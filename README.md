@@ -68,6 +68,9 @@ This repository currently contains:
   realizability checks;
 - a host control-plane surface with persistent catalog, package-source, and
   graph state under `.entangle/host`;
+- host-managed external principal records for backend-facing identities such as
+  git principals, exposed through the same host boundary and resolved into
+  effective runtime context rather than hardcoded into packages;
 - runtime materialization under `.entangle/host` for desired bindings,
   runtime intents, observed runtime records, an immutable package store,
   workspaces, and injected runtime context;

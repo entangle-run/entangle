@@ -23,6 +23,12 @@ import {
   type EffectiveRuntimeContext,
   effectiveRuntimeContextSchema,
   effectiveNodeBindingSchema,
+  externalPrincipalInspectionResponseSchema,
+  externalPrincipalListResponseSchema,
+  type ExternalPrincipalInspectionResponse,
+  type ExternalPrincipalListResponse,
+  type ExternalPrincipalRecord,
+  externalPrincipalRecordSchema,
   type GraphInspectionResponse,
   type GraphSpec,
   type GraphMutationResponse,
@@ -34,7 +40,11 @@ import {
   type PackageSourceInspectionResponse,
   type PackageSourceRecord,
   type PackageSourceListResponse,
+  resolveEffectiveGitDefaultNamespace,
+  resolveEffectiveExternalPrincipals,
+  resolveEffectiveExternalPrincipalRefs,
   resolveEffectiveGitServices,
+  resolveEffectivePrimaryGitPrincipalRef,
   resolveEffectiveModelEndpointProfile,
   resolveEffectiveModelEndpointProfileRef,
   resolveEffectivePrimaryGitServiceRef,
@@ -83,6 +93,7 @@ const cacheRoot = path.join(hostStateRoot, "cache");
 const packageStoreRoot = path.join(importsRoot, "packages", "store");
 
 const catalogPath = path.join(desiredRoot, "catalog.json");
+const externalPrincipalsRoot = path.join(desiredRoot, "external-principals");
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
 const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
@@ -808,9 +819,14 @@ function buildRuntimeInspectionFromState(input: {
   });
 }
 
+function externalPrincipalRecordPath(principalId: string): string {
+  return path.join(externalPrincipalsRoot, `${principalId}.json`);
+}
+
 export async function initializeHostState(): Promise<void> {
   await Promise.all([
     ensureDirectory(runtimeIdentitiesRoot),
+    ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
     ensureDirectory(packageSourcesRoot),
@@ -1029,6 +1045,83 @@ export async function admitPackageSource(
   };
 }
 
+async function readExternalPrincipalRecords(): Promise<ExternalPrincipalRecord[]> {
+  if (!(await pathExists(externalPrincipalsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(externalPrincipalsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      externalPrincipalRecordSchema.parse(
+        await readJsonFile(path.join(externalPrincipalsRoot, fileName))
+      )
+    )
+  );
+}
+
+async function currentExternalPrincipals(): Promise<ExternalPrincipalRecord[]> {
+  return readExternalPrincipalRecords();
+}
+
+export async function listExternalPrincipals(): Promise<ExternalPrincipalListResponse> {
+  await initializeHostState();
+
+  const principals = (await readExternalPrincipalRecords()).map((principal) =>
+    externalPrincipalInspectionResponseSchema.parse({
+      principal,
+      validation: buildValidationReport([])
+    })
+  );
+
+  return externalPrincipalListResponseSchema.parse({
+    principals
+  });
+}
+
+export async function getExternalPrincipalInspection(
+  principalId: string
+): Promise<ExternalPrincipalInspectionResponse | null> {
+  await initializeHostState();
+  const recordPath = externalPrincipalRecordPath(principalId);
+
+  if (!(await pathExists(recordPath))) {
+    return null;
+  }
+
+  return externalPrincipalInspectionResponseSchema.parse({
+    principal: externalPrincipalRecordSchema.parse(await readJsonFile(recordPath)),
+    validation: buildValidationReport([])
+  });
+}
+
+export async function upsertExternalPrincipal(
+  principal: ExternalPrincipalRecord
+): Promise<ExternalPrincipalInspectionResponse> {
+  await initializeHostState();
+
+  const canonicalPrincipal = externalPrincipalRecordSchema.parse(principal);
+
+  await writeJsonFile(
+    externalPrincipalRecordPath(canonicalPrincipal.principalId),
+    canonicalPrincipal
+  );
+  await appendControlPlaneEvent({
+    category: "control_plane",
+    type: "external_principal_upsert",
+    message: `Upserted external principal '${canonicalPrincipal.principalId}'.`,
+    principalId: canonicalPrincipal.principalId
+  });
+
+  return externalPrincipalInspectionResponseSchema.parse({
+    principal: canonicalPrincipal,
+    validation: buildValidationReport([])
+  });
+}
+
 export async function getGraphInspection(): Promise<GraphInspectionResponse> {
   await initializeHostState();
 
@@ -1077,6 +1170,7 @@ export async function validateGraphCandidate(
 
   const catalogInspection = await getCatalogInspection();
   const validationOptions = {
+    externalPrincipals: await currentExternalPrincipals(),
     packageSourceIds: await currentPackageSourceIds(),
     ...(catalogInspection.catalog ? { catalog: catalogInspection.catalog } : {})
   };
@@ -1173,6 +1267,23 @@ async function buildRuntimeResolution(input: {
     runtimeIdentity.secretStoragePath,
     "utf8"
   )).trim();
+  const resolvedExternalPrincipals = resolveEffectiveExternalPrincipals(
+    node,
+    graph,
+    await currentExternalPrincipals()
+  );
+  const resolvedGitPrincipals = resolvedExternalPrincipals.filter(
+    (principal) => principal.systemKind === "git"
+  );
+  const resolvedPrimaryGitPrincipalRef = resolveEffectivePrimaryGitPrincipalRef(
+    resolvedGitPrincipals,
+    resolvedPrimaryGitServiceRef
+  );
+  const resolvedDefaultNamespace = resolveEffectiveGitDefaultNamespace(
+    resolvedGitServices,
+    resolvedGitPrincipals,
+    resolvedPrimaryGitServiceRef
+  );
   const packageSourcePathExists = sourcePackageRoot
     ? await pathExists(sourcePackageRoot)
     : false;
@@ -1182,11 +1293,13 @@ async function buildRuntimeResolution(input: {
       : undefined;
   const effectiveBinding = effectiveNodeBindingSchema.parse({
     bindingId: sanitizeIdentifier(`${activeRevisionId}-${node.nodeId}`),
+    externalPrincipals: resolvedExternalPrincipals,
     graphId: graph.graphId,
     graphRevisionId: activeRevisionId,
     node,
     packageSource,
     resolvedResourceBindings: {
+      externalPrincipalRefs: resolveEffectiveExternalPrincipalRefs(node, graph),
       relayProfileRefs: resolvedRelayProfileRefs,
       primaryRelayProfileRef: resolvedPrimaryRelayProfileRef,
       gitServiceRefs: resolvedGitServices.map((service) => service.id),
@@ -1278,12 +1391,10 @@ async function buildRuntimeResolution(input: {
     const contextDraft = {
       artifactContext: {
         backends: ["git"],
-        defaultNamespace:
-          resolvedGitServices.find(
-            (service) => service.id === resolvedPrimaryGitServiceRef
-          )?.defaultNamespace ??
-          resolvedGitServices[0]?.defaultNamespace,
+        defaultNamespace: resolvedDefaultNamespace,
+        gitPrincipals: resolvedGitPrincipals,
         gitServices: resolvedGitServices,
+        primaryGitPrincipalRef: resolvedPrimaryGitPrincipalRef,
         primaryGitServiceRef: resolvedPrimaryGitServiceRef
       },
       binding: {

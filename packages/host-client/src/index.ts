@@ -1,5 +1,8 @@
 import {
   catalogInspectionResponseSchema,
+  externalPrincipalInspectionResponseSchema,
+  externalPrincipalListResponseSchema,
+  externalPrincipalMutationRequestSchema,
   graphInspectionResponseSchema,
   graphMutationResponseSchema,
   hostErrorResponseSchema,
@@ -12,6 +15,9 @@ import {
   runtimeInspectionResponseSchema,
   runtimeListResponseSchema,
   type CatalogInspectionResponse,
+  type ExternalPrincipalInspectionResponse,
+  type ExternalPrincipalListResponse,
+  type ExternalPrincipalMutationRequest,
   type GraphInspectionResponse,
   type GraphMutationResponse,
   type HostStatusResponse,
@@ -145,6 +151,42 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/package-sources`),
         packageSourceListResponseSchema
+      );
+    },
+
+    async listExternalPrincipals(): Promise<ExternalPrincipalListResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/external-principals`),
+        externalPrincipalListResponseSchema
+      );
+    },
+
+    async getExternalPrincipal(
+      principalId: string
+    ): Promise<ExternalPrincipalInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/external-principals/${principalId}`),
+        externalPrincipalInspectionResponseSchema
+      );
+    },
+
+    async upsertExternalPrincipal(
+      principal: ExternalPrincipalMutationRequest
+    ): Promise<ExternalPrincipalInspectionResponse> {
+      const canonicalPrincipal = externalPrincipalMutationRequestSchema.parse(principal);
+
+      return parseResponse(
+        await fetchImpl(
+          `${baseUrl}/v1/external-principals/${canonicalPrincipal.principalId}`,
+          {
+            method: "PUT",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(canonicalPrincipal)
+          }
+        ),
+        externalPrincipalInspectionResponseSchema
       );
     },
 

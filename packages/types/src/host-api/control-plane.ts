@@ -6,6 +6,7 @@ import { packageSourceRecordSchema } from "../package/package-source.js";
 import {
   deploymentResourceCatalogSchema
 } from "../resources/catalog.js";
+import { externalPrincipalRecordSchema } from "../resources/external-principal.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 
 export const packageSourceAdmissionRequestSchema = z.discriminatedUnion(
@@ -35,6 +36,17 @@ export const packageSourceInspectionResponseSchema = z.object({
   validation: validationReportSchema
 });
 
+export const externalPrincipalMutationRequestSchema = externalPrincipalRecordSchema;
+
+export const externalPrincipalInspectionResponseSchema = z.object({
+  principal: externalPrincipalRecordSchema,
+  validation: validationReportSchema
+});
+
+export const externalPrincipalListResponseSchema = z.object({
+  principals: z.array(externalPrincipalInspectionResponseSchema)
+});
+
 export const packageSourceListResponseSchema = z.object({
   packageSources: z.array(packageSourceInspectionResponseSchema)
 });
@@ -52,6 +64,15 @@ export const graphMutationResponseSchema = z.object({
 
 export type PackageSourceAdmissionRequest = z.infer<
   typeof packageSourceAdmissionRequestSchema
+>;
+export type ExternalPrincipalMutationRequest = z.infer<
+  typeof externalPrincipalMutationRequestSchema
+>;
+export type ExternalPrincipalInspectionResponse = z.infer<
+  typeof externalPrincipalInspectionResponseSchema
+>;
+export type ExternalPrincipalListResponse = z.infer<
+  typeof externalPrincipalListResponseSchema
 >;
 export type CatalogInspectionResponse = z.infer<
   typeof catalogInspectionResponseSchema

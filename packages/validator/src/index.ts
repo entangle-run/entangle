@@ -8,12 +8,15 @@ import {
   type DeploymentResourceCatalog,
   deploymentResourceCatalogSchema,
   entangleA2AMessageSchema,
+  type ExternalPrincipalRecord,
   type GraphSpec,
   graphSpecSchema,
   intersectIdentifiers,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
+  resolveEffectiveExternalPrincipals,
+  resolveEffectiveExternalPrincipalRefs,
   resolveEffectiveGitServiceRefs,
   resolveEffectiveModelEndpointProfileRef,
   resolveEffectivePrimaryGitServiceRef,
@@ -173,13 +176,16 @@ function validateGraphSemantics(
   graph: GraphSpec,
   options: {
     catalog?: DeploymentResourceCatalog;
+    externalPrincipals?: ExternalPrincipalRecord[];
     packageSourceIds?: string[];
   } = {}
 ): ValidationFinding[] {
-  const { catalog, packageSourceIds } = options;
+  const { catalog, externalPrincipals, packageSourceIds } = options;
   const findings: ValidationFinding[] = [];
   const nodeIds = graph.nodes.map((node) => node.nodeId);
   const edgeIds = graph.edges.map((edge) => edge.edgeId);
+  const externalPrincipalIds =
+    externalPrincipals?.map((principal) => principal.principalId) ?? [];
   const relayIds = catalog?.relays.map((relay) => relay.id) ?? [];
   const gitServiceIds = catalog?.gitServices.map((service) => service.id) ?? [];
   const modelEndpointIds =
@@ -213,6 +219,20 @@ function validateGraphSemantics(
           message: `Graph defaults reference git service '${gitServiceRef}' that is missing from the catalog.`,
           path: ["defaults", "resourceBindings", "gitServiceRefs"],
           details: { gitServiceRef }
+        })
+      );
+    }
+  }
+
+  for (const externalPrincipalRef of graph.defaults.resourceBindings.externalPrincipalRefs) {
+    if (externalPrincipals && !externalPrincipalIds.includes(externalPrincipalRef)) {
+      findings.push(
+        createFinding({
+          code: "unknown_graph_default_external_principal",
+          severity: "error",
+          message: `Graph defaults reference external principal '${externalPrincipalRef}' that is missing from host state.`,
+          path: ["defaults", "resourceBindings", "externalPrincipalRefs"],
+          details: { externalPrincipalRef }
         })
       );
     }
@@ -313,6 +333,15 @@ function validateGraphSemantics(
     }
 
     const resourceBindings = node.resourceBindings;
+    const resolvedExternalPrincipalRefs = resolveEffectiveExternalPrincipalRefs(
+      node,
+      graph
+    );
+    const resolvedExternalPrincipals = resolveEffectiveExternalPrincipals(
+      node,
+      graph,
+      externalPrincipals ?? []
+    );
     const resolvedRelayRefs = resolveEffectiveRelayProfileRefs(node, graph, catalog);
     const resolvedPrimaryRelayRef = resolveEffectivePrimaryRelayProfileRef(
       node,
@@ -411,6 +440,20 @@ function validateGraphSemantics(
       }
     }
 
+    for (const externalPrincipalRef of resourceBindings.externalPrincipalRefs) {
+      if (externalPrincipals && !externalPrincipalIds.includes(externalPrincipalRef)) {
+        findings.push(
+          createFinding({
+            code: "unknown_external_principal_ref",
+            severity: "error",
+            message: `Node '${node.nodeId}' references external principal '${externalPrincipalRef}' that is missing from host state.`,
+            path: ["nodes", node.nodeId, "resourceBindings", "externalPrincipalRefs"],
+            details: { externalPrincipalRef }
+          })
+        );
+      }
+    }
+
     if (
       catalog &&
       resolvedPrimaryGitServiceRef &&
@@ -423,6 +466,103 @@ function validateGraphSemantics(
           message: `Node '${node.nodeId}' resolves primary git service '${resolvedPrimaryGitServiceRef}' outside its effective git service set.`,
           path: ["nodes", node.nodeId, "resourceBindings", "primaryGitServiceRef"],
           details: { gitServiceRef: resolvedPrimaryGitServiceRef }
+        })
+      );
+    }
+
+    if (
+      externalPrincipals &&
+      resolvedExternalPrincipalRefs.length > 0 &&
+      resolvedExternalPrincipals.length !== resolvedExternalPrincipalRefs.length
+    ) {
+      findings.push(
+        createFinding({
+          code: "effective_external_principal_resolution_incomplete",
+          severity: "error",
+          message: `Node '${node.nodeId}' did not resolve every effective external principal reference.`,
+          path: ["nodes", node.nodeId, "resourceBindings", "externalPrincipalRefs"],
+          details: {
+            resolvedExternalPrincipalRefs
+          }
+        })
+      );
+    }
+
+    const resolvedGitPrincipals = resolvedExternalPrincipals.filter(
+      (principal) => principal.systemKind === "git"
+    );
+
+    for (const principal of resolvedGitPrincipals) {
+      if (!resolvedGitServiceRefs.includes(principal.gitServiceRef)) {
+        findings.push(
+          createFinding({
+            code: "git_principal_outside_effective_git_services",
+            severity: "error",
+            message: `Node '${node.nodeId}' resolves git principal '${principal.principalId}' outside its effective git service set.`,
+            path: ["nodes", node.nodeId, "resourceBindings", "externalPrincipalRefs"],
+            details: {
+              gitServiceRef: principal.gitServiceRef,
+              principalId: principal.principalId
+            }
+          })
+        );
+      }
+    }
+
+    if (externalPrincipals && resolvedPrimaryGitServiceRef) {
+      const matchingPrimaryGitPrincipals = resolvedGitPrincipals.filter(
+        (principal) => principal.gitServiceRef === resolvedPrimaryGitServiceRef
+      );
+
+      if (matchingPrimaryGitPrincipals.length > 1) {
+        findings.push(
+          createFinding({
+            code: "ambiguous_primary_git_principal",
+            severity: "error",
+            message: `Node '${node.nodeId}' resolves multiple git principals for primary git service '${resolvedPrimaryGitServiceRef}'.`,
+            path: ["nodes", node.nodeId, "resourceBindings", "externalPrincipalRefs"],
+            details: {
+              gitServiceRef: resolvedPrimaryGitServiceRef,
+              principalIds: matchingPrimaryGitPrincipals.map(
+                (principal) => principal.principalId
+              )
+            }
+          })
+        );
+      }
+
+      if (
+        node.nodeKind !== "user" &&
+        matchingPrimaryGitPrincipals.length === 0
+      ) {
+        findings.push(
+          createFinding({
+            code: "missing_primary_git_principal",
+            severity: "warning",
+            message: `Non-user node '${node.nodeId}' has no git principal bound for primary git service '${resolvedPrimaryGitServiceRef}'.`,
+            path: ["nodes", node.nodeId, "resourceBindings", "externalPrincipalRefs"],
+            details: {
+              gitServiceRef: resolvedPrimaryGitServiceRef
+            }
+          })
+        );
+      }
+    }
+
+    if (
+      externalPrincipals &&
+      !resolvedPrimaryGitServiceRef &&
+      resolvedGitPrincipals.length > 1
+    ) {
+      findings.push(
+        createFinding({
+          code: "ambiguous_git_principal_without_primary_service",
+          severity: "warning",
+          message: `Node '${node.nodeId}' resolves multiple git principals without an effective primary git service.`,
+          path: ["nodes", node.nodeId, "resourceBindings", "externalPrincipalRefs"],
+          details: {
+            principalIds: resolvedGitPrincipals.map((principal) => principal.principalId)
+          }
         })
       );
     }
@@ -557,6 +697,7 @@ export function validateGraphDocument(
   input: unknown,
   options: {
     catalog?: DeploymentResourceCatalog;
+    externalPrincipals?: ExternalPrincipalRecord[];
     packageSourceIds?: string[];
   } = {}
 ): ValidationReport {

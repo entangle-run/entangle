@@ -216,6 +216,19 @@ canonical source identifier. Studio may use a convenience file-picker flow, but
 the host should persist a normalized package-source record such as `local_path`
 or host-managed imported archive storage.
 
+### 8.2.1 External principals
+
+- `GET /v1/external-principals`
+- `GET /v1/external-principals/{principalId}`
+- `PUT /v1/external-principals/{principalId}`
+
+Purpose:
+
+- persist backend-facing principal bindings such as git principals;
+- expose those bindings to Studio, CLI, and tests through the host boundary;
+- keep credential references and attribution profiles out of package sources and
+  out of ad hoc runtime-only configuration.
+
 ### 8.3 Graph and revision state
 
 - `GET /v1/graph`
@@ -273,6 +286,9 @@ The current repository implementation now concretely includes:
 - `GET /v1/package-sources`
 - `GET /v1/package-sources/{packageSourceId}`
 - `POST /v1/package-sources/admit`
+- `GET /v1/external-principals`
+- `GET /v1/external-principals/{principalId}`
+- `PUT /v1/external-principals/{principalId}`
 - `GET /v1/graph`
 - `PUT /v1/graph`
 - `POST /v1/graph/validate`
@@ -299,6 +315,7 @@ The current implementation also exposes:
 - runtime handles when the backend reports them;
 - runtime status messages suitable for Studio and CLI;
 - read-only persisted artifact inspection for active runtimes;
+- host-managed external principal inspection and mutation;
 - host-level reconciliation status via `GET /v1/host/status`.
 
 ### 8.7 Validation and dry-run

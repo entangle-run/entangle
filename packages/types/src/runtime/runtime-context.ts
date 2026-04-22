@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { gitServiceProfileSchema, modelEndpointProfileSchema, relayProfileSchema } from "../resources/catalog.js";
+import { externalPrincipalRecordSchema } from "../resources/external-principal.js";
 import { edgeRelationSchema, runtimeProfileSchema } from "../common/topology.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
@@ -26,6 +27,7 @@ export const workspaceLayoutSchema = z.object({
 
 export const effectiveNodeBindingSchema = z.object({
   bindingId: identifierSchema,
+  externalPrincipals: z.array(externalPrincipalRecordSchema).default([]),
   graphId: identifierSchema,
   graphRevisionId: identifierSchema,
   node: nodeBindingSchema,
@@ -45,6 +47,8 @@ export const artifactRuntimeContextSchema = z.object({
   backends: z.array(z.enum(["git"])).default(["git"]),
   defaultNamespace: identifierSchema.optional(),
   gitServices: z.array(gitServiceProfileSchema).default([]),
+  gitPrincipals: z.array(externalPrincipalRecordSchema).default([]),
+  primaryGitPrincipalRef: identifierSchema.optional(),
   primaryGitServiceRef: identifierSchema.optional()
 });
 

@@ -2,6 +2,9 @@ import { pathToFileURL } from "node:url";
 import Fastify from "fastify";
 import {
   catalogInspectionResponseSchema,
+  externalPrincipalInspectionResponseSchema,
+  externalPrincipalListResponseSchema,
+  externalPrincipalMutationRequestSchema,
   graphMutationResponseSchema,
   graphInspectionResponseSchema,
   hostErrorResponseSchema,
@@ -22,14 +25,17 @@ import {
   buildHostStatus,
   getRuntimeContext,
   getRuntimeInspection,
+  getExternalPrincipalInspection,
   listRuntimeArtifacts,
   getCatalogInspection,
   getGraphInspection,
+  listExternalPrincipals,
   getPackageSourceInspection,
   initializeHostState,
   listRuntimeInspections,
   listPackageSources,
   setRuntimeDesiredState,
+  upsertExternalPrincipal,
   validateCatalogCandidate,
   validateGraphCandidate
 } from "./state.js";
@@ -112,6 +118,50 @@ export function buildHostServer() {
   server.get("/v1/package-sources", async () =>
     packageSourceListResponseSchema.parse(await listPackageSources())
   );
+
+  server.get("/v1/external-principals", async () =>
+    externalPrincipalListResponseSchema.parse(await listExternalPrincipals())
+  );
+
+  server.get("/v1/external-principals/:principalId", async (request, reply) => {
+    const params = request.params as { principalId: string };
+    const inspection = await getExternalPrincipalInspection(params.principalId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `External principal '${params.principalId}' was not found.`
+      });
+    }
+
+    return externalPrincipalInspectionResponseSchema.parse(inspection);
+  });
+
+  server.put("/v1/external-principals/:principalId", async (request) => {
+    const params = request.params as { principalId: string };
+    const mutation = parseRequestBody(
+      externalPrincipalMutationRequestSchema,
+      request.body
+    );
+
+    if (mutation.principalId !== params.principalId) {
+      throw new HostHttpError({
+        code: "bad_request",
+        details: {
+          bodyPrincipalId: mutation.principalId,
+          pathPrincipalId: params.principalId
+        },
+        message:
+          "External principal body principalId must match the path parameter.",
+        statusCode: 400
+      });
+    }
+
+    return externalPrincipalInspectionResponseSchema.parse(
+      await upsertExternalPrincipal(mutation)
+    );
+  });
 
   server.get("/v1/package-sources/:packageSourceId", async (request, reply) => {
     const params = request.params as { packageSourceId: string };

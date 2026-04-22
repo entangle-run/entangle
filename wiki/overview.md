@@ -61,6 +61,10 @@ The repository now also contains the first real implementation baseline:
 - a first local Compose profile and service Dockerfiles;
 - a persistent local host-state model under `.entangle/host`;
 - a separate local secret root for host-owned runtime identities;
+- host-managed external principal bindings for git-facing identities, exposed
+  through host routes, the shared host client, and the CLI, and now resolved
+  into effective runtime context instead of remaining only in the written
+  specification;
 - live host routes for catalog inspection/apply, package admission, graph
   inspection/apply, runtime inspection, runtime context access, and runtime
   desired-state mutation;
@@ -135,6 +139,8 @@ The central design direction is now clear:
 - the project should remain in one monorepo with explicit internal package boundaries during the hackathon and early product phase.
 - relay, git service, and model endpoint configuration should come from a
   deployment-scoped resource catalog, not hardcoded runtime assumptions.
+- git-facing principals should be bound explicitly through host-managed
+  external principal records, not hidden in package or runner-local config.
 - runners should consume a versioned effective runtime context resolved by the
   host, not recompute graph and deployment merges on their own.
 - model-provider integration should happen behind an internal engine-adapter
@@ -163,7 +169,8 @@ The central design direction is now clear:
 ## Immediate next steps
 
 - extend git-backed artifacts from runner-local materialization to real remote
-  publication and retrieval against named git services;
+  publication and retrieval against named git services now that git principals
+  are modeled explicitly;
 - expose richer runtime, reconciliation, and artifact state in Studio without
   breaking the existing host-first boundary;
 - add stronger Docker-backed runtime smoke coverage for long-lived runner

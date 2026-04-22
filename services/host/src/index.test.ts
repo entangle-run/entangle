@@ -12,6 +12,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   artifactRecordSchema,
+  externalPrincipalInspectionResponseSchema,
   hostErrorResponseSchema,
   packageSourceInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
@@ -92,6 +93,34 @@ async function createAdmittedPackageDirectory(rootPath: string): Promise<string>
   ]);
 
   return packageRoot;
+}
+
+function buildGitPrincipalRecord(
+  overrides: Partial<{
+    attributionEmail: string;
+    displayName: string;
+    gitServiceRef: string;
+    principalId: string;
+    secretRef: string;
+    subject: string;
+  }> = {}
+) {
+  return {
+    principalId: overrides.principalId ?? "worker-it-git",
+    displayName: overrides.displayName ?? "Worker IT Git Principal",
+    systemKind: "git" as const,
+    gitServiceRef: overrides.gitServiceRef ?? "local-gitea",
+    subject: overrides.subject ?? "worker-it",
+    transportAuthMode: "ssh_key" as const,
+    secretRef: overrides.secretRef ?? "secret://git/worker-it/ssh",
+    attribution: {
+      displayName: "Worker IT",
+      email: overrides.attributionEmail ?? "worker-it@entangle.local"
+    },
+    signing: {
+      mode: "none" as const
+    }
+  };
 }
 
 async function createTestServer(options: { includeModelEndpoint?: boolean } = {}) {
@@ -196,6 +225,47 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(response.json())).toMatchObject({
         code: "not_found",
         message: "Package source 'missing-source' was not found."
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("creates and lists external principals through the host surface", async () => {
+    const server = await createTestServer();
+
+    try {
+      const principal = buildGitPrincipalRecord();
+      const upsertResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+
+      expect(upsertResponse.statusCode).toBe(200);
+      expect(
+        externalPrincipalInspectionResponseSchema.parse(upsertResponse.json())
+      ).toMatchObject({
+        principal: {
+          principalId: "worker-it-git",
+          gitServiceRef: "local-gitea"
+        }
+      });
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/external-principals"
+      });
+
+      expect(listResponse.statusCode).toBe(200);
+      expect(listResponse.json()).toMatchObject({
+        principals: [
+          {
+            principal: {
+              principalId: "worker-it-git"
+            }
+          }
+        ]
       });
     } finally {
       await server.close();
@@ -336,6 +406,253 @@ describe("buildHostServer", () => {
           packageLinkTarget
         )
       ).toBe(admittedPackageSource.materialization?.packageRoot);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("injects resolved git principals into runtime context when a node binds them", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const principal = buildGitPrincipalRecord();
+      const principalResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+      expect(principalResponse.statusCode).toBe(200);
+
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      expect(admitResponse.statusCode).toBe(200);
+      const admittedPackageSource = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource;
+
+      const graphResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSource.packageSourceId,
+              resourceBindings: {
+                relayProfileRefs: [],
+                gitServiceRefs: ["local-gitea"],
+                primaryGitServiceRef: "local-gitea",
+                externalPrincipalRefs: ["worker-it-git"]
+              }
+            }
+          ],
+          edges: [
+            {
+              edgeId: "user-to-worker",
+              fromNodeId: "user-main",
+              toNodeId: "worker-it",
+              relation: "delegates_to"
+            }
+          ]
+        },
+        url: "/v1/graph"
+      });
+      expect(graphResponse.statusCode).toBe(200);
+
+      const contextResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/context"
+      });
+
+      expect(contextResponse.statusCode).toBe(200);
+      expect(
+        runtimeContextInspectionResponseSchema.parse(contextResponse.json())
+      ).toMatchObject({
+        artifactContext: {
+          primaryGitPrincipalRef: "worker-it-git",
+          gitPrincipals: [
+            {
+              principalId: "worker-it-git",
+              gitServiceRef: "local-gitea"
+            }
+          ]
+        },
+        binding: {
+          externalPrincipals: [
+            {
+              principalId: "worker-it-git"
+            }
+          ],
+          resolvedResourceBindings: {
+            externalPrincipalRefs: ["worker-it-git"]
+          }
+        }
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("does not invent a primary git principal or default namespace when git bindings remain ambiguous", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const catalogResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          catalogId: "local-catalog",
+          relays: [
+            {
+              id: "local-relay",
+              displayName: "Local Relay",
+              readUrls: ["ws://relay.local"],
+              writeUrls: ["ws://relay.local"],
+              authMode: "none"
+            }
+          ],
+          gitServices: [
+            {
+              id: "local-gitea",
+              displayName: "Local Gitea",
+              baseUrl: "https://gitea.local",
+              transportKind: "ssh",
+              authMode: "ssh_key",
+              defaultNamespace: "main-team"
+            },
+            {
+              id: "backup-gitea",
+              displayName: "Backup Gitea",
+              baseUrl: "https://backup.gitea.local",
+              transportKind: "ssh",
+              authMode: "ssh_key",
+              defaultNamespace: "backup-team"
+            }
+          ],
+          modelEndpoints: [
+            {
+              id: "shared-model",
+              displayName: "Shared Model",
+              adapterKind: "anthropic",
+              baseUrl: "https://api.anthropic.com",
+              authMode: "api_key_bearer",
+              secretRef: "secret://shared-model",
+              defaultModel: "claude-opus"
+            }
+          ],
+          defaults: {
+            relayProfileRefs: ["local-relay"],
+            modelEndpointRef: "shared-model"
+          }
+        },
+        url: "/v1/catalog"
+      });
+      expect(catalogResponse.statusCode).toBe(200);
+
+      for (const principal of [
+        buildGitPrincipalRecord({
+          principalId: "worker-it-git-main",
+          gitServiceRef: "local-gitea",
+          secretRef: "secret://git/worker-it/main"
+        }),
+        buildGitPrincipalRecord({
+          principalId: "worker-it-git-backup",
+          displayName: "Worker IT Backup Git Principal",
+          gitServiceRef: "backup-gitea",
+          secretRef: "secret://git/worker-it/backup"
+        })
+      ]) {
+        const principalResponse = await server.inject({
+          method: "PUT",
+          payload: principal,
+          url: `/v1/external-principals/${principal.principalId}`
+        });
+        expect(principalResponse.statusCode).toBe(200);
+      }
+
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      expect(admitResponse.statusCode).toBe(200);
+      const admittedPackageSource = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource;
+
+      const graphResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSource.packageSourceId,
+              resourceBindings: {
+                relayProfileRefs: [],
+                gitServiceRefs: ["local-gitea", "backup-gitea"],
+                externalPrincipalRefs: [
+                  "worker-it-git-main",
+                  "worker-it-git-backup"
+                ]
+              }
+            }
+          ],
+          edges: [
+            {
+              edgeId: "user-to-worker",
+              fromNodeId: "user-main",
+              toNodeId: "worker-it",
+              relation: "delegates_to"
+            }
+          ]
+        },
+        url: "/v1/graph"
+      });
+      expect(graphResponse.statusCode).toBe(200);
+
+      const contextResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/context"
+      });
+
+      expect(contextResponse.statusCode).toBe(200);
+      const context = runtimeContextInspectionResponseSchema.parse(
+        contextResponse.json()
+      );
+
+      expect(context.artifactContext.primaryGitPrincipalRef).toBeUndefined();
+      expect(context.artifactContext.defaultNamespace).toBeUndefined();
+      expect(context.artifactContext.gitPrincipals).toHaveLength(2);
     } finally {
       await server.close();
     }

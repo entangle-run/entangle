@@ -7,10 +7,18 @@ import {
   validateSessionLifecycleTransition
 } from "./index.js";
 
-function buildGraph(packageSourceRef?: string): GraphSpec {
+function buildGraph(
+  packageSourceRef?: string,
+  workerResourceBindings: GraphSpec["nodes"][number]["resourceBindings"] = {
+    externalPrincipalRefs: [],
+    gitServiceRefs: [],
+    relayProfileRefs: []
+  }
+): GraphSpec {
   return {
     defaults: {
       resourceBindings: {
+        externalPrincipalRefs: [],
         gitServiceRefs: [],
         relayProfileRefs: []
       },
@@ -29,6 +37,7 @@ function buildGraph(packageSourceRef?: string): GraphSpec {
         nodeId: "user",
         nodeKind: "user",
         resourceBindings: {
+          externalPrincipalRefs: [],
           gitServiceRefs: [],
           relayProfileRefs: []
         }
@@ -42,10 +51,7 @@ function buildGraph(packageSourceRef?: string): GraphSpec {
         nodeId: "worker",
         nodeKind: "worker",
         packageSourceRef,
-        resourceBindings: {
-          gitServiceRefs: [],
-          relayProfileRefs: []
-        }
+        resourceBindings: workerResourceBindings
       }
     ],
     schemaVersion: "1"
@@ -71,6 +77,157 @@ describe("validateGraphDocument", () => {
         expect.objectContaining({
           code: "unknown_package_source_ref",
           severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects missing external principal refs when host principal state was provided", () => {
+    const report = validateGraphDocument(
+      buildGraph("worker-source", {
+        externalPrincipalRefs: ["worker-git"],
+        gitServiceRefs: ["local-gitea"],
+        primaryGitServiceRef: "local-gitea",
+        relayProfileRefs: []
+      }),
+      {
+        catalog: {
+          schemaVersion: "1",
+          catalogId: "local",
+          relays: [],
+          gitServices: [
+            {
+              id: "local-gitea",
+              displayName: "Local Gitea",
+              baseUrl: "https://gitea.local",
+              transportKind: "ssh",
+              authMode: "ssh_key"
+            }
+          ],
+          modelEndpoints: [],
+          defaults: {
+            relayProfileRefs: []
+          }
+        },
+        externalPrincipals: [],
+        packageSourceIds: ["worker-source"]
+      }
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "unknown_external_principal_ref",
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("warns when a non-user node resolves a primary git service without a matching git principal", () => {
+    const report = validateGraphDocument(
+      buildGraph("worker-source", {
+        externalPrincipalRefs: [],
+        gitServiceRefs: ["local-gitea"],
+        primaryGitServiceRef: "local-gitea",
+        relayProfileRefs: []
+      }),
+      {
+        catalog: {
+          schemaVersion: "1",
+          catalogId: "local",
+          relays: [],
+          gitServices: [
+            {
+              id: "local-gitea",
+              displayName: "Local Gitea",
+              baseUrl: "https://gitea.local",
+              transportKind: "ssh",
+              authMode: "ssh_key"
+            }
+          ],
+          modelEndpoints: [],
+          defaults: {
+            relayProfileRefs: []
+          }
+        },
+        externalPrincipals: [],
+        packageSourceIds: ["worker-source"]
+      }
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "missing_primary_git_principal",
+          severity: "warning"
+        })
+      ])
+    );
+  });
+
+  it("warns when multiple git principals resolve without a primary git service", () => {
+    const report = validateGraphDocument(
+      buildGraph("worker-source", {
+        externalPrincipalRefs: ["worker-git-main", "worker-git-backup"],
+        gitServiceRefs: ["local-gitea", "backup-gitea"],
+        relayProfileRefs: []
+      }),
+      {
+        catalog: {
+          schemaVersion: "1",
+          catalogId: "local",
+          relays: [],
+          gitServices: [
+            {
+              id: "local-gitea",
+              displayName: "Local Gitea",
+              baseUrl: "https://gitea.local",
+              transportKind: "ssh",
+              authMode: "ssh_key"
+            },
+            {
+              id: "backup-gitea",
+              displayName: "Backup Gitea",
+              baseUrl: "https://backup.gitea.local",
+              transportKind: "ssh",
+              authMode: "ssh_key"
+            }
+          ],
+          modelEndpoints: [],
+          defaults: {
+            relayProfileRefs: []
+          }
+        },
+        externalPrincipals: [
+          {
+            principalId: "worker-git-main",
+            displayName: "Worker Git Main",
+            systemKind: "git",
+            gitServiceRef: "local-gitea",
+            subject: "worker",
+            transportAuthMode: "ssh_key",
+            secretRef: "secret://git/worker/main"
+          },
+          {
+            principalId: "worker-git-backup",
+            displayName: "Worker Git Backup",
+            systemKind: "git",
+            gitServiceRef: "backup-gitea",
+            subject: "worker",
+            transportAuthMode: "ssh_key",
+            secretRef: "secret://git/worker/backup"
+          }
+        ],
+        packageSourceIds: ["worker-source"]
+      }
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "ambiguous_git_principal_without_primary_service",
+          severity: "warning"
         })
       ])
     );

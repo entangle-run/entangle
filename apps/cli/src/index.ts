@@ -3,6 +3,7 @@ import path from "node:path";
 import { Command } from "commander";
 import { createHostClient } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
+import { externalPrincipalMutationRequestSchema } from "@entangle/types";
 import {
   formatValidationReport,
   validateGraphFile,
@@ -143,6 +144,42 @@ hostPackageSourcesCommand
         sourceKind: "local_path",
         absolutePath: path.resolve(directory)
       })
+    );
+  });
+
+const hostExternalPrincipalsCommand = hostCommand
+  .command("external-principals")
+  .description("Inspect and mutate external principal bindings through entangle-host.");
+
+hostExternalPrincipalsCommand
+  .command("list")
+  .description("List bound external principals.")
+  .action(async (_options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.listExternalPrincipals());
+  });
+
+hostExternalPrincipalsCommand
+  .command("get")
+  .argument("<principalId>", "External principal identifier.")
+  .description("Inspect one external principal.")
+  .action(async (principalId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getExternalPrincipal(principalId));
+  });
+
+hostExternalPrincipalsCommand
+  .command("apply")
+  .argument("<file>", "Path to an external principal JSON file.")
+  .description("Create or update one external principal through entangle-host.")
+  .action(async (file: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(
+      await client.upsertExternalPrincipal(
+        externalPrincipalMutationRequestSchema.parse(
+          await readJsonDocument(path.resolve(file))
+        )
+      )
     );
   });
 

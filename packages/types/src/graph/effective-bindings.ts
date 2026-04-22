@@ -5,6 +5,7 @@ import type {
   ModelEndpointProfile,
   RelayProfile
 } from "../resources/catalog.js";
+import type { ExternalPrincipalRecord } from "../resources/external-principal.js";
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values));
@@ -84,6 +85,71 @@ export function resolveEffectiveModelEndpointProfileRef(
     graph.defaults.resourceBindings.modelEndpointProfileRef ??
     catalog?.defaults.modelEndpointRef
   );
+}
+
+export function resolveEffectiveExternalPrincipalRefs(
+  node: NodeBinding,
+  graph: GraphSpec
+): string[] {
+  if (node.resourceBindings.externalPrincipalRefs.length > 0) {
+    return unique(node.resourceBindings.externalPrincipalRefs);
+  }
+
+  if (graph.defaults.resourceBindings.externalPrincipalRefs.length > 0) {
+    return unique(graph.defaults.resourceBindings.externalPrincipalRefs);
+  }
+
+  return [];
+}
+
+export function resolveEffectiveExternalPrincipals(
+  node: NodeBinding,
+  graph: GraphSpec,
+  principals: ExternalPrincipalRecord[] = []
+): ExternalPrincipalRecord[] {
+  const refs = resolveEffectiveExternalPrincipalRefs(node, graph);
+  return refs.flatMap((ref) =>
+    principals.filter((principal) => principal.principalId === ref)
+  );
+}
+
+export function resolveEffectivePrimaryGitPrincipalRef(
+  principals: ExternalPrincipalRecord[],
+  primaryGitServiceRef?: string
+): string | undefined {
+  if (primaryGitServiceRef) {
+    const matchingPrincipals = principals.filter(
+      (principal) => principal.gitServiceRef === primaryGitServiceRef
+    );
+
+    return matchingPrincipals.length === 1
+      ? matchingPrincipals[0]?.principalId
+      : undefined;
+  }
+
+  return principals.length === 1 ? principals[0]?.principalId : undefined;
+}
+
+export function resolveEffectiveGitDefaultNamespace(
+  gitServices: GitServiceProfile[],
+  principals: ExternalPrincipalRecord[],
+  primaryGitServiceRef?: string
+): string | undefined {
+  if (primaryGitServiceRef) {
+    return gitServices.find((service) => service.id === primaryGitServiceRef)
+      ?.defaultNamespace;
+  }
+
+  if (gitServices.length === 1) {
+    return gitServices[0]?.defaultNamespace;
+  }
+
+  if (principals.length === 1) {
+    return gitServices.find((service) => service.id === principals[0]?.gitServiceRef)
+      ?.defaultNamespace;
+  }
+
+  return undefined;
 }
 
 export function resolveEffectiveRelayProfiles(

@@ -84,6 +84,48 @@ describe("createHostClient", () => {
     );
   });
 
+  it("parses external principal inspection responses from the host surface", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              principal: {
+                principalId: "worker-it-git",
+                displayName: "Worker IT Git Principal",
+                systemKind: "git",
+                gitServiceRef: "local-gitea",
+                subject: "worker-it",
+                transportAuthMode: "ssh_key",
+                secretRef: "secret://git/worker-it/ssh",
+                attribution: {
+                  displayName: "Worker IT",
+                  email: "worker-it@entangle.local"
+                },
+                signing: {
+                  mode: "none"
+                }
+              },
+              validation: {
+                ok: true,
+                findings: []
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        )
+    });
+
+    await expect(client.getExternalPrincipal("worker-it-git")).resolves.toMatchObject({
+      principal: {
+        principalId: "worker-it-git",
+        gitServiceRef: "local-gitea"
+      }
+    });
+  });
+
   it("parses runtime artifact lists from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

@@ -15,6 +15,7 @@ export * from "./package/package-source.js";
 export * from "./protocol/a2a.js";
 export * from "./protocol/nostr-transport.js";
 export * from "./resources/catalog.js";
+export * from "./resources/external-principal.js";
 export * from "./runtime/runtime-context.js";
 export * from "./runtime/runtime-identity.js";
 export * from "./runtime/reconciliation.js";

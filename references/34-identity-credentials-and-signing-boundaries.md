@@ -217,3 +217,19 @@ Entangle should reject these models:
 - using one shared git secret for every node as the canonical design;
 - assuming git author metadata is equivalent to authenticated identity;
 - binding package portability to host-local credential material.
+
+## 10. Current implemented slice
+
+The current repository implementation now realizes the first machine-readable
+and host-managed subset of this model:
+
+- `packages/types` owns a concrete `ExternalPrincipalRecord` contract for git
+  principals;
+- graph bindings may now reference external principals by id;
+- `entangle-host` persists external principal records under desired state and
+  exposes them through host routes, host-client, and CLI surfaces;
+- effective runtime context now carries resolved git principals plus a
+  `primaryGitPrincipalRef` hint for the node when the primary principal is
+  deterministically resolvable;
+- the runner still does not publish to a remote git service yet, but the
+  correct credential and attribution boundary now exists in the runtime model.

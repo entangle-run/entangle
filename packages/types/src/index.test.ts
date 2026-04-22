@@ -4,6 +4,7 @@ import {
   entangleA2AMessageSchema,
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
+  externalPrincipalRecordSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition
@@ -100,6 +101,30 @@ describe("artifact contracts", () => {
 
     expect(result.ref.backend).toBe("git");
     expect(result.ref.locator.path).toContain("reports/session-alpha");
+  });
+});
+
+describe("external principal contracts", () => {
+  it("accepts a git external principal record", () => {
+    const result = externalPrincipalRecordSchema.parse({
+      principalId: "worker-it-git",
+      displayName: "Worker IT Git Principal",
+      systemKind: "git",
+      gitServiceRef: "local-gitea",
+      subject: "worker-it",
+      transportAuthMode: "ssh_key",
+      secretRef: "secret://git/worker-it/ssh",
+      attribution: {
+        displayName: "Worker IT",
+        email: "worker-it@entangle.local"
+      },
+      signing: {
+        mode: "none"
+      }
+    });
+
+    expect(result.systemKind).toBe("git");
+    expect(result.gitServiceRef).toBe("local-gitea");
   });
 });
 

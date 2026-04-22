@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-22] implementation | Added host-managed external principal bindings and resolved git principals
+
+Closed the gap between the identity model and the runtime model by introducing
+machine-readable external principal records for git-facing identities, binding
+them from graph nodes by reference, persisting them through `entangle-host`,
+resolving them into effective runtime context, and exposing them through the
+shared host/host-client/CLI surfaces. Added validator coverage for missing and
+ambiguous principal resolution so future remote git publication can build on a
+real credential-binding boundary instead of ad hoc host logic.
+
 ## [2026-04-22] refinement | Removed runtime-local filesystem paths from portable artifact refs
 
 Refined the first git artifact slice so protocol-facing `ArtifactRef` locators

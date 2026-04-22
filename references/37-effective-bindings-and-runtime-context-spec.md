@@ -182,6 +182,10 @@ The current implementation now also carries explicit non-secret
 `identityContext` metadata for runner authorship while keeping the secret key
 delivery separate.
 
+The current implementation also now resolves host-managed external principals
+into effective runtime context instead of leaving git-facing identity entirely
+implicit.
+
 ## 8. Relay context semantics
 
 `relay-context.json` should describe what the runner can actually use.
@@ -213,10 +217,17 @@ Recommended fields:
 
 - `backends`
 - `git_services`
+- `git_principals`
 - `primary_git_service_id`
+- `primary_git_principal_ref`
 - `default_namespace`
 - `workspace_mounts`
 - `publication_constraints`
+
+`primary_git_principal_ref` and `default_namespace` should only be populated
+when the host can resolve them deterministically. The runtime should not invent
+fallback identity or namespace choices by taking the "first" git principal or
+the "first" git service when multiple candidates remain.
 
 This allows the runner to:
 
@@ -270,6 +281,8 @@ specification as:
 
 - one injected `effective-runtime-context.json` per node;
 - one desired effective-binding record per non-user node;
+- resolved external principal bindings materialized into effective bindings and
+  artifact runtime context;
 - workspace partitions for `package/`, `memory/`, `workspace/`, `runtime/`,
   and `injected/`;
 - a package link from workspace `package/` to the admitted package source for

@@ -11,7 +11,8 @@ export const nodeResourceBindingsSchema = z.object({
   primaryRelayProfileRef: identifierSchema.optional(),
   gitServiceRefs: z.array(identifierSchema).default([]),
   primaryGitServiceRef: identifierSchema.optional(),
-  modelEndpointProfileRef: identifierSchema.optional()
+  modelEndpointProfileRef: identifierSchema.optional(),
+  externalPrincipalRefs: z.array(identifierSchema).default([])
 });
 
 export const nodeAutonomyProfileSchema = z.object({
@@ -26,7 +27,8 @@ export const nodeBindingSchema = z.object({
   packageSourceRef: identifierSchema.optional(),
   resourceBindings: nodeResourceBindingsSchema.default({
     relayProfileRefs: [],
-    gitServiceRefs: []
+    gitServiceRefs: [],
+    externalPrincipalRefs: []
   }),
   autonomy: nodeAutonomyProfileSchema.default({
     canInitiateSessions: false,
@@ -56,7 +58,8 @@ export const edgeSchema = z.object({
 export const graphDefaultsSchema = z.object({
   resourceBindings: nodeResourceBindingsSchema.default({
     relayProfileRefs: [],
-    gitServiceRefs: []
+    gitServiceRefs: [],
+    externalPrincipalRefs: []
   }),
   runtimeProfile: runtimeProfileSchema.default("hackathon_local")
 });
@@ -70,7 +73,8 @@ export const graphSpecSchema = z.object({
   defaults: graphDefaultsSchema.default({
     resourceBindings: {
       relayProfileRefs: [],
-      gitServiceRefs: []
+      gitServiceRefs: [],
+      externalPrincipalRefs: []
     },
     runtimeProfile: "hackathon_local"
   })
