@@ -78,8 +78,11 @@ This repository currently contains:
   context injected into runners and a separate local secret storage profile;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
-- a runner bootstrap path that consumes injected runtime context and package
-  prompts instead of a hardcoded stub request;
+- a runner transport and intake slice with a deterministic in-memory transport,
+  a file-backed runner state store, and a long-lived `RunnerService` that
+  validates inbound A2A messages, advances session and conversation lifecycle
+  state, builds engine turn requests from inbound context, and emits
+  `task.result` replies when response policy requires them;
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;

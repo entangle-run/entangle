@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   agentEngineTurnRequestSchema,
+  type EntangleA2AMessage,
   effectiveRuntimeContextSchema,
   type AgentEngineTurnRequest,
   type EffectiveRuntimeContext
@@ -94,7 +95,10 @@ export async function loadRuntimeContext(
 }
 
 export async function buildAgentEngineTurnRequest(
-  context: EffectiveRuntimeContext
+  context: EffectiveRuntimeContext,
+  input: {
+    inboundMessage?: EntangleA2AMessage;
+  } = {}
 ): Promise<AgentEngineTurnRequest> {
   const systemPromptPath = path.join(
     context.workspace.packageRoot,
@@ -113,7 +117,9 @@ export async function buildAgentEngineTurnRequest(
     ]);
 
   return agentEngineTurnRequestSchema.parse({
-    sessionId: `${context.binding.graphRevisionId}-${context.binding.node.nodeId}`,
+    sessionId:
+      input.inboundMessage?.sessionId ??
+      `${context.binding.graphRevisionId}-${context.binding.node.nodeId}`,
     nodeId: context.binding.node.nodeId,
     systemPromptParts: [
       systemPrompt?.trim() || "You are an Entangle runtime node.",
@@ -126,10 +132,17 @@ export async function buildAgentEngineTurnRequest(
         "Process the assigned task using the injected runtime context.",
       `Model adapter: ${context.modelContext.modelEndpointProfile?.adapterKind ?? "unbound"}`,
       `Primary relay: ${context.relayContext.primaryRelayProfileRef ?? "none"}`,
-      `Primary git service: ${context.artifactContext.primaryGitServiceRef ?? "none"}`
+      `Primary git service: ${context.artifactContext.primaryGitServiceRef ?? "none"}`,
+      ...(input.inboundMessage
+        ? [
+            `Inbound intent: ${input.inboundMessage.intent}`,
+            `Inbound summary: ${input.inboundMessage.work.summary}`,
+            `Inbound sender: ${input.inboundMessage.fromNodeId} (${input.inboundMessage.fromPubkey})`
+          ]
+        : [])
     ],
     toolDefinitions: [],
-    artifactRefs: [],
+    artifactRefs: input.inboundMessage?.work.artifactRefs ?? [],
     memoryRefs,
     executionLimits: {
       maxToolTurns: runtimeConfig?.toolBudget?.maxToolTurns ?? 8,

@@ -34,6 +34,13 @@ Current implemented slice:
 - reads package prompt files and runtime config;
 - constructs a provider-agnostic engine turn request;
 - executes one stub-engine turn for bootstrap verification;
+- provides a deterministic transport boundary for runner-local integration
+  tests;
+- persists runner-local session, conversation, and turn records under the
+  runtime root;
+- runs a long-lived `RunnerService` that validates inbound A2A payloads,
+  advances lifecycle state, invokes the internal engine, and emits bounded
+  `task.result` responses when required;
 - consumes machine-readable A2A, session, conversation, approval, and turn-state
   contracts through shared `packages/types` exports.
 
@@ -152,13 +159,15 @@ Optional but strongly recommended package for:
 17. add thin CLI access to the same host control-plane surfaces;
 18. add thin package scaffolding through shared scaffold utilities.
 
-The repository now has partial completion through step 13:
+The repository now has partial completion through step 13, with step 11 now
+started locally but not yet connected to a live relay:
 
 - types, validator, quality gates, and CI baseline are in place;
 - host owns desired graph and resource state;
 - host now materializes runtime intents, effective bindings, and injected
   runtime context;
-- runner now consumes injected runtime context for its bootstrap path;
+- runner now consumes injected runtime context for both its bootstrap path and
+  its first long-lived local intake loop;
 - CLI already covers validation, scaffolding, and the first runtime host
   operations.
 

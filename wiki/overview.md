@@ -76,6 +76,10 @@ The repository now also contains the first real implementation baseline:
   demo graph;
 - a runner bootstrap that now consumes injected runtime context, package
   prompts, runtime config, and seeded memory instead of a hardcoded request;
+- a deterministic runner transport abstraction, file-backed runner-local state
+  store, and long-lived `RunnerService` that subscribes by recipient pubkey,
+  validates inbound A2A payloads, persists session/conversation/turn records,
+  and emits bounded `task.result` replies when required;
 - machine-readable Entangle A2A payloads and runner-local session,
   conversation, approval, and turn-state contracts owned by `packages/types`
   plus validator entrypoints for those surfaces in `packages/validator`;
@@ -138,12 +142,11 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- move `entangle-runner` from bootstrap-only execution into Nostr lifecycle and
-  session handling;
-- materialize stable per-node Nostr identities and inject non-secret identity
-  context from the host into runner workspaces;
-- add artifact-side git work and handoff logic inside the runner;
-- start exposing the richer runtime slice in Studio while keeping the same host
-  boundary and quality gates;
-- add stronger Docker-backed runtime smoke coverage and explicit restart/event
-  semantics on top of the new runtime backend boundary.
+- replace the in-memory runner transport with a real Nostr transport adapter
+  while preserving the same `RunnerTransport` boundary and deterministic tests;
+- add artifact-side git work and handoff logic inside the runner on top of the
+  now-persisted session and conversation state;
+- expose richer runtime and reconciliation state in Studio without breaking the
+  existing host-first boundary;
+- add stronger Docker-backed runtime smoke coverage for long-lived runner
+  execution and restart semantics on top of the runtime backend boundary.

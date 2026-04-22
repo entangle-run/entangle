@@ -62,13 +62,13 @@ export const runnerTriggerKindSchema = z.enum([
 
 export const sessionRecordSchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
-  entrypointNodeId: identifierSchema,
+  entrypointNodeId: identifierSchema.optional(),
   graphId: identifierSchema,
   intent: nonEmptyStringSchema,
   lastMessageId: nostrEventIdSchema.optional(),
   lastMessageType: entangleA2AMessageTypeSchema.optional(),
   openedAt: nonEmptyStringSchema,
-  originatingNodeId: identifierSchema,
+  originatingNodeId: identifierSchema.optional(),
   ownerNodeId: identifierSchema,
   sessionId: identifierSchema,
   status: sessionLifecycleStateSchema,

@@ -103,6 +103,15 @@ The runner now has canonical record shapes for:
 - approval gates;
 - bounded runner turn tracking.
 
+The local runner perspective also forced one important realism correction:
+
+- `entrypointNodeId` is optional on session records;
+- `originatingNodeId` is optional on session records.
+
+A materialized local runner can always know its local owner node and the
+current peer message, but it cannot always authoritatively reconstruct the
+original global entrypoint or originating user node for every session shape.
+
 This is the minimum shape discipline needed before implementing:
 
 - long-lived Nostr intake;

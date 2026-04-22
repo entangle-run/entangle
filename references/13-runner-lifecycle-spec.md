@@ -140,3 +140,24 @@ The first implementation can be strict and narrow:
 
 That narrow runtime profile should still consume the canonical machine-readable
 contracts rather than inventing runner-local ad hoc state shapes.
+
+## Current implemented local slice
+
+The current implementation has now crossed from bootstrap-only runner behavior
+into a first long-lived local intake loop.
+
+That implemented slice currently includes:
+
+- a deterministic transport abstraction used in local tests;
+- a file-backed runner-local state store for session, conversation, and turn
+  records;
+- recipient-bound subscription at the runner-service boundary;
+- machine-readable A2A payload validation before lifecycle mutation;
+- lifecycle advancement from intake through completion for the current strict
+  local path;
+- bounded `task.result` emission when the inbound response policy requires a
+  follow-up.
+
+Live Nostr transport and git artifact work still remain future slices, but the
+runner lifecycle is no longer only conceptual prose plus a single bootstrap
+turn.
