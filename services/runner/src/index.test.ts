@@ -119,6 +119,14 @@ async function createRuntimeFixture(): Promise<{
       schemaVersion: "1"
     },
     generatedAt: "2026-04-22T00:00:00.000Z",
+    identityContext: {
+      algorithm: "nostr_secp256k1",
+      publicKey: "4f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+      secretDelivery: {
+        envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+        mode: "env_var"
+      }
+    },
     modelContext: {
       modelEndpointProfile: {
         id: "shared-model",
@@ -234,11 +242,12 @@ describe("runner runtime context", () => {
 
     const result = await runRunnerOnce(fixture.contextPath);
 
-    expect(result.ephemeralIdentity).toBe(false);
     expect(result.graphId).toBe("graph-alpha");
     expect(result.nodeId).toBe("worker-it");
     expect(result.packageId).toBe("worker-it");
-    expect(result.publicKey).toHaveLength(64);
+    expect(result.publicKey).toBe(
+      "4f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa"
+    );
     expect(result.result.assistantMessages[0]).toContain("worker-it");
   });
 });

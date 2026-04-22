@@ -56,6 +56,7 @@ This directory is the canonical design corpus for Entangle.
 50. [49-typescript-build-graph-and-project-references-refinement.md](49-typescript-build-graph-and-project-references-refinement.md)
 51. [50-immutable-package-store-refinement.md](50-immutable-package-store-refinement.md)
 52. [51-machine-readable-a2a-and-runner-state-contracts.md](51-machine-readable-a2a-and-runner-state-contracts.md)
+53. [52-runtime-identity-materialization-and-secret-boundaries.md](52-runtime-identity-materialization-and-secret-boundaries.md)
 
 ## Role of this corpus
 

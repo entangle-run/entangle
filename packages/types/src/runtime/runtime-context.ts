@@ -5,6 +5,7 @@ import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "..
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
 import { nodeAutonomyProfileSchema, nodeBindingSchema, nodeResourceBindingsSchema } from "../graph/graph-spec.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
+import { runtimeIdentityContextSchema } from "./runtime-identity.js";
 
 export const effectiveEdgeRouteSchema = z.object({
   channel: identifierSchema,
@@ -61,6 +62,7 @@ export const effectiveRuntimeContextSchema = z.object({
   artifactContext: artifactRuntimeContextSchema,
   binding: effectiveNodeBindingSchema,
   generatedAt: nonEmptyStringSchema,
+  identityContext: runtimeIdentityContextSchema,
   modelContext: modelRuntimeContextSchema,
   packageManifest: agentPackageManifestSchema.optional(),
   policyContext: policyRuntimeContextSchema,

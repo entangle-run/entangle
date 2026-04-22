@@ -41,6 +41,9 @@ import {
   resolveEffectiveRelayProfiles,
   resolveEffectiveRelayProfileRefs,
   type RuntimeDesiredState,
+  runtimeIdentityContextSchema,
+  type RuntimeIdentityRecord,
+  runtimeIdentityRecordSchema,
   runtimeInspectionResponseSchema,
   type RuntimeInspectionResponse,
   runtimeIntentRecordSchema,
@@ -56,11 +59,16 @@ import {
   validateGraphDocument,
   validatePackageDirectory
 } from "@entangle/validator";
+import { generateSecretKey, getPublicKey } from "nostr-tools";
 import { createRuntimeBackend } from "./runtime-backend.js";
 
 const hostStateRoot = path.join(
   path.resolve(process.env.ENTANGLE_HOME ?? path.resolve(process.cwd(), ".entangle")),
   "host"
+);
+const secretStateRoot = path.resolve(
+  process.env.ENTANGLE_SECRETS_HOME ??
+    path.join(path.dirname(path.dirname(hostStateRoot)), ".entangle-secrets")
 );
 
 const desiredRoot = path.join(hostStateRoot, "desired");
@@ -84,6 +92,7 @@ const reconciliationRoot = path.join(observedRoot, "reconciliation");
 const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
 const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
+const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const runtimeContextFileName = "effective-runtime-context.json";
 const packageStoreMetadataFileName = ".package-store.json";
 
@@ -155,6 +164,14 @@ function encodeJsonFile(value: unknown): string {
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await ensureDirectory(path.dirname(filePath));
   await writeFile(filePath, encodeJsonFile(value), "utf8");
+}
+
+async function writeSecretFile(filePath: string, value: string): Promise<void> {
+  await ensureDirectory(path.dirname(filePath));
+  await writeFile(filePath, value, {
+    encoding: "utf8",
+    mode: 0o600
+  });
 }
 
 async function writeJsonFileIfChanged(
@@ -305,6 +322,57 @@ function buildPackageStoreLayout(contentDigest: string) {
     packageStoreKey,
     root
   };
+}
+
+function buildRuntimeIdentityRecordId(graphId: string, nodeId: string): string {
+  return sanitizeIdentifier(`${graphId}-${nodeId}`);
+}
+
+function buildRuntimeIdentityRecordPath(graphId: string, nodeId: string): string {
+  return path.join(
+    runtimeIdentitiesRoot,
+    `${buildRuntimeIdentityRecordId(graphId, nodeId)}.json`
+  );
+}
+
+async function ensureRuntimeIdentity(input: {
+  graphId: string;
+  nodeId: string;
+}): Promise<RuntimeIdentityRecord> {
+  const recordPath = buildRuntimeIdentityRecordPath(input.graphId, input.nodeId);
+
+  if (await pathExists(recordPath)) {
+    const record = runtimeIdentityRecordSchema.parse(
+      await readJsonFile<RuntimeIdentityRecord>(recordPath)
+    );
+
+    if (await pathExists(record.secretStoragePath)) {
+      return record;
+    }
+  }
+
+  const secretKey = generateSecretKey();
+  const secretHex = Buffer.from(secretKey).toString("hex");
+  const publicKey = getPublicKey(secretKey);
+  const secretStoragePath = path.join(
+    runtimeIdentitiesRoot,
+    `${buildRuntimeIdentityRecordId(input.graphId, input.nodeId)}.nostr-secret`
+  );
+  const now = nowIsoString();
+  const record = runtimeIdentityRecordSchema.parse({
+    algorithm: "nostr_secp256k1",
+    createdAt: now,
+    graphId: input.graphId,
+    nodeId: input.nodeId,
+    publicKey,
+    schemaVersion: "1",
+    secretStoragePath,
+    updatedAt: now
+  });
+
+  await writeSecretFile(secretStoragePath, `${secretHex}\n`);
+  await writeJsonFile(recordPath, record);
+  return record;
 }
 
 async function appendDirectoryDigest(
@@ -739,6 +807,7 @@ function buildRuntimeInspectionFromState(input: {
 
 export async function initializeHostState(): Promise<void> {
   await Promise.all([
+    ensureDirectory(runtimeIdentitiesRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
     ensureDirectory(packageSourcesRoot),
@@ -1089,10 +1158,18 @@ async function buildRuntimeResolution(input: {
   const sourcePackageRoot = packageSource
     ? packageSourcePackageRoot(packageSource)
     : undefined;
+  const runtimeIdentity = await ensureRuntimeIdentity({
+    graphId: graph.graphId,
+    nodeId: node.nodeId
+  });
   const runtimeContextPath = path.join(
     workspace.injectedRoot,
     runtimeContextFileName
   );
+  const runtimeIdentitySecret = (await readFile(
+    runtimeIdentity.secretStoragePath,
+    "utf8"
+  )).trim();
   const packageSourcePathExists = sourcePackageRoot
     ? await pathExists(sourcePackageRoot)
     : false;
@@ -1210,6 +1287,14 @@ async function buildRuntimeResolution(input: {
         ...effectiveBinding
       },
       generatedAt: nowIsoString(),
+      identityContext: runtimeIdentityContextSchema.parse({
+        algorithm: runtimeIdentity.algorithm,
+        publicKey: runtimeIdentity.publicKey,
+        secretDelivery: {
+          envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+          mode: "env_var"
+        }
+      }),
       modelContext: {
         modelEndpointProfile: resolvedModelEndpointProfile
       },
@@ -1300,18 +1385,26 @@ async function buildRuntimeResolution(input: {
     intentRecord
   );
 
+  const reconcileInput = {
+    context,
+    contextPath: context
+      ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
+      : undefined,
+    desiredState: intentRecord.desiredState,
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    nodeId: node.nodeId,
+    reason: intentRecord.reason,
+    ...(context
+      ? {
+          secretEnvironment: {
+            ENTANGLE_NOSTR_SECRET_KEY: runtimeIdentitySecret
+          }
+        }
+      : {})
+  };
   const observedRuntime = await runtimeBackend
-    .reconcileRuntime({
-      context,
-      contextPath: context
-        ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
-        : undefined,
-      desiredState: intentRecord.desiredState,
-      graphId: graph.graphId,
-      graphRevisionId: activeRevisionId,
-      nodeId: node.nodeId,
-      reason: intentRecord.reason
-    })
+    .reconcileRuntime(reconcileInput)
     .catch((error: unknown) => ({
       backendKind: runtimeBackend.kind,
       lastError: formatUnknownError(error),

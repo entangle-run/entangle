@@ -39,6 +39,7 @@ export type RuntimeBackendReconcileInput = {
   graphRevisionId: string;
   nodeId: string;
   reason: string | undefined;
+  secretEnvironment?: Record<string, string>;
 };
 
 export interface RuntimeBackend {
@@ -199,6 +200,12 @@ class DockerRuntimeBackend implements RuntimeBackend {
     }
 
     if (!inspection) {
+      const containerEnv = [
+        `ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`,
+        ...Object.entries(input.secretEnvironment ?? {})
+          .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+          .map(([key, value]) => `${key}=${value}`)
+      ];
       const mounts = [
         {
           source: this.stateMount.source,
@@ -208,7 +215,7 @@ class DockerRuntimeBackend implements RuntimeBackend {
       ] as const;
       await this.dockerClient.createContainer({
         containerName,
-        env: [`ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`],
+        env: containerEnv,
         image: this.runnerImage,
         labels: {
           "io.entangle.graph_id": input.graphId,
@@ -268,12 +275,18 @@ class DockerRuntimeBackend implements RuntimeBackend {
 
     const labels = inspection.Config.Labels ?? {};
     const envEntries = new Set(inspection.Config.Env ?? []);
+    const requiredEnvEntries = [
+      `ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`,
+      ...Object.entries(input.secretEnvironment ?? {})
+        .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+        .map(([key, value]) => `${key}=${value}`)
+    ];
 
     return (
       inspection.Config.Image !== this.runnerImage ||
       labels["io.entangle.graph_revision_id"] !== input.graphRevisionId ||
       labels["io.entangle.runtime_context_path"] !== input.contextPath ||
-      !envEntries.has(`ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`)
+      requiredEnvEntries.some((entry) => !envEntries.has(entry))
     );
   }
 }

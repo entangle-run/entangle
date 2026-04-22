@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { createStubAgentEngine } from "@entangle/agent-engine";
 import type { AgentEngineTurnResult } from "@entangle/types";
-import { generateSecretKey, getPublicKey } from "nostr-tools";
+import { getPublicKey } from "nostr-tools";
 import {
   buildAgentEngineTurnRequest,
   loadRuntimeContext,
@@ -24,7 +24,6 @@ function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefi
 
 export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
   contextPath: string;
-  ephemeralIdentity: boolean;
   graphId: string;
   nodeId: string;
   packageId: string | undefined;
@@ -35,16 +34,34 @@ export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
   const runtimeContext = await loadRuntimeContext(contextPath);
   const turnRequest = await buildAgentEngineTurnRequest(runtimeContext);
   const engine = createStubAgentEngine();
-  const providedSecretKey = parseNostrSecretKey(
-    process.env.ENTANGLE_NOSTR_SECRET_KEY
-  );
-  const secretKey = providedSecretKey ?? generateSecretKey();
-  const publicKey = getPublicKey(secretKey);
+  const secretEnvVar =
+    runtimeContext.identityContext.secretDelivery.mode === "env_var"
+      ? runtimeContext.identityContext.secretDelivery.envVar
+      : undefined;
+  const configuredSecretKey = secretEnvVar
+    ? parseNostrSecretKey(process.env[secretEnvVar])
+    : undefined;
+
+  if (!configuredSecretKey) {
+    throw new Error(
+      secretEnvVar
+        ? `Runner identity secret is missing from env var '${secretEnvVar}'.`
+        : "Runner identity secret delivery mode is not yet supported."
+    );
+  }
+
+  const publicKey = getPublicKey(configuredSecretKey);
+
+  if (publicKey !== runtimeContext.identityContext.publicKey) {
+    throw new Error(
+      `Runner identity mismatch: runtime context expects '${runtimeContext.identityContext.publicKey}' but derived '${publicKey}'.`
+    );
+  }
+
   const result = await engine.executeTurn(turnRequest);
 
   return {
     contextPath,
-    ephemeralIdentity: !providedSecretKey,
     graphId: runtimeContext.binding.graphId,
     nodeId: runtimeContext.binding.node.nodeId,
     packageId: runtimeContext.packageManifest?.packageId,

@@ -8,6 +8,13 @@ Added validator surfaces for A2A documents and lifecycle transition checks, and
 aligned the protocol and runner references with the new machine-readable
 ownership.
 
+## [2026-04-22] implementation | Materialize stable host-owned runtime identities
+
+Moved per-node Nostr identity ownership into the host, added non-secret
+`identityContext` to the effective runtime context, introduced a separate local
+secret storage profile, and made the runner reject identity drift instead of
+silently generating ephemeral authorship.
+
 ## [2026-04-22] bootstrap | Initialized project wiki
 
 Created the first project wiki structure, schema, index, and initial concept, decision, source, and session pages.

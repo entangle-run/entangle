@@ -98,11 +98,18 @@ describe("createRuntimeBackend", () => {
       graphId: "team-alpha",
       graphRevisionId: "rev-1",
       nodeId: "worker-it",
-      reason: undefined
+      reason: undefined,
+      secretEnvironment: {
+        ENTANGLE_NOSTR_SECRET_KEY:
+          "1111111111111111111111111111111111111111111111111111111111111111"
+      }
     });
 
     expect(dockerClient.createContainer).toHaveBeenCalledOnce();
-    expect(dockerClient.createContainer.mock.calls[0]?.[0]).toMatchObject({
+    const createContainerInput = dockerClient.createContainer.mock.calls[0]?.[0];
+
+    expect(createContainerInput).toBeDefined();
+    expect(createContainerInput).toMatchObject({
       containerName: "entangle-runner-worker-it",
       image: "entangle-runner:local",
       mounts: [
@@ -114,6 +121,12 @@ describe("createRuntimeBackend", () => {
       ],
       networkName: "entangle-local"
     });
+    expect(createContainerInput?.env).toEqual(
+      expect.arrayContaining([
+        "ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/context.json",
+        "ENTANGLE_NOSTR_SECRET_KEY=1111111111111111111111111111111111111111111111111111111111111111"
+      ])
+    );
     expect(dockerClient.startContainer).toHaveBeenCalledWith(
       "entangle-runner-worker-it"
     );
@@ -191,7 +204,11 @@ describe("createRuntimeBackend", () => {
       graphId: "team-alpha",
       graphRevisionId: "rev-1",
       nodeId: "worker-it",
-      reason: undefined
+      reason: undefined,
+      secretEnvironment: {
+        ENTANGLE_NOSTR_SECRET_KEY:
+          "2222222222222222222222222222222222222222222222222222222222222222"
+      }
     });
 
     expect(dockerClient.removeContainer).toHaveBeenCalledWith(

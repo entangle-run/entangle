@@ -20,6 +20,7 @@ services:
     environment:
       ENTANGLE_HOST_PORT: ${ENTANGLE_HOST_PORT:-7071}
       ENTANGLE_HOME: /entangle-state/.entangle
+      ENTANGLE_SECRETS_HOME: /entangle-secrets
       ENTANGLE_RUNTIME_BACKEND: docker
       ENTANGLE_DOCKER_NETWORK: entangle-local
       ENTANGLE_DOCKER_RUNNER_IMAGE: entangle-runner:local
@@ -29,6 +30,7 @@ services:
       - "${ENTANGLE_HOST_PORT:-7071}:7071"
     volumes:
       - entangle-host-state:/entangle-state
+      - entangle-secret-state:/entangle-secrets
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - entangle-local
@@ -71,6 +73,7 @@ services:
 
 volumes:
   entangle-host-state:
+  entangle-secret-state:
   gitea-data:
   strfry-data:
 

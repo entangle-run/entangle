@@ -178,6 +178,10 @@ The injected JSON should carry only:
 - profile ids;
 - non-secret operational metadata.
 
+The current implementation now also carries explicit non-secret
+`identityContext` metadata for runner authorship while keeping the secret key
+delivery separate.
+
 ## 8. Relay context semantics
 
 `relay-context.json` should describe what the runner can actually use.

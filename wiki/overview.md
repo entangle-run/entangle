@@ -60,12 +60,14 @@ The repository now also contains the first real implementation baseline:
   `package-scaffold`;
 - a first local Compose profile and service Dockerfiles;
 - a persistent local host-state model under `.entangle/host`;
+- a separate local secret root for host-owned runtime identities;
 - live host routes for catalog inspection/apply, package admission, graph
   inspection/apply, runtime inspection, runtime context access, and runtime
   desired-state mutation;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
-  package surfaces, and injected runtime context;
+  package surfaces, injected runtime context, and stable per-node runtime
+  identity context;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,

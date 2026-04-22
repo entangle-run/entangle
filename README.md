@@ -74,6 +74,8 @@ This repository currently contains:
 - a runtime-backend abstraction with a tested memory backend, a first Docker
   backend driven by a first-party Docker Engine API client, and persisted
   reconciliation snapshots under observed host state;
+- host-owned stable per-node Nostr runtime identities with non-secret identity
+  context injected into runners and a separate local secret storage profile;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a runner bootstrap path that consumes injected runtime context and package

@@ -46,6 +46,7 @@ The host state root should distinguish at least these partitions:
 - trace state
 - imported package storage
 - node workspaces
+- host-owned secret storage
 - caches and ephemeral runtime data
 
 These are not interchangeable.
@@ -99,10 +100,18 @@ Recommended first serious layout:
       validator/
       projections/
       temp/
+.entangle-secrets/
+  runtime-identities/
+    <graph_id>-<node_id>.json
+    <graph_id>-<node_id>.nostr-secret
 ```
 
 This is the first serious recommendation, not a forever promise about exact
 folder names. The logical separation is the important part.
+
+The separate secret root is important: host-owned Nostr identity material
+should not share the same default storage partition as injected runtime context
+and mutable runner workspaces.
 
 ## 4. Desired state semantics
 

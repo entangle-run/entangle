@@ -290,10 +290,18 @@ describe("buildHostServer", () => {
             nodeId: "worker-it"
           }
         },
+        identityContext: {
+          algorithm: "nostr_secp256k1",
+          secretDelivery: {
+            envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+            mode: "env_var"
+          }
+        },
         packageManifest: {
           packageId: "worker-it"
         }
       });
+      expect(runtimeContext.identityContext.publicKey).toHaveLength(64);
 
       const contextPath = runtimeContext.workspace.injectedRoot;
       const storedContext = runtimeContextInspectionResponseSchema.parse(

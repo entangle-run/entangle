@@ -120,8 +120,8 @@ The current runner slice now:
 - collects memory references from the seeded workspace memory;
 - builds a normalized provider-agnostic engine turn request;
 - runs one stub-engine turn against that request;
-- derives or generates a Nostr identity without storing the secret in injected
-  JSON.
+- consumes a host-owned runtime identity context without storing the raw secret
+  in injected JSON.
 
 The current runner still does not implement:
 
