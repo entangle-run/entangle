@@ -175,3 +175,7 @@ Built the local `entangle-runner:local` image, admitted a package, applied a gra
 ## [2026-04-22] implementation | Replaced Docker CLI shell-outs with a first-party Docker Engine API client
 
 Refined the Docker runtime backend so `entangle-host` no longer shells out to the `docker` binary for image inspection and container lifecycle. Added a first-party Docker Engine API client with unix-socket coverage tests, injected that boundary into the runtime backend for better testability, and removed the host container's dependency on the Docker CLI package while keeping the Docker socket as the explicit local operator control path.
+
+## [2026-04-22] implementation | Replaced the blunt build-first typecheck gate with an explicit TypeScript project graph
+
+Refined the workspace toolchain so type safety is now driven by an explicit TypeScript project-reference graph instead of a generic `pnpm build` pre-step before workspace-wide typechecking. Added a root solution `tsconfig`, declared references across the composite packages and Node services, aligned composite package scripts around `tsc -b`, and kept Studio as a separate bundler-driven typecheck surface.

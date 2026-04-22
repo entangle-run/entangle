@@ -41,9 +41,16 @@ The local baseline now includes:
 For coherent code or tooling batches, `pnpm verify` is the default aggregate
 gate.
 
-When workspace packages export generated contract outputs consumed by sibling
-packages, the repository must ensure typecheck runs against fresh contract
-artifacts instead of silently relying on stale prior builds.
+When workspace packages depend on one another through canonical contracts, the
+repository must model that build graph explicitly instead of relying on an
+opaque pre-build step.
+
+The current baseline does that through:
+
+- TypeScript project references for the composite packages and services;
+- a root solution config used by `tsc -b` for workspace-wide type safety;
+- a separate Studio typecheck path kept outside the composite solution because
+  it remains a bundler-driven browser surface.
 
 ## What lint must mean
 

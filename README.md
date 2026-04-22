@@ -78,6 +78,8 @@ This repository currently contains:
 - a runner bootstrap path that consumes injected runtime context and package
   prompts instead of a hardcoded stub request;
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- an explicit TypeScript project graph for the composite packages and Node
+  services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:

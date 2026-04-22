@@ -9,14 +9,14 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "check": "turbo run check",
+    "check": "pnpm typecheck",
     "clean": "turbo run clean && rm -rf .turbo",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "lint:fix": "eslint apps services packages --fix",
     "test": "turbo run test",
     "test:coverage": "vitest run --config vitest.config.ts packages/**/*.test.ts services/**/*.test.ts --coverage.enabled true",
-    "typecheck": "pnpm build && turbo run typecheck",
+    "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck",
     "verify": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

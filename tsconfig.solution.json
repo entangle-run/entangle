@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/types" },
+    { "path": "./packages/validator" },
+    { "path": "./packages/host-client" },
+    { "path": "./packages/agent-engine" },
+    { "path": "./packages/package-scaffold" },
+    { "path": "./services/host" },
+    { "path": "./services/runner" },
+    { "path": "./apps/cli" }
+  ]
+}

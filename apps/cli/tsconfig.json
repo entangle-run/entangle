@@ -9,5 +9,19 @@
   },
   "include": [
     "src"
+  ],
+  "references": [
+    {
+      "path": "../../packages/host-client"
+    },
+    {
+      "path": "../../packages/package-scaffold"
+    },
+    {
+      "path": "../../packages/types"
+    },
+    {
+      "path": "../../packages/validator"
+    }
   ]
 }

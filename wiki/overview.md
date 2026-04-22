@@ -75,6 +75,8 @@ The repository now also contains the first real implementation baseline:
 - a runner bootstrap that now consumes injected runtime context, package
   prompts, runtime config, and seeded memory instead of a hardcoded request;
 - a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- an explicit composite TypeScript build graph with solution-build typechecking
+  for internal packages and Node services;
 - targeted tests over validator semantics, host-client error handling, package
   scaffolding, host API input failure modes, runtime context conflict
   semantics, and runner bootstrap behavior;

@@ -125,9 +125,9 @@ This batch also corrected two quality issues that surfaced during the audit:
 - the runtime backend now degrades one node into observed `failed` state when
   backend reconciliation throws, instead of letting the whole host surface
   collapse immediately;
-- the repository quality gate now uses a build-first discipline before
-  workspace-wide typecheck, preventing stale generated contract outputs from
-  silently invalidating downstream packages in the local monorepo.
+- the repository no longer relies on an opaque build-first gate for
+  workspace-wide typecheck, and now models the composite TypeScript build graph
+  explicitly through project references and solution-build typechecking.
 
 This slice was also manually smoke-validated against a real local Docker
 runtime by building the runner image, admitting a package, applying a graph,
