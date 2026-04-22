@@ -115,6 +115,7 @@ entangle/
   packages/
     types/
     validator/
+    agent-engine/
     host-client/
     package-scaffold/
   deploy/
@@ -212,6 +213,23 @@ Owns:
 - graph validation;
 - binding validation;
 - transport feasibility validation.
+
+### `packages/agent-engine`
+
+Owns:
+
+- normalized model turn execution;
+- provider-adapter dispatch;
+- tool loop orchestration;
+- streaming normalization;
+- provider-agnostic turn result shapes.
+
+Must not own:
+
+- Nostr transport;
+- graph policy;
+- approval logic;
+- artifact publication policy.
 
 ### `packages/host-client`
 
@@ -343,11 +361,12 @@ But these are later ecosystem moves, not early architecture moves.
 1. `packages/types`
 2. `packages/validator`
 3. `services/host`
-4. `services/runner`
-5. `packages/host-client`
-6. `apps/studio`
-7. `apps/cli`
-8. `packages/package-scaffold`
+4. `packages/agent-engine`
+5. `services/runner`
+6. `packages/host-client`
+7. `apps/studio`
+8. `apps/cli`
+9. `packages/package-scaffold`
 
 This order keeps contracts and control plane ahead of presentation.
 

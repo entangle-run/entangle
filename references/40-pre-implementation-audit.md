@@ -196,47 +196,43 @@ Reason:
 
 This freezes the monorepo toolchain strongly enough to scaffold against.
 
-## Remaining questions after the audit
+## Follow-up closures after the audit
 
-The remaining questions are now narrower than before. They are no longer
-fundamental architecture gaps.
+The three remaining pre-implementation questions identified during the first
+audit were closed in the follow-up refinement batch.
 
 ### 1. Engine reuse depth
 
-The corpus is clear that the runner owns the stable boundary and the engine
-adapter isolates provider-specific execution.
+Resolved by
+[41-agent-engine-boundary-and-reuse-policy.md](41-agent-engine-boundary-and-reuse-policy.md).
 
-What remains to decide during implementation is how much of the first agentic
-engine should be:
+Current rule:
 
-- built directly in Entangle; versus
-- adapted from an OpenCode-like code-editing loop.
-
-This is an implementation-shaping choice, not a missing type-system boundary.
+- Entangle should own a first-party internal `agent-engine` package;
+- OpenCode-like systems remain reference material and possible utility sources,
+  not the canonical node runtime boundary.
 
 ### 2. Exact on-disk layout for live graph state
 
-The conceptual objects are clear, but the first code pass still needs to choose
-the concrete source-of-truth files and directories for:
+Resolved by
+[42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md).
 
-- desired graph state;
-- host state;
-- revision history;
-- session trace storage.
+Current rule:
 
-The architecture no longer lacks the object model; it now needs disciplined
-materialization.
+- live local host state should default to `.entangle/`;
+- desired state, observed state, traces, imports, and node workspaces must be
+  partitioned explicitly.
 
 ### 3. Degree of hackathon CLI completeness
 
-The architecture is clear that the CLI should exist and remain thin.
+Resolved by
+[43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md).
 
-What remains is scoping:
+Current rule:
 
-- how many commands the hackathon includes; and
-- whether `package init` ships in the first demo cut or immediately after.
-
-This is a scope question, not an architecture blocker.
+- the hackathon should include a thin but real CLI;
+- offline validation and package scaffolding are required;
+- online runtime control remains intentionally narrower than Studio.
 
 ## Gate assessment against the quality framework
 
@@ -273,11 +269,12 @@ implementation-shaping preference choices inside already-bounded contracts.
 
 ### Implementation-readiness gate
 
-Near-pass, with one explicit interpretation:
+Pass.
 
-- the architecture is ready enough to start code scaffolding now;
-- implementation should still begin with machine-readable schemas and package
-  boundaries, not with ad hoc service code.
+The remaining pre-scaffold questions are no longer foundational architecture
+questions. The repository is ready enough to begin code scaffolding, provided
+implementation still begins with machine-readable schemas and package
+boundaries instead of ad hoc service code.
 
 In practical terms, the repository is ready to move into:
 

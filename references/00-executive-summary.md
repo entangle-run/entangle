@@ -43,7 +43,10 @@ The hackathon build does not need to prove every future feature. It must prove t
 The minimum convincing proof is:
 
 1. a user can view and use a graph of nodes;
-2. the graph contains a user node, a supervisor/orchestrator node, and multiple worker nodes;
+2. the graph contains a user node plus a visibly non-flat organization of agent
+   nodes, including at least one supervisory or entrypoint branch, at least one
+   peer collaboration relationship, and at least one delegation path deeper
+   than one edge;
 3. the nodes communicate over Nostr using signed messages;
 4. the nodes collaborate on persistent artifacts, preferably using git;
 5. each node runs as a true agent runtime with memory, tools, and local state;

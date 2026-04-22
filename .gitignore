@@ -1,5 +1,9 @@
 # Local runtime and future generated state
 .DS_Store
+.entangle/
+.turbo/
+.pnpm-store/
+pnpm-debug.log
 
 # Future local execution data
 workspaces/

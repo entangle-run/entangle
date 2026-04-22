@@ -45,6 +45,9 @@ This directory is the canonical design corpus for Entangle.
 39. [38-engine-adapter-and-model-execution-spec.md](38-engine-adapter-and-model-execution-spec.md)
 40. [39-local-deployment-topology-and-compose-spec.md](39-local-deployment-topology-and-compose-spec.md)
 41. [40-pre-implementation-audit.md](40-pre-implementation-audit.md)
+42. [41-agent-engine-boundary-and-reuse-policy.md](41-agent-engine-boundary-and-reuse-policy.md)
+43. [42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md)
+44. [43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md)
 
 ## Role of this corpus
 

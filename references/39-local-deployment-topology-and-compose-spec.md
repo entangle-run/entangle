@@ -5,6 +5,9 @@ This document defines the first serious local deployment topology for Entangle.
 The goal is to make the hackathon and early-product runtime reproducible
 without letting the deployment profile hardcode the long-term architecture.
 
+The corresponding on-disk host-state contract is specified in
+[42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md).
+
 ## Design rule
 
 The local deployment should make the real architecture visible:

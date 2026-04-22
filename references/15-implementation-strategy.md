@@ -28,6 +28,16 @@ One executable or service responsible for:
 
 One executable or service responsible for running a node instance.
 
+### `entangle-agent-engine`
+
+One shared internal package responsible for:
+
+- normalized model turn orchestration;
+- tool-call loop execution;
+- provider-adapter dispatch;
+- streaming normalization;
+- returning provider-agnostic turn outcomes back to the runner.
+
 ### `entangle-studio`
 
 One client surface for:
@@ -112,16 +122,17 @@ Optional but strongly recommended package for:
 3. define runner lifecycle;
 4. define A2A protocol;
 5. implement validator;
-6. implement `entangle-host` and local runtime-backend abstraction;
-7. implement local package admission + node execution;
-8. implement Nostr messaging;
-9. implement git artifact handoff;
-10. implement model-endpoint adapter binding;
-11. implement wiki update phase;
-12. implement Studio graph and runtime view against host APIs;
-13. implement bounded graph editing, node admission, and runtime controls in Studio;
-14. add CLI access to the same host control-plane surfaces.
-15. add thin package scaffolding through shared scaffold utilities if scope allows.
+6. implement `entangle-agent-engine`;
+7. implement `entangle-host` and local runtime-backend abstraction;
+8. implement local package admission + node execution;
+9. implement Nostr messaging;
+10. implement git artifact handoff;
+11. implement model-endpoint adapter binding;
+12. implement wiki update phase;
+13. implement Studio graph and runtime view against host APIs;
+14. add bounded graph editing, node admission, and runtime controls in Studio;
+15. add thin CLI access to the same host control-plane surfaces.
+16. add thin package scaffolding through shared scaffold utilities.
 
 ## Definition of done for the first serious version
 

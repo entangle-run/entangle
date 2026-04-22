@@ -15,7 +15,7 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in the pre-implementation audit and refinement phase.
+Entangle is currently in the final pre-scaffold refinement phase.
 
 The corpus now extends from conceptual architecture into normative contracts,
 package and binding structure, edge semantics, artifact backends, control-plane
@@ -27,6 +27,22 @@ The local reference corpus is materialized under `resources/`, and the
 implementation stack direction has now been narrowed toward a canonical
 TypeScript + Node 22 + pnpm + Turborepo toolchain around `nostr-tools`,
 `strfry`, `Gitea`, Docker Compose, `entangle-host`, and host-managed runners.
+
+The previously remaining pre-implementation decisions have now also been
+closed:
+
+- the node execution core should live in a first-party internal
+  `agent-engine` package rather than inside a wholesale upstream runtime fork;
+- live local host state should live under a disciplined `.entangle/` runtime
+  root with explicit desired, observed, trace, import, and workspace
+  partitions;
+- the hackathon should include a thin but real CLI plus package scaffolding,
+  while Studio remains the richer operator surface.
+
+The implementation-readiness gate has now passed at the specification level.
+That does not mean the repository should stop auditing itself; it means the
+next work can move from architectural uncertainty into schema, validator, host,
+runner, CLI, and Studio scaffolding without changing the core model again.
 
 The specification corpus now has five layers:
 
@@ -79,7 +95,6 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- finish the last repository-wide refinement loop and close the pre-implementation audit;
 - scaffold the monorepo implementation layout under `apps/`, `services/`,
   `packages/`, and `deploy/`;
 - encode the canonical contracts as machine-readable schemas in

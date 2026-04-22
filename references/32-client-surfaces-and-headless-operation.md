@@ -216,8 +216,13 @@ Recommended hackathon stance:
 
 - implement `entangle-host` first as the real control-plane boundary;
 - let Studio talk to the host;
-- optionally provide a very small CLI or admin script for host inspection;
+- include a thin but real CLI rather than an ad hoc admin script;
+- keep the required hackathon CLI surface to offline validation and package
+  scaffolding plus minimal online host inspection and node lifecycle commands;
 - avoid building anything in Studio that would later have to be extracted into the host.
+
+The recommended concrete hackathon CLI profile is specified in
+[43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md).
 
 ## 11. Rejected anti-patterns
 

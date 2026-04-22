@@ -127,3 +127,11 @@ Performed a systematic read of the canonical corpus, wiki, root project document
 ## [2026-04-22] decision | Froze local package admission, Docker-backed host access, and the canonical monorepo toolchain
 
 Clarified that Studio-driven package admission must resolve into host-owned `local_path` or `local_archive` package sources instead of browser-local filesystem handles; clarified that the local Docker profile should give `entangle-host` explicit access to the Docker Engine for dynamic runner management; and tightened the stack recommendation from a Bun-friendly posture into a canonical TypeScript + Node 22 + pnpm + Turborepo toolchain.
+
+## [2026-04-22] decision | Froze the internal agent-engine boundary, host-state layout, and hackathon CLI profile
+
+Closed the last pre-implementation questions by deciding that Entangle should own a first-party internal `agent-engine` package rather than embed an upstream runtime wholesale, by freezing `.entangle/` as the default local host-state root with explicit desired/observed/trace/import/workspace partitions, and by fixing the hackathon CLI to a thin but real profile centered on offline validation, package scaffolding, and minimal online host operations.
+
+## [2026-04-22] audit | Corrected final pre-scaffold drift in executive summary, ignore policy, and phase wording
+
+Ran a follow-up coherence pass on the post-audit refinement batch. Corrected the remaining stale executive-summary description of the hackathon graph, aligned the ignore policy with the now-canonical `.entangle/` runtime root and upcoming pnpm/turbo tooling, and tightened the wiki overview so it reflects that implementation-readiness has passed while the repository remains under the standard audit loop.

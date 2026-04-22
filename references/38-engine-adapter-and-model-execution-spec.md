@@ -7,6 +7,9 @@ model vendor.
 The goal is to keep the runner provider-agnostic while still making a concrete
 first implementation choice.
 
+The recommended package and ownership split for this boundary is specified more
+explicitly in [41-agent-engine-boundary-and-reuse-policy.md](41-agent-engine-boundary-and-reuse-policy.md).
+
 ## Design rule
 
 The runner should depend on an internal engine-adapter contract, not directly on
@@ -77,6 +80,7 @@ Recommended first implementation stack for model-provider integration:
 
 - TypeScript
 - internal engine adapter interface owned by Entangle
+- a first-party internal `agent-engine` package owned by Entangle
 - Vercel AI SDK provider packages or equivalent provider wrappers underneath the
   adapter where they add leverage
 
