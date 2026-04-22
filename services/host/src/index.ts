@@ -8,7 +8,10 @@ import {
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
-  packageSourceListResponseSchema
+  packageSourceListResponseSchema,
+  runtimeContextInspectionResponseSchema,
+  runtimeInspectionResponseSchema,
+  runtimeListResponseSchema
 } from "@entangle/types";
 import { ZodError, type ZodType } from "zod";
 import {
@@ -16,22 +19,26 @@ import {
   applyCatalog,
   applyGraph,
   buildHostStatus,
+  getRuntimeContext,
+  getRuntimeInspection,
   getCatalogInspection,
   getGraphInspection,
   getPackageSourceInspection,
   initializeHostState,
+  listRuntimeInspections,
   listPackageSources,
+  setRuntimeDesiredState,
   validateCatalogCandidate,
   validateGraphCandidate
 } from "./state.js";
 
 class HostHttpError extends Error {
-  readonly code: "bad_request" | "not_found" | "internal_error";
+  readonly code: "bad_request" | "conflict" | "not_found" | "internal_error";
   readonly details: Record<string, unknown> | undefined;
   readonly statusCode: number;
 
   constructor(options: {
-    code: "bad_request" | "not_found" | "internal_error";
+    code: "bad_request" | "conflict" | "not_found" | "internal_error";
     details?: Record<string, unknown>;
     message: string;
     statusCode: number;
@@ -151,6 +158,131 @@ export function buildHostServer() {
     return graphMutationResponseSchema.parse(mutation);
   });
 
+  server.get("/v1/runtimes", async () =>
+    runtimeListResponseSchema.parse(await listRuntimeInspections())
+  );
+
+  server.get("/v1/runtimes/:nodeId", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    return runtimeInspectionResponseSchema.parse(inspection);
+  });
+
+  server.get("/v1/runtimes/:nodeId/context", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const runtimeContext = await getRuntimeContext(params.nodeId);
+
+    if (!runtimeContext) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeContextInspectionResponseSchema.parse(runtimeContext);
+  });
+
+  server.post("/v1/runtimes/:nodeId/start", async (request) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const updatedInspection = await setRuntimeDesiredState(params.nodeId, "running");
+
+    if (!updatedInspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    return runtimeInspectionResponseSchema.parse(updatedInspection);
+  });
+
+  server.post("/v1/runtimes/:nodeId/stop", async (request) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    const updatedInspection = await setRuntimeDesiredState(params.nodeId, "stopped");
+
+    if (!updatedInspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    return runtimeInspectionResponseSchema.parse(updatedInspection);
+  });
+
   server.setErrorHandler((error, _request, reply) => {
     if (!reply.sent) {
       if (error instanceof HostHttpError) {
@@ -183,7 +315,14 @@ export function buildHostServer() {
 
       reply.status(statusCode).send(
         hostErrorResponseSchema.parse({
-          code: statusCode === 404 ? "not_found" : statusCode < 500 ? "bad_request" : "internal_error",
+          code:
+            statusCode === 404
+              ? "not_found"
+              : statusCode === 409
+                ? "conflict"
+                : statusCode < 500
+                  ? "bad_request"
+                  : "internal_error",
           message: error instanceof Error ? error.message : "Unknown host error"
         })
       );

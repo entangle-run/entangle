@@ -3,6 +3,7 @@ import { nonEmptyStringSchema } from "../common/primitives.js";
 
 export const hostErrorCodeSchema = z.enum([
   "bad_request",
+  "conflict",
   "not_found",
   "internal_error"
 ]);

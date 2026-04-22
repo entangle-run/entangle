@@ -67,8 +67,13 @@ This repository currently contains:
   realizability checks;
 - a host control-plane surface with persistent catalog, package-source, and
   graph state under `.entangle/host`;
-- a host client, package scaffold utility, runner stub, CLI, and Studio
+- runtime materialization under `.entangle/host` for desired bindings,
+  runtime intents, observed runtime records, workspaces, and injected runtime
+  context;
+- a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
+- a runner bootstrap path that consumes injected runtime context and package
+  prompts instead of a hardcoded stub request;
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - a verified baseline where `pnpm verify` passes end to end.
 

@@ -258,6 +258,32 @@ Purpose:
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
 - `POST /v1/runtimes/{nodeId}/restart`
+
+## 9. Current implemented slice
+
+The current repository implementation now concretely includes:
+
+- `GET /v1/host/status`
+- `GET/PUT /v1/catalog`
+- `POST /v1/catalog/validate`
+- `GET /v1/package-sources`
+- `GET /v1/package-sources/{packageSourceId}`
+- `POST /v1/package-sources/admit`
+- `GET /v1/graph`
+- `PUT /v1/graph`
+- `POST /v1/graph/validate`
+- `GET /v1/runtimes`
+- `GET /v1/runtimes/{nodeId}`
+- `GET /v1/runtimes/{nodeId}/context`
+- `POST /v1/runtimes/{nodeId}/start`
+- `POST /v1/runtimes/{nodeId}/stop`
+
+The currently missing runtime lifecycle elements are:
+
+- restart;
+- runtime event streaming;
+- reconciliation against real Docker-managed processes;
+- observed-state updates from actual runtime lifecycle.
 - `DELETE /v1/runtimes/{nodeId}`
 
 Purpose:

@@ -258,6 +258,27 @@ or incompatible materializations.
 If any of these change materially:
 
 - graph revision;
+
+## 13. Current implemented slice
+
+The current repository implementation realizes the first serious subset of this
+specification as:
+
+- one injected `effective-runtime-context.json` per node;
+- one desired effective-binding record per non-user node;
+- workspace partitions for `package/`, `memory/`, `workspace/`, `runtime/`,
+  and `injected/`;
+- a package link from workspace `package/` to the admitted package source for
+  `local_path` packages;
+- seeded writable memory copied from the package template on first
+  materialization;
+- non-secret relay, git, and model context delivered through injected JSON.
+
+The current slice intentionally does not yet split the injected surface into
+multiple files such as `relay-context.json`, `artifact-context.json`, or
+`model-context.json`. The single-file form is acceptable for the current phase
+because the contract is already versioned and test-backed, and can still be
+split later without changing the host-owned semantic model.
 - node resource bindings;
 - relevant graph defaults;
 - deployment resource catalog;

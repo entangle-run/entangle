@@ -151,3 +151,11 @@ Extended the implementation from a status-only bootstrap into a first serious lo
 ## [2026-04-22] implementation | Added the first enforced quality baseline
 
 Raised the repository quality bar from manual discipline alone to an explicit engineering baseline. Added real ESLint-based linting, first Vitest suites for validator, host-client, package-scaffold, and host API behavior, a GitHub Actions CI workflow, and a root `pnpm verify` aggregate gate. Hardened host error semantics so invalid client input and missing resources are returned as structured 4xx responses instead of generic 500s, and documented the stricter audit-plus-quality policy in the canonical corpus.
+
+## [2026-04-22] implementation | Added runtime materialization and runtime host surfaces
+
+Extended `entangle-host` from graph persistence into runtime preparation. The host now resolves effective bindings, writes runtime intents and observed runtime records, materializes per-node workspaces, injects `effective-runtime-context.json`, and exposes the first runtime inspection and lifecycle routes through the same host boundary used by CLI and tests.
+
+## [2026-04-22] implementation | Replaced the runner bootstrap stub with injected-context bootstrap logic
+
+Extended `entangle-runner` so it now loads injected runtime context from disk, reads package prompt files and runtime config, constructs a normalized agent-engine turn request, and executes a first stub-engine turn from real materialized node state rather than from a hardcoded inline request.

@@ -60,13 +60,20 @@ The repository now also contains the first real implementation baseline:
   `package-scaffold`;
 - a first local Compose profile and service Dockerfiles;
 - a persistent local host-state model under `.entangle/host`;
-- live host routes for catalog inspection/apply, package admission, and graph
-  inspection/apply;
+- live host routes for catalog inspection/apply, package admission, graph
+  inspection/apply, runtime inspection, runtime context access, and runtime
+  desired-state mutation;
+- host-side runtime materialization for effective bindings, runtime intents,
+  observed runtime records, workspace layout, package linking, and injected
+  runtime context;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
+- a runner bootstrap that now consumes injected runtime context, package
+  prompts, runtime config, and seeded memory instead of a hardcoded request;
 - a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - targeted tests over validator semantics, host-client error handling, package
-  scaffolding, and host API input failure modes;
+  scaffolding, host API input failure modes, runtime context conflict
+  semantics, and runner bootstrap behavior;
 - a verified `pnpm verify` path for the current workspace.
 
 The specification corpus now has five layers:
@@ -120,13 +127,12 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- deepen the remaining canonical objects in `packages/types`, especially
-  effective bindings and injected runtime context;
-- expand `packages/validator` further into runtime-profile-aware and
-  reconciliation-aware checks;
-- move `entangle-host` from desired-state ownership into reconciliation and
-  runtime lifecycle management;
-- move `entangle-runner` from stub execution into injected-context and Nostr
-  lifecycle handling;
-- keep Studio and CLI aligned with the same host boundary while preserving the
-  stricter quality and audit loop.
+- move `entangle-host` from runtime materialization into real runtime
+  reconciliation against Docker-managed runner processes;
+- replace placeholder observed runtime records with real runtime lifecycle
+  observation;
+- move `entangle-runner` from bootstrap-only execution into Nostr lifecycle and
+  session handling;
+- add artifact-side git work and handoff logic inside the runner;
+- start exposing the richer runtime slice in Studio while keeping the same host
+  boundary and quality gates.

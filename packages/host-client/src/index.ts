@@ -2,6 +2,9 @@ import {
   catalogInspectionResponseSchema,
   graphInspectionResponseSchema,
   graphMutationResponseSchema,
+  runtimeContextInspectionResponseSchema,
+  runtimeInspectionResponseSchema,
+  runtimeListResponseSchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
@@ -10,6 +13,9 @@ import {
   type CatalogInspectionResponse,
   type GraphInspectionResponse,
   type GraphMutationResponse,
+  type RuntimeContextInspectionResponse,
+  type RuntimeInspectionResponse,
+  type RuntimeListResponse,
   type HostStatusResponse,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
@@ -198,6 +204,47 @@ export function createHostClient(options: HostClientOptions) {
         }),
         graphMutationResponseSchema,
         { acceptErrorStatus: true }
+      );
+    },
+
+    async listRuntimes(): Promise<RuntimeListResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes`),
+        runtimeListResponseSchema
+      );
+    },
+
+    async getRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}`),
+        runtimeInspectionResponseSchema
+      );
+    },
+
+    async getRuntimeContext(
+      nodeId: string
+    ): Promise<RuntimeContextInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/context`),
+        runtimeContextInspectionResponseSchema
+      );
+    },
+
+    async startRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/start`, {
+          method: "POST"
+        }),
+        runtimeInspectionResponseSchema
+      );
+    },
+
+    async stopRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/stop`, {
+          method: "POST"
+        }),
+        runtimeInspectionResponseSchema
       );
     }
   };

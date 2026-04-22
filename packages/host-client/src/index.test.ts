@@ -62,4 +62,25 @@ describe("createHostClient", () => {
       }
     });
   });
+
+  it("formats structured host conflict errors for runtime context requests", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              code: "conflict",
+              message: "Runtime 'worker-it' has no effective model endpoint."
+            }),
+            ok: false,
+            status: 409
+          })
+        )
+    });
+
+    await expect(client.getRuntimeContext("worker-it")).rejects.toThrow(
+      "Host request failed with 409 [conflict]: Runtime 'worker-it' has no effective model endpoint."
+    );
+  });
 });

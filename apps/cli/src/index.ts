@@ -176,6 +176,54 @@ hostGraphCommand
     printJson(await client.applyGraph(await readJsonDocument(path.resolve(file))));
   });
 
+const hostRuntimesCommand = hostCommand
+  .command("runtimes")
+  .description("Inspect and mutate desired runtime state through entangle-host.");
+
+hostRuntimesCommand
+  .command("list")
+  .description("List runtime inspections for the active graph.")
+  .action(async (_options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.listRuntimes());
+  });
+
+hostRuntimesCommand
+  .command("get")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Inspect one runtime in the active graph.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getRuntime(nodeId));
+  });
+
+hostRuntimesCommand
+  .command("context")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Print the effective runtime context for one runtime.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getRuntimeContext(nodeId));
+  });
+
+hostRuntimesCommand
+  .command("start")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Set one runtime's desired state to running.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.startRuntime(nodeId));
+  });
+
+hostRuntimesCommand
+  .command("stop")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Set one runtime's desired state to stopped.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.stopRuntime(nodeId));
+  });
+
 const graphCommand = program
   .command("graph")
   .description("Inspect graph files from the terminal.");

@@ -7,7 +7,12 @@ import {
   deploymentResourceCatalogSchema,
   type GraphSpec,
   graphSpecSchema,
-  type NodeBinding,
+  intersectIdentifiers,
+  resolveEffectiveGitServiceRefs,
+  resolveEffectiveModelEndpointProfileRef,
+  resolveEffectivePrimaryGitServiceRef,
+  resolveEffectivePrimaryRelayProfileRef,
+  resolveEffectiveRelayProfileRefs,
   type ValidationFinding,
   type ValidationReport
 } from "@entangle/types";
@@ -46,85 +51,6 @@ function collectDuplicateFindings(
 
 function hasExistingId(ids: string[], id: string | undefined): boolean {
   return typeof id === "string" && ids.includes(id);
-}
-
-function unique<T>(values: T[]): T[] {
-  return Array.from(new Set(values));
-}
-
-function effectiveRelayRefs(
-  node: NodeBinding,
-  graph: GraphSpec,
-  catalog?: DeploymentResourceCatalog
-): string[] {
-  if (node.resourceBindings.relayProfileRefs.length > 0) {
-    return unique(node.resourceBindings.relayProfileRefs);
-  }
-
-  if (graph.defaults.resourceBindings.relayProfileRefs.length > 0) {
-    return unique(graph.defaults.resourceBindings.relayProfileRefs);
-  }
-
-  return unique(catalog?.defaults.relayProfileRefs ?? []);
-}
-
-function effectivePrimaryRelayRef(
-  node: NodeBinding,
-  graph: GraphSpec,
-  catalog?: DeploymentResourceCatalog
-): string | undefined {
-  return (
-    node.resourceBindings.primaryRelayProfileRef ??
-    graph.defaults.resourceBindings.primaryRelayProfileRef ??
-    catalog?.defaults.relayProfileRefs[0]
-  );
-}
-
-function effectiveGitServiceRefs(
-  node: NodeBinding,
-  graph: GraphSpec,
-  catalog?: DeploymentResourceCatalog
-): string[] {
-  if (node.resourceBindings.gitServiceRefs.length > 0) {
-    return unique(node.resourceBindings.gitServiceRefs);
-  }
-
-  if (graph.defaults.resourceBindings.gitServiceRefs.length > 0) {
-    return unique(graph.defaults.resourceBindings.gitServiceRefs);
-  }
-
-  return catalog?.defaults.gitServiceRef
-    ? [catalog.defaults.gitServiceRef]
-    : [];
-}
-
-function effectivePrimaryGitServiceRef(
-  node: NodeBinding,
-  graph: GraphSpec,
-  catalog?: DeploymentResourceCatalog
-): string | undefined {
-  return (
-    node.resourceBindings.primaryGitServiceRef ??
-    graph.defaults.resourceBindings.primaryGitServiceRef ??
-    catalog?.defaults.gitServiceRef
-  );
-}
-
-function effectiveModelEndpointRef(
-  node: NodeBinding,
-  graph: GraphSpec,
-  catalog?: DeploymentResourceCatalog
-): string | undefined {
-  return (
-    node.resourceBindings.modelEndpointProfileRef ??
-    graph.defaults.resourceBindings.modelEndpointProfileRef ??
-    catalog?.defaults.modelEndpointRef
-  );
-}
-
-function intersect(values: string[], otherValues: string[]): string[] {
-  const lookup = new Set(otherValues);
-  return values.filter((value) => lookup.has(value));
 }
 
 export function validatePackageManifestDocument(
@@ -379,15 +305,27 @@ function validateGraphSemantics(
     }
 
     const resourceBindings = node.resourceBindings;
-    const resolvedRelayRefs = effectiveRelayRefs(node, graph, catalog);
-    const resolvedPrimaryRelayRef = effectivePrimaryRelayRef(node, graph, catalog);
-    const resolvedGitServiceRefs = effectiveGitServiceRefs(node, graph, catalog);
-    const resolvedPrimaryGitServiceRef = effectivePrimaryGitServiceRef(
+    const resolvedRelayRefs = resolveEffectiveRelayProfileRefs(node, graph, catalog);
+    const resolvedPrimaryRelayRef = resolveEffectivePrimaryRelayProfileRef(
       node,
       graph,
       catalog
     );
-    const resolvedModelEndpointRef = effectiveModelEndpointRef(node, graph, catalog);
+    const resolvedGitServiceRefs = resolveEffectiveGitServiceRefs(
+      node,
+      graph,
+      catalog
+    );
+    const resolvedPrimaryGitServiceRef = resolveEffectivePrimaryGitServiceRef(
+      node,
+      graph,
+      catalog
+    );
+    const resolvedModelEndpointRef = resolveEffectiveModelEndpointProfileRef(
+      node,
+      graph,
+      catalog
+    );
 
     if (
       catalog &&
@@ -568,14 +506,22 @@ function validateGraphSemantics(
       continue;
     }
 
-    const sourceRelayRefs = effectiveRelayRefs(sourceNode, graph, catalog);
-    const targetRelayRefs = effectiveRelayRefs(targetNode, graph, catalog);
+    const sourceRelayRefs = resolveEffectiveRelayProfileRefs(
+      sourceNode,
+      graph,
+      catalog
+    );
+    const targetRelayRefs = resolveEffectiveRelayProfileRefs(
+      targetNode,
+      graph,
+      catalog
+    );
     const transportRelayRefs =
       edge.transportPolicy.relayProfileRefs.length > 0
         ? edge.transportPolicy.relayProfileRefs
-        : intersect(sourceRelayRefs, targetRelayRefs);
-    const realizableRelayRefs = intersect(
-      intersect(sourceRelayRefs, targetRelayRefs),
+        : intersectIdentifiers(sourceRelayRefs, targetRelayRefs);
+    const realizableRelayRefs = intersectIdentifiers(
+      intersectIdentifiers(sourceRelayRefs, targetRelayRefs),
       transportRelayRefs
     );
 

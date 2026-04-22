@@ -28,6 +28,13 @@ One executable or service responsible for:
 
 One executable or service responsible for running a node instance.
 
+Current implemented slice:
+
+- loads injected runtime context from disk;
+- reads package prompt files and runtime config;
+- constructs a provider-agnostic engine turn request;
+- executes one stub-engine turn for bootstrap verification.
+
 ### `entangle-agent-engine`
 
 One shared internal package responsible for:
@@ -142,6 +149,16 @@ Optional but strongly recommended package for:
 16. add bounded graph editing, node admission, and runtime controls in Studio;
 17. add thin CLI access to the same host control-plane surfaces;
 18. add thin package scaffolding through shared scaffold utilities.
+
+The repository now has partial completion through step 13:
+
+- types, validator, quality gates, and CI baseline are in place;
+- host owns desired graph and resource state;
+- host now materializes runtime intents, effective bindings, and injected
+  runtime context;
+- runner now consumes injected runtime context for its bootstrap path;
+- CLI already covers validation, scaffolding, and the first runtime host
+  operations.
 
 ## Definition of done for the first serious version
 

@@ -1,20 +1,53 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import {
+  cp,
+  lstat,
+  mkdir,
+  readFile,
+  readlink,
+  readdir,
+  rm,
+  stat,
+  symlink,
+  writeFile
+} from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
+  type AgentPackageManifest,
   agentPackageManifestSchema,
   buildValidationReport,
   type CatalogInspectionResponse,
   type DeploymentResourceCatalog,
   deploymentResourceCatalogSchema,
+  type EffectiveRuntimeContext,
+  effectiveRuntimeContextSchema,
+  effectiveNodeBindingSchema,
   type GraphInspectionResponse,
+  type GraphSpec,
   type GraphMutationResponse,
   graphSpecSchema,
-  type PackageSourceAdmissionRequest,
+  intersectIdentifiers,
+  type NodeBinding,
   packageSourceRecordSchema,
+  type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
   type PackageSourceRecord,
   type PackageSourceListResponse,
+  resolveEffectiveGitServices,
+  resolveEffectiveModelEndpointProfile,
+  resolveEffectiveModelEndpointProfileRef,
+  resolveEffectivePrimaryGitServiceRef,
+  resolveEffectivePrimaryRelayProfileRef,
+  resolveEffectiveRelayProfiles,
+  resolveEffectiveRelayProfileRefs,
+  type RuntimeDesiredState,
+  runtimeInspectionResponseSchema,
+  type RuntimeInspectionResponse,
+  runtimeIntentRecordSchema,
+  runtimeListResponseSchema,
+  type RuntimeListResponse,
+  type RuntimeObservedState,
+  observedRuntimeRecordSchema,
 } from "@entangle/types";
 import {
   validateDeploymentResourceCatalogDocument,
@@ -40,12 +73,20 @@ const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
 const activeGraphRevisionPath = path.join(graphRoot, "active-revision.json");
 const graphRevisionsRoot = path.join(graphRoot, "revisions");
+const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
+const observedRuntimesRoot = path.join(observedRoot, "runtimes");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
+const runtimeContextFileName = "effective-runtime-context.json";
 
 type GraphRevisionRecord = {
   activeRevisionId: string;
   appliedAt: string;
+};
+
+type RuntimeResolution = {
+  context: EffectiveRuntimeContext | undefined;
+  inspection: RuntimeInspectionResponse;
 };
 
 function nowIsoString(): string {
@@ -84,9 +125,28 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
   return JSON.parse(await readFile(filePath, "utf8")) as T;
 }
 
+function encodeJsonFile(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await ensureDirectory(path.dirname(filePath));
-  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  await writeFile(filePath, encodeJsonFile(value), "utf8");
+}
+
+async function writeJsonFileIfChanged(
+  filePath: string,
+  value: unknown
+): Promise<boolean> {
+  const encoded = encodeJsonFile(value);
+
+  if ((await pathExists(filePath)) && (await readFile(filePath, "utf8")) === encoded) {
+    return false;
+  }
+
+  await ensureDirectory(path.dirname(filePath));
+  await writeFile(filePath, encoded, "utf8");
+  return true;
 }
 
 function buildDefaultCatalog(): DeploymentResourceCatalog {
@@ -245,13 +305,226 @@ async function appendControlPlaneEvent(
   await writeFile(logPath, encoded, { encoding: "utf8", flag: "a" });
 }
 
+async function removeJsonFilesExcept(
+  directoryPath: string,
+  allowedBaseNames: Set<string>
+): Promise<void> {
+  if (!(await pathExists(directoryPath))) {
+    return;
+  }
+
+  const entries = await readdir(directoryPath, { withFileTypes: true });
+
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .filter((entry) => !allowedBaseNames.has(entry.name.slice(0, -".json".length)))
+      .map((entry) => rm(path.join(directoryPath, entry.name), { force: true }))
+  );
+}
+
+async function readCatalog(): Promise<DeploymentResourceCatalog> {
+  await initializeHostState();
+  return deploymentResourceCatalogSchema.parse(await readJsonFile(catalogPath));
+}
+
+async function readActiveGraphState(): Promise<{
+  activeRevisionId: string | undefined;
+  graph: GraphSpec | undefined;
+}> {
+  await initializeHostState();
+
+  if (!(await pathExists(currentGraphPath))) {
+    return {
+      activeRevisionId: undefined,
+      graph: undefined
+    };
+  }
+
+  const graph = graphSpecSchema.parse(await readJsonFile(currentGraphPath));
+  const revisionRecord = (await pathExists(activeGraphRevisionPath))
+    ? await readJsonFile<GraphRevisionRecord>(activeGraphRevisionPath)
+    : undefined;
+
+  return {
+    graph,
+    activeRevisionId: revisionRecord?.activeRevisionId
+  };
+}
+
+async function listPackageSourceRecords(): Promise<PackageSourceRecord[]> {
+  await initializeHostState();
+  const entries = (await readdir(packageSourcesRoot)).filter((entry) =>
+    entry.endsWith(".json")
+  );
+  const records: PackageSourceRecord[] = [];
+
+  for (const entry of entries) {
+    records.push(
+      packageSourceRecordSchema.parse(
+        await readJsonFile(path.join(packageSourcesRoot, entry))
+      )
+    );
+  }
+
+  records.sort((left, right) =>
+    left.packageSourceId.localeCompare(right.packageSourceId)
+  );
+
+  return records;
+}
+
+async function listPackageSourceRecordMap(): Promise<
+  Map<string, PackageSourceRecord>
+> {
+  const records = await listPackageSourceRecords();
+  return new Map(records.map((record) => [record.packageSourceId, record]));
+}
+
+function packageSourcePackageRoot(record: PackageSourceRecord): string {
+  return record.sourceKind === "local_path"
+    ? record.absolutePath
+    : path.join(importsRoot, "packages", record.packageSourceId, "package");
+}
+
+async function ensureDirectoryLink(
+  linkPath: string,
+  targetPath: string
+): Promise<void> {
+  await ensureDirectory(path.dirname(linkPath));
+
+  if (await pathExists(linkPath)) {
+    const existingStats = await lstat(linkPath);
+
+    if (existingStats.isSymbolicLink()) {
+      const linkedTarget = await readlink(linkPath).catch(() => "");
+
+      if (
+        typeof linkedTarget === "string" &&
+        path.resolve(path.dirname(linkPath), linkedTarget) === path.resolve(targetPath)
+      ) {
+        return;
+      }
+    }
+
+    await rm(linkPath, { force: true, recursive: true });
+  }
+
+  await symlink(targetPath, linkPath);
+}
+
+async function readPackageManifest(
+  packageRoot: string
+): Promise<AgentPackageManifest | undefined> {
+  const manifestPath = path.join(packageRoot, "manifest.json");
+
+  if (!(await pathExists(manifestPath))) {
+    return undefined;
+  }
+
+  try {
+    return agentPackageManifestSchema.parse(await readJsonFile(manifestPath));
+  } catch {
+    return undefined;
+  }
+}
+
+async function copyFileIfMissing(
+  sourcePath: string,
+  targetPath: string
+): Promise<void> {
+  if (!(await pathExists(sourcePath)) || (await pathExists(targetPath))) {
+    return;
+  }
+
+  await ensureDirectory(path.dirname(targetPath));
+  await writeFile(targetPath, await readFile(sourcePath, "utf8"), "utf8");
+}
+
+async function initializeWorkspaceMemory(
+  memoryRoot: string,
+  packageRoot: string,
+  manifest: AgentPackageManifest
+): Promise<void> {
+  const wikiSeedSource = path.join(packageRoot, manifest.memoryProfile.wikiSeedPath);
+  const wikiTarget = path.join(memoryRoot, "wiki");
+  const schemaSource = path.join(packageRoot, manifest.memoryProfile.schemaPath);
+  const schemaTarget = path.join(memoryRoot, "schema", path.basename(schemaSource));
+
+  if ((await pathExists(wikiSeedSource)) && !(await pathExists(wikiTarget))) {
+    await ensureDirectory(path.dirname(wikiTarget));
+    await cp(wikiSeedSource, wikiTarget, { recursive: true });
+  }
+
+  await copyFileIfMissing(schemaSource, schemaTarget);
+}
+
+function buildWorkspaceLayout(nodeId: string) {
+  const root = path.join(workspacesRoot, nodeId);
+  return {
+    artifactWorkspaceRoot: path.join(root, "workspace"),
+    injectedRoot: path.join(root, "injected"),
+    memoryRoot: path.join(root, "memory"),
+    packageRoot: path.join(root, "package"),
+    root,
+    runtimeRoot: path.join(root, "runtime")
+  };
+}
+
+async function readRuntimeIntentRecord(
+  nodeId: string
+): Promise<ReturnType<typeof runtimeIntentRecordSchema.parse> | undefined> {
+  const filePath = path.join(runtimeIntentsRoot, `${nodeId}.json`);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return runtimeIntentRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function readObservedRuntimeRecord(
+  nodeId: string
+): Promise<ReturnType<typeof observedRuntimeRecordSchema.parse> | undefined> {
+  const filePath = path.join(observedRuntimesRoot, `${nodeId}.json`);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedRuntimeRecordSchema.parse(await readJsonFile(filePath));
+}
+
+function buildRuntimeInspectionFromState(input: {
+  context: EffectiveRuntimeContext | undefined;
+  desiredState: RuntimeDesiredState;
+  graphId: string;
+  graphRevisionId: string;
+  nodeId: string;
+  observedState: RuntimeObservedState;
+  packageSourceId: string | undefined;
+  reason: string | undefined;
+}): RuntimeInspectionResponse {
+  return runtimeInspectionResponseSchema.parse({
+    contextAvailable: Boolean(input.context),
+    contextPath: input.context ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName) : undefined,
+    desiredState: input.desiredState,
+    graphId: input.graphId,
+    graphRevisionId: input.graphRevisionId,
+    nodeId: input.nodeId,
+    observedState: input.observedState,
+    packageSourceId: input.packageSourceId,
+    reason: input.reason
+  });
+}
+
 export async function initializeHostState(): Promise<void> {
   await Promise.all([
-    ensureDirectory(path.join(desiredRoot, "node-bindings")),
+    ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
-    ensureDirectory(path.join(observedRoot, "runtimes")),
+    ensureDirectory(observedRuntimesRoot),
     ensureDirectory(path.join(observedRoot, "reconciliation", "history")),
     ensureDirectory(path.join(observedRoot, "health")),
     ensureDirectory(controlPlaneTraceRoot),
@@ -319,6 +592,7 @@ export async function applyCatalog(
   }
 
   await writeJsonFile(catalogPath, inspection.catalog);
+  await synchronizeCurrentGraphRuntimeState();
   await appendControlPlaneEvent({
     category: "control_plane",
     type: "catalog_apply",
@@ -486,10 +760,8 @@ export async function getGraphInspection(): Promise<GraphInspectionResponse> {
 }
 
 async function currentPackageSourceIds(): Promise<string[]> {
-  const listing = await listPackageSources();
-  return listing.packageSources.map(
-    (entry: PackageSourceInspectionResponse) => entry.packageSource.packageSourceId
-  );
+  const records = await listPackageSourceRecords();
+  return records.map((record) => record.packageSourceId);
 }
 
 export async function validateGraphCandidate(
@@ -526,6 +798,410 @@ export async function validateGraphCandidate(
   };
 }
 
+function buildRuntimeIntentReasonForUnavailableContext(input: {
+  hasModelEndpoint: boolean;
+  node: NodeBinding;
+  packageManifest: AgentPackageManifest | undefined;
+  packageSource: PackageSourceRecord | undefined;
+  packageSourcePathExists: boolean;
+}): string {
+  if (!input.node.packageSourceRef) {
+    return `Node '${input.node.nodeId}' cannot start because it has no package source binding.`;
+  }
+
+  if (!input.packageSource) {
+    return `Node '${input.node.nodeId}' cannot start because package source '${input.node.packageSourceRef}' is not admitted.`;
+  }
+
+  if (!input.packageSourcePathExists) {
+    return `Node '${input.node.nodeId}' cannot start because package source '${input.packageSource.packageSourceId}' is unavailable on disk.`;
+  }
+
+  if (!input.packageManifest) {
+    return `Node '${input.node.nodeId}' cannot start because its package manifest could not be resolved.`;
+  }
+
+  if (!input.hasModelEndpoint) {
+    return `Node '${input.node.nodeId}' cannot start because it has no effective model endpoint binding.`;
+  }
+
+  return `Node '${input.node.nodeId}' has no realizable runtime context.`;
+}
+
+async function buildRuntimeResolution(input: {
+  activeRevisionId: string;
+  catalog: DeploymentResourceCatalog;
+  graph: GraphSpec;
+  node: NodeBinding;
+  packageSources: Map<string, PackageSourceRecord>;
+}): Promise<RuntimeResolution> {
+  const { activeRevisionId, catalog, graph, node, packageSources } = input;
+  const workspace = buildWorkspaceLayout(node.nodeId);
+  const packageSource = node.packageSourceRef
+    ? packageSources.get(node.packageSourceRef)
+    : undefined;
+  const resolvedRelayProfiles = resolveEffectiveRelayProfiles(node, graph, catalog);
+  const resolvedRelayProfileRefs = resolveEffectiveRelayProfileRefs(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedPrimaryRelayProfileRef = resolveEffectivePrimaryRelayProfileRef(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedGitServices = resolveEffectiveGitServices(node, graph, catalog);
+  const resolvedPrimaryGitServiceRef = resolveEffectivePrimaryGitServiceRef(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedModelEndpointProfile = resolveEffectiveModelEndpointProfile(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedModelEndpointProfileRef = resolveEffectiveModelEndpointProfileRef(
+    node,
+    graph,
+    catalog
+  );
+  const packageRoot = packageSource
+    ? packageSourcePackageRoot(packageSource)
+    : undefined;
+  const runtimeContextPath = path.join(
+    workspace.injectedRoot,
+    runtimeContextFileName
+  );
+  const packageSourcePathExists = packageRoot
+    ? await pathExists(packageRoot)
+    : false;
+  const packageManifest =
+    packageRoot && packageSourcePathExists
+      ? await readPackageManifest(packageRoot)
+      : undefined;
+  const effectiveBinding = effectiveNodeBindingSchema.parse({
+    bindingId: sanitizeIdentifier(`${activeRevisionId}-${node.nodeId}`),
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    node,
+    packageSource,
+    resolvedResourceBindings: {
+      relayProfileRefs: resolvedRelayProfileRefs,
+      primaryRelayProfileRef: resolvedPrimaryRelayProfileRef,
+      gitServiceRefs: resolvedGitServices.map((service) => service.id),
+      primaryGitServiceRef: resolvedPrimaryGitServiceRef,
+      modelEndpointProfileRef: resolvedModelEndpointProfileRef
+    },
+    runtimeProfile: graph.defaults.runtimeProfile,
+    schemaVersion: "1"
+  });
+
+  await Promise.all([
+    ensureDirectory(workspace.root),
+    ensureDirectory(workspace.injectedRoot),
+    ensureDirectory(workspace.memoryRoot),
+    ensureDirectory(workspace.artifactWorkspaceRoot),
+    ensureDirectory(workspace.runtimeRoot)
+  ]);
+
+  let context: EffectiveRuntimeContext | undefined;
+
+  if (
+    packageRoot &&
+    packageSourcePathExists &&
+    packageManifest &&
+    resolvedModelEndpointProfile
+  ) {
+    await ensureDirectoryLink(workspace.packageRoot, packageRoot);
+    await initializeWorkspaceMemory(
+      workspace.memoryRoot,
+      packageRoot,
+      packageManifest
+    );
+    let existingContext: EffectiveRuntimeContext | undefined;
+
+    if (await pathExists(runtimeContextPath)) {
+      const parsedExistingContext = effectiveRuntimeContextSchema.safeParse(
+        await readJsonFile(runtimeContextPath)
+      );
+
+      if (parsedExistingContext.success) {
+        existingContext = parsedExistingContext.data;
+      }
+    }
+
+    const edgeRoutes = graph.edges
+      .filter(
+        (edge) =>
+          edge.enabled &&
+          (edge.fromNodeId === node.nodeId || edge.toNodeId === node.nodeId)
+      )
+      .flatMap((edge) => {
+        const peerNodeId =
+          edge.fromNodeId === node.nodeId ? edge.toNodeId : edge.fromNodeId;
+        const peerNode = graph.nodes.find((candidate) => candidate.nodeId === peerNodeId);
+
+        if (!peerNode) {
+          return [];
+        }
+
+        const peerRelayRefs = resolveEffectiveRelayProfileRefs(
+          peerNode,
+          graph,
+          catalog
+        );
+        const transportRelayRefs =
+          edge.transportPolicy.relayProfileRefs.length > 0
+            ? edge.transportPolicy.relayProfileRefs
+            : intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs);
+        const realizableRelayRefs = intersectIdentifiers(
+          intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs),
+          transportRelayRefs
+        );
+
+        if (realizableRelayRefs.length === 0) {
+          return [];
+        }
+
+        return [
+          {
+            channel: edge.transportPolicy.channel,
+            edgeId: edge.edgeId,
+            peerNodeId,
+            relation: edge.relation,
+            relayProfileRefs: realizableRelayRefs
+          }
+        ];
+      });
+
+    const contextDraft = {
+      artifactContext: {
+        backends: ["git"],
+        defaultNamespace:
+          resolvedGitServices.find(
+            (service) => service.id === resolvedPrimaryGitServiceRef
+          )?.defaultNamespace ??
+          resolvedGitServices[0]?.defaultNamespace,
+        gitServices: resolvedGitServices,
+        primaryGitServiceRef: resolvedPrimaryGitServiceRef
+      },
+      binding: {
+        ...effectiveBinding
+      },
+      generatedAt: nowIsoString(),
+      modelContext: {
+        modelEndpointProfile: resolvedModelEndpointProfile
+      },
+      packageManifest,
+      policyContext: {
+        autonomy: node.autonomy,
+        notes: [],
+        runtimeProfile: graph.defaults.runtimeProfile
+      },
+      relayContext: {
+        edgeRoutes,
+        primaryRelayProfileRef: resolvedPrimaryRelayProfileRef,
+        relayProfiles: resolvedRelayProfiles
+      },
+      schemaVersion: "1",
+      workspace
+    };
+    const comparableDraft = JSON.stringify({
+      ...contextDraft,
+      generatedAt: ""
+    });
+    const comparableExisting = existingContext
+      ? JSON.stringify({
+          ...existingContext,
+          generatedAt: ""
+        })
+      : undefined;
+
+    context = effectiveRuntimeContextSchema.parse({
+      ...contextDraft,
+      generatedAt:
+        comparableExisting === comparableDraft
+          ? existingContext?.generatedAt ?? contextDraft.generatedAt
+          : nowIsoString()
+    });
+
+    await writeJsonFileIfChanged(runtimeContextPath, context);
+  } else {
+    await rm(workspace.packageRoot, { force: true, recursive: true });
+    await rm(runtimeContextPath, { force: true });
+  }
+
+  await writeJsonFileIfChanged(
+    path.join(nodeBindingsRoot, `${node.nodeId}.json`),
+    effectiveBinding
+  );
+
+  const existingIntent = await readRuntimeIntentRecord(node.nodeId);
+  const operatorStopped =
+    existingIntent?.desiredState === "stopped" &&
+    existingIntent.reason === "stopped_by_operator";
+  const desiredState: RuntimeDesiredState = context
+    ? operatorStopped
+      ? "stopped"
+      : "running"
+    : "stopped";
+  const reason =
+    desiredState === "stopped"
+      ? context
+        ? "stopped_by_operator"
+        : buildRuntimeIntentReasonForUnavailableContext({
+            hasModelEndpoint: Boolean(resolvedModelEndpointProfile),
+            node,
+            packageManifest,
+            packageSource,
+            packageSourcePathExists
+          })
+      : undefined;
+
+  const intentRecord = runtimeIntentRecordSchema.parse({
+    desiredState,
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    nodeId: node.nodeId,
+    reason,
+    schemaVersion: "1",
+    updatedAt:
+      existingIntent &&
+      existingIntent.desiredState === desiredState &&
+      existingIntent.reason === reason &&
+      existingIntent.graphId === graph.graphId &&
+      existingIntent.graphRevisionId === activeRevisionId
+        ? existingIntent.updatedAt
+        : nowIsoString()
+  });
+  await writeJsonFileIfChanged(
+    path.join(runtimeIntentsRoot, `${node.nodeId}.json`),
+    intentRecord
+  );
+
+  const existingObserved = await readObservedRuntimeRecord(node.nodeId);
+  const observedRecord = observedRuntimeRecordSchema.parse({
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    lastError: existingObserved?.lastError,
+    lastSeenAt: existingObserved?.lastSeenAt ?? nowIsoString(),
+    nodeId: node.nodeId,
+    observedState: existingObserved?.observedState ?? "missing",
+    runtimeContextPath: context
+      ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
+      : undefined,
+    schemaVersion: "1"
+  });
+  await writeJsonFileIfChanged(
+    path.join(observedRuntimesRoot, `${node.nodeId}.json`),
+    observedRecord
+  );
+
+  return {
+    context,
+    inspection: buildRuntimeInspectionFromState({
+      context,
+      desiredState: intentRecord.desiredState,
+      graphId: graph.graphId,
+      graphRevisionId: activeRevisionId,
+      nodeId: node.nodeId,
+      observedState: observedRecord.observedState,
+      packageSourceId: packageSource?.packageSourceId,
+      reason: intentRecord.reason
+    })
+  };
+}
+
+async function synchronizeCurrentGraphRuntimeState(): Promise<
+  RuntimeInspectionResponse[]
+> {
+  const { graph, activeRevisionId } = await readActiveGraphState();
+
+  if (!graph || !activeRevisionId) {
+    return [];
+  }
+
+  const catalog = await readCatalog();
+  const packageSources = await listPackageSourceRecordMap();
+  const runtimeNodes = graph.nodes.filter((node) => node.nodeKind !== "user");
+  const activeNodeIds = new Set(runtimeNodes.map((node) => node.nodeId));
+  const inspections: RuntimeInspectionResponse[] = [];
+
+  await removeJsonFilesExcept(nodeBindingsRoot, activeNodeIds);
+  await removeJsonFilesExcept(runtimeIntentsRoot, activeNodeIds);
+
+  for (const node of runtimeNodes) {
+    const resolution = await buildRuntimeResolution({
+      activeRevisionId,
+      catalog,
+      graph,
+      node,
+      packageSources
+    });
+    inspections.push(resolution.inspection);
+  }
+
+  inspections.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
+  return inspections;
+}
+
+export async function listRuntimeInspections(): Promise<RuntimeListResponse> {
+  return runtimeListResponseSchema.parse({
+    runtimes: await synchronizeCurrentGraphRuntimeState()
+  });
+}
+
+export async function getRuntimeInspection(
+  nodeId: string
+): Promise<RuntimeInspectionResponse | null> {
+  const runtimes = await synchronizeCurrentGraphRuntimeState();
+  return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
+}
+
+export async function getRuntimeContext(
+  nodeId: string
+): Promise<EffectiveRuntimeContext | null> {
+  const inspection = await getRuntimeInspection(nodeId);
+
+  if (!inspection?.contextPath || !inspection.contextAvailable) {
+    return null;
+  }
+
+  return effectiveRuntimeContextSchema.parse(
+    await readJsonFile(inspection.contextPath)
+  );
+}
+
+export async function setRuntimeDesiredState(
+  nodeId: string,
+  desiredState: RuntimeDesiredState
+): Promise<RuntimeInspectionResponse | null> {
+  const inspection = await getRuntimeInspection(nodeId);
+
+  if (!inspection) {
+    return null;
+  }
+
+  const intent = runtimeIntentRecordSchema.parse({
+    desiredState,
+    graphId: inspection.graphId,
+    graphRevisionId: inspection.graphRevisionId,
+    nodeId,
+    reason: desiredState === "stopped" ? "stopped_by_operator" : undefined,
+    schemaVersion: "1",
+    updatedAt: nowIsoString()
+  });
+  await writeJsonFile(path.join(runtimeIntentsRoot, `${nodeId}.json`), intent);
+
+  return runtimeInspectionResponseSchema.parse({
+    ...inspection,
+    desiredState,
+    reason: intent.reason
+  });
+}
+
 export async function applyGraph(input: unknown): Promise<GraphMutationResponse> {
   const candidate = await validateGraphCandidate(input);
 
@@ -545,6 +1221,7 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
     candidate.graph
   );
   await writeJsonFile(activeGraphRevisionPath, revisionRecord);
+  await synchronizeCurrentGraphRuntimeState();
   await appendControlPlaneEvent({
     category: "control_plane",
     type: "graph_apply",
@@ -561,23 +1238,22 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
-  const runtimeIntentEntries = await readdir(runtimeIntentsRoot, {
-    withFileTypes: true
-  });
-  const desiredRuntimeCount =
-    runtimeIntentEntries.filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
-      .length ||
-    graphInspection.graph?.nodes.filter((node) => node.nodeKind !== "user").length ||
-    0;
+  const runtimeInspections = await listRuntimeInspections();
 
   return {
     service: "entangle-host" as const,
     status: "healthy" as const,
     graphRevisionId: graphInspection.activeRevisionId,
     runtimeCounts: {
-      desired: desiredRuntimeCount,
-      observed: 0,
-      running: 0
+      desired: runtimeInspections.runtimes.filter(
+        (runtime) => runtime.desiredState === "running"
+      ).length,
+      observed: runtimeInspections.runtimes.filter(
+        (runtime) => runtime.observedState !== "missing"
+      ).length,
+      running: runtimeInspections.runtimes.filter(
+        (runtime) => runtime.observedState === "running"
+      ).length
     },
     timestamp: nowIsoString()
   };
