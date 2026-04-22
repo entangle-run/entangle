@@ -15,7 +15,7 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in the final pre-scaffold refinement phase.
+Entangle is currently in the initial implementation scaffold phase.
 
 The corpus now extends from conceptual architecture into normative contracts,
 package and binding structure, edge semantics, artifact backends, control-plane
@@ -50,6 +50,16 @@ The contract-ownership layer is now also explicit:
   contracts;
 - `packages/validator` should own semantic validation on top of those schemas;
 - generated artifacts such as JSON Schema should remain derivative, not primary.
+
+The repository now also contains the first real implementation baseline:
+
+- a `pnpm` + Turborepo monorepo scaffold;
+- `apps/studio` and `apps/cli`;
+- `services/host` and `services/runner`;
+- `packages/types`, `validator`, `host-client`, `agent-engine`, and
+  `package-scaffold`;
+- a first local Compose profile and service Dockerfiles;
+- a verified install/build/typecheck path.
 
 The specification corpus now has five layers:
 
@@ -102,12 +112,13 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- scaffold the monorepo implementation layout under `apps/`, `services/`,
-  `packages/`, and `deploy/`;
-- encode the canonical contracts as machine-readable schemas in
-  `packages/types`;
-- implement `entangle-validator` against those schemas;
-- implement the first `entangle-host` API and reconciliation skeleton;
-- implement the first `entangle-runner` skeleton with injected runtime context;
-- materialize the first Compose deployment and host-managed runner path while
-  keeping the repository audit loop active.
+- deepen `packages/types` so more canonical objects have concrete schemas and
+  DTOs;
+- expand `packages/validator` from bootstrap checks into stronger semantic
+  validation;
+- grow `entangle-host` from status-only bootstrap into catalog, package-source,
+  graph, and runtime surfaces;
+- move `entangle-runner` from stub execution into injected-context and Nostr
+  lifecycle handling;
+- connect Studio and CLI to more real host operations while keeping the
+  repository audit loop active.

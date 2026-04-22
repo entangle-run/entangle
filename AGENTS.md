@@ -73,19 +73,18 @@ Current preferred stack:
 At this stage, prioritize:
 
 1. root repository coherence;
-2. machine-readable schemas;
-3. validator scaffolding;
+2. expansion of machine-readable schemas from the initial scaffold;
+3. deeper validator coverage for graph, transport, and deployment semantics;
 4. deployment resource catalog and binding contracts;
-5. host control-plane and host API boundaries;
+5. host control-plane and host API implementation beyond the bootstrap status route;
 6. effective runtime context for runners;
-7. runner skeleton;
-8. Nostr messaging path;
-9. git artifact handoff;
-10. engine-adapter and model-endpoint execution boundary;
-11. Docker Compose topology;
-12. Studio runtime visibility;
-13. headless CLI surface over the same host boundary;
-14. thin package scaffolding surface for `AgentPackage` creation.
+7. runner lifecycle and Nostr messaging path;
+8. git artifact handoff;
+9. engine-adapter and model-endpoint execution boundary;
+10. Docker Compose topology;
+11. Studio runtime visibility over real host state;
+12. headless CLI surface over the same host boundary;
+13. thin package scaffolding surface for `AgentPackage` creation.
 
 ## Working attitude
 

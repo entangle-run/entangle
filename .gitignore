@@ -12,6 +12,7 @@ tmp/
 dist/
 node_modules/
 .venv/
+*.tsbuildinfo
 
 # Local mirrored research corpus
 resources/*

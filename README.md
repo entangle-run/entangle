@@ -6,6 +6,17 @@ This repository is the project foundation for the Entangle hackathon build and f
 
 ## Repository Layout
 
+- `apps/`
+  User-facing surfaces. The first scaffold includes `studio/` for the visual
+  operator experience and `cli/` for thin headless operation.
+- `services/`
+  Long-running runtime components. The first scaffold includes `host/` and
+  `runner/`.
+- `packages/`
+  Shared internal packages. The first scaffold includes `types/`, `validator/`,
+  `host-client/`, `agent-engine/`, and `package-scaffold/`.
+- `deploy/`
+  Local deployment material such as the first Compose profile and Dockerfiles.
 - `resources/`
   External reference repositories and a manifest of the research corpus. This directory holds local clones of the primary systems, protocols, and engines studied while designing Entangle.
 - `references/`
@@ -48,7 +59,14 @@ This repository currently contains:
 - an operational wiki schema and initial pages;
 - a locally materialized reference corpus under `resources/`;
 - a concrete implementation stack direction centered on TypeScript, Node 22,
-  `pnpm`, Turborepo, `nostr-tools`, `strfry`, `Gitea`, and Docker Compose.
+  `pnpm`, Turborepo, `nostr-tools`, `strfry`, `Gitea`, and Docker Compose;
+- an initial monorepo scaffold for `apps/`, `services/`, `packages/`, and
+  `deploy/`;
+- the first machine-readable contract layer in `packages/types`;
+- a first validator surface, host client, package scaffold utility, host
+  service, runner stub, CLI, and Studio scaffold;
+- a verified baseline where `pnpm install`, `pnpm typecheck`, and `pnpm build`
+  all pass.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

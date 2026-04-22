@@ -1,0 +1,50 @@
+services:
+  studio:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/studio.Dockerfile
+    environment:
+      VITE_ENTANGLE_HOST_URL: ${ENTANGLE_STUDIO_HOST_API_URL:-http://localhost:7071}
+    ports:
+      - "${ENTANGLE_STUDIO_PORT:-3000}:3000"
+    depends_on:
+      host:
+        condition: service_started
+
+  host:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/host.Dockerfile
+    environment:
+      ENTANGLE_HOST_PORT: ${ENTANGLE_HOST_PORT:-7071}
+      ENTANGLE_HOME: /data/.entangle
+    ports:
+      - "${ENTANGLE_HOST_PORT:-7071}:7071"
+    volumes:
+      - entangle-host-state:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  strfry:
+    image: ghcr.io/hoytech/strfry:latest
+    command:
+      - relay
+    ports:
+      - "${ENTANGLE_STRFRY_PORT:-7777}:7777"
+    volumes:
+      - strfry-data:/app/strfry-db
+
+  gitea:
+    image: gitea/gitea:1.24.7
+    environment:
+      GITEA__server__ROOT_URL: ${ENTANGLE_GITEA_ROOT_URL:-http://localhost:3001}
+      GITEA__server__SSH_PORT: ${ENTANGLE_GITEA_SSH_PORT:-2222}
+    ports:
+      - "${ENTANGLE_GITEA_HTTP_PORT:-3001}:3000"
+      - "${ENTANGLE_GITEA_SSH_PORT:-2222}:22"
+    volumes:
+      - gitea-data:/data
+
+volumes:
+  entangle-host-state:
+  gitea-data:
+  strfry-data:

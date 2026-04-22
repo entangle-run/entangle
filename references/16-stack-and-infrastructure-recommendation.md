@@ -10,7 +10,7 @@ That means:
 
 - TypeScript for shared schemas, Studio, host, and runner logic;
 - a TypeScript host/control-plane service for local runtime management;
-- `@nostr/tools` as the primary Nostr library;
+- `nostr-tools` as the primary Nostr library;
 - `strfry` as the first relay implementation;
 - `Gitea` as the first git server;
 - one runner container per active node;
@@ -128,7 +128,7 @@ the actual orchestration logic.
 
 ### Primary library
 
-Use `@nostr/tools` (`nostr-tools`) as the default library.
+Use `nostr-tools` as the default library.
 
 Why:
 
@@ -278,7 +278,7 @@ If implementation started now, the most sensible stack would be:
 - `TypeScript`
 - `Node 22`
 - `pnpm` workspaces plus Turborepo
-- `@nostr/tools`
+- `nostr-tools`
 - `strfry`
 - `Gitea`
 - `entangle-host`

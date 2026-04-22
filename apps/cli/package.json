@@ -1,0 +1,24 @@
+{
+  "name": "@entangle/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "entangle": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "pnpm run typecheck",
+    "clean": "rm -rf dist",
+    "dev": "tsx src/index.ts",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@entangle/host-client": "workspace:*",
+    "@entangle/package-scaffold": "workspace:*",
+    "@entangle/types": "workspace:*",
+    "@entangle/validator": "workspace:*",
+    "commander": "^14.0.3"
+  }
+}

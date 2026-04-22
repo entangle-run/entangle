@@ -1,0 +1,182 @@
+:root {
+  color: #f7f1e8;
+  background:
+    radial-gradient(circle at top left, rgba(212, 168, 109, 0.16), transparent 32%),
+    linear-gradient(145deg, #111112 0%, #17181a 52%, #0d0f11 100%);
+  font-family:
+    "IBM Plex Sans",
+    "Avenir Next",
+    system-ui,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+code {
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    monospace;
+}
+
+.studio-shell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.hero-card,
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 20, 23, 0.84);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(16px);
+}
+
+.hero-card {
+  border-radius: 28px;
+  margin-bottom: 24px;
+  padding: 28px 32px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #d4a86d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-card h1 {
+  margin: 0 0 12px;
+  max-width: 16ch;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 0.98;
+}
+
+.lede {
+  margin: 0;
+  max-width: 72ch;
+  color: rgba(247, 241, 232, 0.82);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 24px;
+}
+
+.panel {
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panel-header h2,
+.checklist h3 {
+  margin: 0;
+}
+
+.panel-caption {
+  color: rgba(247, 241, 232, 0.58);
+  font-size: 0.92rem;
+}
+
+.graph-canvas {
+  height: 520px;
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(32, 35, 40, 0.88), rgba(15, 16, 18, 0.95));
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.status-healthy {
+  background: rgba(79, 210, 149, 0.12);
+  color: #78e0ac;
+}
+
+.status-degraded,
+.status-pending {
+  background: rgba(233, 190, 82, 0.12);
+  color: #f0cf7d;
+}
+
+.status-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.status-list div {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px 16px;
+}
+
+.status-list dt {
+  color: rgba(247, 241, 232, 0.6);
+  font-size: 0.85rem;
+}
+
+.status-list dd {
+  margin: 6px 0 0;
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.error-box {
+  margin: 18px 0 0;
+  border-left: 3px solid #d96857;
+  background: rgba(217, 104, 87, 0.1);
+  padding: 12px 14px;
+  color: #ffcbc4;
+}
+
+.checklist {
+  margin-top: 20px;
+}
+
+.checklist ul {
+  padding-left: 20px;
+  color: rgba(247, 241, 232, 0.82);
+  line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+  .studio-shell {
+    padding: 18px;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .graph-canvas {
+    height: 420px;
+  }
+}
