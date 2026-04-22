@@ -52,6 +52,12 @@ The current baseline does that through:
 - a separate Studio typecheck path kept outside the composite solution because
   it remains a bundler-driven browser surface.
 
+Package-local tests should also avoid silently relying on stale built `dist/`
+artifacts from sibling workspace packages. The current baseline therefore uses
+a shared root Vitest config with explicit workspace-source aliases, so package
+tests exercise current contracts from source instead of whatever old build may
+happen to be present on disk.
+
 ## What lint must mean
 
 `lint` must be a real static-quality pass, not a disguised typecheck.

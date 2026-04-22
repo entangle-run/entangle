@@ -110,6 +110,8 @@ This repository currently contains:
 - verified portable deploy payloads for host and runner built from the real
   `build -> deploy` path used by the service images;
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- shared Vitest workspace-source resolution so package-local tests do not
+  rely on stale sibling `dist/` outputs;
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.

@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-22] quality | Switched package-local tests to shared source-resolved Vitest config
+
+Hardened the local developer workflow so package-level Vitest runs no longer
+depend on whichever sibling `dist/` outputs happen to be on disk. Added a
+shared root Vitest config with explicit workspace-source aliases and pointed
+package-local test scripts at that config, so direct `pnpm --filter ... test`
+runs exercise current contracts from source.
+
 ## [2026-04-22] implementation | Added host-managed external principal bindings and resolved git principals
 
 Closed the gap between the identity model and the runtime model by introducing

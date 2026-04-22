@@ -105,6 +105,8 @@ The repository now also contains the first real implementation baseline:
   conversation, approval, and turn-state contracts owned by `packages/types`
   plus validator entrypoints for those surfaces in `packages/validator`;
 - a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- shared Vitest workspace-source resolution so package-local tests do not
+  accidentally execute against stale sibling build outputs;
 - an explicit composite TypeScript build graph with solution-build typechecking
   for internal packages and Node services;
 - targeted tests over validator semantics, host-client error handling, package
