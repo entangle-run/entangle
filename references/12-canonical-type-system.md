@@ -54,6 +54,9 @@ Graph-local binding of an agent package.
 - local policy labels
 - secret references
 - package source descriptor
+- external principal bindings
+- commit attribution profile hints
+- resource binding refs
 
 ## 3. Edge
 
@@ -154,6 +157,7 @@ Materialized local context injected into a node workspace by the runner.
 | `relay_context` | object | Effective relay configuration |
 | `approval_context` | object | Effective approval context |
 | `artifact_context` | object | Artifact backend mounts and references |
+| `model_context` | object | Effective model endpoint context |
 
 ## 8. Session
 
@@ -199,3 +203,161 @@ Pointer to work product or durable state.
   }
 }
 ```
+
+## 10. ExternalPrincipalBinding
+
+Binding between a node and an external system identity.
+
+### Required fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `principal_id` | string | Stable principal binding id |
+| `node_id` | string | Owning node |
+| `system_kind` | enum | `git`, later others |
+| `subject` | string | External account or subject identity |
+| `transport_auth_mode` | enum | `ssh_key`, `https_token`, `http_signature`, later others |
+| `secret_ref` | string | Reference to auth secret material |
+
+### Optional fields
+
+- attribution profile
+- signing profile
+- scope or permission profile
+- host provisioning metadata
+
+### Semantics
+
+- binds a node to an external system principal without changing the node's
+  authoritative Nostr identity;
+- allows external credentials to rotate independently of the node's Nostr key;
+- prevents package and graph types from embedding live secrets directly.
+
+## 11. DeploymentResourceCatalog
+
+Deployment-scoped registry of external systems that the active Entangle
+environment can use.
+
+### Required fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `catalog_id` | string | Stable deployment catalog id |
+| `relay_profiles` | object[] | Named relay profiles |
+| `git_service_profiles` | object[] | Named git service profiles |
+| `model_endpoint_profiles` | object[] | Named model endpoint profiles |
+
+### Optional fields
+
+- default relay profile refs
+- default git service profile refs
+- default model endpoint profile ref
+- deployment notes
+
+## 12. RelayProfile
+
+Named relay configuration surface.
+
+### Required fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `relay_profile_id` | string | Stable relay profile id |
+| `urls` | string[] | Relay endpoints |
+| `auth_mode` | enum | `none`, `nip42`, later others |
+
+### Optional fields
+
+- secret refs
+- usage labels
+- description
+
+## 13. GitServiceProfile
+
+Named git service configuration surface.
+
+### Required fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `git_service_id` | string | Stable git service profile id |
+| `transport_kind` | enum | `ssh`, `https` |
+| `remote_base` | string | Canonical remote base or remote alias root |
+
+### Optional fields
+
+- API base URL
+- web base URL
+- default namespace
+- auth mode hints
+
+## 14. ModelEndpointProfile
+
+Named inference endpoint profile.
+
+### Required fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `model_profile_id` | string | Stable model endpoint profile id |
+| `adapter_kind` | enum | `anthropic`, `openai`, `openai_compatible`, `custom` |
+| `base_url` | string | Provider or gateway base URL |
+| `secret_ref` | string | Secret reference for auth |
+
+### Optional fields
+
+- default model id
+- capability labels
+- provider notes
+
+### Semantics
+
+- keeps nodes provider-agnostic at the package layer;
+- lets different nodes bind different inference backends;
+- lets the hackathon use one shared profile without changing the canonical
+  model.
+
+## 15. NodeResourceBindings
+
+Graph-local references from a node to deployment resource profiles.
+
+### Recommended fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `relay_profile_refs` | string[] | Relay profiles usable by this node |
+| `primary_relay_profile_ref` | string or null | Preferred relay profile |
+| `git_service_refs` | string[] | Git services usable by this node |
+| `primary_git_service_ref` | string or null | Preferred git service |
+| `model_endpoint_profile_ref` | string or null | Active model endpoint profile |
+| `external_principal_refs` | string[] | External principal binding refs |
+
+### Semantics
+
+- lets nodes override graph or deployment defaults;
+- keeps raw infrastructure URLs out of node authoring where a catalog exists;
+- makes runtime resource resolution explicit and validatable.
+
+## 16. EffectiveNodeBinding
+
+Host-derived resolved binding used to materialize and run a node.
+
+### Required fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `binding_id` | string | Stable effective binding id |
+| `graph_revision_id` | string | Graph revision used to resolve the binding |
+| `node_id` | string | Bound node |
+| `package_source_id` | string | Package source used |
+| `resource_bindings` | object | Resolved resource bindings |
+| `external_principals` | object[] | Resolved principal bindings |
+| `runtime_backend_profile` | string | Runtime backend profile |
+| `workspace_layout_version` | string | Materialization layout version |
+| `projection_version` | string | Effective context format version |
+
+### Semantics
+
+- derived by the host, not hand-authored;
+- used to decide whether a node can start or must be rebound;
+- separates stable source objects from resolved runtime truth.

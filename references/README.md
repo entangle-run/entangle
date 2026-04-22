@@ -35,6 +35,15 @@ This directory is the canonical design corpus for Entangle.
 29. [28-studio-and-user-surface-spec.md](28-studio-and-user-surface-spec.md)
 30. [29-hackathon-runtime-profile.md](29-hackathon-runtime-profile.md)
 31. [30-quality-gates-and-acceptance-criteria.md](30-quality-gates-and-acceptance-criteria.md)
+32. [31-host-control-plane-and-runtime-orchestration.md](31-host-control-plane-and-runtime-orchestration.md)
+33. [32-client-surfaces-and-headless-operation.md](32-client-surfaces-and-headless-operation.md)
+34. [33-repository-and-package-topology.md](33-repository-and-package-topology.md)
+35. [34-identity-credentials-and-signing-boundaries.md](34-identity-credentials-and-signing-boundaries.md)
+36. [35-external-resource-catalog-and-bindings.md](35-external-resource-catalog-and-bindings.md)
+37. [36-host-api-and-reconciliation-spec.md](36-host-api-and-reconciliation-spec.md)
+38. [37-effective-bindings-and-runtime-context-spec.md](37-effective-bindings-and-runtime-context-spec.md)
+39. [38-engine-adapter-and-model-execution-spec.md](38-engine-adapter-and-model-execution-spec.md)
+40. [39-local-deployment-topology-and-compose-spec.md](39-local-deployment-topology-and-compose-spec.md)
 
 ## Role of this corpus
 

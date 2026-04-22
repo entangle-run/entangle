@@ -14,6 +14,7 @@ Studio is a graph-aware client and control surface. It is not the authoritative 
 Runtime truth belongs to:
 
 - graph definitions;
+- host control-plane state;
 - validators;
 - runners;
 - control-plane history;
@@ -23,7 +24,7 @@ Studio should present and manipulate that truth through bounded interfaces.
 
 ## 1. Studio roles
 
-Studio has three primary roles.
+Studio has four primary roles.
 
 ### 1. User task surface
 
@@ -37,6 +38,11 @@ Where the session trace, conversations, approvals, artifacts, and runtime subgra
 
 Where bounded graph and policy changes can be inspected, proposed, and eventually applied.
 
+### 4. Runtime administration surface
+
+Where local nodes can be admitted, started, stopped, restarted, removed, and
+inspected through the host control plane.
+
 ## 2. Non-goals
 
 Studio should not:
@@ -44,6 +50,7 @@ Studio should not:
 - invent fake runtime state;
 - bypass validator or control-plane rules;
 - directly own graph truth in ad hoc client-only state;
+- directly own container or process lifecycle logic;
 - become the only way to edit a graph if file-based workflows still exist.
 
 ## 3. Primary Studio views
@@ -100,6 +107,15 @@ Shows or supports:
 - revision comparison;
 - validation findings;
 - apply/reject workflows later.
+
+### Runtime operations view
+
+Shows or supports:
+
+- local node admission from package sources;
+- runner health and lifecycle state;
+- start, stop, and restart controls;
+- deployment errors and recovery actions.
 
 ## 4. User task initiation
 
@@ -158,7 +174,7 @@ Safe early editing scope:
 
 - labels and descriptions;
 - entrypoint selection;
-- adding or removing nodes through explicit validated flows;
+- adding or removing local package-backed nodes through explicit validated flows;
 - editing edge state or bounded policy settings;
 - preparing, validating, and reviewing topology changes.
 
@@ -181,6 +197,19 @@ It must not become the primary source of truth for:
 
 It should always be able to refresh from authoritative sources.
 
+### Host boundary rule
+
+Studio should act as the operator surface over a host control-plane service.
+
+That means:
+
+- Studio sends mutation and lifecycle intents;
+- the host validates, applies, and records the outcome;
+- Studio renders authoritative host and runtime state back to the operator.
+
+This is the preferred implementation boundary even when the entire system runs
+on one local machine.
+
 ## 10. Studio interaction with files
 
 The product should not force every configuration task into the UI.
@@ -193,6 +222,21 @@ Some edits are better left file-based, especially early:
 - some graph config files.
 
 Studio should focus on the interactions that benefit most from visual graph-aware interfaces.
+
+### Headless rule
+
+Entangle should remain usable without Studio.
+
+Studio is the preferred visual surface, but it should not be the only serious
+surface for:
+
+- runtime administration;
+- graph operations;
+- task launch;
+- inspection of applied system state.
+
+Those capabilities should also exist through a CLI or equivalent host-facing
+surface.
 
 ## 11. Multi-audience design
 
@@ -213,6 +257,8 @@ The hackathon Studio should implement a strict subset:
 - live session trace / runtime subgraph view;
 - node and edge inspection;
 - artifact list and basic opening/reference behavior;
-- at most lightweight graph editing or configuration toggles if they reflect real backend truth.
+- bounded local node admission from package folders;
+- bounded edge creation and configuration if they reflect real backend truth;
+- basic start/stop controls through the host control plane.
 
 That is enough to make the system understandable to judges without pretending the control plane is already fully built.

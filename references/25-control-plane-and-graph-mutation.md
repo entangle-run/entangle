@@ -50,6 +50,18 @@ Typical powers:
 - enable or disable edges;
 - manage entrypoints.
 
+### Local host controller
+
+The concrete local control-plane actor that applies graph revisions and manages
+runtime lifecycle on one machine.
+
+Typical powers:
+
+- materialize validated node workspaces;
+- start, stop, restart, and remove node runtimes;
+- reconcile desired graph state with observed local runtime state;
+- expose runtime and admission status back to Studio.
+
 ### Node operator
 
 The actor responsible for a specific node instance or runtime deployment.
@@ -112,6 +124,8 @@ The control plane governs at least these objects.
 - secret bindings by reference;
 - artifact backend assignments;
 - service topology bindings.
+- local runtime instance records;
+- host-managed node lifecycle state.
 
 ## 4. Mutation classes
 
@@ -262,7 +276,7 @@ The first serious mutation workflow should look like this:
 2. validator checks structural, semantic, and environment impact;
 3. authorized control actor approves or rejects when required;
 4. graph revision is produced;
-5. deployment or runtime bindings refresh where necessary;
+5. the host refreshes deployment or runtime bindings where necessary;
 6. observability surfaces record the mutation outcome.
 
 ## 12. Policy widening versus policy narrowing
@@ -308,19 +322,20 @@ Entangle Studio should eventually provide a control-plane surface for:
 - node inspection;
 - edge policy inspection;
 - bounded graph editing;
+- node admission and lifecycle controls;
 - mutation review and apply flows.
 
 It should not fake control-plane behavior that does not exist in the runtime and validator stack.
 
 ## 15. Hackathon profile
 
-The hackathon build should keep the control plane intentionally narrow:
+The hackathon build should keep the control plane intentionally narrow but real:
 
-- graph mostly static;
-- mutations primarily manual or file-based;
+- graph changes applied through the same host-mediated path that the final system will use;
+- bounded Studio flows for local node admission and edge editing are acceptable and desirable;
 - no autonomous topology mutation by agents;
-- edge and node changes applied through explicit operator edits;
-- sessions run against a static graph snapshot.
+- no hidden client-side graph truth;
+- sessions run against a static graph snapshot once started.
 
 This is acceptable because it constrains the active feature surface without corrupting the final control-plane architecture.
 

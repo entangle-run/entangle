@@ -4,7 +4,25 @@
 
 Build the minimum number of executables and the minimum number of active profiles while preserving the final conceptual architecture.
 
+## Repository stance
+
+Use one monorepo with explicit internal package boundaries.
+
+Do not split the project into multiple repositories during the hackathon or
+early product formation.
+
 ## Recommended implementation units
+
+### `entangle-host`
+
+One executable or service responsible for:
+
+- local graph revision application;
+- package admission from local sources;
+- runtime workspace materialization;
+- validator invocation before apply;
+- node lifecycle management against a runtime backend such as Docker;
+- exposing a bounded local control-plane API to Studio.
 
 ### `entangle-runner`
 
@@ -18,6 +36,15 @@ One client surface for:
 - launching work from the user node;
 - inspecting runtime traces;
 - editing limited graph structure and node configuration.
+
+### `entangle-cli`
+
+One headless client surface for:
+
+- operating the host from terminal or automation contexts;
+- inspecting graph, revision, and runtime state;
+- performing bounded node and edge operations through the same control-plane rules as Studio;
+- running validation-oriented offline operations where no host is required.
 
 ### `entangle-types`
 
@@ -36,12 +63,33 @@ Validation CLI or library for:
 - graph validation;
 - runtime binding validation;
 - transport feasibility validation.
+- deployment resource validation.
+
+### `entangle-host-client`
+
+Optional but recommended shared client package for:
+
+- Studio-to-host API bindings;
+- CLI-to-host API bindings;
+- test harness access to the host control plane.
+
+### `entangle-package-scaffold`
+
+Optional but strongly recommended package for:
+
+- generating new `AgentPackage` directory trees;
+- enforcing the package interface through scaffolding;
+- reusing the same templates from CLI and future Studio flows.
 
 ## Hackathon-first implementation profile
 
 ### Strong yes
 
 - define schemas first;
+- define the deployment resource catalog and node binding references before
+  hardcoding relay, git, or model endpoints into runtime code;
+- introduce a host/control-plane service before making Studio responsible for runtime lifecycle;
+- treat Studio as a first-class hackathon deliverable, not a late cosmetic layer;
 - implement runner with one engine adapter;
 - use git as first artifact backend;
 - implement wiki memory folder and update phase;
@@ -55,19 +103,25 @@ Validation CLI or library for:
 - do not let the model control conversation stopping alone;
 - do not collapse artifacts into chat messages;
 - do not bind the entire architecture to one engine's internal assumptions.
+- do not make Studio directly own Docker or process lifecycle logic.
 
 ## Suggested order of implementation
 
 1. define core types;
-2. define runner lifecycle;
-3. define A2A protocol;
-4. implement validator;
-5. implement local package + node execution;
-6. implement Nostr messaging;
-7. implement git artifact handoff;
-8. implement wiki update phase;
-9. implement Studio read-only graph view;
-10. implement lightweight graph editing and task launch.
+2. define deployment resource catalog and binding types;
+3. define runner lifecycle;
+4. define A2A protocol;
+5. implement validator;
+6. implement `entangle-host` and local runtime-backend abstraction;
+7. implement local package admission + node execution;
+8. implement Nostr messaging;
+9. implement git artifact handoff;
+10. implement model-endpoint adapter binding;
+11. implement wiki update phase;
+12. implement Studio graph and runtime view against host APIs;
+13. implement bounded graph editing, node admission, and runtime controls in Studio;
+14. add CLI access to the same host control-plane surfaces.
+15. add thin package scaffolding through shared scaffold utilities if scope allows.
 
 ## Definition of done for the first serious version
 
@@ -75,7 +129,8 @@ The first serious version is done when:
 
 - node packages validate;
 - graph instances validate;
-- runner can execute multiple nodes locally;
+- host can admit, bind, and manage multiple local nodes;
+- runner can execute multiple nodes locally under host control;
 - nodes exchange signed messages over Nostr;
 - at least one git-backed artifact handoff occurs;
 - user can watch the session subgraph;

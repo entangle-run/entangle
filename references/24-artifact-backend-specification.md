@@ -167,6 +167,23 @@ The first serious implementation should not depend on:
 
 Use a generic git server profile first.
 
+### Git identity and credential rule
+
+The git backend must distinguish between:
+
+- git transport authentication;
+- git API authentication when needed;
+- git author/committer attribution;
+- optional commit signing.
+
+These are related, but they are not the same surface.
+
+Entangle should keep the node's Nostr identity as the canonical internal actor
+identity while binding separate git principals and secrets for the git backend.
+
+The same raw Nostr private key should not be reused as the git transport
+credential.
+
 ## 5. Wiki backend
 
 The `wiki` backend is for durable local knowledge, structured summaries, and memory surfaces.
@@ -329,12 +346,15 @@ Examples:
 
 The system should support multiple artifact refs per work outcome.
 
-## 13. Git server assumptions
+## 13. Git service assumptions
 
-The first serious version should assume:
+The canonical model should support one or more named git services in the active
+deployment resource catalog.
 
-- one shared git service for the active graph or deployment;
-- per-node credentials or service identities;
+The first serious implementation may run against:
+
+- one shared git service for the active graph happy path;
+- per-node git principals with separate credentials or host-managed service identities;
 - repositories created and managed by an operator or future control-plane tooling;
 - generic git operations over a service like `Gitea`.
 
@@ -343,6 +363,27 @@ It should not assume:
 - platform-specific SaaS workflows;
 - PR semantics as a hard dependency;
 - internet-wide repository access.
+
+### Retrieval compatibility rule
+
+A git artifact handoff is valid only if the receiving node can reach the
+referenced git service or another explicit replication path exists.
+
+The system should not assume that every node can retrieve every git artifact
+from every git service.
+
+### Preferred git auth profile
+
+Preferred first profile:
+
+- SSH auth per node principal for normal git transport;
+- separate API token only when the control plane needs git-service API access;
+- optional SSH signing key for commit signing, treated as a separate signing
+  surface.
+
+Fallback profile:
+
+- HTTPS token for constrained environments where SSH is unavailable.
 
 ## 14. Backend capability declaration
 

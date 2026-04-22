@@ -268,11 +268,13 @@ workspaces/
     package/                 # package copy or read-only mount
     injected/
       node-instance.json
+      effective-binding.json
       graph-context.json
       peers.json
       policies.json
       relay-context.json
       artifact-context.json
+      model-context.json
       approval-context.json
     memory/
       wiki/
@@ -321,6 +323,7 @@ Minimum outputs:
 - derived runtime projection files;
 - resolved tool and artifact backend mounts;
 - effective relay configuration;
+- effective model endpoint configuration;
 - effective approval configuration.
 
 ## 10. Package source descriptor
@@ -357,9 +360,25 @@ Secret binding should be expressed as:
 Examples:
 
 - Nostr private key;
-- git credentials;
+- git transport credentials;
+- optional git signing credentials;
 - model provider tokens;
 - future storage credentials.
+
+### Secret boundary rule
+
+Secret binding must not assume that one secret is reused across unrelated
+system boundaries.
+
+In particular:
+
+- the Nostr private key is for Entangle protocol identity and event signing;
+- git transport credentials are separate secrets;
+- git commit signing keys, if enabled, are separate signing material;
+- git author or committer metadata is configuration, not secret auth material.
+
+The system should reject "one keypair for everything" assumptions during
+binding design.
 
 ## 12. Runtime-injected files
 
@@ -368,11 +387,13 @@ The runner should inject structured files into the runtime workspace instead of 
 Recommended injected files:
 
 - `node-instance.json`
+- `effective-binding.json`
 - `graph-context.json`
 - `peers.json`
 - `policies.json`
 - `relay-context.json`
 - `artifact-context.json`
+- `model-context.json`
 - `approval-context.json`
 
 These files should be considered derived, not hand-authored package truth.

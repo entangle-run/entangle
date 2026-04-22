@@ -75,6 +75,72 @@ Typical graph-local properties:
 - `approval rules`
 - `graph-local prompt addendum`
 
+## Identity surfaces
+
+An Entangle node must be understood as having more than one identity-related
+surface.
+
+### 1. Protocol identity
+
+This is the node's authoritative internal identity inside Entangle.
+
+- represented by the node's Nostr public key;
+- used for event signing and provenance;
+- stable across sessions unless the node is intentionally rekeyed.
+
+### 2. External service principals
+
+These are bindings to external systems that the node uses in order to
+collaborate or publish work.
+
+Examples:
+
+- a git user or service account on `Gitea`;
+- later storage, issue-tracker, or registry identities.
+
+These are not the same thing as the Nostr identity, even when they are
+visually derived from it.
+
+### 3. Secret-backed credentials
+
+These are concrete authentication or signing materials used against those
+external systems.
+
+Examples:
+
+- SSH private keys for git transport;
+- access tokens for HTTPS-based API or git access;
+- optional SSH signing keys for commit signing.
+
+These must remain separate from the Nostr private key.
+
+## Identity boundary rule
+
+Entangle should preserve one strong internal identity while allowing bound
+external principals.
+
+Therefore:
+
+- Nostr public key = authoritative runtime identity;
+- external principals = bound identities for specific backends;
+- credentials = secret material used by those principals;
+- commit attribution/signing = separate git-level concerns.
+
+The system should not collapse these into a single "one key for everything"
+model.
+
+## Git identity stance
+
+For git-backed collaboration, the preferred model is:
+
+- keep the node's Nostr identity as the authoritative actor identity;
+- bind the node to one git principal on the git service;
+- keep git authentication credentials separate from the Nostr private key;
+- allow git author/committer display information to be derived from the node's
+  alias and Nostr identity for human readability.
+
+This gives identity continuity without collapsing security boundaries.
+
 ## Visibility model
 
 Nodes should not automatically know the whole graph.

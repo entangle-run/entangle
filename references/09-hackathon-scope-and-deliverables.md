@@ -29,8 +29,9 @@ That means:
 ### Active graph
 
 - user node
-- supervisor/orchestrator node
-- two or three worker nodes
+- a non-trivial supervisory structure rather than one flat orchestrator-only tree
+- at least one peer relationship between subordinate nodes
+- at least one delegation path deeper than one level
 
 ### Studio surface
 
@@ -38,6 +39,8 @@ That means:
 - runtime trace view
 - task launch from the user node
 - node inspector with basic configuration
+- bounded node admission from local package folders
+- bounded edge editing and runtime controls through the local control plane
 
 ### Collaboration
 
@@ -48,7 +51,7 @@ That means:
 ## What should be intentionally left out
 
 - remote node attachment UI
-- advanced graph editor
+- advanced graph editor beyond bounded admission and policy editing
 - open marketplace semantics
 - multi-relay routing optimization
 - global trust or reputation
@@ -67,15 +70,19 @@ The hackathon build is a success if it demonstrates all of the following:
 5. at least one node updates its local wiki memory as part of execution;
 6. the runtime subgraph is visible;
 7. the user can understand who did what.
+8. the graph shown in the demo is visibly more expressive than a simple "one coordinator plus subagents" structure.
+9. the operator can perform at least one bounded control-plane action in Studio such as admitting a local node or applying an edge change through real backend validation.
 
 ## Demo recommendation
 
-Use one controlled scenario:
+Use one controlled scenario built around a visibly varied graph:
 
 - a coding or structured artifact task;
-- a supervisor delegates to a worker;
-- the worker produces a branch or commit;
-- another node reviews or continues the work;
+- the user interacts with one or more meaningful supervisory entrypoints;
+- at least one branch of the graph contains peer collaborators;
+- at least one branch of the graph contains a deeper delegation chain;
+- a worker produces a branch or commit;
+- another node reviews, continues, or critiques the work through a different relation shape;
 - the user sees messages and artifact references in real time.
 
 The runtime subset that should be treated as canonical for the hackathon build is specified more explicitly in [29-hackathon-runtime-profile.md](29-hackathon-runtime-profile.md).

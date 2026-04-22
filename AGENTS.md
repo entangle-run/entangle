@@ -13,7 +13,9 @@ It is not a chatbot wrapper and not a shallow multi-agent demo. The repository s
 - Nostr-signed messaging for coordination;
 - artifact backends for work handoff;
 - a runner per node;
-- Studio as the graph-aware user client.
+- a host control-plane service;
+- Studio as the graph-aware visual client;
+- headless-capable operation through CLI and host-facing surfaces.
 
 ## Mandatory audit loop
 
@@ -29,6 +31,7 @@ After durable repository changes:
 1. update the affected canonical files;
 2. update `wiki/index.md` if new wiki pages were added;
 3. append a meaningful entry to `wiki/log.md` when project state or design baseline changed.
+4. commit the coherent batch once the repository is internally consistent.
 
 ## Design rules
 
@@ -48,8 +51,11 @@ Current preferred stack:
 - `strfry`
 - `Gitea`
 - Docker Compose
+- one `entangle-host` control-plane service
 - one `entangle-runner` per active node
-- one `entangle-studio` control-plane client
+- one `entangle-studio` visual control client
+- one CLI-capable headless surface over the same host boundary
+- one monorepo with explicit internal package boundaries
 
 ## Repository usage rules
 
@@ -66,11 +72,17 @@ At this stage, prioritize:
 1. root repository coherence;
 2. machine-readable schemas;
 3. validator scaffolding;
-4. runner skeleton;
-5. Nostr messaging path;
-6. git artifact handoff;
-7. Docker Compose topology;
-8. Studio runtime visibility.
+4. deployment resource catalog and binding contracts;
+5. host control-plane and host API boundaries;
+6. effective runtime context for runners;
+7. runner skeleton;
+8. Nostr messaging path;
+9. git artifact handoff;
+10. engine-adapter and model-endpoint execution boundary;
+11. Docker Compose topology;
+12. Studio runtime visibility;
+13. headless CLI surface over the same host boundary;
+14. thin package scaffolding surface for `AgentPackage` creation.
 
 ## Working attitude
 

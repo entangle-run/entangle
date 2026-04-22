@@ -1,0 +1,359 @@
+# Host API and Reconciliation Specification
+
+This document defines the first serious API surface and reconciliation model for
+`entangle-host`.
+
+The goal is to make the host boundary implementable as a real control plane
+rather than a vague service placeholder.
+
+## Design rule
+
+The host API should be:
+
+- local-first;
+- explicit;
+- stable enough for Studio, CLI, and tests to build against;
+- centered on desired state, observed state, and validation-backed mutation.
+
+It must not degrade into:
+
+- UI-owned hidden actions;
+- shell-script orchestration outside the product boundary;
+- duplicated mutation logic across multiple clients.
+
+## 1. Trust boundary
+
+For the first serious implementation, the host API should be treated as a local
+operator boundary.
+
+That means:
+
+- it is not the public multi-tenant internet-facing control plane;
+- it is trusted by the local operator and local product surfaces;
+- Studio, CLI, and tests are first-class clients of the same boundary.
+
+This simplifies the first implementation without weakening the architectural
+model.
+
+## 2. Recommended transport
+
+Recommended first transport shape:
+
+- local HTTP API for request-response control operations;
+- local WebSocket stream for events, traces, health, and reconciliation status.
+
+Alternative transports such as IPC can still be viable later, but HTTP +
+WebSocket is the best first compromise because it is:
+
+- easy to inspect;
+- easy to script;
+- easy to bind from web and CLI clients;
+- compatible with a future remote-host boundary if needed.
+
+## 3. Core host-managed objects
+
+The host API should expose or operate on at least these object classes.
+
+### Deployment resource catalog
+
+The active registry of relay, git service, and model endpoint profiles.
+
+### Package source
+
+A locally admitted package origin such as a validated `local_path`.
+
+### Applied graph revision
+
+The desired graph revision and associated defaults currently chosen by the
+operator.
+
+### Applied node binding
+
+The graph-local node binding plus effective runtime and resource references.
+
+### Runtime instance
+
+The concrete runner instance for a node.
+
+### Validation run
+
+A structured set of findings produced before or during apply.
+
+### Event stream
+
+Host-side operational events, runtime status changes, and session trace events.
+
+## 4. Desired state versus observed state
+
+The host should explicitly separate:
+
+### Desired state
+
+- active deployment resource catalog version;
+- applied graph revision;
+- admitted package sources;
+- node bindings that should exist;
+- nodes that should be running.
+
+### Observed state
+
+- package sources actually present;
+- latest validation status;
+- runtime instances actually running;
+- container or process health;
+- effective revision and binding currently mounted in each runtime;
+- last known runtime errors.
+
+Reconciliation is the process of converging observed state toward desired state.
+
+## 5. Reconciliation loop
+
+The host should run a continuous reconciliation loop.
+
+Recommended stages:
+
+1. load desired state;
+2. inspect current observed state;
+3. detect drift;
+4. compute required actions;
+5. apply actions in dependency order;
+6. emit structured events;
+7. repeat or await the next mutation trigger.
+
+### Typical drift classes
+
+- node should be running but no runtime exists;
+- runtime exists with stale graph revision;
+- runtime exists with stale resource bindings;
+- package source is missing or invalid after admission;
+- resource profile changed and dependent nodes need restart or rebind;
+- runtime failed repeatedly and is now degraded.
+
+## 6. Mutation contract
+
+Every serious host mutation should follow the same pattern:
+
+1. receive request;
+2. normalize request;
+3. validate request and affected objects;
+4. reject or accept explicitly;
+5. if accepted, write a new desired-state revision;
+6. trigger reconciliation;
+7. emit mutation and reconciliation events.
+
+This applies to:
+
+- node admission;
+- edge creation and edit;
+- graph default changes;
+- deployment resource catalog changes;
+- runtime lifecycle requests.
+
+## 7. API design stance
+
+The API should be resource-oriented and explicit rather than RPC-shaped around
+UI gestures.
+
+That means clients should talk in terms of:
+
+- package sources;
+- graph revisions;
+- node bindings;
+- runtimes;
+- validations;
+- events.
+
+The host may still expose action endpoints where needed, but those actions
+should be grounded in these resources.
+
+## 8. Recommended HTTP surface
+
+The exact route names may evolve, but the first serious API should cover at
+least the following surfaces.
+
+### 8.1 Catalog
+
+- `GET /v1/catalog`
+- `PUT /v1/catalog`
+- `POST /v1/catalog/validate`
+
+Purpose:
+
+- inspect and update the deployment resource catalog;
+- validate relay, git service, and model endpoint profiles before apply.
+
+### 8.2 Package sources
+
+- `GET /v1/package-sources`
+- `POST /v1/package-sources/admit`
+- `GET /v1/package-sources/{packageSourceId}`
+- `DELETE /v1/package-sources/{packageSourceId}`
+
+Purpose:
+
+- admit local package folders;
+- inspect normalized package metadata;
+- remove unused package sources.
+
+### 8.3 Graph and revision state
+
+- `GET /v1/graph`
+- `GET /v1/graph/revisions`
+- `GET /v1/graph/revisions/{revisionId}`
+- `POST /v1/graph/validate`
+
+Purpose:
+
+- inspect current desired graph;
+- inspect revision history;
+- validate proposed graph mutations.
+
+### 8.4 Node bindings
+
+- `GET /v1/nodes`
+- `POST /v1/nodes`
+- `GET /v1/nodes/{nodeId}`
+- `PATCH /v1/nodes/{nodeId}`
+- `DELETE /v1/nodes/{nodeId}`
+
+Purpose:
+
+- create or update graph-local node bindings;
+- bind packages, resources, and principals to nodes.
+
+### 8.5 Edges
+
+- `GET /v1/edges`
+- `POST /v1/edges`
+- `PATCH /v1/edges/{edgeId}`
+- `DELETE /v1/edges/{edgeId}`
+
+Purpose:
+
+- manage topology and policy edges with full validation.
+
+### 8.6 Runtime lifecycle
+
+- `GET /v1/runtimes`
+- `GET /v1/runtimes/{nodeId}`
+- `POST /v1/runtimes/{nodeId}/start`
+- `POST /v1/runtimes/{nodeId}/stop`
+- `POST /v1/runtimes/{nodeId}/restart`
+- `DELETE /v1/runtimes/{nodeId}`
+
+Purpose:
+
+- inspect and influence runner lifecycle without bypassing desired-state truth.
+
+### 8.7 Validation and dry-run
+
+- `POST /v1/validate/package`
+- `POST /v1/validate/graph`
+- `POST /v1/validate/binding`
+- `POST /v1/validate/deployment`
+
+Purpose:
+
+- enable Studio, CLI, and CI-like flows to validate without mutating state.
+
+### 8.8 Session and trace inspection
+
+- `GET /v1/sessions`
+- `GET /v1/sessions/{sessionId}`
+- `GET /v1/sessions/{sessionId}/trace`
+
+Purpose:
+
+- inspect current or historical runtime sessions in a stable way.
+
+## 9. Recommended WebSocket event stream
+
+Recommended stream:
+
+- `GET /v1/events` upgraded to WebSocket
+
+Event classes should include at least:
+
+- `catalog.updated`
+- `package_source.admitted`
+- `validation.completed`
+- `graph.revision.applied`
+- `node.binding.updated`
+- `runtime.state.changed`
+- `runtime.health.changed`
+- `session.trace.event`
+- `host.reconciliation.started`
+- `host.reconciliation.completed`
+- `host.reconciliation.failed`
+
+The event payloads should carry:
+
+- stable ids;
+- timestamps;
+- revision references;
+- node or session references when relevant;
+- machine-readable state deltas where appropriate.
+
+## 10. Idempotency and concurrency stance
+
+The first implementation does not need distributed transactions, but it should
+still be disciplined.
+
+Recommended rules:
+
+- resource updates should replace whole normalized objects or use explicit
+  patches;
+- write requests should accept an optional precondition such as the expected
+  current revision id;
+- repeated lifecycle actions such as `start` or `stop` should be idempotent
+  where practical;
+- failed mutations must not leave graph truth half-written.
+
+## 11. Validation-before-apply rule
+
+The host should never mutate desired graph or node state blindly.
+
+Every mutation that can affect runtime behavior should pass through:
+
+- shape validation;
+- referential validation;
+- semantic validation;
+- environment validation.
+
+If validation fails:
+
+- the mutation should be rejected;
+- findings should be returned to the caller;
+- no partial desired-state write should occur.
+
+## 12. Hackathon API subset
+
+The hackathon does not need the full surface above, but it should preserve the
+same conceptual boundary.
+
+Recommended minimum subset:
+
+- inspect current graph and runtimes;
+- admit a local package source;
+- add or update a node binding;
+- add or update an edge;
+- start, stop, or restart a node runtime;
+- retrieve validation findings;
+- subscribe to runtime and session events.
+
+This is enough for:
+
+- Studio as a real admin surface;
+- a thin CLI if included;
+- no frontend-only hidden control paths.
+
+## 13. Rejected anti-patterns
+
+Reject these directions:
+
+- host API that directly mirrors UI widgets instead of system resources;
+- mutation paths that skip validation because the caller is "trusted";
+- lifecycle actions that mutate runtime state without updating desired state;
+- a trace surface only available through browser memory instead of the host;
+- treating reconciliation as optional background behavior instead of a core host
+  responsibility.

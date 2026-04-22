@@ -21,11 +21,13 @@ The hackathon runtime should prove, end to end, that:
 
 ## 2. Graph scope
 
-Recommended graph size:
+Recommended graph size and shape:
 
 - one user node;
-- one entrypoint or supervisor node;
-- two or three worker/specialist nodes.
+- four to six non-user nodes is a strong target;
+- one or two entrypoint or supervisor nodes;
+- at least one branch with peer-level collaborators;
+- at least one branch with delegation depth greater than one edge.
 
 Recommended edge subset:
 
@@ -33,8 +35,13 @@ Recommended edge subset:
 - `reviews`
 - `consults`
 - `reports_to`
+- `peer_collaborates_with`
 
 The graph should be static during the demo except for bounded operator-edited changes if mutation support exists.
+
+The key design rule for the hackathon graph is:
+
+> do not demo Entangle as a disguised orchestrator tree if the point is to show graph-native organizational structure.
 
 ## 3. Node scope
 
@@ -66,6 +73,9 @@ Recommended transport profile:
 - private messaging patterns over the chosen Nostr stack;
 - no multi-relay routing optimization.
 
+This is the minimum deployment profile, not the canonical model. The full model
+must still support per-node relay-profile differences.
+
 ## 6. Artifact backend scope
 
 Required:
@@ -83,12 +93,17 @@ Not required:
 - issue-tracker backends;
 - remote registry-backed artifact surfaces.
 
+The hackathon should use one shared git service profile for the active graph,
+but the canonical model must still allow multiple named git services in the
+deployment catalog.
+
 ## 7. Control-plane scope
 
-The hackathon control plane should be intentionally narrow:
+The hackathon control plane should be intentionally narrow but real:
 
-- static graph revision for the main flow;
-- file-based or explicit operator-applied configuration changes;
+- one local host service should own applied graph truth and runtime lifecycle;
+- bounded Studio flows for local node admission and edge editing are desirable;
+- static graph revision for the core happy-path demo is still acceptable;
 - no autonomous topology mutation by agents;
 - no complex multi-user governance UI required.
 
@@ -129,36 +144,88 @@ The hackathon runtime should use:
 - per-node isolated state;
 - real file/tool/git operations.
 
+It should also use:
+
+- one shared model endpoint profile for the demo deployment.
+
+Recommended first adapter choice:
+
+- `anthropic` when direct Claude access is available
+
 It should not require:
 
 - a separate full product shell per node;
 - heterogeneous engines in the first demo.
+
+This is a deployment restriction, not a canonical model restriction. The full
+model must still allow different nodes to bind different model endpoint
+profiles.
 
 ## 11. Deployment scope
 
 Recommended services:
 
 - `entangle-studio`
-- one or more `entangle-runner` instances or configs
+- `entangle-host`
 - `strfry`
 - `Gitea`
+- one or more `entangle-runner` containers managed by the host
 
 Recommended deployment mode:
 
 - local Docker Compose for the demo environment.
+
+Recommended deployment resources:
+
+- one relay profile shared by all active nodes;
+- one git service profile shared by all active nodes;
+- one model endpoint profile shared by all active nodes.
 
 ## 12. Demo-critical behaviors
 
 The hackathon runtime should reliably demonstrate:
 
 - user task submission;
-- entrypoint acceptance;
-- delegation to a worker;
+- entrypoint acceptance through a meaningful organizational surface;
+- at least one delegation path through more than one level of the graph;
+- at least one peer-level collaboration or consultation path;
 - at least one git-backed artifact creation or handoff;
 - review or consultation by another node;
+- at least one host-mediated local control-plane action through Studio, such as node admission or edge mutation;
 - final session outcome visible in Studio.
 
-## 13. Explicit non-goals for the hackathon profile
+## 13. Recommended demo topologies
+
+The hackathon should prefer a graph that looks like an organization rather than a flat agent tree.
+
+Two especially good patterns are:
+
+### Pattern A: two departmental leads
+
+- user node at the top;
+- two supervisory nodes such as `it-lead` and `marketing-lead`;
+- the IT branch contains two peer contributors working at the same level;
+- the marketing branch contains a deeper chain where one subordinate delegates further downward.
+
+This demonstrates:
+
+- multiple entrypoint-worthy nodes;
+- parallel departments;
+- peer collaboration;
+- hierarchical depth.
+
+### Pattern B: one visible coordinator with heterogeneous substructure
+
+- one main coordinator or supervisor;
+- one branch with two peer workers;
+- one branch with a subordinate that itself delegates to another node.
+
+This demonstrates:
+
+- one obvious user-facing coordinator;
+- peer collaboration and deeper delegation coexisting in the same graph.
+
+## 14. Explicit non-goals for the hackathon profile
 
 Do not require:
 
@@ -172,11 +239,11 @@ Do not require:
 
 These are product roadmap items, not blockers to proving the architecture.
 
-## 14. Success condition
+## 15. Success condition
 
 The hackathon runtime profile is successful if:
 
 - the runtime uses the real core contracts;
 - the supported subset is explicit;
-- the demo shows real distributed coordination and real artifact flow;
+- the demo shows real distributed coordination, real artifact flow, and a visibly non-flat organizational graph;
 - post-hackathon expansion can happen by widening support, not rewriting foundations.

@@ -8,7 +8,8 @@ Use a TypeScript-first stack for the application layer, a standard relay impleme
 
 That means:
 
-- TypeScript for shared schemas, Studio, and runner logic;
+- TypeScript for shared schemas, Studio, host, and runner logic;
+- a TypeScript host/control-plane service for local runtime management;
 - `@nostr/tools` as the primary Nostr library;
 - `strfry` as the first relay implementation;
 - `Gitea` as the first git server;
@@ -50,6 +51,24 @@ Recommended libraries:
 - TypeScript types generated or maintained alongside the canonical schemas;
 - optional JSON Schema export later for cross-language validation.
 
+## Model provider integration layer
+
+Recommended first stance:
+
+- keep an internal engine-adapter boundary owned by Entangle;
+- use provider SDKs or wrappers underneath that boundary rather than exposing
+  provider-native types to the runner;
+- strongly consider Vercel AI SDK provider packages or equivalent wrappers where
+  they reduce integration cost without becoming product-facing types.
+
+Recommended first operational adapter:
+
+- `anthropic`
+
+Recommended second adapter once the boundary is stable:
+
+- `openai_compatible`
+
 ## Studio stack
 
 Recommended shape:
@@ -73,6 +92,26 @@ Recommended shape:
 - Nostr subscriptions/publication through `nostr-tools`
 
 The runner should be the universal execution boundary for a node.
+
+## Host control stack
+
+Recommended shape:
+
+- TypeScript host service (`entangle-host`);
+- local control-plane API consumed by Studio;
+- desired-state reconciler for active node runtimes;
+- runtime-backend abstraction with Docker as the first backend.
+
+The host should be the place where:
+
+- local package paths are admitted and validated;
+- deployment resource profiles for relay, git, and model endpoints are resolved;
+- node bindings are created;
+- runtime projections are materialized;
+- runner containers or processes are managed.
+
+Studio should feel like the administrator of the graph, but the host should own
+the actual orchestration logic.
 
 ## Nostr protocol stack
 
@@ -140,6 +179,20 @@ Why:
 
 Entangle should integrate with a git server. It should not try to become one.
 
+### Git identity recommendation
+
+Treat git identity as a bound external principal, not as the same raw key
+material as the node's Nostr identity.
+
+Recommended first profile:
+
+- one git principal per active node where feasible;
+- SSH auth for normal fetch/pull/push;
+- separate token-based auth only for host-side API automation where necessary;
+- optional separate SSH signing key for commit signing;
+- git author/committer metadata derived from node alias and Nostr identity only
+  at the attribution layer, not by reusing the same private key.
+
 ## Containerization
 
 Yes, containerization makes sense.
@@ -149,9 +202,10 @@ Not because Docker is fashionable, but because the product has natural runtime b
 ### Recommended containers
 
 - `entangle-studio`
-- one `entangle-runner` per active node
+- `entangle-host`
 - `strfry`
 - `gitea`
+- one `entangle-runner` container per active node, created and managed by the host
 
 Optional later:
 
@@ -173,9 +227,28 @@ For the hackathon:
 - one relay service
 - one git service
 - one Studio service
-- multiple runner services
+- one host service
+- dynamic runner containers created by the host
 
 This is enough to demonstrate that the graph is not a UI fiction.
+
+The compose stack should be treated as a reference deployment profile, not as
+the only valid runtime environment Entangle can support.
+
+## Package and workspace mounting stance
+
+The first implementation should not mount a selected package folder as a fully
+mutable node root.
+
+Preferred local node materialization:
+
+- package source mounted read-only into the runtime boundary;
+- node-local memory and workspace mounted as writable volumes;
+- injected binding and policy files generated into a dedicated writable runtime surface;
+- secrets mounted or injected separately from package content.
+
+This preserves the portability of `AgentPackage` and prevents the graph-specific
+runtime from mutating the portable source package by accident.
 
 ## What not to overbuild yet
 
@@ -196,6 +269,7 @@ If implementation started now, the most sensible stack would be:
 - `@nostr/tools`
 - `strfry`
 - `Gitea`
+- `entangle-host`
 - Docker Compose
 - React-based Studio
 - TypeScript-based runners

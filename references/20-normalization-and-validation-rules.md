@@ -67,6 +67,8 @@ Checks:
 - relay endpoints are syntactically valid;
 - configured transports are realizable;
 - artifact mounts or git remotes exist in the chosen deployment profile.
+- referenced model endpoint profiles exist and are usable in the chosen
+  deployment profile.
 
 This layer answers:
 
@@ -150,6 +152,17 @@ Relay URLs should be normalized by:
 - sorting deterministically when order is not semantically meaningful.
 
 The validator should reject obviously invalid relay URLs.
+
+### 3b. External resource references
+
+Resource references should normalize to stable ids rather than ad hoc inline URL
+duplicates whenever the system is operating against a deployment catalog.
+
+Recommended canonical stored form:
+
+- node or graph references named relay profile ids;
+- node or graph references named git service ids;
+- node or graph references named model endpoint profile ids.
 
 ### 4. Relative file paths
 

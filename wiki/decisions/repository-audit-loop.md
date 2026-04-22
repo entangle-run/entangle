@@ -2,7 +2,7 @@
 
 ## Decision
 
-Every substantial interaction with the Entangle repository must begin with a repository audit pass and must end with corpus updates if durable state changed.
+Every substantial interaction with the Entangle repository must begin with a repository audit pass and must end with corpus updates and a coherent commit if durable state changed.
 
 ## Rationale
 
@@ -36,6 +36,7 @@ Rejected because the whole point of the current phase is to make the design base
 - stale project-status statements should be corrected as soon as they are detected;
 - durable state changes should be written back into the corpus in the same turn;
 - the wiki log should record meaningful repository-state changes, not just architectural ideas.
+- once the repository is coherent again, the resulting batch should be committed instead of being left suspended indefinitely.
 
 ## Status
 

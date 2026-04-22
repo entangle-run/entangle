@@ -83,3 +83,39 @@ Added a deeper operational specification layer covering the on-disk AgentPackage
 ## [2026-04-22] specification | Added observability, Studio, hackathon-profile, and phase-gate specs
 
 Extended the corpus again to cover trace and observability requirements, the responsibilities of Entangle Studio as a truthful graph-aware client, the exact hackathon runtime profile as a restricted subset of the full architecture, and the quality gates that define when the project is actually ready to move from specification into architecture and implementation decisions.
+
+## [2026-04-22] specification | Clarified that the hackathon graph should be visibly non-flat
+
+Adjusted the hackathon-facing documents so the demo is no longer framed as a simple entrypoint-plus-workers tree. The preferred hackathon graph should now show a more expressive organizational structure, such as multiple supervisory branches, peer collaborators, and at least one deeper delegation chain.
+
+## [2026-04-22] decision | Split Studio from local runtime orchestration through a host control-plane service
+
+Clarified that Studio should be the operator-facing graph and runtime administration surface, but should not directly own Docker or process lifecycle logic. Added a concrete `entangle-host` architectural role to own applied local graph state, package admission, runtime materialization, and local runner lifecycle while preserving Studio as the most convenient user-facing control surface.
+
+## [2026-04-22] decision | Made headless operation a first-class architectural requirement
+
+Clarified that Entangle should remain operable without the visual frontend. Studio is the preferred graph-aware surface, but CLI and automation should use the same host control-plane boundary rather than introducing separate privileged paths or making the frontend the only serious way to operate the system.
+
+## [2026-04-22] decision | Chose a monorepo-first topology with thin CLI and package scaffolding
+
+Clarified that Entangle should remain a single monorepo through the hackathon and early product phase, with explicit internal package boundaries rather than multiple repositories. Also recorded that Studio is a core hackathon deliverable, while CLI and package scaffolding are worthwhile if they remain thin surfaces over shared host, validator, and scaffold packages rather than turning into separate parallel products.
+
+## [2026-04-22] decision | Separated Nostr identity from git credentials and signing surfaces
+
+Clarified that a node's Nostr keypair is the authoritative Entangle protocol identity, but should not be reused directly as the git transport credential. Recorded a stronger identity model where external git principals, transport secrets, commit attribution, and optional commit-signing material are related but distinct surfaces.
+
+## [2026-04-22] decision | Made relay, git service, and model endpoint resources deployment-scoped and bindable
+
+Clarified that Entangle must not hardcode one relay, one git server, or one model endpoint as product truth. Recorded a stronger model where the host owns a deployment-scoped resource catalog, graphs may define defaults, nodes may bind different resource profiles, and the hackathon uses the restricted case of one shared relay profile, one shared git service profile, and one shared model profile.
+
+## [2026-04-22] specification | Added host API, reconciliation, and effective runtime context contracts
+
+Extended the corpus from architectural roles into explicit implementation-facing contracts for the host control plane and the runner boundary. Specified a first serious host API shape, desired-versus-observed state reconciliation, and the effective binding/runtime context model that resolves graph, resource, and secret inputs before a runner starts.
+
+## [2026-04-22] specification | Added engine-adapter and local deployment topology contracts
+
+Extended the corpus again to clarify the provider-facing side of the runner and the local deployment profile. Recorded an internal engine-adapter boundary for model execution, a recommended first operational `anthropic` adapter for the hackathon, and a Compose-based local topology where stable services are booted statically while runner containers are created dynamically by the host.
+
+## [2026-04-22] decision | Made coherent commits part of the standard repository loop
+
+Clarified that audit and documentation updates are not enough on their own. After each substantial interaction that leaves durable repository changes, the batch should be committed once the repository is internally consistent, so the working baseline is not left suspended in an uncommitted state.
