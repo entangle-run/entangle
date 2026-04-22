@@ -1,11 +1,87 @@
 import { z } from "zod";
-import { identifierSchema } from "../common/primitives.js";
+import {
+  filesystemPathSchema,
+  identifierSchema,
+  nonEmptyStringSchema
+} from "../common/primitives.js";
 
-export const artifactRefSchema = z.object({
+export const artifactBackendSchema = z.enum(["git", "wiki", "local_file"]);
+
+export const artifactKindSchema = z.enum([
+  "branch",
+  "commit",
+  "patch",
+  "report_file",
+  "wiki_page",
+  "knowledge_summary",
+  "local_output"
+]);
+
+export const artifactLifecycleStateSchema = z.enum([
+  "declared",
+  "materialized",
+  "published",
+  "superseded",
+  "rejected",
+  "failed"
+]);
+
+const artifactRefBaseSchema = z.object({
   artifactId: identifierSchema,
-  backend: z.enum(["git", "wiki", "local_file"]),
-  locator: z.record(z.string(), z.unknown()),
-  preferred: z.boolean().default(true)
+  artifactKind: artifactKindSchema.optional(),
+  contentSummary: nonEmptyStringSchema.optional(),
+  conversationId: identifierSchema.optional(),
+  createdByNodeId: identifierSchema.optional(),
+  preferred: z.boolean().default(true),
+  sessionId: identifierSchema.optional(),
+  status: artifactLifecycleStateSchema.optional()
 });
 
+export const gitArtifactLocatorSchema = z.object({
+  branch: nonEmptyStringSchema,
+  commit: nonEmptyStringSchema,
+  gitServiceRef: identifierSchema.optional(),
+  namespace: identifierSchema.optional(),
+  path: nonEmptyStringSchema,
+  repoPath: filesystemPathSchema
+});
+
+export const wikiArtifactLocatorSchema = z.object({
+  nodeId: identifierSchema,
+  path: filesystemPathSchema
+});
+
+export const localFileArtifactLocatorSchema = z.object({
+  path: filesystemPathSchema
+});
+
+export const artifactRefSchema = z.discriminatedUnion("backend", [
+  artifactRefBaseSchema.extend({
+    backend: z.literal("git"),
+    locator: gitArtifactLocatorSchema
+  }),
+  artifactRefBaseSchema.extend({
+    backend: z.literal("wiki"),
+    locator: wikiArtifactLocatorSchema
+  }),
+  artifactRefBaseSchema.extend({
+    backend: z.literal("local_file"),
+    locator: localFileArtifactLocatorSchema
+  })
+]);
+
+export const artifactRecordSchema = z.object({
+  createdAt: nonEmptyStringSchema,
+  ref: artifactRefSchema,
+  turnId: identifierSchema.optional(),
+  updatedAt: nonEmptyStringSchema
+});
+
+export type ArtifactBackend = z.infer<typeof artifactBackendSchema>;
+export type ArtifactKind = z.infer<typeof artifactKindSchema>;
+export type ArtifactLifecycleState = z.infer<typeof artifactLifecycleStateSchema>;
+export type GitArtifactLocator = z.infer<typeof gitArtifactLocatorSchema>;
+export type WikiArtifactLocator = z.infer<typeof wikiArtifactLocatorSchema>;
+export type LocalFileArtifactLocator = z.infer<typeof localFileArtifactLocatorSchema>;
 export type ArtifactRef = z.infer<typeof artifactRefSchema>;
+export type ArtifactRecord = z.infer<typeof artifactRecordSchema>;

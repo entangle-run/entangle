@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-22] implementation | Added git-backed runner artifacts and host runtime artifact inspection
+
+Extended the runner from pure lifecycle persistence into the first durable
+artifact slice. Added structured artifact contracts and artifact records,
+linked produced artifact ids into session, conversation, and turn state,
+materialized markdown turn reports in a runner-local git repository with real
+commits, propagated produced artifact refs into outbound `task.result`
+messages, and exposed persisted runtime artifacts through a new host read
+surface plus matching host-client coverage. Revalidated the batch with runner,
+host, host-client, and contract tests plus a full `pnpm verify`.
+
 ## [2026-04-22] implementation | Hardened the local Docker image topology for host, runner, and Studio
 
 Refined the local image profile so it no longer depends on implicit toolchain

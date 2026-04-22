@@ -83,4 +83,56 @@ describe("createHostClient", () => {
       "Host request failed with 409 [conflict]: Runtime 'worker-it' has no effective model endpoint."
     );
   });
+
+  it("parses runtime artifact lists from the host surface", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifacts: [
+                {
+                  createdAt: "2026-04-22T00:00:00.000Z",
+                  ref: {
+                    artifactId: "report-turn-001",
+                    artifactKind: "report_file",
+                    backend: "git",
+                    contentSummary: "Turn report",
+                    conversationId: "conv-alpha",
+                    createdByNodeId: "worker-it",
+                    locator: {
+                      branch: "worker-it/session-alpha/review-patch",
+                      commit: "abc123",
+                      gitServiceRef: "local-gitea",
+                      namespace: "team-alpha",
+                      path: "reports/session-alpha/turn-001.md",
+                      repoPath: "/tmp/entangle-runner/workspace"
+                    },
+                    preferred: true,
+                    sessionId: "session-alpha",
+                    status: "materialized"
+                  },
+                  turnId: "turn-001",
+                  updatedAt: "2026-04-22T00:00:00.000Z"
+                }
+              ]
+            }),
+            ok: true,
+            status: 200
+          })
+        )
+    });
+
+    await expect(client.listRuntimeArtifacts("worker-it")).resolves.toMatchObject({
+      artifacts: [
+        {
+          ref: {
+            artifactId: "report-turn-001",
+            backend: "git"
+          }
+        }
+      ]
+    });
+  });
 });

@@ -308,10 +308,11 @@ Artifacts are durable work products, not just side effects.
 ### Canonical lifecycle
 
 - `declared`
-- `materializing`
-- `available`
+- `materialized`
+- `published`
 - `superseded`
-- `unreachable`
+- `rejected`
+- `failed`
 
 ### Meaning
 
@@ -319,30 +320,41 @@ Artifacts are durable work products, not just side effects.
 
 The system has created an artifact intention or reference placeholder, but the durable work product is not yet confirmed.
 
-#### `materializing`
+#### `materialized`
 
-The backend operation is in progress, such as:
+The backend operation completed successfully enough to create a durable local or
+backend-specific work product, such as:
 
 - writing a wiki page;
 - creating a branch;
-- pushing a commit;
-- creating a file.
+- committing a report file;
+- creating a file-backed output.
 
-#### `available`
+The artifact may still be local-only at this stage.
 
-The artifact is retrievable at its locator.
+#### `published`
+
+The artifact has been published or otherwise made retrievable according to the
+relevant backend policy.
 
 #### `superseded`
 
 The artifact remains historically valid but is no longer the preferred live output.
 
-#### `unreachable`
+#### `rejected`
 
-The locator no longer resolves or the backend is unavailable.
+The candidate artifact was explicitly rejected as a valid work product or
+publication outcome.
+
+#### `failed`
+
+Materialization or publication failed and the artifact record remains useful
+only for diagnostics or retry logic.
 
 ### Rule
 
-Messages should prefer referencing `available` artifacts, not speculative ones.
+Messages should prefer referencing `materialized` or `published` artifacts, not
+speculative placeholders.
 
 ## 6. Response and stop conditions
 

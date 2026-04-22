@@ -2,24 +2,26 @@ import {
   catalogInspectionResponseSchema,
   graphInspectionResponseSchema,
   graphMutationResponseSchema,
-  runtimeContextInspectionResponseSchema,
-  runtimeInspectionResponseSchema,
-  runtimeListResponseSchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeArtifactListResponseSchema,
+  runtimeContextInspectionResponseSchema,
+  runtimeInspectionResponseSchema,
+  runtimeListResponseSchema,
   type CatalogInspectionResponse,
   type GraphInspectionResponse,
   type GraphMutationResponse,
-  type RuntimeContextInspectionResponse,
-  type RuntimeInspectionResponse,
-  type RuntimeListResponse,
   type HostStatusResponse,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
+  type RuntimeArtifactListResponse,
+  type RuntimeContextInspectionResponse,
+  type RuntimeInspectionResponse,
+  type RuntimeListResponse,
 } from "@entangle/types";
 
 type FetchResponse = {
@@ -227,6 +229,13 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/context`),
         runtimeContextInspectionResponseSchema
+      );
+    },
+
+    async listRuntimeArtifacts(nodeId: string): Promise<RuntimeArtifactListResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/artifacts`),
+        runtimeArtifactListResponseSchema
       );
     },
 

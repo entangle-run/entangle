@@ -1,10 +1,13 @@
-import { readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { sessionRecordSchema } from "@entangle/types";
 import { loadRuntimeContext } from "./runtime-context.js";
 import { RunnerService } from "./service.js";
 import {
   buildRunnerStatePaths,
+  listArtifactRecords,
   readConversationRecord,
   readRunnerTurnRecord,
   readSessionRecord
@@ -55,16 +58,59 @@ describe("RunnerService", () => {
       await readSessionRecord(statePaths, "session-alpha")
     );
     const conversationRecord = await readConversationRecord(statePaths, "conv-alpha");
+    const artifactRecords = await listArtifactRecords(statePaths);
     const turnIds = publishedEnvelopes
       .filter((envelope) => envelope.message.fromNodeId === "worker-it")
       .map((envelope) => envelope.message.turnId);
+    const [turnRecordFile] = await readdir(statePaths.turnsRoot);
+    const turnRecord = turnRecordFile
+      ? await readRunnerTurnRecord(statePaths, turnRecordFile.replace(/\.json$/, ""))
+      : undefined;
 
     expect(sessionRecord.status).toBe("completed");
     expect(sessionRecord.lastMessageType).toBe("task.result");
+    expect(sessionRecord.rootArtifactIds).toHaveLength(1);
     expect(conversationRecord?.status).toBe("closed");
+    expect(conversationRecord?.artifactIds).toEqual(sessionRecord.rootArtifactIds);
     expect(conversationRecord?.lastOutboundMessageId).toBe(responseEnvelope?.eventId);
     expect(conversationRecord?.followupCount).toBe(1);
     expect(turnIds).toHaveLength(1);
+    expect(turnRecord?.producedArtifactIds).toEqual(sessionRecord.rootArtifactIds);
+    expect(artifactRecords).toHaveLength(1);
+    const artifactRecord = artifactRecords[0];
+    if (!artifactRecord || artifactRecord.ref.backend !== "git") {
+      throw new Error("Expected a git-backed artifact record.");
+    }
+
+    expect(responseEnvelope?.message.work.artifactRefs).toEqual(
+      expect.arrayContaining([artifactRecord.ref])
+    );
+    expect(artifactRecord.ref.backend).toBe("git");
+    expect(artifactRecord.ref.artifactKind).toBe("report_file");
+    expect(artifactRecord.ref.status).toBe("materialized");
+
+    const reportAbsolutePath = path.join(
+      runtimeContext.workspace.artifactWorkspaceRoot,
+      artifactRecord.ref.locator.path
+    );
+    const reportContent = await readFile(reportAbsolutePath, "utf8");
+    expect(reportContent).toContain("## Inbound Summary");
+    expect(reportContent).toContain("Review the parser patch and summarize blocking issues.");
+
+    const gitDirectoryStats = await stat(
+      path.join(runtimeContext.workspace.artifactWorkspaceRoot, ".git")
+    );
+    expect(gitDirectoryStats.isDirectory()).toBe(true);
+
+    const headCommit = spawnSync(
+      "git",
+      ["-C", runtimeContext.workspace.artifactWorkspaceRoot, "rev-parse", "HEAD"],
+      {
+        encoding: "utf8"
+      }
+    );
+    expect(headCommit.status).toBe(0);
+    expect(headCommit.stdout.trim()).toBe(artifactRecord.ref.locator.commit);
 
     await service.stop();
   });
@@ -99,14 +145,23 @@ describe("RunnerService", () => {
     const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
     const sessionRecord = await readSessionRecord(statePaths, "session-alpha");
     const conversationRecord = await readConversationRecord(statePaths, "conv-alpha");
+    const artifactRecords = await listArtifactRecords(statePaths);
     const [turnRecordFile] = await readdir(statePaths.turnsRoot);
     const turnRecord = turnRecordFile
       ? await readRunnerTurnRecord(statePaths, turnRecordFile.replace(/\.json$/, ""))
       : undefined;
 
     expect(sessionRecord?.status).toBe("completed");
+    expect(sessionRecord?.rootArtifactIds).toHaveLength(1);
     expect(conversationRecord?.status).toBe("closed");
+    expect(conversationRecord?.artifactIds).toEqual(sessionRecord?.rootArtifactIds);
     expect(turnRecord?.phase).toBe("persisting");
+    expect(turnRecord?.producedArtifactIds).toEqual(sessionRecord?.rootArtifactIds);
+    expect(artifactRecords).toHaveLength(1);
+    if (!artifactRecords[0]) {
+      throw new Error("Expected an artifact record for the persisted turn.");
+    }
+    expect(artifactRecords[0].ref.backend).toBe("git");
   });
 
   it("ignores envelopes addressed to another node id", async () => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { artifactRecordSchema } from "../artifacts/artifact-ref.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
 import {
@@ -32,7 +33,12 @@ export const runtimeIntentMutationRequestSchema = z.object({
 
 export const runtimeContextInspectionResponseSchema = effectiveRuntimeContextSchema;
 
+export const runtimeArtifactListResponseSchema = z.object({
+  artifacts: z.array(artifactRecordSchema)
+});
+
 export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponseSchema>;
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;
 export type RuntimeContextInspectionResponse = z.infer<typeof runtimeContextInspectionResponseSchema>;
+export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResponseSchema>;

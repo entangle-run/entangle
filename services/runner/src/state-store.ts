@@ -1,12 +1,14 @@
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
+  ArtifactRecord,
   ApprovalRecord,
   ConversationRecord,
   RunnerTurnRecord,
   SessionRecord
 } from "@entangle/types";
 import {
+  artifactRecordSchema,
   approvalRecordSchema,
   conversationRecordSchema,
   runnerTurnRecordSchema,
@@ -15,6 +17,7 @@ import {
 
 export type RunnerStatePaths = {
   approvalsRoot: string;
+  artifactsRoot: string;
   conversationsRoot: string;
   sessionsRoot: string;
   turnsRoot: string;
@@ -45,6 +48,7 @@ async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
 export function buildRunnerStatePaths(runtimeRoot: string): RunnerStatePaths {
   return {
     approvalsRoot: path.join(runtimeRoot, "approvals"),
+    artifactsRoot: path.join(runtimeRoot, "artifacts"),
     conversationsRoot: path.join(runtimeRoot, "conversations"),
     sessionsRoot: path.join(runtimeRoot, "sessions"),
     turnsRoot: path.join(runtimeRoot, "turns")
@@ -58,6 +62,7 @@ export async function ensureRunnerStatePaths(
 
   await Promise.all([
     ensureDirectory(statePaths.approvalsRoot),
+    ensureDirectory(statePaths.artifactsRoot),
     ensureDirectory(statePaths.conversationsRoot),
     ensureDirectory(statePaths.sessionsRoot),
     ensureDirectory(statePaths.turnsRoot)
@@ -82,6 +87,13 @@ function approvalRecordPath(
   approvalId: string
 ): string {
   return path.join(statePaths.approvalsRoot, `${approvalId}.json`);
+}
+
+function artifactRecordPath(
+  statePaths: RunnerStatePaths,
+  artifactId: string
+): string {
+  return path.join(statePaths.artifactsRoot, `${artifactId}.json`);
 }
 
 function runnerTurnRecordPath(
@@ -144,6 +156,49 @@ export async function writeApprovalRecord(
   await writeJsonFile(
     approvalRecordPath(statePaths, record.approvalId),
     approvalRecordSchema.parse(record)
+  );
+}
+
+export async function readArtifactRecord(
+  statePaths: RunnerStatePaths,
+  artifactId: string
+): Promise<ArtifactRecord | undefined> {
+  const filePath = artifactRecordPath(statePaths, artifactId);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return artifactRecordSchema.parse(await readJsonFile(filePath));
+}
+
+export async function writeArtifactRecord(
+  statePaths: RunnerStatePaths,
+  record: ArtifactRecord
+): Promise<void> {
+  await writeJsonFile(
+    artifactRecordPath(statePaths, record.ref.artifactId),
+    artifactRecordSchema.parse(record)
+  );
+}
+
+export async function listArtifactRecords(
+  statePaths: RunnerStatePaths
+): Promise<ArtifactRecord[]> {
+  if (!(await pathExists(statePaths.artifactsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.artifactsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      artifactRecordSchema.parse(
+        await readJsonFile<unknown>(path.join(statePaths.artifactsRoot, fileName))
+      )
+    )
   );
 }
 

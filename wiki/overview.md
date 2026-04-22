@@ -80,6 +80,10 @@ The repository now also contains the first real implementation baseline:
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
   and emits bounded `task.result` replies when required;
+- a first git-backed artifact materialization slice in the runner, with
+  persisted artifact records, session/conversation/turn artifact linkage,
+  committed markdown turn reports under the runtime artifact workspace, and a
+  host read surface for runtime artifact inspection;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay
@@ -156,9 +160,10 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- add artifact-side git work and handoff logic inside the runner on top of the
-  now-persisted session and conversation state;
-- expose richer runtime and reconciliation state in Studio without breaking the
-  existing host-first boundary;
+- extend git-backed artifacts from runner-local materialization to real remote
+  publication and retrieval against named git services;
+- expose richer runtime, reconciliation, and artifact state in Studio without
+  breaking the existing host-first boundary;
 - add stronger Docker-backed runtime smoke coverage for long-lived runner
-  execution and restart semantics on top of the runtime backend boundary.
+  execution, restart semantics, and artifact-aware runner flows on top of the
+  runtime backend boundary.

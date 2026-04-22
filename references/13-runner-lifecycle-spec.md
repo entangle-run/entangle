@@ -159,9 +159,17 @@ That implemented slice currently includes:
 - machine-readable A2A payload validation before lifecycle mutation;
 - lifecycle advancement from intake through completion for the current strict
   local path;
+- git-backed turn artifact materialization into a runner-local artifact
+  workspace;
+- persisted `ArtifactRecord` state linked from session, conversation, and turn
+  records;
+- outbound `task.result` payloads that now include newly produced artifact
+  references alongside inbound ones when a response is emitted;
 - bounded `task.result` emission when the inbound response policy requires a
   follow-up;
 - live relay smoke validation against a real local `strfry` instance.
 
-Git artifact work still remains a future slice, but the runner lifecycle is no
-longer only conceptual prose plus a single bootstrap turn.
+The runner lifecycle is therefore no longer only conceptual prose plus a single
+bootstrap turn. The next meaningful gaps are remote git publication, richer
+artifact kinds beyond report files, and full long-lived Nostr-driven runtime
+operation under the Docker-backed host path.

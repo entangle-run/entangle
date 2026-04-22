@@ -9,6 +9,7 @@ import {
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeListResponseSchema
@@ -21,6 +22,7 @@ import {
   buildHostStatus,
   getRuntimeContext,
   getRuntimeInspection,
+  listRuntimeArtifacts,
   getCatalogInspection,
   getGraphInspection,
   getPackageSourceInspection,
@@ -218,6 +220,49 @@ export function buildHostServer() {
     }
 
     return runtimeContextInspectionResponseSchema.parse(runtimeContext);
+  });
+
+  server.get("/v1/runtimes/:nodeId/artifacts", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const artifacts = await listRuntimeArtifacts(params.nodeId);
+
+    if (!artifacts) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeArtifactListResponseSchema.parse(artifacts);
   });
 
   server.post("/v1/runtimes/:nodeId/start", async (request) => {

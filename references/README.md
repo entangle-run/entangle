@@ -60,6 +60,7 @@ This directory is the canonical design corpus for Entangle.
 54. [53-runner-transport-and-long-lived-intake-slice.md](53-runner-transport-and-long-lived-intake-slice.md)
 55. [54-live-nostr-transport-and-relay-profile-slice.md](54-live-nostr-transport-and-relay-profile-slice.md)
 56. [55-docker-image-build-topology-slice.md](55-docker-image-build-topology-slice.md)
+57. [56-git-artifact-materialization-and-host-surface-slice.md](56-git-artifact-materialization-and-host-surface-slice.md)
 
 ## Role of this corpus
 

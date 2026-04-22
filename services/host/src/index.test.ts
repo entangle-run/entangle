@@ -11,8 +11,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  artifactRecordSchema,
   hostErrorResponseSchema,
   packageSourceInspectionResponseSchema,
+  runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeListResponseSchema
@@ -334,6 +336,113 @@ describe("buildHostServer", () => {
           packageLinkTarget
         )
       ).toBe(admittedPackageSource.materialization?.packageRoot);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists persisted runtime artifacts through the host surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource.packageSourceId;
+
+      await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSourceId
+            }
+          ],
+          edges: [
+            {
+              edgeId: "user-to-worker",
+              fromNodeId: "user-main",
+              toNodeId: "worker-it",
+              relation: "delegates_to"
+            }
+          ]
+        },
+        url: "/v1/graph"
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      const artifactRecord = artifactRecordSchema.parse({
+        createdAt: "2026-04-22T00:00:00.000Z",
+        ref: {
+          artifactId: "report-turn-001",
+          artifactKind: "report_file",
+          backend: "git",
+          contentSummary: "Turn report",
+          conversationId: "conv-alpha",
+          createdByNodeId: "worker-it",
+          locator: {
+            branch: "worker-it/session-alpha/review-patch",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            path: "reports/session-alpha/turn-001.md",
+            repoPath: runtimeContext.workspace.artifactWorkspaceRoot
+          },
+          preferred: true,
+          sessionId: "session-alpha",
+          status: "materialized"
+        },
+        turnId: "turn-001",
+        updatedAt: "2026-04-22T00:00:00.000Z"
+      });
+      await mkdir(path.join(runtimeContext.workspace.runtimeRoot, "artifacts"), {
+        recursive: true
+      });
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "artifacts",
+          `${artifactRecord.ref.artifactId}.json`
+        ),
+        `${JSON.stringify(artifactRecord, null, 2)}\n`,
+        "utf8"
+      );
+
+      const artifactsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts"
+      });
+
+      expect(artifactsResponse.statusCode).toBe(200);
+      expect(runtimeArtifactListResponseSchema.parse(artifactsResponse.json())).toEqual({
+        artifacts: [artifactRecord]
+      });
     } finally {
       await server.close();
     }

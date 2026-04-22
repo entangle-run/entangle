@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   AgentEngineTurnResult,
+  ArtifactRecord,
   ConversationLifecycleState,
   ConversationRecord,
   EffectiveRuntimeContext,
@@ -23,10 +24,15 @@ import {
   ensureRunnerStatePaths,
   readConversationRecord,
   readSessionRecord,
+  writeArtifactRecord,
   writeConversationRecord,
   writeRunnerTurnRecord,
   writeSessionRecord
 } from "./state-store.js";
+import {
+  GitCliRunnerArtifactBackend,
+  type RunnerArtifactBackend
+} from "./artifact-backend.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -269,6 +275,7 @@ function buildInitialSessionRecord(
     openedAt: envelope.receivedAt,
     originatingNodeId: envelope.message.fromNodeId,
     ownerNodeId: context.binding.node.nodeId,
+    rootArtifactIds: [],
     sessionId: envelope.message.sessionId,
     status: "requested",
     traceId: envelope.message.sessionId,
@@ -282,6 +289,7 @@ function buildInitialConversationRecord(
   envelope: RunnerInboundEnvelope
 ): ConversationRecord {
   return {
+    artifactIds: [],
     conversationId: envelope.message.conversationId,
     followupCount: 0,
     graphId: envelope.message.graphId,
@@ -303,6 +311,7 @@ function buildInitialConversationRecord(
 function buildResponseMessage(input: {
   context: EffectiveRuntimeContext;
   envelope: RunnerInboundEnvelope;
+  producedArtifacts: ArtifactRecord[];
   result: AgentEngineTurnResult;
 }): EntangleA2AMessage {
   return {
@@ -327,8 +336,14 @@ function buildResponseMessage(input: {
     toPubkey: input.envelope.message.fromPubkey,
     turnId: buildSyntheticTurnId("result"),
     work: {
-      artifactRefs: input.envelope.message.work.artifactRefs,
+      artifactRefs: [
+        ...input.envelope.message.work.artifactRefs,
+        ...input.producedArtifacts.map((artifactRecord) => artifactRecord.ref)
+      ],
       metadata: {
+        producedArtifactIds: input.producedArtifacts.map(
+          (artifactRecord) => artifactRecord.ref.artifactId
+        ),
         stopReason: input.result.stopReason
       },
       summary:
@@ -338,7 +353,15 @@ function buildResponseMessage(input: {
   };
 }
 
+function mergeIdentifierLists(
+  currentValues: string[],
+  nextValues: string[]
+): string[] {
+  return [...new Set([...currentValues, ...nextValues])];
+}
+
 export class RunnerService {
+  private readonly artifactBackend: RunnerArtifactBackend;
   private readonly context: EffectiveRuntimeContext;
   private readonly engine: AgentEngine;
   private readonly transport: RunnerTransport;
@@ -346,10 +369,13 @@ export class RunnerService {
   private statePaths: RunnerStatePaths | undefined;
 
   constructor(input: {
+    artifactBackend?: RunnerArtifactBackend;
     context: EffectiveRuntimeContext;
     engine?: AgentEngine;
     transport: RunnerTransport;
   }) {
+    this.artifactBackend =
+      input.artifactBackend ?? new GitCliRunnerArtifactBackend();
     this.context = input.context;
     this.engine = input.engine ?? createStubAgentEngine();
     this.transport = input.transport;
@@ -391,6 +417,7 @@ export class RunnerService {
       messageId: envelope.eventId,
       nodeId: this.context.binding.node.nodeId,
       phase: "receiving",
+      producedArtifactIds: [],
       sessionId: envelope.message.sessionId,
       startedAt: envelope.receivedAt,
       triggerKind: "message",
@@ -434,6 +461,42 @@ export class RunnerService {
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
       const result = await this.engine.executeTurn(turnRequest);
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "persisting");
+      const materializedArtifacts = await this.artifactBackend.materializeTurnArtifacts({
+        context: this.context,
+        envelope,
+        result,
+        turnId: turnRecord.turnId
+      });
+      const producedArtifactIds = materializedArtifacts.artifacts.map(
+        (artifactRecord) => artifactRecord.ref.artifactId
+      );
+      await Promise.all(
+        materializedArtifacts.artifacts.map((artifactRecord) =>
+          writeArtifactRecord(statePaths, artifactRecord)
+        )
+      );
+      turnRecord = {
+        ...turnRecord,
+        producedArtifactIds,
+        updatedAt: nowIsoString()
+      };
+      await writeRunnerTurnRecord(statePaths, turnRecord);
+      currentConversation = {
+        ...currentConversation,
+        artifactIds: mergeIdentifierLists(
+          currentConversation.artifactIds,
+          producedArtifactIds
+        )
+      };
+      await writeConversationRecord(statePaths, currentConversation);
+      currentSession = {
+        ...currentSession,
+        rootArtifactIds: mergeIdentifierLists(
+          currentSession.rootArtifactIds,
+          producedArtifactIds
+        )
+      };
+      await writeSessionRecord(statePaths, currentSession);
 
       currentConversation = await transitionConversationStatus(
         statePaths,
@@ -471,6 +534,7 @@ export class RunnerService {
       const responseMessage = buildResponseMessage({
         context: this.context,
         envelope,
+        producedArtifacts: materializedArtifacts.artifacts,
         result
       });
       const publishedEnvelope = await this.transport.publish(responseMessage);

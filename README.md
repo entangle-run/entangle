@@ -83,6 +83,12 @@ This repository currently contains:
   validates inbound A2A messages, advances session and conversation lifecycle
   state, builds engine turn requests from inbound context, and emits
   `task.result` replies when response policy requires them;
+- a first git-backed artifact materialization slice in the runner, where each
+  completed turn can persist a structured `ArtifactRecord`, write a durable
+  report file into a node-local git workspace, commit it, and attach the
+  resulting artifact reference to outbound `task.result` messages;
+- a host read surface for persisted runtime artifacts through
+  `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
   a dedicated Entangle rumor kind, relay-readiness preconnect semantics, and a
   verified local relay smoke where a real wrapped message produces persisted

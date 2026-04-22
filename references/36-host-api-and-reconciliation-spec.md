@@ -258,6 +258,7 @@ Purpose:
 
 - `GET /v1/runtimes`
 - `GET /v1/runtimes/{nodeId}`
+- `GET /v1/runtimes/{nodeId}/artifacts`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
 - `POST /v1/runtimes/{nodeId}/restart`
@@ -278,6 +279,7 @@ The current repository implementation now concretely includes:
 - `GET /v1/runtimes`
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
+- `GET /v1/runtimes/{nodeId}/artifacts`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
 
@@ -296,6 +298,7 @@ The current implementation also exposes:
 - per-runtime backend kind;
 - runtime handles when the backend reports them;
 - runtime status messages suitable for Studio and CLI;
+- read-only persisted artifact inspection for active runtimes;
 - host-level reconciliation status via `GET /v1/host/status`.
 
 ### 8.7 Validation and dry-run

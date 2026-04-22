@@ -13,6 +13,7 @@ import {
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import {
+  artifactRecordSchema,
   type AgentPackageManifest,
   agentPackageManifestSchema,
   buildValidationReport,
@@ -44,9 +45,11 @@ import {
   runtimeIdentityContextSchema,
   type RuntimeIdentityRecord,
   runtimeIdentityRecordSchema,
+  runtimeArtifactListResponseSchema,
   runtimeInspectionResponseSchema,
   type RuntimeInspectionResponse,
   runtimeIntentRecordSchema,
+  type RuntimeArtifactListResponse,
   runtimeListResponseSchema,
   type RuntimeListResponse,
   type RuntimeObservedState,
@@ -1562,6 +1565,39 @@ export async function getRuntimeContext(
   return effectiveRuntimeContextSchema.parse(
     await readJsonFile(inspection.contextPath)
   );
+}
+
+export async function listRuntimeArtifacts(
+  nodeId: string
+): Promise<RuntimeArtifactListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifactsRoot = path.join(context.workspace.runtimeRoot, "artifacts");
+
+  if (!(await pathExists(artifactsRoot))) {
+    return runtimeArtifactListResponseSchema.parse({
+      artifacts: []
+    });
+  }
+
+  const artifacts = await Promise.all(
+    (await readdir(artifactsRoot))
+      .filter((fileName) => fileName.endsWith(".json"))
+      .sort()
+      .map(async (fileName) =>
+        artifactRecordSchema.parse(
+          await readJsonFile(path.join(artifactsRoot, fileName))
+        )
+      )
+  );
+
+  return runtimeArtifactListResponseSchema.parse({
+    artifacts
+  });
 }
 
 export async function setRuntimeDesiredState(

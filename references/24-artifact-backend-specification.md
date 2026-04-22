@@ -54,20 +54,20 @@ Every artifact backend must support, either directly or through adapter logic:
 - provenance metadata;
 - lifecycle-relevant metadata.
 
-Recommended expanded fields:
+The current machine-readable contract in `packages/types` uses camelCase field
+names and already includes the following canonical metadata:
 
 | Field | Meaning |
 | --- | --- |
-| `artifact_id` | Stable artifact id |
+| `artifactId` | Stable artifact id |
 | `backend` | Backend kind |
 | `locator` | Backend-specific retrieval address |
-| `created_by_node_id` | Creating node |
-| `session_id` | Session association |
-| `task_id` | Optional task association |
-| `conversation_id` | Optional conversation association |
-| `artifact_kind` | Semantic category such as `patch`, `report`, `wiki_page`, `commit`, `workspace_snapshot` |
+| `createdByNodeId` | Creating node |
+| `sessionId` | Session association |
+| `conversationId` | Optional conversation association |
+| `artifactKind` | Semantic category such as `patch`, `report_file`, `wiki_page`, `commit`, `knowledge_summary` |
 | `status` | Artifact lifecycle state |
-| `content_summary` | Short human-readable summary |
+| `contentSummary` | Short human-readable summary |
 
 ## 4. Git backend
 
@@ -91,12 +91,12 @@ Recommended fields:
 
 | Field | Meaning |
 | --- | --- |
-| `remote` | Remote identity or URL alias |
-| `repo` | Repository identity |
+| `gitServiceRef` | Named git service profile when known |
+| `namespace` | Repository namespace or organization when known |
 | `branch` | Branch name when relevant |
 | `commit` | Commit hash when relevant |
-| `path` | Optional file path |
-| `base_commit` | Optional merge/review base |
+| `path` | Optional in-repository path |
+| `repoPath` | Current runtime-local repository root |
 
 ### Git handoff patterns
 
@@ -258,21 +258,30 @@ Artifact lifecycle states should be interpreted as follows.
 
 The runtime intends an artifact but it is not yet durably materialized.
 
-### `materializing`
+### `materialized`
 
-The backend operation is in progress.
+The artifact has been durably created in a backend-specific location and can be
+referenced locally, but it may not yet have been published to an external
+shared service.
 
-### `available`
+### `published`
 
-The artifact is retrievable and safe to reference in follow-up work.
+The artifact has been published or otherwise made externally retrievable
+according to backend policy.
 
 ### `superseded`
 
 The artifact remains valid historically, but another artifact is now the preferred live reference.
 
-### `unreachable`
+### `rejected`
 
-The artifact locator no longer resolves or the backend cannot currently serve it.
+The artifact candidate was intentionally not accepted as a valid published work
+product.
+
+### `failed`
+
+Artifact materialization or publication failed and the recorded artifact state
+should be treated as non-usable except for diagnostics.
 
 ## 8. Publication rules
 
@@ -449,3 +458,28 @@ It may omit:
 - remote-node artifact federation.
 
 It should still preserve the canonical artifact abstraction so later backends can slot in cleanly.
+
+## 18. Current implemented local slice
+
+The current repository implementation now includes a first real git-backed
+artifact path:
+
+- the runner materializes a report markdown file under
+  `reports/<sessionId>/<turnId>.md` inside the node-local artifact workspace;
+- that workspace is initialized as a git repository when needed and committed
+  on each turn with deterministic branch naming;
+- the produced work is recorded as a structured `ArtifactRecord` with backend
+  `git`, kind `report_file`, lifecycle state `materialized`, and a locator that
+  includes `branch`, `commit`, `gitServiceRef`, `namespace`, `path`, and
+  runtime-local `repoPath`;
+- session, conversation, and turn records now keep stable artifact-id links to
+  the produced records;
+- the host exposes a first read-only artifact inspection route through
+  `GET /v1/runtimes/{nodeId}/artifacts`.
+
+What still remains outside this implemented slice:
+
+- publication to a remote shared git service;
+- branch/commit/patch artifact kinds beyond report files;
+- artifact supersession policy;
+- Studio artifact inspection surfaces.
