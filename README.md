@@ -63,8 +63,12 @@ This repository currently contains:
 - an initial monorepo scaffold for `apps/`, `services/`, `packages/`, and
   `deploy/`;
 - the first machine-readable contract layer in `packages/types`;
-- a first validator surface, host client, package scaffold utility, host
-  service, runner stub, CLI, and Studio scaffold;
+- a stronger validator surface with resource-resolution and transport
+  realizability checks;
+- a host control-plane surface with persistent catalog, package-source, and
+  graph state under `.entangle/host`;
+- a host client, package scaffold utility, runner stub, CLI, and Studio
+  surface that now consume real host state instead of a fake graph;
 - a verified baseline where `pnpm install`, `pnpm typecheck`, and `pnpm build`
   all pass.
 

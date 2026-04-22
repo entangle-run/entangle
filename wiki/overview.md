@@ -15,7 +15,7 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in the initial implementation scaffold phase.
+Entangle is currently in the first real control-plane implementation phase.
 
 The corpus now extends from conceptual architecture into normative contracts,
 package and binding structure, edge semantics, artifact backends, control-plane
@@ -59,7 +59,13 @@ The repository now also contains the first real implementation baseline:
 - `packages/types`, `validator`, `host-client`, `agent-engine`, and
   `package-scaffold`;
 - a first local Compose profile and service Dockerfiles;
-- a verified install/build/typecheck path.
+- a persistent local host-state model under `.entangle/host`;
+- live host routes for catalog inspection/apply, package admission, and graph
+  inspection/apply;
+- a Studio graph surface that now renders live host topology instead of a fake
+  demo graph;
+- a verified install/build/typecheck path and a manually exercised
+  host-plus-CLI flow.
 
 The specification corpus now has five layers:
 
@@ -112,13 +118,13 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- deepen `packages/types` so more canonical objects have concrete schemas and
-  DTOs;
-- expand `packages/validator` from bootstrap checks into stronger semantic
-  validation;
-- grow `entangle-host` from status-only bootstrap into catalog, package-source,
-  graph, and runtime surfaces;
+- deepen the remaining canonical objects in `packages/types`, especially
+  effective bindings and injected runtime context;
+- expand `packages/validator` further into package-source-aware and
+  runtime-profile-aware checks;
+- move `entangle-host` from desired-state ownership into reconciliation and
+  runtime lifecycle management;
 - move `entangle-runner` from stub execution into injected-context and Nostr
   lifecycle handling;
-- connect Studio and CLI to more real host operations while keeping the
-  repository audit loop active.
+- keep Studio and CLI aligned with the same host boundary while the repository
+  audit loop stays active.

@@ -4,6 +4,7 @@ export * from "./common/topology.js";
 export * from "./common/validation.js";
 export * from "./engine/turn-contract.js";
 export * from "./graph/graph-spec.js";
+export * from "./host-api/control-plane.js";
 export * from "./host-api/status.js";
 export * from "./package/package-manifest.js";
 export * from "./package/package-source.js";

@@ -7,6 +7,7 @@ import {
   deploymentResourceCatalogSchema,
   type GraphSpec,
   graphSpecSchema,
+  type NodeBinding,
   type ValidationFinding,
   type ValidationReport
 } from "@entangle/types";
@@ -45,6 +46,85 @@ function collectDuplicateFindings(
 
 function hasExistingId(ids: string[], id: string | undefined): boolean {
   return typeof id === "string" && ids.includes(id);
+}
+
+function unique<T>(values: T[]): T[] {
+  return Array.from(new Set(values));
+}
+
+function effectiveRelayRefs(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): string[] {
+  if (node.resourceBindings.relayProfileRefs.length > 0) {
+    return unique(node.resourceBindings.relayProfileRefs);
+  }
+
+  if (graph.defaults.resourceBindings.relayProfileRefs.length > 0) {
+    return unique(graph.defaults.resourceBindings.relayProfileRefs);
+  }
+
+  return unique(catalog?.defaults.relayProfileRefs ?? []);
+}
+
+function effectivePrimaryRelayRef(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): string | undefined {
+  return (
+    node.resourceBindings.primaryRelayProfileRef ??
+    graph.defaults.resourceBindings.primaryRelayProfileRef ??
+    catalog?.defaults.relayProfileRefs[0]
+  );
+}
+
+function effectiveGitServiceRefs(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): string[] {
+  if (node.resourceBindings.gitServiceRefs.length > 0) {
+    return unique(node.resourceBindings.gitServiceRefs);
+  }
+
+  if (graph.defaults.resourceBindings.gitServiceRefs.length > 0) {
+    return unique(graph.defaults.resourceBindings.gitServiceRefs);
+  }
+
+  return catalog?.defaults.gitServiceRef
+    ? [catalog.defaults.gitServiceRef]
+    : [];
+}
+
+function effectivePrimaryGitServiceRef(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): string | undefined {
+  return (
+    node.resourceBindings.primaryGitServiceRef ??
+    graph.defaults.resourceBindings.primaryGitServiceRef ??
+    catalog?.defaults.gitServiceRef
+  );
+}
+
+function effectiveModelEndpointRef(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): string | undefined {
+  return (
+    node.resourceBindings.modelEndpointProfileRef ??
+    graph.defaults.resourceBindings.modelEndpointProfileRef ??
+    catalog?.defaults.modelEndpointRef
+  );
+}
+
+function intersect(values: string[], otherValues: string[]): string[] {
+  const lookup = new Set(otherValues);
+  return values.filter((value) => lookup.has(value));
 }
 
 export function validatePackageManifestDocument(
@@ -157,8 +237,12 @@ export function validateDeploymentResourceCatalogDocument(
 
 function validateGraphSemantics(
   graph: GraphSpec,
-  catalog?: DeploymentResourceCatalog
+  options: {
+    catalog?: DeploymentResourceCatalog;
+    packageSourceIds?: string[];
+  } = {}
 ): ValidationFinding[] {
+  const { catalog, packageSourceIds = [] } = options;
   const findings: ValidationFinding[] = [];
   const nodeIds = graph.nodes.map((node) => node.nodeId);
   const edgeIds = graph.edges.map((edge) => edge.edgeId);
@@ -171,6 +255,89 @@ function validateGraphSemantics(
     ...collectDuplicateFindings(nodeIds, ["nodes"]),
     ...collectDuplicateFindings(edgeIds, ["edges"])
   );
+
+  for (const relayRef of graph.defaults.resourceBindings.relayProfileRefs) {
+    if (catalog && !relayIds.includes(relayRef)) {
+      findings.push(
+        createFinding({
+          code: "unknown_graph_default_relay_profile",
+          severity: "error",
+          message: `Graph defaults reference relay profile '${relayRef}' that is missing from the catalog.`,
+          path: ["defaults", "resourceBindings", "relayProfileRefs"],
+          details: { relayRef }
+        })
+      );
+    }
+  }
+
+  for (const gitServiceRef of graph.defaults.resourceBindings.gitServiceRefs) {
+    if (catalog && !gitServiceIds.includes(gitServiceRef)) {
+      findings.push(
+        createFinding({
+          code: "unknown_graph_default_git_service",
+          severity: "error",
+          message: `Graph defaults reference git service '${gitServiceRef}' that is missing from the catalog.`,
+          path: ["defaults", "resourceBindings", "gitServiceRefs"],
+          details: { gitServiceRef }
+        })
+      );
+    }
+  }
+
+  if (
+    catalog &&
+    graph.defaults.resourceBindings.primaryRelayProfileRef &&
+    !relayIds.includes(graph.defaults.resourceBindings.primaryRelayProfileRef)
+  ) {
+    findings.push(
+      createFinding({
+        code: "unknown_graph_default_primary_relay_profile",
+        severity: "error",
+        message: `Graph defaults reference an unknown primary relay profile '${graph.defaults.resourceBindings.primaryRelayProfileRef}'.`,
+        path: ["defaults", "resourceBindings", "primaryRelayProfileRef"],
+        details: {
+          relayProfileRef: graph.defaults.resourceBindings.primaryRelayProfileRef
+        }
+      })
+    );
+  }
+
+  if (
+    catalog &&
+    graph.defaults.resourceBindings.primaryGitServiceRef &&
+    !gitServiceIds.includes(graph.defaults.resourceBindings.primaryGitServiceRef)
+  ) {
+    findings.push(
+      createFinding({
+        code: "unknown_graph_default_primary_git_service",
+        severity: "error",
+        message: `Graph defaults reference an unknown primary git service '${graph.defaults.resourceBindings.primaryGitServiceRef}'.`,
+        path: ["defaults", "resourceBindings", "primaryGitServiceRef"],
+        details: {
+          gitServiceRef: graph.defaults.resourceBindings.primaryGitServiceRef
+        }
+      })
+    );
+  }
+
+  if (
+    catalog &&
+    graph.defaults.resourceBindings.modelEndpointProfileRef &&
+    !modelEndpointIds.includes(graph.defaults.resourceBindings.modelEndpointProfileRef)
+  ) {
+    findings.push(
+      createFinding({
+        code: "unknown_graph_default_model_endpoint",
+        severity: "error",
+        message: `Graph defaults reference an unknown model endpoint '${graph.defaults.resourceBindings.modelEndpointProfileRef}'.`,
+        path: ["defaults", "resourceBindings", "modelEndpointProfileRef"],
+        details: {
+          modelEndpointProfileRef:
+            graph.defaults.resourceBindings.modelEndpointProfileRef
+        }
+      })
+    );
+  }
 
   if (!graph.nodes.some((node) => node.nodeKind === "user")) {
     findings.push(
@@ -195,7 +362,32 @@ function validateGraphSemantics(
       );
     }
 
+    if (
+      node.packageSourceRef &&
+      packageSourceIds.length > 0 &&
+      !packageSourceIds.includes(node.packageSourceRef)
+    ) {
+      findings.push(
+        createFinding({
+          code: "unknown_package_source_ref",
+          severity: "error",
+          message: `Node '${node.nodeId}' references package source '${node.packageSourceRef}' that is not admitted in the current host state.`,
+          path: ["nodes", node.nodeId, "packageSourceRef"],
+          details: { packageSourceRef: node.packageSourceRef }
+        })
+      );
+    }
+
     const resourceBindings = node.resourceBindings;
+    const resolvedRelayRefs = effectiveRelayRefs(node, graph, catalog);
+    const resolvedPrimaryRelayRef = effectivePrimaryRelayRef(node, graph, catalog);
+    const resolvedGitServiceRefs = effectiveGitServiceRefs(node, graph, catalog);
+    const resolvedPrimaryGitServiceRef = effectivePrimaryGitServiceRef(
+      node,
+      graph,
+      catalog
+    );
+    const resolvedModelEndpointRef = effectiveModelEndpointRef(node, graph, catalog);
 
     if (
       catalog &&
@@ -229,6 +421,22 @@ function validateGraphSemantics(
 
     if (
       catalog &&
+      resolvedPrimaryRelayRef &&
+      !resolvedRelayRefs.includes(resolvedPrimaryRelayRef)
+    ) {
+      findings.push(
+        createFinding({
+          code: "primary_relay_not_in_effective_set",
+          severity: "error",
+          message: `Node '${node.nodeId}' resolves primary relay profile '${resolvedPrimaryRelayRef}' outside its effective relay set.`,
+          path: ["nodes", node.nodeId, "resourceBindings", "primaryRelayProfileRef"],
+          details: { relayProfileRef: resolvedPrimaryRelayRef }
+        })
+      );
+    }
+
+    if (
+      catalog &&
       resourceBindings.primaryGitServiceRef &&
       !hasExistingId(gitServiceIds, resourceBindings.primaryGitServiceRef)
     ) {
@@ -239,6 +447,36 @@ function validateGraphSemantics(
           message: `Node '${node.nodeId}' references an unknown primary git service.`,
           path: ["nodes", node.nodeId, "resourceBindings", "primaryGitServiceRef"],
           details: { gitServiceRef: resourceBindings.primaryGitServiceRef }
+        })
+      );
+    }
+
+    for (const gitServiceRef of resourceBindings.gitServiceRefs) {
+      if (catalog && !gitServiceIds.includes(gitServiceRef)) {
+        findings.push(
+          createFinding({
+            code: "unknown_git_service_ref",
+            severity: "error",
+            message: `Node '${node.nodeId}' references git service '${gitServiceRef}' that is missing from the catalog.`,
+            path: ["nodes", node.nodeId, "resourceBindings", "gitServiceRefs"],
+            details: { gitServiceRef }
+          })
+        );
+      }
+    }
+
+    if (
+      catalog &&
+      resolvedPrimaryGitServiceRef &&
+      !resolvedGitServiceRefs.includes(resolvedPrimaryGitServiceRef)
+    ) {
+      findings.push(
+        createFinding({
+          code: "primary_git_service_not_in_effective_set",
+          severity: "error",
+          message: `Node '${node.nodeId}' resolves primary git service '${resolvedPrimaryGitServiceRef}' outside its effective git service set.`,
+          path: ["nodes", node.nodeId, "resourceBindings", "primaryGitServiceRef"],
+          details: { gitServiceRef: resolvedPrimaryGitServiceRef }
         })
       );
     }
@@ -255,6 +493,21 @@ function validateGraphSemantics(
           message: `Node '${node.nodeId}' references an unknown model endpoint profile.`,
           path: ["nodes", node.nodeId, "resourceBindings", "modelEndpointProfileRef"],
           details: { modelEndpointProfileRef: resourceBindings.modelEndpointProfileRef }
+        })
+      );
+    }
+
+    if (
+      node.nodeKind !== "user" &&
+      catalog &&
+      !resolvedModelEndpointRef
+    ) {
+      findings.push(
+        createFinding({
+          code: "missing_effective_model_endpoint",
+          severity: "warning",
+          message: `Non-user node '${node.nodeId}' has no effective model endpoint binding.`,
+          path: ["nodes", node.nodeId, "resourceBindings", "modelEndpointProfileRef"]
         })
       );
     }
@@ -307,6 +560,40 @@ function validateGraphSemantics(
         );
       }
     }
+
+    const sourceNode = graph.nodes.find((node) => node.nodeId === edge.fromNodeId);
+    const targetNode = graph.nodes.find((node) => node.nodeId === edge.toNodeId);
+
+    if (!sourceNode || !targetNode) {
+      continue;
+    }
+
+    const sourceRelayRefs = effectiveRelayRefs(sourceNode, graph, catalog);
+    const targetRelayRefs = effectiveRelayRefs(targetNode, graph, catalog);
+    const transportRelayRefs =
+      edge.transportPolicy.relayProfileRefs.length > 0
+        ? edge.transportPolicy.relayProfileRefs
+        : intersect(sourceRelayRefs, targetRelayRefs);
+    const realizableRelayRefs = intersect(
+      intersect(sourceRelayRefs, targetRelayRefs),
+      transportRelayRefs
+    );
+
+    if (realizableRelayRefs.length === 0) {
+      findings.push(
+        createFinding({
+          code: "unrealizable_edge_transport",
+          severity: "error",
+          message: `Edge '${edge.edgeId}' has no realizable direct relay route under the current effective bindings.`,
+          path: ["edges", edge.edgeId, "transportPolicy"],
+          details: {
+            sourceRelayRefs,
+            targetRelayRefs,
+            transportRelayRefs
+          }
+        })
+      );
+    }
   }
 
   return findings;
@@ -316,6 +603,7 @@ export function validateGraphDocument(
   input: unknown,
   options: {
     catalog?: DeploymentResourceCatalog;
+    packageSourceIds?: string[];
   } = {}
 ): ValidationReport {
   const parseResult = graphSpecSchema.safeParse(input);
@@ -334,7 +622,7 @@ export function validateGraphDocument(
   }
 
   return buildValidationReport(
-    validateGraphSemantics(parseResult.data, options.catalog)
+    validateGraphSemantics(parseResult.data, options)
   );
 }
 
@@ -368,7 +656,40 @@ export async function validatePackageDirectory(
     ]);
   }
 
-  const manifest = agentPackageManifestSchema.parse(await readJsonFile(manifestPath));
+  let manifestDocument: unknown;
+
+  try {
+    manifestDocument = await readJsonFile(manifestPath);
+  } catch (error: unknown) {
+    return buildValidationReport([
+      createFinding({
+        code: "invalid_manifest_json",
+        severity: "error",
+        message:
+          error instanceof Error
+            ? `Could not parse manifest.json: ${error.message}`
+            : "Could not parse manifest.json.",
+        path: ["manifest.json"]
+      })
+    ]);
+  }
+
+  const manifestParse = agentPackageManifestSchema.safeParse(manifestDocument);
+
+  if (!manifestParse.success) {
+    return buildValidationReport(
+      manifestParse.error.issues.map((issue) =>
+        createFinding({
+          code: "package_manifest_invalid",
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  const manifest = manifestParse.data;
   const report = validatePackageManifestDocument(manifest);
   const findings = [...report.findings];
 
@@ -402,9 +723,27 @@ export async function validateGraphFile(
   filePath: string,
   options: {
     catalog?: DeploymentResourceCatalog;
+    packageSourceIds?: string[];
   } = {}
 ): Promise<ValidationReport> {
-  const document = await readJsonFile(filePath);
+  let document: unknown;
+
+  try {
+    document = await readJsonFile(filePath);
+  } catch (error: unknown) {
+    return buildValidationReport([
+      createFinding({
+        code: "invalid_graph_json",
+        severity: "error",
+        message:
+          error instanceof Error
+            ? `Could not parse graph JSON: ${error.message}`
+            : "Could not parse graph JSON.",
+        path: [filePath]
+      })
+    ]);
+  }
+
   return validateGraphDocument(document, options);
 }
 

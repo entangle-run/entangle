@@ -126,6 +126,12 @@ Optional but strongly recommended package for:
 7. implement `entangle-agent-engine`;
 8. implement `entangle-host` and local runtime-backend abstraction;
 9. implement local package admission + node execution;
+   First serious host slice:
+   - fully support `local_path` package admission;
+   - keep `local_archive` in the canonical model, but defer archive
+     materialization until the import pipeline exists;
+   - persist catalog, package-source, and graph desired state before dynamic
+     runtime management.
 10. implement Nostr messaging;
 11. implement git artifact handoff;
 12. implement model-endpoint adapter binding;

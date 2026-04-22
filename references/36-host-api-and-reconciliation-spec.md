@@ -69,6 +69,10 @@ A locally admitted package origin such as:
 - a validated host-visible `local_path`; or
 - an imported `local_archive` materialized into host-managed package storage.
 
+The canonical model should keep both forms, but the first implemented host
+slice may support `local_path` admission first and defer `local_archive`
+materialization until archive import tooling exists.
+
 ### Applied graph revision
 
 The desired graph revision and associated defaults currently chosen by the
@@ -176,7 +180,9 @@ should be grounded in these resources.
 ## 8. Recommended HTTP surface
 
 The exact route names may evolve, but the first serious API should cover at
-least the following surfaces.
+least the following surfaces. The earliest implemented slice may only realize a
+strict subset, but that subset should align with the same resource model rather
+than inventing a temporary API.
 
 ### 8.1 Catalog
 
@@ -210,6 +216,7 @@ or host-managed imported archive storage.
 ### 8.3 Graph and revision state
 
 - `GET /v1/graph`
+- `PUT /v1/graph`
 - `GET /v1/graph/revisions`
 - `GET /v1/graph/revisions/{revisionId}`
 - `POST /v1/graph/validate`
