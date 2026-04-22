@@ -1,0 +1,20 @@
+# Local runtime and future generated state
+.DS_Store
+
+# Future local execution data
+workspaces/
+state/
+tmp/
+dist/
+node_modules/
+.venv/
+
+# Local mirrored research corpus
+resources/*
+!resources/README.md
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.secret
