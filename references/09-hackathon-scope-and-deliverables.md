@@ -77,3 +77,5 @@ Use one controlled scenario:
 - the worker produces a branch or commit;
 - another node reviews or continues the work;
 - the user sees messages and artifact references in real time.
+
+The runtime subset that should be treated as canonical for the hackathon build is specified more explicitly in [29-hackathon-runtime-profile.md](29-hackathon-runtime-profile.md).

@@ -46,7 +46,7 @@ Should agents ever be able to mutate topology directly?
 Current recommendation:
 
 - not in the hackathon build;
-- later only through strongly bounded governance policies.
+- later only through strongly bounded governance policies defined by the control plane.
 
 ## 6. Relay policy complexity
 
@@ -56,3 +56,13 @@ Current recommendation:
 
 - canonical edge-level transport policy type now;
 - one restricted runtime profile in the hackathon implementation.
+
+## 7. Versioning and migration strictness
+
+How strict should early Entangle be about rejecting objects that are structurally valid but semantically newer than the active runtime?
+
+Current recommendation:
+
+- be strict by default;
+- accept clearly compatible additions;
+- reject semantic uncertainty rather than silently reinterpret it.

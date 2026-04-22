@@ -26,6 +26,15 @@ This directory is the canonical design corpus for Entangle.
 20. [19-core-contract-invariants.md](19-core-contract-invariants.md)
 21. [20-normalization-and-validation-rules.md](20-normalization-and-validation-rules.md)
 22. [21-state-machines-and-runtime-transitions.md](21-state-machines-and-runtime-transitions.md)
+23. [22-agent-package-filesystem-and-binding-spec.md](22-agent-package-filesystem-and-binding-spec.md)
+24. [23-edge-semantics-and-policy-matrix.md](23-edge-semantics-and-policy-matrix.md)
+25. [24-artifact-backend-specification.md](24-artifact-backend-specification.md)
+26. [25-control-plane-and-graph-mutation.md](25-control-plane-and-graph-mutation.md)
+27. [26-versioning-migrations-and-compatibility.md](26-versioning-migrations-and-compatibility.md)
+28. [27-observability-and-trace-spec.md](27-observability-and-trace-spec.md)
+29. [28-studio-and-user-surface-spec.md](28-studio-and-user-surface-spec.md)
+30. [29-hackathon-runtime-profile.md](29-hackathon-runtime-profile.md)
+31. [30-quality-gates-and-acceptance-criteria.md](30-quality-gates-and-acceptance-criteria.md)
 
 ## Role of this corpus
 

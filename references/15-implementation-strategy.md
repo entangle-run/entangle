@@ -80,3 +80,5 @@ The first serious version is done when:
 - at least one git-backed artifact handoff occurs;
 - user can watch the session subgraph;
 - the resulting architecture clearly extends to remote nodes later without changing core types.
+
+The phase gates for moving from specification to architecture and implementation are defined in [30-quality-gates-and-acceptance-criteria.md](30-quality-gates-and-acceptance-criteria.md).

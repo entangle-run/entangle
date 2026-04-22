@@ -90,3 +90,5 @@ What is useful now:
 - simple reliability metrics.
 
 That is enough to support governance without prematurely inventing a global reputation system.
+
+The operational interpretation of edges is specified more rigorously in [23-edge-semantics-and-policy-matrix.md](23-edge-semantics-and-policy-matrix.md), and the governance side of graph evolution is specified in [25-control-plane-and-graph-mutation.md](25-control-plane-and-graph-mutation.md).

@@ -58,6 +58,8 @@ This package model gives:
 - LLM readability;
 - the ability to import/export agents cleanly.
 
+The package filesystem and binding contract is specified in more detail in [22-agent-package-filesystem-and-binding-spec.md](22-agent-package-filesystem-and-binding-spec.md).
+
 ## NodeInstance overlay
 
 A node instance should add graph-local meaning without mutating the canonical package.

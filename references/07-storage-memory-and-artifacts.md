@@ -73,3 +73,5 @@ After each substantial interaction, the runner should perform a memory update ph
 5. record unresolved questions or pending work.
 
 This should be a systematic phase of the runner lifecycle, not an occasional manual cleanup.
+
+The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

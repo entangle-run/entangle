@@ -87,3 +87,5 @@ The hackathon should implement:
 - one simple transport policy profile.
 
 This is already enough to prove the runtime architecture.
+
+The observability expectations of the runtime are specified more explicitly in [27-observability-and-trace-spec.md](27-observability-and-trace-spec.md).
