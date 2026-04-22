@@ -54,8 +54,13 @@ This should be read as:
 Recommended libraries:
 
 - `zod` for runtime validation and schema discipline;
-- TypeScript types generated or maintained alongside the canonical schemas;
+- TypeScript types inferred from the canonical schemas;
 - optional JSON Schema export later for cross-language validation.
+
+Canonical ownership rule:
+
+- `packages/types` owns the primary schemas and host API DTO contracts;
+- generated artifacts, including JSON Schema later, remain derivative.
 
 ## Model provider integration layer
 

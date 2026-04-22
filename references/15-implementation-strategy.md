@@ -121,18 +121,19 @@ Optional but strongly recommended package for:
 2. define deployment resource catalog and binding types;
 3. define runner lifecycle;
 4. define A2A protocol;
-5. implement validator;
-6. implement `entangle-agent-engine`;
-7. implement `entangle-host` and local runtime-backend abstraction;
-8. implement local package admission + node execution;
-9. implement Nostr messaging;
-10. implement git artifact handoff;
-11. implement model-endpoint adapter binding;
-12. implement wiki update phase;
-13. implement Studio graph and runtime view against host APIs;
-14. add bounded graph editing, node admission, and runtime controls in Studio;
-15. add thin CLI access to the same host control-plane surfaces.
-16. add thin package scaffolding through shared scaffold utilities.
+5. freeze schema ownership and host API DTO ownership in `packages/types`;
+6. implement validator;
+7. implement `entangle-agent-engine`;
+8. implement `entangle-host` and local runtime-backend abstraction;
+9. implement local package admission + node execution;
+10. implement Nostr messaging;
+11. implement git artifact handoff;
+12. implement model-endpoint adapter binding;
+13. implement wiki update phase;
+14. implement Studio graph and runtime view against host APIs;
+15. add bounded graph editing, node admission, and runtime controls in Studio;
+16. add thin CLI access to the same host control-plane surfaces.
+17. add thin package scaffolding through shared scaffold utilities.
 
 ## Definition of done for the first serious version
 

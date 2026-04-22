@@ -1,6 +1,11 @@
 # Open Questions and Design Tradeoffs
 
-This file exists to keep the architecture honest. Not every unresolved area should be implemented immediately, but the main tradeoffs should remain visible.
+This file exists to keep the architecture honest after the core specification
+has already been frozen.
+
+It should no longer function as a hidden backlog of foundational decisions that
+block implementation. Instead, it should track the main non-blocking tradeoffs
+and future-facing areas where Entangle may widen after the first serious build.
 
 ## 1. Package binding versus package purity
 
@@ -12,16 +17,13 @@ Current recommendation:
 - inject graph-local runtime projections;
 - never make graph edges live only inside package-local declarations.
 
-## 2. Engine reuse boundary
+Status:
 
-How far should Entangle reuse OpenCode-like internals versus building a bespoke runner-driven engine contract?
+- non-blocking;
+- bounded well enough for implementation by the package, binding, and
+  runtime-context specs.
 
-Current recommendation:
-
-- reuse where it accelerates real agentic behavior;
-- keep the runner boundary independent.
-
-## 3. Artifact backend generality
+## 2. Artifact backend generality
 
 How early should multiple artifact backends be implemented?
 
@@ -30,7 +32,13 @@ Current recommendation:
 - model the abstraction now;
 - implement git first.
 
-## 4. Remote node trust model
+Status:
+
+- non-blocking;
+- hackathon and first serious build stay on `git` + `wiki` + optional
+  `local_file`.
+
+## 3. Remote node trust model
 
 How should remote node attachment decide whether a remote actor is acceptable?
 
@@ -39,7 +47,12 @@ Current recommendation:
 - local policy first;
 - no global web-of-trust requirement in the first serious version.
 
-## 5. Graph mutation authority
+Status:
+
+- future-facing;
+- intentionally not required before local host-managed implementation.
+
+## 4. Graph mutation authority
 
 Should agents ever be able to mutate topology directly?
 
@@ -48,7 +61,12 @@ Current recommendation:
 - not in the hackathon build;
 - later only through strongly bounded governance policies defined by the control plane.
 
-## 6. Relay policy complexity
+Status:
+
+- future-facing;
+- core mutation model for host-owned control-plane changes is already frozen.
+
+## 5. Relay policy complexity
 
 How much transport complexity should the first runner support?
 
@@ -57,7 +75,12 @@ Current recommendation:
 - canonical edge-level transport policy type now;
 - one restricted runtime profile in the hackathon implementation.
 
-## 7. Versioning and migration strictness
+Status:
+
+- non-blocking;
+- full type model is fixed, runtime profile remains intentionally narrow.
+
+## 6. Versioning and migration strictness
 
 How strict should early Entangle be about rejecting objects that are structurally valid but semantically newer than the active runtime?
 
@@ -66,3 +89,18 @@ Current recommendation:
 - be strict by default;
 - accept clearly compatible additions;
 - reject semantic uncertainty rather than silently reinterpret it.
+
+Status:
+
+- non-blocking;
+- versioning and compatibility policy are already explicit enough to implement against.
+
+## Resolved and moved out of the open-question set
+
+The following items were previously treated as active open questions but are no
+longer blockers:
+
+- engine reuse boundary, resolved by [41-agent-engine-boundary-and-reuse-policy.md](41-agent-engine-boundary-and-reuse-policy.md);
+- host-state layout, resolved by [42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md);
+- hackathon CLI scope, resolved by [43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md);
+- schema ownership and contract generation strategy, resolved by [44-schema-ownership-and-contract-generation-spec.md](44-schema-ownership-and-contract-generation-spec.md).

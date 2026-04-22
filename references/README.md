@@ -48,6 +48,7 @@ This directory is the canonical design corpus for Entangle.
 42. [41-agent-engine-boundary-and-reuse-policy.md](41-agent-engine-boundary-and-reuse-policy.md)
 43. [42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md)
 44. [43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md)
+45. [44-schema-ownership-and-contract-generation-spec.md](44-schema-ownership-and-contract-generation-spec.md)
 
 ## Role of this corpus
 

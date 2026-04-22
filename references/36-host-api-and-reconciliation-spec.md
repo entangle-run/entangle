@@ -35,6 +35,10 @@ That means:
 This simplifies the first implementation without weakening the architectural
 model.
 
+Canonical request and response DTO schemas for this API should live in
+`packages/types`, while semantic checks and reconciler behavior remain owned by
+`packages/validator` and `services/host`.
+
 ## 2. Recommended transport
 
 Recommended first transport shape:

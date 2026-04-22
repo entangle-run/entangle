@@ -234,6 +234,17 @@ Current rule:
 - offline validation and package scaffolding are required;
 - online runtime control remains intentionally narrower than Studio.
 
+### 4. Schema ownership and contract generation
+
+Resolved by
+[44-schema-ownership-and-contract-generation-spec.md](44-schema-ownership-and-contract-generation-spec.md).
+
+Current rule:
+
+- `packages/types` owns the primary `zod` schemas and host API DTO contracts;
+- validators, host routes, CLI, Studio, and future generated artifacts must
+  consume those contracts rather than redefining them.
+
 ## Gate assessment against the quality framework
 
 Using [30-quality-gates-and-acceptance-criteria.md](30-quality-gates-and-acceptance-criteria.md):

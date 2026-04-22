@@ -44,6 +44,13 @@ That does not mean the repository should stop auditing itself; it means the
 next work can move from architectural uncertainty into schema, validator, host,
 runner, CLI, and Studio scaffolding without changing the core model again.
 
+The contract-ownership layer is now also explicit:
+
+- `packages/types` should own the primary `zod` schemas and host API DTO
+  contracts;
+- `packages/validator` should own semantic validation on top of those schemas;
+- generated artifacts such as JSON Schema should remain derivative, not primary.
+
 The specification corpus now has five layers:
 
 - descriptive and conceptual architecture;

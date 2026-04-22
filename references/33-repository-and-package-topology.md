@@ -202,8 +202,11 @@ Owns:
 
 - canonical TypeScript types;
 - `zod` schemas;
+- host API DTO schemas;
 - JSON Schema export path later;
 - protocol, graph, binding, and resource-catalog contract definitions.
+
+Must remain the primary contract source rather than one consumer among many.
 
 ### `packages/validator`
 
@@ -237,6 +240,9 @@ Owns:
 
 - client bindings for host APIs;
 - transport and request wrappers shared by Studio, CLI, and tests.
+
+Must consume canonical request and response DTO contracts from `packages/types`
+rather than redefining them locally.
 
 ### `packages/package-scaffold`
 

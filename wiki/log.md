@@ -135,3 +135,7 @@ Closed the last pre-implementation questions by deciding that Entangle should ow
 ## [2026-04-22] audit | Corrected final pre-scaffold drift in executive summary, ignore policy, and phase wording
 
 Ran a follow-up coherence pass on the post-audit refinement batch. Corrected the remaining stale executive-summary description of the hackathon graph, aligned the ignore policy with the now-canonical `.entangle/` runtime root and upcoming pnpm/turbo tooling, and tightened the wiki overview so it reflects that implementation-readiness has passed while the repository remains under the standard audit loop.
+
+## [2026-04-22] decision | Froze schema ownership and downgraded the remaining open questions to non-blocking tradeoffs
+
+Clarified that `packages/types` must own the primary `zod` schemas and host API DTO contracts, with validators, host routes, CLI, and Studio consuming those contracts rather than redefining them. Also updated the open-questions document so it no longer presents already-resolved implementation decisions as active blockers, and instead tracks only residual future-facing tradeoffs.
