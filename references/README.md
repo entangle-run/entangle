@@ -49,6 +49,7 @@ This directory is the canonical design corpus for Entangle.
 43. [42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md)
 44. [43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md)
 45. [44-schema-ownership-and-contract-generation-spec.md](44-schema-ownership-and-contract-generation-spec.md)
+46. [45-quality-engineering-and-ci-baseline.md](45-quality-engineering-and-ci-baseline.md)
 
 ## Role of this corpus
 

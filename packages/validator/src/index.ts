@@ -242,7 +242,7 @@ function validateGraphSemantics(
     packageSourceIds?: string[];
   } = {}
 ): ValidationFinding[] {
-  const { catalog, packageSourceIds = [] } = options;
+  const { catalog, packageSourceIds } = options;
   const findings: ValidationFinding[] = [];
   const nodeIds = graph.nodes.map((node) => node.nodeId);
   const edgeIds = graph.edges.map((edge) => edge.edgeId);
@@ -364,7 +364,7 @@ function validateGraphSemantics(
 
     if (
       node.packageSourceRef &&
-      packageSourceIds.length > 0 &&
+      packageSourceIds &&
       !packageSourceIds.includes(node.packageSourceRef)
     ) {
       findings.push(

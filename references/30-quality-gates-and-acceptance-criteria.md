@@ -42,7 +42,10 @@ Implementation can begin seriously when:
 - deployment assumptions are explicit;
 - schema ownership is explicit;
 - validation responsibility is explicit;
-- hackathon runtime profile is frozen enough to build against.
+- hackathon runtime profile is frozen enough to build against;
+- the repository has a real lint strategy, not only TypeScript strictness;
+- the first contract-critical tests exist;
+- CI can run the default quality gates automatically.
 
 ## 4. Hackathon-readiness gate
 
@@ -99,7 +102,17 @@ The specification corpus itself should satisfy:
 - no hidden contradictions between documents;
 - audit-loop maintenance after each major batch.
 
-## 9. What does not count as passing
+## 9. Engineering-quality gate
+
+The implementation baseline is not strong enough if any of the following are
+missing:
+
+- real static-quality checks;
+- tests over the most failure-prone contracts;
+- a standard aggregate verification command;
+- CI enforcement for the default gates.
+
+## 10. What does not count as passing
 
 The following do not count as quality:
 
@@ -107,8 +120,11 @@ The following do not count as quality:
 - TODO-shaped architecture;
 - client mock state presented as runtime truth;
 - hackathon shortcuts hidden in canonical types;
-- implementation proceeding despite unresolved core boundaries.
+- implementation proceeding despite unresolved core boundaries;
+- "lint" that is only another name for typecheck;
+- API behavior that distinguishes invalid input only by throwing generic 500s;
+- manual verification standing in for missing tests and CI.
 
-## 10. Practical use
+## 11. Practical use
 
 This document should be used at the end of each major phase to decide whether the repository is actually ready to move forward, rather than moving because of time pressure alone.

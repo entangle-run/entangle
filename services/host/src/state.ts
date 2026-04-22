@@ -15,7 +15,6 @@ import {
   type PackageSourceInspectionResponse,
   type PackageSourceRecord,
   type PackageSourceListResponse,
-  type ValidationReport
 } from "@entangle/types";
 import {
   validateDeploymentResourceCatalogDocument,
@@ -41,6 +40,7 @@ const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
 const activeGraphRevisionPath = path.join(graphRoot, "active-revision.json");
 const graphRevisionsRoot = path.join(graphRoot, "revisions");
+const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 
 type GraphRevisionRecord = {
@@ -248,7 +248,7 @@ async function appendControlPlaneEvent(
 export async function initializeHostState(): Promise<void> {
   await Promise.all([
     ensureDirectory(path.join(desiredRoot, "node-bindings")),
-    ensureDirectory(path.join(desiredRoot, "runtime-intents")),
+    ensureDirectory(runtimeIntentsRoot),
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(path.join(observedRoot, "runtimes")),
@@ -286,9 +286,7 @@ export async function getCatalogInspection(): Promise<CatalogInspectionResponse>
   };
 }
 
-export async function validateCatalogCandidate(
-  input: unknown
-): Promise<CatalogInspectionResponse> {
+export function validateCatalogCandidate(input: unknown): CatalogInspectionResponse {
   const parseResult = deploymentResourceCatalogSchema.safeParse(input);
 
   if (!parseResult.success) {
@@ -314,7 +312,7 @@ export async function validateCatalogCandidate(
 export async function applyCatalog(
   input: unknown
 ): Promise<CatalogInspectionResponse> {
-  const inspection = await validateCatalogCandidate(input);
+  const inspection = validateCatalogCandidate(input);
 
   if (!inspection.validation.ok || !inspection.catalog) {
     return inspection;
@@ -563,8 +561,13 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
+  const runtimeIntentEntries = await readdir(runtimeIntentsRoot, {
+    withFileTypes: true
+  });
   const desiredRuntimeCount =
-    graphInspection.graph?.nodes.filter((node) => node.nodeKind !== "user").length ??
+    runtimeIntentEntries.filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .length ||
+    graphInspection.graph?.nodes.filter((node) => node.nodeKind !== "user").length ||
     0;
 
   return {

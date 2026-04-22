@@ -96,6 +96,7 @@ Optional but strongly recommended package for:
 ### Strong yes
 
 - define schemas first;
+- establish real quality gates early, before behavior spreads across packages;
 - define the deployment resource catalog and node binding references before
   hardcoding relay, git, or model endpoints into runtime code;
 - introduce a host/control-plane service before making Studio responsible for runtime lifecycle;
@@ -123,23 +124,24 @@ Optional but strongly recommended package for:
 4. define A2A protocol;
 5. freeze schema ownership and host API DTO ownership in `packages/types`;
 6. implement validator;
-7. implement `entangle-agent-engine`;
-8. implement `entangle-host` and local runtime-backend abstraction;
-9. implement local package admission + node execution;
+7. establish lint, test, and CI baselines around the first real contracts;
+8. implement `entangle-agent-engine`;
+9. implement `entangle-host` and local runtime-backend abstraction;
+10. implement local package admission + node execution;
    First serious host slice:
    - fully support `local_path` package admission;
    - keep `local_archive` in the canonical model, but defer archive
      materialization until the import pipeline exists;
    - persist catalog, package-source, and graph desired state before dynamic
      runtime management.
-10. implement Nostr messaging;
-11. implement git artifact handoff;
-12. implement model-endpoint adapter binding;
-13. implement wiki update phase;
-14. implement Studio graph and runtime view against host APIs;
-15. add bounded graph editing, node admission, and runtime controls in Studio;
-16. add thin CLI access to the same host control-plane surfaces.
-17. add thin package scaffolding through shared scaffold utilities.
+11. implement Nostr messaging;
+12. implement git artifact handoff;
+13. implement model-endpoint adapter binding;
+14. implement wiki update phase;
+15. implement Studio graph and runtime view against host APIs;
+16. add bounded graph editing, node admission, and runtime controls in Studio;
+17. add thin CLI access to the same host control-plane surfaces;
+18. add thin package scaffolding through shared scaffold utilities.
 
 ## Definition of done for the first serious version
 

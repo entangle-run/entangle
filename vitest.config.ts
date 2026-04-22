@@ -1,0 +1,13 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  root: process.cwd(),
+  test: {
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"]
+    },
+    environment: "node",
+    include: ["src/**/*.test.ts"]
+  }
+});

@@ -127,7 +127,8 @@ Periodically check for:
 - orphan pages;
 - missing links;
 - duplicated concepts;
-- open questions that need promotion into proper design pages.
+- open questions that need promotion into proper design pages;
+- code or tooling quality assumptions that have not yet been encoded into checks.
 
 ## Interaction audit loop
 
@@ -135,14 +136,15 @@ Before substantial work in any interaction:
 
 1. reread `README.md`, `resources/README.md`, `wiki/overview.md`, `wiki/index.md`, and `wiki/log.md`;
 2. inspect any concept, decision, source, or reference pages directly affected by the current request;
-3. search for stale status statements, contradictions, or drift introduced by earlier changes;
+3. search for stale status statements, contradictions, drift introduced by earlier changes, and quality regressions in code or tooling;
 4. correct durable inconsistencies before building new work on top of them.
 
 After durable repository changes:
 
 1. update the affected canonical pages;
 2. update `wiki/index.md` if new wiki pages were added;
-3. append a `wiki/log.md` entry when project state, corpus structure, or design baseline changes in a way future sessions must remember.
+3. append a `wiki/log.md` entry when project state, corpus structure, or design baseline changes in a way future sessions must remember;
+4. record the quality gate that now protects the new state when the batch changes engineering process.
 
 Treat the repository as a live system that must stay internally coherent across sessions. Never assume prior documentation is still accurate without a quick audit pass.
 

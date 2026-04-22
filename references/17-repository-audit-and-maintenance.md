@@ -22,6 +22,10 @@ Entangle is intentionally front-loaded with architecture, protocol, runtime, and
 
 The cost of a lightweight audit at the start of each interaction is much lower than the cost of coding against an incoherent corpus.
 
+The same principle applies to quality. It is cheaper to detect a broken
+boundary, weak test surface, or shallow automation rule during the audit loop
+than after several implementation batches have compounded around it.
+
 ## Repository layers that must stay aligned
 
 ### Root orientation
@@ -71,7 +75,9 @@ Search for:
 - statements that no longer match the real repository state;
 - outdated next steps;
 - resource manifests that no longer match the filesystem;
-- decisions that were superseded but never updated.
+- decisions that were superseded but never updated;
+- code paths that are semantically weak even if they are locally consistent;
+- missing quality automation for newly introduced behavior.
 
 ### 3. Reconcile before extending
 
@@ -84,6 +90,7 @@ If project state changed in a way that future sessions should remember:
 - update the relevant canonical files;
 - update `wiki/index.md` if new wiki pages were introduced;
 - append a log entry to `wiki/log.md`.
+- when the change affects engineering process, record the new quality gate or automation baseline explicitly.
 
 ## Definition of “under control”
 
@@ -159,3 +166,10 @@ The point is not to create documentation for its own sake. The point is to ensur
 The working rule for Entangle should be:
 
 > Every substantial interaction starts with an audit pass and should leave the repository in a more coherent state than it found it.
+
+For implementation-heavy phases, "more coherent" also means:
+
+- better tested;
+- more strongly linted;
+- more clearly automated;
+- less dependent on manual vigilance.

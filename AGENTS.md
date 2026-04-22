@@ -23,15 +23,16 @@ Before substantial work:
 
 1. read `README.md`, `resources/README.md`, `wiki/overview.md`, `wiki/index.md`, and `wiki/log.md`;
 2. read any concept, decision, source, or reference files directly touched by the task;
-3. check for stale state, contradictions, and drift;
+3. check for stale state, contradictions, drift, and quality regressions in code or tooling;
 4. correct durable inconsistencies before extending the repository.
 
 After durable repository changes:
 
 1. update the affected canonical files;
 2. update `wiki/index.md` if new wiki pages were added;
-3. append a meaningful entry to `wiki/log.md` when project state or design baseline changed.
-4. commit the coherent batch once the repository is internally consistent.
+3. append a meaningful entry to `wiki/log.md` when project state or design baseline changed;
+4. run the relevant automated checks for the touched scope;
+5. commit the coherent batch once the repository is internally consistent.
 
 ## Design rules
 
@@ -89,3 +90,6 @@ At this stage, prioritize:
 ## Working attitude
 
 Do not treat this repository as static notes. Treat it as a controlled engineering baseline that should become more coherent and more implementation-ready after each substantial interaction.
+
+Raise the bar actively. Audit for quality, cleanliness, and professional
+engineering rigor with the same seriousness used for consistency.

@@ -69,11 +69,11 @@ This repository currently contains:
   graph state under `.entangle/host`;
 - a host client, package scaffold utility, runner stub, CLI, and Studio
   surface that now consume real host state instead of a fake graph;
-- a verified baseline where `pnpm install`, `pnpm typecheck`, and `pnpm build`
-  all pass.
+- a quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- a verified baseline where `pnpm verify` passes end to end.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 
 - reread the current project state;
-- check for stale status statements or drift between documents;
+- check for stale status statements, drift between documents, and quality regressions in code or tooling;
 - update durable project memory when the state changes.

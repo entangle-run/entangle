@@ -18,10 +18,8 @@ function printJson(value: unknown): void {
 }
 
 function resolveHostUrl(command: Command): string {
-  const rootOptions = command.parent?.opts?.() as { hostUrl?: string } | undefined;
-  const nestedRootOptions = command.parent?.parent?.opts?.() as
-    | { hostUrl?: string }
-    | undefined;
+  const rootOptions = command.parent?.opts<{ hostUrl?: string }>();
+  const nestedRootOptions = command.parent?.parent?.opts<{ hostUrl?: string }>();
 
   return (
     rootOptions?.hostUrl ??

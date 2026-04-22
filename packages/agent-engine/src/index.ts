@@ -10,20 +10,22 @@ export interface AgentEngine {
 
 export function createStubAgentEngine(): AgentEngine {
   return {
-    async executeTurn(
+    executeTurn(
       request: AgentEngineTurnRequest
     ): Promise<AgentEngineTurnResult> {
-      return agentEngineTurnResultSchema.parse({
-        assistantMessages: [
-          `Stub engine executed for node '${request.nodeId}' with ${request.toolDefinitions.length} tool definitions.`
-        ],
-        toolRequests: [],
-        stopReason: "completed",
-        usage: {
-          inputTokens: 0,
-          outputTokens: 0
-        }
-      });
+      return Promise.resolve(
+        agentEngineTurnResultSchema.parse({
+          assistantMessages: [
+            `Stub engine executed for node '${request.nodeId}' with ${request.toolDefinitions.length} tool definitions.`
+          ],
+          toolRequests: [],
+          stopReason: "completed",
+          usage: {
+            inputTokens: 0,
+            outputTokens: 0
+          }
+        })
+      );
     }
   };
 }

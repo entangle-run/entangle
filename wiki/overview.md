@@ -64,8 +64,10 @@ The repository now also contains the first real implementation baseline:
   inspection/apply;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
-- a verified install/build/typecheck path and a manually exercised
-  host-plus-CLI flow.
+- a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- targeted tests over validator semantics, host-client error handling, package
+  scaffolding, and host API input failure modes;
+- a verified `pnpm verify` path for the current workspace.
 
 The specification corpus now has five layers:
 
@@ -120,11 +122,11 @@ The central design direction is now clear:
 
 - deepen the remaining canonical objects in `packages/types`, especially
   effective bindings and injected runtime context;
-- expand `packages/validator` further into package-source-aware and
-  runtime-profile-aware checks;
+- expand `packages/validator` further into runtime-profile-aware and
+  reconciliation-aware checks;
 - move `entangle-host` from desired-state ownership into reconciliation and
   runtime lifecycle management;
 - move `entangle-runner` from stub execution into injected-context and Nostr
   lifecycle handling;
-- keep Studio and CLI aligned with the same host boundary while the repository
-  audit loop stays active.
+- keep Studio and CLI aligned with the same host boundary while preserving the
+  stricter quality and audit loop.

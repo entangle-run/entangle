@@ -2,6 +2,7 @@ import {
   catalogInspectionResponseSchema,
   graphInspectionResponseSchema,
   graphMutationResponseSchema,
+  hostErrorResponseSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
@@ -39,6 +40,32 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 }
 
+function parseResponseBody(rawBody: string): unknown {
+  if (rawBody.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawBody) as unknown;
+  } catch {
+    return rawBody;
+  }
+}
+
+function formatErrorBody(status: number, body: unknown): string {
+  const parsedHostError = hostErrorResponseSchema.safeParse(body);
+
+  if (parsedHostError.success) {
+    return `Host request failed with ${status} [${parsedHostError.data.code}]: ${parsedHostError.data.message}`;
+  }
+
+  if (typeof body === "string") {
+    return `Host request failed with ${status}: ${body}`;
+  }
+
+  return `Host request failed with ${status}: ${JSON.stringify(body, null, 2)}`;
+}
+
 async function parseResponse<T>(
   response: FetchResponse,
   parser: { parse(input: unknown): T },
@@ -46,12 +73,11 @@ async function parseResponse<T>(
     acceptErrorStatus?: boolean;
   } = {}
 ): Promise<T> {
-  const body = await response.json();
+  const rawBody = await response.text();
+  const body = parseResponseBody(rawBody);
 
   if (!response.ok && !options.acceptErrorStatus) {
-    throw new Error(
-      `Host request failed with ${response.status}: ${JSON.stringify(body, null, 2)}`
-    );
+    throw new Error(formatErrorBody(response.status, body));
   }
 
   return parser.parse(body);
@@ -59,8 +85,7 @@ async function parseResponse<T>(
 
 export function createHostClient(options: HostClientOptions) {
   const baseUrl = normalizeBaseUrl(options.baseUrl);
-  const fetchImpl =
-    options.fetchImpl ?? ((globalThis.fetch as FetchLike | undefined) ?? null);
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
 
   if (!fetchImpl) {
     throw new Error("A fetch implementation is required to create an Entangle host client.");
