@@ -79,6 +79,9 @@ The Compose layer should not own:
 
 - primary relay service for the local profile;
 - referenced by the deployment resource catalog as a relay profile.
+- must be started with an explicit mounted config file in the local Compose
+  profile; a config-less `strfry relay` command is not a valid local deployment
+  baseline.
 
 ### `gitea`
 
@@ -181,6 +184,13 @@ Recommended approach:
 - stable service health checks in Compose where practical;
 - host-level startup checks for catalog dependencies;
 - clear degraded status when infrastructure is unavailable.
+
+For `strfry` specifically, readiness must assume:
+
+- an explicit `strfry.conf` exists and is mounted into the container;
+- the relay binds to a container-reachable interface such as `0.0.0.0`;
+- the service is not considered usable merely because the container process was
+  created.
 
 ## 10. Secret delivery stance
 

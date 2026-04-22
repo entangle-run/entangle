@@ -1,12 +1,18 @@
 import { pathToFileURL } from "node:url";
 import { createStubAgentEngine } from "@entangle/agent-engine";
-import type { AgentEngineTurnResult } from "@entangle/types";
+import type {
+  AgentEngineTurnResult,
+  EffectiveRuntimeContext
+} from "@entangle/types";
 import { getPublicKey } from "nostr-tools";
+import { NostrRunnerTransport } from "./nostr-transport.js";
 import {
   buildAgentEngineTurnRequest,
   loadRuntimeContext,
   resolveRuntimeContextPath
 } from "./runtime-context.js";
+import { RunnerService } from "./service.js";
+import type { RunnerTransport } from "./transport.js";
 
 function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefined {
   if (!secretHex) {
@@ -22,18 +28,12 @@ function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefi
   return Uint8Array.from(Buffer.from(normalized, "hex"));
 }
 
-export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
-  contextPath: string;
-  graphId: string;
-  nodeId: string;
-  packageId: string | undefined;
+function resolveRunnerIdentity(
+  runtimeContext: EffectiveRuntimeContext
+): {
   publicKey: string;
-  result: AgentEngineTurnResult;
-}> {
-  const contextPath = resolveRuntimeContextPath(runtimeContextPath);
-  const runtimeContext = await loadRuntimeContext(contextPath);
-  const turnRequest = await buildAgentEngineTurnRequest(runtimeContext);
-  const engine = createStubAgentEngine();
+  secretKey: Uint8Array;
+} {
   const secretEnvVar =
     runtimeContext.identityContext.secretDelivery.mode === "env_var"
       ? runtimeContext.identityContext.secretDelivery.envVar
@@ -58,6 +58,85 @@ export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
     );
   }
 
+  return {
+    publicKey,
+    secretKey: configuredSecretKey
+  };
+}
+
+function waitForAbortSignal(abortSignal: AbortSignal | undefined): Promise<void> {
+  if (!abortSignal) {
+    return new Promise(() => {
+      /* Intentionally never resolves without an external stop signal. */
+    });
+  }
+
+  if (abortSignal.aborted) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    abortSignal.addEventListener("abort", () => resolve(), { once: true });
+  });
+}
+
+function createProcessAbortController(): AbortController {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+
+  process.once("SIGINT", abort);
+  process.once("SIGTERM", abort);
+
+  return controller;
+}
+
+export async function createConfiguredRunnerService(
+  runtimeContextPath?: string,
+  input: {
+    transport?: RunnerTransport;
+  } = {}
+): Promise<{
+  contextPath: string;
+  publicKey: string;
+  runtimeContext: EffectiveRuntimeContext;
+  service: RunnerService;
+}> {
+  const contextPath = resolveRuntimeContextPath(runtimeContextPath);
+  const runtimeContext = await loadRuntimeContext(contextPath);
+  const { publicKey, secretKey } = resolveRunnerIdentity(runtimeContext);
+  const transport =
+    input.transport ??
+    new NostrRunnerTransport({
+      context: runtimeContext,
+      secretKey
+    });
+  const service = new RunnerService({
+    context: runtimeContext,
+    transport
+  });
+
+  return {
+    contextPath,
+    publicKey,
+    runtimeContext,
+    service
+  };
+}
+
+export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
+  contextPath: string;
+  graphId: string;
+  nodeId: string;
+  packageId: string | undefined;
+  publicKey: string;
+  result: AgentEngineTurnResult;
+}> {
+  const contextPath = resolveRuntimeContextPath(runtimeContextPath);
+  const runtimeContext = await loadRuntimeContext(contextPath);
+  const turnRequest = await buildAgentEngineTurnRequest(runtimeContext);
+  const engine = createStubAgentEngine();
+  const { publicKey } = resolveRunnerIdentity(runtimeContext);
+
   const result = await engine.executeTurn(turnRequest);
 
   return {
@@ -70,9 +149,44 @@ export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
   };
 }
 
+export async function runRunnerServiceUntilSignal(input: {
+  abortSignal?: AbortSignal;
+  runtimeContextPath?: string;
+  transport?: RunnerTransport;
+} = {}): Promise<{
+  contextPath: string;
+  graphId: string;
+  nodeId: string;
+  publicKey: string;
+  runtimeRoot: string;
+}> {
+  const configured = await createConfiguredRunnerService(
+    input.runtimeContextPath,
+    input.transport ? { transport: input.transport } : {}
+  );
+  const startResult = await configured.service.start();
+
+  try {
+    await waitForAbortSignal(input.abortSignal);
+  } finally {
+    await configured.service.stop();
+  }
+
+  return {
+    contextPath: configured.contextPath,
+    graphId: configured.runtimeContext.binding.graphId,
+    nodeId: configured.runtimeContext.binding.node.nodeId,
+    publicKey: configured.publicKey,
+    runtimeRoot: startResult.runtimeRoot
+  };
+}
+
 async function main(): Promise<void> {
-  const bootstrap = await runRunnerOnce();
-  console.log(JSON.stringify(bootstrap, null, 2));
+  const abortController = createProcessAbortController();
+  const runner = await runRunnerServiceUntilSignal({
+    abortSignal: abortController.signal
+  });
+  console.log(JSON.stringify(runner, null, 2));
 }
 
 function isDirectExecution(): boolean {

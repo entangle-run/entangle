@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-22] implementation | Added live Nostr runner transport and validated it against a real local relay
+
+Extended `entangle-runner` from deterministic transport-only intake into a
+real Nostr-backed transport slice. Added canonical NIP-59 / Entangle rumor
+transport constants, implemented a real `NostrRunnerTransport`, tightened
+runner startup so readable relay connections are established before the service
+reports itself as started, and verified the batch with a live local relay smoke
+that produced session, conversation, and turn records under the runtime root.
+
+## [2026-04-22] fix | Corrected the local strfry Compose profile to mount a real relay config
+
+Found that the local Compose relay service was not actually usable because it
+started `strfry` without a config file. Added an explicit
+`deploy/config/strfry.local.conf`, mounted it into the Compose service, and
+revalidated local relay reachability through `nostr-tools` before rerunning the
+end-to-end runner smoke.
+
 ## [2026-04-22] implementation | Add machine-readable A2A and runner state contracts
 
 Added canonical `@entangle/types` ownership for Entangle A2A payloads and

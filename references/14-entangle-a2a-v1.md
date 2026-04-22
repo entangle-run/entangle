@@ -98,6 +98,13 @@ Declare that no more followup is expected for this conversation.
 
 Use NIP-17/NIP-59 style private messaging for inter-node communication.
 
+For the current Entangle implementation profile:
+
+- the outer wrapped event kind is the canonical NIP-59 gift-wrap kind `1059`;
+- the inner Entangle rumor kind is the dedicated custom kind `24159`;
+- message threading and local session correlation must use the inner rumor id as
+  the canonical message/event id, not the outer gift-wrap event id.
+
 ### Public events
 
 Use public custom events only for:

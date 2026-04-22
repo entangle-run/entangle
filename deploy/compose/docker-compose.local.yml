@@ -50,10 +50,13 @@ services:
   strfry:
     image: ghcr.io/hoytech/strfry:latest
     command:
+      - --config
+      - /etc/strfry.conf
       - relay
     ports:
       - "${ENTANGLE_STRFRY_PORT:-7777}:7777"
     volumes:
+      - ../config/strfry.local.conf:/etc/strfry.conf:ro
       - strfry-data:/app/strfry-db
     networks:
       - entangle-local

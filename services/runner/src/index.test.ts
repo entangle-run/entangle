@@ -4,13 +4,14 @@ import {
   buildAgentEngineTurnRequest,
   loadRuntimeContext
 } from "./runtime-context.js";
-import { runRunnerOnce } from "./index.js";
+import { runRunnerOnce, runRunnerServiceUntilSignal } from "./index.js";
 import {
   cleanupRuntimeFixtures,
   createRuntimeFixture,
   runnerPublicKey,
   runnerSecretHex
 } from "./test-fixtures.js";
+import { InMemoryRunnerTransport } from "./transport.js";
 
 afterEach(async () => {
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
@@ -49,5 +50,23 @@ describe("runner runtime context", () => {
     expect(result.packageId).toBe("worker-it");
     expect(result.publicKey).toBe(runnerPublicKey);
     expect(result.result.assistantMessages[0]).toContain("worker-it");
+  });
+
+  it("can start and stop the long-lived runner service with an injected transport", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+    const abortController = new AbortController();
+
+    abortController.abort();
+
+    const result = await runRunnerServiceUntilSignal({
+      abortSignal: abortController.signal,
+      runtimeContextPath: fixture.contextPath,
+      transport: new InMemoryRunnerTransport()
+    });
+
+    expect(result.graphId).toBe("graph-alpha");
+    expect(result.nodeId).toBe("worker-it");
+    expect(result.publicKey).toBe(runnerPublicKey);
   });
 });

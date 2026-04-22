@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   entangleA2AMessageSchema,
+  entangleNostrGiftWrapKind,
+  entangleNostrRumorKind,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition
@@ -84,5 +86,12 @@ describe("runner lifecycle transition helpers", () => {
     expect(isAllowedApprovalLifecycleTransition("approved", "pending")).toBe(
       false
     );
+  });
+});
+
+describe("nostr transport constants", () => {
+  it("keeps the canonical wrapped-event kinds stable", () => {
+    expect(entangleNostrGiftWrapKind).toBe(1059);
+    expect(entangleNostrRumorKind).toBe(24159);
   });
 });

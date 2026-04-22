@@ -160,7 +160,7 @@ Optional but strongly recommended package for:
 18. add thin package scaffolding through shared scaffold utilities.
 
 The repository now has partial completion through step 13, with step 11 now
-started locally but not yet connected to a live relay:
+implemented through a real local relay path:
 
 - types, validator, quality gates, and CI baseline are in place;
 - host owns desired graph and resource state;
@@ -168,6 +168,8 @@ started locally but not yet connected to a live relay:
   runtime context;
 - runner now consumes injected runtime context for both its bootstrap path and
   its first long-lived local intake loop;
+- runner now has a real Nostr transport adapter using NIP-59 gift wrapping and
+  a dedicated Entangle rumor kind, plus a successful local live-relay smoke;
 - CLI already covers validation, scaffolding, and the first runtime host
   operations.
 

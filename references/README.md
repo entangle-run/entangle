@@ -58,6 +58,7 @@ This directory is the canonical design corpus for Entangle.
 52. [51-machine-readable-a2a-and-runner-state-contracts.md](51-machine-readable-a2a-and-runner-state-contracts.md)
 53. [52-runtime-identity-materialization-and-secret-boundaries.md](52-runtime-identity-materialization-and-secret-boundaries.md)
 54. [53-runner-transport-and-long-lived-intake-slice.md](53-runner-transport-and-long-lived-intake-slice.md)
+55. [54-live-nostr-transport-and-relay-profile-slice.md](54-live-nostr-transport-and-relay-profile-slice.md)
 
 ## Role of this corpus
 

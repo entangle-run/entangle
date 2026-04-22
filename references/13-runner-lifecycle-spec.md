@@ -31,6 +31,8 @@ The runner starts with:
 The runner continuously:
 
 - maintains relay subscriptions;
+- does not report itself as subscription-ready until the configured readable
+  relay set has been connected successfully for the active transport mode;
 - watches inbound messages;
 - tracks session-local state;
 - manages memory updates;
@@ -149,6 +151,8 @@ into a first long-lived local intake loop.
 That implemented slice currently includes:
 
 - a deterministic transport abstraction used in local tests;
+- a real Nostr transport adapter using NIP-59 gift wrapping plus an
+  Entangle-specific wrapped rumor kind;
 - a file-backed runner-local state store for session, conversation, and turn
   records;
 - recipient-bound subscription at the runner-service boundary;
@@ -156,8 +160,8 @@ That implemented slice currently includes:
 - lifecycle advancement from intake through completion for the current strict
   local path;
 - bounded `task.result` emission when the inbound response policy requires a
-  follow-up.
+  follow-up;
+- live relay smoke validation against a real local `strfry` instance.
 
-Live Nostr transport and git artifact work still remain future slices, but the
-runner lifecycle is no longer only conceptual prose plus a single bootstrap
-turn.
+Git artifact work still remains a future slice, but the runner lifecycle is no
+longer only conceptual prose plus a single bootstrap turn.

@@ -83,6 +83,12 @@ This repository currently contains:
   validates inbound A2A messages, advances session and conversation lifecycle
   state, builds engine turn requests from inbound context, and emits
   `task.result` replies when response policy requires them;
+- a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
+  a dedicated Entangle rumor kind, relay-readiness preconnect semantics, and a
+  verified local relay smoke where a real wrapped message produces persisted
+  session, conversation, and turn state;
+- a corrected local `strfry` deployment profile with an explicit mounted config
+  file instead of an invalid config-less relay command;
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;

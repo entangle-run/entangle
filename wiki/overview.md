@@ -80,6 +80,10 @@ The repository now also contains the first real implementation baseline:
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
   and emits bounded `task.result` replies when required;
+- a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
+  Entangle rumor kind, with relay-readiness preconnect semantics at startup;
+- a corrected local `strfry` deployment profile with an explicit mounted relay
+  config instead of an invalid config-less command;
 - machine-readable Entangle A2A payloads and runner-local session,
   conversation, approval, and turn-state contracts owned by `packages/types`
   plus validator entrypoints for those surfaces in `packages/validator`;
@@ -90,6 +94,9 @@ The repository now also contains the first real implementation baseline:
   scaffolding, host API input failure modes, runtime context conflict
   semantics, and runner bootstrap behavior;
 - a verified `pnpm verify` path for the current workspace.
+- a successful live local relay smoke where a wrapped Entangle message produced
+  persisted session, conversation, and turn records under the runner runtime
+  root.
 
 The specification corpus now has five layers:
 
@@ -142,8 +149,6 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- replace the in-memory runner transport with a real Nostr transport adapter
-  while preserving the same `RunnerTransport` boundary and deterministic tests;
 - add artifact-side git work and handoff logic inside the runner on top of the
   now-persisted session and conversation state;
 - expose richer runtime and reconciliation state in Studio without breaking the
