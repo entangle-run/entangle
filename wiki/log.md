@@ -67,3 +67,7 @@ Cloned the Google-led A2A protocol repository and the official Model Context Pro
 ## [2026-04-22] decision | Renamed local Nostr spec mirror from nips-official to nips
 
 Simplified the local reference name from `nips-official` to `nips` and updated the corpus so the local path naming is shorter and cleaner while preserving the same upstream reference.
+
+## [2026-04-22] decision | Added a high-rigor Codex workflow for deep specification work
+
+Recorded a project-specific workflow for using Codex during deep specification, architecture decision-making, and implementation planning so the project can optimize for durable system quality rather than fast but weak early choices.

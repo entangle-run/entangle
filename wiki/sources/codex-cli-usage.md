@@ -84,6 +84,36 @@ Useful for quickly inspecting the repository delta during active work.
 
 Useful when a task needs a more explicit planning pass, but it should not replace direct execution when the path is already clear.
 
+### `/model`
+
+Crucial for high-rigor architecture and specification work.
+
+For Entangle, use the strongest model and highest useful reasoning level when:
+
+- defining core contracts;
+- comparing architecture alternatives;
+- making stack and boundary decisions;
+- reviewing specification quality.
+
+### `/fast`
+
+Useful only for lightweight operational work.
+
+For Entangle:
+
+- use it for low-risk housekeeping;
+- avoid it for specification, architecture, protocol, and infrastructure decisions.
+
+### `/permissions`
+
+Useful to ensure Codex can actually inspect and modify the repository effectively during design and implementation work.
+
+### `/memories`
+
+Use carefully.
+
+For Entangle, the repository corpus and wiki should remain the primary durable source of truth. Session or product memory should support the work, not replace the project documentation.
+
 ## Most useful commands
 
 ### `codex`
@@ -259,6 +289,24 @@ Useful situationally, but not central to the project workflow.
 1. `codex exec -C /path/to/entangle ...`
 2. optionally request JSON or a schema-shaped output
 3. feed the result back into the repository if it becomes durable
+
+## High-rigor workflow for deep specification and architecture work
+
+When the goal is to maximize architectural quality rather than speed, use this profile:
+
+1. `/model` to select the strongest model and high reasoning
+2. keep `/fast` off
+3. start the batch with `/plan`
+4. use `/fork` or `/side` for competing alternatives
+5. converge in the main thread only after comparison
+6. run `/review` at the end of the batch
+7. use `/compact` before the thread gets degraded by context pressure
+
+Shell-side equivalent:
+
+1. `codex exec` for structured one-shot analysis
+2. `codex review --uncommitted` as an external review gate
+3. `codex resume --last` for continuity across long-running work
 
 ## Commands that matter most in practice
 

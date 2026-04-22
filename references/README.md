@@ -22,6 +22,7 @@ This directory is the canonical design corpus for Entangle.
 16. [15-implementation-strategy.md](15-implementation-strategy.md)
 17. [16-stack-and-infrastructure-recommendation.md](16-stack-and-infrastructure-recommendation.md)
 18. [17-repository-audit-and-maintenance.md](17-repository-audit-and-maintenance.md)
+19. [18-specification-and-decision-workflow.md](18-specification-and-decision-workflow.md)
 
 ## Role of this corpus
 
