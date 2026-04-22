@@ -15,9 +15,15 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in the architecture and design-consolidation phase.
+Entangle is currently in the architecture and design-consolidation phase, with a second layer of normative contract work now being added on top of the original design corpus.
 
 The local reference corpus is materialized under `resources/`, and the initial implementation stack direction has been recorded.
+
+The specification corpus now has three layers:
+
+- descriptive and conceptual architecture;
+- canonical type definitions;
+- normative invariants, normalization rules, validation rules, and runtime state machines.
 
 The central design direction is now clear:
 
@@ -43,7 +49,7 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- finalize canonical schemas for packages, nodes, edges, graphs, and messages;
-- formalize the first monorepo and package layout for `entangle-runner`, `entangle-studio`, and shared schema packages;
-- define the first Docker Compose service topology around Studio, runners, `strfry`, and `Gitea`;
-- begin the first runner, validator, and protocol skeletons while keeping the repository audit loop active.
+- finish tightening the remaining contract details and validation boundaries;
+- move into the next decision batch for monorepo layout, package boundaries, and service topology;
+- formalize the first Docker Compose service topology around Studio, runners, `strfry`, and `Gitea`;
+- only then begin the first runner, validator, and protocol skeletons while keeping the repository audit loop active.

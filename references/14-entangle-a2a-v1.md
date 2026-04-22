@@ -14,6 +14,8 @@ It should define:
 - stop conditions;
 - response behavior.
 
+The protocol must be interpreted together with the state and transition rules in [21-state-machines-and-runtime-transitions.md](21-state-machines-and-runtime-transitions.md). Message validity is not only a payload-shape question; it also depends on conversation, approval, and session state.
+
 ## Top-level payload
 
 ```json

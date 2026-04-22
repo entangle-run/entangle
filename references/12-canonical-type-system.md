@@ -168,7 +168,7 @@ Session is the unit of execution across the graph.
 | `entrypoint_node_id` | string | Entry node chosen by the user |
 | `originating_user_node_id` | string | User node |
 | `intent` | string | Human-facing summary of work |
-| `status` | enum | Session lifecycle state |
+| `status` | enum | Session lifecycle state; see [21-state-machines-and-runtime-transitions.md](21-state-machines-and-runtime-transitions.md) |
 | `trace_id` | string | Correlation id |
 
 ## 9. ArtifactRef

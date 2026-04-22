@@ -23,6 +23,9 @@ This directory is the canonical design corpus for Entangle.
 17. [16-stack-and-infrastructure-recommendation.md](16-stack-and-infrastructure-recommendation.md)
 18. [17-repository-audit-and-maintenance.md](17-repository-audit-and-maintenance.md)
 19. [18-specification-and-decision-workflow.md](18-specification-and-decision-workflow.md)
+20. [19-core-contract-invariants.md](19-core-contract-invariants.md)
+21. [20-normalization-and-validation-rules.md](20-normalization-and-validation-rules.md)
+22. [21-state-machines-and-runtime-transitions.md](21-state-machines-and-runtime-transitions.md)
 
 ## Role of this corpus
 

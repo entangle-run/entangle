@@ -71,3 +71,7 @@ Simplified the local reference name from `nips-official` to `nips` and updated t
 ## [2026-04-22] decision | Added a high-rigor Codex workflow for deep specification work
 
 Recorded a project-specific workflow for using Codex during deep specification, architecture decision-making, and implementation planning so the project can optimize for durable system quality rather than fast but weak early choices.
+
+## [2026-04-22] specification | Added normative contract rules for Entangle core types
+
+Extended the design corpus beyond descriptive architecture by adding a normative layer for core contract invariants, normalization and validation rules, and runtime state machines. This makes the corpus substantially more implementation-ready for a serious team build rather than only conceptually coherent.
