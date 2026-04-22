@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-22] implementation | Hardened the local Docker image topology for host, runner, and Studio
+
+Refined the local image profile so it no longer depends on implicit toolchain
+acquisition or broad runtime payloads. Added an explicit `.dockerignore`,
+moved host and runner build stages to pinned `pnpm` installation with an
+explicit store path, switched Studio to a static Nginx runtime image, added
+workspace package `files` allowlists, excluded compiled test files from
+deployable runtime `dist/` outputs, kept typed lint coverage over tests with a
+tightly scoped out-of-project configuration, and revalidated the batch with
+`pnpm verify`, real `build -> deploy` payload checks, and rebuilt Docker
+images for runner, host, and Studio.
+
 ## [2026-04-22] implementation | Added live Nostr runner transport and validated it against a real local relay
 
 Extended `entangle-runner` from deterministic transport-only intake into a

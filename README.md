@@ -89,6 +89,15 @@ This repository currently contains:
   session, conversation, and turn state;
 - a corrected local `strfry` deployment profile with an explicit mounted config
   file instead of an invalid config-less relay command;
+- a hardened local Docker image topology with an explicit `.dockerignore`,
+  explicit pinned `pnpm` installation inside build stages, a pinned shared
+  pnpm store path for cache mounts, and a static Nginx runtime image for
+  Studio instead of `vite preview`;
+- explicit deploy packaging boundaries for host, runner, CLI, and shared
+  packages through `files` allowlists and build outputs that exclude compiled
+  test files from runtime payloads;
+- verified portable deploy payloads for host and runner built from the real
+  `build -> deploy` path used by the service images;
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;

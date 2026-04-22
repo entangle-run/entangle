@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
@@ -9,6 +10,14 @@
       "DOM",
       "DOM.Iterable"
     ],
+    "paths": {
+      "@entangle/host-client": [
+        "../../packages/host-client/src/index.ts"
+      ],
+      "@entangle/types": [
+        "../../packages/types/src/index.ts"
+      ]
+    },
     "types": [
       "vite/client"
     ],

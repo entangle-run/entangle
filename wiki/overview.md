@@ -84,6 +84,13 @@ The repository now also contains the first real implementation baseline:
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay
   config instead of an invalid config-less command;
+- a hardened local Docker image topology with an explicit `.dockerignore`,
+  pinned `pnpm` installation and store semantics inside build stages, a static
+  Nginx Studio runtime, and verified host/runner portable deploy payloads
+  built from the real `build -> deploy` path;
+- build outputs for deployable runtime packages that now exclude compiled test
+  files, while typed linting keeps explicit coverage over tests through a
+  tightly scoped out-of-project configuration;
 - machine-readable Entangle A2A payloads and runner-local session,
   conversation, approval, and turn-state contracts owned by `packages/types`
   plus validator entrypoints for those surfaces in `packages/validator`;

@@ -245,3 +245,55 @@ Reject these directions:
 - using local infrastructure defaults as if they were permanent product
   contracts;
 - hiding critical deployment logic in undocumented shell scripts.
+
+## 14. Image build topology
+
+The local Docker profile should not rely on accidental workspace state on the
+operator machine.
+
+The preferred first serious stance is:
+
+- use multi-stage images for host and runner;
+- install a pinned `pnpm` version explicitly inside the build stages rather
+  than relying on implicit Corepack downloads;
+- pin the pnpm store directory to a known path that matches the Docker cache
+  mount target;
+- use `pnpm --filter ... build` followed by `pnpm --filter ... deploy` to
+  create portable runtime payloads;
+- keep the Studio runtime image static and minimal by serving the built bundle
+  with Nginx instead of running `vite preview` in production-like profiles.
+
+This matters because Entangle's local profile is not only a convenience stack.
+It is the first serious operational expression of the product boundary.
+
+## 15. Build-context discipline
+
+The Docker build context should exclude repository areas that are not required
+to produce runtime images.
+
+At minimum, the local profile should exclude:
+
+- live host state under `.entangle/`;
+- live secrets under `.entangle-secrets/`;
+- cloned research material under `resources/`;
+- large design-only material such as `references/` and `wiki/`.
+
+The goal is not only faster builds. It is also cleaner image provenance and a
+smaller attack surface for accidental inclusion of local runtime state.
+
+## 16. Runtime payload discipline
+
+Portable deploy payloads for host and runner must not include compiled test
+artifacts.
+
+Therefore:
+
+- deployable workspace packages should use explicit `files` allowlists;
+- TypeScript build outputs for runtime packages should exclude `*.test.ts`
+  sources from emitted `dist/`;
+- typed linting for tests should remain explicit and separate from runtime
+  build output concerns.
+
+The build graph and the runtime payload are related, but they are not the same
+thing. Runtime images should contain only what is needed to execute the
+service.

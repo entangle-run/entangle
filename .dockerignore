@@ -1,0 +1,14 @@
+.entangle
+.entangle-secrets
+.git
+.github
+.gitignore
+.turbo
+**/coverage
+**/dist
+**/node_modules
+apps/*/dist
+node_modules
+references
+resources
+wiki

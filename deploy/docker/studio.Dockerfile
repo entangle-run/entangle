@@ -1,20 +1,28 @@
-FROM node:22-bookworm-slim
+# syntax=docker/dockerfile:1.7
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+FROM node:22-bookworm-slim AS base
 
-RUN corepack enable
+ARG PNPM_VERSION=10.18.3
+ENV PNPM_STORE_DIR="/pnpm/store"
+
+RUN npm install --global "pnpm@${PNPM_VERSION}" \
+    && pnpm config set store-dir "${PNPM_STORE_DIR}"
 
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+FROM base AS build
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json tsconfig.solution.json ./
 COPY apps ./apps
-COPY services ./services
 COPY packages ./packages
 
-RUN pnpm install --filter @entangle/studio...
-RUN pnpm --filter @entangle/studio build
+RUN --mount=type=cache,id=pnpm-store-studio,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+RUN pnpm --filter @entangle/studio... build
+
+FROM nginx:1.29-alpine AS runtime
+
+COPY deploy/config/nginx.studio.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/studio/dist /usr/share/nginx/html
 
 EXPOSE 3000
-
-CMD ["pnpm", "--filter", "@entangle/studio", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]

@@ -23,7 +23,18 @@ export default tseslint.config(
         ...globals.node
       },
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            "apps/*/src/*.test.ts",
+            "apps/*/src/*.test.tsx",
+            "packages/*/src/*.test.ts",
+            "packages/*/src/*.test.tsx",
+            "services/*/src/*.test.ts",
+            "services/*/src/*.test.tsx",
+            "services/runner/src/test-fixtures.ts"
+          ],
+          defaultProject: "tsconfig.base.json"
+        },
         tsconfigRootDir: import.meta.dirname
       }
     },
