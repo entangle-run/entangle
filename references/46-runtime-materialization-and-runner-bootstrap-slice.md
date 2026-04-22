@@ -114,7 +114,8 @@ This confirms the intended architecture:
 The current runner slice now:
 
 - loads an injected runtime context from disk;
-- reads package prompt files from the materialized package root;
+- reads package prompt files from the host-managed package surface, which is now
+  backed by an immutable package store instead of a per-node copied snapshot;
 - reads runtime tool-budget hints from package runtime config;
 - collects memory references from the seeded workspace memory;
 - builds a normalized provider-agnostic engine turn request;

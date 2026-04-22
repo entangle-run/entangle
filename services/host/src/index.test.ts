@@ -1,4 +1,12 @@
-import { lstat, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdtemp,
+  mkdir,
+  readFile,
+  readlink,
+  rm,
+  writeFile
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -206,9 +214,16 @@ describe("buildHostServer", () => {
         url: "/v1/package-sources/admit"
       });
       expect(admitResponse.statusCode).toBe(200);
-      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
+      const admittedPackageSource = packageSourceInspectionResponseSchema.parse(
         admitResponse.json()
-      ).packageSource.packageSourceId;
+      ).packageSource;
+      const admittedPackageSourceId = admittedPackageSource.packageSourceId;
+      expect(admittedPackageSource).toMatchObject({
+        materialization: {
+          materializationKind: "immutable_store"
+        },
+        sourceKind: "local_path"
+      });
 
       const graphResponse = await server.inject({
         method: "PUT",
@@ -301,8 +316,16 @@ describe("buildHostServer", () => {
         packageId: "worker-it"
       });
       expect((await lstat(storedContext.workspace.packageRoot)).isSymbolicLink()).toBe(
-        false
+        true
       );
+      const packageLinkTarget = await readlink(storedContext.workspace.packageRoot);
+      expect(packageLinkTarget).toContain("../");
+      expect(
+        path.resolve(
+          path.dirname(storedContext.workspace.packageRoot),
+          packageLinkTarget
+        )
+      ).toBe(admittedPackageSource.materialization?.packageRoot);
     } finally {
       await server.close();
     }

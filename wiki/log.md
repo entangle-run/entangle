@@ -179,3 +179,7 @@ Refined the Docker runtime backend so `entangle-host` no longer shells out to th
 ## [2026-04-22] implementation | Replaced the blunt build-first typecheck gate with an explicit TypeScript project graph
 
 Refined the workspace toolchain so type safety is now driven by an explicit TypeScript project-reference graph instead of a generic `pnpm build` pre-step before workspace-wide typechecking. Added a root solution `tsconfig`, declared references across the composite packages and Node services, aligned composite package scripts around `tsc -b`, and kept Studio as a separate bundler-driven typecheck surface.
+
+## [2026-04-22] implementation | Replaced per-node package copies with an immutable host-managed package store
+
+Refined package materialization so admitted package contents are now hashed and materialized into an immutable host-managed package store under `.entangle/host/imports/packages/store/`. Package-source records now carry that materialization metadata, manifests and runtime package roots resolve from the store, and each node workspace exposes a host-managed package surface backed by the immutable store instead of a private copied snapshot.

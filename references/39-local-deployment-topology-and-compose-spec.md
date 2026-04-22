@@ -144,7 +144,8 @@ The important rule is:
 When the host creates a runner container, it should mount:
 
 - a shared host-state root at a stable container-visible path;
-- a materialized package snapshot inside that shared state;
+- an immutable package-store object inside that shared state, surfaced to the
+  node workspace through host-managed materialization;
 - injected runtime context as writable host-managed materialization;
 - node memory/wiki as writable persistent storage;
 - node artifact workspace as writable persistent storage;

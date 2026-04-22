@@ -64,8 +64,8 @@ The repository now also contains the first real implementation baseline:
   inspection/apply, runtime inspection, runtime context access, and runtime
   desired-state mutation;
 - host-side runtime materialization for effective bindings, runtime intents,
-  observed runtime records, workspace layout, package linking, and injected
-  runtime context;
+  observed runtime records, workspace layout, immutable package-store-backed
+  package surfaces, and injected runtime context;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,

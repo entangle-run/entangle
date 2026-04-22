@@ -170,11 +170,13 @@ under:
 - `.entangle/host/imports/packages/<package_source_id>/package/`
 
 If a package is admitted via `local_path`, the package-source record may point
-at the external path while workspaces mount it read-only.
+at the external path, but the host should still materialize the admitted
+contents into an immutable host-managed package store.
 
 The host should not confuse:
 
 - imported package storage;
+- immutable package-store objects;
 - runtime workspaces;
 - tracked package templates inside the repo.
 
@@ -197,8 +199,9 @@ The host may choose bind mounts or named volumes underneath this abstraction,
 but the logical structure should remain consistent.
 
 The package surface inside `workspaces/<node_id>/package/` should be treated as
-host-managed runtime materialization, not as an implicit symlink forever bound
-to the original admitted source path.
+host-managed runtime materialization backed by the immutable package store, not
+as a mutable per-node copy and not as an implicit symlink to the original
+admitted source path outside host state.
 
 ## 9. What should be tracked in git versus ignored
 

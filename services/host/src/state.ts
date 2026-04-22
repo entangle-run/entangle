@@ -1,14 +1,17 @@
 import {
   cp,
+  lstat,
   mkdir,
   readFile,
+  readlink,
   readdir,
   rm,
   stat,
+  symlink,
   writeFile
 } from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   type AgentPackageManifest,
   agentPackageManifestSchema,
@@ -66,6 +69,7 @@ const tracesRoot = path.join(hostStateRoot, "traces");
 const importsRoot = path.join(hostStateRoot, "imports");
 const workspacesRoot = path.join(hostStateRoot, "workspaces");
 const cacheRoot = path.join(hostStateRoot, "cache");
+const packageStoreRoot = path.join(importsRoot, "packages", "store");
 
 const catalogPath = path.join(desiredRoot, "catalog.json");
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
@@ -81,12 +85,17 @@ const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
 const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 const runtimeContextFileName = "effective-runtime-context.json";
-const packageSnapshotMetadataFileName = ".snapshot-source.json";
+const packageStoreMetadataFileName = ".package-store.json";
 
 type GraphRevisionRecord = {
   activeRevisionId: string;
   appliedAt: string;
 };
+
+type LocalPathPackageSourceRecord = Extract<
+  PackageSourceRecord,
+  { sourceKind: "local_path" }
+>;
 
 type RuntimeResolution = {
   context: EffectiveRuntimeContext | undefined;
@@ -282,14 +291,132 @@ function buildGraphRevisionId(graphId: string): string {
   return sanitizeIdentifier(`${graphId}-${timestamp}`);
 }
 
+function buildPackageStoreKey(contentDigest: string): string {
+  return sanitizeIdentifier(contentDigest.replace(":", "-"));
+}
+
+function buildPackageStoreLayout(contentDigest: string) {
+  const packageStoreKey = buildPackageStoreKey(contentDigest);
+  const root = path.join(packageStoreRoot, packageStoreKey);
+
+  return {
+    metadataPath: path.join(root, packageStoreMetadataFileName),
+    packageRoot: path.join(root, "package"),
+    packageStoreKey,
+    root
+  };
+}
+
+async function appendDirectoryDigest(
+  directoryPath: string,
+  relativeRoot: string,
+  hash: ReturnType<typeof createHash>
+): Promise<void> {
+  const entries = (await readdir(directoryPath, { withFileTypes: true })).sort((left, right) =>
+    left.name.localeCompare(right.name)
+  );
+
+  for (const entry of entries) {
+    const sourcePath = path.join(directoryPath, entry.name);
+    const relativePath =
+      relativeRoot.length > 0 ? `${relativeRoot}/${entry.name}` : entry.name;
+
+    if (entry.isDirectory()) {
+      hash.update(`dir:${relativePath}\n`);
+      await appendDirectoryDigest(sourcePath, relativePath, hash);
+      continue;
+    }
+
+    if (entry.isSymbolicLink()) {
+      hash.update(`symlink:${relativePath}\n`);
+      hash.update(await readlink(sourcePath));
+      hash.update("\n");
+      continue;
+    }
+
+    hash.update(`file:${relativePath}\n`);
+    hash.update(await readFile(sourcePath));
+    hash.update("\n");
+  }
+}
+
+async function computeDirectoryContentDigest(directoryPath: string): Promise<string> {
+  const hash = createHash("sha256");
+  await appendDirectoryDigest(directoryPath, "", hash);
+  return `sha256:${hash.digest("hex")}`;
+}
+
+async function materializePackageStore(
+  packageSourceId: string,
+  packageRoot: string
+): Promise<LocalPathPackageSourceRecord["materialization"]> {
+  const contentDigest = await computeDirectoryContentDigest(packageRoot);
+  const storeLayout = buildPackageStoreLayout(contentDigest);
+
+  if (!(await pathExists(storeLayout.packageRoot))) {
+    await syncDirectoryContents(packageRoot, storeLayout.packageRoot);
+  }
+
+  const materialization = {
+    contentDigest,
+    materializationKind: "immutable_store" as const,
+    packageRoot: storeLayout.packageRoot,
+    synchronizedAt: nowIsoString()
+  };
+
+  await writeJsonFile(storeLayout.metadataPath, {
+    contentDigest,
+    packageRoot: storeLayout.packageRoot,
+    packageSourceId,
+    synchronizedAt: materialization.synchronizedAt
+  });
+
+  return materialization;
+}
+
+async function reconcileMaterializedPackageSourceRecord(
+  record: PackageSourceRecord
+): Promise<PackageSourceRecord> {
+  if (record.sourceKind !== "local_path") {
+    return record;
+  }
+
+  if (!(await pathExists(record.absolutePath))) {
+    return record;
+  }
+
+  const materialization = await materializePackageStore(
+    record.packageSourceId,
+    record.absolutePath
+  );
+  const nextRecord = packageSourceRecordSchema.parse({
+    ...record,
+    materialization
+  });
+
+  if (JSON.stringify(nextRecord) !== JSON.stringify(record)) {
+    await writeJsonFile(
+      path.join(packageSourcesRoot, `${record.packageSourceId}.json`),
+      nextRecord
+    );
+  }
+
+  return nextRecord;
+}
+
+function packageSourcePackageRoot(record: PackageSourceRecord): string {
+  return (
+    record.materialization?.packageRoot ??
+    (record.sourceKind === "local_path"
+      ? record.absolutePath
+      : path.join(importsRoot, "packages", record.packageSourceId, "package"))
+  );
+}
+
 async function resolveManifestForPackageSource(
   record: PackageSourceRecord
 ): Promise<PackageSourceInspectionResponse["manifest"]> {
-  if (record.sourceKind !== "local_path") {
-    return undefined;
-  }
-
-  const manifestPath = path.join(record.absolutePath, "manifest.json");
+  const manifestPath = path.join(packageSourcePackageRoot(record), "manifest.json");
 
   if (!(await pathExists(manifestPath))) {
     return undefined;
@@ -374,11 +501,10 @@ async function listPackageSourceRecords(): Promise<PackageSourceRecord[]> {
   const records: PackageSourceRecord[] = [];
 
   for (const entry of entries) {
-    records.push(
-      packageSourceRecordSchema.parse(
-        await readJsonFile(path.join(packageSourcesRoot, entry))
-      )
+    const parsedRecord = packageSourceRecordSchema.parse(
+      await readJsonFile(path.join(packageSourcesRoot, entry))
     );
+    records.push(await reconcileMaterializedPackageSourceRecord(parsedRecord));
   }
 
   records.sort((left, right) =>
@@ -393,12 +519,6 @@ async function listPackageSourceRecordMap(): Promise<
 > {
   const records = await listPackageSourceRecords();
   return new Map(records.map((record) => [record.packageSourceId, record]));
-}
-
-function packageSourcePackageRoot(record: PackageSourceRecord): string {
-  return record.sourceKind === "local_path"
-    ? record.absolutePath
-    : path.join(importsRoot, "packages", record.packageSourceId, "package");
 }
 
 async function syncFileIfChanged(
@@ -468,19 +588,31 @@ async function syncDirectoryContents(
   }
 }
 
-async function syncPackageSnapshot(
-  packageSourceId: string,
-  packageRoot: string,
-  snapshotRoot: string
+async function syncWorkspacePackageLink(
+  sourcePackageRoot: string,
+  workspacePackageRoot: string
 ): Promise<void> {
-  await syncDirectoryContents(packageRoot, snapshotRoot);
-  await writeJsonFile(
-    path.join(snapshotRoot, packageSnapshotMetadataFileName),
-    {
-      packageSourceId,
-      synchronizedAt: nowIsoString()
-    }
+  const expectedTarget = path.relative(
+    path.dirname(workspacePackageRoot),
+    sourcePackageRoot
   );
+
+  if (await pathExists(workspacePackageRoot)) {
+    const workspaceEntry = await lstat(workspacePackageRoot);
+
+    if (workspaceEntry.isSymbolicLink()) {
+      const currentTarget = await readlink(workspacePackageRoot);
+
+      if (currentTarget === expectedTarget) {
+        return;
+      }
+    }
+
+    await rm(workspacePackageRoot, { force: true, recursive: true });
+  }
+
+  await ensureDirectory(path.dirname(workspacePackageRoot));
+  await symlink(expectedTarget, workspacePackageRoot, "dir");
 }
 
 async function readPackageManifest(
@@ -617,6 +749,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(controlPlaneTraceRoot),
     ensureDirectory(path.join(tracesRoot, "sessions")),
     ensureDirectory(path.join(importsRoot, "packages")),
+    ensureDirectory(packageStoreRoot),
     ensureDirectory(workspacesRoot),
     ensureDirectory(path.join(cacheRoot, "validator")),
     ensureDirectory(path.join(cacheRoot, "projections")),
@@ -692,16 +825,10 @@ export async function applyCatalog(
 
 export async function listPackageSources(): Promise<PackageSourceListResponse> {
   await initializeHostState();
-  const entries = (await readdir(packageSourcesRoot)).filter((entry) =>
-    entry.endsWith(".json")
-  );
+  const records = await listPackageSourceRecords();
   const packageSources: PackageSourceInspectionResponse[] = [];
 
-  for (const entry of entries) {
-    const record = packageSourceRecordSchema.parse(
-      await readJsonFile(path.join(packageSourcesRoot, entry))
-    );
-
+  for (const record of records) {
     packageSources.push({
       packageSource: record,
       manifest: await resolveManifestForPackageSource(record),
@@ -739,7 +866,9 @@ export async function getPackageSourceInspection(
     return null;
   }
 
-  const record = packageSourceRecordSchema.parse(await readJsonFile(packageSourcePath));
+  const record = await reconcileMaterializedPackageSourceRecord(
+    packageSourceRecordSchema.parse(await readJsonFile(packageSourcePath))
+  );
 
   return {
     packageSource: record,
@@ -805,6 +934,9 @@ export async function admitPackageSource(
     sourceKind: "local_path",
     packageSourceId,
     absolutePath: request.absolutePath,
+    materialization: validation.ok
+      ? await materializePackageStore(packageSourceId, request.absolutePath)
+      : undefined,
     admittedAt: nowIsoString()
   });
 
@@ -1001,14 +1133,10 @@ async function buildRuntimeResolution(input: {
     packageManifest &&
     resolvedModelEndpointProfile
   ) {
-    await syncPackageSnapshot(
-      packageSource?.packageSourceId ?? node.nodeId,
-      sourcePackageRoot,
-      workspace.packageRoot
-    );
+    await syncWorkspacePackageLink(sourcePackageRoot, workspace.packageRoot);
     await initializeWorkspaceMemory(
       workspace.memoryRoot,
-      workspace.packageRoot,
+      sourcePackageRoot,
       packageManifest
     );
     let existingContext: EffectiveRuntimeContext | undefined;

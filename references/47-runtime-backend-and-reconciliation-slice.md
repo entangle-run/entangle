@@ -38,19 +38,26 @@ host state mutation logic.
 
 ## 2. Package materialization correction
 
-The earlier runtime slice used a workspace `package/` symlink pointing to the
-admitted package root.
+The earlier runtime slice moved away from a direct symlink to the original
+admitted package path, but still relied on copying a package snapshot into each
+node workspace.
 
-That was acceptable for host-local bootstrap, but it is not a robust basis for
-Docker-managed sibling runtimes when the host itself may run inside a container.
+That was better than linking directly to an arbitrary external path, but it is
+still not the right long-term basis for:
 
-The host now materializes a package snapshot into the node workspace instead of
-relying on a live symlink.
+- deduplicated local state;
+- stable recovery;
+- backend-managed sibling runtimes;
+- clear separation between immutable package content and mutable node state.
 
-This makes the runtime workspace more self-contained and better aligned with:
+The host now treats package contents as immutable store objects and exposes a
+host-managed package surface inside each node workspace, rather than copying the
+package tree per node.
+
+This makes the runtime workspace more disciplined and better aligned with:
 
 - backend-managed runners;
-- shared-volume or bind-mount strategies;
+- shared-volume or bind-mount strategies with stable package objects;
 - future replay and recovery requirements.
 
 ## 3. Observed runtime semantics

@@ -68,8 +68,8 @@ This repository currently contains:
 - a host control-plane surface with persistent catalog, package-source, and
   graph state under `.entangle/host`;
 - runtime materialization under `.entangle/host` for desired bindings,
-  runtime intents, observed runtime records, workspaces, and injected runtime
-  context;
+  runtime intents, observed runtime records, an immutable package store,
+  workspaces, and injected runtime context;
 - a runtime-backend abstraction with a tested memory backend, a first Docker
   backend driven by a first-party Docker Engine API client, and persisted
   reconciliation snapshots under observed host state;

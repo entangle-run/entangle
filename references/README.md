@@ -54,6 +54,7 @@ This directory is the canonical design corpus for Entangle.
 48. [47-runtime-backend-and-reconciliation-slice.md](47-runtime-backend-and-reconciliation-slice.md)
 49. [48-docker-engine-api-runtime-backend-refinement.md](48-docker-engine-api-runtime-backend-refinement.md)
 50. [49-typescript-build-graph-and-project-references-refinement.md](49-typescript-build-graph-and-project-references-refinement.md)
+51. [50-immutable-package-store-refinement.md](50-immutable-package-store-refinement.md)
 
 ## Role of this corpus
 
