@@ -397,25 +397,33 @@ describe("buildHostServer", () => {
           })
         ).json()
       );
-      const artifactRecord = artifactRecordSchema.parse({
-        createdAt: "2026-04-22T00:00:00.000Z",
-        ref: {
-          artifactId: "report-turn-001",
-          artifactKind: "report_file",
+        const artifactRecord = artifactRecordSchema.parse({
+          createdAt: "2026-04-22T00:00:00.000Z",
+          materialization: {
+            localPath: path.join(
+              runtimeContext.workspace.artifactWorkspaceRoot,
+              "reports",
+              "session-alpha",
+              "turn-001.md"
+            ),
+            repoPath: runtimeContext.workspace.artifactWorkspaceRoot
+          },
+          ref: {
+            artifactId: "report-turn-001",
+            artifactKind: "report_file",
           backend: "git",
           contentSummary: "Turn report",
           conversationId: "conv-alpha",
           createdByNodeId: "worker-it",
           locator: {
             branch: "worker-it/session-alpha/review-patch",
-            commit: "abc123",
-            gitServiceRef: "local-gitea",
-            namespace: "team-alpha",
-            path: "reports/session-alpha/turn-001.md",
-            repoPath: runtimeContext.workspace.artifactWorkspaceRoot
-          },
-          preferred: true,
-          sessionId: "session-alpha",
+              commit: "abc123",
+              gitServiceRef: "local-gitea",
+              namespace: "team-alpha",
+              path: "reports/session-alpha/turn-001.md"
+            },
+            preferred: true,
+            sessionId: "session-alpha",
           status: "materialized"
         },
         turnId: "turn-001",

@@ -86,7 +86,9 @@ This repository currently contains:
 - a first git-backed artifact materialization slice in the runner, where each
   completed turn can persist a structured `ArtifactRecord`, write a durable
   report file into a node-local git workspace, commit it, and attach the
-  resulting artifact reference to outbound `task.result` messages;
+  resulting portable artifact reference to outbound `task.result` messages
+  without leaking runtime-local filesystem paths into the protocol-facing
+  locator;
 - a host read surface for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,

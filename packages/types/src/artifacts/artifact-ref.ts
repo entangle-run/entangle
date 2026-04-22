@@ -42,8 +42,7 @@ export const gitArtifactLocatorSchema = z.object({
   commit: nonEmptyStringSchema,
   gitServiceRef: identifierSchema.optional(),
   namespace: identifierSchema.optional(),
-  path: nonEmptyStringSchema,
-  repoPath: filesystemPathSchema
+  path: nonEmptyStringSchema
 });
 
 export const wikiArtifactLocatorSchema = z.object({
@@ -70,8 +69,22 @@ export const artifactRefSchema = z.discriminatedUnion("backend", [
   })
 ]);
 
+export const artifactMaterializationSchema = z
+  .object({
+    localPath: filesystemPathSchema.optional(),
+    repoPath: filesystemPathSchema.optional()
+  })
+  .refine(
+    (value) => value.localPath !== undefined || value.repoPath !== undefined,
+    {
+      message:
+        "Artifact materialization metadata must include at least one local path."
+    }
+  );
+
 export const artifactRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
+  materialization: artifactMaterializationSchema.optional(),
   ref: artifactRefSchema,
   turnId: identifierSchema.optional(),
   updatedAt: nonEmptyStringSchema
@@ -83,5 +96,6 @@ export type ArtifactLifecycleState = z.infer<typeof artifactLifecycleStateSchema
 export type GitArtifactLocator = z.infer<typeof gitArtifactLocatorSchema>;
 export type WikiArtifactLocator = z.infer<typeof wikiArtifactLocatorSchema>;
 export type LocalFileArtifactLocator = z.infer<typeof localFileArtifactLocatorSchema>;
+export type ArtifactMaterialization = z.infer<typeof artifactMaterializationSchema>;
 export type ArtifactRef = z.infer<typeof artifactRefSchema>;
 export type ArtifactRecord = z.infer<typeof artifactRecordSchema>;

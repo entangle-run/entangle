@@ -96,7 +96,10 @@ Recommended fields:
 | `branch` | Branch name when relevant |
 | `commit` | Commit hash when relevant |
 | `path` | Optional in-repository path |
-| `repoPath` | Current runtime-local repository root |
+
+Runtime-local filesystem paths such as the current checked-out repository root
+belong on `ArtifactRecord.materialization`, not in the portable
+protocol-facing `ArtifactRef` locator.
 
 ### Git handoff patterns
 
@@ -470,8 +473,10 @@ artifact path:
   on each turn with deterministic branch naming;
 - the produced work is recorded as a structured `ArtifactRecord` with backend
   `git`, kind `report_file`, lifecycle state `materialized`, and a locator that
-  includes `branch`, `commit`, `gitServiceRef`, `namespace`, `path`, and
-  runtime-local `repoPath`;
+  includes `branch`, `commit`, `gitServiceRef`, `namespace`, and `path`;
+- runtime-local filesystem details such as `repoPath` and `localPath` are kept
+  under `ArtifactRecord.materialization`, not inside the portable artifact
+  reference emitted over the protocol;
 - session, conversation, and turn records now keep stable artifact-id links to
   the produced records;
 - the host exposes a first read-only artifact inspection route through

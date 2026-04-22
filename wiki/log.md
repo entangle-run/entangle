@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-22] refinement | Removed runtime-local filesystem paths from portable artifact refs
+
+Refined the first git artifact slice so protocol-facing `ArtifactRef` locators
+no longer embed runtime-local filesystem paths such as `repoPath`. Moved local
+materialization details into `ArtifactRecord.materialization`, updated runner,
+host, host-client, and contract tests, and documented the corrected boundary
+as a dedicated artifact portability refinement.
+
 ## [2026-04-22] implementation | Added git-backed runner artifacts and host runtime artifact inspection
 
 Extended the runner from pure lifecycle persistence into the first durable

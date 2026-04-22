@@ -94,6 +94,11 @@ describe("createHostClient", () => {
               artifacts: [
                 {
                   createdAt: "2026-04-22T00:00:00.000Z",
+                  materialization: {
+                    localPath:
+                      "/tmp/entangle-runner/workspace/reports/session-alpha/turn-001.md",
+                    repoPath: "/tmp/entangle-runner/workspace"
+                  },
                   ref: {
                     artifactId: "report-turn-001",
                     artifactKind: "report_file",
@@ -106,8 +111,7 @@ describe("createHostClient", () => {
                       commit: "abc123",
                       gitServiceRef: "local-gitea",
                       namespace: "team-alpha",
-                      path: "reports/session-alpha/turn-001.md",
-                      repoPath: "/tmp/entangle-runner/workspace"
+                      path: "reports/session-alpha/turn-001.md"
                     },
                     preferred: true,
                     sessionId: "session-alpha",

@@ -233,6 +233,10 @@ async function createGitReportArtifact(
 
   return artifactRecordSchema.parse({
     createdAt: timestamp,
+    materialization: {
+      localPath: reportAbsolutePath,
+      repoPath
+    },
     ref: {
       artifactId: `report-${input.turnId}`,
       artifactKind: "report_file",
@@ -247,8 +251,7 @@ async function createGitReportArtifact(
         commit,
         gitServiceRef: input.context.artifactContext.primaryGitServiceRef,
         namespace: input.context.artifactContext.defaultNamespace,
-        path: reportRelativePath,
-        repoPath
+        path: reportRelativePath
       },
       preferred: true,
       sessionId: input.envelope.message.sessionId,

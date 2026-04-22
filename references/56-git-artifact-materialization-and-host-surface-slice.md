@@ -24,7 +24,9 @@ The current implementation now includes:
 - runner-local artifact materialization into a node-local git repository under
   the runtime artifact workspace;
 - committed report artifacts for completed turns;
-- outbound `task.result` messages that include newly produced artifact refs;
+- outbound `task.result` messages that include newly produced artifact refs,
+  while runtime-local filesystem details remain on the persisted artifact
+  record instead of the protocol-facing ref;
 - a host route for runtime artifact inspection:
   `GET /v1/runtimes/{nodeId}/artifacts`;
 - host-client support and tests for that route.
@@ -77,6 +79,18 @@ This keeps the boundary clean:
 - the host inspects and surfaces persisted runtime outputs;
 - later slices can decide which artifact lifecycle transitions remain runner
   local and which become host-governed.
+
+### 4. Portable ref versus local materialization
+
+This slice also now makes a strict distinction between:
+
+- `ArtifactRef`: protocol-facing and portable enough to move between nodes; and
+- `ArtifactRecord.materialization`: runtime-local filesystem details useful for
+  local inspection and diagnostics.
+
+That means values such as `repoPath` and `localPath` are persisted for the host
+and Studio/CLI surfaces, but they are not leaked into the A2A-visible artifact
+locator.
 
 ## Verification in this slice
 

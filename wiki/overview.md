@@ -83,7 +83,9 @@ The repository now also contains the first real implementation baseline:
 - a first git-backed artifact materialization slice in the runner, with
   persisted artifact records, session/conversation/turn artifact linkage,
   committed markdown turn reports under the runtime artifact workspace, and a
-  host read surface for runtime artifact inspection;
+  host read surface for runtime artifact inspection; protocol-facing
+  `ArtifactRef` locators are now kept portable while runtime-local filesystem
+  details remain under persisted artifact-record materialization metadata;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay

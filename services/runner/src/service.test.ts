@@ -88,6 +88,10 @@ describe("RunnerService", () => {
     expect(artifactRecord.ref.backend).toBe("git");
     expect(artifactRecord.ref.artifactKind).toBe("report_file");
     expect(artifactRecord.ref.status).toBe("materialized");
+    expect(artifactRecord.materialization?.repoPath).toBe(
+      runtimeContext.workspace.artifactWorkspaceRoot
+    );
+    expect(artifactRecord.ref.locator).not.toHaveProperty("repoPath");
 
     const reportAbsolutePath = path.join(
       runtimeContext.workspace.artifactWorkspaceRoot,
