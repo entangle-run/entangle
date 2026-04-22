@@ -59,3 +59,11 @@ Corrected the repository baseline so the cloned upstream repositories under `res
 ## [2026-04-22] milestone | Prepared the first committed project baseline
 
 Closed the initial bootstrap phase with a clean repository baseline ready for the first commit: canonical documents aligned, root `AGENTS.md` added, local resource policy corrected, and git staging behavior verified before publishing the initial history to GitHub.
+
+## [2026-04-22] ingest | Added A2A and MCP as secondary protocol references
+
+Cloned the Google-led A2A protocol repository and the official Model Context Protocol repository into `resources/` as secondary references. Recorded their role as comparison and boundary-layer references rather than as replacements for Entangle's internal Nostr-native protocol model.
+
+## [2026-04-22] decision | Renamed local Nostr spec mirror from nips-official to nips
+
+Simplified the local reference name from `nips-official` to `nips` and updated the corpus so the local path naming is shorter and cleaner while preserving the same upstream reference.

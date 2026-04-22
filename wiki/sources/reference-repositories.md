@@ -6,11 +6,13 @@ This page summarizes the main repositories currently mirrored into `resources/`.
 
 The current local reference set under `resources/` intentionally includes:
 
-- `nips-official`
+- `nips`
 - `nostr-tools`
 - `opencode`
 - `open-claude-code`
 - `openclaw`
+- `a2a`
+- `mcp`
 - `strfry`
 - `khatru`
 - `qmd`
@@ -21,7 +23,7 @@ The public Claude Code leak mirror was removed from the local corpus on purpose.
 
 Repository: `nostr-protocol/nips`
 
-Local path: `resources/nips-official`
+Local path: `resources/nips`
 
 Why it matters:
 
@@ -73,6 +75,30 @@ Why it matters:
 
 - large, ambitious open agent runtime;
 - relevant for runtime, memory, tooling, and session ideas.
+
+## A2A
+
+Repository: `a2aproject/A2A`
+
+Local path: `resources/a2a`
+
+Why it matters:
+
+- strong external reference for agent-to-agent interoperability across opaque systems;
+- useful for studying capability discovery, long-running task semantics, and ecosystem-facing interoperability;
+- useful as a comparison point for what Entangle should keep protocol-native versus what it may expose through future gateways.
+
+## MCP
+
+Repository: `modelcontextprotocol/modelcontextprotocol`
+
+Local path: `resources/mcp`
+
+Why it matters:
+
+- strong external reference for tool/runtime boundaries and schema-first protocol design;
+- useful for understanding how Entangle may expose tools or integrate with broader tooling ecosystems;
+- not a replacement for Entangle's internal graph protocol, but a relevant boundary-layer reference.
 
 ## strfry
 

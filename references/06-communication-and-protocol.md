@@ -46,6 +46,50 @@ NIP-90 is conceptually close, but too narrow for the full Entangle model. Entang
 
 The right approach is to stay mentally compatible with NIP-90 but define a richer application-layer protocol.
 
+## External protocol references
+
+Entangle should also study two external protocol references without collapsing into either of them.
+
+### A2A
+
+A2A is relevant because it focuses on interoperability between opaque agentic systems.
+
+What is useful:
+
+- capability discovery;
+- long-running task semantics;
+- interoperability framing across heterogeneous agents;
+- comparison with an HTTP and JSON-RPC style ecosystem protocol.
+
+What Entangle should not do:
+
+- replace its Nostr-native transport and identity model with A2A;
+- flatten its graph semantics into an opaque-agent gateway model too early.
+
+The right stance is:
+
+> study A2A as an interoperability and comparison reference, not as Entangle's core protocol.
+
+### MCP
+
+MCP is relevant because it standardizes how clients and runtimes interact with tools, resources, and structured capabilities.
+
+What is useful:
+
+- schema discipline;
+- clean boundary design;
+- future interoperability with tool ecosystems;
+- understanding how Entangle runners may expose or consume external capability surfaces.
+
+What Entangle should not do:
+
+- confuse tool protocol with agent graph protocol;
+- replace Entangle's internal node, edge, session, and message model with MCP primitives.
+
+The right stance is:
+
+> use MCP to inform tool/runtime boundaries, not to define Entangle's internal agent-to-agent model.
+
 ## Suggested semantic message types
 
 - `task.request`
