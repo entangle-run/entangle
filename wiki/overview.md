@@ -15,9 +15,18 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in the architecture and design-consolidation phase, with the corpus now extending from conceptual architecture into normative contracts, package/binding structure, edge semantics, artifact backends, control-plane rules, compatibility policy, observability, Studio responsibilities, and an explicit hackathon runtime profile.
+Entangle is currently in the pre-implementation audit and refinement phase.
 
-The local reference corpus is materialized under `resources/`, and the initial implementation stack direction has been recorded.
+The corpus now extends from conceptual architecture into normative contracts,
+package and binding structure, edge semantics, artifact backends, control-plane
+rules, compatibility policy, observability, Studio responsibilities, host API
+contracts, effective runtime context, engine-adapter boundaries, and a concrete
+local deployment profile.
+
+The local reference corpus is materialized under `resources/`, and the
+implementation stack direction has now been narrowed toward a canonical
+TypeScript + Node 22 + pnpm + Turborepo toolchain around `nostr-tools`,
+`strfry`, `Gitea`, Docker Compose, `entangle-host`, and host-managed runners.
 
 The specification corpus now has five layers:
 
@@ -70,12 +79,13 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- move into the architecture and infrastructure decision batch for monorepo layout, package boundaries, host API boundaries, and deployment profiles;
-- formalize the first Docker Compose service topology around Studio, `entangle-host`, host-managed runners, `strfry`, and `Gitea`;
-- formalize the deployment resource catalog for relay, git service, and model
-  endpoint profiles;
-- decide the first concrete package split for `entangle-host`, `entangle-runner`, `entangle-cli`, `entangle-types`, and `entangle-validator`;
-- formalize the first host API and the effective runtime binding / injected context contracts;
-- formalize the first local deployment topology and first engine-adapter / model-execution contract;
-- decide whether the first hackathon cut also includes a thin `entangle-package-scaffold` surface;
-- only then begin the first host, validator, runner, and protocol skeletons while keeping the repository audit loop active.
+- finish the last repository-wide refinement loop and close the pre-implementation audit;
+- scaffold the monorepo implementation layout under `apps/`, `services/`,
+  `packages/`, and `deploy/`;
+- encode the canonical contracts as machine-readable schemas in
+  `packages/types`;
+- implement `entangle-validator` against those schemas;
+- implement the first `entangle-host` API and reconciliation skeleton;
+- implement the first `entangle-runner` skeleton with injected runtime context;
+- materialize the first Compose deployment and host-managed runner path while
+  keeping the repository audit loop active.

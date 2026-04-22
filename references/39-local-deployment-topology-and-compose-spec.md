@@ -82,6 +82,21 @@ The Compose layer should not own:
 - primary git service for the local profile;
 - referenced by the deployment resource catalog as a git service profile.
 
+## 4.1 Host runtime-backend access
+
+For the local Docker-backed profile, `entangle-host` must be able to create and
+inspect runner containers dynamically.
+
+Recommended first serious stance:
+
+- run `entangle-host` inside the Compose stack;
+- grant it access to the local Docker Engine through an explicit operator-owned
+  control path such as the Docker socket;
+- treat this as acceptable because the host API is already a trusted local
+  operator boundary, not a public multi-tenant surface.
+
+This is a local deployment choice, not a universal product requirement.
+
 ## 5. Recommended Docker networking stance
 
 Use one internal Docker network for the core deployment.
@@ -102,6 +117,13 @@ The first serious deployment should use named persistent volumes for at least:
 - `strfry` data;
 - host state;
 - host-managed node workspaces when they should survive container restart.
+
+Host state should include at least:
+
+- desired-state and observed-state snapshots;
+- structured session and control-plane trace logs;
+- package-source and binding metadata;
+- reconciliation metadata useful for recovery and inspection.
 
 Node workspaces may also be materialized under host-managed bind mounts if that
 improves inspectability during the hackathon.
@@ -172,6 +194,7 @@ The hackathon should use:
 - one relay profile backed by local `strfry`;
 - one git service profile backed by local `gitea`;
 - one shared model endpoint profile;
+- host access to the local Docker runtime for dynamic runner management;
 - dynamic runner containers created by the host;
 - no remote-host federation.
 
@@ -183,6 +206,8 @@ The following may exist as convenience tooling under `deploy/`, but should not
 become hidden architecture:
 
 - bootstrap scripts for local `gitea` setup;
+- bootstrap scripts for creating demo repositories, orgs, users, SSH keys, or
+  API tokens in the local git service;
 - bootstrap scripts for default relay and git profiles;
 - demo data seeding;
 - local dev environment helpers.

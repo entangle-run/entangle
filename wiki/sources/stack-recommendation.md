@@ -3,6 +3,8 @@
 The current recommended implementation stack for Entangle is:
 
 - TypeScript for shared schemas, Studio, host, and runner logic
+- Node 22 as the canonical runtime target
+- `pnpm` workspaces plus Turborepo for monorepo package and task management
 - `nostr-tools` for Nostr protocol interaction
 - `strfry` as the first relay implementation
 - `Gitea` as the first git server

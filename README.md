@@ -47,7 +47,8 @@ This repository currently contains:
 - a detailed design corpus;
 - an operational wiki schema and initial pages;
 - a locally materialized reference corpus under `resources/`;
-- an initial implementation stack direction centered on TypeScript, `nostr-tools`, `strfry`, `Gitea`, and Docker Compose.
+- a concrete implementation stack direction centered on TypeScript, Node 22,
+  `pnpm`, Turborepo, `nostr-tools`, `strfry`, `Gitea`, and Docker Compose.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

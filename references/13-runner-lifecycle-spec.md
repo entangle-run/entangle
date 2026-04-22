@@ -8,9 +8,10 @@ The runner is the executable embodiment of a node. This document defines the lif
 
 The runner starts with:
 
-- an `AgentPackage`;
+- a runtime-bound workspace derived from an `AgentPackage`;
 - a `NodeInstance`;
-- a `RuntimeProjection`;
+- an `EffectiveNodeBinding`;
+- injected runtime context derived from `RuntimeProjection`, policy, and resource resolution;
 - mounted secrets and keys;
 - mounted artifact workspace;
 - mounted wiki memory;
@@ -121,8 +122,9 @@ Each class should map to an explicit internal outcome instead of collapsing into
 The first implementation can be strict and narrow:
 
 - one engine adapter;
-- one shared git remote;
-- one or two relay endpoints;
+- one shared git service profile;
+- one shared relay profile;
+- one shared model endpoint profile;
 - one transport mode;
 - no remote package fetch;
 - bounded concurrency.

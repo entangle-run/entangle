@@ -433,6 +433,15 @@ The hackathon build should implement:
 - `wiki` as node-local durable memory;
 - `local_file` for bounded local outputs when useful.
 
+Recommended hackathon git bootstrap:
+
+- one `Gitea` organization or namespace for the active demo graph;
+- pre-created per-node git principals and SSH keys are acceptable for the first
+  working slice;
+- one narrow host-side admin token may be used for repository bootstrap or key
+  registration if automation is worth the complexity;
+- one shared git credential for all nodes must not become the canonical model.
+
 It may omit:
 
 - cross-backend synchronization tooling;

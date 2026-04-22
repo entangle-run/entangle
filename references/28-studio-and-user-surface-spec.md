@@ -223,6 +223,20 @@ Some edits are better left file-based, especially early:
 
 Studio should focus on the interactions that benefit most from visual graph-aware interfaces.
 
+### Package admission rule
+
+Studio should treat package admission as a host-mediated source operation, not
+as client-owned filesystem truth.
+
+Recommended canonical admission surfaces:
+
+- host-visible `local_path`
+- imported `local_archive`
+
+A browser directory picker or similar local convenience surface may be added
+where supported, but it should remain a convenience that resolves into one of
+the canonical host-owned package-source forms above.
+
 ### Headless rule
 
 Entangle should remain usable without Studio.

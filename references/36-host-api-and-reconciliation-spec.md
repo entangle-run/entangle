@@ -60,7 +60,10 @@ The active registry of relay, git service, and model endpoint profiles.
 
 ### Package source
 
-A locally admitted package origin such as a validated `local_path`.
+A locally admitted package origin such as:
+
+- a validated host-visible `local_path`; or
+- an imported `local_archive` materialized into host-managed package storage.
 
 ### Applied graph revision
 
@@ -191,9 +194,14 @@ Purpose:
 
 Purpose:
 
-- admit local package folders;
+- admit host-visible local package folders or imported local archives;
 - inspect normalized package metadata;
 - remove unused package sources.
+
+Admission requests should not rely on browser-local directory handles as the
+canonical source identifier. Studio may use a convenience file-picker flow, but
+the host should persist a normalized package-source record such as `local_path`
+or host-managed imported archive storage.
 
 ### 8.3 Graph and revision state
 

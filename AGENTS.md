@@ -46,6 +46,9 @@ After durable repository changes:
 Current preferred stack:
 
 - TypeScript
+- Node 22
+- `pnpm` workspaces
+- Turborepo
 - shared schema packages
 - `nostr-tools`
 - `strfry`

@@ -46,7 +46,7 @@ Studio should:
 
 - present graph and runtime state;
 - let the operator propose graph mutations;
-- let the operator add nodes from local package folders;
+- let the operator add nodes from host-visible local package sources;
 - let the operator add, edit, enable, disable, and remove edges through bounded flows;
 - let the operator start, stop, or restart selected nodes;
 - show validation findings and runtime outcomes.
@@ -77,6 +77,10 @@ First serious supported kinds:
 
 - `local_path`
 - optionally `local_archive`
+
+The canonical source of truth for admission should remain host-visible package
+sources. A browser-only directory handle or other UI-local filesystem token
+must not become the durable package-source identifier.
 
 ### Applied node binding
 
@@ -241,8 +245,11 @@ This distinction matters because a serious system must handle:
 
 ## 10. Host API stance
 
-The exact API shape can be decided later, but the host should expose bounded
-surfaces for:
+The exact route names may still evolve, but the host API is no longer merely an
+open question. The first serious resource-oriented surface is specified in
+[36-host-api-and-reconciliation-spec.md](36-host-api-and-reconciliation-spec.md).
+
+The host should expose bounded surfaces for:
 
 - graph inspection;
 - node admission and removal;
@@ -257,16 +264,15 @@ These surfaces should be suitable for more than one client:
 - CLI;
 - tests and automation.
 
-The API may be:
+The transport may be:
 
 - local HTTP;
 - local WebSocket;
 - IPC;
 - a combination of HTTP + WebSocket.
 
-The implementation detail matters less than the boundary.
-
-The recommended first serious specification for this surface is described in
+The implementation detail matters less than the boundary, but the current
+recommended first implementation is local HTTP plus WebSocket as described in
 [36-host-api-and-reconciliation-spec.md](36-host-api-and-reconciliation-spec.md).
 
 ## 10.1 Headless-first implication

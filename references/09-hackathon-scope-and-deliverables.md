@@ -39,7 +39,7 @@ That means:
 - runtime trace view
 - task launch from the user node
 - node inspector with basic configuration
-- bounded node admission from local package folders
+- bounded node admission from host-visible local package folders or local archives
 - bounded edge editing and runtime controls through the local control plane
 
 ### Collaboration

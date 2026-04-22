@@ -30,18 +30,24 @@ TypeScript is the strongest practical choice because:
 ### Primary choice
 
 - TypeScript end-to-end
-- Bun-compatible project layout
-- keep Node 22 compatibility where practical
+- Node 22 as the canonical runtime target
+- `pnpm` workspaces as the canonical package-management layer
+- Turborepo for monorepo task orchestration
 
 Reasoning:
 
-- Bun aligns well with `opencode`;
 - TypeScript gives the best leverage for shared schema packages;
-- staying Node-compatible reduces lock-in and keeps ecosystem reach high.
+- Node 22 is the least surprising runtime target for multi-service local
+  deployment, containerized execution, and later team scaling;
+- `pnpm` is the strongest practical workspace manager for a serious monorepo
+  with shared packages, Dockerized services, and CI-friendly installs;
+- the upstream references split between Bun-first and pnpm-first ecosystems, so
+  Entangle should favor the more conservative and portable operational choice.
 
 This should be read as:
 
-> Bun-friendly, TypeScript-first, not Bun-dependent in the conceptual architecture.
+> TypeScript-first, Node-first, pnpm-first, and not coupled to any one
+> reference project's toolchain preferences.
 
 ## Package/schema layer
 
@@ -265,7 +271,8 @@ The architecture should be strong. The operational profile should still be disci
 If implementation started now, the most sensible stack would be:
 
 - `TypeScript`
-- `Bun`-friendly monorepo, staying close to Node 22 compatibility
+- `Node 22`
+- `pnpm` workspaces plus Turborepo
 - `@nostr/tools`
 - `strfry`
 - `Gitea`

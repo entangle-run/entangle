@@ -4,12 +4,16 @@
 
 Entangle is a system for composing organizations of AI actors and executing work across them.
 
-It has two major user-facing surfaces:
+It has two primary operator-facing surfaces and two core runtime surfaces:
 
 1. **Entangle Studio**
-   A graph-aware client where the user creates or attaches nodes, edits topology, configures behavior, launches sessions, and watches execution.
-2. **Entangle Runner**
-   The runtime that executes an individual node as a true agent, not as a stateless inference endpoint.
+   A graph-aware visual client where the operator inspects topology, configures bounded graph changes, launches sessions, and watches execution.
+2. **Entangle CLI**
+   A headless control surface for automation, validation, inspection, and runtime-affecting operations through the same host boundary.
+3. **Entangle Host**
+   The local control-plane service that owns applied graph truth, package admission, binding resolution, and runtime orchestration.
+4. **Entangle Runner**
+   The per-node runtime that executes an individual node as a true agent, not as a stateless inference endpoint.
 
 ## What the product is not
 
@@ -104,11 +108,14 @@ The user can change:
 The hackathon build should produce a narrow but real first product slice:
 
 - one user node;
-- one supervisor/orchestrator node;
-- two or three worker nodes;
-- one shared git-backed work substrate;
-- one Nostr relay set profile;
-- graph viewing and light graph editing;
+- four to six non-user nodes;
+- one or two entrypoint or supervisor nodes;
+- at least one peer collaboration path;
+- at least one delegation path deeper than one edge;
+- one shared git service profile for the hackathon deployment;
+- one shared relay profile for the hackathon deployment;
+- one shared model endpoint profile for the hackathon deployment;
+- graph viewing and bounded graph editing through the host control plane;
 - real signed inter-node messaging;
 - real artifact handoff.
 

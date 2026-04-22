@@ -44,6 +44,7 @@ This directory is the canonical design corpus for Entangle.
 38. [37-effective-bindings-and-runtime-context-spec.md](37-effective-bindings-and-runtime-context-spec.md)
 39. [38-engine-adapter-and-model-execution-spec.md](38-engine-adapter-and-model-execution-spec.md)
 40. [39-local-deployment-topology-and-compose-spec.md](39-local-deployment-topology-and-compose-spec.md)
+41. [40-pre-implementation-audit.md](40-pre-implementation-audit.md)
 
 ## Role of this corpus
 

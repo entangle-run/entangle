@@ -119,3 +119,11 @@ Extended the corpus again to clarify the provider-facing side of the runner and 
 ## [2026-04-22] decision | Made coherent commits part of the standard repository loop
 
 Clarified that audit and documentation updates are not enough on their own. After each substantial interaction that leaves durable repository changes, the batch should be committed once the repository is internally consistent, so the working baseline is not left suspended in an uncommitted state.
+
+## [2026-04-22] audit | Ran the first full pre-implementation repository audit
+
+Performed a systematic read of the canonical corpus, wiki, root project documents, and selected upstream references. Corrected drift where earlier documents still described the hackathon as a flat orchestrator tree, where runner input language had not caught up with effective bindings, where the host API was still described as only loosely defined, and where the wiki overview still pointed to already-completed architecture work as the next step.
+
+## [2026-04-22] decision | Froze local package admission, Docker-backed host access, and the canonical monorepo toolchain
+
+Clarified that Studio-driven package admission must resolve into host-owned `local_path` or `local_archive` package sources instead of browser-local filesystem handles; clarified that the local Docker profile should give `entangle-host` explicit access to the Docker Engine for dynamic runner management; and tightened the stack recommendation from a Bun-friendly posture into a canonical TypeScript + Node 22 + pnpm + Turborepo toolchain.
