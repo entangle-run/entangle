@@ -1,14 +1,15 @@
-import { execFile as execFileCallback } from "node:child_process";
 import path from "node:path";
-import { promisify } from "node:util";
 import type {
   EffectiveRuntimeContext,
   RuntimeBackendKind,
   RuntimeDesiredState,
   RuntimeObservedState
 } from "@entangle/types";
-
-const execFile = promisify(execFileCallback);
+import type {
+  DockerContainerInspect,
+  DockerEngineApi
+} from "./docker-engine-client.js";
+import { DockerEngineClient } from "./docker-engine-client.js";
 
 type RuntimeMountStrategy =
   | {
@@ -48,21 +49,8 @@ export interface RuntimeBackend {
   removeInactiveRuntime(nodeId: string): Promise<void>;
 }
 
-type DockerContainerInspect = {
-  Config: {
-    Env: string[];
-    Image: string;
-    Labels: Record<string, string>;
-  };
-  Id: string;
-  Name: string;
-  State: {
-    ExitCode: number;
-    OOMKilled: boolean;
-    Running: boolean;
-    StartedAt: string;
-    Status: string;
-  };
+export type RuntimeBackendFactoryOptions = {
+  dockerClient?: DockerEngineApi;
 };
 
 function sanitizeIdentifier(input: string): string {
@@ -159,12 +147,17 @@ class MemoryRuntimeBackend implements RuntimeBackend {
 
 class DockerRuntimeBackend implements RuntimeBackend {
   readonly kind = "docker" as const;
+  private readonly dockerClient: DockerEngineApi;
   private readonly networkName = process.env.ENTANGLE_DOCKER_NETWORK?.trim();
   private readonly runnerImage =
     process.env.ENTANGLE_DOCKER_RUNNER_IMAGE?.trim() || "entangle-runner:local";
   private readonly stateMount: RuntimeMountStrategy;
 
-  constructor(hostStateRoot: string) {
+  constructor(
+    hostStateRoot: string,
+    dockerClient: DockerEngineApi = new DockerEngineClient()
+  ) {
+    this.dockerClient = dockerClient;
     this.stateMount = buildDockerMountStrategy(hostStateRoot);
   }
 
@@ -174,7 +167,7 @@ class DockerRuntimeBackend implements RuntimeBackend {
     const containerName = buildContainerName(input.nodeId);
 
     if (input.desiredState !== "running" || !input.context || !input.contextPath) {
-      await this.removeContainerIfPresent(containerName);
+      await this.dockerClient.removeContainer(containerName);
       return {
         backendKind: this.kind,
         lastError: undefined,
@@ -184,7 +177,7 @@ class DockerRuntimeBackend implements RuntimeBackend {
       };
     }
 
-    const imageAvailable = await this.inspectImage();
+    const imageAvailable = await this.dockerClient.inspectImage(this.runnerImage);
 
     if (!imageAvailable) {
       return {
@@ -198,20 +191,40 @@ class DockerRuntimeBackend implements RuntimeBackend {
       };
     }
 
-    let inspection = await this.inspectContainer(containerName);
+    let inspection = await this.dockerClient.inspectContainer(containerName);
 
     if (inspection && this.containerRequiresRecreation(inspection, input)) {
-      await this.removeContainerIfPresent(containerName);
+      await this.dockerClient.removeContainer(containerName);
       inspection = undefined;
     }
 
     if (!inspection) {
-      await this.createContainer(containerName, input);
-      await this.startContainer(containerName);
-      inspection = await this.inspectContainer(containerName);
+      const mounts = [
+        {
+          source: this.stateMount.source,
+          target: this.stateMount.target,
+          type: this.stateMount.kind
+        }
+      ] as const;
+      await this.dockerClient.createContainer({
+        containerName,
+        env: [`ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`],
+        image: this.runnerImage,
+        labels: {
+          "io.entangle.graph_id": input.graphId,
+          "io.entangle.graph_revision_id": input.graphRevisionId,
+          "io.entangle.managed": "true",
+          "io.entangle.node_id": input.nodeId,
+          "io.entangle.runtime_context_path": input.contextPath
+        },
+        mounts: [...mounts],
+        networkName: this.networkName
+      });
+      await this.dockerClient.startContainer(containerName);
+      inspection = await this.dockerClient.inspectContainer(containerName);
     } else if (!inspection.State.Running) {
-      await this.startContainer(containerName);
-      inspection = await this.inspectContainer(containerName);
+      await this.dockerClient.startContainer(containerName);
+      inspection = await this.dockerClient.inspectContainer(containerName);
     }
 
     if (!inspection) {
@@ -241,8 +254,8 @@ class DockerRuntimeBackend implements RuntimeBackend {
     };
   }
 
-  async removeInactiveRuntime(nodeId: string): Promise<void> {
-    await this.removeContainerIfPresent(buildContainerName(nodeId));
+  removeInactiveRuntime(nodeId: string): Promise<void> {
+    return this.dockerClient.removeContainer(buildContainerName(nodeId));
   }
 
   private containerRequiresRecreation(
@@ -263,120 +276,13 @@ class DockerRuntimeBackend implements RuntimeBackend {
       !envEntries.has(`ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`)
     );
   }
-
-  private async inspectImage(): Promise<boolean> {
-    try {
-      await execFile("docker", ["image", "inspect", this.runnerImage], {
-        maxBuffer: 4 * 1024 * 1024
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private async inspectContainer(
-    containerName: string
-  ): Promise<DockerContainerInspect | undefined> {
-    try {
-      const { stdout } = await execFile(
-        "docker",
-        ["container", "inspect", containerName, "--format", "{{json .}}"],
-        {
-          maxBuffer: 4 * 1024 * 1024
-        }
-      );
-      return JSON.parse(stdout) as DockerContainerInspect;
-    } catch (error) {
-      const stderr =
-        typeof error === "object" &&
-        error !== null &&
-        "stderr" in error &&
-        typeof error.stderr === "string"
-          ? error.stderr
-          : "";
-
-      if (stderr.includes("No such container")) {
-        return undefined;
-      }
-
-      throw error;
-    }
-  }
-
-  private async createContainer(
-    containerName: string,
-    input: RuntimeBackendReconcileInput
-  ): Promise<void> {
-    if (!input.contextPath) {
-      throw new Error("Cannot create a runner container without a runtime context path.");
-    }
-
-    const mountArg =
-      this.stateMount.kind === "volume"
-        ? `type=volume,src=${this.stateMount.source},dst=${this.stateMount.target}`
-        : `type=bind,src=${this.stateMount.source},dst=${this.stateMount.target}`;
-    const args = [
-      "container",
-      "create",
-      "--name",
-      containerName,
-      "--label",
-      "io.entangle.managed=true",
-      "--label",
-      `io.entangle.node_id=${input.nodeId}`,
-      "--label",
-      `io.entangle.graph_id=${input.graphId}`,
-      "--label",
-      `io.entangle.graph_revision_id=${input.graphRevisionId}`,
-      "--label",
-      `io.entangle.runtime_context_path=${input.contextPath}`,
-      "--mount",
-      mountArg,
-      "--env",
-      `ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`
-    ];
-
-    if (this.networkName) {
-      args.push("--network", this.networkName);
-    }
-
-    args.push(this.runnerImage);
-
-    await execFile("docker", args, {
-      maxBuffer: 4 * 1024 * 1024
-    });
-  }
-
-  private async startContainer(containerName: string): Promise<void> {
-    await execFile("docker", ["container", "start", containerName], {
-      maxBuffer: 4 * 1024 * 1024
-    });
-  }
-
-  private async removeContainerIfPresent(containerName: string): Promise<void> {
-    try {
-      await execFile("docker", ["container", "rm", "--force", containerName], {
-        maxBuffer: 4 * 1024 * 1024
-      });
-    } catch (error) {
-      const stderr =
-        typeof error === "object" &&
-        error !== null &&
-        "stderr" in error &&
-        typeof error.stderr === "string"
-          ? error.stderr
-          : "";
-
-      if (!stderr.includes("No such container")) {
-        throw error;
-      }
-    }
-  }
 }
 
-export function createRuntimeBackend(hostStateRoot: string): RuntimeBackend {
+export function createRuntimeBackend(
+  hostStateRoot: string,
+  options: RuntimeBackendFactoryOptions = {}
+): RuntimeBackend {
   return process.env.ENTANGLE_RUNTIME_BACKEND === "memory"
     ? new MemoryRuntimeBackend()
-    : new DockerRuntimeBackend(hostStateRoot);
+    : new DockerRuntimeBackend(hostStateRoot, options.dockerClient);
 }

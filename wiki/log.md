@@ -171,3 +171,7 @@ Clarified and enforced that workspace-wide typechecking must not silently depend
 ## [2026-04-22] verification | Smoke-validated the Docker runtime backend against a real runner container
 
 Built the local `entangle-runner:local` image, admitted a package, applied a graph under the Docker backend profile, and confirmed that `entangle-host` created and observed a real runner container as `running`. Cleaned up the temporary runtime afterward.
+
+## [2026-04-22] implementation | Replaced Docker CLI shell-outs with a first-party Docker Engine API client
+
+Refined the Docker runtime backend so `entangle-host` no longer shells out to the `docker` binary for image inspection and container lifecycle. Added a first-party Docker Engine API client with unix-socket coverage tests, injected that boundary into the runtime backend for better testability, and removed the host container's dependency on the Docker CLI package while keeping the Docker socket as the explicit local operator control path.

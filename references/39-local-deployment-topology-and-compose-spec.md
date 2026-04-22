@@ -95,6 +95,8 @@ Recommended first serious stance:
 - run `entangle-host` inside the Compose stack;
 - grant it access to the local Docker Engine through an explicit operator-owned
   control path such as the Docker socket;
+- prefer a first-party Docker Engine API client in the host over shelling out to
+  the `docker` CLI from inside the host container;
 - treat this as acceptable because the host API is already a trusted local
   operator boundary, not a public multi-tenant surface.
 

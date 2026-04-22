@@ -71,7 +71,8 @@ This repository currently contains:
   runtime intents, observed runtime records, workspaces, and injected runtime
   context;
 - a runtime-backend abstraction with a tested memory backend, a first Docker
-  backend, and persisted reconciliation snapshots under observed host state;
+  backend driven by a first-party Docker Engine API client, and persisted
+  reconciliation snapshots under observed host state;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a runner bootstrap path that consumes injected runtime context and package

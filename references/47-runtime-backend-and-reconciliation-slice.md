@@ -109,7 +109,8 @@ The local Compose profile is now aligned with the runtime backend model:
 
 - the host receives explicit Docker runtime configuration;
 - host state is mounted at a stable shared path;
-- the host image now includes Docker CLI access;
+- the host talks to the Docker Engine API through an explicit control path such
+  as the Docker socket instead of shelling out through the `docker` CLI;
 - a build-only runner image profile is declared for local operator workflows;
 - the Compose network is made explicit and stable for host-managed runners.
 

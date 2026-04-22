@@ -67,8 +67,9 @@ The repository now also contains the first real implementation baseline:
   observed runtime records, workspace layout, package linking, and injected
   runtime context;
 - a runtime-backend abstraction with a memory backend used in tests and a
-  first Docker backend for the local operator profile, plus persisted
-  reconciliation snapshots and richer host status output;
+  first Docker backend for the local operator profile, now mediated through a
+  first-party Docker Engine API client rather than `docker` CLI shell-outs,
+  plus persisted reconciliation snapshots and richer host status output;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
 - a runner bootstrap that now consumes injected runtime context, package
