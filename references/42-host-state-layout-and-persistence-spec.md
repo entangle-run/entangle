@@ -196,6 +196,10 @@ binding and runtime-context specs:
 The host may choose bind mounts or named volumes underneath this abstraction,
 but the logical structure should remain consistent.
 
+The package surface inside `workspaces/<node_id>/package/` should be treated as
+host-managed runtime materialization, not as an implicit symlink forever bound
+to the original admitted source path.
+
 ## 9. What should be tracked in git versus ignored
 
 Tracked:

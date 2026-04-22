@@ -13,4 +13,5 @@ export * from "./package/package-manifest.js";
 export * from "./package/package-source.js";
 export * from "./resources/catalog.js";
 export * from "./runtime/runtime-context.js";
+export * from "./runtime/reconciliation.js";
 export * from "./runtime/runtime-state.js";

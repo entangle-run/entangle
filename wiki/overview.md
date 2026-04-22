@@ -66,6 +66,9 @@ The repository now also contains the first real implementation baseline:
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, package linking, and injected
   runtime context;
+- a runtime-backend abstraction with a memory backend used in tests and a
+  first Docker backend for the local operator profile, plus persisted
+  reconciliation snapshots and richer host status output;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -127,12 +130,10 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- move `entangle-host` from runtime materialization into real runtime
-  reconciliation against Docker-managed runner processes;
-- replace placeholder observed runtime records with real runtime lifecycle
-  observation;
 - move `entangle-runner` from bootstrap-only execution into Nostr lifecycle and
   session handling;
 - add artifact-side git work and handoff logic inside the runner;
 - start exposing the richer runtime slice in Studio while keeping the same host
-  boundary and quality gates.
+  boundary and quality gates;
+- add stronger Docker-backed runtime smoke coverage and explicit restart/event
+  semantics on top of the new runtime backend boundary.

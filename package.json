@@ -16,8 +16,8 @@
     "lint:fix": "eslint apps services packages --fix",
     "test": "turbo run test",
     "test:coverage": "vitest run --config vitest.config.ts packages/**/*.test.ts services/**/*.test.ts --coverage.enabled true",
-    "typecheck": "turbo run typecheck",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "typecheck": "pnpm build && turbo run typecheck",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

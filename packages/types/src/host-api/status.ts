@@ -1,10 +1,19 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 
 export const hostStatusResponseSchema = z.object({
   service: z.literal("entangle-host"),
   status: z.enum(["starting", "healthy", "degraded"]),
   graphRevisionId: identifierSchema.optional(),
+  reconciliation: z.object({
+    backendKind: runtimeBackendKindSchema,
+    failedRuntimeCount: z.number().int().nonnegative(),
+    lastReconciledAt: nonEmptyStringSchema.optional(),
+    managedRuntimeCount: z.number().int().nonnegative(),
+    runningRuntimeCount: z.number().int().nonnegative(),
+    stoppedRuntimeCount: z.number().int().nonnegative()
+  }),
   runtimeCounts: z.object({
     desired: z.number().int().nonnegative(),
     observed: z.number().int().nonnegative(),

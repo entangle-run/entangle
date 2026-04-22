@@ -10,6 +10,8 @@ services:
     depends_on:
       host:
         condition: service_started
+    networks:
+      - entangle-local
 
   host:
     build:
@@ -17,12 +19,31 @@ services:
       dockerfile: deploy/docker/host.Dockerfile
     environment:
       ENTANGLE_HOST_PORT: ${ENTANGLE_HOST_PORT:-7071}
-      ENTANGLE_HOME: /data/.entangle
+      ENTANGLE_HOME: /entangle-state/.entangle
+      ENTANGLE_RUNTIME_BACKEND: docker
+      ENTANGLE_DOCKER_NETWORK: entangle-local
+      ENTANGLE_DOCKER_RUNNER_IMAGE: entangle-runner:local
+      ENTANGLE_DOCKER_SHARED_STATE_TARGET: /entangle-state
+      ENTANGLE_DOCKER_SHARED_STATE_VOLUME: entangle-host-state
     ports:
       - "${ENTANGLE_HOST_PORT:-7071}:7071"
     volumes:
-      - entangle-host-state:/data
+      - entangle-host-state:/entangle-state
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - entangle-local
+
+  runner-image:
+    profiles:
+      - runner-build
+    image: entangle-runner:local
+    build:
+      context: ../..
+      dockerfile: deploy/docker/runner.Dockerfile
+    command:
+      - "true"
+    networks:
+      - entangle-local
 
   strfry:
     image: ghcr.io/hoytech/strfry:latest
@@ -32,6 +53,8 @@ services:
       - "${ENTANGLE_STRFRY_PORT:-7777}:7777"
     volumes:
       - strfry-data:/app/strfry-db
+    networks:
+      - entangle-local
 
   gitea:
     image: gitea/gitea:1.24.7
@@ -43,8 +66,14 @@ services:
       - "${ENTANGLE_GITEA_SSH_PORT:-2222}:22"
     volumes:
       - gitea-data:/data
+    networks:
+      - entangle-local
 
 volumes:
   entangle-host-state:
   gitea-data:
   strfry-data:
+
+networks:
+  entangle-local:
+    name: entangle-local

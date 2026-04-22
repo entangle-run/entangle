@@ -50,9 +50,9 @@ maintains:
 - an injected `effective-runtime-context.json` when the node has a realizable
   runtime context.
 
-For `local_path` package sources, the host also establishes a workspace
-`package/` link to the admitted package root and seeds node memory from the
-package template.
+For `local_path` package sources, the host also materializes a workspace
+`package/` snapshot from the admitted package root and seeds node memory from
+that runtime-local package surface.
 
 ## 3. Desired state semantics
 
@@ -154,10 +154,8 @@ The tests specifically cover:
 
 The most important remaining runtime work is now:
 
-- host reconciliation against actual Docker-managed runner processes;
-- observed runtime state derived from real runtime lifecycle instead of initial
-  placeholder records;
-- host-side runtime start/stop/restart actions that affect real processes;
+- richer Docker smoke coverage and restart semantics on top of the runtime
+  backend and reconciliation layer;
 - runner-side Nostr lifecycle and message handling;
 - runner-side artifact work over git;
 - session trace generation beyond control-plane events;

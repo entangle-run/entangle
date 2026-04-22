@@ -134,12 +134,15 @@ improves inspectability during the hackathon.
 The important rule is:
 
 - package sources remain separate from mutable node workspaces.
+- host-managed runner containers should see a stable shared-state mount instead
+  of backend-specific path guesses.
 
 ## 7. Host-managed runner materialization
 
 When the host creates a runner container, it should mount:
 
-- package source as read-only;
+- a shared host-state root at a stable container-visible path;
+- a materialized package snapshot inside that shared state;
 - injected runtime context as writable host-managed materialization;
 - node memory/wiki as writable persistent storage;
 - node artifact workspace as writable persistent storage;
@@ -199,6 +202,8 @@ The hackathon should use:
 - one shared model endpoint profile;
 - host access to the local Docker runtime for dynamic runner management;
 - dynamic runner containers created by the host;
+- an explicit shared-state mount and explicit Docker network for host-managed
+  runners;
 - no remote-host federation.
 
 This gives the cleanest demo while remaining faithful to the architecture.

@@ -114,6 +114,8 @@ The host should explicitly separate:
 - container or process health;
 - effective revision and binding currently mounted in each runtime;
 - last known runtime errors.
+- runtime-backend identity and runtime handles when known;
+- persisted reconciliation summary for health and debugging.
 
 Reconciliation is the process of converging observed state toward desired state.
 
@@ -135,6 +137,7 @@ Recommended stages:
 
 - node should be running but no runtime exists;
 - runtime exists with stale graph revision;
+- runtime exists with stale runtime-context materialization;
 - runtime exists with stale resource bindings;
 - package source is missing or invalid after admission;
 - resource profile changed and dependent nodes need restart or rebind;
@@ -282,13 +285,18 @@ The currently missing runtime lifecycle elements are:
 
 - restart;
 - runtime event streaming;
-- reconciliation against real Docker-managed processes;
-- observed-state updates from actual runtime lifecycle.
 - `DELETE /v1/runtimes/{nodeId}`
 
 Purpose:
 
 - inspect and influence runner lifecycle without bypassing desired-state truth.
+
+The current implementation also exposes:
+
+- per-runtime backend kind;
+- runtime handles when the backend reports them;
+- runtime status messages suitable for Studio and CLI;
+- host-level reconciliation status via `GET /v1/host/status`.
 
 ### 8.7 Validation and dry-run
 

@@ -159,3 +159,15 @@ Extended `entangle-host` from graph persistence into runtime preparation. The ho
 ## [2026-04-22] implementation | Replaced the runner bootstrap stub with injected-context bootstrap logic
 
 Extended `entangle-runner` so it now loads injected runtime context from disk, reads package prompt files and runtime config, constructs a normalized agent-engine turn request, and executes a first stub-engine turn from real materialized node state rather than from a hardcoded inline request.
+
+## [2026-04-22] implementation | Added runtime-backend abstraction and persisted reconciliation state
+
+Extended `entangle-host` from runtime materialization into a first real runtime-backend and reconciliation slice. Added an explicit runtime-backend boundary, introduced a tested in-memory backend and a first Docker backend, switched package materialization from workspace symlink assumptions to runtime package snapshots, persisted reconciliation snapshots under observed host state, and exposed richer runtime/status fields through the host surface.
+
+## [2026-04-22] quality | Tightened build-first contract checking for workspace type safety
+
+Clarified and enforced that workspace-wide typechecking must not silently depend on stale generated contract outputs. The local quality baseline now treats fresh contract builds as part of the type-safety gate so downstream packages do not drift behind newly changed shared schemas.
+
+## [2026-04-22] verification | Smoke-validated the Docker runtime backend against a real runner container
+
+Built the local `entangle-runner:local` image, admitted a package, applied a graph under the Docker backend profile, and confirmed that `entangle-host` created and observed a real runner container as `running`. Cleaned up the temporary runtime afterward.

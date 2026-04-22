@@ -1,13 +1,10 @@
 import {
   cp,
-  lstat,
   mkdir,
   readFile,
-  readlink,
   readdir,
   rm,
   stat,
-  symlink,
   writeFile
 } from "node:fs/promises";
 import path from "node:path";
@@ -48,12 +45,15 @@ import {
   type RuntimeListResponse,
   type RuntimeObservedState,
   observedRuntimeRecordSchema,
+  reconciliationSnapshotSchema,
+  type ReconciliationSnapshot,
 } from "@entangle/types";
 import {
   validateDeploymentResourceCatalogDocument,
   validateGraphDocument,
   validatePackageDirectory
 } from "@entangle/validator";
+import { createRuntimeBackend } from "./runtime-backend.js";
 
 const hostStateRoot = path.join(
   path.resolve(process.env.ENTANGLE_HOME ?? path.resolve(process.cwd(), ".entangle")),
@@ -76,8 +76,12 @@ const graphRevisionsRoot = path.join(graphRoot, "revisions");
 const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const observedRuntimesRoot = path.join(observedRoot, "runtimes");
+const reconciliationRoot = path.join(observedRoot, "reconciliation");
+const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
+const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 const runtimeContextFileName = "effective-runtime-context.json";
+const packageSnapshotMetadataFileName = ".snapshot-source.json";
 
 type GraphRevisionRecord = {
   activeRevisionId: string;
@@ -89,12 +93,22 @@ type RuntimeResolution = {
   inspection: RuntimeInspectionResponse;
 };
 
+const runtimeBackend = createRuntimeBackend(hostStateRoot);
+
 function nowIsoString(): string {
   return new Date().toISOString();
 }
 
 function dateStamp(): string {
   return nowIsoString().slice(0, 10);
+}
+
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return "Unknown host runtime error.";
 }
 
 function sanitizeIdentifier(input: string): string {
@@ -387,30 +401,86 @@ function packageSourcePackageRoot(record: PackageSourceRecord): string {
     : path.join(importsRoot, "packages", record.packageSourceId, "package");
 }
 
-async function ensureDirectoryLink(
-  linkPath: string,
+async function syncFileIfChanged(
+  sourcePath: string,
   targetPath: string
 ): Promise<void> {
-  await ensureDirectory(path.dirname(linkPath));
+  const sourceContents = await readFile(sourcePath);
 
-  if (await pathExists(linkPath)) {
-    const existingStats = await lstat(linkPath);
+  if (await pathExists(targetPath)) {
+    const targetContents = await readFile(targetPath);
 
-    if (existingStats.isSymbolicLink()) {
-      const linkedTarget = await readlink(linkPath).catch(() => "");
+    if (sourceContents.equals(targetContents)) {
+      return;
+    }
+  }
 
-      if (
-        typeof linkedTarget === "string" &&
-        path.resolve(path.dirname(linkPath), linkedTarget) === path.resolve(targetPath)
-      ) {
-        return;
+  await ensureDirectory(path.dirname(targetPath));
+  await writeFile(targetPath, sourceContents);
+}
+
+async function syncDirectoryContents(
+  sourceDirectory: string,
+  targetDirectory: string
+): Promise<void> {
+  await ensureDirectory(targetDirectory);
+
+  const [sourceEntries, targetEntries] = await Promise.all([
+    readdir(sourceDirectory, { withFileTypes: true }),
+    readdir(targetDirectory, { withFileTypes: true })
+  ]);
+  const sourceEntryNames = new Set(sourceEntries.map((entry) => entry.name));
+
+  await Promise.all(
+    targetEntries
+      .filter((entry) => !sourceEntryNames.has(entry.name))
+      .map((entry) =>
+        rm(path.join(targetDirectory, entry.name), {
+          force: true,
+          recursive: true
+        })
+      )
+  );
+
+  for (const entry of sourceEntries) {
+    const sourcePath = path.join(sourceDirectory, entry.name);
+    const targetPath = path.join(targetDirectory, entry.name);
+    const sourceStats = await stat(sourcePath);
+
+    if (sourceStats.isDirectory()) {
+      if ((await pathExists(targetPath)) && !(await stat(targetPath)).isDirectory()) {
+        await rm(targetPath, { force: true, recursive: true });
+      }
+
+      await syncDirectoryContents(sourcePath, targetPath);
+      continue;
+    }
+
+    if (await pathExists(targetPath)) {
+      const targetStats = await stat(targetPath);
+
+      if (targetStats.isDirectory()) {
+        await rm(targetPath, { force: true, recursive: true });
       }
     }
 
-    await rm(linkPath, { force: true, recursive: true });
+    await syncFileIfChanged(sourcePath, targetPath);
   }
+}
 
-  await symlink(targetPath, linkPath);
+async function syncPackageSnapshot(
+  packageSourceId: string,
+  packageRoot: string,
+  snapshotRoot: string
+): Promise<void> {
+  await syncDirectoryContents(packageRoot, snapshotRoot);
+  await writeJsonFile(
+    path.join(snapshotRoot, packageSnapshotMetadataFileName),
+    {
+      packageSourceId,
+      synchronizedAt: nowIsoString()
+    }
+  );
 }
 
 async function readPackageManifest(
@@ -483,19 +553,31 @@ async function readRuntimeIntentRecord(
   return runtimeIntentRecordSchema.parse(await readJsonFile(filePath));
 }
 
-async function readObservedRuntimeRecord(
-  nodeId: string
-): Promise<ReturnType<typeof observedRuntimeRecordSchema.parse> | undefined> {
-  const filePath = path.join(observedRuntimesRoot, `${nodeId}.json`);
+async function listObservedRuntimeNodeIds(): Promise<string[]> {
+  if (!(await pathExists(observedRuntimesRoot))) {
+    return [];
+  }
 
-  if (!(await pathExists(filePath))) {
+  return (await readdir(observedRuntimesRoot))
+    .filter((entry) => entry.endsWith(".json"))
+    .map((entry) => entry.slice(0, -".json".length))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+async function readLatestReconciliationSnapshot(): Promise<
+  ReconciliationSnapshot | undefined
+> {
+  if (!(await pathExists(latestReconciliationPath))) {
     return undefined;
   }
 
-  return observedRuntimeRecordSchema.parse(await readJsonFile(filePath));
+  return reconciliationSnapshotSchema.parse(
+    await readJsonFile(latestReconciliationPath)
+  );
 }
 
 function buildRuntimeInspectionFromState(input: {
+  backendKind: ReturnType<typeof observedRuntimeRecordSchema.parse>["backendKind"];
   context: EffectiveRuntimeContext | undefined;
   desiredState: RuntimeDesiredState;
   graphId: string;
@@ -504,8 +586,11 @@ function buildRuntimeInspectionFromState(input: {
   observedState: RuntimeObservedState;
   packageSourceId: string | undefined;
   reason: string | undefined;
+  runtimeHandle: string | undefined;
+  statusMessage: string | undefined;
 }): RuntimeInspectionResponse {
   return runtimeInspectionResponseSchema.parse({
+    backendKind: input.backendKind,
     contextAvailable: Boolean(input.context),
     contextPath: input.context ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName) : undefined,
     desiredState: input.desiredState,
@@ -514,7 +599,9 @@ function buildRuntimeInspectionFromState(input: {
     nodeId: input.nodeId,
     observedState: input.observedState,
     packageSourceId: input.packageSourceId,
-    reason: input.reason
+    reason: input.reason,
+    runtimeHandle: input.runtimeHandle,
+    statusMessage: input.statusMessage
   });
 }
 
@@ -525,7 +612,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
-    ensureDirectory(path.join(observedRoot, "reconciliation", "history")),
+    ensureDirectory(reconciliationHistoryRoot),
     ensureDirectory(path.join(observedRoot, "health")),
     ensureDirectory(controlPlaneTraceRoot),
     ensureDirectory(path.join(tracesRoot, "sessions")),
@@ -867,19 +954,19 @@ async function buildRuntimeResolution(input: {
     graph,
     catalog
   );
-  const packageRoot = packageSource
+  const sourcePackageRoot = packageSource
     ? packageSourcePackageRoot(packageSource)
     : undefined;
   const runtimeContextPath = path.join(
     workspace.injectedRoot,
     runtimeContextFileName
   );
-  const packageSourcePathExists = packageRoot
-    ? await pathExists(packageRoot)
+  const packageSourcePathExists = sourcePackageRoot
+    ? await pathExists(sourcePackageRoot)
     : false;
   const packageManifest =
-    packageRoot && packageSourcePathExists
-      ? await readPackageManifest(packageRoot)
+    sourcePackageRoot && packageSourcePathExists
+      ? await readPackageManifest(sourcePackageRoot)
       : undefined;
   const effectiveBinding = effectiveNodeBindingSchema.parse({
     bindingId: sanitizeIdentifier(`${activeRevisionId}-${node.nodeId}`),
@@ -909,15 +996,19 @@ async function buildRuntimeResolution(input: {
   let context: EffectiveRuntimeContext | undefined;
 
   if (
-    packageRoot &&
+    sourcePackageRoot &&
     packageSourcePathExists &&
     packageManifest &&
     resolvedModelEndpointProfile
   ) {
-    await ensureDirectoryLink(workspace.packageRoot, packageRoot);
+    await syncPackageSnapshot(
+      packageSource?.packageSourceId ?? node.nodeId,
+      sourcePackageRoot,
+      workspace.packageRoot
+    );
     await initializeWorkspaceMemory(
       workspace.memoryRoot,
-      packageRoot,
+      workspace.packageRoot,
       packageManifest
     );
     let existingContext: EffectiveRuntimeContext | undefined;
@@ -1081,18 +1172,39 @@ async function buildRuntimeResolution(input: {
     intentRecord
   );
 
-  const existingObserved = await readObservedRuntimeRecord(node.nodeId);
+  const observedRuntime = await runtimeBackend
+    .reconcileRuntime({
+      context,
+      contextPath: context
+        ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
+        : undefined,
+      desiredState: intentRecord.desiredState,
+      graphId: graph.graphId,
+      graphRevisionId: activeRevisionId,
+      nodeId: node.nodeId,
+      reason: intentRecord.reason
+    })
+    .catch((error: unknown) => ({
+      backendKind: runtimeBackend.kind,
+      lastError: formatUnknownError(error),
+      observedState: "failed" as const,
+      runtimeHandle: undefined,
+      statusMessage: `Runtime reconciliation failed: ${formatUnknownError(error)}`
+    }));
   const observedRecord = observedRuntimeRecordSchema.parse({
+    backendKind: observedRuntime.backendKind,
     graphId: graph.graphId,
     graphRevisionId: activeRevisionId,
-    lastError: existingObserved?.lastError,
-    lastSeenAt: existingObserved?.lastSeenAt ?? nowIsoString(),
+    lastError: observedRuntime.lastError,
+    lastSeenAt: nowIsoString(),
     nodeId: node.nodeId,
-    observedState: existingObserved?.observedState ?? "missing",
+    observedState: observedRuntime.observedState,
     runtimeContextPath: context
       ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
       : undefined,
-    schemaVersion: "1"
+    runtimeHandle: observedRuntime.runtimeHandle,
+    schemaVersion: "1",
+    statusMessage: observedRuntime.statusMessage
   });
   await writeJsonFileIfChanged(
     path.join(observedRuntimesRoot, `${node.nodeId}.json`),
@@ -1109,18 +1221,39 @@ async function buildRuntimeResolution(input: {
       nodeId: node.nodeId,
       observedState: observedRecord.observedState,
       packageSourceId: packageSource?.packageSourceId,
-      reason: intentRecord.reason
+      reason: intentRecord.reason,
+      runtimeHandle: observedRecord.runtimeHandle,
+      statusMessage: observedRecord.statusMessage,
+      backendKind: observedRecord.backendKind
     })
   };
 }
 
-async function synchronizeCurrentGraphRuntimeState(): Promise<
-  RuntimeInspectionResponse[]
-> {
+async function synchronizeCurrentGraphRuntimeState(): Promise<{
+  runtimes: RuntimeInspectionResponse[];
+  snapshot: ReturnType<typeof reconciliationSnapshotSchema.parse>;
+}> {
   const { graph, activeRevisionId } = await readActiveGraphState();
 
   if (!graph || !activeRevisionId) {
-    return [];
+    const emptySnapshot = reconciliationSnapshotSchema.parse({
+      backendKind: runtimeBackend.kind,
+      failedRuntimeCount: 0,
+      graphId: undefined,
+      graphRevisionId: undefined,
+      lastReconciledAt: nowIsoString(),
+      managedRuntimeCount: 0,
+      nodes: [],
+      runningRuntimeCount: 0,
+      schemaVersion: "1",
+      stoppedRuntimeCount: 0
+    });
+    await writeJsonFileIfChanged(latestReconciliationPath, emptySnapshot);
+
+    return {
+      runtimes: [],
+      snapshot: emptySnapshot
+    };
   }
 
   const catalog = await readCatalog();
@@ -1129,8 +1262,15 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<
   const activeNodeIds = new Set(runtimeNodes.map((node) => node.nodeId));
   const inspections: RuntimeInspectionResponse[] = [];
 
+  for (const nodeId of await listObservedRuntimeNodeIds()) {
+    if (!activeNodeIds.has(nodeId)) {
+      await runtimeBackend.removeInactiveRuntime(nodeId);
+    }
+  }
+
   await removeJsonFilesExcept(nodeBindingsRoot, activeNodeIds);
   await removeJsonFilesExcept(runtimeIntentsRoot, activeNodeIds);
+  await removeJsonFilesExcept(observedRuntimesRoot, activeNodeIds);
 
   for (const node of runtimeNodes) {
     const resolution = await buildRuntimeResolution({
@@ -1144,19 +1284,48 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<
   }
 
   inspections.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
-  return inspections;
+  const snapshot = reconciliationSnapshotSchema.parse({
+    backendKind: runtimeBackend.kind,
+    failedRuntimeCount: inspections.filter(
+      (runtime) => runtime.observedState === "failed"
+    ).length,
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    lastReconciledAt: nowIsoString(),
+    managedRuntimeCount: inspections.length,
+    nodes: inspections.map((runtime) => ({
+      desiredState: runtime.desiredState,
+      nodeId: runtime.nodeId,
+      observedState: runtime.observedState,
+      statusMessage: runtime.statusMessage
+    })),
+    runningRuntimeCount: inspections.filter(
+      (runtime) => runtime.observedState === "running"
+    ).length,
+    schemaVersion: "1",
+    stoppedRuntimeCount: inspections.filter((runtime) =>
+      runtime.observedState === "stopped" || runtime.observedState === "missing"
+    ).length
+  });
+
+  await writeJsonFileIfChanged(latestReconciliationPath, snapshot);
+
+  return {
+    runtimes: inspections,
+    snapshot
+  };
 }
 
 export async function listRuntimeInspections(): Promise<RuntimeListResponse> {
   return runtimeListResponseSchema.parse({
-    runtimes: await synchronizeCurrentGraphRuntimeState()
+    runtimes: (await synchronizeCurrentGraphRuntimeState()).runtimes
   });
 }
 
 export async function getRuntimeInspection(
   nodeId: string
 ): Promise<RuntimeInspectionResponse | null> {
-  const runtimes = await synchronizeCurrentGraphRuntimeState();
+  const { runtimes } = await synchronizeCurrentGraphRuntimeState();
   return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
 }
 
@@ -1195,11 +1364,8 @@ export async function setRuntimeDesiredState(
   });
   await writeJsonFile(path.join(runtimeIntentsRoot, `${nodeId}.json`), intent);
 
-  return runtimeInspectionResponseSchema.parse({
-    ...inspection,
-    desiredState,
-    reason: intent.reason
-  });
+  const { runtimes } = await synchronizeCurrentGraphRuntimeState();
+  return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
 }
 
 export async function applyGraph(input: unknown): Promise<GraphMutationResponse> {
@@ -1239,11 +1405,35 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const runtimeInspections = await listRuntimeInspections();
+  const reconciliationSnapshot =
+    (await readLatestReconciliationSnapshot()) ??
+    reconciliationSnapshotSchema.parse({
+      backendKind: runtimeBackend.kind,
+      failedRuntimeCount: 0,
+      graphId: graphInspection.graph?.graphId,
+      graphRevisionId: graphInspection.activeRevisionId,
+      lastReconciledAt: nowIsoString(),
+      managedRuntimeCount: 0,
+      nodes: [],
+      runningRuntimeCount: 0,
+      schemaVersion: "1",
+      stoppedRuntimeCount: 0
+    });
+  const hostStatus =
+    reconciliationSnapshot.failedRuntimeCount > 0 ? "degraded" : "healthy";
 
   return {
     service: "entangle-host" as const,
-    status: "healthy" as const,
+    status: hostStatus,
     graphRevisionId: graphInspection.activeRevisionId,
+    reconciliation: {
+      backendKind: reconciliationSnapshot.backendKind,
+      failedRuntimeCount: reconciliationSnapshot.failedRuntimeCount,
+      lastReconciledAt: reconciliationSnapshot.lastReconciledAt,
+      managedRuntimeCount: reconciliationSnapshot.managedRuntimeCount,
+      runningRuntimeCount: reconciliationSnapshot.runningRuntimeCount,
+      stoppedRuntimeCount: reconciliationSnapshot.stoppedRuntimeCount
+    },
     runtimeCounts: {
       desired: runtimeInspections.runtimes.filter(
         (runtime) => runtime.desiredState === "running"

@@ -41,6 +41,10 @@ The local baseline now includes:
 For coherent code or tooling batches, `pnpm verify` is the default aggregate
 gate.
 
+When workspace packages export generated contract outputs consumed by sibling
+packages, the repository must ensure typecheck runs against fresh contract
+artifacts instead of silently relying on stale prior builds.
+
 ## What lint must mean
 
 `lint` must be a real static-quality pass, not a disguised typecheck.

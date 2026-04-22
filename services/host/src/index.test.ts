@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -88,6 +88,7 @@ async function createTestServer(options: { includeModelEndpoint?: boolean } = {}
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-host-"));
   createdDirectories.push(tempRoot);
   process.env.ENTANGLE_HOME = tempRoot;
+  process.env.ENTANGLE_RUNTIME_BACKEND = "memory";
   process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID = options.includeModelEndpoint
     ? "shared-model"
     : "";
@@ -114,6 +115,7 @@ async function createTestServer(options: { includeModelEndpoint?: boolean } = {}
 
 afterEach(async () => {
   delete process.env.ENTANGLE_HOME;
+  delete process.env.ENTANGLE_RUNTIME_BACKEND;
   delete process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID;
   delete process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL;
   delete process.env.ENTANGLE_DEFAULT_MODEL_SECRET_REF;
@@ -248,9 +250,11 @@ describe("buildHostServer", () => {
       expect(runtimeListResponseSchema.parse(runtimesResponse.json())).toMatchObject({
         runtimes: [
           {
+            backendKind: "memory",
             nodeId: "worker-it",
             desiredState: "running",
             contextAvailable: true,
+            observedState: "running",
             packageSourceId: admittedPackageSourceId
           }
         ]
@@ -286,6 +290,19 @@ describe("buildHostServer", () => {
         ) as unknown
       );
       expect(storedContext.binding.node.nodeId).toBe("worker-it");
+      expect(
+        JSON.parse(
+          await readFile(
+            path.join(storedContext.workspace.packageRoot, "manifest.json"),
+            "utf8"
+          )
+        ) as unknown
+      ).toMatchObject({
+        packageId: "worker-it"
+      });
+      expect((await lstat(storedContext.workspace.packageRoot)).isSymbolicLink()).toBe(
+        false
+      );
     } finally {
       await server.close();
     }
@@ -394,10 +411,75 @@ describe("buildHostServer", () => {
 
       expect(stopResponse.statusCode).toBe(200);
       expect(runtimeInspectionResponseSchema.parse(stopResponse.json())).toMatchObject({
+        backendKind: "memory",
         nodeId: "worker-it",
         desiredState: "stopped",
         contextAvailable: true,
+        observedState: "stopped",
         reason: "stopped_by_operator"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("reports reconciliation status through the host status surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource.packageSourceId;
+
+      await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSourceId
+            }
+          ],
+          edges: []
+        },
+        url: "/v1/graph"
+      });
+
+      const statusResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      expect(statusResponse.json()).toMatchObject({
+        service: "entangle-host",
+        status: "healthy",
+        reconciliation: {
+          backendKind: "memory",
+          failedRuntimeCount: 0,
+          managedRuntimeCount: 1,
+          runningRuntimeCount: 1,
+          stoppedRuntimeCount: 0
+        }
       });
     } finally {
       await server.close();
