@@ -1,4 +1,5 @@
 export * from "./artifacts/artifact-ref.js";
+export * from "./common/crypto.js";
 export * from "./common/primitives.js";
 export * from "./common/topology.js";
 export * from "./common/validation.js";
@@ -11,7 +12,9 @@ export * from "./host-api/runtime.js";
 export * from "./host-api/status.js";
 export * from "./package/package-manifest.js";
 export * from "./package/package-source.js";
+export * from "./protocol/a2a.js";
 export * from "./resources/catalog.js";
 export * from "./runtime/runtime-context.js";
 export * from "./runtime/reconciliation.js";
+export * from "./runtime/session-state.js";
 export * from "./runtime/runtime-state.js";

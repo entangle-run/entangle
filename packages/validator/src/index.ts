@@ -1,18 +1,26 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import {
+  approvalRecordSchema,
   agentPackageManifestSchema,
   buildValidationReport,
+  conversationRecordSchema,
   type DeploymentResourceCatalog,
   deploymentResourceCatalogSchema,
+  entangleA2AMessageSchema,
   type GraphSpec,
   graphSpecSchema,
   intersectIdentifiers,
+  isAllowedApprovalLifecycleTransition,
+  isAllowedConversationLifecycleTransition,
+  isAllowedSessionLifecycleTransition,
   resolveEffectiveGitServiceRefs,
   resolveEffectiveModelEndpointProfileRef,
   resolveEffectivePrimaryGitServiceRef,
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfileRefs,
+  runnerTurnRecordSchema,
+  sessionRecordSchema,
   type ValidationFinding,
   type ValidationReport
 } from "@entangle/types";
@@ -570,6 +578,163 @@ export function validateGraphDocument(
   return buildValidationReport(
     validateGraphSemantics(parseResult.data, options)
   );
+}
+
+export function validateA2AMessageDocument(input: unknown): ValidationReport {
+  const parseResult = entangleA2AMessageSchema.safeParse(input);
+
+  if (!parseResult.success) {
+    return buildValidationReport(
+      parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "a2a_message_invalid",
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  return buildValidationReport([]);
+}
+
+export function validateSessionRecordDocument(input: unknown): ValidationReport {
+  const parseResult = sessionRecordSchema.safeParse(input);
+
+  if (!parseResult.success) {
+    return buildValidationReport(
+      parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "session_record_invalid",
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  return buildValidationReport([]);
+}
+
+export function validateConversationRecordDocument(
+  input: unknown
+): ValidationReport {
+  const parseResult = conversationRecordSchema.safeParse(input);
+
+  if (!parseResult.success) {
+    return buildValidationReport(
+      parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "conversation_record_invalid",
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  return buildValidationReport([]);
+}
+
+export function validateApprovalRecordDocument(input: unknown): ValidationReport {
+  const parseResult = approvalRecordSchema.safeParse(input);
+
+  if (!parseResult.success) {
+    return buildValidationReport(
+      parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "approval_record_invalid",
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  return buildValidationReport([]);
+}
+
+export function validateRunnerTurnRecordDocument(input: unknown): ValidationReport {
+  const parseResult = runnerTurnRecordSchema.safeParse(input);
+
+  if (!parseResult.success) {
+    return buildValidationReport(
+      parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "runner_turn_record_invalid",
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  return buildValidationReport([]);
+}
+
+function buildTransitionValidationReport(input: {
+  kind: "approval" | "conversation" | "session";
+  fromState: string;
+  toState: string;
+  allowed: boolean;
+}): ValidationReport {
+  if (input.allowed) {
+    return buildValidationReport([]);
+  }
+
+  return buildValidationReport([
+    createFinding({
+      code: `${input.kind}_transition_invalid`,
+      severity: "error",
+      message: `Transition '${input.fromState} -> ${input.toState}' is not allowed for ${input.kind} state.`,
+      path: ["status"],
+      details: {
+        fromState: input.fromState,
+        toState: input.toState
+      }
+    })
+  ]);
+}
+
+export function validateSessionLifecycleTransition(
+  fromState: Parameters<typeof isAllowedSessionLifecycleTransition>[0],
+  toState: Parameters<typeof isAllowedSessionLifecycleTransition>[1]
+): ValidationReport {
+  return buildTransitionValidationReport({
+    allowed: isAllowedSessionLifecycleTransition(fromState, toState),
+    fromState,
+    kind: "session",
+    toState
+  });
+}
+
+export function validateConversationLifecycleTransition(
+  fromState: Parameters<typeof isAllowedConversationLifecycleTransition>[0],
+  toState: Parameters<typeof isAllowedConversationLifecycleTransition>[1]
+): ValidationReport {
+  return buildTransitionValidationReport({
+    allowed: isAllowedConversationLifecycleTransition(fromState, toState),
+    fromState,
+    kind: "conversation",
+    toState
+  });
+}
+
+export function validateApprovalLifecycleTransition(
+  fromState: Parameters<typeof isAllowedApprovalLifecycleTransition>[0],
+  toState: Parameters<typeof isAllowedApprovalLifecycleTransition>[1]
+): ValidationReport {
+  return buildTransitionValidationReport({
+    allowed: isAllowedApprovalLifecycleTransition(fromState, toState),
+    fromState,
+    kind: "approval",
+    toState
+  });
 }
 
 async function readJsonFile(filePath: string): Promise<unknown> {

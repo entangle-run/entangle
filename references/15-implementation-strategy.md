@@ -33,7 +33,9 @@ Current implemented slice:
 - loads injected runtime context from disk;
 - reads package prompt files and runtime config;
 - constructs a provider-agnostic engine turn request;
-- executes one stub-engine turn for bootstrap verification.
+- executes one stub-engine turn for bootstrap verification;
+- consumes machine-readable A2A, session, conversation, approval, and turn-state
+  contracts through shared `packages/types` exports.
 
 ### `entangle-agent-engine`
 

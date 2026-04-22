@@ -62,7 +62,8 @@ This repository currently contains:
   `pnpm`, Turborepo, `nostr-tools`, `strfry`, `Gitea`, and Docker Compose;
 - an initial monorepo scaffold for `apps/`, `services/`, `packages/`, and
   `deploy/`;
-- the first machine-readable contract layer in `packages/types`;
+- the first machine-readable contract layer in `packages/types`, now extended
+  with Entangle A2A payloads and runner-local lifecycle state contracts;
 - a stronger validator surface with resource-resolution and transport
   realizability checks;
 - a host control-plane surface with persistent catalog, package-source, and

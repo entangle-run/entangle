@@ -1,6 +1,11 @@
 import type { GraphSpec } from "@entangle/types";
 import { describe, expect, it } from "vitest";
-import { validateGraphDocument } from "./index.js";
+import {
+  validateA2AMessageDocument,
+  validateConversationLifecycleTransition,
+  validateGraphDocument,
+  validateSessionLifecycleTransition
+} from "./index.js";
 
 function buildGraph(packageSourceRef?: string): GraphSpec {
   return {
@@ -69,5 +74,58 @@ describe("validateGraphDocument", () => {
         })
       ])
     );
+  });
+});
+
+describe("validateA2AMessageDocument", () => {
+  it("rejects self-addressed protocol messages", () => {
+    const report = validateA2AMessageDocument({
+      conversationId: "conv-alpha",
+      fromNodeId: "worker-it",
+      fromPubkey:
+        "1111111111111111111111111111111111111111111111111111111111111111",
+      graphId: "graph-alpha",
+      intent: "review_patch",
+      messageType: "task.request",
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-alpha",
+      toNodeId: "worker-it",
+      toPubkey:
+        "1111111111111111111111111111111111111111111111111111111111111111",
+      turnId: "turn-001",
+      work: {
+        summary: "Review the patch."
+      }
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "a2a_message_invalid",
+          severity: "error"
+        })
+      ])
+    );
+  });
+});
+
+describe("lifecycle transition validation", () => {
+  it("rejects invalid session regressions", () => {
+    const report = validateSessionLifecycleTransition("completed", "active");
+
+    expect(report.ok).toBe(false);
+    expect(report.findings[0]?.code).toBe("session_transition_invalid");
+  });
+
+  it("accepts valid conversation progress transitions", () => {
+    const report = validateConversationLifecycleTransition("working", "resolved");
+
+    expect(report.ok).toBe(true);
+    expect(report.findings).toHaveLength(0);
   });
 });

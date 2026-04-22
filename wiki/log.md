@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-22] implementation | Add machine-readable A2A and runner state contracts
+
+Added canonical `@entangle/types` ownership for Entangle A2A payloads and
+runner-local session, conversation, approval, and turn-state contracts.
+Added validator surfaces for A2A documents and lifecycle transition checks, and
+aligned the protocol and runner references with the new machine-readable
+ownership.
+
 ## [2026-04-22] bootstrap | Initialized project wiki
 
 Created the first project wiki structure, schema, index, and initial concept, decision, source, and session pages.

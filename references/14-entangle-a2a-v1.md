@@ -21,29 +21,34 @@ The protocol must be interpreted together with the state and transition rules in
 ```json
 {
   "protocol": "entangle.a2a.v1",
-  "message_type": "task.request",
-  "graph_id": "graph-alpha",
-  "session_id": "session-123",
-  "conversation_id": "conv-123",
-  "turn_id": "turn-001",
-  "parent_message_id": null,
-  "from_node": "npub1...",
-  "to_node": "npub1...",
+  "messageType": "task.request",
+  "graphId": "graph-alpha",
+  "sessionId": "session-123",
+  "conversationId": "conv-123",
+  "turnId": "turn-001",
+  "parentMessageId": null,
+  "fromNodeId": "worker-it",
+  "fromPubkey": "1111111111111111111111111111111111111111111111111111111111111111",
+  "toNodeId": "reviewer-it",
+  "toPubkey": "2222222222222222222222222222222222222222222222222222222222222222",
   "intent": "review_commit",
-  "response_policy": {
-    "response_required": true,
-    "close_on_result": true,
-    "max_followups": 1
+  "responsePolicy": {
+    "responseRequired": true,
+    "closeOnResult": true,
+    "maxFollowups": 1
   },
   "work": {
     "summary": "Review the parser patch and report blocking issues",
-    "artifact_refs": []
+    "artifactRefs": []
   },
   "constraints": {
-    "approval_required_before_action": false
+    "approvalRequiredBeforeAction": false
   }
 }
 ```
+
+The canonical machine-readable contract now lives in `packages/types` and uses
+camelCase JSON keys for consistency with the rest of the Entangle repository.
 
 ## Message types
 
@@ -104,6 +109,7 @@ Use public custom events only for:
 ## Mandatory behavioral invariants
 
 - every message must be signed;
-- every message must identify sender and recipient;
+- every message must identify sender and recipient by both graph-local node id
+  and authoritative pubkey;
 - every message must belong to a graph and session context;
 - every message must carry enough control metadata to avoid infinite ping-pong loops.

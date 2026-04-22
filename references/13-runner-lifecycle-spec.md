@@ -4,6 +4,15 @@
 
 The runner is the executable embodiment of a node. This document defines the lifecycle the runner should implement.
 
+The machine-readable lifecycle-adjacent contracts now live in `packages/types`
+for:
+
+- Entangle A2A message payloads;
+- session records;
+- conversation records;
+- approval records;
+- runner phases and turn tracking.
+
 ## Inputs to the runner
 
 The runner starts with:
@@ -128,3 +137,6 @@ The first implementation can be strict and narrow:
 - one transport mode;
 - no remote package fetch;
 - bounded concurrency.
+
+That narrow runtime profile should still consume the canonical machine-readable
+contracts rather than inventing runner-local ad hoc state shapes.

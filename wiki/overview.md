@@ -74,6 +74,9 @@ The repository now also contains the first real implementation baseline:
   demo graph;
 - a runner bootstrap that now consumes injected runtime context, package
   prompts, runtime config, and seeded memory instead of a hardcoded request;
+- machine-readable Entangle A2A payloads and runner-local session,
+  conversation, approval, and turn-state contracts owned by `packages/types`
+  plus validator entrypoints for those surfaces in `packages/validator`;
 - a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - an explicit composite TypeScript build graph with solution-build typechecking
   for internal packages and Node services;
@@ -135,6 +138,8 @@ The central design direction is now clear:
 
 - move `entangle-runner` from bootstrap-only execution into Nostr lifecycle and
   session handling;
+- materialize stable per-node Nostr identities and inject non-secret identity
+  context from the host into runner workspaces;
 - add artifact-side git work and handoff logic inside the runner;
 - start exposing the richer runtime slice in Studio while keeping the same host
   boundary and quality gates;
