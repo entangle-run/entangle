@@ -12,20 +12,34 @@ import Anthropic, {
 } from "@anthropic-ai/sdk";
 import type {
   Message,
-  MessageCreateParamsNonStreaming
+  MessageCreateParamsNonStreaming,
+  MessageParam,
+  Tool,
+  ToolResultBlockParam,
+  ToolUseBlock
 } from "@anthropic-ai/sdk/resources/messages";
 import {
+  agentEngineTurnRequestSchema,
   agentEngineTurnResultSchema,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
+  engineToolExecutionRequestSchema,
+  engineToolExecutionResultSchema,
+  type EngineToolExecutionResult,
   type ModelRuntimeContext,
   type ResolvedSecretBinding
 } from "@entangle/types";
+import type { AgentEngineToolExecutor } from "./tool-executor.js";
+export type { AgentEngineToolExecutor } from "./tool-executor.js";
 
 const maxRenderedArtifactInputs = 8;
 const maxRenderedMemoryFiles = 8;
 const maxRenderedFileCharacters = 12_000;
 const providerTimeoutMs = 120_000;
+type AnthropicMessageParamContentBlock = Exclude<
+  MessageParam["content"],
+  string
+>[number];
 
 export type AgentEngineErrorClassification =
   | "auth_error"
@@ -46,6 +60,8 @@ type AnthropicClientLike = {
     create(request: MessageCreateParamsNonStreaming): Promise<Message>;
   };
 };
+
+type AnthropicRequestBody = Omit<MessageCreateParamsNonStreaming, "model">;
 
 type AnthropicClientFactory = (input: {
   apiKey?: string;
@@ -228,15 +244,31 @@ async function buildMemorySection(
   return sections.join("\n\n---\n\n");
 }
 
-async function buildAnthropicRequest(
+function mapToolDefinitionsToAnthropicTools(
   request: AgentEngineTurnRequest
-): Promise<MessageCreateParamsNonStreaming> {
-  if (request.toolDefinitions.length > 0) {
-    throw new AgentEngineConfigurationError(
-      "The first anthropic engine slice does not yet support tool definitions."
-    );
+): Tool[] | undefined {
+  if (request.toolDefinitions.length === 0) {
+    return undefined;
   }
 
+  return request.toolDefinitions.map((toolDefinition) => {
+    if (typeof toolDefinition.inputSchema.type !== "string") {
+      throw new AgentEngineConfigurationError(
+        `Tool '${toolDefinition.id}' must declare an inputSchema with a top-level string 'type' property to be sent to Anthropic.`
+      );
+    }
+
+    return {
+      description: toolDefinition.description,
+      input_schema: toolDefinition.inputSchema as Tool["input_schema"],
+      name: toolDefinition.id
+    };
+  });
+}
+
+async function buildInitialAnthropicUserMessage(
+  request: AgentEngineTurnRequest
+): Promise<MessageParam> {
   const artifactRefSummary = buildArtifactRefSummary(request);
   const artifactInputSection = await buildArtifactInputSection(request);
   const memorySection = await buildMemorySection(request);
@@ -248,16 +280,174 @@ async function buildAnthropicRequest(
   ].filter((value): value is string => Boolean(value));
 
   return {
-    model: "claude-opus-4-7",
+    role: "user",
+    content: interactionSections.join("\n\n")
+  };
+}
+
+async function buildAnthropicRequest(
+  request: AgentEngineTurnRequest,
+  input: {
+    messages?: MessageParam[];
+  } = {}
+): Promise<AnthropicRequestBody> {
+  const messages =
+    input.messages ?? [await buildInitialAnthropicUserMessage(request)];
+  const tools = mapToolDefinitionsToAnthropicTools(request);
+
+  return {
     max_tokens: request.executionLimits.maxOutputTokens,
     system: request.systemPromptParts.join("\n\n"),
-    messages: [
-      {
-        role: "user",
-        content: interactionSections.join("\n\n")
-      }
-    ]
+    messages,
+    ...(tools ? { tools } : {})
   };
+}
+
+function accumulateUsage(
+  currentUsage: AgentEngineTurnResult["usage"],
+  response: Message
+): AgentEngineTurnResult["usage"] {
+  const responseUsage = response.usage
+    ? {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens
+      }
+    : undefined;
+
+  if (!responseUsage) {
+    return currentUsage;
+  }
+
+  if (!currentUsage) {
+    return responseUsage;
+  }
+
+  return {
+    inputTokens: currentUsage.inputTokens + responseUsage.inputTokens,
+    outputTokens: currentUsage.outputTokens + responseUsage.outputTokens
+  };
+}
+
+function mapAssistantContentBlockForContinuation(
+  block: Message["content"][number]
+): AnthropicMessageParamContentBlock {
+  switch (block.type) {
+    case "text":
+      return {
+        text: block.text,
+        type: "text"
+      };
+    case "tool_use":
+      return {
+        id: block.id,
+        input: block.input,
+        name: block.name,
+        type: "tool_use"
+      };
+    default:
+      throw new AgentEngineExecutionError(
+        `Anthropic returned an unsupported assistant content block type '${block.type}' during tool-loop continuation.`,
+        {
+          classification: "tool_protocol_error"
+        }
+      );
+  }
+}
+
+function buildAssistantContinuationMessage(response: Message): MessageParam {
+  return {
+    role: "assistant",
+    content: response.content.map(mapAssistantContentBlockForContinuation)
+  };
+}
+
+function extractToolUses(response: Message): ToolUseBlock[] {
+  return response.content.filter(
+    (block): block is ToolUseBlock => block.type === "tool_use"
+  );
+}
+
+function renderToolExecutionContent(
+  content: EngineToolExecutionResult["content"]
+): string {
+  return typeof content === "string" ? content : JSON.stringify(content, null, 2);
+}
+
+function buildToolProtocolErrorResult(
+  toolUseId: string,
+  message: string
+): ToolResultBlockParam {
+  return {
+    tool_use_id: toolUseId,
+    type: "tool_result",
+    content: message,
+    is_error: true
+  };
+}
+
+function isPlainObjectRecord(
+  input: unknown
+): input is Record<string, unknown> {
+  return typeof input === "object" && input !== null && !Array.isArray(input);
+}
+
+async function executeAnthropicToolRound(input: {
+  request: AgentEngineTurnRequest;
+  response: Message;
+  toolExecutor: AgentEngineToolExecutor;
+}): Promise<ToolResultBlockParam[]> {
+  const toolUses = extractToolUses(input.response);
+
+  if (toolUses.length === 0) {
+    throw new AgentEngineExecutionError(
+      "Anthropic returned stop_reason=tool_use without any tool_use content blocks.",
+      {
+        classification: "tool_protocol_error"
+      }
+    );
+  }
+
+  return Promise.all(
+    toolUses.map(async (toolUse) => {
+      const toolDefinition = input.request.toolDefinitions.find(
+        (candidate) => candidate.id === toolUse.name
+      );
+
+      if (!toolDefinition) {
+        return buildToolProtocolErrorResult(
+          toolUse.id,
+          `Tool '${toolUse.name}' was not declared for this turn.`
+        );
+      }
+
+      if (!isPlainObjectRecord(toolUse.input)) {
+        return buildToolProtocolErrorResult(
+          toolUse.id,
+          `Tool '${toolUse.name}' produced a non-object input payload.`
+        );
+      }
+
+      const executionRequest = engineToolExecutionRequestSchema.parse({
+        artifactInputs: input.request.artifactInputs,
+        input: toolUse.input,
+        memoryRefs: input.request.memoryRefs,
+        nodeId: input.request.nodeId,
+        sessionId: input.request.sessionId,
+        tool: toolDefinition,
+        toolCallId: toolUse.id
+      });
+      const executionResult = engineToolExecutionResultSchema.parse(
+        await input.toolExecutor.executeToolCall(executionRequest)
+      );
+
+      return {
+        tool_use_id: toolUse.id,
+        type: "tool_result",
+        content: renderToolExecutionContent(executionResult.content),
+        ...(executionResult.isError ? { is_error: true } : {})
+      };
+    })
+  );
 }
 
 function classifyAnthropicError(
@@ -350,6 +540,7 @@ function resolveConfiguredModelId(
 export function createAnthropicAgentEngine(input: {
   clientFactory?: AnthropicClientFactory;
   modelContext: ModelRuntimeContext;
+  toolExecutor?: AgentEngineToolExecutor;
 }): AgentEngine {
   const profile = input.modelContext.modelEndpointProfile;
 
@@ -381,40 +572,73 @@ export function createAnthropicAgentEngine(input: {
       }
 
       const client = await clientPromise;
+      const normalizedRequest = agentEngineTurnRequestSchema.parse(request);
+      let messages: MessageParam[] | undefined;
+      let aggregatedUsage: AgentEngineTurnResult["usage"];
+      let toolLoopCount = 0;
 
       try {
-        const response = await client.messages.create({
-          ...(await buildAnthropicRequest(request)),
-          model: modelId
-        });
+        while (true) {
+          const response = await client.messages.create({
+            ...(await buildAnthropicRequest(normalizedRequest, {
+              ...(messages ? { messages } : {})
+            })),
+            model: modelId
+          });
+          aggregatedUsage = accumulateUsage(aggregatedUsage, response);
 
-        if (response.stop_reason === "tool_use") {
-          throw new AgentEngineExecutionError(
-            "Anthropic requested tool use before the internal tool loop was enabled.",
-            {
-              classification: "tool_protocol_error"
-            }
-          );
-        }
+          if (response.stop_reason !== "tool_use") {
+            return agentEngineTurnResultSchema.parse({
+              assistantMessages: extractAssistantMessages(response),
+              toolRequests: [],
+              stopReason: mapStopReason(response),
+              usage: aggregatedUsage
+            });
+          }
 
-        return agentEngineTurnResultSchema.parse({
-          assistantMessages: extractAssistantMessages(response),
-          toolRequests: [],
-          stopReason: mapStopReason(response),
-          usage: response.usage
-            ? {
-                inputTokens: response.usage.input_tokens,
-                outputTokens: response.usage.output_tokens
+          if (!input.toolExecutor) {
+            throw new AgentEngineExecutionError(
+              "Anthropic requested tool use without a configured Entangle tool executor.",
+              {
+                classification: "tool_protocol_error"
               }
-            : undefined
-        });
+            );
+          }
+
+          if (toolLoopCount >= normalizedRequest.executionLimits.maxToolTurns) {
+            throw new AgentEngineExecutionError(
+              `Anthropic requested more than ${normalizedRequest.executionLimits.maxToolTurns} tool rounds for node '${normalizedRequest.nodeId}'.`,
+              {
+                classification: "tool_protocol_error"
+              }
+            );
+          }
+
+          const toolResults = await executeAnthropicToolRound({
+            request: normalizedRequest,
+            response,
+            toolExecutor: input.toolExecutor
+          });
+
+          messages = [
+            ...(messages ?? [
+              await buildInitialAnthropicUserMessage(normalizedRequest)
+            ]),
+            buildAssistantContinuationMessage(response),
+            {
+              role: "user",
+              content: toolResults
+            }
+          ];
+          toolLoopCount += 1;
+        }
       } catch (error) {
         if (error instanceof AgentEngineExecutionError) {
           throw error;
         }
 
         throw new AgentEngineExecutionError(
-          `Anthropic engine execution failed for node '${request.nodeId}'.`,
+          `Anthropic engine execution failed for node '${normalizedRequest.nodeId}'.`,
           {
             classification: classifyAnthropicError(error),
             cause: error
@@ -428,6 +652,7 @@ export function createAnthropicAgentEngine(input: {
 export function createAgentEngineForModelContext(input: {
   clientFactory?: AnthropicClientFactory;
   modelContext: ModelRuntimeContext;
+  toolExecutor?: AgentEngineToolExecutor;
 }): AgentEngine {
   const adapterKind = input.modelContext.modelEndpointProfile?.adapterKind;
 

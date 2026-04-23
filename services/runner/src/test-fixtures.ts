@@ -6,7 +6,8 @@ import {
   entangleA2AMessageSchema,
   type ArtifactRef,
   type EffectiveRuntimeContext,
-  type EntangleA2AResponsePolicy
+  type EntangleA2AResponsePolicy,
+  type PackageToolCatalog
 } from "@entangle/types";
 import { getPublicKey } from "nostr-tools";
 import type { RunnerInboundEnvelope } from "./transport.js";
@@ -58,6 +59,7 @@ async function runGitCommand(cwd: string, args: string[]): Promise<void> {
 
 export async function createRuntimeFixture(input: {
   remotePublication?: "bare_repo" | "missing_repo" | "none";
+  toolCatalog?: PackageToolCatalog;
 } = {}): Promise<{
   context: EffectiveRuntimeContext;
   contextPath: string;
@@ -107,10 +109,13 @@ export async function createRuntimeFixture(input: {
     writeJsonFile(path.join(packageRoot, "runtime", "capabilities.json"), {
       capabilities: []
     }),
-    writeJsonFile(path.join(packageRoot, "runtime", "tools.json"), {
-      schemaVersion: "1",
-      tools: []
-    }),
+    writeJsonFile(
+      path.join(packageRoot, "runtime", "tools.json"),
+      input.toolCatalog ?? {
+        schemaVersion: "1",
+        tools: []
+      }
+    ),
     writeFile(
       path.join(secretsRoot, "git", "worker-it", "ssh"),
       "test-private-key\n",

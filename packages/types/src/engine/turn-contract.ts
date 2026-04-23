@@ -28,6 +28,24 @@ export const engineArtifactInputSchema = z.object({
   sourceRef: artifactRefSchema
 });
 
+export const engineToolExecutionRequestSchema = z.object({
+  artifactInputs: z.array(engineArtifactInputSchema).default([]),
+  input: z.record(z.string(), z.unknown()).default({}),
+  memoryRefs: z.array(nonEmptyStringSchema).default([]),
+  nodeId: identifierSchema,
+  sessionId: identifierSchema,
+  tool: engineToolDefinitionSchema,
+  toolCallId: nonEmptyStringSchema
+});
+
+export const engineToolExecutionResultSchema = z.object({
+  content: z.union([
+    nonEmptyStringSchema,
+    z.record(z.string(), z.unknown())
+  ]),
+  isError: z.boolean().default(false)
+});
+
 export const agentEngineTurnRequestSchema = z.object({
   sessionId: identifierSchema,
   nodeId: identifierSchema,
@@ -67,6 +85,12 @@ export const agentEngineTurnResultSchema = z.object({
 
 export type EngineToolDefinition = z.infer<typeof engineToolDefinitionSchema>;
 export type EngineToolRequest = z.infer<typeof engineToolRequestSchema>;
+export type EngineToolExecutionRequest = z.infer<
+  typeof engineToolExecutionRequestSchema
+>;
+export type EngineToolExecutionResult = z.infer<
+  typeof engineToolExecutionResultSchema
+>;
 export type EngineArtifactInput = z.infer<typeof engineArtifactInputSchema>;
 export type AgentEngineTurnRequest = z.infer<typeof agentEngineTurnRequestSchema>;
 export type AgentEngineTurnResult = z.infer<typeof agentEngineTurnResultSchema>;

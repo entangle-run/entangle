@@ -3,10 +3,13 @@ import path from "node:path";
 import {
   agentEngineTurnRequestSchema,
   type EngineArtifactInput,
+  type EngineToolDefinition,
   type EntangleA2AMessage,
   effectiveRuntimeContextSchema,
+  packageToolCatalogSchema,
   type AgentEngineTurnRequest,
-  type EffectiveRuntimeContext
+  type EffectiveRuntimeContext,
+  type PackageToolCatalog
 } from "@entangle/types";
 
 type RuntimeConfigDocument = {
@@ -95,11 +98,45 @@ export async function loadRuntimeContext(
   );
 }
 
+function resolvePackageToolCatalogPath(context: EffectiveRuntimeContext): string {
+  return path.join(
+    context.workspace.packageRoot,
+    context.packageManifest?.runtime.toolsPath ?? "runtime/tools.json"
+  );
+}
+
+export async function loadPackageToolCatalog(
+  context: EffectiveRuntimeContext
+): Promise<PackageToolCatalog> {
+  const toolCatalogPath = resolvePackageToolCatalogPath(context);
+
+  if (!(await pathExists(toolCatalogPath))) {
+    throw new Error(
+      `Package tool catalog is missing at '${toolCatalogPath}' for node '${context.binding.node.nodeId}'.`
+    );
+  }
+
+  return packageToolCatalogSchema.parse(
+    await readJsonFile<unknown>(toolCatalogPath)
+  );
+}
+
+export function mapPackageToolCatalogToEngineToolDefinitions(
+  toolCatalog: PackageToolCatalog
+): EngineToolDefinition[] {
+  return toolCatalog.tools.map((toolDefinition) => ({
+    description: toolDefinition.description,
+    id: toolDefinition.id,
+    inputSchema: toolDefinition.inputSchema
+  }));
+}
+
 export async function buildAgentEngineTurnRequest(
   context: EffectiveRuntimeContext,
   input: {
     artifactInputs?: EngineArtifactInput[];
     inboundMessage?: EntangleA2AMessage;
+    toolDefinitions?: EngineToolDefinition[];
   } = {}
 ): Promise<AgentEngineTurnRequest> {
   const systemPromptPath = path.join(
@@ -148,7 +185,11 @@ export async function buildAgentEngineTurnRequest(
           ]
         : [])
     ],
-    toolDefinitions: [],
+    toolDefinitions:
+      input.toolDefinitions ??
+      mapPackageToolCatalogToEngineToolDefinitions(
+        await loadPackageToolCatalog(context)
+      ),
     artifactRefs: input.inboundMessage?.work.artifactRefs ?? [],
     artifactInputs: input.artifactInputs ?? [],
     memoryRefs,

@@ -9,6 +9,7 @@ import {
   AgentEngineConfigurationError,
   createAgentEngineForModelContext
 } from "./index.js";
+import type { AgentEngineExecutionError } from "./index.js";
 
 const createdDirectories: string[] = [];
 
@@ -255,6 +256,270 @@ describe("agent-engine anthropic adapter", () => {
       authToken: "anthropic-bearer-token",
       baseURL: "https://api.anthropic.com"
     });
+  });
+
+  it("runs a bounded internal tool loop with a configured tool executor", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "anthropic-api-key";
+    const artifactPath = await createTempTextFile(
+      "artifacts/input.md",
+      "Inbound artifact content.\n"
+    );
+
+    const capturedRequests: Array<{
+      messages: Array<unknown>;
+      tools?: Array<unknown>;
+    }> = [];
+    const capturedToolCalls: Array<{
+      artifactInputs: Array<unknown>;
+      input: Record<string, unknown>;
+      toolCallId: string;
+      toolId: string;
+    }> = [];
+    let callCount = 0;
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext(),
+      toolExecutor: {
+        executeToolCall(request) {
+          capturedToolCalls.push({
+            artifactInputs: request.artifactInputs,
+            input: request.input,
+            toolCallId: request.toolCallId,
+            toolId: request.tool.id
+          });
+
+          return Promise.resolve({
+            content: {
+              artifactId: request.input.artifactId,
+              preview: "Inbound artifact content."
+            },
+            isError: false
+          });
+        }
+      },
+      clientFactory: () => ({
+        messages: {
+          create(request) {
+            capturedRequests.push({
+              messages: request.messages,
+              ...(request.tools ? { tools: request.tools } : {})
+            });
+            callCount += 1;
+
+            if (callCount === 1) {
+              return Promise.resolve({
+                id: "msg_tool_use",
+                type: "message",
+                role: "assistant",
+                content: [
+                  {
+                    type: "text",
+                    text: "I'll inspect the artifact first."
+                  },
+                  {
+                    type: "tool_use",
+                    id: "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+                    name: "inspect_artifact_input",
+                    input: {
+                      artifactId: "artifact-alpha"
+                    },
+                    caller: "direct"
+                  }
+                ],
+                model: "claude-opus-4-7",
+                stop_reason: "tool_use",
+                stop_sequence: null,
+                usage: {
+                  input_tokens: 30,
+                  output_tokens: 10
+                }
+              } as unknown as Message);
+            }
+
+            return Promise.resolve({
+              id: "msg_final",
+              type: "message",
+              role: "assistant",
+              content: [
+                {
+                  type: "text",
+                  text: "The inspected artifact looks consistent."
+                }
+              ],
+              model: "claude-opus-4-7",
+              stop_reason: "end_turn",
+              stop_sequence: null,
+              usage: {
+                input_tokens: 20,
+                output_tokens: 8
+              }
+            } as unknown as Message);
+          }
+        }
+      })
+    });
+
+    const result = await engine.executeTurn({
+      sessionId: "session-alpha",
+      nodeId: "worker-it",
+      systemPromptParts: ["System prompt."],
+      interactionPromptParts: ["Inspect the inbound artifact."],
+      toolDefinitions: [
+        {
+          id: "inspect_artifact_input",
+          description: "Inspect a retrieved inbound artifact by artifact id.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              artifactId: {
+                type: "string"
+              }
+            },
+            required: ["artifactId"]
+          }
+        }
+      ],
+      artifactRefs: [],
+      artifactInputs: [
+        {
+          artifactId: "artifact-alpha",
+          backend: "git",
+          localPath: artifactPath,
+          sourceRef: {
+            artifactId: "artifact-alpha",
+            artifactKind: "report_file",
+            backend: "git",
+            locator: {
+              branch: "worker-it/session-alpha/review",
+              commit: "abc123",
+              gitServiceRef: "local-gitea",
+              namespace: "team-alpha",
+              repositoryName: "graph-alpha",
+              path: "reports/session-alpha/input.md"
+            },
+            preferred: true,
+            status: "published"
+          }
+        }
+      ],
+      memoryRefs: [],
+      executionLimits: {
+        maxToolTurns: 2,
+        maxOutputTokens: 1024
+      }
+    });
+
+    expect(capturedRequests).toHaveLength(2);
+    expect(capturedRequests[0]?.tools).toEqual([
+      {
+        description: "Inspect a retrieved inbound artifact by artifact id.",
+        input_schema: {
+          type: "object",
+          properties: {
+            artifactId: {
+              type: "string"
+            }
+          },
+          required: ["artifactId"]
+        },
+        name: "inspect_artifact_input"
+      }
+    ]);
+    expect(capturedRequests[1]?.messages).toHaveLength(3);
+    expect(capturedToolCalls).toEqual([
+      {
+        artifactInputs: [
+          expect.objectContaining({
+            artifactId: "artifact-alpha"
+          })
+        ],
+        input: {
+          artifactId: "artifact-alpha"
+        },
+        toolCallId: "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+        toolId: "inspect_artifact_input"
+      }
+    ]);
+    expect(result).toMatchObject({
+      assistantMessages: ["The inspected artifact looks consistent."],
+      stopReason: "completed",
+      usage: {
+        inputTokens: 50,
+        outputTokens: 18
+      }
+    });
+  });
+
+  it("fails deterministically when the model exceeds the configured tool loop budget", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "anthropic-api-key";
+
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext(),
+      toolExecutor: {
+        executeToolCall() {
+          return Promise.resolve({
+            content: "tool result",
+            isError: false
+          });
+        }
+      },
+      clientFactory: () => ({
+        messages: {
+          create() {
+            return Promise.resolve({
+              id: "msg_tool_use",
+              type: "message",
+              role: "assistant",
+              content: [
+                {
+                  type: "tool_use",
+                  id: "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+                  name: "inspect_artifact_input",
+                  input: {
+                    artifactId: "artifact-alpha"
+                  },
+                  caller: "direct"
+                }
+              ],
+              model: "claude-opus-4-7",
+              stop_reason: "tool_use",
+              stop_sequence: null,
+              usage: {
+                input_tokens: 10,
+                output_tokens: 5
+              }
+            } as unknown as Message);
+          }
+        }
+      })
+    });
+
+    await expect(
+      engine.executeTurn({
+        sessionId: "session-alpha",
+        nodeId: "worker-it",
+        systemPromptParts: ["System prompt."],
+        interactionPromptParts: ["Inspect the inbound artifact."],
+        toolDefinitions: [
+          {
+            id: "inspect_artifact_input",
+            description: "Inspect a retrieved inbound artifact by artifact id.",
+            inputSchema: {
+              type: "object"
+            }
+          }
+        ],
+        artifactRefs: [],
+        artifactInputs: [],
+        memoryRefs: [],
+        executionLimits: {
+          maxToolTurns: 1,
+          maxOutputTokens: 1024
+        }
+      })
+    ).rejects.toMatchObject({
+      classification: "tool_protocol_error",
+      name: "AgentEngineExecutionError"
+    } satisfies Partial<AgentEngineExecutionError>);
   });
 
   it("normalizes anthropic auth failures into engine execution errors", async () => {

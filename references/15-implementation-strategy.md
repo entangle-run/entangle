@@ -154,18 +154,19 @@ Completed in the current repository state:
 
 Remaining work in this phase:
 
-1. package tool-catalog loading into runner turn assembly, then bounded
-   multi-turn execution and internal tool-loop support;
-2. richer normalized provider metadata and error reporting;
-3. wider memory/context assembly discipline as runtime depth grows.
+1. widen the builtin tool surface beyond the first bounded internal
+   artifact-inspection path;
+2. add the explicit post-turn memory/wiki update phase;
+3. deepen normalized provider metadata, error reporting, and runtime
+   observability as engine depth grows.
 
 Acceptance for the phase:
 
 - live runner execution no longer depends on a stub engine;
 - provider-native types do not leak into runner contracts;
 - the engine path is test-covered and reusable across runner scenarios;
-- multi-turn and tool-loop behavior are added without collapsing provider logic
-  into the runner.
+- bounded tool-loop behavior is added without collapsing provider logic into
+  the runner.
 
 ## Phase 3: Host control-plane completion
 

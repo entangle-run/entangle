@@ -73,6 +73,7 @@ This directory is the canonical design corpus for Entangle.
 67. [66-locator-specific-git-handoff-widening-slice.md](66-locator-specific-git-handoff-widening-slice.md)
 68. [67-first-real-anthropic-agent-engine-slice.md](67-first-real-anthropic-agent-engine-slice.md)
 69. [68-package-tool-catalog-contract-slice.md](68-package-tool-catalog-contract-slice.md)
+70. [69-builtin-tool-executor-and-bounded-anthropic-tool-loop-slice.md](69-builtin-tool-executor-and-bounded-anthropic-tool-loop-slice.md)
 
 ## Role of this corpus
 

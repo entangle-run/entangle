@@ -4,6 +4,8 @@ import {
   entangleA2AMessageSchema,
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
+  engineToolExecutionRequestSchema,
+  engineToolExecutionResultSchema,
   externalPrincipalRecordSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
@@ -699,6 +701,67 @@ describe("package tool catalog contracts", () => {
         ]
       }).success
     ).toBe(false);
+  });
+});
+
+describe("engine tool execution contracts", () => {
+  it("accepts structured tool execution requests and results", () => {
+    const request = engineToolExecutionRequestSchema.parse({
+      artifactInputs: [
+        {
+          artifactId: "input-report",
+          backend: "git",
+          localPath: "/tmp/entangle/retrieval/input.md",
+          repoPath: "/tmp/entangle/retrieval/repo",
+          sourceRef: {
+            artifactId: "input-report",
+            artifactKind: "report_file",
+            backend: "git",
+            locator: {
+              branch: "worker-it/session-alpha/review-patch",
+              commit: "abc123",
+              gitServiceRef: "local-gitea",
+              namespace: "team-alpha",
+              repositoryName: "graph-alpha",
+              path: "reports/session-alpha/input.md"
+            },
+            preferred: true,
+            status: "published"
+          }
+        }
+      ],
+      input: {
+        artifactId: "input-report"
+      },
+      memoryRefs: ["/tmp/entangle/memory/wiki/index.md"],
+      nodeId: "worker-it",
+      sessionId: "session-alpha",
+      tool: {
+        id: "inspect_artifact_input",
+        description: "Inspect a retrieved inbound artifact.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            artifactId: {
+              type: "string"
+            }
+          },
+          required: ["artifactId"]
+        }
+      },
+      toolCallId: "toolu_01D7FLrfh4GYq7yT1ULFeyMV"
+    });
+    const result = engineToolExecutionResultSchema.parse({
+      content: {
+        artifactId: "input-report",
+        localPath: "/tmp/entangle/retrieval/input.md",
+        preview: "Inbound artifact content."
+      },
+      isError: false
+    });
+
+    expect(request.tool.id).toBe("inspect_artifact_input");
+    expect(result.isError).toBe(false);
   });
 });
 

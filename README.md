@@ -150,11 +150,17 @@ This repository currently contains:
   Anthropic adapter behind the stable engine boundary, typed error
   normalization, live runner entrypoints wired to the real engine path, and
   tests that exercise request assembly, auth mapping, and provider-failure
-  semantics without relying on networked model calls.
+  semantics without relying on networked model calls;
+- a first bounded internal tool-execution slice where package-declared tool
+  catalogs are loaded into runner turn assembly, an Entangle-owned builtin
+  tool executor is wired behind the internal engine boundary, and the
+  Anthropic adapter now completes `tool_use` / `tool_result` loops without
+  leaking provider protocol logic into the runner.
 
 The highest-value remaining gaps are:
 
-- multi-turn and tool-loop depth inside the internal `agent-engine`;
+- a broader builtin tool surface and explicit post-turn memory/wiki update
+  phase inside the internal `agent-engine`;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - host event streaming and fuller host resource surfaces;

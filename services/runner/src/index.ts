@@ -11,10 +11,13 @@ import { getPublicKey } from "nostr-tools";
 import { NostrRunnerTransport } from "./nostr-transport.js";
 import {
   buildAgentEngineTurnRequest,
+  loadPackageToolCatalog,
   loadRuntimeContext,
+  mapPackageToolCatalogToEngineToolDefinitions,
   resolveRuntimeContextPath
 } from "./runtime-context.js";
 import { RunnerService } from "./service.js";
+import { createBuiltinToolExecutor } from "./tool-executor.js";
 import type { RunnerTransport } from "./transport.js";
 
 function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefined {
@@ -107,6 +110,9 @@ export async function createConfiguredRunnerService(
 }> {
   const contextPath = resolveRuntimeContextPath(runtimeContextPath);
   const runtimeContext = await loadRuntimeContext(contextPath);
+  const packageToolCatalog = await loadPackageToolCatalog(runtimeContext);
+  const toolDefinitions =
+    mapPackageToolCatalogToEngineToolDefinitions(packageToolCatalog);
   const { publicKey, secretKey } = resolveRunnerIdentity(runtimeContext);
   const transport =
     input.transport ??
@@ -118,8 +124,13 @@ export async function createConfiguredRunnerService(
     context: runtimeContext,
     engine:
       input.engine ?? createAgentEngineForModelContext({
-        modelContext: runtimeContext.modelContext
+        modelContext: runtimeContext.modelContext,
+        toolExecutor: createBuiltinToolExecutor({
+          context: runtimeContext,
+          toolCatalog: packageToolCatalog
+        })
       }),
+    toolDefinitions,
     transport
   });
 
@@ -144,11 +155,20 @@ export async function runRunnerOnce(input: {
 }> {
   const contextPath = resolveRuntimeContextPath(input.runtimeContextPath);
   const runtimeContext = await loadRuntimeContext(contextPath);
-  const turnRequest = await buildAgentEngineTurnRequest(runtimeContext);
+  const packageToolCatalog = await loadPackageToolCatalog(runtimeContext);
+  const toolDefinitions =
+    mapPackageToolCatalogToEngineToolDefinitions(packageToolCatalog);
+  const turnRequest = await buildAgentEngineTurnRequest(runtimeContext, {
+    toolDefinitions
+  });
   const engine =
     input.engine ??
     createAgentEngineForModelContext({
-      modelContext: runtimeContext.modelContext
+      modelContext: runtimeContext.modelContext,
+      toolExecutor: createBuiltinToolExecutor({
+        context: runtimeContext,
+        toolCatalog: packageToolCatalog
+      })
     });
   const { publicKey } = resolveRunnerIdentity(runtimeContext);
 

@@ -101,6 +101,11 @@ The repository now also contains the first real implementation baseline:
   one-turn execution, explicit model auth-mode contracts with the correct
   Anthropic local default, and live runner entrypoints no longer bound to the
   stub path;
+- a first bounded tool-execution slice where the runner now loads
+  package-declared tool catalogs into turn assembly, the runtime owns an
+  Entangle builtin tool executor boundary, and the Anthropic adapter can
+  complete internal `tool_use` / `tool_result` loops without leaking provider
+  protocol logic into the runner surface;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -211,8 +216,9 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- deepen the now-real internal `agent-engine` into bounded multi-turn and
-  tool-loop execution;
+- widen the now-real internal `agent-engine` beyond the first bounded tool
+  loop, especially around builtin tool surface depth and explicit post-turn
+  memory updates;
 - complete the host event stream and remaining core host resource surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

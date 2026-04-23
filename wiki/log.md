@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added the first bounded internal tool loop
+
+Closed the first real tool-loop gap by introducing explicit internal tool
+execution contracts, loading package-declared tool catalogs into runner turn
+assembly, wiring an Entangle-owned builtin tool executor boundary, and
+teaching the Anthropic adapter to complete bounded `tool_use` / `tool_result`
+loops without leaking provider protocol logic into the runner. The first
+builtin surface is intentionally narrow and runtime-local: deterministic
+artifact-input inspection. The next best runtime-deepening step is to widen
+the builtin tool surface and add the explicit post-turn memory update phase.
+
 ## [2026-04-23] implementation | Added an explicit package tool-catalog contract
 
 Closed a real package/runtime contract gap before the internal tool loop by

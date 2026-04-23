@@ -4,6 +4,7 @@ import type {
   ArtifactRecord,
   ConversationLifecycleState,
   ConversationRecord,
+  EngineToolDefinition,
   EffectiveRuntimeContext,
   EntangleA2AMessage,
   RunnerPhase,
@@ -18,7 +19,11 @@ import {
 import { validateA2AMessageDocument } from "@entangle/validator";
 import type { AgentEngine } from "@entangle/agent-engine";
 import { createStubAgentEngine } from "@entangle/agent-engine";
-import { buildAgentEngineTurnRequest } from "./runtime-context.js";
+import {
+  buildAgentEngineTurnRequest,
+  loadPackageToolCatalog,
+  mapPackageToolCatalogToEngineToolDefinitions
+} from "./runtime-context.js";
 import {
   type RunnerStatePaths,
   ensureRunnerStatePaths,
@@ -365,21 +370,37 @@ export class RunnerService {
   private readonly artifactBackend: RunnerArtifactBackend;
   private readonly context: EffectiveRuntimeContext;
   private readonly engine: AgentEngine;
+  private readonly explicitToolDefinitions: EngineToolDefinition[] | undefined;
   private readonly transport: RunnerTransport;
   private subscription: RunnerTransportSubscription | undefined;
   private statePaths: RunnerStatePaths | undefined;
+  private toolDefinitionsPromise: Promise<EngineToolDefinition[]> | undefined;
 
   constructor(input: {
     artifactBackend?: RunnerArtifactBackend;
     context: EffectiveRuntimeContext;
     engine?: AgentEngine;
+    toolDefinitions?: EngineToolDefinition[];
     transport: RunnerTransport;
   }) {
     this.artifactBackend =
       input.artifactBackend ?? new GitCliRunnerArtifactBackend();
     this.context = input.context;
     this.engine = input.engine ?? createStubAgentEngine();
+    this.explicitToolDefinitions = input.toolDefinitions;
     this.transport = input.transport;
+  }
+
+  private async resolveToolDefinitions(): Promise<EngineToolDefinition[]> {
+    if (!this.toolDefinitionsPromise) {
+      this.toolDefinitionsPromise = this.explicitToolDefinitions
+        ? Promise.resolve(this.explicitToolDefinitions)
+        : loadPackageToolCatalog(this.context).then(
+            mapPackageToolCatalogToEngineToolDefinitions
+          );
+    }
+
+    return this.toolDefinitionsPromise;
   }
 
   async handleInboundEnvelope(
@@ -500,7 +521,8 @@ export class RunnerService {
 
       const turnRequest = await buildAgentEngineTurnRequest(this.context, {
         artifactInputs: retrievedArtifacts.artifactInputs,
-        inboundMessage: envelope.message
+        inboundMessage: envelope.message,
+        toolDefinitions: await this.resolveToolDefinitions()
       });
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");

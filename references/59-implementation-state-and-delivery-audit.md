@@ -45,7 +45,8 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- multi-turn and tool-loop depth inside the internal `agent-engine`;
+- a broad builtin tool surface and explicit post-turn memory-update phase
+  inside the internal `agent-engine`;
 - host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
   history;
@@ -231,13 +232,18 @@ not modeling.
   process configuration;
 - one-turn provider-backed execution with normalized usage and stop-reason
   mapping;
+- package-tool-catalog loading into runner turn assembly and a bounded internal
+  Anthropic tool loop driven by `tool_use` / `tool_result` exchanges through an
+  Entangle-owned tool-executor boundary;
+- a first builtin runner-side tool executor with deterministic artifact-input
+  inspection behavior;
 - typed provider-error normalization and isolated engine tests that do not
   require live model calls.
 
 ### Still missing or incomplete
 
-- multi-turn execution;
-- tool loop execution;
+- a broader builtin tool surface beyond the first artifact-inspection path;
+- explicit post-turn memory update and wiki-maintenance execution stages;
 - richer provider metadata and broader error surfacing through the runner.
 
 ### Assessment
@@ -327,8 +333,9 @@ surface:
 
 The current best delivery order is:
 
-1. deepen the internal `agent-engine` into bounded multi-turn and tool-loop
-   execution on top of the now-real provider-backed path;
+1. widen the internal `agent-engine` beyond the first bounded tool loop,
+   especially around builtin tool surface depth and explicit post-turn memory
+   updates;
 2. complete host event streaming and the remaining core host resource surfaces;
 3. deepen Studio into a real operator surface on top of those host capabilities;
 4. complete CLI parity for the core host workflows;
@@ -346,9 +353,10 @@ This ordering preserves the best current properties of the repository:
 
 The git secret-delivery, repository-target-resolution, publication-state,
 preexisting-repository publication, locator-specific retrieval, host-owned
-`gitea_api` provisioning, and first real provider-backed engine slices are now
-complete for the current local operator profile, so the next best capability
-move is engine deepening rather than another foundational rewrite.
+`gitea_api` provisioning, first real provider-backed engine, and first bounded
+tool-loop slices are now complete for the current local operator profile, so
+the next best capability move is controlled runtime deepening and host-surface
+completion rather than another foundational rewrite.
 
 ## What should not happen next
 

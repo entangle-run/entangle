@@ -37,7 +37,30 @@ describe("runner runtime context", () => {
   };
 
   it("loads runtime context and builds the first engine turn request from package files", async () => {
-    const fixture = await createRuntimeFixture();
+    const fixture = await createRuntimeFixture({
+      toolCatalog: {
+        schemaVersion: "1",
+        tools: [
+          {
+            id: "inspect_artifact_input",
+            description: "Inspect a retrieved inbound artifact by artifact id.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                artifactId: {
+                  type: "string"
+                }
+              },
+              required: ["artifactId"]
+            },
+            execution: {
+              kind: "builtin",
+              builtinToolId: "inspect_artifact_input"
+            }
+          }
+        ]
+      }
+    });
 
     const context = await loadRuntimeContext(fixture.contextPath);
     const request = await buildAgentEngineTurnRequest(context);
@@ -51,6 +74,21 @@ describe("runner runtime context", () => {
     expect(request.interactionPromptParts[0]).toContain(
       "Interaction prompt from package."
     );
+    expect(request.toolDefinitions).toEqual([
+      {
+        description: "Inspect a retrieved inbound artifact by artifact id.",
+        id: "inspect_artifact_input",
+        inputSchema: {
+          type: "object",
+          properties: {
+            artifactId: {
+              type: "string"
+            }
+          },
+          required: ["artifactId"]
+        }
+      }
+    ]);
     expect(request.memoryRefs).toContain(
       path.join(context.workspace.memoryRoot, "schema", "AGENTS.md")
     );
