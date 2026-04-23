@@ -170,6 +170,7 @@ That implemented slice currently includes:
 - live relay smoke validation against a real local `strfry` instance.
 
 The runner lifecycle is therefore no longer only conceptual prose plus a single
-bootstrap turn. The next meaningful gaps are remote git publication, richer
-artifact kinds beyond report files, and full long-lived Nostr-driven runtime
-operation under the Docker-backed host path.
+bootstrap turn. The next meaningful gaps are the explicit post-turn memory
+update phase, richer upward surfacing of runtime/session activity, and broader
+artifact and tool-execution depth beyond the current first report-file and
+artifact-inspection paths.
