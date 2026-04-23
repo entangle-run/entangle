@@ -115,10 +115,13 @@ The current implementation truth is recorded in
 
 This is the highest-value capability gap still open in the current runtime.
 
-The first secret-delivery slice is now implemented. The remaining work in this
-phase is:
+The first two preparation slices are now implemented:
 
-- remote repository selection and provisioning policy;
+- git transport secret delivery from host-owned secret references;
+- deterministic remote repository selection and provisioning policy.
+
+The remaining work in this phase is:
+
 - remote publication from the runner artifact backend;
 - remote retrieval and handoff validation for downstream nodes.
 

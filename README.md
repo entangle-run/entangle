@@ -89,6 +89,9 @@ This repository currently contains:
 - runtime-context artifact metadata that now carries resolved git principal
   bindings, including secret-delivery availability and mounted-file delivery
   paths for the current local profile;
+- deterministic primary git repository-target resolution in runtime context,
+  separating HTTP/API service base URLs from SSH/HTTPS remote transport roots
+  and carrying explicit provisioning mode hints for the selected git service;
 - a runner transport and intake slice with a deterministic in-memory transport,
   a file-backed runner state store, and a long-lived `RunnerService` that
   validates inbound A2A messages, advances session and conversation lifecycle

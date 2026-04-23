@@ -28,6 +28,7 @@ services:
       ENTANGLE_DOCKER_SHARED_STATE_VOLUME: entangle-host-state
       ENTANGLE_DOCKER_SECRET_STATE_TARGET: /entangle-secrets
       ENTANGLE_DOCKER_SECRET_STATE_VOLUME: entangle-secret-state
+      ENTANGLE_DEFAULT_GIT_REMOTE_BASE: ${ENTANGLE_DEFAULT_GIT_REMOTE_BASE:-ssh://git@gitea:22}
     ports:
       - "${ENTANGLE_HOST_PORT:-7071}:7071"
     volumes:

@@ -72,6 +72,9 @@ The repository now also contains the first real implementation baseline:
   specification;
 - resolved git principal runtime bindings that now include secret-availability
   status and mounted-file delivery metadata for the current local profile;
+- deterministic primary git repository-target resolution in effective runtime
+  context, based on explicit git service `remoteBase` contracts, resolved
+  namespace hints, and graph identity;
 - live host routes for catalog inspection/apply, package admission, graph
   inspection/apply, runtime inspection, runtime context access, and runtime
   desired-state mutation;
@@ -182,8 +185,8 @@ The current implementation-truth audit now lives in
 [../references/59-implementation-state-and-delivery-audit.md](../references/59-implementation-state-and-delivery-audit.md).
 
 - complete remote git publication and retrieval on top of the existing local
-  git-backed artifact model and the now-resolved git principal secret-delivery
-  bindings;
+  git-backed artifact model, the resolved git principal secret-delivery
+  bindings, and the now-explicit primary repository-target contract;
 - replace the stub engine path with the first real model-backed internal
   `agent-engine` adapter;
 - complete the host event stream and remaining core host resource surfaces;

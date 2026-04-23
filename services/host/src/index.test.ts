@@ -183,6 +183,8 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL;
   delete process.env.ENTANGLE_DEFAULT_MODEL_SECRET_REF;
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
+  delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
+  delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
   vi.resetModules();
 
   await Promise.all(
@@ -544,6 +546,95 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("derives a primary git repository target when the git service and namespace are unambiguous", async () => {
+    process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE = "team-alpha";
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const principal = buildGitPrincipalRecord();
+      await writeSecretRefFile(principal.secretRef);
+      const principalResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+      expect(principalResponse.statusCode).toBe(200);
+
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      expect(admitResponse.statusCode).toBe(200);
+      const admittedPackageSource = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource;
+
+      const graphResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSource.packageSourceId,
+              resourceBindings: {
+                relayProfileRefs: [],
+                gitServiceRefs: ["local-gitea"],
+                primaryGitServiceRef: "local-gitea",
+                externalPrincipalRefs: ["worker-it-git"]
+              }
+            }
+          ],
+          edges: [
+            {
+              edgeId: "user-to-worker",
+              fromNodeId: "user-main",
+              toNodeId: "worker-it",
+              relation: "delegates_to"
+            }
+          ]
+        },
+        url: "/v1/graph"
+      });
+      expect(graphResponse.statusCode).toBe(200);
+
+      const contextResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/context"
+      });
+
+      expect(contextResponse.statusCode).toBe(200);
+      const context = runtimeContextInspectionResponseSchema.parse(
+        contextResponse.json()
+      );
+
+      expect(context.artifactContext.primaryGitRepositoryTarget).toEqual({
+        gitServiceRef: "local-gitea",
+        namespace: "team-alpha",
+        provisioningMode: "preexisting",
+        remoteUrl: "ssh://git@gitea:22/team-alpha/team-alpha.git",
+        repositoryName: "team-alpha",
+        transportKind: "ssh"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("does not invent a primary git principal or default namespace when git bindings remain ambiguous", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
@@ -568,17 +659,25 @@ describe("buildHostServer", () => {
               id: "local-gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
+              remoteBase: "ssh://git@gitea.local:22",
               transportKind: "ssh",
               authMode: "ssh_key",
-              defaultNamespace: "main-team"
+              defaultNamespace: "main-team",
+              provisioning: {
+                mode: "preexisting"
+              }
             },
             {
               id: "backup-gitea",
               displayName: "Backup Gitea",
               baseUrl: "https://backup.gitea.local",
+              remoteBase: "ssh://git@backup.gitea.local:22",
               transportKind: "ssh",
               authMode: "ssh_key",
-              defaultNamespace: "backup-team"
+              defaultNamespace: "backup-team",
+              provisioning: {
+                mode: "preexisting"
+              }
             }
           ],
           modelEndpoints: [
@@ -689,6 +788,7 @@ describe("buildHostServer", () => {
 
       expect(context.artifactContext.primaryGitPrincipalRef).toBeUndefined();
       expect(context.artifactContext.defaultNamespace).toBeUndefined();
+      expect(context.artifactContext.primaryGitRepositoryTarget).toBeUndefined();
       expect(context.artifactContext.gitPrincipalBindings).toHaveLength(2);
       const mainBinding = context.artifactContext.gitPrincipalBindings.find(
         ({ principal }) => principal.principalId === "worker-it-git-main"

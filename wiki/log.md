@@ -290,3 +290,13 @@ git principal bindings with explicit availability and mounted-file delivery
 metadata. Extended the Docker runtime backend to mount the secret volume into
 runner containers as read-only, and updated local git artifact commits so they
 use bound git-principal attribution when a primary principal is available.
+
+## [2026-04-23] implementation | Added deterministic git remote selection and provisioning policy contracts
+
+Extended git service profiles with explicit transport-facing `remoteBase`
+configuration and repository-provisioning mode, then taught the host to resolve
+a deterministic `primaryGitRepositoryTarget` into effective runtime context
+when service and namespace selection are unambiguous. Updated the local
+deployment profile with `ENTANGLE_DEFAULT_GIT_REMOTE_BASE`, hardened the shared
+type layer and host tests around the new contract, and locked the current
+policy to a graph-shared repository target derived from `graphId`.

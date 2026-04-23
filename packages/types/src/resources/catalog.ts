@@ -15,16 +15,84 @@ export const relayProfileSchema = z.object({
   authMode: z.enum(["none", "nip42"]).default("none")
 });
 
-export const gitServiceProfileSchema = z.object({
-  id: identifierSchema,
-  displayName: nonEmptyStringSchema,
-  baseUrl: httpUrlSchema,
-  transportKind: z.enum(["ssh", "https"]).default("ssh"),
-  authMode: z.enum(["ssh_key", "https_token", "http_signature"]).default(
-    "ssh_key"
-  ),
-  defaultNamespace: identifierSchema.optional()
+export const gitRemoteBaseSchema = z.string().superRefine((value, context) => {
+  let parsed: URL;
+
+  try {
+    parsed = new URL(value);
+  } catch {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Expected a valid git remote base URL."
+    });
+    return;
+  }
+
+  if (!["ssh:", "http:", "https:"].includes(parsed.protocol)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Git remote bases must use ssh://, http://, or https://."
+    });
+  }
+
+  if (parsed.search || parsed.hash) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Git remote bases must not include query or fragment components."
+    });
+  }
 });
+
+export const gitServiceProvisioningSchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("preexisting")
+  }),
+  z.object({
+    mode: z.literal("gitea_api"),
+    apiBaseUrl: httpUrlSchema,
+    secretRef: secretRefSchema
+  })
+]);
+
+export const gitServiceProfileSchema = z
+  .object({
+    id: identifierSchema,
+    displayName: nonEmptyStringSchema,
+    baseUrl: httpUrlSchema,
+    remoteBase: gitRemoteBaseSchema,
+    transportKind: z.enum(["ssh", "https"]).default("ssh"),
+    authMode: z.enum(["ssh_key", "https_token", "http_signature"]).default(
+      "ssh_key"
+    ),
+    defaultNamespace: identifierSchema.optional(),
+    provisioning: gitServiceProvisioningSchema.default({
+      mode: "preexisting"
+    })
+  })
+  .superRefine((value, context) => {
+    const remoteProtocol = new URL(value.remoteBase).protocol;
+
+    if (value.transportKind === "ssh" && remoteProtocol !== "ssh:") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "SSH git services must use an ssh:// remote base.",
+        path: ["remoteBase"]
+      });
+    }
+
+    if (
+      value.transportKind === "https" &&
+      !["http:", "https:"].includes(remoteProtocol)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "HTTPS git services must use an http:// or https:// remote base.",
+        path: ["remoteBase"]
+      });
+    }
+  });
 
 export const modelEndpointProfileSchema = z.object({
   id: identifierSchema,
@@ -56,6 +124,10 @@ export const deploymentResourceCatalogSchema = z.object({
 });
 
 export type RelayProfile = z.infer<typeof relayProfileSchema>;
+export type GitRemoteBase = z.infer<typeof gitRemoteBaseSchema>;
+export type GitServiceProvisioning = z.infer<
+  typeof gitServiceProvisioningSchema
+>;
 export type GitServiceProfile = z.infer<typeof gitServiceProfileSchema>;
 export type ModelEndpointProfile = z.infer<typeof modelEndpointProfileSchema>;
 export type DeploymentResourceCatalog = z.infer<

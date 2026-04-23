@@ -5,10 +5,12 @@ import {
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
   externalPrincipalRecordSchema,
+  gitServiceProfileSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
   resolvedSecretBindingSchema,
+  resolvePrimaryGitRepositoryTarget,
   secretRefSchema
 } from "./index.js";
 
@@ -127,6 +129,70 @@ describe("external principal contracts", () => {
 
     expect(result.systemKind).toBe("git");
     expect(result.gitServiceRef).toBe("local-gitea");
+  });
+});
+
+describe("git service contracts", () => {
+  it("accepts an SSH git service with an explicit remote base", () => {
+    const result = gitServiceProfileSchema.parse({
+      id: "local-gitea",
+      displayName: "Local Gitea",
+      baseUrl: "http://gitea:3000",
+      remoteBase: "ssh://git@gitea:22",
+      transportKind: "ssh",
+      authMode: "ssh_key",
+      defaultNamespace: "team-alpha",
+      provisioning: {
+        mode: "preexisting"
+      }
+    });
+
+    expect(result.remoteBase).toBe("ssh://git@gitea:22");
+    expect(result.provisioning.mode).toBe("preexisting");
+  });
+
+  it("rejects git services whose remote base does not match the transport kind", () => {
+    expect(
+      gitServiceProfileSchema.safeParse({
+        id: "local-gitea",
+        displayName: "Local Gitea",
+        baseUrl: "http://gitea:3000",
+        remoteBase: "http://gitea:3000",
+        transportKind: "ssh",
+        authMode: "ssh_key"
+      }).success
+    ).toBe(false);
+  });
+
+  it("derives a primary git repository target deterministically", () => {
+    const target = resolvePrimaryGitRepositoryTarget({
+      defaultNamespace: "team-alpha",
+      gitServices: [
+        gitServiceProfileSchema.parse({
+          id: "local-gitea",
+          displayName: "Local Gitea",
+          baseUrl: "http://gitea:3000",
+          remoteBase: "ssh://git@gitea:22",
+          transportKind: "ssh",
+          authMode: "ssh_key",
+          defaultNamespace: "team-alpha",
+          provisioning: {
+            mode: "preexisting"
+          }
+        })
+      ],
+      graphId: "graph-alpha",
+      primaryGitServiceRef: "local-gitea"
+    });
+
+    expect(target).toEqual({
+      gitServiceRef: "local-gitea",
+      namespace: "team-alpha",
+      provisioningMode: "preexisting",
+      remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
+      repositoryName: "graph-alpha",
+      transportKind: "ssh"
+    });
   });
 });
 

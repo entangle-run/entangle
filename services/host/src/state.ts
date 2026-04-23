@@ -48,6 +48,7 @@ import {
   resolveEffectiveModelEndpointProfile,
   resolveEffectiveModelEndpointProfileRef,
   resolveEffectivePrimaryGitServiceRef,
+  resolvePrimaryGitRepositoryTarget,
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfiles,
   resolveEffectiveRelayProfileRefs,
@@ -221,6 +222,11 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
     process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL ?? relayReadUrl;
   const gitBaseUrl =
     process.env.ENTANGLE_DEFAULT_GIT_SERVICE_BASE_URL ?? "http://gitea:3000";
+  const gitTransport =
+    process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT === "https" ? "https" : "ssh";
+  const gitRemoteBase =
+    process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE ??
+    (gitTransport === "https" ? gitBaseUrl : "ssh://git@gitea:22");
 
   const modelEndpointId = process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID?.trim();
   const modelBaseUrl = process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL?.trim();
@@ -270,10 +276,8 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
         displayName:
           process.env.ENTANGLE_DEFAULT_GIT_SERVICE_DISPLAY_NAME ?? "Local Gitea",
         baseUrl: gitBaseUrl,
-        transportKind:
-          process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT === "https"
-            ? "https"
-            : "ssh",
+        remoteBase: gitRemoteBase,
+        transportKind: gitTransport,
         authMode:
           process.env.ENTANGLE_DEFAULT_GIT_AUTH_MODE === "https_token"
             ? "https_token"
@@ -1375,6 +1379,12 @@ async function buildRuntimeResolution(input: {
     resolvedGitPrincipals,
     resolvedPrimaryGitServiceRef
   );
+  const resolvedPrimaryGitRepositoryTarget = resolvePrimaryGitRepositoryTarget({
+    defaultNamespace: resolvedDefaultNamespace,
+    gitServices: resolvedGitServices,
+    graphId: graph.graphId,
+    primaryGitServiceRef: resolvedPrimaryGitServiceRef
+  });
   const packageSourcePathExists = sourcePackageRoot
     ? await pathExists(sourcePackageRoot)
     : false;
@@ -1486,6 +1496,7 @@ async function buildRuntimeResolution(input: {
         gitPrincipalBindings: resolvedGitPrincipalBindings,
         gitServices: resolvedGitServices,
         primaryGitPrincipalRef: resolvedPrimaryGitPrincipalRef,
+        primaryGitRepositoryTarget: resolvedPrimaryGitRepositoryTarget,
         primaryGitServiceRef: resolvedPrimaryGitServiceRef
       },
       binding: {

@@ -166,11 +166,12 @@ artifact-collaboration depth, not the runner boundary itself.
 - node-local git repository initialization and commit provenance;
 - report-file artifact materialization per turn;
 - artifact linkage into runner-local session, conversation, and turn state;
+- deterministic primary remote repository target resolution from git service
+  profiles, namespace hints, and graph identity;
 - host inspection surface for runtime artifacts.
 
 ### Still missing or incomplete
 
-- remote repository selection and provisioning policy;
 - remote push semantics;
 - remote retrieval semantics;
 - cross-node handoff validation against named git services;
@@ -325,8 +326,8 @@ This ordering preserves the best current properties of the repository:
 - it keeps deployment hardening as a real finalization phase rather than a
   premature distraction.
 
-The first git secret-delivery slice is now complete, so the next best
-capability move inside that first phase is remote repository selection and
+The git secret-delivery and repository-target-resolution slices are now
+complete, so the next best capability move inside that first phase is remote
 publication semantics.
 
 ## What should not happen next

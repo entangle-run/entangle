@@ -122,12 +122,24 @@ export async function createRuntimeFixture(): Promise<{
           id: "local-gitea",
           displayName: "Local Gitea",
           baseUrl: "http://gitea:3000",
+          remoteBase: "ssh://git@gitea:22",
           transportKind: "ssh",
           authMode: "ssh_key",
-          defaultNamespace: "team-alpha"
+          defaultNamespace: "team-alpha",
+          provisioning: {
+            mode: "preexisting"
+          }
         }
       ],
       primaryGitPrincipalRef: "worker-it-git",
+      primaryGitRepositoryTarget: {
+        gitServiceRef: "local-gitea",
+        namespace: "team-alpha",
+        provisioningMode: "preexisting",
+        remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
+        repositoryName: "graph-alpha",
+        transportKind: "ssh"
+      },
       primaryGitServiceRef: "local-gitea"
     },
     binding: {

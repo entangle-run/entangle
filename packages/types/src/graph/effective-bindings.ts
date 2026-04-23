@@ -6,9 +6,21 @@ import type {
   RelayProfile
 } from "../resources/catalog.js";
 import type { ExternalPrincipalRecord } from "../resources/external-principal.js";
+import type { GitRepositoryTarget } from "../artifacts/git-repository-target.js";
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values));
+}
+
+function joinRemoteBasePath(
+  remoteBase: string,
+  namespace: string,
+  repositoryName: string
+): string {
+  const parsed = new URL(remoteBase);
+  const basePath = parsed.pathname.replace(/\/+$/, "");
+  parsed.pathname = `${basePath}/${namespace}/${repositoryName}.git`;
+  return parsed.toString();
 }
 
 export function intersectIdentifiers(
@@ -150,6 +162,38 @@ export function resolveEffectiveGitDefaultNamespace(
   }
 
   return undefined;
+}
+
+export function resolvePrimaryGitRepositoryTarget(input: {
+  defaultNamespace: string | undefined;
+  gitServices: GitServiceProfile[];
+  graphId: string;
+  primaryGitServiceRef: string | undefined;
+}): GitRepositoryTarget | undefined {
+  if (!input.primaryGitServiceRef || !input.defaultNamespace) {
+    return undefined;
+  }
+
+  const service = input.gitServices.find(
+    (candidate) => candidate.id === input.primaryGitServiceRef
+  );
+
+  if (!service) {
+    return undefined;
+  }
+
+  return {
+    gitServiceRef: service.id,
+    namespace: input.defaultNamespace,
+    provisioningMode: service.provisioning.mode,
+    remoteUrl: joinRemoteBasePath(
+      service.remoteBase,
+      input.defaultNamespace,
+      input.graphId
+    ),
+    repositoryName: input.graphId,
+    transportKind: service.transportKind
+  };
 }
 
 export function resolveEffectiveRelayProfiles(

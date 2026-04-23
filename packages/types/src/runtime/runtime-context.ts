@@ -3,6 +3,7 @@ import { gitServiceProfileSchema, modelEndpointProfileSchema, relayProfileSchema
 import { externalPrincipalRecordSchema } from "../resources/external-principal.js";
 import { edgeRelationSchema, runtimeProfileSchema } from "../common/topology.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { gitRepositoryTargetSchema } from "../artifacts/git-repository-target.js";
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
 import { nodeAutonomyProfileSchema, nodeBindingSchema, nodeResourceBindingsSchema } from "../graph/graph-spec.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
@@ -58,6 +59,7 @@ export const artifactRuntimeContextSchema = z.object({
     .default([]),
   gitServices: z.array(gitServiceProfileSchema).default([]),
   primaryGitPrincipalRef: identifierSchema.optional(),
+  primaryGitRepositoryTarget: gitRepositoryTargetSchema.optional(),
   primaryGitServiceRef: identifierSchema.optional()
 });
 

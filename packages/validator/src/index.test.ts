@@ -100,8 +100,12 @@ describe("validateGraphDocument", () => {
               id: "local-gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
+              remoteBase: "ssh://git@gitea.local:22",
               transportKind: "ssh",
-              authMode: "ssh_key"
+              authMode: "ssh_key",
+              provisioning: {
+                mode: "preexisting"
+              }
             }
           ],
           modelEndpoints: [],
@@ -142,8 +146,12 @@ describe("validateGraphDocument", () => {
               id: "local-gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
+              remoteBase: "ssh://git@gitea.local:22",
               transportKind: "ssh",
-              authMode: "ssh_key"
+              authMode: "ssh_key",
+              provisioning: {
+                mode: "preexisting"
+              }
             }
           ],
           modelEndpoints: [],
@@ -183,15 +191,23 @@ describe("validateGraphDocument", () => {
               id: "local-gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
+              remoteBase: "ssh://git@gitea.local:22",
               transportKind: "ssh",
-              authMode: "ssh_key"
+              authMode: "ssh_key",
+              provisioning: {
+                mode: "preexisting"
+              }
             },
             {
               id: "backup-gitea",
               displayName: "Backup Gitea",
               baseUrl: "https://backup.gitea.local",
+              remoteBase: "ssh://git@backup.gitea.local:22",
               transportKind: "ssh",
-              authMode: "ssh_key"
+              authMode: "ssh_key",
+              provisioning: {
+                mode: "preexisting"
+              }
             }
           ],
           modelEndpoints: [],

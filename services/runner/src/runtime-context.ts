@@ -133,6 +133,11 @@ export async function buildAgentEngineTurnRequest(
       `Model adapter: ${context.modelContext.modelEndpointProfile?.adapterKind ?? "unbound"}`,
       `Primary relay: ${context.relayContext.primaryRelayProfileRef ?? "none"}`,
       `Primary git service: ${context.artifactContext.primaryGitServiceRef ?? "none"}`,
+      `Primary git repository: ${
+        context.artifactContext.primaryGitRepositoryTarget
+          ? `${context.artifactContext.primaryGitRepositoryTarget.namespace}/${context.artifactContext.primaryGitRepositoryTarget.repositoryName}`
+          : "none"
+      }`,
       ...(input.inboundMessage
         ? [
             `Inbound intent: ${input.inboundMessage.intent}`,
