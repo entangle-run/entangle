@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added the first deterministic post-turn memory update phase
+
+Closed the first runner-owned memory-maintenance gap by making completed turns
+write task pages into the node wiki, append structured entries to
+`memory/wiki/log.md`, keep `memory/wiki/index.md` aligned, and feed recent task
+memory back into future turn assembly. This is intentionally deterministic and
+auditable, not model-authored wiki mutation.
+
 ## [2026-04-23] implementation | Added the first bounded internal tool loop
 
 Closed the first real tool-loop gap by introducing explicit internal tool

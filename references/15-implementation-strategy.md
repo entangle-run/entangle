@@ -156,7 +156,8 @@ Remaining work in this phase:
 
 1. widen the builtin tool surface beyond the first bounded internal
    artifact-inspection path;
-2. add the explicit post-turn memory/wiki update phase;
+2. deepen the now-implemented deterministic post-turn memory/wiki update phase
+   into richer model-guided memory maintenance;
 3. deepen normalized provider metadata, error reporting, and runtime
    observability as engine depth grows.
 

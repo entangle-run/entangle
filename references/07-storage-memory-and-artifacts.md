@@ -74,4 +74,15 @@ After each substantial interaction, the runner should perform a memory update ph
 
 This should be a systematic phase of the runner lifecycle, not an occasional manual cleanup.
 
+The first implementation should begin with deterministic runner-maintained
+memory hygiene:
+
+- append a structured turn log entry;
+- write a task-specific wiki page for the completed turn;
+- keep `index.md` and `log.md` aligned with the new page;
+- feed the freshest task pages back into future prompt assembly.
+
+Richer model-guided wiki synthesis can widen later, but the runner should own a
+clean baseline memory-update phase first.
+
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

@@ -155,12 +155,16 @@ This repository currently contains:
   catalogs are loaded into runner turn assembly, an Entangle-owned builtin
   tool executor is wired behind the internal engine boundary, and the
   Anthropic adapter now completes `tool_use` / `tool_result` loops without
-  leaking provider protocol logic into the runner.
+  leaking provider protocol logic into the runner;
+- a first deterministic post-turn memory-maintenance slice where the runner
+  now writes task-specific wiki pages, appends structured entries to
+  `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
+  task memory back into future turn assembly.
 
 The highest-value remaining gaps are:
 
-- a broader builtin tool surface and explicit post-turn memory/wiki update
-  phase inside the internal `agent-engine`;
+- a broader builtin tool surface and richer model-guided memory/wiki
+  maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - host event streaming and fuller host resource surfaces;

@@ -45,8 +45,8 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- a broad builtin tool surface and explicit post-turn memory-update phase
-  inside the internal `agent-engine`;
+- a broad builtin tool surface and richer model-guided memory maintenance
+  inside the internal runtime execution path;
 - host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
   history;
@@ -149,7 +149,10 @@ and widening, not rethinking the boundary.
 - response-policy-aware reply behavior;
 - host-provided effective runtime context consumption;
 - live runner entrypoints wired to the real internal engine boundary instead of
-  the stub path.
+  the stub path;
+- deterministic post-turn wiki maintenance that writes task pages, appends to
+  `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
+  task memory back into future turn assembly.
 
 ### Still missing or incomplete
 
@@ -237,13 +240,16 @@ not modeling.
   Entangle-owned tool-executor boundary;
 - a first builtin runner-side tool executor with deterministic artifact-input
   inspection behavior;
+- a first deterministic post-turn memory maintenance slice in the runner,
+  including task-page creation plus wiki log/index maintenance;
 - typed provider-error normalization and isolated engine tests that do not
   require live model calls.
 
 ### Still missing or incomplete
 
 - a broader builtin tool surface beyond the first artifact-inspection path;
-- explicit post-turn memory update and wiki-maintenance execution stages;
+- richer model-guided memory maintenance beyond the current deterministic task
+  page and log/index baseline;
 - richer provider metadata and broader error surfacing through the runner.
 
 ### Assessment
@@ -334,7 +340,7 @@ surface:
 The current best delivery order is:
 
 1. widen the internal `agent-engine` beyond the first bounded tool loop,
-   especially around builtin tool surface depth and explicit post-turn memory
+   especially around builtin tool surface depth and richer model-guided memory
    updates;
 2. complete host event streaming and the remaining core host resource surfaces;
 3. deepen Studio into a real operator surface on top of those host capabilities;

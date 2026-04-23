@@ -161,6 +161,9 @@ That implemented slice currently includes:
   local path;
 - git-backed turn artifact materialization into a runner-local artifact
   workspace;
+- deterministic post-turn wiki maintenance that now writes task pages and keeps
+  `memory/wiki/index.md` plus `memory/wiki/log.md` aligned with completed
+  turns;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact
@@ -170,7 +173,7 @@ That implemented slice currently includes:
 - live relay smoke validation against a real local `strfry` instance.
 
 The runner lifecycle is therefore no longer only conceptual prose plus a single
-bootstrap turn. The next meaningful gaps are the explicit post-turn memory
-update phase, richer upward surfacing of runtime/session activity, and broader
+bootstrap turn. The next meaningful gaps are richer model-guided memory
+maintenance, clearer upward surfacing of runtime/session activity, and broader
 artifact and tool-execution depth beyond the current first report-file and
 artifact-inspection paths.

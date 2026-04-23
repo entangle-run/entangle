@@ -39,6 +39,7 @@ import {
   RunnerArtifactRetrievalError,
   type RunnerArtifactBackend
 } from "./artifact-backend.js";
+import { performPostTurnMemoryUpdate } from "./memory-maintenance.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -564,6 +565,14 @@ export class RunnerService {
         )
       };
       await writeSessionRecord(statePaths, currentSession);
+      await performPostTurnMemoryUpdate({
+        consumedArtifactIds,
+        context: this.context,
+        envelope,
+        producedArtifactIds,
+        result,
+        turnId: turnRecord.turnId
+      });
 
       currentConversation = await transitionConversationStatus(
         statePaths,

@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   agentEngineTurnRequestSchema,
@@ -62,10 +62,12 @@ async function readRuntimeConfig(
 async function collectMemoryRefs(
   context: EffectiveRuntimeContext
 ): Promise<string[]> {
+  const recentTaskRefs = await collectRecentTaskMemoryRefs(context);
   const candidatePaths = [
     path.join(context.workspace.memoryRoot, "schema", "AGENTS.md"),
+    path.join(context.workspace.memoryRoot, "wiki", "log.md"),
     path.join(context.workspace.memoryRoot, "wiki", "index.md"),
-    context.workspace.memoryRoot
+    ...recentTaskRefs
   ];
   const resolvedRefs: string[] = [];
 
@@ -79,6 +81,49 @@ async function collectMemoryRefs(
   }
 
   return resolvedRefs;
+}
+
+async function collectMarkdownFilesRecursively(
+  rootPath: string
+): Promise<string[]> {
+  if (!(await pathExists(rootPath))) {
+    return [];
+  }
+
+  const entries = await readdir(rootPath, { withFileTypes: true });
+  const nestedFiles = await Promise.all(
+    entries.map(async (entry) => {
+      const absolutePath = path.join(rootPath, entry.name);
+
+      if (entry.isDirectory()) {
+        return collectMarkdownFilesRecursively(absolutePath);
+      }
+
+      return absolutePath.endsWith(".md") ? [absolutePath] : [];
+    })
+  );
+
+  return nestedFiles.flat();
+}
+
+async function collectRecentTaskMemoryRefs(
+  context: EffectiveRuntimeContext,
+  limit = 3
+): Promise<string[]> {
+  const taskFiles = await collectMarkdownFilesRecursively(
+    path.join(context.workspace.memoryRoot, "wiki", "tasks")
+  );
+  const filesWithTimestamps = await Promise.all(
+    taskFiles.map(async (filePath) => ({
+      filePath,
+      modifiedAt: (await stat(filePath)).mtimeMs
+    }))
+  );
+
+  return filesWithTimestamps
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, limit)
+    .map((entry) => entry.filePath);
 }
 
 export function resolveRuntimeContextPath(explicitPath?: string): string {

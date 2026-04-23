@@ -344,9 +344,26 @@ describe("RunnerService", () => {
       runtimeContext.workspace.artifactWorkspaceRoot,
       artifactRecord.ref.locator.path
     );
+    const memoryTaskPagePath = path.join(
+      runtimeContext.workspace.memoryRoot,
+      "wiki",
+      "tasks",
+      "session-alpha",
+      `${turnRecord?.turnId}.md`
+    );
+    const memoryLogPath = path.join(
+      runtimeContext.workspace.memoryRoot,
+      "wiki",
+      "log.md"
+    );
     const reportContent = await readFile(reportAbsolutePath, "utf8");
+    const memoryTaskPage = await readFile(memoryTaskPagePath, "utf8");
+    const memoryLog = await readFile(memoryLogPath, "utf8");
     expect(reportContent).toContain("## Inbound Summary");
     expect(reportContent).toContain("Review the parser patch and summarize blocking issues.");
+    expect(memoryTaskPage).toContain(`# Task Memory session-alpha / ${turnRecord?.turnId}`);
+    expect(memoryTaskPage).toContain("## Produced Artifacts");
+    expect(memoryLog).toContain(`runner turn | session-alpha / ${turnRecord?.turnId}`);
 
     const gitDirectoryStats = await stat(
       path.join(runtimeContext.workspace.artifactWorkspaceRoot, ".git")
