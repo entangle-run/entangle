@@ -33,11 +33,13 @@ export type DockerContainerInspect = {
 
 export type DockerContainerMount =
   | {
+      readOnly?: boolean;
       source: string;
       target: string;
       type: "bind";
     }
   | {
+      readOnly?: boolean;
       source: string;
       target: string;
       type: "volume";
@@ -253,6 +255,7 @@ export class DockerEngineClient implements DockerEngineApi {
         Env: input.env,
         HostConfig: {
           Mounts: input.mounts.map((mount) => ({
+            ReadOnly: mount.readOnly ?? false,
             Source: mount.source,
             Target: mount.target,
             Type: mount.type

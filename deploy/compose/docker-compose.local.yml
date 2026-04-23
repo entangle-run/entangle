@@ -26,6 +26,8 @@ services:
       ENTANGLE_DOCKER_RUNNER_IMAGE: entangle-runner:local
       ENTANGLE_DOCKER_SHARED_STATE_TARGET: /entangle-state
       ENTANGLE_DOCKER_SHARED_STATE_VOLUME: entangle-host-state
+      ENTANGLE_DOCKER_SECRET_STATE_TARGET: /entangle-secrets
+      ENTANGLE_DOCKER_SECRET_STATE_VOLUME: entangle-secret-state
     ports:
       - "${ENTANGLE_HOST_PORT:-7071}:7071"
     volumes:

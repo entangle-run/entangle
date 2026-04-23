@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import {
+  identifierSchema,
+  nonEmptyStringSchema,
+  secretRefSchema
+} from "../common/primitives.js";
 
 export const externalPrincipalSystemKindSchema = z.enum(["git"]);
 
@@ -20,7 +24,7 @@ export const gitSigningProfileSchema = z.discriminatedUnion("mode", [
   }),
   z.object({
     mode: z.literal("ssh_key"),
-    secretRef: nonEmptyStringSchema
+    secretRef: secretRefSchema
   })
 ]);
 
@@ -31,7 +35,7 @@ export const externalPrincipalRecordSchema = z.object({
   gitServiceRef: identifierSchema,
   subject: nonEmptyStringSchema,
   transportAuthMode: gitTransportAuthModeSchema,
-  secretRef: nonEmptyStringSchema,
+  secretRef: secretRefSchema,
   attribution: gitAttributionProfileSchema.optional(),
   signing: gitSigningProfileSchema.optional()
 });

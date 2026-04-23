@@ -14,11 +14,13 @@ import { DockerEngineClient } from "./docker-engine-client.js";
 type RuntimeMountStrategy =
   | {
       kind: "bind";
+      readOnly?: boolean;
       source: string;
       target: string;
     }
   | {
       kind: "volume";
+      readOnly?: boolean;
       source: string;
       target: string;
     };
@@ -114,6 +116,31 @@ function buildDockerMountStrategy(hostStateRoot: string): RuntimeMountStrategy {
   };
 }
 
+function buildDockerSecretMountStrategy(secretStateRoot: string): RuntimeMountStrategy {
+  const configuredVolume = process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME?.trim();
+  const secretMountRoot = configuredVolume
+    ? path.resolve(
+        process.env.ENTANGLE_DOCKER_SECRET_STATE_TARGET?.trim() || "/entangle-secrets"
+      )
+    : path.resolve(secretStateRoot);
+
+  if (configuredVolume) {
+    return {
+      kind: "volume",
+      readOnly: true,
+      source: configuredVolume,
+      target: secretMountRoot
+    };
+  }
+
+  return {
+    kind: "bind",
+    readOnly: true,
+    source: path.resolve(secretStateRoot),
+    target: path.resolve(secretStateRoot)
+  };
+}
+
 class MemoryRuntimeBackend implements RuntimeBackend {
   readonly kind = "memory" as const;
 
@@ -152,14 +179,17 @@ class DockerRuntimeBackend implements RuntimeBackend {
   private readonly networkName = process.env.ENTANGLE_DOCKER_NETWORK?.trim();
   private readonly runnerImage =
     process.env.ENTANGLE_DOCKER_RUNNER_IMAGE?.trim() || "entangle-runner:local";
+  private readonly secretMount: RuntimeMountStrategy;
   private readonly stateMount: RuntimeMountStrategy;
 
   constructor(
     hostStateRoot: string,
+    secretStateRoot: string,
     dockerClient: DockerEngineApi = new DockerEngineClient()
   ) {
     this.dockerClient = dockerClient;
     this.stateMount = buildDockerMountStrategy(hostStateRoot);
+    this.secretMount = buildDockerSecretMountStrategy(secretStateRoot);
   }
 
   async reconcileRuntime(
@@ -208,9 +238,16 @@ class DockerRuntimeBackend implements RuntimeBackend {
       ];
       const mounts = [
         {
+          readOnly: this.stateMount.readOnly ?? false,
           source: this.stateMount.source,
           target: this.stateMount.target,
           type: this.stateMount.kind
+        },
+        {
+          readOnly: this.secretMount.readOnly ?? false,
+          source: this.secretMount.source,
+          target: this.secretMount.target,
+          type: this.secretMount.kind
         }
       ] as const;
       await this.dockerClient.createContainer({
@@ -293,9 +330,14 @@ class DockerRuntimeBackend implements RuntimeBackend {
 
 export function createRuntimeBackend(
   hostStateRoot: string,
+  secretStateRoot: string,
   options: RuntimeBackendFactoryOptions = {}
 ): RuntimeBackend {
   return process.env.ENTANGLE_RUNTIME_BACKEND === "memory"
     ? new MemoryRuntimeBackend()
-    : new DockerRuntimeBackend(hostStateRoot, options.dockerClient);
+    : new DockerRuntimeBackend(
+        hostStateRoot,
+        secretStateRoot,
+        options.dockerClient
+      );
 }

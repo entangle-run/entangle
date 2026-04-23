@@ -61,6 +61,8 @@ describe("createRuntimeBackend", () => {
     delete process.env.ENTANGLE_RUNTIME_BACKEND;
     delete process.env.ENTANGLE_DOCKER_RUNNER_IMAGE;
     delete process.env.ENTANGLE_DOCKER_NETWORK;
+    delete process.env.ENTANGLE_DOCKER_SECRET_STATE_TARGET;
+    delete process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME;
     delete process.env.ENTANGLE_DOCKER_SHARED_STATE_TARGET;
     delete process.env.ENTANGLE_DOCKER_SHARED_STATE_VOLUME;
   });
@@ -69,6 +71,8 @@ describe("createRuntimeBackend", () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
     process.env.ENTANGLE_DOCKER_SHARED_STATE_VOLUME = "entangle-host-state";
     process.env.ENTANGLE_DOCKER_SHARED_STATE_TARGET = "/entangle-state";
+    process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME = "entangle-secret-state";
+    process.env.ENTANGLE_DOCKER_SECRET_STATE_TARGET = "/entangle-secrets";
     process.env.ENTANGLE_DOCKER_NETWORK = "entangle-local";
 
     const dockerClient = createFakeDockerClient();
@@ -88,9 +92,13 @@ describe("createRuntimeBackend", () => {
         })
       );
 
-    const backend = createRuntimeBackend("/repo/.entangle/host", {
-      dockerClient
-    });
+    const backend = createRuntimeBackend(
+      "/repo/.entangle/host",
+      "/repo/.entangle-secrets",
+      {
+        dockerClient
+      }
+    );
     const result = await backend.reconcileRuntime({
       context: buildRuntimeContext(),
       contextPath: "/entangle-state/context.json",
@@ -117,6 +125,12 @@ describe("createRuntimeBackend", () => {
           source: "entangle-host-state",
           target: "/entangle-state",
           type: "volume"
+        },
+        {
+          readOnly: true,
+          source: "entangle-secret-state",
+          target: "/entangle-secrets",
+          type: "volume"
         }
       ],
       networkName: "entangle-local"
@@ -140,9 +154,13 @@ describe("createRuntimeBackend", () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
 
     const dockerClient = createFakeDockerClient();
-    const backend = createRuntimeBackend("/repo/.entangle/host", {
-      dockerClient
-    });
+    const backend = createRuntimeBackend(
+      "/repo/.entangle/host",
+      "/repo/.entangle-secrets",
+      {
+        dockerClient
+      }
+    );
     const result = await backend.reconcileRuntime({
       context: undefined,
       contextPath: undefined,
@@ -194,9 +212,13 @@ describe("createRuntimeBackend", () => {
         })
       );
 
-    const backend = createRuntimeBackend("/repo/.entangle/host", {
-      dockerClient
-    });
+    const backend = createRuntimeBackend(
+      "/repo/.entangle/host",
+      "/repo/.entangle-secrets",
+      {
+        dockerClient
+      }
+    );
     await backend.reconcileRuntime({
       context: buildRuntimeContext(),
       contextPath: "/entangle-state/new.json",

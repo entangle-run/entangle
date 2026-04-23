@@ -28,6 +28,28 @@ async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+function secretRefStoragePath(secretRef: string): string {
+  const parsed = new URL(secretRef);
+  return path.join(
+    process.env.ENTANGLE_SECRETS_HOME ?? "",
+    "refs",
+    parsed.hostname,
+    ...parsed.pathname.split("/").filter(Boolean)
+  );
+}
+
+async function writeSecretRefFile(
+  secretRef: string,
+  value = "secret-material\n"
+): Promise<void> {
+  const filePath = secretRefStoragePath(secretRef);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, value, {
+    encoding: "utf8",
+    mode: 0o600
+  });
+}
+
 async function createAdmittedPackageDirectory(rootPath: string): Promise<string> {
   const packageRoot = path.join(rootPath, "packages", "worker-it");
 
@@ -127,6 +149,7 @@ async function createTestServer(options: { includeModelEndpoint?: boolean } = {}
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-host-"));
   createdDirectories.push(tempRoot);
   process.env.ENTANGLE_HOME = tempRoot;
+  process.env.ENTANGLE_SECRETS_HOME = path.join(tempRoot, ".entangle-secrets");
   process.env.ENTANGLE_RUNTIME_BACKEND = "memory";
   process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID = options.includeModelEndpoint
     ? "shared-model"
@@ -154,6 +177,7 @@ async function createTestServer(options: { includeModelEndpoint?: boolean } = {}
 
 afterEach(async () => {
   delete process.env.ENTANGLE_HOME;
+  delete process.env.ENTANGLE_SECRETS_HOME;
   delete process.env.ENTANGLE_RUNTIME_BACKEND;
   delete process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID;
   delete process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL;
@@ -417,6 +441,7 @@ describe("buildHostServer", () => {
 
     try {
       const principal = buildGitPrincipalRecord();
+      await writeSecretRefFile(principal.secretRef);
       const principalResponse = await server.inject({
         method: "PUT",
         payload: principal,
@@ -486,10 +511,20 @@ describe("buildHostServer", () => {
       ).toMatchObject({
         artifactContext: {
           primaryGitPrincipalRef: "worker-it-git",
-          gitPrincipals: [
+          gitPrincipalBindings: [
             {
-              principalId: "worker-it-git",
-              gitServiceRef: "local-gitea"
+              principal: {
+                principalId: "worker-it-git",
+                gitServiceRef: "local-gitea"
+              },
+              transport: {
+                secretRef: principal.secretRef,
+                status: "available",
+                delivery: {
+                  mode: "mounted_file",
+                  filePath: secretRefStoragePath(principal.secretRef)
+                }
+              }
             }
           ]
         },
@@ -587,6 +622,8 @@ describe("buildHostServer", () => {
         expect(principalResponse.statusCode).toBe(200);
       }
 
+      await writeSecretRefFile("secret://git/worker-it/main");
+
       const admitResponse = await server.inject({
         method: "POST",
         payload: {
@@ -652,7 +689,22 @@ describe("buildHostServer", () => {
 
       expect(context.artifactContext.primaryGitPrincipalRef).toBeUndefined();
       expect(context.artifactContext.defaultNamespace).toBeUndefined();
-      expect(context.artifactContext.gitPrincipals).toHaveLength(2);
+      expect(context.artifactContext.gitPrincipalBindings).toHaveLength(2);
+      const mainBinding = context.artifactContext.gitPrincipalBindings.find(
+        ({ principal }) => principal.principalId === "worker-it-git-main"
+      );
+      const backupBinding = context.artifactContext.gitPrincipalBindings.find(
+        ({ principal }) => principal.principalId === "worker-it-git-backup"
+      );
+
+      expect(mainBinding).toBeDefined();
+      expect(mainBinding?.transport.secretRef).toBe("secret://git/worker-it/main");
+      expect(mainBinding?.transport.status).toBe("available");
+      expect(backupBinding).toBeDefined();
+      expect(backupBinding?.transport.secretRef).toBe(
+        "secret://git/worker-it/backup"
+      );
+      expect(backupBinding?.transport.status).toBe("missing");
     } finally {
       await server.close();
     }

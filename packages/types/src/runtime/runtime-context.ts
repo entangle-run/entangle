@@ -7,6 +7,7 @@ import { agentPackageManifestSchema } from "../package/package-manifest.js";
 import { nodeAutonomyProfileSchema, nodeBindingSchema, nodeResourceBindingsSchema } from "../graph/graph-spec.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
 import { runtimeIdentityContextSchema } from "./runtime-identity.js";
+import { resolvedSecretBindingSchema } from "./secret-delivery.js";
 
 export const effectiveEdgeRouteSchema = z.object({
   channel: identifierSchema,
@@ -46,8 +47,16 @@ export const relayRuntimeContextSchema = z.object({
 export const artifactRuntimeContextSchema = z.object({
   backends: z.array(z.enum(["git"])).default(["git"]),
   defaultNamespace: identifierSchema.optional(),
+  gitPrincipalBindings: z
+    .array(
+      z.object({
+        principal: externalPrincipalRecordSchema,
+        signing: resolvedSecretBindingSchema.optional(),
+        transport: resolvedSecretBindingSchema
+      })
+    )
+    .default([]),
   gitServices: z.array(gitServiceProfileSchema).default([]),
-  gitPrincipals: z.array(externalPrincipalRecordSchema).default([]),
   primaryGitPrincipalRef: identifierSchema.optional(),
   primaryGitServiceRef: identifierSchema.optional()
 });

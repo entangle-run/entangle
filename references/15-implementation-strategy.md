@@ -99,6 +99,7 @@ It now contains:
 - shared machine-readable contracts and semantic validation;
 - a real local host control plane;
 - host-managed runtime identity and external-principal binding;
+- host-resolved git principal secret-delivery metadata in runtime context;
 - a long-lived runner with real Nostr transport;
 - local git-backed artifact materialization;
 - Docker-backed runtime lifecycle management;
@@ -114,12 +115,12 @@ The current implementation truth is recorded in
 
 This is the highest-value capability gap still open in the current runtime.
 
-Implement in small slices:
+The first secret-delivery slice is now implemented. The remaining work in this
+phase is:
 
-1. git transport secret delivery from host-owned secret references;
-2. remote repository selection and provisioning policy;
-3. remote publication from the runner artifact backend;
-4. remote retrieval and handoff validation for downstream nodes.
+- remote repository selection and provisioning policy;
+- remote publication from the runner artifact backend;
+- remote retrieval and handoff validation for downstream nodes.
 
 Acceptance for the phase:
 

@@ -35,6 +35,7 @@ export async function createRuntimeFixture(): Promise<{
   createdDirectories.push(tempRoot);
 
   const packageRoot = path.join(tempRoot, "package-source");
+  const secretsRoot = path.join(tempRoot, "secrets");
   const workspaceRoot = path.join(tempRoot, "workspace");
   const injectedRoot = path.join(workspaceRoot, "injected");
   const memoryRoot = path.join(workspaceRoot, "memory");
@@ -42,6 +43,7 @@ export async function createRuntimeFixture(): Promise<{
   await Promise.all([
     mkdir(path.join(packageRoot, "prompts"), { recursive: true }),
     mkdir(path.join(packageRoot, "runtime"), { recursive: true }),
+    mkdir(path.join(secretsRoot, "git", "worker-it"), { recursive: true }),
     mkdir(path.join(memoryRoot, "schema"), { recursive: true }),
     mkdir(path.join(memoryRoot, "wiki"), { recursive: true }),
     mkdir(path.join(workspaceRoot, "runtime"), { recursive: true }),
@@ -67,6 +69,11 @@ export async function createRuntimeFixture(): Promise<{
       }
     }),
     writeFile(
+      path.join(secretsRoot, "git", "worker-it", "ssh"),
+      "test-private-key\n",
+      "utf8"
+    ),
+    writeFile(
       path.join(memoryRoot, "schema", "AGENTS.md"),
       "# Memory Schema\n",
       "utf8"
@@ -82,6 +89,34 @@ export async function createRuntimeFixture(): Promise<{
     artifactContext: {
       backends: ["git"],
       defaultNamespace: "team-alpha",
+      gitPrincipalBindings: [
+        {
+          principal: {
+            principalId: "worker-it-git",
+            displayName: "Worker IT Git Principal",
+            systemKind: "git",
+            gitServiceRef: "local-gitea",
+            subject: "worker-it",
+            transportAuthMode: "ssh_key",
+            secretRef: "secret://git/worker-it/ssh",
+            attribution: {
+              displayName: "Worker IT Git Principal",
+              email: "worker-it@entangle.local"
+            },
+            signing: {
+              mode: "none"
+            }
+          },
+          transport: {
+            secretRef: "secret://git/worker-it/ssh",
+            status: "available",
+            delivery: {
+              mode: "mounted_file",
+              filePath: path.join(secretsRoot, "git", "worker-it", "ssh")
+            }
+          }
+        }
+      ],
       gitServices: [
         {
           id: "local-gitea",
@@ -92,6 +127,7 @@ export async function createRuntimeFixture(): Promise<{
           defaultNamespace: "team-alpha"
         }
       ],
+      primaryGitPrincipalRef: "worker-it-git",
       primaryGitServiceRef: "local-gitea"
     },
     binding: {

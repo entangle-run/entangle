@@ -1,22 +1,12 @@
 import { z } from "zod";
 import { nostrPublicKeySchema } from "../common/crypto.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
-
-export const runtimeIdentitySecretDeliverySchema = z.discriminatedUnion("mode", [
-  z.object({
-    envVar: nonEmptyStringSchema,
-    mode: z.literal("env_var")
-  }),
-  z.object({
-    filePath: filesystemPathSchema,
-    mode: z.literal("mounted_file")
-  })
-]);
+import { runtimeSecretDeliverySchema } from "./secret-delivery.js";
 
 export const runtimeIdentityContextSchema = z.object({
   algorithm: z.literal("nostr_secp256k1"),
   publicKey: nostrPublicKeySchema,
-  secretDelivery: runtimeIdentitySecretDeliverySchema
+  secretDelivery: runtimeSecretDeliverySchema
 });
 
 export const runtimeIdentityRecordSchema = z.object({
@@ -31,7 +21,7 @@ export const runtimeIdentityRecordSchema = z.object({
 });
 
 export type RuntimeIdentitySecretDelivery = z.infer<
-  typeof runtimeIdentitySecretDeliverySchema
+  typeof runtimeSecretDeliverySchema
 >;
 export type RuntimeIdentityContext = z.infer<typeof runtimeIdentityContextSchema>;
 export type RuntimeIdentityRecord = z.infer<typeof runtimeIdentityRecordSchema>;

@@ -70,6 +70,8 @@ The repository now also contains the first real implementation baseline:
   through host routes, the shared host client, and the CLI, and now resolved
   into effective runtime context instead of remaining only in the written
   specification;
+- resolved git principal runtime bindings that now include secret-availability
+  status and mounted-file delivery metadata for the current local profile;
 - live host routes for catalog inspection/apply, package admission, graph
   inspection/apply, runtime inspection, runtime context access, and runtime
   desired-state mutation;
@@ -80,7 +82,8 @@ The repository now also contains the first real implementation baseline:
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,
-  plus persisted reconciliation snapshots and richer host status output;
+  plus persisted reconciliation snapshots, richer host status output, and a
+  read-only secret-volume mount into runner containers;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -179,7 +182,8 @@ The current implementation-truth audit now lives in
 [../references/59-implementation-state-and-delivery-audit.md](../references/59-implementation-state-and-delivery-audit.md).
 
 - complete remote git publication and retrieval on top of the existing local
-  git-backed artifact model and external-principal bindings;
+  git-backed artifact model and the now-resolved git principal secret-delivery
+  bindings;
 - replace the stub engine path with the first real model-backed internal
   `agent-engine` adapter;
 - complete the host event stream and remaining core host resource surfaces;

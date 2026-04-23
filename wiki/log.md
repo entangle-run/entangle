@@ -280,3 +280,13 @@ implementation-truth document, marked
 order, and updated `README.md`, `references/README.md`, and `wiki/overview.md`
 so the repository is no longer described as pre-implementation or
 control-plane-only.
+
+## [2026-04-23] implementation | Added runtime secret delivery and resolved git principal bindings
+
+Introduced a real `secret://` contract, resolved secret-binding metadata in the
+runtime type system, host-side resolution of git secret refs under
+`ENTANGLE_SECRETS_HOME/refs/...`, and runtime artifact context that now carries
+git principal bindings with explicit availability and mounted-file delivery
+metadata. Extended the Docker runtime backend to mount the secret volume into
+runner containers as read-only, and updated local git artifact commits so they
+use bound git-principal attribution when a primary principal is available.

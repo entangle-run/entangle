@@ -3,6 +3,7 @@ import {
   httpUrlSchema,
   identifierSchema,
   nonEmptyStringSchema,
+  secretRefSchema,
   websocketUrlSchema
 } from "../common/primitives.js";
 
@@ -33,7 +34,7 @@ export const modelEndpointProfileSchema = z.object({
   authMode: z.enum(["api_key_bearer", "header_secret"]).default(
     "api_key_bearer"
   ),
-  secretRef: nonEmptyStringSchema,
+  secretRef: secretRefSchema,
   defaultModel: nonEmptyStringSchema.optional()
 });
 

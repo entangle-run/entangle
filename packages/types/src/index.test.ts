@@ -7,7 +7,9 @@ import {
   externalPrincipalRecordSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
-  isAllowedSessionLifecycleTransition
+  isAllowedSessionLifecycleTransition,
+  resolvedSecretBindingSchema,
+  secretRefSchema
 } from "./index.js";
 
 describe("Entangle A2A machine-readable contracts", () => {
@@ -125,6 +127,52 @@ describe("external principal contracts", () => {
 
     expect(result.systemKind).toBe("git");
     expect(result.gitServiceRef).toBe("local-gitea");
+  });
+});
+
+describe("secret reference contracts", () => {
+  it("accepts secret:// references with safe path segments", () => {
+    expect(secretRefSchema.parse("secret://git/worker-it/ssh")).toBe(
+      "secret://git/worker-it/ssh"
+    );
+  });
+
+  it("rejects unsafe or malformed secret references", () => {
+    expect(secretRefSchema.safeParse("https://example.com/secret").success).toBe(
+      false
+    );
+    expect(secretRefSchema.safeParse("secret://git/../ssh").success).toBe(false);
+    expect(secretRefSchema.safeParse("secret://git/worker it/ssh").success).toBe(
+      false
+    );
+  });
+});
+
+describe("resolved secret bindings", () => {
+  it("accepts an available mounted secret binding", () => {
+    const result = resolvedSecretBindingSchema.parse({
+      secretRef: "secret://git/worker-it/ssh",
+      status: "available",
+      delivery: {
+        mode: "mounted_file",
+        filePath: "/entangle-secrets/refs/git/worker-it/ssh"
+      }
+    });
+
+    expect(result.status).toBe("available");
+  });
+
+  it("rejects inconsistent delivery/status combinations", () => {
+    expect(
+      resolvedSecretBindingSchema.safeParse({
+        secretRef: "secret://git/worker-it/ssh",
+        status: "missing",
+        delivery: {
+          mode: "mounted_file",
+          filePath: "/entangle-secrets/refs/git/worker-it/ssh"
+        }
+      }).success
+    ).toBe(false);
   });
 });
 

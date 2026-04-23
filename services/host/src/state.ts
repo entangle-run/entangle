@@ -53,6 +53,7 @@ import {
   resolveEffectiveRelayProfileRefs,
   type RuntimeDesiredState,
   runtimeIdentityContextSchema,
+  secretRefSchema,
   type RuntimeIdentityRecord,
   runtimeIdentityRecordSchema,
   runtimeArtifactListResponseSchema,
@@ -107,6 +108,7 @@ const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
 const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
+const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
 const packageStoreMetadataFileName = ".package-store.json";
 
@@ -125,7 +127,7 @@ type RuntimeResolution = {
   inspection: RuntimeInspectionResponse;
 };
 
-const runtimeBackend = createRuntimeBackend(hostStateRoot);
+const runtimeBackend = createRuntimeBackend(hostStateRoot, secretStateRoot);
 
 function nowIsoString(): string {
   return new Date().toISOString();
@@ -387,6 +389,91 @@ async function ensureRuntimeIdentity(input: {
   await writeSecretFile(secretStoragePath, `${secretHex}\n`);
   await writeJsonFile(recordPath, record);
   return record;
+}
+
+function resolveSecretRefStoragePath(secretRef: string): string | undefined {
+  const parsedSecretRef = secretRefSchema.safeParse(secretRef);
+
+  if (!parsedSecretRef.success) {
+    return undefined;
+  }
+
+  const parsed = new URL(parsedSecretRef.data);
+
+  const segments = [parsed.hostname, ...parsed.pathname.split("/").filter(Boolean)];
+
+  if (segments.length === 0) {
+    return undefined;
+  }
+
+  return path.join(secretRefsRoot, ...segments);
+}
+
+async function resolveSecretBinding(secretRef: string): Promise<{
+  delivery?: {
+    filePath: string;
+    mode: "mounted_file";
+  };
+  secretRef: string;
+  status: "available" | "missing";
+}> {
+  const storagePath = resolveSecretRefStoragePath(secretRef);
+
+  if (!storagePath || !(await pathExists(storagePath))) {
+    return {
+      secretRef,
+      status: "missing"
+    };
+  }
+
+  return {
+    delivery: {
+      filePath: storagePath,
+      mode: "mounted_file"
+    },
+    secretRef,
+    status: "available"
+  };
+}
+
+async function resolveGitPrincipalRuntimeBindings(
+  principals: ExternalPrincipalRecord[]
+): Promise<
+  Array<{
+    principal: ExternalPrincipalRecord;
+    signing?: {
+      delivery?: {
+        filePath: string;
+        mode: "mounted_file";
+      };
+      secretRef: string;
+      status: "available" | "missing";
+    };
+    transport: {
+      delivery?: {
+        filePath: string;
+        mode: "mounted_file";
+      };
+      secretRef: string;
+      status: "available" | "missing";
+    };
+  }>
+> {
+  return Promise.all(
+    principals.map(async (principal) => {
+      const transport = await resolveSecretBinding(principal.secretRef);
+      const signing =
+        principal.signing?.mode === "ssh_key"
+          ? await resolveSecretBinding(principal.signing.secretRef)
+          : undefined;
+
+      return {
+        principal,
+        ...(signing ? { signing } : {}),
+        transport
+      };
+    })
+  );
 }
 
 async function appendDirectoryDigest(
@@ -826,6 +913,7 @@ function externalPrincipalRecordPath(principalId: string): string {
 export async function initializeHostState(): Promise<void> {
   await Promise.all([
     ensureDirectory(runtimeIdentitiesRoot),
+    ensureDirectory(secretRefsRoot),
     ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
@@ -1275,6 +1363,9 @@ async function buildRuntimeResolution(input: {
   const resolvedGitPrincipals = resolvedExternalPrincipals.filter(
     (principal) => principal.systemKind === "git"
   );
+  const resolvedGitPrincipalBindings = await resolveGitPrincipalRuntimeBindings(
+    resolvedGitPrincipals
+  );
   const resolvedPrimaryGitPrincipalRef = resolveEffectivePrimaryGitPrincipalRef(
     resolvedGitPrincipals,
     resolvedPrimaryGitServiceRef
@@ -1392,7 +1483,7 @@ async function buildRuntimeResolution(input: {
       artifactContext: {
         backends: ["git"],
         defaultNamespace: resolvedDefaultNamespace,
-        gitPrincipals: resolvedGitPrincipals,
+        gitPrincipalBindings: resolvedGitPrincipalBindings,
         gitServices: resolvedGitServices,
         primaryGitPrincipalRef: resolvedPrimaryGitPrincipalRef,
         primaryGitServiceRef: resolvedPrimaryGitServiceRef

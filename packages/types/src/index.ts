@@ -19,5 +19,6 @@ export * from "./resources/external-principal.js";
 export * from "./runtime/runtime-context.js";
 export * from "./runtime/runtime-identity.js";
 export * from "./runtime/reconciliation.js";
+export * from "./runtime/secret-delivery.js";
 export * from "./runtime/session-state.js";
 export * from "./runtime/runtime-state.js";

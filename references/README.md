@@ -64,6 +64,7 @@ This directory is the canonical design corpus for Entangle.
 58. [57-artifact-reference-portability-refinement.md](57-artifact-reference-portability-refinement.md)
 59. [58-external-principal-bindings-slice.md](58-external-principal-bindings-slice.md)
 60. [59-implementation-state-and-delivery-audit.md](59-implementation-state-and-delivery-audit.md)
+61. [60-runtime-secret-delivery-and-git-principal-binding-slice.md](60-runtime-secret-delivery-and-git-principal-binding-slice.md)
 
 ## Role of this corpus
 

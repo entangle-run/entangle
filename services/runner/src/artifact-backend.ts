@@ -120,6 +120,27 @@ function buildReportContent(input: {
   ].join("\n");
 }
 
+function resolvePrimaryGitAttribution(context: EffectiveRuntimeContext): {
+  email: string;
+  name: string;
+} {
+  const primaryBinding =
+    context.artifactContext.primaryGitPrincipalRef
+      ? context.artifactContext.gitPrincipalBindings.find(
+          (binding) =>
+            binding.principal.principalId ===
+            context.artifactContext.primaryGitPrincipalRef
+        )
+      : undefined;
+  const attribution = primaryBinding?.principal.attribution;
+
+  return {
+    email:
+      attribution?.email ?? `${context.binding.node.nodeId}@entangle.invalid`,
+    name: attribution?.displayName ?? context.binding.node.displayName
+  };
+}
+
 async function runGitCommand(
   repoPath: string,
   args: string[]
@@ -173,15 +194,17 @@ async function ensureGitWorkspace(input: {
     await runGitCommand(input.repoPath, ["checkout", "-B", input.branchName]);
   }
 
+  const attribution = resolvePrimaryGitAttribution(input.context);
+
   await runGitCommand(input.repoPath, [
     "config",
     "user.name",
-    input.context.binding.node.displayName
+    attribution.name
   ]);
   await runGitCommand(input.repoPath, [
     "config",
     "user.email",
-    `${input.context.binding.node.nodeId}@entangle.invalid`
+    attribution.email
   ]);
 }
 

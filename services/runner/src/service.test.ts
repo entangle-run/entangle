@@ -116,6 +116,22 @@ describe("RunnerService", () => {
     expect(headCommit.status).toBe(0);
     expect(headCommit.stdout.trim()).toBe(artifactRecord.ref.locator.commit);
 
+    const authorEmail = spawnSync(
+      "git",
+      [
+        "-C",
+        runtimeContext.workspace.artifactWorkspaceRoot,
+        "log",
+        "-1",
+        "--format=%ae"
+      ],
+      {
+        encoding: "utf8"
+      }
+    );
+    expect(authorEmail.status).toBe(0);
+    expect(authorEmail.stdout.trim()).toBe("worker-it@entangle.local");
+
     await service.stop();
   });
 

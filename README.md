@@ -86,6 +86,9 @@ This repository currently contains:
   context injected into runners and a separate local secret storage profile;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
+- runtime-context artifact metadata that now carries resolved git principal
+  bindings, including secret-delivery availability and mounted-file delivery
+  paths for the current local profile;
 - a runner transport and intake slice with a deterministic in-memory transport,
   a file-backed runner state store, and a long-lived `RunnerService` that
   validates inbound A2A messages, advances session and conversation lifecycle

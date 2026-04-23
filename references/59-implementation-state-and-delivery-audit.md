@@ -170,7 +170,6 @@ artifact-collaboration depth, not the runner boundary itself.
 
 ### Still missing or incomplete
 
-- git transport secret delivery;
 - remote repository selection and provisioning policy;
 - remote push semantics;
 - remote retrieval semantics;
@@ -190,12 +189,14 @@ artifact model is strong enough to extend without redesign.
 - separated secret and non-secret identity context;
 - host-managed external principals for git-facing identities;
 - graph-local binding of principals by reference;
-- effective runtime resolution of git principals and primary-principal hints.
+- effective runtime resolution of git principals and primary-principal hints;
+- resolved git secret-delivery metadata for bound git principals in runtime
+  context.
 
 ### Still missing or incomplete
 
-- secret delivery and materialization for git transport credentials;
-- tighter integration of external principal records with remote git publication
+- tighter integration of resolved git principal bindings with remote git
+  publication
   flows.
 
 ### Assessment
@@ -307,7 +308,8 @@ surface:
 
 The current best delivery order is:
 
-1. complete git transport secret delivery and remote git publication/retrieval;
+1. complete remote git publication and retrieval on top of the now-resolved
+   git principal secret-delivery bindings;
 2. replace the stub engine with the first real model-backed `agent-engine`
    adapter;
 3. complete host event streaming and the remaining core host resource surfaces;
@@ -322,6 +324,10 @@ This ordering preserves the best current properties of the repository:
 - it finishes control-plane completeness before broadening client complexity;
 - it keeps deployment hardening as a real finalization phase rather than a
   premature distraction.
+
+The first git secret-delivery slice is now complete, so the next best
+capability move inside that first phase is remote repository selection and
+publication semantics.
 
 ## What should not happen next
 
