@@ -172,6 +172,10 @@ This repository currently contains:
   `GET /v1/graph/revisions/{revisionId}`, preserves backward compatibility with
   earlier raw graph snapshots, and shares the inspection boundary through
   `packages/host-client` and the CLI;
+- a first resource-oriented node surface where `entangle-host` now exposes
+  applied non-user node bindings through `GET /v1/nodes` and
+  `GET /v1/nodes/{nodeId}`, with shared client and CLI support grounded in the
+  host's effective binding model rather than a duplicated UI projection;
 
 The highest-value remaining gaps are:
 

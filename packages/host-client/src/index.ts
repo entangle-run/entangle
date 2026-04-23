@@ -11,6 +11,8 @@ import {
   hostEventRecordSchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
+  nodeInspectionResponseSchema,
+  nodeListResponseSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
@@ -29,6 +31,8 @@ import {
   type HostEventListResponse,
   type HostEventRecord,
   type HostStatusResponse,
+  type NodeInspectionResponse,
+  type NodeListResponse,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
@@ -347,6 +351,17 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/graph/revisions/${revisionId}`),
         graphRevisionInspectionResponseSchema
+      );
+    },
+
+    async listNodes(): Promise<NodeListResponse> {
+      return parseResponse(await fetchImpl(`${baseUrl}/v1/nodes`), nodeListResponseSchema);
+    },
+
+    async getNode(nodeId: string): Promise<NodeInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/nodes/${nodeId}`),
+        nodeInspectionResponseSchema
       );
     },
 

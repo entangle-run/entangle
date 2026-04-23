@@ -234,6 +234,27 @@ hostGraphCommand
     printJson(await client.applyGraph(await readJsonDocument(path.resolve(file))));
   });
 
+const hostNodesCommand = hostCommand
+  .command("nodes")
+  .description("Inspect applied node bindings through entangle-host.");
+
+hostNodesCommand
+  .command("list")
+  .description("List applied non-user node bindings for the active graph.")
+  .action(async (_options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.listNodes());
+  });
+
+hostNodesCommand
+  .command("get")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Inspect one applied non-user node binding.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getNode(nodeId));
+  });
+
 const hostRuntimesCommand = hostCommand
   .command("runtimes")
   .description("Inspect and mutate desired runtime state through entangle-host.");

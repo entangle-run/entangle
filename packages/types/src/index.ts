@@ -11,6 +11,7 @@ export * from "./graph/graph-spec.js";
 export * from "./host-api/control-plane.js";
 export * from "./host-api/events.js";
 export * from "./host-api/error.js";
+export * from "./host-api/nodes.js";
 export * from "./host-api/runtime.js";
 export * from "./host-api/status.js";
 export * from "./package/package-manifest.js";

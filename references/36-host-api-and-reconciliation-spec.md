@@ -263,6 +263,13 @@ Purpose:
 - create or update graph-local node bindings;
 - bind packages, resources, and principals to nodes.
 
+The current implementation now covers:
+
+- `GET /v1/nodes`
+- `GET /v1/nodes/{nodeId}`
+
+The mutation routes in this subsection remain pending.
+
 ### 8.5 Edges
 
 - `GET /v1/edges`

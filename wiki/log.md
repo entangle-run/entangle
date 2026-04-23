@@ -415,3 +415,13 @@ exposed `GET /v1/graph/revisions` plus `GET /v1/graph/revisions/{revisionId}`
 through `entangle-host`, `packages/host-client`, and the CLI. Closed the slice
 only after tightening strict test parsing under ESLint, normalizing the last
 stale active-revision read path in host state, and re-running `pnpm verify`.
+
+## [2026-04-23] implementation | Added the first applied-node inspection surface
+
+Promoted applied non-user node bindings from a host-internal reconciliation
+detail into a real resource surface. Added canonical node-inspection DTOs in
+`packages/types`, exposed `GET /v1/nodes` plus `GET /v1/nodes/{nodeId}` through
+`entangle-host`, and wired the same boundary through `packages/host-client` and
+the CLI. Closed the slice only after fixing strict fixture quality in the new
+types test, tightening the host integration assertions for ESLint, and
+re-running `pnpm verify`.

@@ -16,6 +16,7 @@ import {
   isAllowedSessionLifecycleTransition,
   modelEndpointProfileSchema,
   modelRuntimeContextSchema,
+  nodeInspectionResponseSchema,
   packageToolCatalogSchema,
   resolvedSecretBindingSchema,
   resolveGitPrincipalBindingForService,
@@ -267,6 +268,79 @@ describe("graph revision contracts", () => {
 
     expect(result.revision.isActive).toBe(true);
     expect(result.graph.graphId).toBe("team-alpha");
+  });
+});
+
+describe("node inspection contracts", () => {
+  it("accepts a typed node inspection response", () => {
+    const result = nodeInspectionResponseSchema.parse({
+      binding: {
+        bindingId: "team-alpha-worker-it",
+        externalPrincipals: [],
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260423-000000",
+        node: {
+          autonomy: {
+            canInitiateSessions: true,
+            canMutateGraph: false
+          },
+          displayName: "Worker IT",
+          nodeId: "worker-it",
+          nodeKind: "worker",
+          packageSourceRef: "worker-it-source",
+          resourceBindings: {
+            externalPrincipalRefs: [],
+            gitServiceRefs: ["local-gitea"],
+            modelEndpointProfileRef: "shared-anthropic",
+            primaryGitServiceRef: "local-gitea",
+            primaryRelayProfileRef: "local-relay",
+            relayProfileRefs: ["local-relay"]
+          }
+        },
+        packageSource: {
+          absolutePath: "/tmp/packages/worker-it",
+          admittedAt: "2026-04-23T00:00:00.000Z",
+          manifestPath: "/tmp/packages/worker-it/manifest.json",
+          materialization: {
+            contentDigest:
+              "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            materializationKind: "immutable_store",
+            packageRoot: "/tmp/store/worker-it/package",
+            synchronizedAt: "2026-04-23T00:00:00.000Z"
+          },
+          packageSourceId: "worker-it-source",
+          packageStoreKey: "sha256-abc123",
+          sourceKind: "local_path"
+        },
+        resolvedResourceBindings: {
+          externalPrincipalRefs: [],
+          gitServiceRefs: ["local-gitea"],
+          modelEndpointProfileRef: "shared-anthropic",
+          primaryGitServiceRef: "local-gitea",
+          primaryRelayProfileRef: "local-relay",
+          relayProfileRefs: ["local-relay"]
+        },
+        runtimeProfile: "hackathon_local",
+        schemaVersion: "1"
+      },
+      runtime: {
+        backendKind: "docker",
+        contextAvailable: true,
+        contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+        desiredState: "running",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260423-000000",
+        nodeId: "worker-it",
+        observedState: "running",
+        packageSourceId: "worker-it-source",
+        reason: "running",
+        runtimeHandle: "container://worker-it",
+        statusMessage: "Runtime is healthy."
+      }
+    });
+
+    expect(result.binding.node.nodeId).toBe("worker-it");
+    expect(result.runtime.nodeId).toBe("worker-it");
   });
 });
 

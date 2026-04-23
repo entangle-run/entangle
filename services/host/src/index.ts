@@ -15,6 +15,8 @@ import {
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
   hostErrorResponseSchema,
+  nodeInspectionResponseSchema,
+  nodeListResponseSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
@@ -30,6 +32,7 @@ import {
   applyCatalog,
   applyGraph,
   buildHostStatus,
+  getNodeInspection,
   getRuntimeContext,
   getRuntimeInspection,
   getExternalPrincipalInspection,
@@ -40,6 +43,7 @@ import {
   getGraphRevision,
   listExternalPrincipals,
   listGraphRevisions,
+  listNodeInspections,
   getPackageSourceInspection,
   initializeHostState,
   listRuntimeInspections,
@@ -331,6 +335,25 @@ export async function buildHostServer() {
     }
 
     return graphRevisionInspectionResponseSchema.parse(inspection);
+  });
+
+  server.get("/v1/nodes", async () =>
+    nodeListResponseSchema.parse(await listNodeInspections())
+  );
+
+  server.get("/v1/nodes/:nodeId", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getNodeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Node '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    return nodeInspectionResponseSchema.parse(inspection);
   });
 
   server.post("/v1/graph/validate", async (request) =>

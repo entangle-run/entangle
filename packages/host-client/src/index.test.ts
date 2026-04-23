@@ -188,6 +188,109 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses applied node inspection responses from the host surface", async () => {
+    const responses = [
+      createMockResponse({
+        body: JSON.stringify({
+          nodes: [
+            {
+              binding: {
+                bindingId: "team-alpha-worker-it",
+                externalPrincipals: [],
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260423-000000",
+                node: {
+                  displayName: "Worker IT",
+                  nodeId: "worker-it",
+                  nodeKind: "worker"
+                },
+                resolvedResourceBindings: {
+                  externalPrincipalRefs: [],
+                  gitServiceRefs: ["local-gitea"],
+                  relayProfileRefs: ["local-relay"]
+                },
+                runtimeProfile: "hackathon_local",
+                schemaVersion: "1"
+              },
+              runtime: {
+                backendKind: "docker",
+                contextAvailable: true,
+                contextPath:
+                  "/tmp/runtime/worker-it/effective-runtime-context.json",
+                desiredState: "running",
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260423-000000",
+                nodeId: "worker-it",
+                observedState: "running"
+              }
+            }
+          ]
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          binding: {
+            bindingId: "team-alpha-worker-it",
+            externalPrincipals: [],
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260423-000000",
+            node: {
+              displayName: "Worker IT",
+              nodeId: "worker-it",
+              nodeKind: "worker"
+            },
+            resolvedResourceBindings: {
+              externalPrincipalRefs: [],
+              gitServiceRefs: ["local-gitea"],
+              relayProfileRefs: ["local-relay"]
+            },
+            runtimeProfile: "hackathon_local",
+            schemaVersion: "1"
+          },
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260423-000000",
+            nodeId: "worker-it",
+            observedState: "running"
+          }
+        }),
+        ok: true,
+        status: 200
+      })
+    ];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () => Promise.resolve(responses.shift()!)
+    });
+
+    await expect(client.listNodes()).resolves.toMatchObject({
+      nodes: [
+        {
+          binding: {
+            node: {
+              nodeId: "worker-it"
+            }
+          }
+        }
+      ]
+    });
+
+    await expect(client.getNode("worker-it")).resolves.toMatchObject({
+      binding: {
+        graphId: "team-alpha"
+      },
+      runtime: {
+        observedState: "running"
+      }
+    });
+  });
+
   it("formats structured host conflict errors for runtime context requests", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

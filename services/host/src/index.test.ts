@@ -20,6 +20,8 @@ import {
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
+  nodeInspectionResponseSchema,
+  nodeListResponseSchema,
   packageSourceInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -759,6 +761,83 @@ describe("buildHostServer", () => {
         missingRevisionErrorBody
       );
       expect(missingRevisionError).toMatchObject({
+        code: "not_found"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and inspects applied non-user node bindings through the host boundary", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/nodes"
+      });
+
+      expect(listResponse.statusCode).toBe(200);
+      const listResponseBody: unknown = listResponse.json();
+      const listedNodes = nodeListResponseSchema.parse(listResponseBody);
+      expect(listedNodes.nodes).toHaveLength(1);
+      const [activeNode] = listedNodes.nodes;
+      expect(activeNode).toBeDefined();
+      if (!activeNode) {
+        throw new Error("Expected one applied non-user node binding.");
+      }
+      expect(activeNode).toMatchObject({
+        binding: {
+          graphId: "team-alpha",
+          node: {
+            nodeId: "worker-it"
+          }
+        },
+        runtime: {
+          nodeId: "worker-it"
+        }
+      });
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/nodes/worker-it"
+      });
+
+      expect(inspectionResponse.statusCode).toBe(200);
+      const inspectionResponseBody: unknown = inspectionResponse.json();
+      const nodeInspection = nodeInspectionResponseSchema.parse(
+        inspectionResponseBody
+      );
+      expect(nodeInspection.binding.bindingId).toContain("worker-it");
+      expect(nodeInspection).toMatchObject({
+        binding: {
+          node: {
+            displayName: "Worker IT",
+            nodeId: "worker-it"
+          }
+        },
+        runtime: {
+          graphId: "team-alpha",
+          nodeId: "worker-it"
+        }
+      });
+
+      const missingNodeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/nodes/missing-node"
+      });
+
+      expect(missingNodeResponse.statusCode).toBe(404);
+      const missingNodeBody: unknown = missingNodeResponse.json();
+      const missingNodeError = hostErrorResponseSchema.parse(missingNodeBody);
+      expect(missingNodeError).toMatchObject({
         code: "not_found"
       });
     } finally {

@@ -20,7 +20,10 @@ import {
   graphRevisionRecordSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
+  nodeInspectionResponseSchema,
+  nodeListResponseSchema,
   type ActiveGraphRevisionRecord,
+  type EffectiveNodeBinding,
   type HostEventListResponse,
   type HostEventRecord,
   gitRepositoryProvisioningRecordSchema,
@@ -47,6 +50,8 @@ import {
   graphSpecSchema,
   intersectIdentifiers,
   type NodeBinding,
+  type NodeInspectionResponse,
+  type NodeListResponse,
   packageSourceRecordSchema,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
@@ -136,6 +141,7 @@ type LocalPathPackageSourceRecord = Extract<
 >;
 
 type RuntimeResolution = {
+  binding: EffectiveNodeBinding;
   context: EffectiveRuntimeContext | undefined;
   primaryGitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
   inspection: RuntimeInspectionResponse;
@@ -2271,6 +2277,7 @@ async function buildRuntimeResolution(input: {
   }
 
   return {
+    binding: effectiveBinding,
     context,
     primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
     inspection: buildRuntimeInspectionFromState({
@@ -2291,6 +2298,7 @@ async function buildRuntimeResolution(input: {
 }
 
 async function synchronizeCurrentGraphRuntimeState(): Promise<{
+  nodes: NodeInspectionResponse[];
   runtimes: RuntimeInspectionResponse[];
   snapshot: ReturnType<typeof reconciliationSnapshotSchema.parse>;
 }> {
@@ -2328,6 +2336,7 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
     }
 
     return {
+      nodes: [],
       runtimes: [],
       snapshot: emptySnapshot
     };
@@ -2341,6 +2350,7 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
     string,
     GitRepositoryProvisioningRecord
   >();
+  const nodeInspections: NodeInspectionResponse[] = [];
   const inspections: RuntimeInspectionResponse[] = [];
 
   for (const nodeId of await listObservedRuntimeNodeIds()) {
@@ -2362,6 +2372,12 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
       packageSources,
       repositoryProvisioningCache
     });
+    nodeInspections.push(
+      nodeInspectionResponseSchema.parse({
+        binding: resolution.binding,
+        runtime: resolution.inspection
+      })
+    );
     inspections.push(resolution.inspection);
   }
 
@@ -2371,6 +2387,9 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   );
 
   inspections.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
+  nodeInspections.sort((left, right) =>
+    left.binding.node.nodeId.localeCompare(right.binding.node.nodeId)
+  );
   const snapshot = reconciliationSnapshotSchema.parse({
     backendKind: runtimeBackend.kind,
     failedRuntimeCount: inspections.filter(
@@ -2412,6 +2431,7 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   }
 
   return {
+    nodes: nodeInspections,
     runtimes: inspections,
     snapshot
   };
@@ -2421,6 +2441,19 @@ export async function listRuntimeInspections(): Promise<RuntimeListResponse> {
   return runtimeListResponseSchema.parse({
     runtimes: (await synchronizeCurrentGraphRuntimeState()).runtimes
   });
+}
+
+export async function listNodeInspections(): Promise<NodeListResponse> {
+  return nodeListResponseSchema.parse({
+    nodes: (await synchronizeCurrentGraphRuntimeState()).nodes
+  });
+}
+
+export async function getNodeInspection(
+  nodeId: string
+): Promise<NodeInspectionResponse | null> {
+  const { nodes } = await synchronizeCurrentGraphRuntimeState();
+  return nodes.find((node) => node.binding.node.nodeId === nodeId) ?? null;
 }
 
 export async function getRuntimeInspection(

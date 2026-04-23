@@ -119,6 +119,10 @@ The repository now also contains the first real implementation baseline:
   `GET /v1/graph/revisions/{revisionId}`, keeps backward compatibility with
   older raw graph-snapshot revision files, and shares that inspection boundary
   through `packages/host-client` and the CLI;
+- a first resource-oriented node surface where `entangle-host` now exposes
+  applied non-user node bindings through `GET /v1/nodes` and
+  `GET /v1/nodes/{nodeId}`, and shares that inspection boundary through
+  `packages/host-client` and the CLI;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,

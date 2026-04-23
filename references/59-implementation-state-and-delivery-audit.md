@@ -86,6 +86,8 @@ The most important stable conclusions remain:
 - canonical host-event DTOs for persisted inspection and WebSocket streaming;
 - canonical graph-revision DTOs for active revision records, revision history
   metadata, and revision inspection responses;
+- canonical node-inspection DTOs for applied non-user bindings and their paired
+  runtime summaries;
 - explicit package-level tool catalog contracts with manifest-owned
   `runtime.toolsPath` and structured `runtime/tools.json` documents;
 - semantic validation in `packages/validator` for graph-resource consistency,
@@ -96,8 +98,8 @@ The most important stable conclusions remain:
 
 ### Still missing or incomplete
 
-- fuller host API DTO coverage for node/edge resource mutation and revision
-  history surfaces not yet implemented;
+- fuller host API DTO coverage for node/edge resource mutation surfaces not yet
+  implemented;
 - richer engine/tool-execution observability contracts once tool activity is
   surfaced more explicitly through host and Studio.
 
@@ -115,6 +117,7 @@ This layer is strong and directionally correct. It is not a blocker.
 - external-principal persistence and inspection;
 - graph apply, inspection, and validation;
 - graph revision-history listing and revision-detail inspection;
+- applied non-user node binding listing and node-detail inspection;
 - runtime inspection, start, stop, context inspection, and artifact inspection;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
@@ -127,7 +130,8 @@ This layer is strong and directionally correct. It is not a blocker.
 
 ### Still missing or incomplete
 
-- resource-oriented node mutation surfaces;
+- resource-oriented node mutation surfaces on top of the new inspection
+  boundary;
 - resource-oriented edge mutation surfaces;
 - runtime restart surface;
 - session-level and richer runner-originated event classes on top of the new
