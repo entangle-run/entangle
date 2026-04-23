@@ -78,6 +78,7 @@ export async function createRuntimeFixture(input: {
     mkdir(path.join(packageRoot, "prompts"), { recursive: true }),
     mkdir(path.join(packageRoot, "runtime"), { recursive: true }),
     mkdir(path.join(secretsRoot, "git", "worker-it"), { recursive: true }),
+    mkdir(path.join(secretsRoot, "model"), { recursive: true }),
     mkdir(path.join(memoryRoot, "schema"), { recursive: true }),
     mkdir(path.join(memoryRoot, "wiki"), { recursive: true }),
     mkdir(retrievalRoot, { recursive: true }),
@@ -106,6 +107,11 @@ export async function createRuntimeFixture(input: {
     writeFile(
       path.join(secretsRoot, "git", "worker-it", "ssh"),
       "test-private-key\n",
+      "utf8"
+    ),
+    writeFile(
+      path.join(secretsRoot, "model", "shared-model"),
+      "test-model-secret\n",
       "utf8"
     ),
     writeFile(
@@ -236,12 +242,20 @@ export async function createRuntimeFixture(input: {
       }
     },
     modelContext: {
+      auth: {
+        secretRef: "secret://shared-model",
+        status: "available",
+        delivery: {
+          mode: "mounted_file",
+          filePath: path.join(secretsRoot, "model", "shared-model")
+        }
+      },
       modelEndpointProfile: {
         id: "shared-model",
         displayName: "Shared Model",
         adapterKind: "anthropic",
         baseUrl: "https://api.anthropic.com",
-        authMode: "api_key_bearer",
+        authMode: "header_secret",
         secretRef: "secret://shared-model",
         defaultModel: "claude-opus"
       }

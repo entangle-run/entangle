@@ -45,7 +45,7 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- a real model-backed internal `agent-engine`;
+- multi-turn and tool-loop depth inside the internal `agent-engine`;
 - host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
   history;
@@ -115,7 +115,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - host-managed runtime identity persistence;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
-- first-party Docker Engine API integration instead of `docker` CLI shell-outs.
+- first-party Docker Engine API integration instead of `docker` CLI shell-outs;
+- host-resolved model-secret delivery in the effective runtime context, with
+  runtime realizability now gated on bound model credential availability.
 
 ### Still missing or incomplete
 
@@ -142,11 +144,12 @@ and widening, not rethinking the boundary.
   artifact records;
 - durable lifecycle transitions;
 - response-policy-aware reply behavior;
-- host-provided effective runtime context consumption.
+- host-provided effective runtime context consumption;
+- live runner entrypoints wired to the real internal engine boundary instead of
+  the stub path.
 
 ### Still missing or incomplete
 
-- real engine-backed execution in live runtime paths;
 - richer runtime restart and recovery behavior;
 - broader multi-node live-flow coverage;
 - more explicit upward surfacing of runtime events.
@@ -220,21 +223,25 @@ not modeling.
 
 - first-party internal engine boundary in `packages/agent-engine`;
 - provider-agnostic turn contracts;
-- stub engine used to keep the runner contract stable while runtime and
-  transport matured.
+- a first real `anthropic` adapter using the official Anthropic TypeScript SDK
+  behind the stable internal engine boundary;
+- resolved model-auth delivery consumed at runtime instead of assuming ambient
+  process configuration;
+- one-turn provider-backed execution with normalized usage and stop-reason
+  mapping;
+- typed provider-error normalization and isolated engine tests that do not
+  require live model calls.
 
 ### Still missing or incomplete
 
-- a real provider adapter, with `anthropic` the intended first canonical
-  adapter;
 - multi-turn execution;
 - tool loop execution;
-- normalized real usage and stop-reason reporting.
+- richer provider metadata and broader error surfacing through the runner.
 
 ### Assessment
 
-This is the second major remaining capability gap after remote git
-collaboration.
+This boundary is now real. The remaining work is depth and widening, not first
+delivery.
 
 ### 7. Studio
 
@@ -318,14 +325,14 @@ surface:
 
 The current best delivery order is:
 
-1. complete broader downstream handoff semantics on top of the now-resolved
-   git principal secret-delivery bindings and host-owned provisioning model;
-2. replace the stub engine with the first real model-backed `agent-engine`
-   adapter;
-3. complete host event streaming and the remaining core host resource surfaces;
-4. deepen Studio into a real operator surface on top of those host capabilities;
-5. complete CLI parity for the core host workflows;
-6. harden end-to-end deployment, restart, and integration coverage.
+1. deepen the internal `agent-engine` into bounded multi-turn and tool-loop
+   execution on top of the now-real provider-backed path;
+2. complete host event streaming and the remaining core host resource surfaces;
+3. deepen Studio into a real operator surface on top of those host capabilities;
+4. complete CLI parity for the core host workflows;
+5. harden end-to-end deployment, restart, and integration coverage;
+6. widen git collaboration only where later delivery needs justify going beyond
+   the current locator-specific retrieval and primary-target provisioning model.
 
 This ordering preserves the best current properties of the repository:
 
@@ -336,10 +343,10 @@ This ordering preserves the best current properties of the repository:
   premature distraction.
 
 The git secret-delivery, repository-target-resolution, publication-state,
-preexisting-repository publication, locator-specific retrieval, and host-owned
-`gitea_api` provisioning slices are now complete for the current local
-operator profile, so the next best capability move is the first real internal
-`agent-engine`.
+preexisting-repository publication, locator-specific retrieval, host-owned
+`gitea_api` provisioning, and first real provider-backed engine slices are now
+complete for the current local operator profile, so the next best capability
+move is engine deepening rather than another foundational rewrite.
 
 ## What should not happen next
 

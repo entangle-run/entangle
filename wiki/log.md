@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added the first real provider-backed internal agent-engine slice
+
+Closed the live stub-engine gap by extending the effective runtime context with
+host-resolved model auth delivery, gating runtime realizability on actual model
+credential availability, and implementing the first real Anthropic-backed
+internal engine adapter behind the stable `agent-engine` boundary. Live runner
+entrypoints now use the real engine path by default, while tests keep explicit
+engine injection for determinism. Tightened the model-endpoint contract in the
+same slice so auth mode is explicit and the host-owned Anthropic default uses
+header-secret semantics instead of an unsafe bearer-token default. The next
+best capability move is to deepen the engine into bounded multi-turn and
+tool-loop execution rather than revisiting the provider boundary again.
+
 ## [2026-04-23] implementation | Widened git handoff retrieval to locator-specific repository targets
 
 Extended the git-collaboration model beyond exact primary-repository retrieval.

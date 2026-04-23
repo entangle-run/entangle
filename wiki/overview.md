@@ -70,6 +70,9 @@ The repository now also contains the first real implementation baseline:
   through host routes, the shared host client, and the CLI, and now resolved
   into effective runtime context instead of remaining only in the written
   specification;
+- host-resolved model-secret delivery in the effective runtime context, so live
+  node execution now depends on actual credential availability rather than only
+  on model endpoint selection;
 - resolved git principal runtime bindings that now include secret-availability
   status and mounted-file delivery metadata for the current local profile;
 - deterministic primary git repository-target resolution in effective runtime
@@ -91,6 +94,11 @@ The repository now also contains the first real implementation baseline:
   demo graph;
 - a runner bootstrap that now consumes injected runtime context, package
   prompts, runtime config, and seeded memory instead of a hardcoded request;
+- a first real provider-backed `agent-engine` slice with an internal Anthropic
+  adapter, official SDK wiring behind the stable engine boundary, normalized
+  one-turn execution, explicit model auth-mode contracts with the correct
+  Anthropic local default, and live runner entrypoints no longer bound to the
+  stub path;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -201,8 +209,8 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- replace the stub engine path with the first real model-backed internal
-  `agent-engine` adapter;
+- deepen the now-real internal `agent-engine` into bounded multi-turn and
+  tool-loop execution;
 - complete the host event stream and remaining core host resource surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

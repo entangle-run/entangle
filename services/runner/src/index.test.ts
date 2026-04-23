@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import path from "node:path";
+import type { AgentEngine } from "@entangle/agent-engine";
 import {
   buildAgentEngineTurnRequest,
   loadRuntimeContext
@@ -19,6 +20,22 @@ afterEach(async () => {
 });
 
 describe("runner runtime context", () => {
+  const stubEngine: AgentEngine = {
+    executeTurn(request) {
+      return Promise.resolve({
+        assistantMessages: [
+          `Stub execution for node '${request.nodeId}' through the configured runner path.`
+        ],
+        stopReason: "completed",
+        toolRequests: [],
+        usage: {
+          inputTokens: 0,
+          outputTokens: 0
+        }
+      });
+    }
+  };
+
   it("loads runtime context and builds the first engine turn request from package files", async () => {
     const fixture = await createRuntimeFixture();
 
@@ -43,7 +60,10 @@ describe("runner runtime context", () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
 
-    const result = await runRunnerOnce(fixture.contextPath);
+    const result = await runRunnerOnce({
+      runtimeContextPath: fixture.contextPath,
+      engine: stubEngine
+    });
 
     expect(result.graphId).toBe("graph-alpha");
     expect(result.nodeId).toBe("worker-it");
@@ -61,6 +81,7 @@ describe("runner runtime context", () => {
 
     const result = await runRunnerServiceUntilSignal({
       abortSignal: abortController.signal,
+      engine: stubEngine,
       runtimeContextPath: fixture.contextPath,
       transport: new InMemoryRunnerTransport()
     });

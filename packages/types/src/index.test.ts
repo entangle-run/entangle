@@ -10,6 +10,8 @@ import {
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
+  modelEndpointProfileSchema,
+  modelRuntimeContextSchema,
   resolvedSecretBindingSchema,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
@@ -573,6 +575,69 @@ describe("resolved secret bindings", () => {
         delivery: {
           mode: "mounted_file",
           filePath: "/entangle-secrets/refs/git/worker-it/ssh"
+        }
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("model runtime context contracts", () => {
+  it("requires explicit authMode on model endpoint profiles", () => {
+    expect(
+      modelEndpointProfileSchema.safeParse({
+        id: "shared-model",
+        displayName: "Shared Model",
+        adapterKind: "anthropic",
+        baseUrl: "https://api.anthropic.com",
+        secretRef: "secret://shared-model",
+        defaultModel: "claude-opus-4-7"
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts a model profile paired with the matching resolved auth binding", () => {
+    const result = modelRuntimeContextSchema.parse({
+      modelEndpointProfile: {
+        id: "shared-model",
+        displayName: "Shared Model",
+        adapterKind: "anthropic",
+        baseUrl: "https://api.anthropic.com",
+        authMode: "header_secret",
+        secretRef: "secret://shared-model",
+        defaultModel: "claude-opus-4-7"
+      },
+      auth: {
+        secretRef: "secret://shared-model",
+        status: "available",
+        delivery: {
+          mode: "mounted_file",
+          filePath: "/entangle-secrets/refs/shared-model"
+        }
+      }
+    });
+
+    expect(result.auth?.status).toBe("available");
+  });
+
+  it("rejects mismatched model profile and auth binding secret refs", () => {
+    expect(
+      modelRuntimeContextSchema.safeParse({
+        modelEndpointProfile: {
+          id: "shared-model",
+          displayName: "Shared Model",
+          adapterKind: "anthropic",
+          baseUrl: "https://api.anthropic.com",
+          authMode: "header_secret",
+          secretRef: "secret://shared-model",
+          defaultModel: "claude-opus-4-7"
+        },
+        auth: {
+          secretRef: "secret://different-model",
+          status: "available",
+          delivery: {
+            mode: "mounted_file",
+            filePath: "/entangle-secrets/refs/different-model"
+          }
         }
       }).success
     ).toBe(false);

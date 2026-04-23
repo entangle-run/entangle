@@ -238,6 +238,18 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
   const modelSecretRef = process.env.ENTANGLE_DEFAULT_MODEL_SECRET_REF?.trim();
   const modelDefaultModel =
     process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL?.trim();
+  const modelAdapterKind =
+    process.env.ENTANGLE_DEFAULT_MODEL_ADAPTER_KIND === "openai_compatible"
+      ? "openai_compatible"
+      : "anthropic";
+  const modelAuthMode =
+    process.env.ENTANGLE_DEFAULT_MODEL_AUTH_MODE === "api_key_bearer"
+      ? "api_key_bearer"
+      : process.env.ENTANGLE_DEFAULT_MODEL_AUTH_MODE === "header_secret"
+        ? "header_secret"
+        : modelAdapterKind === "anthropic"
+          ? "header_secret"
+          : "api_key_bearer";
 
   const modelEndpoints =
     modelEndpointId && modelBaseUrl && modelSecretRef
@@ -247,16 +259,9 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
             displayName:
               process.env.ENTANGLE_DEFAULT_MODEL_DISPLAY_NAME ??
               "Shared Model Endpoint",
-            adapterKind:
-              process.env.ENTANGLE_DEFAULT_MODEL_ADAPTER_KIND ===
-              "openai_compatible"
-                ? "openai_compatible"
-                : "anthropic",
+            adapterKind: modelAdapterKind,
             baseUrl: modelBaseUrl,
-            authMode:
-              process.env.ENTANGLE_DEFAULT_MODEL_AUTH_MODE === "header_secret"
-                ? "header_secret"
-                : "api_key_bearer",
+            authMode: modelAuthMode,
             secretRef: modelSecretRef,
             defaultModel: modelDefaultModel || undefined
           }
@@ -1452,6 +1457,7 @@ export async function validateGraphCandidate(
 function buildRuntimeIntentReasonForUnavailableContext(input: {
   gitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
   hasModelEndpoint: boolean;
+  hasModelEndpointAuth: boolean;
   node: NodeBinding;
   packageManifest: AgentPackageManifest | undefined;
   packageSource: PackageSourceRecord | undefined;
@@ -1475,6 +1481,13 @@ function buildRuntimeIntentReasonForUnavailableContext(input: {
 
   if (!input.hasModelEndpoint) {
     return `Node '${input.node.nodeId}' cannot start because it has no effective model endpoint binding.`;
+  }
+
+  if (!input.hasModelEndpointAuth) {
+    return (
+      `Node '${input.node.nodeId}' cannot start because its effective model endpoint ` +
+      `credential is unavailable.`
+    );
   }
 
   if (input.gitRepositoryProvisioning?.state === "failed") {
@@ -1535,6 +1548,9 @@ async function buildRuntimeResolution(input: {
     graph,
     catalog
   );
+  const resolvedModelAuthBinding = resolvedModelEndpointProfile
+    ? await resolveSecretBinding(resolvedModelEndpointProfile.secretRef)
+    : undefined;
   const sourcePackageRoot = packageSource
     ? packageSourcePackageRoot(packageSource)
     : undefined;
@@ -1587,7 +1603,8 @@ async function buildRuntimeResolution(input: {
     Boolean(sourcePackageRoot) &&
     packageSourcePathExists &&
     Boolean(packageManifest) &&
-    Boolean(resolvedModelEndpointProfile);
+    Boolean(resolvedModelEndpointProfile) &&
+    resolvedModelAuthBinding?.status === "available";
   const gitRepositoryProvisioningRecordId = resolvedPrimaryGitRepositoryTarget
     ? buildGitRepositoryTargetRecordId(resolvedPrimaryGitRepositoryTarget)
     : undefined;
@@ -1735,6 +1752,7 @@ async function buildRuntimeResolution(input: {
         }
       }),
       modelContext: {
+        auth: resolvedModelAuthBinding,
         modelEndpointProfile: resolvedModelEndpointProfile
       },
       packageManifest,
@@ -1797,6 +1815,8 @@ async function buildRuntimeResolution(input: {
         : buildRuntimeIntentReasonForUnavailableContext({
             gitRepositoryProvisioning,
             hasModelEndpoint: Boolean(resolvedModelEndpointProfile),
+            hasModelEndpointAuth:
+              resolvedModelAuthBinding?.status === "available",
             node,
             packageManifest,
             packageSource,

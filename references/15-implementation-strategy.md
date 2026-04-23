@@ -141,23 +141,30 @@ Acceptance for the phase:
   on hidden fallback repository assumptions;
 - publication and retrieval failures are explicit, typed, and persisted.
 
-## Phase 2: Real agent-engine execution
+## Phase 2: Agent-engine deepening
 
-Replace the current stub execution path with a real first-party engine slice.
+The first provider-backed engine slice is now complete.
 
-Implement in small slices:
+Completed in the current repository state:
 
-1. the first real provider adapter, with `anthropic` as the canonical first
-   adapter;
+1. a first real `anthropic` adapter behind the internal engine boundary;
 2. provider-agnostic turn execution through the internal engine package;
-3. bounded multi-turn execution and tool-loop support;
-4. normalized real usage, stop-reason, and error reporting.
+3. host-resolved model credential delivery into the effective runtime context;
+4. live runner entrypoints wired to the real engine path instead of the stub.
+
+Remaining work in this phase:
+
+1. bounded multi-turn execution and internal tool-loop support;
+2. richer normalized provider metadata and error reporting;
+3. wider memory/context assembly discipline as runtime depth grows.
 
 Acceptance for the phase:
 
 - live runner execution no longer depends on a stub engine;
 - provider-native types do not leak into runner contracts;
-- the engine path is test-covered and reusable across runner scenarios.
+- the engine path is test-covered and reusable across runner scenarios;
+- multi-turn and tool-loop behavior are added without collapsing provider logic
+  into the runner.
 
 ## Phase 3: Host control-plane completion
 

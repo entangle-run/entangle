@@ -71,6 +71,7 @@ This directory is the canonical design corpus for Entangle.
 65. [64-primary-target-git-retrieval-and-handoff-validation-slice.md](64-primary-target-git-retrieval-and-handoff-validation-slice.md)
 66. [65-host-owned-gitea-primary-target-provisioning-slice.md](65-host-owned-gitea-primary-target-provisioning-slice.md)
 67. [66-locator-specific-git-handoff-widening-slice.md](66-locator-specific-git-handoff-widening-slice.md)
+68. [67-first-real-anthropic-agent-engine-slice.md](67-first-real-anthropic-agent-engine-slice.md)
 
 ## Role of this corpus
 

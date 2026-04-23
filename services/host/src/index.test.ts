@@ -323,7 +323,7 @@ function buildProvisioningCatalog(input: {
         displayName: "Shared Model",
         adapterKind: "anthropic",
         baseUrl: "https://api.anthropic.com",
-        authMode: "api_key_bearer",
+        authMode: "header_secret",
         secretRef: "secret://shared-model",
         defaultModel: "claude-opus"
       }
@@ -336,12 +336,16 @@ function buildProvisioningCatalog(input: {
   };
 }
 
-async function createTestServer(options: { includeModelEndpoint?: boolean } = {}) {
+async function createTestServer(
+  options: { includeModelEndpoint?: boolean; includeModelSecret?: boolean } = {}
+) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-host-"));
   createdDirectories.push(tempRoot);
   process.env.ENTANGLE_HOME = tempRoot;
   process.env.ENTANGLE_SECRETS_HOME = path.join(tempRoot, ".entangle-secrets");
   process.env.ENTANGLE_RUNTIME_BACKEND = "memory";
+  const includeModelEndpoint = options.includeModelEndpoint ?? false;
+  const includeModelSecret = options.includeModelSecret ?? includeModelEndpoint;
   process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID = options.includeModelEndpoint
     ? "shared-model"
     : "";
@@ -354,6 +358,10 @@ async function createTestServer(options: { includeModelEndpoint?: boolean } = {}
   process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL = options.includeModelEndpoint
     ? "claude-opus"
     : "";
+
+  if (includeModelSecret) {
+    await writeSecretRefFile("secret://shared-model", "test-model-secret\n");
+  }
 
   vi.resetModules();
   const [hostModule, stateModule] = await Promise.all([
@@ -646,6 +654,19 @@ describe("buildHostServer", () => {
           secretDelivery: {
             envVar: "ENTANGLE_NOSTR_SECRET_KEY",
             mode: "env_var"
+          }
+        },
+        modelContext: {
+          auth: {
+            secretRef: "secret://shared-model",
+            status: "available",
+            delivery: {
+              mode: "mounted_file"
+            }
+          },
+          modelEndpointProfile: {
+            id: "shared-model",
+            authMode: "header_secret"
           }
         },
         packageManifest: {
@@ -1206,7 +1227,7 @@ describe("buildHostServer", () => {
               displayName: "Shared Model",
               adapterKind: "anthropic",
               baseUrl: "https://api.anthropic.com",
-              authMode: "api_key_bearer",
+              authMode: "header_secret",
               secretRef: "secret://shared-model",
               defaultModel: "claude-opus"
             }
@@ -1495,6 +1516,66 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(response.json())).toMatchObject({
         code: "conflict"
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("treats a missing model secret as an unavailable runtime context", async () => {
+    const server = await createTestServer({
+      includeModelEndpoint: true,
+      includeModelSecret: false
+    });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource.packageSourceId;
+
+      await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSourceId
+            }
+          ],
+          edges: []
+        },
+        url: "/v1/graph"
+      });
+
+      const response = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/context"
+      });
+
+      expect(response.statusCode).toBe(409);
+      const parsedError = hostErrorResponseSchema.parse(response.json());
+      expect(parsedError.code).toBe("conflict");
+      expect(parsedError.message).toContain(
+        "effective model endpoint credential is unavailable"
+      );
     } finally {
       await server.close();
     }

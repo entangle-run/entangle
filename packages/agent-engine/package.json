@@ -17,9 +17,11 @@
     "check": "pnpm run typecheck",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint src --max-warnings 0",
+    "test": "vitest run --config ../../vitest.config.ts --environment node src/*.test.ts",
     "typecheck": "tsc -b tsconfig.json --pretty false"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "@entangle/types": "workspace:*"
   }
 }

@@ -25,12 +25,12 @@ export default tseslint.config(
       parserOptions: {
         projectService: {
           allowDefaultProject: [
-            "apps/*/src/*.test.ts",
-            "apps/*/src/*.test.tsx",
-            "packages/*/src/*.test.ts",
-            "packages/*/src/*.test.tsx",
-            "services/*/src/*.test.ts",
-            "services/*/src/*.test.tsx",
+            "packages/host-client/src/*.test.ts",
+            "packages/package-scaffold/src/*.test.ts",
+            "packages/types/src/*.test.ts",
+            "packages/validator/src/*.test.ts",
+            "services/host/src/*.test.ts",
+            "services/runner/src/*.test.ts",
             "services/runner/src/test-fixtures.ts"
           ],
           defaultProject: "tsconfig.base.json"

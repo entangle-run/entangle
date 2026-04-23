@@ -64,9 +64,43 @@ export const artifactRuntimeContextSchema = z.object({
   primaryGitServiceRef: identifierSchema.optional()
 });
 
-export const modelRuntimeContextSchema = z.object({
-  modelEndpointProfile: modelEndpointProfileSchema.optional()
-});
+export const modelRuntimeContextSchema = z
+  .object({
+    auth: resolvedSecretBindingSchema.optional(),
+    modelEndpointProfile: modelEndpointProfileSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (value.modelEndpointProfile && !value.auth) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Model runtime context must include a resolved auth binding when a model endpoint profile is present.",
+        path: ["auth"]
+      });
+    }
+
+    if (!value.modelEndpointProfile && value.auth) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Model runtime auth binding cannot exist without a model endpoint profile.",
+        path: ["modelEndpointProfile"]
+      });
+    }
+
+    if (
+      value.modelEndpointProfile &&
+      value.auth &&
+      value.modelEndpointProfile.secretRef !== value.auth.secretRef
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Model runtime auth binding must reference the same secret as the model endpoint profile.",
+        path: ["auth", "secretRef"]
+      });
+    }
+  });
 
 export const policyRuntimeContextSchema = z.object({
   autonomy: nodeAutonomyProfileSchema,

@@ -84,6 +84,12 @@ This repository currently contains:
   reconciliation snapshots under observed host state;
 - host-owned stable per-node Nostr runtime identities with non-secret identity
   context injected into runners and a separate local secret storage profile;
+- host-resolved model credential delivery in the effective runtime context,
+  so live runner execution now starts only when the bound model secret is
+  actually available instead of assuming endpoint presence is sufficient, with
+  explicit per-profile auth-mode selection rather than an unsafe implicit
+  default and with Anthropic local defaults now correctly resolving to
+  header-secret authentication;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - runtime-context artifact metadata that now carries resolved git principal
@@ -136,10 +142,15 @@ This repository currently contains:
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
+- a first real provider-backed `agent-engine` slice with an internal
+  Anthropic adapter behind the stable engine boundary, typed error
+  normalization, live runner entrypoints wired to the real engine path, and
+  tests that exercise request assembly, auth mapping, and provider-failure
+  semantics without relying on networked model calls.
 
 The highest-value remaining gaps are:
 
-- a real model-backed internal `agent-engine`;
+- multi-turn and tool-loop depth inside the internal `agent-engine`;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - host event streaming and fuller host resource surfaces;

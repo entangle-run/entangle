@@ -99,9 +99,7 @@ export const modelEndpointProfileSchema = z.object({
   displayName: nonEmptyStringSchema,
   adapterKind: z.enum(["anthropic", "openai_compatible"]),
   baseUrl: httpUrlSchema,
-  authMode: z.enum(["api_key_bearer", "header_secret"]).default(
-    "api_key_bearer"
-  ),
+  authMode: z.enum(["api_key_bearer", "header_secret"]),
   secretRef: secretRefSchema,
   defaultModel: nonEmptyStringSchema.optional()
 });

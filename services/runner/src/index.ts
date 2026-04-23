@@ -1,5 +1,8 @@
 import { pathToFileURL } from "node:url";
-import { createStubAgentEngine } from "@entangle/agent-engine";
+import {
+  type AgentEngine,
+  createAgentEngineForModelContext
+} from "@entangle/agent-engine";
 import type {
   AgentEngineTurnResult,
   EffectiveRuntimeContext
@@ -93,6 +96,7 @@ function createProcessAbortController(): AbortController {
 export async function createConfiguredRunnerService(
   runtimeContextPath?: string,
   input: {
+    engine?: AgentEngine;
     transport?: RunnerTransport;
   } = {}
 ): Promise<{
@@ -112,6 +116,10 @@ export async function createConfiguredRunnerService(
     });
   const service = new RunnerService({
     context: runtimeContext,
+    engine:
+      input.engine ?? createAgentEngineForModelContext({
+        modelContext: runtimeContext.modelContext
+      }),
     transport
   });
 
@@ -123,7 +131,10 @@ export async function createConfiguredRunnerService(
   };
 }
 
-export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
+export async function runRunnerOnce(input: {
+  engine?: AgentEngine;
+  runtimeContextPath?: string;
+} = {}): Promise<{
   contextPath: string;
   graphId: string;
   nodeId: string;
@@ -131,10 +142,14 @@ export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
   publicKey: string;
   result: AgentEngineTurnResult;
 }> {
-  const contextPath = resolveRuntimeContextPath(runtimeContextPath);
+  const contextPath = resolveRuntimeContextPath(input.runtimeContextPath);
   const runtimeContext = await loadRuntimeContext(contextPath);
   const turnRequest = await buildAgentEngineTurnRequest(runtimeContext);
-  const engine = createStubAgentEngine();
+  const engine =
+    input.engine ??
+    createAgentEngineForModelContext({
+      modelContext: runtimeContext.modelContext
+    });
   const { publicKey } = resolveRunnerIdentity(runtimeContext);
 
   const result = await engine.executeTurn(turnRequest);
@@ -151,6 +166,7 @@ export async function runRunnerOnce(runtimeContextPath?: string): Promise<{
 
 export async function runRunnerServiceUntilSignal(input: {
   abortSignal?: AbortSignal;
+  engine?: AgentEngine;
   runtimeContextPath?: string;
   transport?: RunnerTransport;
 } = {}): Promise<{
@@ -162,7 +178,10 @@ export async function runRunnerServiceUntilSignal(input: {
 }> {
   const configured = await createConfiguredRunnerService(
     input.runtimeContextPath,
-    input.transport ? { transport: input.transport } : {}
+    {
+      ...(input.engine ? { engine: input.engine } : {}),
+      ...(input.transport ? { transport: input.transport } : {})
+    }
   );
   const startResult = await configured.service.start();
 
