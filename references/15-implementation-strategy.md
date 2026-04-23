@@ -125,13 +125,16 @@ remaining work in this phase can land on a clean lifecycle model.
 
 The remaining work in this phase is:
 
-- remote publication from the runner artifact backend;
-- remote retrieval and handoff validation for downstream nodes.
+- remote retrieval and handoff validation for downstream nodes;
+- repository provisioning flows for service profiles that declare
+  `gitea_api` rather than `preexisting`.
 
 Acceptance for the phase:
 
 - a runner can publish a git-backed artifact to a named remote git service;
 - a second node can retrieve and consume that artifact by reference;
+- repository-target provisioning policy is enforced for both preexisting and
+  service-provisioned repository modes;
 - publication and retrieval failures are explicit, typed, and persisted.
 
 ## Phase 2: Real agent-engine execution

@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added first remote git publication for preexisting repositories
+
+Extended the runner git artifact backend from local-only materialization into a
+first real remote publication path. The runner now configures a deterministic
+remote from the resolved git service target, pushes turn artifacts to
+preexisting repositories, and persists explicit publication success or failure
+metadata without corrupting local artifact truth. Added runner coverage for
+both successful publication to a controlled bare repository and graceful
+failure when the configured remote is unavailable, then reran `pnpm verify`.
+
 ## [2026-04-22] quality | Switched package-local tests to shared source-resolved Vitest config
 
 Hardened the local developer workflow so package-level Vitest runs no longer

@@ -1,6 +1,7 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import {
   entangleA2AMessageSchema,
   type EffectiveRuntimeContext,
@@ -27,14 +28,45 @@ async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-export async function createRuntimeFixture(): Promise<{
+async function runGitCommand(cwd: string, args: string[]): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("git", args, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stderr = "";
+
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(
+        new Error(
+          `Git command failed (${args.join(" ")}): ${stderr.trim() || "unknown error"}`
+        )
+      );
+    });
+  });
+}
+
+export async function createRuntimeFixture(input: {
+  remotePublication?: "bare_repo" | "missing_repo" | "none";
+} = {}): Promise<{
   context: EffectiveRuntimeContext;
   contextPath: string;
+  remoteRepositoryPath?: string;
 }> {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-runner-"));
   createdDirectories.push(tempRoot);
 
   const packageRoot = path.join(tempRoot, "package-source");
+  const remoteRepositoryPath = path.join(tempRoot, "remote.git");
   const secretsRoot = path.join(tempRoot, "secrets");
   const workspaceRoot = path.join(tempRoot, "workspace");
   const injectedRoot = path.join(workspaceRoot, "injected");
@@ -85,6 +117,23 @@ export async function createRuntimeFixture(): Promise<{
     )
   ]);
 
+  if (input.remotePublication === "bare_repo") {
+    await runGitCommand(tempRoot, ["init", "--bare", remoteRepositoryPath]);
+  }
+
+  const primaryGitRepositoryTarget =
+    input.remotePublication === "bare_repo" ||
+    input.remotePublication === "missing_repo"
+      ? {
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          provisioningMode: "preexisting" as const,
+          remoteUrl: remoteRepositoryPath,
+          repositoryName: "graph-alpha",
+          transportKind: "ssh" as const
+        }
+      : undefined;
+
   const context: EffectiveRuntimeContext = {
     artifactContext: {
       backends: ["git"],
@@ -132,14 +181,11 @@ export async function createRuntimeFixture(): Promise<{
         }
       ],
       primaryGitPrincipalRef: "worker-it-git",
-      primaryGitRepositoryTarget: {
-        gitServiceRef: "local-gitea",
-        namespace: "team-alpha",
-        provisioningMode: "preexisting",
-        remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
-        repositoryName: "graph-alpha",
-        transportKind: "ssh"
-      },
+      ...(primaryGitRepositoryTarget
+        ? {
+            primaryGitRepositoryTarget
+          }
+        : {}),
       primaryGitServiceRef: "local-gitea"
     },
     binding: {
@@ -259,7 +305,12 @@ export async function createRuntimeFixture(): Promise<{
 
   return {
     context,
-    contextPath
+    contextPath,
+    remoteRepositoryPath:
+      input.remotePublication === "bare_repo" ||
+      input.remotePublication === "missing_repo"
+        ? remoteRepositoryPath
+        : undefined
   };
 }
 

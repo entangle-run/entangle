@@ -45,7 +45,8 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- remote git publication and retrieval between nodes;
+- remote git retrieval and downstream handoff between nodes;
+- repository provisioning for git service profiles that declare `gitea_api`;
 - a real model-backed internal `agent-engine`;
 - host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
@@ -96,8 +97,8 @@ The most important stable conclusions remain:
 - event-stream DTOs for the future host event surface;
 - fuller host API DTO coverage for node/edge resource mutation and revision
   history surfaces not yet implemented;
-- remote git publication and retrieval record contracts beyond the current
-  local `materialized` artifact posture.
+- remote git retrieval, handoff, and service-provisioning record contracts
+  beyond the current publication-state model.
 
 ### Assessment
 
@@ -170,13 +171,15 @@ artifact-collaboration depth, not the runner boundary itself.
   profiles, namespace hints, and graph identity;
 - explicit artifact publication-state metadata separating local materialization
   from remote publication outcome;
+- remote publication to deterministic preexisting repositories, with persisted
+  success and failure semantics on artifact records;
 - host inspection surface for runtime artifacts.
 
 ### Still missing or incomplete
 
-- remote push semantics;
 - remote retrieval semantics;
 - cross-node handoff validation against named git services;
+- repository provisioning for targets that declare `gitea_api`;
 - richer artifact kinds beyond the first report-file slice.
 
 ### Assessment
@@ -198,9 +201,8 @@ artifact model is strong enough to extend without redesign.
 
 ### Still missing or incomplete
 
-- tighter integration of resolved git principal bindings with remote git
-  publication
-  flows.
+- broader secret-delivery backends and lifecycle handling beyond the current
+  mounted-file local profile.
 
 ### Assessment
 
@@ -311,8 +313,9 @@ surface:
 
 The current best delivery order is:
 
-1. complete remote git publication and retrieval on top of the now-resolved
-   git principal secret-delivery bindings;
+1. complete remote git retrieval, downstream handoff validation, and
+   repository provisioning on top of the now-resolved git principal
+   secret-delivery bindings;
 2. replace the stub engine with the first real model-backed `agent-engine`
    adapter;
 3. complete host event streaming and the remaining core host resource surfaces;
@@ -328,9 +331,10 @@ This ordering preserves the best current properties of the repository:
 - it keeps deployment hardening as a real finalization phase rather than a
   premature distraction.
 
-The git secret-delivery, repository-target-resolution, and artifact
-publication-state slices are now complete, so the next best capability move
-inside that first phase is remote publication semantics.
+The git secret-delivery, repository-target-resolution, publication-state, and
+preexisting-repository publication slices are now complete, so the next best
+capability move inside that first phase is downstream retrieval and handoff
+validation.
 
 ## What should not happen next
 

@@ -143,13 +143,20 @@ function resolvePrimaryGitAttribution(context: EffectiveRuntimeContext): {
 
 async function runGitCommand(
   repoPath: string,
-  args: string[]
+  args: string[],
+  options: {
+    env?: NodeJS.ProcessEnv | undefined;
+  } = {}
 ): Promise<string> {
   await mkdir(repoPath, { recursive: true });
 
   return new Promise((resolve, reject) => {
     const child = spawn("git", args, {
       cwd: repoPath,
+      env: {
+        ...process.env,
+        ...options.env
+      },
       stdio: ["ignore", "pipe", "pipe"]
     });
     let stdout = "";
@@ -208,6 +215,187 @@ async function ensureGitWorkspace(input: {
   ]);
 }
 
+function buildGitRemoteName(gitServiceRef: string): string {
+  return `entangle-${sanitizeBranchComponent(gitServiceRef)}`;
+}
+
+function buildGitCommandEnvForPublication(input: {
+  context: EffectiveRuntimeContext;
+  remoteUrl: string;
+}): NodeJS.ProcessEnv | undefined {
+  // Bounded local/test profiles may target a directly mounted bare repository path.
+  // Those remotes do not require transport-level credentials.
+  if (!input.remoteUrl.includes("://")) {
+    return undefined;
+  }
+
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  if (!primaryTarget) {
+    return undefined;
+  }
+
+  const primaryBinding =
+    input.context.artifactContext.primaryGitPrincipalRef
+      ? input.context.artifactContext.gitPrincipalBindings.find(
+          (binding) =>
+            binding.principal.principalId ===
+            input.context.artifactContext.primaryGitPrincipalRef
+        )
+      : undefined;
+
+  if (!primaryBinding) {
+    throw new Error(
+      "Remote publication requires a primary git principal binding, but none was resolved."
+    );
+  }
+
+  if (primaryTarget.transportKind !== "ssh") {
+    throw new Error(
+      `Remote publication for transport kind '${primaryTarget.transportKind}' is not implemented yet.`
+    );
+  }
+
+  if (primaryBinding.principal.transportAuthMode !== "ssh_key") {
+    throw new Error(
+      `Remote publication requires an SSH-key git principal, but '${primaryBinding.principal.principalId}' uses '${primaryBinding.principal.transportAuthMode}'.`
+    );
+  }
+
+  if (
+    primaryBinding.transport.status !== "available" ||
+    primaryBinding.transport.delivery?.mode !== "mounted_file"
+  ) {
+    throw new Error(
+      `Remote publication requires an available mounted SSH key for git principal '${primaryBinding.principal.principalId}'.`
+    );
+  }
+
+  return {
+    GIT_SSH_COMMAND: [
+      "ssh",
+      "-F",
+      "/dev/null",
+      "-i",
+      primaryBinding.transport.delivery.filePath,
+      "-o",
+      "IdentitiesOnly=yes",
+      "-o",
+      "StrictHostKeyChecking=accept-new"
+    ].join(" ")
+  };
+}
+
+async function ensureGitRemote(input: {
+  env?: NodeJS.ProcessEnv | undefined;
+  remoteName: string;
+  remoteUrl: string;
+  repoPath: string;
+}): Promise<void> {
+  let currentRemoteUrl: string | undefined;
+
+  try {
+    currentRemoteUrl = await runGitCommand(
+      input.repoPath,
+      ["remote", "get-url", input.remoteName],
+      {
+        env: input.env
+      }
+    );
+  } catch {
+    currentRemoteUrl = undefined;
+  }
+
+  if (!currentRemoteUrl) {
+    await runGitCommand(
+      input.repoPath,
+      ["remote", "add", input.remoteName, input.remoteUrl],
+      {
+        env: input.env
+      }
+    );
+    return;
+  }
+
+  if (currentRemoteUrl !== input.remoteUrl) {
+    await runGitCommand(
+      input.repoPath,
+      ["remote", "set-url", input.remoteName, input.remoteUrl],
+      {
+        env: input.env
+      }
+    );
+  }
+}
+
+async function publishGitArtifactRecord(input: {
+  artifactRecord: ArtifactRecord;
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  repoPath: string;
+}): Promise<ArtifactRecord> {
+  const target = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  if (!target) {
+    return input.artifactRecord;
+  }
+
+  const remoteName = buildGitRemoteName(target.gitServiceRef);
+  const attemptTimestamp = nowIsoString();
+
+  try {
+    const gitEnv = buildGitCommandEnvForPublication({
+      context: input.context,
+      remoteUrl: target.remoteUrl
+    });
+    await ensureGitRemote({
+      env: gitEnv,
+      remoteName,
+      remoteUrl: target.remoteUrl,
+      repoPath: input.repoPath
+    });
+    await runGitCommand(
+      input.repoPath,
+      ["push", "--set-upstream", remoteName, `HEAD:refs/heads/${input.branchName}`],
+      {
+        env: gitEnv
+      }
+    );
+
+    return artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        publishedAt: attemptTimestamp,
+        remoteName,
+        remoteUrl: target.remoteUrl,
+        state: "published"
+      },
+      ref: {
+        ...input.artifactRecord.ref,
+        status: "published"
+      },
+      updatedAt: attemptTimestamp
+    });
+  } catch (error) {
+    const publicationError =
+      error instanceof Error && error.message.trim().length > 0
+        ? error.message
+        : "Unknown remote git publication failure.";
+
+    return artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        lastAttemptAt: attemptTimestamp,
+        lastError: publicationError,
+        remoteName,
+        remoteUrl: target.remoteUrl,
+        state: "failed"
+      },
+      updatedAt: attemptTimestamp
+    });
+  }
+}
+
 async function createGitReportArtifact(
   input: ArtifactMaterializationInput
 ): Promise<ArtifactRecord> {
@@ -253,8 +441,7 @@ async function createGitReportArtifact(
   ]);
   const commit = await runGitCommand(repoPath, ["rev-parse", "HEAD"]);
   const timestamp = nowIsoString();
-
-  return artifactRecordSchema.parse({
+  const artifactRecord = artifactRecordSchema.parse({
     createdAt: timestamp,
     materialization: {
       localPath: reportAbsolutePath,
@@ -285,6 +472,13 @@ async function createGitReportArtifact(
     },
     turnId: input.turnId,
     updatedAt: timestamp
+  });
+
+  return publishGitArtifactRecord({
+    artifactRecord,
+    branchName,
+    context: input.context,
+    repoPath
   });
 }
 

@@ -27,6 +27,61 @@ afterEach(async () => {
 });
 
 describe("RunnerService", () => {
+  it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(buildInboundTaskRequest());
+
+    expect(result.handled).toBe(true);
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const artifactRecords = await listArtifactRecords(statePaths);
+    expect(artifactRecords).toHaveLength(1);
+
+    const artifactRecord = artifactRecords[0];
+    if (
+      !artifactRecord ||
+      artifactRecord.ref.backend !== "git" ||
+      !fixture.remoteRepositoryPath
+    ) {
+      throw new Error("Expected a published git artifact and a bare remote path.");
+    }
+
+    expect(artifactRecord.ref.status).toBe("published");
+    expect(artifactRecord.publication?.state).toBe("published");
+    expect(artifactRecord.publication?.remoteName).toBe("entangle-local-gitea");
+    expect(artifactRecord.publication?.remoteUrl).toBe(fixture.remoteRepositoryPath);
+
+    const remoteRef = spawnSync(
+      "git",
+      [
+        "--git-dir",
+        fixture.remoteRepositoryPath,
+        "show-ref",
+        "--verify",
+        `refs/heads/${artifactRecord.ref.locator.branch}`
+      ],
+      {
+        encoding: "utf8"
+      }
+    );
+
+    expect(remoteRef.status).toBe(0);
+    expect(remoteRef.stdout.trim().split(/\s+/)[0]).toBe(
+      artifactRecord.ref.locator.commit
+    );
+  });
+
   it("processes an inbound task request and publishes a task result", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
@@ -134,6 +189,48 @@ describe("RunnerService", () => {
     expect(authorEmail.stdout.trim()).toBe("worker-it@entangle.local");
 
     await service.stop();
+  });
+
+  it("preserves the local artifact and records publication failure when the remote is unavailable", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "missing_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(buildInboundTaskRequest());
+
+    expect(result.handled).toBe(true);
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const artifactRecords = await listArtifactRecords(statePaths);
+    expect(artifactRecords).toHaveLength(1);
+
+    const artifactRecord = artifactRecords[0];
+    if (
+      !artifactRecord ||
+      artifactRecord.ref.backend !== "git" ||
+      !fixture.remoteRepositoryPath
+    ) {
+      throw new Error(
+        "Expected a git artifact and a configured-but-missing remote path."
+      );
+    }
+
+    expect(artifactRecord.ref.status).toBe("materialized");
+    expect(artifactRecord.publication?.state).toBe("failed");
+    expect(artifactRecord.publication?.remoteName).toBe("entangle-local-gitea");
+    expect(artifactRecord.publication?.remoteUrl).toBe(fixture.remoteRepositoryPath);
+    expect(artifactRecord.publication?.lastError).toContain("Git command failed");
+    expect(artifactRecord.materialization?.repoPath).toBe(
+      runtimeContext.workspace.artifactWorkspaceRoot
+    );
   });
 
   it("does not publish a follow-up when the inbound response policy does not require one", async () => {

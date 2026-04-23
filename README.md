@@ -103,8 +103,10 @@ This repository currently contains:
   resulting portable artifact reference to outbound `task.result` messages
   without leaking runtime-local filesystem paths into the protocol-facing
   locator, while now also persisting explicit publication-state metadata that
-  distinguishes local-only materialization from future remote publication
-  outcomes;
+  distinguishes local-only materialization from remote publication outcomes,
+  plus a first remote-publication path for deterministic preexisting
+  repositories that persists success or failure without corrupting local
+  artifact truth;
 - a host read surface for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
@@ -131,7 +133,8 @@ This repository currently contains:
 
 The highest-value remaining gaps are:
 
-- remote git publication and retrieval;
+- remote git retrieval, downstream handoff validation, and repository
+  provisioning beyond preexisting targets;
 - a real model-backed internal `agent-engine`;
 - host event streaming and fuller host resource surfaces;
 - deeper Studio runtime and operator workflows;
