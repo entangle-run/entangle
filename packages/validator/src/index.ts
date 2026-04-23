@@ -21,6 +21,8 @@ import {
   resolveEffectiveExternalPrincipalRefs,
   resolveEffectiveGitServiceRefs,
   resolveEffectiveModelEndpointProfileRef,
+  resolveGitPrincipalBindingForService,
+  resolveGitRepositoryTargetForArtifactLocator,
   resolveEffectivePrimaryGitServiceRef,
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfileRefs,
@@ -750,7 +752,6 @@ export function validateRuntimeArtifactRefs(input: {
   const gitServiceIds = input.context.artifactContext.gitServices.map(
     (service) => service.id
   );
-  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
 
   input.artifactRefs.forEach((artifactRef, index) => {
     if (artifactRef.backend !== "git") {
@@ -825,35 +826,41 @@ export function validateRuntimeArtifactRefs(input: {
       );
     }
 
-    if (!primaryTarget) {
-      findings.push(
-        createFinding({
-          code: "git_handoff_missing_primary_repository_target",
-          severity: "error",
-          message:
-            `Runtime context for node '${input.context.binding.node.nodeId}' has no primary git repository target, so remote git handoff cannot be resolved.`,
-          path: ["artifactContext", "primaryGitRepositoryTarget"],
-          details: { artifactId: artifactRef.artifactId }
-        })
-      );
+    if (!artifactRef.locator.gitServiceRef) {
       return;
     }
 
-    if (
-      artifactRef.locator.gitServiceRef &&
-      artifactRef.locator.gitServiceRef !== primaryTarget.gitServiceRef
-    ) {
+    const principalResolution = resolveGitPrincipalBindingForService({
+      artifactContext: input.context.artifactContext,
+      gitServiceRef: artifactRef.locator.gitServiceRef
+    });
+
+    if (principalResolution.status === "missing") {
       findings.push(
         createFinding({
-          code: "git_handoff_non_primary_service",
+          code: "git_handoff_missing_transport_principal",
           severity: "error",
           message:
-            `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the current retrieval slice only supports the runtime's primary repository target '${primaryTarget.gitServiceRef}'.`,
-          path: [...pathPrefix, "gitServiceRef"],
+            `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the receiving runtime has no git transport principal bound for that service.`,
+          path: ["artifactContext", "gitPrincipalBindings"],
           details: {
             artifactId: artifactRef.artifactId,
-            expectedGitServiceRef: primaryTarget.gitServiceRef,
-            actualGitServiceRef: artifactRef.locator.gitServiceRef
+            gitServiceRef: artifactRef.locator.gitServiceRef
+          }
+        })
+      );
+    } else if (principalResolution.status === "ambiguous") {
+      findings.push(
+        createFinding({
+          code: "git_handoff_ambiguous_transport_principal",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the receiving runtime resolves multiple candidate git transport principals for that service.`,
+          path: ["artifactContext", "gitPrincipalBindings"],
+          details: {
+            artifactId: artifactRef.artifactId,
+            gitServiceRef: artifactRef.locator.gitServiceRef,
+            principalIds: principalResolution.candidatePrincipalIds
           }
         })
       );
@@ -861,39 +868,21 @@ export function validateRuntimeArtifactRefs(input: {
 
     if (
       artifactRef.locator.namespace &&
-      artifactRef.locator.namespace !== primaryTarget.namespace
-    ) {
-      findings.push(
-        createFinding({
-          code: "git_handoff_non_primary_namespace",
-          severity: "error",
-          message:
-            `Git artifact '${artifactRef.artifactId}' targets namespace '${artifactRef.locator.namespace}', but the current retrieval slice only supports the runtime's primary namespace '${primaryTarget.namespace}'.`,
-          path: [...pathPrefix, "namespace"],
-          details: {
-            artifactId: artifactRef.artifactId,
-            expectedNamespace: primaryTarget.namespace,
-            actualNamespace: artifactRef.locator.namespace
-          }
-        })
-      );
-    }
-
-    if (
       artifactRef.locator.repositoryName &&
-      artifactRef.locator.repositoryName !== primaryTarget.repositoryName
+      !resolveGitRepositoryTargetForArtifactLocator({
+        artifactContext: input.context.artifactContext,
+        locator: artifactRef.locator
+      })
     ) {
       findings.push(
         createFinding({
-          code: "git_handoff_non_primary_repository",
+          code: "git_handoff_unresolvable_repository_target",
           severity: "error",
           message:
-            `Git artifact '${artifactRef.artifactId}' targets repository '${artifactRef.locator.repositoryName}', but the current retrieval slice only supports the runtime's primary repository '${primaryTarget.repositoryName}'.`,
+            `Git artifact '${artifactRef.artifactId}' could not be resolved into a concrete repository target from the receiving runtime context.`,
           path: [...pathPrefix, "repositoryName"],
           details: {
-            artifactId: artifactRef.artifactId,
-            expectedRepositoryName: primaryTarget.repositoryName,
-            actualRepositoryName: artifactRef.locator.repositoryName
+            artifactId: artifactRef.artifactId
           }
         })
       );

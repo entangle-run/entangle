@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Widened git handoff retrieval to locator-specific repository targets
+
+Extended the git-collaboration model beyond exact primary-repository retrieval.
+The runtime can now resolve locator-specific repository targets from the
+effective runtime context, select transport principals deterministically per
+git service, retrieve sibling repositories on the primary service, and persist
+repository-partitioned retrieval state instead of assuming one retrieval cache
+per artifact id. Updated the shared type layer, validator semantics, runner
+artifact backend, and integration tests, and re-baselined the implementation
+audit so the next main capability target can move to the real internal engine.
+
 ## [2026-04-23] implementation | Added host-owned Gitea primary-target provisioning
 
 Closed the first concrete `gitea_api` provisioning path for git collaboration.

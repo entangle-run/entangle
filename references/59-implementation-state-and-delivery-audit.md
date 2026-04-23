@@ -45,7 +45,6 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- retrieval and handoff beyond the current primary-target-only git policy;
 - a real model-backed internal `agent-engine`;
 - host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
@@ -173,8 +172,10 @@ artifact-collaboration depth, not the runner boundary itself.
 - remote publication to deterministic preexisting repositories, with persisted
   success and failure semantics on artifact records;
 - downstream retrieval of published git artifacts from the receiving runtime's
-  primary repository target, with persisted retrieval-state records and local
-  engine artifact inputs;
+  effective runtime context, with persisted retrieval-state records,
+  locator-specific repository-target resolution, deterministic service-scoped
+  transport-principal selection, repository-partitioned retrieval caches, and
+  local engine artifact inputs;
 - host-owned provisioning of primary repository targets whose selected git
   service declares `gitea_api`, with persisted provisioning-state records and
   runtime realizability gated on provisioning success;
@@ -182,7 +183,8 @@ artifact-collaboration depth, not the runner boundary itself.
 
 ### Still missing or incomplete
 
-- cross-node handoff validation beyond the current primary-target-only policy;
+- advanced git widening beyond the current locator-specific retrieval model,
+  especially non-primary target provisioning and replicated fallback paths;
 - richer artifact kinds beyond the first report-file slice.
 
 ### Assessment
@@ -334,10 +336,10 @@ This ordering preserves the best current properties of the repository:
   premature distraction.
 
 The git secret-delivery, repository-target-resolution, publication-state,
-preexisting-repository publication, primary-target retrieval, and host-owned
-`gitea_api` provisioning slices are now complete, so the next best capability
-move inside that first phase is broader handoff widening where the design calls
-for it.
+preexisting-repository publication, locator-specific retrieval, and host-owned
+`gitea_api` provisioning slices are now complete for the current local
+operator profile, so the next best capability move is the first real internal
+`agent-engine`.
 
 ## What should not happen next
 

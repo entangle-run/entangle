@@ -11,6 +11,8 @@ import {
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
   resolvedSecretBindingSchema,
+  resolveGitPrincipalBindingForService,
+  resolveGitRepositoryTargetForArtifactLocator,
   resolvePrimaryGitRepositoryTarget,
   secretRefSchema
 } from "./index.js";
@@ -266,6 +268,113 @@ describe("git service contracts", () => {
       transportKind: "ssh"
     });
   });
+
+  it("resolves sibling repository targets from a primary-target remote override", () => {
+    const target = resolveGitRepositoryTargetForArtifactLocator({
+      artifactContext: {
+        backends: ["git"],
+        defaultNamespace: "team-alpha",
+        gitPrincipalBindings: [],
+        gitServices: [
+          gitServiceProfileSchema.parse({
+            id: "local-gitea",
+            displayName: "Local Gitea",
+            baseUrl: "http://gitea:3000",
+            remoteBase: "ssh://git@gitea:22",
+            transportKind: "ssh",
+            authMode: "ssh_key",
+            defaultNamespace: "team-alpha",
+            provisioning: {
+              mode: "preexisting"
+            }
+          })
+        ],
+        primaryGitRepositoryTarget: {
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          provisioningMode: "preexisting",
+          remoteUrl: "/tmp/entangle-remotes/graph-alpha.git",
+          repositoryName: "graph-alpha",
+          transportKind: "ssh"
+        },
+        primaryGitServiceRef: "local-gitea"
+      },
+      locator: {
+        branch: "worker-it/session-alpha/review",
+        commit: "abc123",
+        gitServiceRef: "local-gitea",
+        namespace: "team-alpha",
+        repositoryName: "review-artifacts",
+        path: "reports/session-alpha/turn-001.md"
+      }
+    });
+
+    expect(target).toEqual({
+      gitServiceRef: "local-gitea",
+      namespace: "team-alpha",
+      provisioningMode: "preexisting",
+      remoteUrl: "/tmp/entangle-remotes/review-artifacts.git",
+      repositoryName: "review-artifacts",
+      transportKind: "ssh"
+    });
+  });
+
+  it("resolves locator-specific repository targets from bound non-primary services", () => {
+    const target = resolveGitRepositoryTargetForArtifactLocator({
+      artifactContext: {
+        backends: ["git"],
+        defaultNamespace: "team-alpha",
+        gitPrincipalBindings: [],
+        gitServices: [
+          gitServiceProfileSchema.parse({
+            id: "local-gitea",
+            displayName: "Local Gitea",
+            baseUrl: "http://gitea:3000",
+            remoteBase: "ssh://git@gitea:22",
+            transportKind: "ssh",
+            authMode: "ssh_key",
+            defaultNamespace: "team-alpha",
+            provisioning: {
+              mode: "preexisting"
+            }
+          }),
+          gitServiceProfileSchema.parse({
+            id: "backup-gitea",
+            displayName: "Backup Gitea",
+            baseUrl: "http://backup-gitea:3000",
+            remoteBase: "ssh://git@backup-gitea:22",
+            transportKind: "ssh",
+            authMode: "ssh_key",
+            defaultNamespace: "backup-team",
+            provisioning: {
+              mode: "preexisting"
+            }
+          })
+        ],
+        primaryGitRepositoryTarget: {
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          provisioningMode: "preexisting",
+          remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
+          repositoryName: "graph-alpha",
+          transportKind: "ssh"
+        },
+        primaryGitServiceRef: "local-gitea"
+      },
+      locator: {
+        branch: "worker-it/session-alpha/review",
+        commit: "abc123",
+        gitServiceRef: "backup-gitea",
+        namespace: "backup-team",
+        repositoryName: "review-artifacts",
+        path: "reports/session-alpha/turn-001.md"
+      }
+    });
+
+    expect(target?.remoteUrl).toBe(
+      "ssh://git@backup-gitea:22/backup-team/review-artifacts.git"
+    );
+  });
 });
 
 describe("git repository provisioning contracts", () => {
@@ -305,6 +414,122 @@ describe("git repository provisioning contracts", () => {
         }
       }).success
     ).toBe(false);
+  });
+});
+
+describe("runtime git resolution helpers", () => {
+  it("prefers the primary principal binding when it matches the requested service", () => {
+    const resolution = resolveGitPrincipalBindingForService({
+      artifactContext: {
+        backends: ["git"],
+        defaultNamespace: "team-alpha",
+        gitPrincipalBindings: [
+          {
+            principal: externalPrincipalRecordSchema.parse({
+              principalId: "worker-it-git-main",
+              displayName: "Worker IT Git Main",
+              systemKind: "git",
+              gitServiceRef: "local-gitea",
+              subject: "worker-it",
+              transportAuthMode: "ssh_key",
+              secretRef: "secret://git/worker-it/main"
+            }),
+            transport: resolvedSecretBindingSchema.parse({
+              secretRef: "secret://git/worker-it/main",
+              status: "available",
+              delivery: {
+                mode: "mounted_file",
+                filePath: "/tmp/git-main"
+              }
+            })
+          },
+          {
+            principal: externalPrincipalRecordSchema.parse({
+              principalId: "worker-it-git-backup",
+              displayName: "Worker IT Git Backup",
+              systemKind: "git",
+              gitServiceRef: "local-gitea",
+              subject: "worker-it",
+              transportAuthMode: "ssh_key",
+              secretRef: "secret://git/worker-it/backup"
+            }),
+            transport: resolvedSecretBindingSchema.parse({
+              secretRef: "secret://git/worker-it/backup",
+              status: "available",
+              delivery: {
+                mode: "mounted_file",
+                filePath: "/tmp/git-backup"
+              }
+            })
+          }
+        ],
+        gitServices: [],
+        primaryGitPrincipalRef: "worker-it-git-backup",
+        primaryGitServiceRef: "local-gitea"
+      },
+      gitServiceRef: "local-gitea"
+    });
+
+    expect(resolution.status).toBe("resolved");
+    if (resolution.status === "resolved") {
+      expect(resolution.binding.principal.principalId).toBe(
+        "worker-it-git-backup"
+      );
+    }
+  });
+
+  it("reports ambiguity when multiple service principals exist without a deterministic selection", () => {
+    const resolution = resolveGitPrincipalBindingForService({
+      artifactContext: {
+        backends: ["git"],
+        defaultNamespace: "team-alpha",
+        gitPrincipalBindings: [
+          {
+            principal: externalPrincipalRecordSchema.parse({
+              principalId: "worker-it-git-main",
+              displayName: "Worker IT Git Main",
+              systemKind: "git",
+              gitServiceRef: "local-gitea",
+              subject: "worker-it",
+              transportAuthMode: "ssh_key",
+              secretRef: "secret://git/worker-it/main"
+            }),
+            transport: resolvedSecretBindingSchema.parse({
+              secretRef: "secret://git/worker-it/main",
+              status: "available",
+              delivery: {
+                mode: "mounted_file",
+                filePath: "/tmp/git-main"
+              }
+            })
+          },
+          {
+            principal: externalPrincipalRecordSchema.parse({
+              principalId: "worker-it-git-backup",
+              displayName: "Worker IT Git Backup",
+              systemKind: "git",
+              gitServiceRef: "local-gitea",
+              subject: "worker-it",
+              transportAuthMode: "ssh_key",
+              secretRef: "secret://git/worker-it/backup"
+            }),
+            transport: resolvedSecretBindingSchema.parse({
+              secretRef: "secret://git/worker-it/backup",
+              status: "available",
+              delivery: {
+                mode: "mounted_file",
+                filePath: "/tmp/git-backup"
+              }
+            })
+          }
+        ],
+        gitServices: [],
+        primaryGitServiceRef: "backup-gitea"
+      },
+      gitServiceRef: "local-gitea"
+    });
+
+    expect(resolution.status).toBe("ambiguous");
   });
 });
 

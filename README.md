@@ -108,9 +108,11 @@ This repository currently contains:
   repositories that persists success or failure without corrupting local
   artifact truth, plus a first downstream retrieval path for published
   git-backed handoffs through a runner-local retrieval cache and typed
-  retrieval-state records, plus host-owned provisioning of primary
-  `gitea_api` repository targets with persisted provisioning-state records and
-  runtime realizability gated on provisioning success;
+  retrieval-state records, now widened to locator-specific repository targets
+  with deterministic service-scoped transport-principal selection and
+  repository-partitioned retrieval caches, plus host-owned provisioning of
+  primary `gitea_api` repository targets with persisted provisioning-state
+  records and runtime realizability gated on provisioning success;
 - a host read surface for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
@@ -137,8 +139,9 @@ This repository currently contains:
 
 The highest-value remaining gaps are:
 
-- wider handoff support beyond the current primary-target retrieval policy;
 - a real model-backed internal `agent-engine`;
+- advanced git widening beyond the current locator-specific handoff model,
+  especially non-primary target provisioning and replicated fallback paths;
 - host event streaming and fuller host resource surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.

@@ -103,6 +103,78 @@ describe("RunnerService", () => {
     expect(turnRecord?.consumedArtifactIds).toContain(inboundArtifact.artifactId);
   });
 
+  it("retrieves published inbound git artifacts from a sibling repository on the primary service", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!fixture.remoteRepositoryPath) {
+      throw new Error("Expected a bare remote repository path for retrieval tests.");
+    }
+
+    const siblingRemoteRepositoryPath = path.join(
+      path.dirname(fixture.remoteRepositoryPath),
+      "review-artifacts.git"
+    );
+    spawnSync("git", ["init", "--bare", siblingRemoteRepositoryPath], {
+      encoding: "utf8"
+    });
+
+    const inboundArtifact = await createPublishedGitArtifact({
+      remoteRepositoryPath: siblingRemoteRepositoryPath,
+      repositoryName: "review-artifacts",
+      summary: "Sibling repository review notes.\n"
+    });
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    let capturedRequest: AgentEngineTurnRequest | undefined;
+    const service = new RunnerService({
+      context: runtimeContext,
+      engine: {
+        executeTurn(request) {
+          capturedRequest = request;
+          return Promise.resolve({
+            assistantMessages: ["Retrieved sibling repository artifact successfully."],
+            stopReason: "completed",
+            toolRequests: [],
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0
+            }
+          });
+        }
+      },
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        artifactRefs: [inboundArtifact]
+      })
+    );
+
+    expect(result.handled).toBe(true);
+    expect(capturedRequest?.artifactInputs).toHaveLength(1);
+    expect(capturedRequest?.artifactInputs[0]?.repoPath).toContain(
+      path.join(
+        runtimeContext.workspace.retrievalRoot,
+        "local-gitea",
+        "team-alpha",
+        "review-artifacts"
+      )
+    );
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const artifactRecords = await listArtifactRecords(statePaths);
+    const retrievedArtifact = artifactRecords.find(
+      (artifactRecord) => artifactRecord.ref.artifactId === inboundArtifact.artifactId
+    );
+
+    expect(retrievedArtifact?.retrieval?.state).toBe("retrieved");
+    expect(retrievedArtifact?.retrieval?.remoteUrl).toBe(siblingRemoteRepositoryPath);
+  });
+
   it("fails the turn and persists retrieval failure when inbound git handoff is invalid", async () => {
     const fixture = await createRuntimeFixture({
       remotePublication: "bare_repo"

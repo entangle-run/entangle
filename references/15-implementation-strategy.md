@@ -125,13 +125,16 @@ remaining work in this phase can land on a clean lifecycle model.
 
 The remaining work in this phase is:
 
-- widening retrieval and handoff flows beyond the current primary-target-only
-  retrieval policy where needed;
+- any further git widening beyond the current locator-specific retrieval
+  model, especially non-primary target provisioning and replicated fallback
+  paths, only when later delivery pressure justifies it.
 
 Acceptance for the phase:
 
 - a runner can publish a git-backed artifact to a named remote git service;
 - a second node can retrieve and consume that artifact by reference;
+- locator-specific repository targets can be resolved without hidden fallback
+  repository assumptions;
 - repository-target provisioning policy is enforced for both preexisting and
   service-provisioned repository modes;
 - downstream retrieval and handoff policy remains explicit rather than relying

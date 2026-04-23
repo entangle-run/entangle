@@ -64,7 +64,27 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
     artifactContext: {
       backends: ["git"],
       defaultNamespace: "team-alpha",
-      gitPrincipalBindings: [],
+      gitPrincipalBindings: [
+        {
+          principal: {
+            principalId: "worker-it-git",
+            displayName: "Worker IT Git Principal",
+            systemKind: "git",
+            gitServiceRef: "local-gitea",
+            subject: "worker-it",
+            transportAuthMode: "ssh_key",
+            secretRef: "secret://git/worker-it/ssh"
+          },
+          transport: {
+            secretRef: "secret://git/worker-it/ssh",
+            status: "available",
+            delivery: {
+              mode: "mounted_file",
+              filePath: "/tmp/worker-it-git"
+            }
+          }
+        }
+      ],
       gitServices: [
         {
           id: "local-gitea",
@@ -79,6 +99,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
           }
         }
       ],
+      primaryGitPrincipalRef: "worker-it-git",
       primaryGitRepositoryTarget: {
         gitServiceRef: "local-gitea",
         namespace: "team-alpha",
@@ -440,6 +461,50 @@ describe("validateRuntimeArtifactRefs", () => {
         }),
         expect.objectContaining({
           code: "git_artifact_missing_repository_name",
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects git handoff refs when the target service lacks a transport principal", () => {
+    const context = buildRuntimeContext();
+    context.artifactContext.gitServices.push({
+      id: "backup-gitea",
+      displayName: "Backup Gitea",
+      baseUrl: "https://backup.gitea.local",
+      remoteBase: "ssh://git@backup.gitea.local:22",
+      transportKind: "ssh",
+      authMode: "ssh_key",
+      provisioning: {
+        mode: "preexisting"
+      }
+    });
+
+    const report = validateRuntimeArtifactRefs({
+      context,
+      artifactRefs: [
+        {
+          artifactId: "report-2",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            gitServiceRef: "backup-gitea",
+            namespace: "backup-team",
+            repositoryName: "graph-beta",
+            path: "reports/session-alpha/turn-001.md"
+          },
+          preferred: true,
+          status: "published"
+        }
+      ]
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "git_handoff_missing_transport_principal",
           severity: "error"
         })
       ])

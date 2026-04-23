@@ -19,6 +19,7 @@ export * from "./protocol/nostr-transport.js";
 export * from "./resources/catalog.js";
 export * from "./resources/external-principal.js";
 export * from "./runtime/runtime-context.js";
+export * from "./runtime/git-resolution.js";
 export * from "./runtime/runtime-identity.js";
 export * from "./runtime/reconciliation.js";
 export * from "./runtime/secret-delivery.js";

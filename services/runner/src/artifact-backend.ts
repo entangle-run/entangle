@@ -9,7 +9,11 @@ import type {
   EffectiveRuntimeContext,
   EntangleA2AMessage
 } from "@entangle/types";
-import { artifactRecordSchema } from "@entangle/types";
+import {
+  artifactRecordSchema,
+  resolveGitPrincipalBindingForService,
+  resolveGitRepositoryTargetForArtifactLocator
+} from "@entangle/types";
 import { validateRuntimeArtifactRefs } from "@entangle/validator";
 
 type ArtifactMaterializationInput = {
@@ -234,53 +238,55 @@ function buildGitRemoteName(gitServiceRef: string): string {
 
 function buildGitCommandEnvForRemoteOperation(input: {
   context: EffectiveRuntimeContext;
-  remoteUrl: string;
+  target: {
+    gitServiceRef: string;
+    remoteUrl: string;
+    transportKind: "https" | "ssh";
+  };
 }): NodeJS.ProcessEnv | undefined {
   // Bounded local/test profiles may target a directly mounted bare repository path.
   // Those remotes do not require transport-level credentials.
-  if (!input.remoteUrl.includes("://")) {
+  if (!input.target.remoteUrl.includes("://")) {
     return undefined;
   }
 
-  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+  const principalResolution = resolveGitPrincipalBindingForService({
+    artifactContext: input.context.artifactContext,
+    gitServiceRef: input.target.gitServiceRef
+  });
 
-  if (!primaryTarget) {
-    return undefined;
-  }
-
-  const primaryBinding =
-    input.context.artifactContext.primaryGitPrincipalRef
-      ? input.context.artifactContext.gitPrincipalBindings.find(
-          (binding) =>
-            binding.principal.principalId ===
-            input.context.artifactContext.primaryGitPrincipalRef
-        )
-      : undefined;
-
-  if (!primaryBinding) {
+  if (principalResolution.status === "missing") {
     throw new Error(
-      "Remote git operations require a primary git principal binding, but none was resolved."
+      `Remote git operations require a git principal binding for service '${input.target.gitServiceRef}', but none was resolved.`
     );
   }
 
-  if (primaryTarget.transportKind !== "ssh") {
+  if (principalResolution.status === "ambiguous") {
     throw new Error(
-      `Remote git operations for transport kind '${primaryTarget.transportKind}' are not implemented yet.`
+      `Remote git operations require a deterministic git principal for service '${input.target.gitServiceRef}', but multiple candidates were resolved: ${principalResolution.candidatePrincipalIds.join(", ")}.`
     );
   }
 
-  if (primaryBinding.principal.transportAuthMode !== "ssh_key") {
+  if (input.target.transportKind !== "ssh") {
     throw new Error(
-      `Remote git operations require an SSH-key git principal, but '${primaryBinding.principal.principalId}' uses '${primaryBinding.principal.transportAuthMode}'.`
+      `Remote git operations for transport kind '${input.target.transportKind}' are not implemented yet.`
+    );
+  }
+
+  const principalBinding = principalResolution.binding;
+
+  if (principalBinding.principal.transportAuthMode !== "ssh_key") {
+    throw new Error(
+      `Remote git operations require an SSH-key git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
     );
   }
 
   if (
-    primaryBinding.transport.status !== "available" ||
-    primaryBinding.transport.delivery?.mode !== "mounted_file"
+    principalBinding.transport.status !== "available" ||
+    principalBinding.transport.delivery?.mode !== "mounted_file"
   ) {
     throw new Error(
-      `Remote git operations require an available mounted SSH key for git principal '${primaryBinding.principal.principalId}'.`
+      `Remote git operations require an available mounted SSH key for git principal '${principalBinding.principal.principalId}'.`
     );
   }
 
@@ -290,7 +296,7 @@ function buildGitCommandEnvForRemoteOperation(input: {
       "-F",
       "/dev/null",
       "-i",
-      primaryBinding.transport.delivery.filePath,
+      principalBinding.transport.delivery.filePath,
       "-o",
       "IdentitiesOnly=yes",
       "-o",
@@ -302,9 +308,17 @@ function buildGitCommandEnvForRemoteOperation(input: {
 function buildArtifactRetrievalRoot(input: {
   artifactId: string;
   context: EffectiveRuntimeContext;
+  target: {
+    gitServiceRef: string;
+    namespace: string;
+    repositoryName: string;
+  };
 }): string {
   return path.join(
     input.context.workspace.retrievalRoot,
+    sanitizeBranchComponent(input.target.gitServiceRef),
+    sanitizeBranchComponent(input.target.namespace),
+    sanitizeBranchComponent(input.target.repositoryName),
     sanitizeBranchComponent(input.artifactId)
   );
 }
@@ -408,7 +422,7 @@ async function publishGitArtifactRecord(input: {
   try {
     const gitEnv = buildGitCommandEnvForRemoteOperation({
       context: input.context,
-      remoteUrl: target.remoteUrl
+      target
     });
     await ensureGitRemote({
       env: gitEnv,
@@ -469,13 +483,14 @@ async function retrieveGitArtifact(input: {
     artifactRefs: [input.artifactRef],
     context: input.context
   });
-  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
-  const remoteName = input.artifactRef.locator.gitServiceRef
-    ? buildGitRemoteName(input.artifactRef.locator.gitServiceRef)
-    : undefined;
-  const remoteUrl = primaryTarget?.remoteUrl;
+  const target = resolveGitRepositoryTargetForArtifactLocator({
+    artifactContext: input.context.artifactContext,
+    locator: input.artifactRef.locator
+  });
+  const remoteName = target ? buildGitRemoteName(target.gitServiceRef) : undefined;
+  const remoteUrl = target?.remoteUrl;
 
-  if (!validation.ok || !primaryTarget || !remoteName || !remoteUrl) {
+  if (!validation.ok || !target || !remoteName || !remoteUrl) {
     const failedRecord = buildArtifactRetrievalFailureRecord({
       artifactRef: input.artifactRef,
       error: new Error(
@@ -494,14 +509,15 @@ async function retrieveGitArtifact(input: {
 
   const retrievalRoot = buildArtifactRetrievalRoot({
     artifactId: input.artifactRef.artifactId,
-    context: input.context
+    context: input.context,
+    target
   });
   const repoPath = path.join(retrievalRoot, "repo");
   const localPath = path.join(repoPath, input.artifactRef.locator.path);
   const gitDirectoryPath = path.join(repoPath, ".git");
   const gitEnv = buildGitCommandEnvForRemoteOperation({
     context: input.context,
-    remoteUrl
+    target
   });
 
   try {

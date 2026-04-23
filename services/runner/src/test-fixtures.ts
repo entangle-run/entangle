@@ -67,7 +67,7 @@ export async function createRuntimeFixture(input: {
   createdDirectories.push(tempRoot);
 
   const packageRoot = path.join(tempRoot, "package-source");
-  const remoteRepositoryPath = path.join(tempRoot, "remote.git");
+  const remoteRepositoryPath = path.join(tempRoot, "graph-alpha.git");
   const secretsRoot = path.join(tempRoot, "secrets");
   const workspaceRoot = path.join(tempRoot, "workspace");
   const injectedRoot = path.join(workspaceRoot, "injected");

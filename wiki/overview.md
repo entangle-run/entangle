@@ -105,9 +105,10 @@ The repository now also contains the first real implementation baseline:
   materialization and remote publication are not conflated; the runner can now
   also publish to deterministic preexisting remote repositories while
   preserving local artifact truth if publication fails; it can also retrieve
-  published git handoffs from the runtime's primary repository target into an
-  explicit retrieval cache and pass typed local artifact inputs into the
-  engine request; the host now also provisions primary `gitea_api`
+  published git handoffs from locator-specific repository targets into an
+  explicit retrieval cache partitioned by service, namespace, repository, and
+  artifact id, with deterministic service-scoped git-principal selection and
+  typed local artifact inputs into the engine request; the host now also provisions primary `gitea_api`
   repository targets itself, persists provisioning-state records, and treats
   provisioning failure as a runtime-realizability error instead of deferring
   it to the runner;
@@ -195,11 +196,11 @@ The current implementation-truth audit now lives in
 [../references/59-implementation-state-and-delivery-audit.md](../references/59-implementation-state-and-delivery-audit.md).
 
 - complete remote git collaboration on top of the existing local git-backed
-  artifact model by adding broader handoff support beyond the now-implemented
-  primary-target retrieval path, the resolved git
-  principal secret-delivery bindings, the explicit primary repository-target
-  contract, the host-owned provisioning record model, and the
-  publication/retrieval-state record model;
+  artifact model only where later delivery needs exceed the now-implemented
+  locator-specific retrieval path, the resolved git principal secret-delivery
+  bindings, the explicit repository-target contract, the host-owned
+  provisioning record model, and the publication/retrieval-state record
+  model;
 - replace the stub engine path with the first real model-backed internal
   `agent-engine` adapter;
 - complete the host event stream and remaining core host resource surfaces;

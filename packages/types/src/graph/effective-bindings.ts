@@ -6,21 +6,13 @@ import type {
   RelayProfile
 } from "../resources/catalog.js";
 import type { ExternalPrincipalRecord } from "../resources/external-principal.js";
-import type { GitRepositoryTarget } from "../artifacts/git-repository-target.js";
+import {
+  buildGitRepositoryTarget,
+  type GitRepositoryTarget
+} from "../artifacts/git-repository-target.js";
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values));
-}
-
-function joinRemoteBasePath(
-  remoteBase: string,
-  namespace: string,
-  repositoryName: string
-): string {
-  const parsed = new URL(remoteBase);
-  const basePath = parsed.pathname.replace(/\/+$/, "");
-  parsed.pathname = `${basePath}/${namespace}/${repositoryName}.git`;
-  return parsed.toString();
 }
 
 export function intersectIdentifiers(
@@ -182,18 +174,11 @@ export function resolvePrimaryGitRepositoryTarget(input: {
     return undefined;
   }
 
-  return {
-    gitServiceRef: service.id,
+  return buildGitRepositoryTarget({
     namespace: input.defaultNamespace,
-    provisioningMode: service.provisioning.mode,
-    remoteUrl: joinRemoteBasePath(
-      service.remoteBase,
-      input.defaultNamespace,
-      input.graphId
-    ),
     repositoryName: input.graphId,
-    transportKind: service.transportKind
-  };
+    service
+  });
 }
 
 export function resolveEffectiveRelayProfiles(
