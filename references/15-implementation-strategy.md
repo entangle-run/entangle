@@ -125,8 +125,6 @@ remaining work in this phase can land on a clean lifecycle model.
 
 The remaining work in this phase is:
 
-- repository provisioning flows for primary targets whose git service declares
-  `gitea_api`;
 - widening retrieval and handoff flows beyond the current primary-target-only
   retrieval policy where needed;
 

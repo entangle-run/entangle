@@ -5,6 +5,7 @@ import {
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
   externalPrincipalRecordSchema,
+  gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
@@ -264,6 +265,46 @@ describe("git service contracts", () => {
       repositoryName: "graph-alpha",
       transportKind: "ssh"
     });
+  });
+});
+
+describe("git repository provisioning contracts", () => {
+  it("accepts a ready provisioning record", () => {
+    const result = gitRepositoryProvisioningRecordSchema.parse({
+      checkedAt: "2026-04-23T00:00:00.000Z",
+      created: true,
+      schemaVersion: "1",
+      state: "ready",
+      target: {
+        gitServiceRef: "local-gitea",
+        namespace: "team-alpha",
+        provisioningMode: "gitea_api",
+        remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
+        repositoryName: "graph-alpha",
+        transportKind: "ssh"
+      }
+    });
+
+    expect(result.state).toBe("ready");
+    expect(result.created).toBe(true);
+  });
+
+  it("rejects failed provisioning records without an error", () => {
+    expect(
+      gitRepositoryProvisioningRecordSchema.safeParse({
+        checkedAt: "2026-04-23T00:00:00.000Z",
+        schemaVersion: "1",
+        state: "failed",
+        target: {
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          provisioningMode: "gitea_api",
+          remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
+          repositoryName: "graph-alpha",
+          transportKind: "ssh"
+        }
+      }).success
+    ).toBe(false);
   });
 });
 

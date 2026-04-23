@@ -14,6 +14,7 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import {
   artifactRecordSchema,
+  gitRepositoryProvisioningRecordSchema,
   type AgentPackageManifest,
   agentPackageManifestSchema,
   buildValidationReport,
@@ -52,6 +53,7 @@ import {
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfiles,
   resolveEffectiveRelayProfileRefs,
+  type GitRepositoryProvisioningRecord,
   type RuntimeDesiredState,
   runtimeIdentityContextSchema,
   secretRefSchema,
@@ -75,6 +77,7 @@ import {
   validatePackageDirectory
 } from "@entangle/validator";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
+import { GiteaApiClient } from "./gitea-api-client.js";
 import { createRuntimeBackend } from "./runtime-backend.js";
 
 const hostStateRoot = path.join(
@@ -104,6 +107,7 @@ const graphRevisionsRoot = path.join(graphRoot, "revisions");
 const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const observedRuntimesRoot = path.join(observedRoot, "runtimes");
+const gitRepositoryTargetsRoot = path.join(observedRoot, "git-repository-targets");
 const reconciliationRoot = path.join(observedRoot, "reconciliation");
 const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
 const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
@@ -125,6 +129,7 @@ type LocalPathPackageSourceRecord = Extract<
 
 type RuntimeResolution = {
   context: EffectiveRuntimeContext | undefined;
+  primaryGitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
   inspection: RuntimeInspectionResponse;
 };
 
@@ -440,6 +445,17 @@ async function resolveSecretBinding(secretRef: string): Promise<{
   };
 }
 
+async function readSecretRefValue(secretRef: string): Promise<string | undefined> {
+  const storagePath = resolveSecretRefStoragePath(secretRef);
+
+  if (!storagePath || !(await pathExists(storagePath))) {
+    return undefined;
+  }
+
+  const secretValue = (await readFile(storagePath, "utf8")).trim();
+  return secretValue.length > 0 ? secretValue : undefined;
+}
+
 async function resolveGitPrincipalRuntimeBindings(
   principals: ExternalPrincipalRecord[]
 ): Promise<
@@ -635,6 +651,160 @@ async function removeJsonFilesExcept(
       .filter((entry) => !allowedBaseNames.has(entry.name.slice(0, -".json".length)))
       .map((entry) => rm(path.join(directoryPath, entry.name), { force: true }))
   );
+}
+
+function buildGitRepositoryTargetRecordId(input: {
+  gitServiceRef: string;
+  namespace: string;
+  repositoryName: string;
+}): string {
+  return sanitizeIdentifier(
+    `${input.gitServiceRef}-${input.namespace}-${input.repositoryName}`
+  );
+}
+
+function gitRepositoryProvisioningRecordPath(
+  record: Pick<
+    GitRepositoryProvisioningRecord["target"],
+    "gitServiceRef" | "namespace" | "repositoryName"
+  >
+): string {
+  return path.join(
+    gitRepositoryTargetsRoot,
+    `${buildGitRepositoryTargetRecordId(record)}.json`
+  );
+}
+
+async function readGitRepositoryProvisioningRecord(input: {
+  gitServiceRef: string;
+  namespace: string;
+  repositoryName: string;
+}): Promise<GitRepositoryProvisioningRecord | undefined> {
+  const filePath = gitRepositoryProvisioningRecordPath(input);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return gitRepositoryProvisioningRecordSchema.parse(await readJsonFile(filePath));
+}
+
+function buildGitRepositoryProvisioningRecord(input: {
+  checkedAt?: string;
+  created?: boolean;
+  lastError?: string;
+  state: GitRepositoryProvisioningRecord["state"];
+  target: GitRepositoryProvisioningRecord["target"];
+}): GitRepositoryProvisioningRecord {
+  return gitRepositoryProvisioningRecordSchema.parse({
+    checkedAt: input.checkedAt ?? nowIsoString(),
+    ...(input.created !== undefined ? { created: input.created } : {}),
+    ...(input.lastError ? { lastError: input.lastError } : {}),
+    schemaVersion: "1",
+    state: input.state,
+    target: input.target
+  });
+}
+
+async function ensureGitRepositoryTargetProvisioning(input: {
+  target: NonNullable<EffectiveRuntimeContext["artifactContext"]["primaryGitRepositoryTarget"]>;
+  gitServices: DeploymentResourceCatalog["gitServices"];
+}): Promise<GitRepositoryProvisioningRecord> {
+  const existingRecord = await readGitRepositoryProvisioningRecord(
+    input.target
+  );
+  const service = input.gitServices.find(
+    (candidate) => candidate.id === input.target.gitServiceRef
+  );
+
+  if (!service) {
+    return buildGitRepositoryProvisioningRecord({
+      lastError: `Git service '${input.target.gitServiceRef}' is not available in the effective runtime context.`,
+      state: "failed",
+      target: input.target
+    });
+  }
+
+  if (service.provisioning.mode === "preexisting") {
+    return buildGitRepositoryProvisioningRecord({
+      state: "not_requested",
+      target: input.target
+    });
+  }
+
+  const provisioningToken = await readSecretRefValue(service.provisioning.secretRef);
+
+  if (!provisioningToken) {
+    return buildGitRepositoryProvisioningRecord({
+      lastError:
+        `Git service '${service.id}' requires provisioning secret '${service.provisioning.secretRef}', ` +
+        "but no secret material is available in the host secret store.",
+      state: "failed",
+      target: input.target
+    });
+  }
+
+  try {
+    const client = new GiteaApiClient({
+      apiBaseUrl: service.provisioning.apiBaseUrl,
+      token: provisioningToken
+    });
+    const repositoryAlreadyExists = await client.repositoryExists({
+      owner: input.target.namespace,
+      repositoryName: input.target.repositoryName
+    });
+
+    if (repositoryAlreadyExists) {
+      return buildGitRepositoryProvisioningRecord({
+        created: existingRecord?.state === "ready" ? existingRecord.created ?? false : false,
+        state: "ready",
+        target: input.target
+      });
+    }
+
+    const authenticatedUserLogin = await client.getAuthenticatedUserLogin();
+    const creationResult =
+      authenticatedUserLogin === input.target.namespace
+        ? await client.createCurrentUserRepository({
+            repositoryName: input.target.repositoryName
+          })
+        : await client.createOrganizationRepository({
+            organization: input.target.namespace,
+            repositoryName: input.target.repositoryName
+          });
+
+    if (creationResult === "conflict") {
+      const repositoryExistsAfterConflict = await client.repositoryExists({
+        owner: input.target.namespace,
+        repositoryName: input.target.repositoryName
+      });
+
+      if (!repositoryExistsAfterConflict) {
+        throw new Error(
+          `Gitea reported a repository conflict for '${input.target.namespace}/${input.target.repositoryName}', ` +
+          "but the repository is still not observable through the repository API."
+        );
+      }
+
+      return buildGitRepositoryProvisioningRecord({
+        created: existingRecord?.state === "ready" ? existingRecord.created ?? false : false,
+        state: "ready",
+        target: input.target
+      });
+    }
+
+    return buildGitRepositoryProvisioningRecord({
+      created: true,
+      state: "ready",
+      target: input.target
+    });
+  } catch (error) {
+    return buildGitRepositoryProvisioningRecord({
+      lastError: formatUnknownError(error),
+      state: "failed",
+      target: input.target
+    });
+  }
 }
 
 async function readCatalog(): Promise<DeploymentResourceCatalog> {
@@ -891,6 +1061,7 @@ function buildRuntimeInspectionFromState(input: {
   nodeId: string;
   observedState: RuntimeObservedState;
   packageSourceId: string | undefined;
+  primaryGitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
   reason: string | undefined;
   runtimeHandle: string | undefined;
   statusMessage: string | undefined;
@@ -905,6 +1076,7 @@ function buildRuntimeInspectionFromState(input: {
     nodeId: input.nodeId,
     observedState: input.observedState,
     packageSourceId: input.packageSourceId,
+    primaryGitRepositoryProvisioning: input.primaryGitRepositoryProvisioning,
     reason: input.reason,
     runtimeHandle: input.runtimeHandle,
     statusMessage: input.statusMessage
@@ -925,6 +1097,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
+    ensureDirectory(gitRepositoryTargetsRoot),
     ensureDirectory(reconciliationHistoryRoot),
     ensureDirectory(path.join(observedRoot, "health")),
     ensureDirectory(controlPlaneTraceRoot),
@@ -1277,6 +1450,7 @@ export async function validateGraphCandidate(
 }
 
 function buildRuntimeIntentReasonForUnavailableContext(input: {
+  gitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
   hasModelEndpoint: boolean;
   node: NodeBinding;
   packageManifest: AgentPackageManifest | undefined;
@@ -1303,6 +1477,14 @@ function buildRuntimeIntentReasonForUnavailableContext(input: {
     return `Node '${input.node.nodeId}' cannot start because it has no effective model endpoint binding.`;
   }
 
+  if (input.gitRepositoryProvisioning?.state === "failed") {
+    return (
+      `Node '${input.node.nodeId}' cannot start because primary git repository target ` +
+      `'${input.gitRepositoryProvisioning.target.namespace}/${input.gitRepositoryProvisioning.target.repositoryName}' ` +
+      `could not be provisioned. ${input.gitRepositoryProvisioning.lastError ?? "Unknown provisioning error."}`
+    );
+  }
+
   return `Node '${input.node.nodeId}' has no realizable runtime context.`;
 }
 
@@ -1312,8 +1494,16 @@ async function buildRuntimeResolution(input: {
   graph: GraphSpec;
   node: NodeBinding;
   packageSources: Map<string, PackageSourceRecord>;
+  repositoryProvisioningCache: Map<string, GitRepositoryProvisioningRecord>;
 }): Promise<RuntimeResolution> {
-  const { activeRevisionId, catalog, graph, node, packageSources } = input;
+  const {
+    activeRevisionId,
+    catalog,
+    graph,
+    node,
+    packageSources,
+    repositoryProvisioningCache
+  } = input;
   const workspace = buildWorkspaceLayout(node.nodeId);
   const packageSource = node.packageSourceRef
     ? packageSources.get(node.packageSourceRef)
@@ -1393,6 +1583,37 @@ async function buildRuntimeResolution(input: {
     sourcePackageRoot && packageSourcePathExists
       ? await readPackageManifest(sourcePackageRoot)
       : undefined;
+  const canAttemptContext =
+    Boolean(sourcePackageRoot) &&
+    packageSourcePathExists &&
+    Boolean(packageManifest) &&
+    Boolean(resolvedModelEndpointProfile);
+  const gitRepositoryProvisioningRecordId = resolvedPrimaryGitRepositoryTarget
+    ? buildGitRepositoryTargetRecordId(resolvedPrimaryGitRepositoryTarget)
+    : undefined;
+  let gitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
+
+  if (canAttemptContext && resolvedPrimaryGitRepositoryTarget) {
+    gitRepositoryProvisioning = repositoryProvisioningCache.get(
+      gitRepositoryProvisioningRecordId!
+    );
+
+    if (!gitRepositoryProvisioning) {
+      gitRepositoryProvisioning = await ensureGitRepositoryTargetProvisioning({
+        target: resolvedPrimaryGitRepositoryTarget,
+        gitServices: resolvedGitServices
+      });
+      repositoryProvisioningCache.set(
+        gitRepositoryProvisioningRecordId!,
+        gitRepositoryProvisioning
+      );
+    }
+
+    await writeJsonFileIfChanged(
+      gitRepositoryProvisioningRecordPath(resolvedPrimaryGitRepositoryTarget),
+      gitRepositoryProvisioning
+    );
+  }
   const effectiveBinding = effectiveNodeBindingSchema.parse({
     bindingId: sanitizeIdentifier(`${activeRevisionId}-${node.nodeId}`),
     externalPrincipals: resolvedExternalPrincipals,
@@ -1425,9 +1646,9 @@ async function buildRuntimeResolution(input: {
 
   if (
     sourcePackageRoot &&
-    packageSourcePathExists &&
     packageManifest &&
-    resolvedModelEndpointProfile
+    canAttemptContext &&
+    gitRepositoryProvisioning?.state !== "failed"
   ) {
     await syncWorkspacePackageLink(sourcePackageRoot, workspace.packageRoot);
     await initializeWorkspaceMemory(
@@ -1574,6 +1795,7 @@ async function buildRuntimeResolution(input: {
       ? context
         ? "stopped_by_operator"
         : buildRuntimeIntentReasonForUnavailableContext({
+            gitRepositoryProvisioning,
             hasModelEndpoint: Boolean(resolvedModelEndpointProfile),
             node,
             packageManifest,
@@ -1652,6 +1874,7 @@ async function buildRuntimeResolution(input: {
 
   return {
     context,
+    primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
     inspection: buildRuntimeInspectionFromState({
       context,
       desiredState: intentRecord.desiredState,
@@ -1660,6 +1883,7 @@ async function buildRuntimeResolution(input: {
       nodeId: node.nodeId,
       observedState: observedRecord.observedState,
       packageSourceId: packageSource?.packageSourceId,
+      primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
       reason: intentRecord.reason,
       runtimeHandle: observedRecord.runtimeHandle,
       statusMessage: observedRecord.statusMessage,
@@ -1688,6 +1912,7 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
       stoppedRuntimeCount: 0
     });
     await writeJsonFileIfChanged(latestReconciliationPath, emptySnapshot);
+    await removeJsonFilesExcept(gitRepositoryTargetsRoot, new Set());
 
     return {
       runtimes: [],
@@ -1699,6 +1924,10 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   const packageSources = await listPackageSourceRecordMap();
   const runtimeNodes = graph.nodes.filter((node) => node.nodeKind !== "user");
   const activeNodeIds = new Set(runtimeNodes.map((node) => node.nodeId));
+  const repositoryProvisioningCache = new Map<
+    string,
+    GitRepositoryProvisioningRecord
+  >();
   const inspections: RuntimeInspectionResponse[] = [];
 
   for (const nodeId of await listObservedRuntimeNodeIds()) {
@@ -1717,10 +1946,16 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
       catalog,
       graph,
       node,
-      packageSources
+      packageSources,
+      repositoryProvisioningCache
     });
     inspections.push(resolution.inspection);
   }
+
+  await removeJsonFilesExcept(
+    gitRepositoryTargetsRoot,
+    new Set(repositoryProvisioningCache.keys())
+  );
 
   inspections.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
   const snapshot = reconciliationSnapshotSchema.parse({

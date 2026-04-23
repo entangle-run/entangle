@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { artifactRecordSchema } from "../artifacts/artifact-ref.js";
+import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
 import {
@@ -18,6 +19,7 @@ export const runtimeInspectionResponseSchema = z.object({
   nodeId: identifierSchema,
   observedState: runtimeObservedStateSchema,
   packageSourceId: identifierSchema.optional(),
+  primaryGitRepositoryProvisioning: gitRepositoryProvisioningRecordSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
   runtimeHandle: nonEmptyStringSchema.optional(),
   statusMessage: nonEmptyStringSchema.optional()

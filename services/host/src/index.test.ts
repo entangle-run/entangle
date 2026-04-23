@@ -10,6 +10,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import Fastify from "fastify";
 import {
   artifactRecordSchema,
   externalPrincipalInspectionResponseSchema,
@@ -145,6 +146,196 @@ function buildGitPrincipalRecord(
   };
 }
 
+async function createTestGiteaApiServer(options: {
+  currentUserLogin?: string;
+  existingRepositories?: Array<{
+    owner: string;
+    repositoryName: string;
+  }>;
+} = {}) {
+  const server = Fastify();
+  const repositories = new Set(
+    (options.existingRepositories ?? []).map(
+      ({ owner, repositoryName }) => `${owner}/${repositoryName}`
+    )
+  );
+  const requests: Array<{
+    authorization: string | undefined;
+    body?: unknown;
+    method: string;
+    url: string;
+  }> = [];
+  const currentUserLogin = options.currentUserLogin ?? "operator";
+
+  server.get("/api/v1/user", (request) => {
+    requests.push({
+      authorization:
+        typeof request.headers.authorization === "string"
+          ? request.headers.authorization
+          : undefined,
+      method: "GET",
+      url: request.url
+    });
+
+    return {
+      login: currentUserLogin
+    };
+  });
+
+  server.get("/api/v1/repos/:owner/:repo", async (request, reply) => {
+    const params = request.params as { owner: string; repo: string };
+    requests.push({
+      authorization:
+        typeof request.headers.authorization === "string"
+          ? request.headers.authorization
+          : undefined,
+      method: "GET",
+      url: request.url
+    });
+
+    if (!repositories.has(`${params.owner}/${params.repo}`)) {
+      reply.status(404);
+      return {
+        message: "repository not found"
+      };
+    }
+
+    return {
+      name: params.repo,
+      owner: {
+        login: params.owner
+      }
+    };
+  });
+
+  server.post("/api/v1/user/repos", async (request, reply) => {
+    const body = request.body as { name: string };
+    requests.push({
+      authorization:
+        typeof request.headers.authorization === "string"
+          ? request.headers.authorization
+          : undefined,
+      body,
+      method: "POST",
+      url: request.url
+    });
+
+    const repositoryKey = `${currentUserLogin}/${body.name}`;
+
+    if (repositories.has(repositoryKey)) {
+      reply.status(409);
+      return {
+        message: "repository already exists"
+      };
+    }
+
+    repositories.add(repositoryKey);
+    reply.status(201);
+    return {
+      name: body.name,
+      owner: {
+        login: currentUserLogin
+      }
+    };
+  });
+
+  server.post("/api/v1/orgs/:org/repos", async (request, reply) => {
+    const params = request.params as { org: string };
+    const body = request.body as { name: string };
+    requests.push({
+      authorization:
+        typeof request.headers.authorization === "string"
+          ? request.headers.authorization
+          : undefined,
+      body,
+      method: "POST",
+      url: request.url
+    });
+
+    const repositoryKey = `${params.org}/${body.name}`;
+
+    if (repositories.has(repositoryKey)) {
+      reply.status(409);
+      return {
+        message: "repository already exists"
+      };
+    }
+
+    repositories.add(repositoryKey);
+    reply.status(201);
+    return {
+      name: body.name,
+      owner: {
+        login: params.org
+      }
+    };
+  });
+
+  await server.listen({
+    host: "127.0.0.1",
+    port: 0
+  });
+
+  return {
+    close: () => server.close(),
+    requests,
+    url: server.listeningOrigin
+  };
+}
+
+function buildProvisioningCatalog(input: {
+  apiBaseUrl: string;
+  provisioningSecretRef?: string;
+}) {
+  return {
+    schemaVersion: "1",
+    catalogId: "local-catalog",
+    relays: [
+      {
+        id: "local-relay",
+        displayName: "Local Relay",
+        readUrls: ["ws://relay.local"],
+        writeUrls: ["ws://relay.local"],
+        authMode: "none"
+      }
+    ],
+    gitServices: [
+      {
+        id: "local-gitea",
+        displayName: "Local Gitea",
+        baseUrl: input.apiBaseUrl,
+        remoteBase: "ssh://git@gitea.local:22",
+        transportKind: "ssh",
+        authMode: "ssh_key",
+        defaultNamespace: "team-alpha",
+        provisioning: {
+          mode: "gitea_api",
+          apiBaseUrl: `${input.apiBaseUrl}/api/v1`,
+          secretRef:
+            input.provisioningSecretRef ??
+            "secret://git-services/local-gitea/provisioning"
+        }
+      }
+    ],
+    modelEndpoints: [
+      {
+        id: "shared-model",
+        displayName: "Shared Model",
+        adapterKind: "anthropic",
+        baseUrl: "https://api.anthropic.com",
+        authMode: "api_key_bearer",
+        secretRef: "secret://shared-model",
+        defaultModel: "claude-opus"
+      }
+    ],
+    defaults: {
+      relayProfileRefs: ["local-relay"],
+      gitServiceRef: "local-gitea",
+      modelEndpointRef: "shared-model"
+    }
+  };
+}
+
 async function createTestServer(options: { includeModelEndpoint?: boolean } = {}) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-host-"));
   createdDirectories.push(tempRoot);
@@ -173,6 +364,68 @@ async function createTestServer(options: { includeModelEndpoint?: boolean } = {}
   await stateModule.initializeHostState();
 
   return hostModule.buildHostServer();
+}
+
+async function admitPackageSource(
+  server: Awaited<ReturnType<typeof createTestServer>>,
+  packageDirectory: string
+): Promise<string> {
+  const admitResponse = await server.inject({
+    method: "POST",
+    payload: {
+      sourceKind: "local_path",
+      absolutePath: packageDirectory
+    },
+    url: "/v1/package-sources/admit"
+  });
+
+  expect(admitResponse.statusCode).toBe(200);
+
+  return packageSourceInspectionResponseSchema.parse(admitResponse.json()).packageSource
+    .packageSourceId;
+}
+
+async function applySingleWorkerGraph(input: {
+  packageSourceId: string;
+  server: Awaited<ReturnType<typeof createTestServer>>;
+}) {
+  const response = await input.server.inject({
+    method: "PUT",
+    payload: {
+      schemaVersion: "1",
+      graphId: "team-alpha",
+      name: "Team Alpha",
+      nodes: [
+        {
+          nodeId: "user-main",
+          displayName: "User",
+          nodeKind: "user"
+        },
+        {
+          nodeId: "worker-it",
+          displayName: "Worker IT",
+          nodeKind: "worker",
+          packageSourceRef: input.packageSourceId,
+          resourceBindings: {
+            relayProfileRefs: [],
+            gitServiceRefs: ["local-gitea"],
+            primaryGitServiceRef: "local-gitea"
+          }
+        }
+      ],
+      edges: [
+        {
+          edgeId: "user-to-worker",
+          fromNodeId: "user-main",
+          toNodeId: "worker-it",
+          relation: "delegates_to"
+        }
+      ]
+    },
+    url: "/v1/graph"
+  });
+
+  expect(response.statusCode).toBe(200);
 }
 
 afterEach(async () => {
@@ -632,6 +885,273 @@ describe("buildHostServer", () => {
       });
     } finally {
       await server.close();
+    }
+  });
+
+  it("provisions an organization-backed primary repository target through the Gitea API when it is missing", async () => {
+    const giteaApi = await createTestGiteaApiServer();
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      await writeSecretRefFile(
+        "secret://git-services/local-gitea/provisioning",
+        "gitea-provisioning-token\n"
+      );
+
+      const catalogResponse = await server.inject({
+        method: "PUT",
+        payload: buildProvisioningCatalog({
+          apiBaseUrl: giteaApi.url
+        }),
+        url: "/v1/catalog"
+      });
+      expect(catalogResponse.statusCode).toBe(200);
+
+      const admittedPackageSourceId = await admitPackageSource(
+        server,
+        packageDirectory
+      );
+      await applySingleWorkerGraph({
+        packageSourceId: admittedPackageSourceId,
+        server
+      });
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+      expect(runtimeResponse.statusCode).toBe(200);
+      expect(runtimeInspectionResponseSchema.parse(runtimeResponse.json())).toMatchObject({
+        contextAvailable: true,
+        desiredState: "running",
+        observedState: "running",
+        primaryGitRepositoryProvisioning: {
+          created: true,
+          state: "ready",
+          target: {
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            provisioningMode: "gitea_api",
+            repositoryName: "team-alpha"
+          }
+        }
+      });
+
+      expect(
+        giteaApi.requests.filter(
+          (request) =>
+            request.method === "GET" &&
+            request.url === "/api/v1/repos/team-alpha/team-alpha" &&
+            request.authorization === "token gitea-provisioning-token"
+        ).length
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        giteaApi.requests.filter(
+          (request) =>
+            request.method === "GET" &&
+            request.url === "/api/v1/user" &&
+            request.authorization === "token gitea-provisioning-token"
+        ).length
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        giteaApi.requests.filter(
+          (request) =>
+            request.method === "POST" &&
+            request.url === "/api/v1/orgs/team-alpha/repos" &&
+            request.authorization === "token gitea-provisioning-token" &&
+            JSON.stringify(request.body) ===
+              JSON.stringify({
+                auto_init: false,
+                name: "team-alpha",
+                private: true
+              })
+        ).length
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        giteaApi.requests.some(
+          (request) =>
+            request.method === "POST" && request.url === "/api/v1/user/repos"
+        )
+      ).toBe(false);
+    } finally {
+      await Promise.all([server.close(), giteaApi.close()]);
+    }
+  });
+
+  it("provisions the current user's repository through /user/repos when the namespace matches the authenticated user", async () => {
+    const giteaApi = await createTestGiteaApiServer({
+      currentUserLogin: "team-alpha"
+    });
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      await writeSecretRefFile(
+        "secret://git-services/local-gitea/provisioning",
+        "gitea-provisioning-token\n"
+      );
+
+      await server.inject({
+        method: "PUT",
+        payload: buildProvisioningCatalog({
+          apiBaseUrl: giteaApi.url
+        }),
+        url: "/v1/catalog"
+      });
+
+      const admittedPackageSourceId = await admitPackageSource(
+        server,
+        packageDirectory
+      );
+      await applySingleWorkerGraph({
+        packageSourceId: admittedPackageSourceId,
+        server
+      });
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+      expect(runtimeResponse.statusCode).toBe(200);
+      expect(runtimeInspectionResponseSchema.parse(runtimeResponse.json())).toMatchObject({
+        primaryGitRepositoryProvisioning: {
+          created: true,
+          state: "ready"
+        }
+      });
+
+      expect(
+        giteaApi.requests.filter(
+          (request) =>
+            request.method === "POST" &&
+            request.url === "/api/v1/user/repos" &&
+            request.authorization === "token gitea-provisioning-token"
+        ).length
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        giteaApi.requests.some(
+          (request) =>
+            request.method === "POST" &&
+            request.url === "/api/v1/orgs/team-alpha/repos"
+        )
+      ).toBe(false);
+    } finally {
+      await Promise.all([server.close(), giteaApi.close()]);
+    }
+  });
+
+  it("reuses an existing primary repository target without issuing a create call", async () => {
+    const giteaApi = await createTestGiteaApiServer({
+      existingRepositories: [
+        {
+          owner: "team-alpha",
+          repositoryName: "team-alpha"
+        }
+      ]
+    });
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      await writeSecretRefFile(
+        "secret://git-services/local-gitea/provisioning",
+        "gitea-provisioning-token\n"
+      );
+
+      await server.inject({
+        method: "PUT",
+        payload: buildProvisioningCatalog({
+          apiBaseUrl: giteaApi.url
+        }),
+        url: "/v1/catalog"
+      });
+
+      const admittedPackageSourceId = await admitPackageSource(
+        server,
+        packageDirectory
+      );
+      await applySingleWorkerGraph({
+        packageSourceId: admittedPackageSourceId,
+        server
+      });
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+      expect(runtimeResponse.statusCode).toBe(200);
+      expect(runtimeInspectionResponseSchema.parse(runtimeResponse.json())).toMatchObject({
+        primaryGitRepositoryProvisioning: {
+          created: false,
+          state: "ready"
+        }
+      });
+
+      expect(
+        giteaApi.requests.every((request) => request.method === "GET")
+      ).toBe(true);
+      expect(
+        giteaApi.requests.filter(
+          (request) =>
+            request.url === "/api/v1/repos/team-alpha/team-alpha" &&
+            request.authorization === "token gitea-provisioning-token"
+        ).length
+      ).toBeGreaterThanOrEqual(1);
+    } finally {
+      await Promise.all([server.close(), giteaApi.close()]);
+    }
+  });
+
+  it("keeps the runtime unavailable when a gitea_api target cannot be provisioned", async () => {
+    const giteaApi = await createTestGiteaApiServer();
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      await server.inject({
+        method: "PUT",
+        payload: buildProvisioningCatalog({
+          apiBaseUrl: giteaApi.url
+        }),
+        url: "/v1/catalog"
+      });
+
+      const admittedPackageSourceId = await admitPackageSource(
+        server,
+        packageDirectory
+      );
+      await applySingleWorkerGraph({
+        packageSourceId: admittedPackageSourceId,
+        server
+      });
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+      expect(runtimeResponse.statusCode).toBe(200);
+      const runtimeInspection = runtimeInspectionResponseSchema.parse(
+        runtimeResponse.json()
+      );
+      expect(runtimeInspection).toMatchObject({
+        contextAvailable: false,
+        desiredState: "stopped",
+        observedState: "stopped",
+        primaryGitRepositoryProvisioning: {
+          state: "failed",
+          target: {
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            repositoryName: "team-alpha"
+          }
+        }
+      });
+      expect(runtimeInspection.reason).toContain("could not be provisioned");
+      expect(runtimeInspection.reason).toContain("requires provisioning secret");
+      expect(giteaApi.requests).toEqual([]);
+    } finally {
+      await Promise.all([server.close(), giteaApi.close()]);
     }
   });
 

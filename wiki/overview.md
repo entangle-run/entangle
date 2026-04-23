@@ -107,7 +107,10 @@ The repository now also contains the first real implementation baseline:
   preserving local artifact truth if publication fails; it can also retrieve
   published git handoffs from the runtime's primary repository target into an
   explicit retrieval cache and pass typed local artifact inputs into the
-  engine request;
+  engine request; the host now also provisions primary `gitea_api`
+  repository targets itself, persists provisioning-state records, and treats
+  provisioning failure as a runtime-realizability error instead of deferring
+  it to the runner;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay
@@ -192,10 +195,11 @@ The current implementation-truth audit now lives in
 [../references/59-implementation-state-and-delivery-audit.md](../references/59-implementation-state-and-delivery-audit.md).
 
 - complete remote git collaboration on top of the existing local git-backed
-  artifact model by adding repository provisioning and broader handoff support
-  beyond the now-implemented primary-target retrieval path, the resolved git
+  artifact model by adding broader handoff support beyond the now-implemented
+  primary-target retrieval path, the resolved git
   principal secret-delivery bindings, the explicit primary repository-target
-  contract, and the publication/retrieval-state record model;
+  contract, the host-owned provisioning record model, and the
+  publication/retrieval-state record model;
 - replace the stub engine path with the first real model-backed internal
   `agent-engine` adapter;
 - complete the host event stream and remaining core host resource surfaces;

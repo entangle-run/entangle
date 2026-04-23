@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added host-owned Gitea primary-target provisioning
+
+Closed the first concrete `gitea_api` provisioning path for git collaboration.
+The host now provisions primary repository targets itself, persists typed
+provisioning-state records, and keeps runtimes unavailable when service-backed
+repository provisioning fails.
+
 ## [2026-04-23] implementation | Added primary-target git retrieval and handoff validation
 
 Extended the runner from remote publication into the first downstream

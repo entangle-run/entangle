@@ -45,7 +45,6 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- repository provisioning for git service profiles that declare `gitea_api`;
 - retrieval and handoff beyond the current primary-target-only git policy;
 - a real model-backed internal `agent-engine`;
 - host event streaming;
@@ -176,13 +175,14 @@ artifact-collaboration depth, not the runner boundary itself.
 - downstream retrieval of published git artifacts from the receiving runtime's
   primary repository target, with persisted retrieval-state records and local
   engine artifact inputs;
+- host-owned provisioning of primary repository targets whose selected git
+  service declares `gitea_api`, with persisted provisioning-state records and
+  runtime realizability gated on provisioning success;
 - host inspection surface for runtime artifacts.
 
 ### Still missing or incomplete
 
-- remote retrieval semantics;
 - cross-node handoff validation beyond the current primary-target-only policy;
-- repository provisioning for targets that declare `gitea_api`;
 - richer artifact kinds beyond the first report-file slice.
 
 ### Assessment
@@ -316,8 +316,8 @@ surface:
 
 The current best delivery order is:
 
-1. complete repository provisioning and broader downstream handoff semantics on
-   top of the now-resolved git principal secret-delivery bindings;
+1. complete broader downstream handoff semantics on top of the now-resolved
+   git principal secret-delivery bindings and host-owned provisioning model;
 2. replace the stub engine with the first real model-backed `agent-engine`
    adapter;
 3. complete host event streaming and the remaining core host resource surfaces;
@@ -334,9 +334,9 @@ This ordering preserves the best current properties of the repository:
   premature distraction.
 
 The git secret-delivery, repository-target-resolution, publication-state,
-preexisting-repository publication, and primary-target retrieval slices are now
-complete, so the next best capability move inside that first phase is
-repository provisioning plus broader handoff widening where the design calls
+preexisting-repository publication, primary-target retrieval, and host-owned
+`gitea_api` provisioning slices are now complete, so the next best capability
+move inside that first phase is broader handoff widening where the design calls
 for it.
 
 ## What should not happen next
