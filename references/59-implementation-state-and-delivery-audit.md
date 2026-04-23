@@ -98,8 +98,8 @@ The most important stable conclusions remain:
 - event-stream DTOs for the future host event surface;
 - fuller host API DTO coverage for node/edge resource mutation and revision
   history surfaces not yet implemented;
-- remote git retrieval, handoff, and service-provisioning record contracts
-  beyond the current publication-state model.
+- richer engine/tool-execution observability contracts once tool activity is
+  surfaced more explicitly through host and Studio.
 
 ### Assessment
 
