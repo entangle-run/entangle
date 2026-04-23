@@ -148,7 +148,8 @@ The next major runtime work remains:
 
 - runner-side Nostr lifecycle and session handling;
 - git artifact work and handoff semantics;
-- richer observed runtime events and possibly streaming;
+- richer session-level host event classes on top of the now-implemented host
+  event surface;
 - explicit restart semantics;
 - stronger Docker smoke coverage in automation rather than only manual local
   validation;

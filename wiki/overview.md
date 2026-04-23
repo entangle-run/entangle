@@ -110,6 +110,10 @@ The repository now also contains the first real implementation baseline:
   turns now write task pages into the node wiki, append structured entries to
   `memory/wiki/log.md`, keep `memory/wiki/index.md` aligned, and feed the
   freshest task memory back into subsequent turn assembly;
+- a first typed host-event surface where `entangle-host` now persists
+  canonical event records, lists them over `GET /v1/events`, streams them over
+  WebSocket on the same route, and exposes the shared event boundary through
+  `packages/host-client` for future Studio and CLI live usage;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -223,6 +227,7 @@ The current implementation-truth audit now lives in
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided
   memory maintenance;
-- complete the host event stream and remaining core host resource surfaces;
+- complete the remaining core host resource surfaces and widen the now
+  implemented host event surface into deeper session and runner activity;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

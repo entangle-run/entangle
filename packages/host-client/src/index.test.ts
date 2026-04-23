@@ -18,7 +18,63 @@ function createMockResponse(options: {
   };
 }
 
+function createMockWebSocket() {
+  const listeners = new Map<string, Array<(event: unknown) => void>>();
+
+  return {
+    socket: {
+      addEventListener(type: string, listener: (event: unknown) => void) {
+        const current = listeners.get(type) ?? [];
+        current.push(listener);
+        listeners.set(type, current);
+      },
+      close() {}
+    },
+    dispatch(type: string, event: unknown) {
+      for (const listener of listeners.get(type) ?? []) {
+        listener(event);
+      }
+    }
+  };
+}
+
 describe("createHostClient", () => {
+  it("parses host event list responses from the host surface", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              events: [
+                {
+                  eventId: "evt-graph-apply-001",
+                  message: "Applied graph 'team-alpha' as revision 'team-alpha-20260423-000000'.",
+                  schemaVersion: "1",
+                  timestamp: "2026-04-23T00:00:00.000Z",
+                  activeRevisionId: "team-alpha-20260423-000000",
+                  category: "control_plane",
+                  graphId: "team-alpha",
+                  type: "graph.revision.applied"
+                }
+              ]
+            }),
+            ok: true,
+            status: 200
+          })
+        )
+    });
+
+    await expect(client.listHostEvents(20)).resolves.toMatchObject({
+      events: [
+        {
+          type: "graph.revision.applied",
+          graphId: "team-alpha"
+        }
+      ]
+    });
+  });
+
   it("surfaces plain-text upstream failures without masking them behind JSON parsing", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
@@ -180,5 +236,57 @@ describe("createHostClient", () => {
         }
       ]
     });
+  });
+
+  it("parses typed host events from the websocket event stream surface", () => {
+    const mockWebSocket = createMockWebSocket();
+    const receivedEvents: Array<{ type: string; nodeId?: string }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({ events: [] }),
+            ok: true,
+            status: 200
+          })
+        ),
+      webSocketFactory: () => mockWebSocket.socket
+    });
+
+    client.subscribeToEvents({
+      onEvent(event) {
+        receivedEvents.push({
+          type: event.type,
+          ...("nodeId" in event ? { nodeId: event.nodeId } : {})
+        });
+      },
+      replay: 5
+    });
+
+    mockWebSocket.dispatch("message", {
+      data: JSON.stringify({
+        eventId: "evt-runtime-observed-001",
+        message: "Runtime 'worker-it' observed state is now 'running'.",
+        schemaVersion: "1",
+        timestamp: "2026-04-23T00:00:00.000Z",
+        backendKind: "docker",
+        category: "runtime",
+        desiredState: "running",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260423-000000",
+        nodeId: "worker-it",
+        observedState: "running",
+        previousObservedState: "starting",
+        type: "runtime.observed_state.changed"
+      })
+    });
+
+    expect(receivedEvents).toEqual([
+      {
+        nodeId: "worker-it",
+        type: "runtime.observed_state.changed"
+      }
+    ]);
   });
 });

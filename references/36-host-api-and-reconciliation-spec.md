@@ -296,13 +296,13 @@ The current repository implementation now concretely includes:
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
 - `GET /v1/runtimes/{nodeId}/artifacts`
+- `GET /v1/events`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
 
 The currently missing runtime lifecycle elements are:
 
 - restart;
-- runtime event streaming;
 - `DELETE /v1/runtimes/{nodeId}`
 
 Purpose:
@@ -316,7 +316,9 @@ The current implementation also exposes:
 - runtime status messages suitable for Studio and CLI;
 - read-only persisted artifact inspection for active runtimes;
 - host-managed external principal inspection and mutation;
-- host-level reconciliation status via `GET /v1/host/status`.
+- host-level reconciliation status via `GET /v1/host/status`;
+- typed host-event inspection through `GET /v1/events`;
+- live host-event streaming over WebSocket upgrade on `GET /v1/events`.
 
 ### 8.7 Validation and dry-run
 
@@ -339,11 +341,24 @@ Purpose:
 
 - inspect current or historical runtime sessions in a stable way.
 
-## 9. Recommended WebSocket event stream
+## 10. Recommended WebSocket event stream
 
-Recommended stream:
+The current repository now implements the first serious version of this
+boundary:
 
 - `GET /v1/events` upgraded to WebSocket
+
+The implemented event classes currently include:
+
+- `catalog.updated`
+- `package_source.admitted`
+- `external_principal.updated`
+- `graph.revision.applied`
+- `runtime.desired_state.changed`
+- `runtime.observed_state.changed`
+- `host.reconciliation.completed`
+
+The broader target surface should continue to widen from there.
 
 Event classes should include at least:
 
@@ -367,7 +382,7 @@ The event payloads should carry:
 - node or session references when relevant;
 - machine-readable state deltas where appropriate.
 
-## 10. Idempotency and concurrency stance
+## 11. Idempotency and concurrency stance
 
 The first implementation does not need distributed transactions, but it should
 still be disciplined.
@@ -382,7 +397,7 @@ Recommended rules:
   where practical;
 - failed mutations must not leave graph truth half-written.
 
-## 11. Validation-before-apply rule
+## 12. Validation-before-apply rule
 
 The host should never mutate desired graph or node state blindly.
 
@@ -399,7 +414,7 @@ If validation fails:
 - findings should be returned to the caller;
 - no partial desired-state write should occur.
 
-## 12. Hackathon API subset
+## 13. Hackathon API subset
 
 The hackathon does not need the full surface above, but it should preserve the
 same conceptual boundary.

@@ -389,3 +389,14 @@ outcomes without overloading `ref.status`. The current local git-backed
 artifact path now persists `publication.state: "not_requested"`, and the shared
 type and runner tests lock the rules for `not_requested`, `published`, and
 `failed` publication metadata.
+
+## [2026-04-23] implementation | Added the first canonical host event surface
+
+Promoted host-side control-plane tracing into a real typed event boundary.
+Added canonical host-event contracts in `packages/types`, persisted and
+normalized host event records in `services/host`, exposed `GET /v1/events` for
+HTTP inspection plus WebSocket live streaming on the same route, and extended
+`packages/host-client` with typed event listing and subscription helpers.
+Closed the slice only after fixing the replay/live WebSocket race, tightening
+strict TypeScript and ESLint compliance around the shared client surface, and
+verifying the batch with targeted tests plus `pnpm verify`.

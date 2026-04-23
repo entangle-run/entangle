@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 import Fastify from "fastify";
+import websocket from "@fastify/websocket";
 import {
   catalogInspectionResponseSchema,
   externalPrincipalInspectionResponseSchema,
@@ -7,6 +8,10 @@ import {
   externalPrincipalMutationRequestSchema,
   graphMutationResponseSchema,
   graphInspectionResponseSchema,
+  type HostEventRecord,
+  hostEventListQuerySchema,
+  hostEventListResponseSchema,
+  hostEventStreamQuerySchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
@@ -27,6 +32,7 @@ import {
   getRuntimeInspection,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
+  listHostEvents,
   getCatalogInspection,
   getGraphInspection,
   listExternalPrincipals,
@@ -35,6 +41,7 @@ import {
   listRuntimeInspections,
   listPackageSources,
   setRuntimeDesiredState,
+  subscribeToHostEvents,
   upsertExternalPrincipal,
   validateCatalogCandidate,
   validateGraphCandidate
@@ -58,16 +65,31 @@ class HostHttpError extends Error {
   }
 }
 
-function parseRequestBody<T>(schema: ZodType<T>, body: unknown): T {
-  const parsed = schema.safeParse(body);
+type HostEventStreamSocket = {
+  close(code?: number, reason?: string): void;
+  on(event: "close", listener: () => void): void;
+  on(event: "error", listener: (error: Error) => void): void;
+  readyState: number;
+  send(payload: string): void;
+};
+
+function parseRequestInput<T>(
+  schema: ZodType<T>,
+  input: unknown,
+  options: {
+    detailsKey: string;
+    message: string;
+  }
+): T {
+  const parsed = schema.safeParse(input);
 
   if (!parsed.success) {
     throw new HostHttpError({
       code: "bad_request",
       details: {
-        issues: parsed.error.issues
+        [options.detailsKey]: parsed.error.issues
       },
-      message: "Request body did not match the expected schema.",
+      message: options.message,
       statusCode: 400
     });
   }
@@ -88,10 +110,11 @@ function isDirectExecution(): boolean {
   return typeof entrypoint === "string" && import.meta.url === pathToFileURL(entrypoint).href;
 }
 
-export function buildHostServer() {
+export async function buildHostServer() {
   const server = Fastify({
     logger: true
   });
+  await server.register(websocket);
 
   server.get("/v1/host/status", async () =>
     hostStatusResponseSchema.parse(await buildHostStatus())
@@ -100,6 +123,89 @@ export function buildHostServer() {
   server.get("/v1/catalog", async () =>
     catalogInspectionResponseSchema.parse(await getCatalogInspection())
   );
+
+  server.route({
+    method: "GET",
+    url: "/v1/events",
+    handler: async (request) => {
+      const query = parseRequestInput(hostEventListQuerySchema, request.query, {
+        detailsKey: "queryIssues",
+        message: "Request query did not match the expected schema."
+      });
+
+      return hostEventListResponseSchema.parse(
+        await listHostEvents(query.limit ?? 100)
+      );
+    },
+    wsHandler: (rawSocket, request) => {
+      const socket = rawSocket as HostEventStreamSocket;
+      const parsedQuery = hostEventStreamQuerySchema.safeParse(request.query);
+
+      if (!parsedQuery.success) {
+        socket.close(1008, "Invalid event stream query.");
+        return;
+      }
+
+      const sendEvent = (event: unknown) => {
+        if (socket.readyState === 1) {
+          socket.send(JSON.stringify(event));
+        }
+      };
+      let unsubscribe = () => {};
+      let isReplaying = true;
+      const bufferedEvents: HostEventRecord[] = [];
+
+      void (async () => {
+        const replayCount = parsedQuery.data.replay ?? 0;
+        unsubscribe = subscribeToHostEvents((event) => {
+          if (isReplaying) {
+            bufferedEvents.push(event);
+            return;
+          }
+
+          sendEvent(event);
+        });
+
+        if (replayCount > 0) {
+          const replay = await listHostEvents(replayCount);
+          const replayedEventIds = new Set(
+            replay.events.map((event) => event.eventId)
+          );
+
+          for (const event of replay.events) {
+            sendEvent(event);
+          }
+
+          for (const event of bufferedEvents) {
+            if (!replayedEventIds.has(event.eventId)) {
+              sendEvent(event);
+            }
+          }
+        } else {
+          for (const event of bufferedEvents) {
+            sendEvent(event);
+          }
+        }
+
+        bufferedEvents.length = 0;
+        isReplaying = false;
+      })().catch((error: unknown) => {
+        request.log.error(error);
+        isReplaying = false;
+        bufferedEvents.length = 0;
+        unsubscribe();
+        socket.close(1011, "Failed to initialize the host event stream.");
+      });
+
+      socket.on("close", () => {
+        unsubscribe();
+      });
+      socket.on("error", (error) => {
+        request.log.error(error);
+        unsubscribe();
+      });
+    }
+  });
 
   server.post("/v1/catalog/validate", (request) =>
     catalogInspectionResponseSchema.parse(validateCatalogCandidate(request.body))
@@ -140,9 +246,13 @@ export function buildHostServer() {
 
   server.put("/v1/external-principals/:principalId", async (request) => {
     const params = request.params as { principalId: string };
-    const mutation = parseRequestBody(
+    const mutation = parseRequestInput(
       externalPrincipalMutationRequestSchema,
-      request.body
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected schema."
+      }
     );
 
     if (mutation.principalId !== params.principalId) {
@@ -179,9 +289,13 @@ export function buildHostServer() {
   });
 
   server.post("/v1/package-sources/admit", async (request, reply) => {
-    const admissionRequest = parseRequestBody(
+    const admissionRequest = parseRequestInput(
       packageSourceAdmissionRequestSchema,
-      request.body
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected schema."
+      }
     );
     const inspection = await admitPackageSource(admissionRequest);
 
@@ -427,10 +541,12 @@ export function buildHostServer() {
   return server;
 }
 
-export async function startHostServer(): Promise<ReturnType<typeof buildHostServer>> {
+export async function startHostServer(): Promise<
+  Awaited<ReturnType<typeof buildHostServer>>
+> {
   const port = Number.parseInt(process.env.ENTANGLE_HOST_PORT ?? "7071", 10);
   await initializeHostState();
-  const server = buildHostServer();
+  const server = await buildHostServer();
 
   await server.listen({
     host: "0.0.0.0",

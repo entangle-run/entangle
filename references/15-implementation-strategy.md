@@ -176,7 +176,9 @@ place.
 
 Implement in small slices:
 
-1. host event stream;
+1. widen the newly implemented host event surface beyond the first
+   control-plane/runtime/reconciliation classes into deeper session and runner
+   activity;
 2. revision inspection and history surfaces;
 3. node and edge resource mutation surfaces;
 4. restart, degraded, and richer reconciliation semantics.

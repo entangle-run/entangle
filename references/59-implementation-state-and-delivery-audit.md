@@ -47,7 +47,6 @@ The repository does **not** yet include:
 
 - a broad builtin tool surface and richer model-guided memory maintenance
   inside the internal runtime execution path;
-- host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
   history;
 - Studio as a complete operator surface;
@@ -85,6 +84,7 @@ The most important stable conclusions remain:
 - canonical `zod` contracts in `packages/types` for graph, catalog, runtime
   context, A2A payloads, artifact records, external principals, host DTOs, and
   runner-local state;
+- canonical host-event DTOs for persisted inspection and WebSocket streaming;
 - explicit package-level tool catalog contracts with manifest-owned
   `runtime.toolsPath` and structured `runtime/tools.json` documents;
 - semantic validation in `packages/validator` for graph-resource consistency,
@@ -95,7 +95,6 @@ The most important stable conclusions remain:
 
 ### Still missing or incomplete
 
-- event-stream DTOs for the future host event surface;
 - fuller host API DTO coverage for node/edge resource mutation and revision
   history surfaces not yet implemented;
 - richer engine/tool-execution observability contracts once tool activity is
@@ -115,6 +114,8 @@ This layer is strong and directionally correct. It is not a blocker.
 - external-principal persistence and inspection;
 - graph apply, inspection, and validation;
 - runtime inspection, start, stop, context inspection, and artifact inspection;
+- typed host-event persistence, HTTP event listing, and live WebSocket event
+  streaming through the same host boundary;
 - host-managed runtime identity persistence;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
@@ -128,7 +129,8 @@ This layer is strong and directionally correct. It is not a blocker.
 - resource-oriented edge mutation surfaces;
 - graph revision history inspection APIs;
 - runtime restart surface;
-- host event stream for reconciliation, runtime, and session activity;
+- session-level and richer runner-originated event classes on top of the new
+  host event surface;
 - richer reconciliation diagnostics and restart policies.
 
 ### Assessment
@@ -262,7 +264,9 @@ delivery.
 ### Implemented
 
 - real host-backed graph and runtime status surface;
-- host-backed topology rendering instead of a fake demo graph.
+- host-backed topology rendering instead of a fake demo graph;
+- shared host-client support for typed event listing and WebSocket event
+  subscription, ready for Studio consumption.
 
 ### Still missing or incomplete
 
@@ -342,7 +346,8 @@ The current best delivery order is:
 1. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
-2. complete host event streaming and the remaining core host resource surfaces;
+2. complete the remaining core host resource surfaces and widen host events to
+   deeper session-level runtime activity;
 3. deepen Studio into a real operator surface on top of those host capabilities;
 4. complete CLI parity for the core host workflows;
 5. harden end-to-end deployment, restart, and integration coverage;
@@ -359,10 +364,11 @@ This ordering preserves the best current properties of the repository:
 
 The git secret-delivery, repository-target-resolution, publication-state,
 preexisting-repository publication, locator-specific retrieval, host-owned
-`gitea_api` provisioning, first real provider-backed engine, and first bounded
-tool-loop slices are now complete for the current local operator profile, so
-the next best capability move is controlled runtime deepening and host-surface
-completion rather than another foundational rewrite.
+`gitea_api` provisioning, first real provider-backed engine, first bounded
+tool-loop, deterministic post-turn memory, and first host-event-surface slices
+are now complete for the current local operator profile, so the next best
+capability move is controlled runtime deepening and host-surface completion
+rather than another foundational rewrite.
 
 ## What should not happen next
 

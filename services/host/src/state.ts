@@ -14,6 +14,10 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import {
   artifactRecordSchema,
+  hostEventListResponseSchema,
+  hostEventRecordSchema,
+  type HostEventListResponse,
+  type HostEventRecord,
   gitRepositoryProvisioningRecordSchema,
   type AgentPackageManifest,
   agentPackageManifestSchema,
@@ -67,6 +71,8 @@ import {
   runtimeListResponseSchema,
   type RuntimeListResponse,
   type RuntimeObservedState,
+  type RuntimeIntentRecord,
+  type ObservedRuntimeRecord,
   observedRuntimeRecordSchema,
   reconciliationSnapshotSchema,
   type ReconciliationSnapshot,
@@ -134,6 +140,36 @@ type RuntimeResolution = {
 };
 
 const runtimeBackend = createRuntimeBackend(hostStateRoot, secretStateRoot);
+const hostEventSubscribers = new Set<(event: HostEventRecord) => void>();
+
+type CatalogUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "catalog.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type PackageSourceAdmittedEventInput = Omit<
+  Extract<HostEventRecord, { type: "package_source.admitted" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type ExternalPrincipalUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "external_principal.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type GraphRevisionAppliedEventInput = Omit<
+  Extract<HostEventRecord, { type: "graph.revision.applied" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeDesiredStateChangedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.desired_state.changed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeObservedStateChangedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.observed_state.changed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type HostReconciliationCompletedEventInput = Omit<
+  Extract<HostEventRecord, { type: "host.reconciliation.completed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 
 function nowIsoString(): string {
   return new Date().toISOString();
@@ -628,16 +664,172 @@ async function resolveManifestForPackageSource(
   return manifestParse.success ? manifestParse.data : undefined;
 }
 
-async function appendControlPlaneEvent(
+function emitHostEvent(event: HostEventRecord): void {
+  for (const subscriber of hostEventSubscribers) {
+    subscriber(event);
+  }
+}
+
+async function appendHostEvent(
   event: Record<string, unknown>
-): Promise<void> {
+): Promise<HostEventRecord> {
   await ensureDirectory(controlPlaneTraceRoot);
   const logPath = path.join(controlPlaneTraceRoot, `${dateStamp()}.jsonl`);
-  const encoded = `${JSON.stringify({
+  const record = hostEventRecordSchema.parse({
     ...event,
+    eventId: sanitizeIdentifier(`evt-${randomUUID()}`),
+    schemaVersion: "1",
     timestamp: nowIsoString()
-  })}\n`;
+  });
+  const encoded = `${JSON.stringify(record)}\n`;
   await writeFile(logPath, encoded, { encoding: "utf8", flag: "a" });
+  emitHostEvent(record);
+  return record;
+}
+
+function parsePersistedHostEvent(input: unknown): HostEventRecord {
+  const parsedRecord = hostEventRecordSchema.safeParse(input);
+
+  if (parsedRecord.success) {
+    return parsedRecord.data;
+  }
+
+  if (!input || typeof input !== "object") {
+    throw parsedRecord.error;
+  }
+
+  const legacyEvent = input as Record<string, unknown>;
+  const legacyType =
+    typeof legacyEvent.type === "string" ? legacyEvent.type : undefined;
+  const legacyMessage =
+    typeof legacyEvent.message === "string"
+      ? legacyEvent.message
+      : "Recovered legacy host event.";
+  const legacyTimestamp =
+    typeof legacyEvent.timestamp === "string"
+      ? legacyEvent.timestamp
+      : nowIsoString();
+  const legacyEventId = sanitizeIdentifier(
+    `evt-${createHash("sha1").update(JSON.stringify(input)).digest("hex").slice(0, 20)}`
+  );
+
+  switch (legacyType) {
+    case "catalog_bootstrap":
+      return hostEventRecordSchema.parse({
+        eventId: legacyEventId,
+        message: legacyMessage,
+        schemaVersion: "1",
+        timestamp: legacyTimestamp,
+        catalogId:
+          typeof legacyEvent.catalogId === "string"
+            ? legacyEvent.catalogId
+            : "bootstrap-catalog",
+        category: "control_plane",
+        type: "catalog.updated",
+        updateKind: "bootstrap"
+      });
+    case "catalog_apply":
+      return hostEventRecordSchema.parse({
+        eventId: legacyEventId,
+        message: legacyMessage,
+        schemaVersion: "1",
+        timestamp: legacyTimestamp,
+        catalogId:
+          typeof legacyEvent.catalogId === "string"
+            ? legacyEvent.catalogId
+            : "applied-catalog",
+        category: "control_plane",
+        type: "catalog.updated",
+        updateKind: "apply"
+      });
+    case "package_source_admit":
+      return hostEventRecordSchema.parse({
+        eventId: legacyEventId,
+        message: legacyMessage,
+        schemaVersion: "1",
+        timestamp: legacyTimestamp,
+        category: "control_plane",
+        packageSourceId:
+          typeof legacyEvent.packageSourceId === "string"
+            ? legacyEvent.packageSourceId
+            : "legacy-package-source",
+        type: "package_source.admitted"
+      });
+    case "external_principal_upsert":
+      return hostEventRecordSchema.parse({
+        eventId: legacyEventId,
+        message: legacyMessage,
+        schemaVersion: "1",
+        timestamp: legacyTimestamp,
+        category: "control_plane",
+        principalId:
+          typeof legacyEvent.principalId === "string"
+            ? legacyEvent.principalId
+            : "legacy-principal",
+        type: "external_principal.updated"
+      });
+    case "graph_apply":
+      return hostEventRecordSchema.parse({
+        eventId: legacyEventId,
+        message: legacyMessage,
+        schemaVersion: "1",
+        timestamp: legacyTimestamp,
+        activeRevisionId:
+          typeof legacyEvent.activeRevisionId === "string"
+            ? legacyEvent.activeRevisionId
+            : "legacy-graph-revision",
+        category: "control_plane",
+        graphId:
+          typeof legacyEvent.graphId === "string"
+            ? legacyEvent.graphId
+            : "legacy-graph",
+        type: "graph.revision.applied"
+      });
+    default:
+      throw parsedRecord.error;
+  }
+}
+
+export function subscribeToHostEvents(
+  listener: (event: HostEventRecord) => void
+): () => void {
+  hostEventSubscribers.add(listener);
+  return () => {
+    hostEventSubscribers.delete(listener);
+  };
+}
+
+export async function listHostEvents(limit = 100): Promise<HostEventListResponse> {
+  await initializeHostState();
+
+  if (!(await pathExists(controlPlaneTraceRoot))) {
+    return hostEventListResponseSchema.parse({
+      events: []
+    });
+  }
+
+  const fileNames = (await readdir(controlPlaneTraceRoot))
+    .filter((fileName) => fileName.endsWith(".jsonl"))
+    .sort();
+  const events: HostEventRecord[] = [];
+
+  for (const fileName of fileNames) {
+    const fileContent = await readFile(
+      path.join(controlPlaneTraceRoot, fileName),
+      "utf8"
+    );
+    const entries = fileContent
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => parsePersistedHostEvent(JSON.parse(line) as unknown));
+
+    events.push(...entries);
+  }
+
+  return hostEventListResponseSchema.parse({
+    events: events.slice(-limit)
+  });
 }
 
 async function removeJsonFilesExcept(
@@ -1024,7 +1216,7 @@ function buildWorkspaceLayout(nodeId: string) {
 
 async function readRuntimeIntentRecord(
   nodeId: string
-): Promise<ReturnType<typeof runtimeIntentRecordSchema.parse> | undefined> {
+): Promise<RuntimeIntentRecord | undefined> {
   const filePath = path.join(runtimeIntentsRoot, `${nodeId}.json`);
 
   if (!(await pathExists(filePath))) {
@@ -1032,6 +1224,18 @@ async function readRuntimeIntentRecord(
   }
 
   return runtimeIntentRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function readObservedRuntimeRecord(
+  nodeId: string
+): Promise<ObservedRuntimeRecord | undefined> {
+  const filePath = path.join(observedRuntimesRoot, `${nodeId}.json`);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedRuntimeRecordSchema.parse(await readJsonFile(filePath));
 }
 
 async function listObservedRuntimeNodeIds(): Promise<string[]> {
@@ -1054,6 +1258,49 @@ async function readLatestReconciliationSnapshot(): Promise<
 
   return reconciliationSnapshotSchema.parse(
     await readJsonFile(latestReconciliationPath)
+  );
+}
+
+function didRuntimeIntentChange(
+  previous: RuntimeIntentRecord | undefined,
+  next: RuntimeIntentRecord
+): boolean {
+  return (
+    !previous ||
+    previous.desiredState !== next.desiredState ||
+    previous.reason !== next.reason ||
+    previous.graphId !== next.graphId ||
+    previous.graphRevisionId !== next.graphRevisionId
+  );
+}
+
+function didObservedRuntimeChange(
+  previous: ObservedRuntimeRecord | undefined,
+  next: ObservedRuntimeRecord
+): boolean {
+  return (
+    !previous ||
+    previous.observedState !== next.observedState ||
+    previous.statusMessage !== next.statusMessage ||
+    previous.runtimeHandle !== next.runtimeHandle ||
+    previous.graphId !== next.graphId ||
+    previous.graphRevisionId !== next.graphRevisionId
+  );
+}
+
+function didReconciliationSnapshotChange(
+  previous: ReconciliationSnapshot | undefined,
+  next: ReconciliationSnapshot
+): boolean {
+  return (
+    !previous ||
+    previous.graphId !== next.graphId ||
+    previous.graphRevisionId !== next.graphRevisionId ||
+    previous.managedRuntimeCount !== next.managedRuntimeCount ||
+    previous.runningRuntimeCount !== next.runningRuntimeCount ||
+    previous.stoppedRuntimeCount !== next.stoppedRuntimeCount ||
+    previous.failedRuntimeCount !== next.failedRuntimeCount ||
+    JSON.stringify(previous.nodes) !== JSON.stringify(next.nodes)
   );
 }
 
@@ -1116,12 +1363,16 @@ export async function initializeHostState(): Promise<void> {
   ]);
 
   if (!(await pathExists(catalogPath))) {
-    await writeJsonFile(catalogPath, buildDefaultCatalog());
-    await appendControlPlaneEvent({
+    const defaultCatalog = buildDefaultCatalog();
+
+    await writeJsonFile(catalogPath, defaultCatalog);
+    await appendHostEvent({
+      catalogId: defaultCatalog.catalogId,
       category: "control_plane",
-      type: "catalog_bootstrap",
-      message: "Bootstrapped default deployment resource catalog."
-    });
+      message: "Bootstrapped default deployment resource catalog.",
+      type: "catalog.updated",
+      updateKind: "bootstrap"
+    } satisfies CatalogUpdatedEventInput);
   }
 }
 
@@ -1172,12 +1423,13 @@ export async function applyCatalog(
 
   await writeJsonFile(catalogPath, inspection.catalog);
   await synchronizeCurrentGraphRuntimeState();
-  await appendControlPlaneEvent({
+  await appendHostEvent({
+    catalogId: inspection.catalog.catalogId,
     category: "control_plane",
-    type: "catalog_apply",
     message: `Applied catalog '${inspection.catalog.catalogId}'.`,
-    catalogId: inspection.catalog.catalogId
-  });
+    type: "catalog.updated",
+    updateKind: "apply"
+  } satisfies CatalogUpdatedEventInput);
 
   return inspection;
 }
@@ -1301,12 +1553,12 @@ export async function admitPackageSource(
 
   if (validation.ok) {
     await writeJsonFile(path.join(packageSourcesRoot, `${packageSourceId}.json`), record);
-    await appendControlPlaneEvent({
+    await appendHostEvent({
       category: "control_plane",
-      type: "package_source_admit",
       message: `Admitted package source '${packageSourceId}'.`,
-      packageSourceId
-    });
+      packageSourceId,
+      type: "package_source.admitted"
+    } satisfies PackageSourceAdmittedEventInput);
   }
 
   return {
@@ -1380,12 +1632,12 @@ export async function upsertExternalPrincipal(
     externalPrincipalRecordPath(canonicalPrincipal.principalId),
     canonicalPrincipal
   );
-  await appendControlPlaneEvent({
+  await appendHostEvent({
     category: "control_plane",
-    type: "external_principal_upsert",
     message: `Upserted external principal '${canonicalPrincipal.principalId}'.`,
-    principalId: canonicalPrincipal.principalId
-  });
+    principalId: canonicalPrincipal.principalId,
+    type: "external_principal.updated"
+  } satisfies ExternalPrincipalUpdatedEventInput);
 
   return externalPrincipalInspectionResponseSchema.parse({
     principal: canonicalPrincipal,
@@ -1844,6 +2096,20 @@ async function buildRuntimeResolution(input: {
     path.join(runtimeIntentsRoot, `${node.nodeId}.json`),
     intentRecord
   );
+  if (didRuntimeIntentChange(existingIntent, intentRecord)) {
+    await appendHostEvent({
+      category: "runtime",
+      desiredState: intentRecord.desiredState,
+      graphId: graph.graphId,
+      graphRevisionId: activeRevisionId,
+      message: `Runtime '${node.nodeId}' desired state is now '${intentRecord.desiredState}'.`,
+      nodeId: node.nodeId,
+      previousDesiredState: existingIntent?.desiredState,
+      previousReason: existingIntent?.reason,
+      reason: intentRecord.reason,
+      type: "runtime.desired_state.changed"
+    } satisfies RuntimeDesiredStateChangedEventInput);
+  }
 
   const reconcileInput = {
     context,
@@ -1863,6 +2129,7 @@ async function buildRuntimeResolution(input: {
         }
       : {})
   };
+  const existingObservedRecord = await readObservedRuntimeRecord(node.nodeId);
   const observedRuntime = await runtimeBackend
     .reconcileRuntime(reconcileInput)
     .catch((error: unknown) => ({
@@ -1891,6 +2158,22 @@ async function buildRuntimeResolution(input: {
     path.join(observedRuntimesRoot, `${node.nodeId}.json`),
     observedRecord
   );
+  if (didObservedRuntimeChange(existingObservedRecord, observedRecord)) {
+    await appendHostEvent({
+      backendKind: observedRecord.backendKind,
+      category: "runtime",
+      desiredState: intentRecord.desiredState,
+      graphId: graph.graphId,
+      graphRevisionId: activeRevisionId,
+      message: `Runtime '${node.nodeId}' observed state is now '${observedRecord.observedState}'.`,
+      nodeId: node.nodeId,
+      observedState: observedRecord.observedState,
+      previousObservedState: existingObservedRecord?.observedState,
+      runtimeHandle: observedRecord.runtimeHandle,
+      statusMessage: observedRecord.statusMessage,
+      type: "runtime.observed_state.changed"
+    } satisfies RuntimeObservedStateChangedEventInput);
+  }
 
   return {
     context,
@@ -1917,6 +2200,7 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   snapshot: ReturnType<typeof reconciliationSnapshotSchema.parse>;
 }> {
   const { graph, activeRevisionId } = await readActiveGraphState();
+  const previousSnapshot = await readLatestReconciliationSnapshot();
 
   if (!graph || !activeRevisionId) {
     const emptySnapshot = reconciliationSnapshotSchema.parse({
@@ -1933,6 +2217,20 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
     });
     await writeJsonFileIfChanged(latestReconciliationPath, emptySnapshot);
     await removeJsonFilesExcept(gitRepositoryTargetsRoot, new Set());
+    if (didReconciliationSnapshotChange(previousSnapshot, emptySnapshot)) {
+      await appendHostEvent({
+        backendKind: emptySnapshot.backendKind,
+        category: "reconciliation",
+        failedRuntimeCount: emptySnapshot.failedRuntimeCount,
+        graphId: emptySnapshot.graphId,
+        graphRevisionId: emptySnapshot.graphRevisionId,
+        managedRuntimeCount: emptySnapshot.managedRuntimeCount,
+        message: "Host reconciliation completed with no active graph.",
+        runningRuntimeCount: emptySnapshot.runningRuntimeCount,
+        stoppedRuntimeCount: emptySnapshot.stoppedRuntimeCount,
+        type: "host.reconciliation.completed"
+      } satisfies HostReconciliationCompletedEventInput);
+    }
 
     return {
       runtimes: [],
@@ -2003,6 +2301,20 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   });
 
   await writeJsonFileIfChanged(latestReconciliationPath, snapshot);
+  if (didReconciliationSnapshotChange(previousSnapshot, snapshot)) {
+    await appendHostEvent({
+      backendKind: snapshot.backendKind,
+      category: "reconciliation",
+      failedRuntimeCount: snapshot.failedRuntimeCount,
+      graphId: snapshot.graphId,
+      graphRevisionId: snapshot.graphRevisionId,
+      managedRuntimeCount: snapshot.managedRuntimeCount,
+      message: `Host reconciliation completed for graph '${snapshot.graphId}'.`,
+      runningRuntimeCount: snapshot.runningRuntimeCount,
+      stoppedRuntimeCount: snapshot.stoppedRuntimeCount,
+      type: "host.reconciliation.completed"
+    } satisfies HostReconciliationCompletedEventInput);
+  }
 
   return {
     runtimes: inspections,
@@ -2115,13 +2427,13 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
   );
   await writeJsonFile(activeGraphRevisionPath, revisionRecord);
   await synchronizeCurrentGraphRuntimeState();
-  await appendControlPlaneEvent({
+  await appendHostEvent({
+    activeRevisionId,
     category: "control_plane",
-    type: "graph_apply",
-    message: `Applied graph '${candidate.graph.graphId}' as revision '${activeRevisionId}'.`,
     graphId: candidate.graph.graphId,
-    activeRevisionId
-  });
+    message: `Applied graph '${candidate.graph.graphId}' as revision '${activeRevisionId}'.`,
+    type: "graph.revision.applied"
+  } satisfies GraphRevisionAppliedEventInput);
 
   return {
     ...candidate,

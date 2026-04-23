@@ -9,6 +9,7 @@ import {
   externalPrincipalRecordSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
+  hostEventRecordSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
@@ -208,6 +209,30 @@ describe("external principal contracts", () => {
 
     expect(result.systemKind).toBe("git");
     expect(result.gitServiceRef).toBe("local-gitea");
+  });
+});
+
+describe("host event contracts", () => {
+  it("accepts a typed runtime observed-state event", () => {
+    const result = hostEventRecordSchema.parse({
+      eventId: "runtime-worker-it-evt-001",
+      message: "Runtime 'worker-it' entered the running state.",
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:00:00.000Z",
+      backendKind: "docker",
+      category: "runtime",
+      desiredState: "running",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260423-000000",
+      nodeId: "worker-it",
+      observedState: "running",
+      previousObservedState: "starting",
+      statusMessage: "Runtime is healthy.",
+      type: "runtime.observed_state.changed"
+    });
+
+    expect(result.type).toBe("runtime.observed_state.changed");
+    expect(result.category).toBe("runtime");
   });
 });
 

@@ -11,9 +11,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Fastify from "fastify";
+import { WebSocket } from "ws";
 import {
   artifactRecordSchema,
   externalPrincipalInspectionResponseSchema,
+  hostEventListResponseSchema,
+  hostEventRecordSchema,
   hostErrorResponseSchema,
   packageSourceInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
@@ -23,6 +26,16 @@ import {
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
+
+type TestWebSocket = {
+  close(code?: number, reason?: string): void;
+  once(event: "error", listener: (error: Error) => void): void;
+  once(event: "open", listener: () => void): void;
+  once(event: "message", listener: (payload: Buffer) => void): void;
+  terminate(): void;
+};
+
+type TestWebSocketConstructor = new (url: string) => TestWebSocket;
 
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
@@ -376,7 +389,7 @@ async function createTestServer(
 
   await stateModule.initializeHostState();
 
-  return hostModule.buildHostServer();
+  return await hostModule.buildHostServer();
 }
 
 async function admitPackageSource(
@@ -396,6 +409,30 @@ async function admitPackageSource(
 
   return packageSourceInspectionResponseSchema.parse(admitResponse.json()).packageSource
     .packageSourceId;
+}
+
+async function readNextSocketEvent(
+  socket: TestWebSocket
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    socket.once("message", (payload) => {
+      resolve(JSON.parse(payload.toString("utf8")) as unknown);
+    });
+    socket.once("error", reject);
+  });
+}
+
+async function openSocket(url: string): Promise<TestWebSocket> {
+  const socket = new (WebSocket as unknown as TestWebSocketConstructor)(url);
+
+  await new Promise<void>((resolve, reject) => {
+    socket.once("open", () => {
+      resolve();
+    });
+    socket.once("error", reject);
+  });
+
+  return socket;
 }
 
 async function applySingleWorkerGraph(input: {
@@ -589,6 +626,68 @@ describe("buildHostServer", () => {
           }
         ]
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists typed host events over HTTP and streams them over the websocket surface", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=10"
+      });
+
+      expect(listResponse.statusCode).toBe(200);
+      const listedEvents = hostEventListResponseSchema.parse(listResponse.json());
+      expect(listedEvents.events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "package_source.admitted"
+          }),
+          expect.objectContaining({
+            type: "graph.revision.applied"
+          })
+        ])
+      );
+
+      const address = await server.listen({
+        host: "127.0.0.1",
+        port: 0
+      });
+      const socket = await openSocket(`${address.replace(/^http/, "ws")}/v1/events`);
+
+      try {
+        const upsertResponse = await server.inject({
+          method: "PUT",
+          payload: buildGitPrincipalRecord({
+            principalId: "worker-it-git-stream"
+          }),
+          url: "/v1/external-principals/worker-it-git-stream"
+        });
+
+        expect(upsertResponse.statusCode).toBe(200);
+
+        const liveEvent = hostEventRecordSchema.parse(
+          await readNextSocketEvent(socket)
+        );
+        expect(liveEvent).toMatchObject({
+          category: "control_plane",
+          principalId: "worker-it-git-stream",
+          type: "external_principal.updated"
+        });
+      } finally {
+        socket.close();
+      }
     } finally {
       await server.close();
     }

@@ -160,6 +160,10 @@ This repository currently contains:
   now writes task-specific wiki pages, appends structured entries to
   `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
   task memory back into future turn assembly.
+- a first typed host-event surface where `entangle-host` now persists and
+  normalizes event records, exposes `GET /v1/events` for inspection, streams
+  live host events over WebSocket on the same route, and shares that boundary
+  through `packages/host-client` for future Studio and CLI live consumption;
 
 The highest-value remaining gaps are:
 
@@ -167,7 +171,8 @@ The highest-value remaining gaps are:
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
-- host event streaming and fuller host resource surfaces;
+- deeper session-level and runner-originated host event coverage plus fuller
+  host resource surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

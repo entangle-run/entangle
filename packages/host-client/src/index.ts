@@ -5,6 +5,8 @@ import {
   externalPrincipalMutationRequestSchema,
   graphInspectionResponseSchema,
   graphMutationResponseSchema,
+  hostEventListResponseSchema,
+  hostEventRecordSchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
@@ -20,6 +22,8 @@ import {
   type ExternalPrincipalMutationRequest,
   type GraphInspectionResponse,
   type GraphMutationResponse,
+  type HostEventListResponse,
+  type HostEventRecord,
   type HostStatusResponse,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
@@ -44,14 +48,62 @@ type FetchRequest = {
 };
 
 type FetchLike = (input: string, init?: FetchRequest) => Promise<FetchResponse>;
+type WebSocketMessageEvent = {
+  data: unknown;
+};
+type WebSocketErrorEvent = {
+  error?: unknown;
+};
+type WebSocketCloseEvent = {
+  code?: number;
+  reason?: string;
+};
+interface HostClientWebSocket {
+  addEventListener(
+    type: "close",
+    listener: (event: WebSocketCloseEvent) => void
+  ): void;
+  addEventListener(
+    type: "error",
+    listener: (event: WebSocketErrorEvent) => void
+  ): void;
+  addEventListener(
+    type: "message",
+    listener: (event: WebSocketMessageEvent) => void
+  ): void;
+  addEventListener(type: "open", listener: () => void): void;
+  close(code?: number, reason?: string): void;
+}
+type WebSocketFactory = (url: string) => HostClientWebSocket;
 
 export interface HostClientOptions {
   baseUrl: string;
   fetchImpl?: FetchLike;
+  webSocketFactory?: WebSocketFactory;
+}
+
+export interface HostEventSubscriptionOptions {
+  onClose?: (event: WebSocketCloseEvent) => void;
+  onError?: (error: Error) => void;
+  onEvent: (event: HostEventRecord) => void;
+  onOpen?: () => void;
+  replay?: number;
+}
+
+export interface HostEventSubscription {
+  close(code?: number, reason?: string): void;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
+
+function buildEventStreamUrl(baseUrl: string, replay: number): string {
+  const url = new URL(baseUrl);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/events`;
+  url.searchParams.set("replay", String(replay));
+  return url.toString();
 }
 
 function parseResponseBody(rawBody: string): unknown {
@@ -80,6 +132,39 @@ function formatErrorBody(status: number, body: unknown): string {
   return `Host request failed with ${status}: ${JSON.stringify(body, null, 2)}`;
 }
 
+function normalizeWebSocketMessageData(data: unknown): string {
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(new Uint8Array(data));
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(
+      new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    );
+  }
+
+  throw new Error("Unsupported host event message payload.");
+}
+
+function normalizeWebSocketError(event: WebSocketErrorEvent): Error {
+  return event.error instanceof Error
+    ? event.error
+    : new Error("Host event stream reported an unexpected error.");
+}
+
+function normalizeWebSocketCloseEvent(
+  event: WebSocketCloseEvent
+): WebSocketCloseEvent {
+  return {
+    ...(event.code === undefined ? {} : { code: event.code }),
+    ...(event.reason === undefined ? {} : { reason: event.reason })
+  };
+}
+
 async function parseResponse<T>(
   response: FetchResponse,
   parser: { parse(input: unknown): T },
@@ -100,6 +185,17 @@ async function parseResponse<T>(
 export function createHostClient(options: HostClientOptions) {
   const baseUrl = normalizeBaseUrl(options.baseUrl);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const webSocketFactory: WebSocketFactory =
+    options.webSocketFactory ??
+    ((url: string): HostClientWebSocket => {
+      if (!globalThis.WebSocket) {
+        throw new Error(
+          "A WebSocket implementation is required to subscribe to Entangle host events."
+        );
+      }
+
+      return new globalThis.WebSocket(url);
+    });
 
   if (!fetchImpl) {
     throw new Error("A fetch implementation is required to create an Entangle host client.");
@@ -110,6 +206,16 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/host/status`),
         hostStatusResponseSchema
+      );
+    },
+
+    async listHostEvents(limit = 100): Promise<HostEventListResponse> {
+      const url = new URL(`${baseUrl}/v1/events`);
+      url.searchParams.set("limit", String(limit));
+
+      return parseResponse(
+        await fetchImpl(url.toString()),
+        hostEventListResponseSchema
       );
     },
 
@@ -297,6 +403,45 @@ export function createHostClient(options: HostClientOptions) {
         }),
         runtimeInspectionResponseSchema
       );
+    },
+
+    subscribeToEvents(
+      options: HostEventSubscriptionOptions
+    ): HostEventSubscription {
+      const socket = webSocketFactory(
+        buildEventStreamUrl(baseUrl, options.replay ?? 0)
+      );
+
+      socket.addEventListener("open", () => {
+        options.onOpen?.();
+      });
+      socket.addEventListener("message", (event: WebSocketMessageEvent) => {
+        try {
+          options.onEvent(
+            hostEventRecordSchema.parse(
+              parseResponseBody(normalizeWebSocketMessageData(event.data))
+            )
+          );
+        } catch (error: unknown) {
+          options.onError?.(
+            error instanceof Error
+              ? error
+              : new Error("Failed to parse host event payload.")
+          );
+        }
+      });
+      socket.addEventListener("error", (event: WebSocketErrorEvent) => {
+        options.onError?.(normalizeWebSocketError(event));
+      });
+      socket.addEventListener("close", (event: WebSocketCloseEvent) => {
+        options.onClose?.(normalizeWebSocketCloseEvent(event));
+      });
+
+      return {
+        close(code?: number, reason?: string) {
+          socket.close(code, reason);
+        }
+      };
     }
   };
 }
