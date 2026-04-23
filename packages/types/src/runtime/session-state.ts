@@ -113,6 +113,7 @@ export const approvalRecordSchema = z.object({
 
 export const runnerTurnRecordSchema = z.object({
   conversationId: identifierSchema.optional(),
+  consumedArtifactIds: z.array(identifierSchema).default([]),
   graphId: identifierSchema,
   messageId: nostrEventIdSchema.optional(),
   nodeId: identifierSchema,

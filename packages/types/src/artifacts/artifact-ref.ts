@@ -42,6 +42,7 @@ export const gitArtifactLocatorSchema = z.object({
   commit: nonEmptyStringSchema,
   gitServiceRef: identifierSchema.optional(),
   namespace: identifierSchema.optional(),
+  repositoryName: identifierSchema.optional(),
   path: nonEmptyStringSchema
 });
 
@@ -160,10 +161,68 @@ export const artifactPublicationSchema = z
     }
   });
 
+export const artifactRetrievalStateSchema = z.enum(["retrieved", "failed"]);
+
+export const artifactRetrievalSchema = z
+  .object({
+    state: artifactRetrievalStateSchema,
+    retrievedAt: nonEmptyStringSchema.optional(),
+    lastAttemptAt: nonEmptyStringSchema.optional(),
+    lastError: nonEmptyStringSchema.optional(),
+    remoteName: identifierSchema.optional(),
+    remoteUrl: nonEmptyStringSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (value.state === "retrieved") {
+      if (!value.retrievedAt) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Retrieved artifact metadata must include retrievedAt.",
+          path: ["retrievedAt"]
+        });
+      }
+    }
+
+    if (value.state === "failed") {
+      if (!value.lastAttemptAt) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Failed artifact retrieval metadata must include lastAttemptAt.",
+          path: ["lastAttemptAt"]
+        });
+      }
+
+      if (!value.lastError) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Failed artifact retrieval metadata must include lastError.",
+          path: ["lastError"]
+        });
+      }
+    }
+
+    if (value.state !== "retrieved" && value.retrievedAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only retrieved artifact metadata may include retrievedAt.",
+        path: ["retrievedAt"]
+      });
+    }
+
+    if (value.state !== "failed" && value.lastError) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only failed artifact retrieval metadata may include lastError.",
+        path: ["lastError"]
+      });
+    }
+  });
+
 export const artifactRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
   materialization: artifactMaterializationSchema.optional(),
   publication: artifactPublicationSchema.optional(),
+  retrieval: artifactRetrievalSchema.optional(),
   ref: artifactRefSchema,
   turnId: identifierSchema.optional(),
   updatedAt: nonEmptyStringSchema
@@ -178,5 +237,7 @@ export type LocalFileArtifactLocator = z.infer<typeof localFileArtifactLocatorSc
 export type ArtifactMaterialization = z.infer<typeof artifactMaterializationSchema>;
 export type ArtifactPublicationState = z.infer<typeof artifactPublicationStateSchema>;
 export type ArtifactPublication = z.infer<typeof artifactPublicationSchema>;
+export type ArtifactRetrievalState = z.infer<typeof artifactRetrievalStateSchema>;
+export type ArtifactRetrieval = z.infer<typeof artifactRetrievalSchema>;
 export type ArtifactRef = z.infer<typeof artifactRefSchema>;
 export type ArtifactRecord = z.infer<typeof artifactRecordSchema>;

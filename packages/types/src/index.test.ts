@@ -96,6 +96,7 @@ describe("artifact contracts", () => {
           commit: "abc123",
           gitServiceRef: "local-gitea",
           namespace: "team-alpha",
+          repositoryName: "graph-alpha",
           path: "reports/session-alpha/turn-001.md"
         },
         preferred: true,
@@ -131,6 +132,7 @@ describe("artifact contracts", () => {
             commit: "abc123",
             gitServiceRef: "local-gitea",
             namespace: "team-alpha",
+            repositoryName: "graph-alpha",
             path: "reports/session-alpha/turn-001.md"
           },
           preferred: true,
@@ -139,6 +141,41 @@ describe("artifact contracts", () => {
         updatedAt: "2026-04-22T00:01:00.000Z"
       }).success
     ).toBe(false);
+  });
+
+  it("accepts retrieval metadata for successfully consumed git artifacts", () => {
+    const result = artifactRecordSchema.parse({
+      createdAt: "2026-04-23T00:00:00.000Z",
+      materialization: {
+        localPath:
+          "/tmp/entangle-runner/retrieval-cache/input-report/repo/reports/session-alpha/turn-001.md",
+        repoPath: "/tmp/entangle-runner/retrieval-cache/input-report/repo"
+      },
+      ref: {
+        artifactId: "input-report",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "worker-it/session-alpha/review-patch",
+          commit: "abc123",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          repositoryName: "graph-alpha",
+          path: "reports/session-alpha/turn-001.md"
+        },
+        preferred: true,
+        status: "published"
+      },
+      retrieval: {
+        state: "retrieved",
+        retrievedAt: "2026-04-23T00:00:01.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git"
+      },
+      updatedAt: "2026-04-23T00:00:01.000Z"
+    });
+
+    expect(result.retrieval?.state).toBe("retrieved");
   });
 });
 

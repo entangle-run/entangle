@@ -68,6 +68,7 @@ This directory is the canonical design corpus for Entangle.
 62. [61-git-remote-selection-and-provisioning-policy-slice.md](61-git-remote-selection-and-provisioning-policy-slice.md)
 63. [62-artifact-publication-state-contract-slice.md](62-artifact-publication-state-contract-slice.md)
 64. [63-remote-git-publication-preexisting-repository-slice.md](63-remote-git-publication-preexisting-repository-slice.md)
+65. [64-primary-target-git-retrieval-and-handoff-validation-slice.md](64-primary-target-git-retrieval-and-handoff-validation-slice.md)
 
 ## Role of this corpus
 

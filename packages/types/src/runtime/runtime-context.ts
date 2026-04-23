@@ -23,6 +23,7 @@ export const workspaceLayoutSchema = z.object({
   injectedRoot: filesystemPathSchema,
   memoryRoot: filesystemPathSchema,
   packageRoot: filesystemPathSchema,
+  retrievalRoot: filesystemPathSchema,
   root: filesystemPathSchema,
   runtimeRoot: filesystemPathSchema
 });

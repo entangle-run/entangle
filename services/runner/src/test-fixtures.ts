@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import {
   entangleA2AMessageSchema,
+  type ArtifactRef,
   type EffectiveRuntimeContext,
   type EntangleA2AResponsePolicy
 } from "@entangle/types";
@@ -71,6 +72,7 @@ export async function createRuntimeFixture(input: {
   const workspaceRoot = path.join(tempRoot, "workspace");
   const injectedRoot = path.join(workspaceRoot, "injected");
   const memoryRoot = path.join(workspaceRoot, "memory");
+  const retrievalRoot = path.join(workspaceRoot, "retrieval");
 
   await Promise.all([
     mkdir(path.join(packageRoot, "prompts"), { recursive: true }),
@@ -78,6 +80,7 @@ export async function createRuntimeFixture(input: {
     mkdir(path.join(secretsRoot, "git", "worker-it"), { recursive: true }),
     mkdir(path.join(memoryRoot, "schema"), { recursive: true }),
     mkdir(path.join(memoryRoot, "wiki"), { recursive: true }),
+    mkdir(retrievalRoot, { recursive: true }),
     mkdir(path.join(workspaceRoot, "runtime"), { recursive: true }),
     mkdir(path.join(workspaceRoot, "workspace"), { recursive: true }),
     mkdir(injectedRoot, { recursive: true })
@@ -296,6 +299,7 @@ export async function createRuntimeFixture(input: {
       injectedRoot,
       memoryRoot,
       artifactWorkspaceRoot: path.join(workspaceRoot, "workspace"),
+      retrievalRoot,
       runtimeRoot: path.join(workspaceRoot, "runtime")
     }
   };
@@ -314,8 +318,88 @@ export async function createRuntimeFixture(input: {
   };
 }
 
+export async function createPublishedGitArtifact(input: {
+  artifactId?: string;
+  branch?: string;
+  filePath?: string;
+  remoteRepositoryPath: string;
+  repositoryName?: string;
+  summary?: string;
+}): Promise<ArtifactRef> {
+  const workingRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-remote-artifact-"));
+  createdDirectories.push(workingRoot);
+
+  const checkoutPath = path.join(workingRoot, "checkout");
+  const branch = input.branch ?? "worker-it/session-alpha/review-patch";
+  const filePath = input.filePath ?? "reports/session-alpha/input.md";
+  const repositoryName = input.repositoryName ?? "graph-alpha";
+
+  await runGitCommand(workingRoot, ["clone", input.remoteRepositoryPath, checkoutPath]);
+  await runGitCommand(checkoutPath, ["config", "user.name", "Remote Worker"]);
+  await runGitCommand(checkoutPath, ["config", "user.email", "remote-worker@entangle.local"]);
+  await runGitCommand(checkoutPath, ["checkout", "-B", branch]);
+  await mkdir(path.dirname(path.join(checkoutPath, filePath)), { recursive: true });
+  await writeFile(
+    path.join(checkoutPath, filePath),
+    input.summary ?? "Remote artifact content.\n",
+    "utf8"
+  );
+  await runGitCommand(checkoutPath, ["add", "--", filePath]);
+  await runGitCommand(checkoutPath, ["commit", "-m", "Add remote artifact"]);
+  await runGitCommand(checkoutPath, ["push", "--set-upstream", "origin", branch]);
+
+  const commit = await new Promise<string>((resolve, reject) => {
+    const child = spawn("git", ["rev-parse", "HEAD"], {
+      cwd: checkoutPath,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+        return;
+      }
+
+      reject(
+        new Error(
+          `Git command failed (rev-parse HEAD): ${stderr.trim() || "unknown error"}`
+        )
+      );
+    });
+  });
+
+  return {
+    artifactId: input.artifactId ?? "input-report",
+    artifactKind: "report_file",
+    backend: "git",
+    contentSummary: input.summary ?? "Remote artifact content.",
+    createdByNodeId: "reviewer-it",
+    locator: {
+      branch,
+      commit,
+      gitServiceRef: "local-gitea",
+      namespace: "team-alpha",
+      repositoryName,
+      path: filePath
+    },
+    preferred: true,
+    sessionId: "session-alpha",
+    status: "published"
+  };
+}
+
 export function buildInboundTaskRequest(
   input: {
+    artifactRefs?: ArtifactRef[];
     conversationId?: string;
     eventId?: string;
     fromNodeId?: string;
@@ -352,7 +436,7 @@ export function buildInboundTaskRequest(
     toPubkey: input.toPubkey ?? runnerPublicKey,
     turnId: input.turnId ?? "turn-001",
     work: {
-      artifactRefs: [],
+      artifactRefs: input.artifactRefs ?? [],
       metadata: {},
       summary:
         input.summary ?? "Review the parser patch and summarize blocking issues."

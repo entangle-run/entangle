@@ -45,8 +45,8 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- remote git retrieval and downstream handoff between nodes;
 - repository provisioning for git service profiles that declare `gitea_api`;
+- retrieval and handoff beyond the current primary-target-only git policy;
 - a real model-backed internal `agent-engine`;
 - host event streaming;
 - full resource-oriented host mutation coverage for nodes, edges, and revision
@@ -173,12 +173,15 @@ artifact-collaboration depth, not the runner boundary itself.
   from remote publication outcome;
 - remote publication to deterministic preexisting repositories, with persisted
   success and failure semantics on artifact records;
+- downstream retrieval of published git artifacts from the receiving runtime's
+  primary repository target, with persisted retrieval-state records and local
+  engine artifact inputs;
 - host inspection surface for runtime artifacts.
 
 ### Still missing or incomplete
 
 - remote retrieval semantics;
-- cross-node handoff validation against named git services;
+- cross-node handoff validation beyond the current primary-target-only policy;
 - repository provisioning for targets that declare `gitea_api`;
 - richer artifact kinds beyond the first report-file slice.
 
@@ -313,9 +316,8 @@ surface:
 
 The current best delivery order is:
 
-1. complete remote git retrieval, downstream handoff validation, and
-   repository provisioning on top of the now-resolved git principal
-   secret-delivery bindings;
+1. complete repository provisioning and broader downstream handoff semantics on
+   top of the now-resolved git principal secret-delivery bindings;
 2. replace the stub engine with the first real model-backed `agent-engine`
    adapter;
 3. complete host event streaming and the remaining core host resource surfaces;
@@ -331,10 +333,11 @@ This ordering preserves the best current properties of the repository:
 - it keeps deployment hardening as a real finalization phase rather than a
   premature distraction.
 
-The git secret-delivery, repository-target-resolution, publication-state, and
-preexisting-repository publication slices are now complete, so the next best
-capability move inside that first phase is downstream retrieval and handoff
-validation.
+The git secret-delivery, repository-target-resolution, publication-state,
+preexisting-repository publication, and primary-target retrieval slices are now
+complete, so the next best capability move inside that first phase is
+repository provisioning plus broader handoff widening where the design calls
+for it.
 
 ## What should not happen next
 

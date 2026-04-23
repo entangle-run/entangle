@@ -3,11 +3,14 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import type {
   AgentEngineTurnResult,
+  ArtifactRef,
   ArtifactRecord,
+  EngineArtifactInput,
   EffectiveRuntimeContext,
   EntangleA2AMessage
 } from "@entangle/types";
 import { artifactRecordSchema } from "@entangle/types";
+import { validateRuntimeArtifactRefs } from "@entangle/validator";
 
 type ArtifactMaterializationInput = {
   context: EffectiveRuntimeContext;
@@ -20,6 +23,16 @@ type ArtifactMaterializationInput = {
 };
 
 type ArtifactMaterializationResult = {
+  artifacts: ArtifactRecord[];
+};
+
+type ArtifactRetrievalInput = {
+  artifactRefs: ArtifactRef[];
+  context: EffectiveRuntimeContext;
+};
+
+type ArtifactRetrievalResult = {
+  artifactInputs: EngineArtifactInput[];
   artifacts: ArtifactRecord[];
 };
 
@@ -219,7 +232,7 @@ function buildGitRemoteName(gitServiceRef: string): string {
   return `entangle-${sanitizeBranchComponent(gitServiceRef)}`;
 }
 
-function buildGitCommandEnvForPublication(input: {
+function buildGitCommandEnvForRemoteOperation(input: {
   context: EffectiveRuntimeContext;
   remoteUrl: string;
 }): NodeJS.ProcessEnv | undefined {
@@ -246,19 +259,19 @@ function buildGitCommandEnvForPublication(input: {
 
   if (!primaryBinding) {
     throw new Error(
-      "Remote publication requires a primary git principal binding, but none was resolved."
+      "Remote git operations require a primary git principal binding, but none was resolved."
     );
   }
 
   if (primaryTarget.transportKind !== "ssh") {
     throw new Error(
-      `Remote publication for transport kind '${primaryTarget.transportKind}' is not implemented yet.`
+      `Remote git operations for transport kind '${primaryTarget.transportKind}' are not implemented yet.`
     );
   }
 
   if (primaryBinding.principal.transportAuthMode !== "ssh_key") {
     throw new Error(
-      `Remote publication requires an SSH-key git principal, but '${primaryBinding.principal.principalId}' uses '${primaryBinding.principal.transportAuthMode}'.`
+      `Remote git operations require an SSH-key git principal, but '${primaryBinding.principal.principalId}' uses '${primaryBinding.principal.transportAuthMode}'.`
     );
   }
 
@@ -267,7 +280,7 @@ function buildGitCommandEnvForPublication(input: {
     primaryBinding.transport.delivery?.mode !== "mounted_file"
   ) {
     throw new Error(
-      `Remote publication requires an available mounted SSH key for git principal '${primaryBinding.principal.principalId}'.`
+      `Remote git operations require an available mounted SSH key for git principal '${primaryBinding.principal.principalId}'.`
     );
   }
 
@@ -284,6 +297,55 @@ function buildGitCommandEnvForPublication(input: {
       "StrictHostKeyChecking=accept-new"
     ].join(" ")
   };
+}
+
+function buildArtifactRetrievalRoot(input: {
+  artifactId: string;
+  context: EffectiveRuntimeContext;
+}): string {
+  return path.join(
+    input.context.workspace.retrievalRoot,
+    sanitizeBranchComponent(input.artifactId)
+  );
+}
+
+function buildArtifactRetrievalFailureRecord(input: {
+  artifactRef: ArtifactRef;
+  error: unknown;
+  remoteName?: string | undefined;
+  remoteUrl?: string | undefined;
+}): ArtifactRecord {
+  const timestamp = nowIsoString();
+  const lastError =
+    input.error instanceof Error && input.error.message.trim().length > 0
+      ? input.error.message
+      : "Unknown artifact retrieval failure.";
+
+  return artifactRecordSchema.parse({
+    createdAt: timestamp,
+    ref: input.artifactRef,
+    retrieval: {
+      lastAttemptAt: timestamp,
+      lastError,
+      remoteName: input.remoteName,
+      remoteUrl: input.remoteUrl,
+      state: "failed"
+    },
+    updatedAt: timestamp
+  });
+}
+
+export class RunnerArtifactRetrievalError extends Error {
+  readonly artifactRecords: ArtifactRecord[];
+
+  constructor(input: {
+    artifactRecords: ArtifactRecord[];
+    message: string;
+  }) {
+    super(input.message);
+    this.artifactRecords = input.artifactRecords;
+    this.name = "RunnerArtifactRetrievalError";
+  }
 }
 
 async function ensureGitRemote(input: {
@@ -344,7 +406,7 @@ async function publishGitArtifactRecord(input: {
   const attemptTimestamp = nowIsoString();
 
   try {
-    const gitEnv = buildGitCommandEnvForPublication({
+    const gitEnv = buildGitCommandEnvForRemoteOperation({
       context: input.context,
       remoteUrl: target.remoteUrl
     });
@@ -394,6 +456,152 @@ async function publishGitArtifactRecord(input: {
       updatedAt: attemptTimestamp
     });
   }
+}
+
+async function retrieveGitArtifact(input: {
+  artifactRef: Extract<ArtifactRef, { backend: "git" }>;
+  context: EffectiveRuntimeContext;
+}): Promise<{
+  artifactInput: EngineArtifactInput;
+  artifactRecord: ArtifactRecord;
+}> {
+  const validation = validateRuntimeArtifactRefs({
+    artifactRefs: [input.artifactRef],
+    context: input.context
+  });
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+  const remoteName = input.artifactRef.locator.gitServiceRef
+    ? buildGitRemoteName(input.artifactRef.locator.gitServiceRef)
+    : undefined;
+  const remoteUrl = primaryTarget?.remoteUrl;
+
+  if (!validation.ok || !primaryTarget || !remoteName || !remoteUrl) {
+    const failedRecord = buildArtifactRetrievalFailureRecord({
+      artifactRef: input.artifactRef,
+      error: new Error(
+        validation.findings.map((finding) => finding.message).join(" ")
+      ),
+      remoteName,
+      remoteUrl
+    });
+    throw new RunnerArtifactRetrievalError({
+      artifactRecords: [failedRecord],
+      message:
+        failedRecord.retrieval?.lastError ??
+        "Git artifact retrieval validation failed."
+    });
+  }
+
+  const retrievalRoot = buildArtifactRetrievalRoot({
+    artifactId: input.artifactRef.artifactId,
+    context: input.context
+  });
+  const repoPath = path.join(retrievalRoot, "repo");
+  const localPath = path.join(repoPath, input.artifactRef.locator.path);
+  const gitDirectoryPath = path.join(repoPath, ".git");
+  const gitEnv = buildGitCommandEnvForRemoteOperation({
+    context: input.context,
+    remoteUrl
+  });
+
+  try {
+    if (!(await pathExists(gitDirectoryPath))) {
+      await mkdir(retrievalRoot, { recursive: true });
+      await runGitCommand(
+        retrievalRoot,
+        ["clone", "--origin", remoteName, "--no-checkout", remoteUrl, "repo"],
+        {
+          env: gitEnv
+        }
+      );
+    } else {
+      await ensureGitRemote({
+        env: gitEnv,
+        remoteName,
+        remoteUrl,
+        repoPath
+      });
+    }
+
+    await runGitCommand(repoPath, ["fetch", "--prune", remoteName], {
+      env: gitEnv
+    });
+    await runGitCommand(repoPath, ["checkout", "--force", input.artifactRef.locator.commit], {
+      env: gitEnv
+    });
+
+    if (!(await pathExists(localPath))) {
+      throw new Error(
+        `Retrieved git artifact '${input.artifactRef.artifactId}' does not contain expected path '${input.artifactRef.locator.path}'.`
+      );
+    }
+
+    const timestamp = nowIsoString();
+    const artifactRecord = artifactRecordSchema.parse({
+      createdAt: timestamp,
+      materialization: {
+        localPath,
+        repoPath
+      },
+      ref: input.artifactRef,
+      retrieval: {
+        retrievedAt: timestamp,
+        remoteName,
+        remoteUrl,
+        state: "retrieved"
+      },
+      updatedAt: timestamp
+    });
+
+    return {
+      artifactInput: {
+        artifactId: input.artifactRef.artifactId,
+        backend: input.artifactRef.backend,
+        localPath,
+        repoPath,
+        sourceRef: input.artifactRef
+      },
+      artifactRecord
+    };
+  } catch (error) {
+    const failedRecord = buildArtifactRetrievalFailureRecord({
+      artifactRef: input.artifactRef,
+      error,
+      remoteName,
+      remoteUrl
+    });
+    throw new RunnerArtifactRetrievalError({
+      artifactRecords: [failedRecord],
+      message:
+        failedRecord.retrieval?.lastError ??
+        "Git artifact retrieval failed."
+    });
+  }
+}
+
+async function resolveInboundArtifacts(
+  input: ArtifactRetrievalInput
+): Promise<ArtifactRetrievalResult> {
+  const artifactInputs: EngineArtifactInput[] = [];
+  const artifacts: ArtifactRecord[] = [];
+
+  for (const artifactRef of input.artifactRefs) {
+    if (artifactRef.backend !== "git") {
+      continue;
+    }
+
+    const resolved = await retrieveGitArtifact({
+      artifactRef,
+      context: input.context
+    });
+    artifactInputs.push(resolved.artifactInput);
+    artifacts.push(resolved.artifactRecord);
+  }
+
+  return {
+    artifactInputs,
+    artifacts
+  };
 }
 
 async function createGitReportArtifact(
@@ -464,6 +672,8 @@ async function createGitReportArtifact(
         commit,
         gitServiceRef: input.context.artifactContext.primaryGitServiceRef,
         namespace: input.context.artifactContext.defaultNamespace,
+        repositoryName:
+          input.context.artifactContext.primaryGitRepositoryTarget?.repositoryName,
         path: reportRelativePath
       },
       preferred: true,
@@ -483,12 +693,21 @@ async function createGitReportArtifact(
 }
 
 export interface RunnerArtifactBackend {
+  retrieveInboundArtifacts(
+    input: ArtifactRetrievalInput
+  ): Promise<ArtifactRetrievalResult>;
   materializeTurnArtifacts(
     input: ArtifactMaterializationInput
   ): Promise<ArtifactMaterializationResult>;
 }
 
 export class GitCliRunnerArtifactBackend implements RunnerArtifactBackend {
+  retrieveInboundArtifacts(
+    input: ArtifactRetrievalInput
+  ): Promise<ArtifactRetrievalResult> {
+    return resolveInboundArtifacts(input);
+  }
+
   async materializeTurnArtifacts(
     input: ArtifactMaterializationInput
   ): Promise<ArtifactMaterializationResult> {

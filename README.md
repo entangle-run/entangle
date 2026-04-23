@@ -106,7 +106,9 @@ This repository currently contains:
   distinguishes local-only materialization from remote publication outcomes,
   plus a first remote-publication path for deterministic preexisting
   repositories that persists success or failure without corrupting local
-  artifact truth;
+  artifact truth, plus a first downstream retrieval path for published
+  git-backed handoffs through a runner-local retrieval cache and typed
+  retrieval-state records;
 - a host read surface for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
@@ -133,8 +135,8 @@ This repository currently contains:
 
 The highest-value remaining gaps are:
 
-- remote git retrieval, downstream handoff validation, and repository
-  provisioning beyond preexisting targets;
+- repository provisioning for git services that declare `gitea_api`, plus
+  wider handoff support beyond the current primary-target retrieval policy;
 - a real model-backed internal `agent-engine`;
 - host event streaming and fuller host resource surfaces;
 - deeper Studio runtime and operator workflows;

@@ -841,6 +841,7 @@ function buildWorkspaceLayout(nodeId: string) {
     injectedRoot: path.join(root, "injected"),
     memoryRoot: path.join(root, "memory"),
     packageRoot: path.join(root, "package"),
+    retrievalRoot: path.join(root, "retrieval"),
     root,
     runtimeRoot: path.join(root, "runtime")
   };
@@ -1416,6 +1417,7 @@ async function buildRuntimeResolution(input: {
     ensureDirectory(workspace.injectedRoot),
     ensureDirectory(workspace.memoryRoot),
     ensureDirectory(workspace.artifactWorkspaceRoot),
+    ensureDirectory(workspace.retrievalRoot),
     ensureDirectory(workspace.runtimeRoot)
   ]);
 

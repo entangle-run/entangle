@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added primary-target git retrieval and handoff validation
+
+Extended the runner from remote publication into the first downstream
+retrieval path. The runner now validates inbound published git artifact refs
+against the receiving runtime context, retrieves primary-target artifacts into
+an explicit retrieval cache, persists typed retrieval-state records, records
+consumed artifact ids on the turn record, and passes local artifact inputs into
+the engine turn request. Added shared contract coverage for retrieval metadata
+and runner tests for both successful retrieval and explicit failure on invalid
+handoff.
+
 ## [2026-04-23] implementation | Added first remote git publication for preexisting repositories
 
 Extended the runner git artifact backend from local-only materialization into a

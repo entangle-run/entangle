@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   agentEngineTurnRequestSchema,
+  type EngineArtifactInput,
   type EntangleA2AMessage,
   effectiveRuntimeContextSchema,
   type AgentEngineTurnRequest,
@@ -97,6 +98,7 @@ export async function loadRuntimeContext(
 export async function buildAgentEngineTurnRequest(
   context: EffectiveRuntimeContext,
   input: {
+    artifactInputs?: EngineArtifactInput[];
     inboundMessage?: EntangleA2AMessage;
   } = {}
 ): Promise<AgentEngineTurnRequest> {
@@ -148,6 +150,7 @@ export async function buildAgentEngineTurnRequest(
     ],
     toolDefinitions: [],
     artifactRefs: input.inboundMessage?.work.artifactRefs ?? [],
+    artifactInputs: input.artifactInputs ?? [],
     memoryRefs,
     executionLimits: {
       maxToolTurns: runtimeConfig?.toolBudget?.maxToolTurns ?? 8,

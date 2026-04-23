@@ -1,9 +1,10 @@
-import type { GraphSpec } from "@entangle/types";
+import type { EffectiveRuntimeContext, GraphSpec } from "@entangle/types";
 import { describe, expect, it } from "vitest";
 import {
   validateA2AMessageDocument,
   validateConversationLifecycleTransition,
   validateGraphDocument,
+  validateRuntimeArtifactRefs,
   validateSessionLifecycleTransition
 } from "./index.js";
 
@@ -55,6 +56,101 @@ function buildGraph(
       }
     ],
     schemaVersion: "1"
+  };
+}
+
+function buildRuntimeContext(): EffectiveRuntimeContext {
+  return {
+    artifactContext: {
+      backends: ["git"],
+      defaultNamespace: "team-alpha",
+      gitPrincipalBindings: [],
+      gitServices: [
+        {
+          id: "local-gitea",
+          displayName: "Local Gitea",
+          baseUrl: "https://gitea.local",
+          remoteBase: "ssh://git@gitea.local:22",
+          transportKind: "ssh",
+          authMode: "ssh_key",
+          defaultNamespace: "team-alpha",
+          provisioning: {
+            mode: "preexisting"
+          }
+        }
+      ],
+      primaryGitRepositoryTarget: {
+        gitServiceRef: "local-gitea",
+        namespace: "team-alpha",
+        provisioningMode: "preexisting",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        repositoryName: "graph-alpha",
+        transportKind: "ssh"
+      },
+      primaryGitServiceRef: "local-gitea"
+    },
+    binding: {
+      bindingId: "graph-alpha.worker-it",
+      externalPrincipals: [],
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-rev-1",
+      node: {
+        autonomy: {
+          canInitiateSessions: false,
+          canMutateGraph: false
+        },
+        displayName: "Worker",
+        nodeId: "worker-it",
+        nodeKind: "worker",
+        resourceBindings: {
+          externalPrincipalRefs: [],
+          gitServiceRefs: ["local-gitea"],
+          primaryGitServiceRef: "local-gitea",
+          relayProfileRefs: []
+        }
+      },
+      resolvedResourceBindings: {
+        externalPrincipalRefs: [],
+        gitServiceRefs: ["local-gitea"],
+        primaryGitServiceRef: "local-gitea",
+        relayProfileRefs: []
+      },
+      runtimeProfile: "hackathon_local",
+      schemaVersion: "1"
+    },
+    generatedAt: "2026-04-23T00:00:00.000Z",
+    identityContext: {
+      algorithm: "nostr_secp256k1",
+      publicKey:
+        "1111111111111111111111111111111111111111111111111111111111111111",
+      secretDelivery: {
+        envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+        mode: "env_var"
+      }
+    },
+    modelContext: {},
+    policyContext: {
+      autonomy: {
+        canInitiateSessions: false,
+        canMutateGraph: false
+      },
+      notes: [],
+      runtimeProfile: "hackathon_local"
+    },
+    relayContext: {
+      edgeRoutes: [],
+      relayProfiles: []
+    },
+    schemaVersion: "1",
+    workspace: {
+      artifactWorkspaceRoot: "/tmp/entangle/workspace",
+      injectedRoot: "/tmp/entangle/injected",
+      memoryRoot: "/tmp/entangle/memory",
+      packageRoot: "/tmp/entangle/package",
+      retrievalRoot: "/tmp/entangle/retrieval",
+      root: "/tmp/entangle",
+      runtimeRoot: "/tmp/entangle/runtime"
+    }
   };
 }
 
@@ -280,6 +376,70 @@ describe("validateA2AMessageDocument", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: "a2a_message_invalid",
+          severity: "error"
+        })
+      ])
+    );
+  });
+});
+
+describe("validateRuntimeArtifactRefs", () => {
+  it("accepts a published git artifact aligned with the primary repository target", () => {
+    const report = validateRuntimeArtifactRefs({
+      context: buildRuntimeContext(),
+      artifactRefs: [
+        {
+          artifactId: "report-1",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            repositoryName: "graph-alpha",
+            path: "reports/session-alpha/turn-001.md"
+          },
+          preferred: true,
+          status: "published"
+        }
+      ]
+    });
+
+    expect(report.ok).toBe(true);
+  });
+
+  it("rejects git handoff refs that cannot be resolved by the receiving runtime", () => {
+    const report = validateRuntimeArtifactRefs({
+      context: buildRuntimeContext(),
+      artifactRefs: [
+        {
+          artifactId: "report-1",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            gitServiceRef: "backup-gitea",
+            namespace: "other-team",
+            path: "reports/session-alpha/turn-001.md"
+          },
+          preferred: true,
+          status: "materialized"
+        }
+      ]
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "git_artifact_not_published",
+          severity: "error"
+        }),
+        expect.objectContaining({
+          code: "git_artifact_unbound_service",
+          severity: "error"
+        }),
+        expect.objectContaining({
+          code: "git_artifact_missing_repository_name",
           severity: "error"
         })
       ])

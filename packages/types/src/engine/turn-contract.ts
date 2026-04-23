@@ -1,6 +1,13 @@
 import { z } from "zod";
-import { artifactRefSchema } from "../artifacts/artifact-ref.js";
-import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import {
+  artifactBackendSchema,
+  artifactRefSchema
+} from "../artifacts/artifact-ref.js";
+import {
+  filesystemPathSchema,
+  identifierSchema,
+  nonEmptyStringSchema
+} from "../common/primitives.js";
 
 export const engineToolDefinitionSchema = z.object({
   id: identifierSchema,
@@ -13,6 +20,14 @@ export const engineToolRequestSchema = z.object({
   input: z.record(z.string(), z.unknown()).default({})
 });
 
+export const engineArtifactInputSchema = z.object({
+  artifactId: identifierSchema,
+  backend: artifactBackendSchema,
+  localPath: filesystemPathSchema,
+  repoPath: filesystemPathSchema.optional(),
+  sourceRef: artifactRefSchema
+});
+
 export const agentEngineTurnRequestSchema = z.object({
   sessionId: identifierSchema,
   nodeId: identifierSchema,
@@ -20,6 +35,7 @@ export const agentEngineTurnRequestSchema = z.object({
   interactionPromptParts: z.array(nonEmptyStringSchema).min(1),
   toolDefinitions: z.array(engineToolDefinitionSchema).default([]),
   artifactRefs: z.array(artifactRefSchema).default([]),
+  artifactInputs: z.array(engineArtifactInputSchema).default([]),
   memoryRefs: z.array(nonEmptyStringSchema).default([]),
   executionLimits: z
     .object({
@@ -51,5 +67,6 @@ export const agentEngineTurnResultSchema = z.object({
 
 export type EngineToolDefinition = z.infer<typeof engineToolDefinitionSchema>;
 export type EngineToolRequest = z.infer<typeof engineToolRequestSchema>;
+export type EngineArtifactInput = z.infer<typeof engineArtifactInputSchema>;
 export type AgentEngineTurnRequest = z.infer<typeof agentEngineTurnRequestSchema>;
 export type AgentEngineTurnResult = z.infer<typeof agentEngineTurnResultSchema>;

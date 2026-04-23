@@ -31,6 +31,7 @@ import {
 } from "./state-store.js";
 import {
   GitCliRunnerArtifactBackend,
+  RunnerArtifactRetrievalError,
   type RunnerArtifactBackend
 } from "./artifact-backend.js";
 import type {
@@ -413,6 +414,7 @@ export class RunnerService {
     this.statePaths = statePaths;
     let turnRecord: RunnerTurnRecord = {
       conversationId: envelope.message.conversationId,
+      consumedArtifactIds: [],
       graphId: envelope.message.graphId,
       messageId: envelope.eventId,
       nodeId: this.context.binding.node.nodeId,
@@ -454,7 +456,50 @@ export class RunnerService {
       );
 
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "contextualizing");
+      let retrievedArtifacts;
+
+      try {
+        retrievedArtifacts = await this.artifactBackend.retrieveInboundArtifacts({
+          artifactRefs: envelope.message.work.artifactRefs,
+          context: this.context
+        });
+      } catch (error) {
+        if (error instanceof RunnerArtifactRetrievalError) {
+          await Promise.all(
+            error.artifactRecords.map((artifactRecord) =>
+              writeArtifactRecord(statePaths, artifactRecord)
+            )
+          );
+        }
+
+        throw error;
+      }
+
+      await Promise.all(
+        retrievedArtifacts.artifacts.map((artifactRecord) =>
+          writeArtifactRecord(statePaths, artifactRecord)
+        )
+      );
+      const consumedArtifactIds = retrievedArtifacts.artifacts.map(
+        (artifactRecord) => artifactRecord.ref.artifactId
+      );
+      turnRecord = {
+        ...turnRecord,
+        consumedArtifactIds,
+        updatedAt: nowIsoString()
+      };
+      await writeRunnerTurnRecord(statePaths, turnRecord);
+      currentConversation = {
+        ...currentConversation,
+        artifactIds: mergeIdentifierLists(
+          currentConversation.artifactIds,
+          consumedArtifactIds
+        )
+      };
+      await writeConversationRecord(statePaths, currentConversation);
+
       const turnRequest = await buildAgentEngineTurnRequest(this.context, {
+        artifactInputs: retrievedArtifacts.artifactInputs,
         inboundMessage: envelope.message
       });
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");

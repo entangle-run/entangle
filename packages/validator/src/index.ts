@@ -3,11 +3,13 @@ import path from "node:path";
 import {
   approvalRecordSchema,
   agentPackageManifestSchema,
+  type ArtifactRef,
   buildValidationReport,
   conversationRecordSchema,
   type DeploymentResourceCatalog,
   deploymentResourceCatalogSchema,
   entangleA2AMessageSchema,
+  type EffectiveRuntimeContext,
   type ExternalPrincipalRecord,
   type GraphSpec,
   graphSpecSchema,
@@ -738,6 +740,167 @@ export function validateA2AMessageDocument(input: unknown): ValidationReport {
   }
 
   return buildValidationReport([]);
+}
+
+export function validateRuntimeArtifactRefs(input: {
+  artifactRefs: ArtifactRef[];
+  context: EffectiveRuntimeContext;
+}): ValidationReport {
+  const findings: ValidationFinding[] = [];
+  const gitServiceIds = input.context.artifactContext.gitServices.map(
+    (service) => service.id
+  );
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  input.artifactRefs.forEach((artifactRef, index) => {
+    if (artifactRef.backend !== "git") {
+      return;
+    }
+
+    const pathPrefix = ["artifactRefs", String(index), "locator"];
+
+    if (artifactRef.status !== "published") {
+      findings.push(
+        createFinding({
+          code: "git_artifact_not_published",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' must be published before a downstream node can retrieve it.`,
+          path: ["artifactRefs", String(index), "status"],
+          details: { artifactId: artifactRef.artifactId, status: artifactRef.status }
+        })
+      );
+    }
+
+    if (!artifactRef.locator.gitServiceRef) {
+      findings.push(
+        createFinding({
+          code: "git_artifact_missing_service_ref",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' is missing locator.gitServiceRef, so the receiving node cannot resolve a retrieval service.`,
+          path: [...pathPrefix, "gitServiceRef"],
+          details: { artifactId: artifactRef.artifactId }
+        })
+      );
+    } else if (!gitServiceIds.includes(artifactRef.locator.gitServiceRef)) {
+      findings.push(
+        createFinding({
+          code: "git_artifact_unbound_service",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' references git service '${artifactRef.locator.gitServiceRef}', which is not bound in the receiving runtime context.`,
+          path: [...pathPrefix, "gitServiceRef"],
+          details: {
+            artifactId: artifactRef.artifactId,
+            gitServiceRef: artifactRef.locator.gitServiceRef
+          }
+        })
+      );
+    }
+
+    if (!artifactRef.locator.namespace) {
+      findings.push(
+        createFinding({
+          code: "git_artifact_missing_namespace",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' is missing locator.namespace, so the receiving node cannot validate repository ownership.`,
+          path: [...pathPrefix, "namespace"],
+          details: { artifactId: artifactRef.artifactId }
+        })
+      );
+    }
+
+    if (!artifactRef.locator.repositoryName) {
+      findings.push(
+        createFinding({
+          code: "git_artifact_missing_repository_name",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' is missing locator.repositoryName, so the receiving node cannot resolve the remote repository.`,
+          path: [...pathPrefix, "repositoryName"],
+          details: { artifactId: artifactRef.artifactId }
+        })
+      );
+    }
+
+    if (!primaryTarget) {
+      findings.push(
+        createFinding({
+          code: "git_handoff_missing_primary_repository_target",
+          severity: "error",
+          message:
+            `Runtime context for node '${input.context.binding.node.nodeId}' has no primary git repository target, so remote git handoff cannot be resolved.`,
+          path: ["artifactContext", "primaryGitRepositoryTarget"],
+          details: { artifactId: artifactRef.artifactId }
+        })
+      );
+      return;
+    }
+
+    if (
+      artifactRef.locator.gitServiceRef &&
+      artifactRef.locator.gitServiceRef !== primaryTarget.gitServiceRef
+    ) {
+      findings.push(
+        createFinding({
+          code: "git_handoff_non_primary_service",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the current retrieval slice only supports the runtime's primary repository target '${primaryTarget.gitServiceRef}'.`,
+          path: [...pathPrefix, "gitServiceRef"],
+          details: {
+            artifactId: artifactRef.artifactId,
+            expectedGitServiceRef: primaryTarget.gitServiceRef,
+            actualGitServiceRef: artifactRef.locator.gitServiceRef
+          }
+        })
+      );
+    }
+
+    if (
+      artifactRef.locator.namespace &&
+      artifactRef.locator.namespace !== primaryTarget.namespace
+    ) {
+      findings.push(
+        createFinding({
+          code: "git_handoff_non_primary_namespace",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' targets namespace '${artifactRef.locator.namespace}', but the current retrieval slice only supports the runtime's primary namespace '${primaryTarget.namespace}'.`,
+          path: [...pathPrefix, "namespace"],
+          details: {
+            artifactId: artifactRef.artifactId,
+            expectedNamespace: primaryTarget.namespace,
+            actualNamespace: artifactRef.locator.namespace
+          }
+        })
+      );
+    }
+
+    if (
+      artifactRef.locator.repositoryName &&
+      artifactRef.locator.repositoryName !== primaryTarget.repositoryName
+    ) {
+      findings.push(
+        createFinding({
+          code: "git_handoff_non_primary_repository",
+          severity: "error",
+          message:
+            `Git artifact '${artifactRef.artifactId}' targets repository '${artifactRef.locator.repositoryName}', but the current retrieval slice only supports the runtime's primary repository '${primaryTarget.repositoryName}'.`,
+          path: [...pathPrefix, "repositoryName"],
+          details: {
+            artifactId: artifactRef.artifactId,
+            expectedRepositoryName: primaryTarget.repositoryName,
+            actualRepositoryName: artifactRef.locator.repositoryName
+          }
+        })
+      );
+    }
+  });
+
+  return buildValidationReport(findings);
 }
 
 export function validateSessionRecordDocument(input: unknown): ValidationReport {

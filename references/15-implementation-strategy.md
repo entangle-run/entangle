@@ -125,9 +125,10 @@ remaining work in this phase can land on a clean lifecycle model.
 
 The remaining work in this phase is:
 
-- remote retrieval and handoff validation for downstream nodes;
-- repository provisioning flows for service profiles that declare
-  `gitea_api` rather than `preexisting`.
+- repository provisioning flows for primary targets whose git service declares
+  `gitea_api`;
+- widening retrieval and handoff flows beyond the current primary-target-only
+  retrieval policy where needed;
 
 Acceptance for the phase:
 
@@ -135,6 +136,8 @@ Acceptance for the phase:
 - a second node can retrieve and consume that artifact by reference;
 - repository-target provisioning policy is enforced for both preexisting and
   service-provisioned repository modes;
+- downstream retrieval and handoff policy remains explicit rather than relying
+  on hidden fallback repository assumptions;
 - publication and retrieval failures are explicit, typed, and persisted.
 
 ## Phase 2: Real agent-engine execution

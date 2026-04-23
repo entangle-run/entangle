@@ -2,7 +2,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
-import { sessionRecordSchema } from "@entangle/types";
+import { sessionRecordSchema, type AgentEngineTurnRequest } from "@entangle/types";
 import { loadRuntimeContext } from "./runtime-context.js";
 import { RunnerService } from "./service.js";
 import {
@@ -15,6 +15,7 @@ import {
 import {
   buildInboundTaskRequest,
   cleanupRuntimeFixtures,
+  createPublishedGitArtifact,
   createRuntimeFixture,
   remotePublicKey,
   runnerSecretHex
@@ -27,6 +28,124 @@ afterEach(async () => {
 });
 
 describe("RunnerService", () => {
+  it("retrieves published inbound git artifacts from the primary remote and passes them to the engine", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!fixture.remoteRepositoryPath) {
+      throw new Error("Expected a bare remote repository path for retrieval tests.");
+    }
+
+    const inboundArtifact = await createPublishedGitArtifact({
+      remoteRepositoryPath: fixture.remoteRepositoryPath,
+      summary: "Remote review notes.\n"
+    });
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    let capturedRequest: AgentEngineTurnRequest | undefined;
+    const service = new RunnerService({
+      context: runtimeContext,
+      engine: {
+        executeTurn(request) {
+          capturedRequest = request;
+          return Promise.resolve({
+            assistantMessages: ["Retrieved inbound artifact successfully."],
+            stopReason: "completed",
+            toolRequests: [],
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0
+            }
+          });
+        }
+      },
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        artifactRefs: [inboundArtifact]
+      })
+    );
+
+    expect(result.handled).toBe(true);
+    expect(capturedRequest?.artifactInputs).toHaveLength(1);
+    expect(capturedRequest?.artifactInputs[0]?.sourceRef.artifactId).toBe(
+      inboundArtifact.artifactId
+    );
+    expect(capturedRequest?.artifactInputs[0]?.localPath).toContain(
+      path.join("reports", "session-alpha", "input.md")
+    );
+    expect(capturedRequest?.artifactInputs[0]?.repoPath).toContain(
+      runtimeContext.workspace.retrievalRoot
+    );
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const artifactRecords = await listArtifactRecords(statePaths);
+    const retrievedArtifact = artifactRecords.find(
+      (artifactRecord) => artifactRecord.ref.artifactId === inboundArtifact.artifactId
+    );
+    const producedArtifact = artifactRecords.find(
+      (artifactRecord) => artifactRecord.ref.artifactId !== inboundArtifact.artifactId
+    );
+    const [turnRecordFile] = await readdir(statePaths.turnsRoot);
+    const turnRecord = turnRecordFile
+      ? await readRunnerTurnRecord(statePaths, turnRecordFile.replace(/\.json$/, ""))
+      : undefined;
+
+    expect(retrievedArtifact?.retrieval?.state).toBe("retrieved");
+    expect(retrievedArtifact?.materialization?.repoPath).toContain(
+      runtimeContext.workspace.retrievalRoot
+    );
+    expect(producedArtifact?.ref.backend).toBe("git");
+    expect(turnRecord?.consumedArtifactIds).toContain(inboundArtifact.artifactId);
+  });
+
+  it("fails the turn and persists retrieval failure when inbound git handoff is invalid", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!fixture.remoteRepositoryPath) {
+      throw new Error("Expected a bare remote repository path for retrieval tests.");
+    }
+
+    const inboundArtifact = await createPublishedGitArtifact({
+      remoteRepositoryPath: fixture.remoteRepositoryPath
+    });
+    delete inboundArtifact.locator.repositoryName;
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport
+    });
+
+    await expect(
+      service.handleInboundEnvelope(
+        buildInboundTaskRequest({
+          artifactRefs: [inboundArtifact]
+        })
+      )
+    ).rejects.toThrow("missing locator.repositoryName");
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const sessionRecord = await readSessionRecord(statePaths, "session-alpha");
+    const artifactRecords = await listArtifactRecords(statePaths);
+    const failedArtifact = artifactRecords.find(
+      (artifactRecord) => artifactRecord.ref.artifactId === inboundArtifact.artifactId
+    );
+
+    expect(sessionRecord?.status).toBe("failed");
+    expect(failedArtifact?.retrieval?.state).toBe("failed");
+    expect(failedArtifact?.retrieval?.lastError).toContain(
+      "cannot resolve the remote repository"
+    );
+  });
+
   it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {
     const fixture = await createRuntimeFixture({
       remotePublication: "bare_repo"
