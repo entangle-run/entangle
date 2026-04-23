@@ -84,6 +84,8 @@ The most important stable conclusions remain:
 - canonical `zod` contracts in `packages/types` for graph, catalog, runtime
   context, A2A payloads, artifact records, external principals, host DTOs, and
   runner-local state;
+- explicit package-level tool catalog contracts with manifest-owned
+  `runtime.toolsPath` and structured `runtime/tools.json` documents;
 - semantic validation in `packages/validator` for graph-resource consistency,
   realizable transport overlap, package-source binding, principal resolution,
   and runtime-context-related constraints;

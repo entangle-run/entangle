@@ -54,7 +54,8 @@ export async function createAgentPackageScaffold(
     },
     runtime: {
       configPath: "runtime/config.json",
-      capabilitiesPath: "runtime/capabilities.json"
+      capabilitiesPath: "runtime/capabilities.json",
+      toolsPath: "runtime/tools.json"
     },
     metadata: {
       description: `${packageName} agent package scaffold.`,
@@ -102,6 +103,17 @@ export async function createAgentPackageScaffold(
       `${JSON.stringify(
         {
           capabilities: []
+        },
+        null,
+        2
+      )}\n`
+    ],
+    [
+      "runtime/tools.json",
+      `${JSON.stringify(
+        {
+          schemaVersion: "1",
+          tools: []
         },
         null,
         2

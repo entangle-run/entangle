@@ -104,6 +104,13 @@ export async function createRuntimeFixture(input: {
         maxOutputTokens: 1536
       }
     }),
+    writeJsonFile(path.join(packageRoot, "runtime", "capabilities.json"), {
+      capabilities: []
+    }),
+    writeJsonFile(path.join(packageRoot, "runtime", "tools.json"), {
+      schemaVersion: "1",
+      tools: []
+    }),
     writeFile(
       path.join(secretsRoot, "git", "worker-it", "ssh"),
       "test-private-key\n",
@@ -278,7 +285,8 @@ export async function createRuntimeFixture(input: {
       },
       runtime: {
         configPath: "runtime/config.json",
-        capabilitiesPath: "runtime/capabilities.json"
+        capabilitiesPath: "runtime/capabilities.json",
+        toolsPath: "runtime/tools.json"
       },
       metadata: {
         description: "Worker package",

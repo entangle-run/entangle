@@ -81,8 +81,8 @@ Recommended first implementation stack for model-provider integration:
 - TypeScript
 - internal engine adapter interface owned by Entangle
 - a first-party internal `agent-engine` package owned by Entangle
-- Vercel AI SDK provider packages or equivalent provider wrappers underneath the
-  adapter where they add leverage
+- official provider SDKs behind Entangle-owned adapters, with wrappers used
+  only where they add concrete leverage without distorting the boundary
 
 Why this is a strong first choice:
 
@@ -138,6 +138,10 @@ Recommended conceptual response fields:
 
 The runner should expose tools to the engine through a stable internal tool
 surface.
+
+The source of truth for package-declared tools should be a structured package
+tool catalog, not prompt prose or provider-shaped tool payloads assembled ad
+hoc inside the runner.
 
 The adapter may translate tool definitions and tool-call payloads to provider
 formats, but the runner should not become provider-shaped because of tool

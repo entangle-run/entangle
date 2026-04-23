@@ -80,7 +80,8 @@ async function createAdmittedPackageDirectory(rootPath: string): Promise<string>
       },
       runtime: {
         configPath: "runtime/config.json",
-        capabilitiesPath: "runtime/capabilities.json"
+        capabilitiesPath: "runtime/capabilities.json",
+        toolsPath: "runtime/tools.json"
       },
       metadata: {
         description: "Worker package",
@@ -102,6 +103,10 @@ async function createAdmittedPackageDirectory(rootPath: string): Promise<string>
     }),
     writeJsonFile(path.join(packageRoot, "runtime", "capabilities.json"), {
       capabilities: []
+    }),
+    writeJsonFile(path.join(packageRoot, "runtime", "tools.json"), {
+      schemaVersion: "1",
+      tools: []
     }),
     writeFile(
       path.join(packageRoot, "memory", "seed", "wiki", "index.md"),
@@ -494,6 +499,36 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(response.json())).toMatchObject({
         code: "bad_request"
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects package admission when the required tool catalog file is missing", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      await rm(path.join(packageDirectory, "runtime", "tools.json"));
+
+      const response = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+
+      expect(response.statusCode).toBe(400);
+      const inspection = packageSourceInspectionResponseSchema.parse(response.json());
+      expect(inspection.validation.ok).toBe(false);
+      expect(inspection.validation.findings).toContainEqual(
+        expect.objectContaining({
+          code: "missing_package_file",
+          path: ["runtime/tools.json"]
+        })
+      );
     } finally {
       await server.close();
     }

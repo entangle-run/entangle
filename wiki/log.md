@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-23] implementation | Added an explicit package tool-catalog contract
+
+Closed a real package/runtime contract gap before the internal tool loop by
+making `runtime/tools.json` a manifest-owned package file, adding typed package
+tool-catalog schemas, updating scaffolds to generate explicit empty catalogs,
+and tightening package validation so missing tool catalogs fail admission
+deterministically. This keeps the next tool-loop slice grounded in a clean
+package boundary instead of ad hoc runner logic.
+
 ## [2026-04-23] implementation | Added the first real provider-backed internal agent-engine slice
 
 Closed the live stub-engine gap by extending the effective runtime context with

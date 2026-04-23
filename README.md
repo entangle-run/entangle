@@ -92,6 +92,10 @@ This repository currently contains:
   header-secret authentication;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
+- an explicit package-level tool catalog contract through
+  `manifest.runtime.toolsPath` and `runtime/tools.json`, with scaffolds and
+  validators now treating empty tool catalogs as explicit package state rather
+  than inferred absence;
 - runtime-context artifact metadata that now carries resolved git principal
   bindings, including secret-delivery availability and mounted-file delivery
   paths for the current local profile;

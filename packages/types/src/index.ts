@@ -14,6 +14,7 @@ export * from "./host-api/runtime.js";
 export * from "./host-api/status.js";
 export * from "./package/package-manifest.js";
 export * from "./package/package-source.js";
+export * from "./package/tool-catalog.js";
 export * from "./protocol/a2a.js";
 export * from "./protocol/nostr-transport.js";
 export * from "./resources/catalog.js";

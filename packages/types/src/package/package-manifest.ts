@@ -37,11 +37,13 @@ export const agentPackageManifestSchema = z.object({
       configPath: nonEmptyStringSchema.default("runtime/config.json"),
       capabilitiesPath: nonEmptyStringSchema.default(
         "runtime/capabilities.json"
-      )
+      ),
+      toolsPath: nonEmptyStringSchema.default("runtime/tools.json")
     })
     .default({
       configPath: "runtime/config.json",
-      capabilitiesPath: "runtime/capabilities.json"
+      capabilitiesPath: "runtime/capabilities.json",
+      toolsPath: "runtime/tools.json"
     }),
   metadata: z
     .object({

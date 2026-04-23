@@ -104,6 +104,7 @@ It should be the authoritative structured description of:
 - template identity;
 - compatibility range;
 - entry files;
+- runtime tool-catalog path;
 - package class;
 - package metadata;
 - declared mutable surfaces.
@@ -113,6 +114,14 @@ It should be the authoritative structured description of:
 This should exist for any package that exposes structured capabilities to routing or validation.
 
 It must not be replaced by prose-only prompt claims.
+
+### `runtime/tools.json`
+
+This should exist for any package that exposes structured tool definitions to
+the internal agent engine.
+
+Even when the catalog is empty, the file should still exist so scaffolding,
+validation, and runtime loading can rely on an explicit package contract.
 
 ### `prompts/system.md`
 

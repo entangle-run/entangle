@@ -12,6 +12,7 @@ import {
   isAllowedSessionLifecycleTransition,
   modelEndpointProfileSchema,
   modelRuntimeContextSchema,
+  packageToolCatalogSchema,
   resolvedSecretBindingSchema,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
@@ -639,6 +640,63 @@ describe("model runtime context contracts", () => {
             filePath: "/entangle-secrets/refs/different-model"
           }
         }
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("package tool catalog contracts", () => {
+  it("accepts an explicit builtin tool catalog", () => {
+    const result = packageToolCatalogSchema.parse({
+      schemaVersion: "1",
+      tools: [
+        {
+          id: "write_report_file",
+          description: "Persist a markdown report artifact for the current turn.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              body: {
+                type: "string"
+              }
+            },
+            required: ["body"]
+          },
+          execution: {
+            kind: "builtin",
+            builtinToolId: "write_report_file"
+          }
+        }
+      ]
+    });
+
+    expect(result.tools).toHaveLength(1);
+  });
+
+  it("rejects duplicate tool ids in the catalog", () => {
+    expect(
+      packageToolCatalogSchema.safeParse({
+        schemaVersion: "1",
+        tools: [
+          {
+            id: "write_report_file",
+            description: "first",
+            inputSchema: {},
+            execution: {
+              kind: "builtin",
+              builtinToolId: "write_report_file"
+            }
+          },
+          {
+            id: "write_report_file",
+            description: "second",
+            inputSchema: {},
+            execution: {
+              kind: "builtin",
+              builtinToolId: "write_report_file_v2"
+            }
+          }
+        ]
       }).success
     ).toBe(false);
   });

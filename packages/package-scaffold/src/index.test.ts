@@ -33,9 +33,13 @@ describe("createAgentPackageScaffold", () => {
     expect(result.manifest.defaultNodeKind).toBe("supervisor");
     expect(result.writtenFiles).toContain("manifest.json");
     expect(result.writtenFiles).toContain("memory/schema/AGENTS.md");
+    expect(result.writtenFiles).toContain("runtime/tools.json");
 
     await expect(readTextFile(path.join(targetDirectory, "manifest.json"))).resolves.toContain(
       '"packageId": "marketing-lead"'
+    );
+    await expect(readTextFile(path.join(targetDirectory, "runtime/tools.json"))).resolves.toContain(
+      '"tools": []'
     );
     await expect(
       readTextFile(path.join(targetDirectory, "prompts/system.md"))

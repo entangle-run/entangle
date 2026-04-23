@@ -92,6 +92,8 @@ The repository now also contains the first real implementation baseline:
   read-only secret-volume mount into runner containers;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
+- an explicit package tool-catalog contract through `runtime/tools.json`,
+  validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
   prompts, runtime config, and seeded memory instead of a hardcoded request;
 - a first real provider-backed `agent-engine` slice with an internal Anthropic

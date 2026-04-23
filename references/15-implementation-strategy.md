@@ -154,7 +154,8 @@ Completed in the current repository state:
 
 Remaining work in this phase:
 
-1. bounded multi-turn execution and internal tool-loop support;
+1. package tool-catalog loading into runner turn assembly, then bounded
+   multi-turn execution and internal tool-loop support;
 2. richer normalized provider metadata and error reporting;
 3. wider memory/context assembly discipline as runtime depth grows.
 

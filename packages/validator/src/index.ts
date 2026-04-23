@@ -1102,6 +1102,7 @@ export async function validatePackageDirectory(
     manifest.entryPrompts.interaction,
     manifest.runtime.configPath,
     manifest.runtime.capabilitiesPath,
+    manifest.runtime.toolsPath,
     manifest.memoryProfile.schemaPath
   ];
 
