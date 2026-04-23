@@ -44,7 +44,7 @@ This directory is the canonical design corpus for Entangle.
 38. [37-effective-bindings-and-runtime-context-spec.md](37-effective-bindings-and-runtime-context-spec.md)
 39. [38-engine-adapter-and-model-execution-spec.md](38-engine-adapter-and-model-execution-spec.md)
 40. [39-local-deployment-topology-and-compose-spec.md](39-local-deployment-topology-and-compose-spec.md)
-41. [40-pre-implementation-audit.md](40-pre-implementation-audit.md)
+41. [40-pre-implementation-audit.md](40-pre-implementation-audit.md) (historical first audit)
 42. [41-agent-engine-boundary-and-reuse-policy.md](41-agent-engine-boundary-and-reuse-policy.md)
 43. [42-host-state-layout-and-persistence-spec.md](42-host-state-layout-and-persistence-spec.md)
 44. [43-hackathon-cli-and-package-scaffold-profile.md](43-hackathon-cli-and-package-scaffold-profile.md)
@@ -63,6 +63,7 @@ This directory is the canonical design corpus for Entangle.
 57. [56-git-artifact-materialization-and-host-surface-slice.md](56-git-artifact-materialization-and-host-surface-slice.md)
 58. [57-artifact-reference-portability-refinement.md](57-artifact-reference-portability-refinement.md)
 59. [58-external-principal-bindings-slice.md](58-external-principal-bindings-slice.md)
+60. [59-implementation-state-and-delivery-audit.md](59-implementation-state-and-delivery-audit.md)
 
 ## Role of this corpus
 

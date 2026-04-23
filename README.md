@@ -2,7 +2,12 @@
 
 Entangle is a graph-native environment for composing, governing, and running modular AI organizations.
 
-This repository is the project foundation for the Entangle hackathon build and for the larger post-hackathon product. It is intentionally documentation-heavy at this stage. The goal is to establish a stable architectural core before implementation, so the hackathon build is a constrained realization of the final system instead of a throwaway prototype.
+This repository is the active design-and-implementation monorepo for Entangle.
+The design corpus remains deliberately deep, but the repository is no longer in
+a pre-implementation state: real host, runner, transport, artifact, and local
+deployment slices are already in place, and the remaining work is concentrated
+in the highest-value runtime capabilities rather than in foundational
+architecture discovery.
 
 ## Repository Layout
 
@@ -115,6 +120,14 @@ This repository currently contains:
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
+
+The highest-value remaining gaps are:
+
+- remote git publication and retrieval;
+- a real model-backed internal `agent-engine`;
+- host event streaming and fuller host resource surfaces;
+- deeper Studio runtime and operator workflows;
+- stronger end-to-end deployment and integration hardening.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

@@ -15,7 +15,7 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in the first real control-plane implementation phase.
+Entangle is currently in a partial end-to-end runtime implementation phase.
 
 The corpus now extends from conceptual architecture into normative contracts,
 package and binding structure, edge semantics, artifact backends, control-plane
@@ -39,10 +39,15 @@ closed:
 - the hackathon should include a thin but real CLI plus package scaffolding,
   while Studio remains the richer operator surface.
 
-The implementation-readiness gate has now passed at the specification level.
-That does not mean the repository should stop auditing itself; it means the
-next work can move from architectural uncertainty into schema, validator, host,
-runner, CLI, and Studio scaffolding without changing the core model again.
+The repository is therefore no longer best described as "entering
+implementation" or as being in a control-plane-only stage.
+
+The most accurate current description is:
+
+- the architecture and contract layers are strong and largely stable;
+- the host and runner are already real local runtime components;
+- the remaining work is concentrated in a few major capability gaps rather
+  than in foundational uncertainty.
 
 The contract-ownership layer is now also explicit:
 
@@ -170,11 +175,13 @@ The central design direction is now clear:
 
 ## Immediate next steps
 
-- extend git-backed artifacts from runner-local materialization to real remote
-  publication and retrieval against named git services now that git principals
-  are modeled explicitly;
-- expose richer runtime, reconciliation, and artifact state in Studio without
-  breaking the existing host-first boundary;
-- add stronger Docker-backed runtime smoke coverage for long-lived runner
-  execution, restart semantics, and artifact-aware runner flows on top of the
-  runtime backend boundary.
+The current implementation-truth audit now lives in
+[../references/59-implementation-state-and-delivery-audit.md](../references/59-implementation-state-and-delivery-audit.md).
+
+- complete remote git publication and retrieval on top of the existing local
+  git-backed artifact model and external-principal bindings;
+- replace the stub engine path with the first real model-backed internal
+  `agent-engine` adapter;
+- complete the host event stream and remaining core host resource surfaces;
+- deepen Studio only after those host capabilities exist, so the client stays
+  clean and host-first.

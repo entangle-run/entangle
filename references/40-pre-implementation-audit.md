@@ -1,5 +1,13 @@
 # Pre-Implementation Audit
 
+Historical note:
+
+This document records the first repository-wide audit that closed the
+pre-implementation design questions.
+
+The current implementation-truth audit now lives in
+[59-implementation-state-and-delivery-audit.md](59-implementation-state-and-delivery-audit.md).
+
 This document records the first full repository-wide audit performed after the
 specification and architecture-decision batches.
 

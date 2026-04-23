@@ -268,3 +268,15 @@ Refined package materialization so admitted package contents are now hashed and 
 ## [2026-04-22] implementation | Added deterministic runner transport and the first long-lived local intake loop
 
 Extended `entangle-runner` beyond bootstrap-only execution. Added a deterministic transport abstraction, a file-backed runner-local state store, and a long-lived `RunnerService` that subscribes by recipient pubkey, validates inbound A2A payloads, advances session and conversation state through the canonical lifecycle, builds engine turn requests from inbound context, and emits bounded `task.result` replies when required. Tightened the runner tests around wrong-recipient rejection, no-response flows, idempotent startup, and persisted turn/state records.
+
+## [2026-04-23] audit | Reconciled the planning corpus with the implemented runtime slices
+
+Ran a repository-wide implementation-state audit after the host, runner,
+transport, artifact, and external-principal slices. Added
+`references/59-implementation-state-and-delivery-audit.md` as the new current
+implementation-truth document, marked
+`references/40-pre-implementation-audit.md` as historical, rewrote
+`references/15-implementation-strategy.md` around the current rolling delivery
+order, and updated `README.md`, `references/README.md`, and `wiki/overview.md`
+so the repository is no longer described as pre-implementation or
+control-plane-only.

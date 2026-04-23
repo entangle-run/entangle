@@ -1,189 +1,255 @@
 # Implementation Strategy
 
-## North star
+## Principle
 
-Build the minimum number of executables and the minimum number of active profiles while preserving the final conceptual architecture.
+Implement Entangle in small, high-rigor slices that preserve the final
+architecture instead of accumulating temporary shortcuts.
+
+Each serious slice should:
+
+1. start with a local audit of the relevant code, specifications, and tests;
+2. define a narrow gap statement and acceptance criteria;
+3. implement only that gap;
+4. run a strict quality pass and verification loop;
+5. update canonical docs and wiki where the durable project state changed;
+6. commit the slice as one coherent unit;
+7. re-evaluate the whole repository before choosing the next slice.
+
+This strategy is intentionally rolling rather than locked. The order below is
+the best current delivery path from the present repository state, not a promise
+never to re-evaluate.
 
 ## Repository stance
 
 Use one monorepo with explicit internal package boundaries.
 
-Do not split the project into multiple repositories during the hackathon or
-early product formation.
+Do not split the project into multiple repositories during early product
+formation unless a future operational boundary becomes strong enough to justify
+it.
 
-## Recommended implementation units
+## Stable implementation units
 
 ### `entangle-host`
 
-One executable or service responsible for:
+The local control-plane boundary responsible for:
 
-- local graph revision application;
-- package admission from local sources;
-- runtime workspace materialization;
-- validator invocation before apply;
-- node lifecycle management against a runtime backend such as Docker;
-- exposing a bounded local control-plane API to Studio.
+- desired and observed state;
+- package admission;
+- graph apply and validation;
+- runtime materialization and reconciliation;
+- runtime backend ownership;
+- host API surfaces for Studio, CLI, and tests.
 
 ### `entangle-runner`
 
-One executable or service responsible for running a node instance.
+The per-node execution boundary responsible for:
 
-Current implemented slice:
-
-- loads injected runtime context from disk;
-- reads package prompt files and runtime config;
-- constructs a provider-agnostic engine turn request;
-- executes one stub-engine turn for bootstrap verification;
-- provides a deterministic transport boundary for runner-local integration
-  tests;
-- persists runner-local session, conversation, and turn records under the
-  runtime root;
-- runs a long-lived `RunnerService` that validates inbound A2A payloads,
-  advances lifecycle state, invokes the internal engine, and emits bounded
-  `task.result` responses when required;
-- consumes machine-readable A2A, session, conversation, approval, and turn-state
-  contracts through shared `packages/types` exports.
+- consuming host-resolved runtime context;
+- maintaining local runner state;
+- receiving and publishing A2A messages;
+- invoking the internal agent engine;
+- materializing artifacts;
+- enforcing stop and reply policy.
 
 ### `entangle-agent-engine`
 
-One shared internal package responsible for:
+The first-party internal model-execution layer responsible for:
 
-- normalized model turn orchestration;
-- tool-call loop execution;
-- provider-adapter dispatch;
-- streaming normalization;
-- returning provider-agnostic turn outcomes back to the runner.
+- provider adapters;
+- multi-turn execution;
+- tool loops;
+- provider-agnostic turn results returned to the runner.
 
 ### `entangle-studio`
 
-One client surface for:
+The richer operator surface responsible for:
 
-- viewing the graph;
-- launching work from the user node;
-- inspecting runtime traces;
-- editing limited graph structure and node configuration.
+- graph and runtime inspection;
+- live runtime and reconciliation visibility;
+- bounded mutation flows through host APIs;
+- artifact and session visibility.
 
 ### `entangle-cli`
 
-One headless client surface for:
+The thinner but serious headless client responsible for:
 
-- operating the host from terminal or automation contexts;
-- inspecting graph, revision, and runtime state;
-- performing bounded node and edge operations through the same control-plane rules as Studio;
-- running validation-oriented offline operations where no host is required.
+- validation-oriented offline operations;
+- host inspection and mutation for automation and terminal workflows;
+- package scaffolding;
+- eventual live watch and event consumption.
 
-### `entangle-types`
+### Shared packages
 
-Shared package for:
+- `entangle-types`
+  Canonical machine-readable contracts and DTOs.
+- `entangle-validator`
+  Semantic validation above the shared contracts.
+- `entangle-host-client`
+  Shared host API client for Studio, CLI, and tests.
+- `entangle-package-scaffold`
+  Shared scaffolding utilities for new `AgentPackage` trees.
 
-- package schema;
-- graph schema;
-- protocol schema;
-- validation helpers.
+## Current repository state
 
-### `entangle-validator`
+The repository has already completed the early foundation work.
 
-Validation CLI or library for:
+It now contains:
 
-- package validation;
-- graph validation;
-- runtime binding validation;
-- transport feasibility validation.
-- deployment resource validation.
+- the canonical specification corpus;
+- shared machine-readable contracts and semantic validation;
+- a real local host control plane;
+- host-managed runtime identity and external-principal binding;
+- a long-lived runner with real Nostr transport;
+- local git-backed artifact materialization;
+- Docker-backed runtime lifecycle management;
+- a first real Studio and CLI surface over host state;
+- a credible lint, test, build, and CI baseline.
 
-### `entangle-host-client`
+The current implementation truth is recorded in
+[59-implementation-state-and-delivery-audit.md](59-implementation-state-and-delivery-audit.md).
 
-Optional but recommended shared client package for:
+## Delivery order from the current state
 
-- Studio-to-host API bindings;
-- CLI-to-host API bindings;
-- test harness access to the host control plane.
+## Phase 1: Remote git collaboration completion
 
-### `entangle-package-scaffold`
+This is the highest-value capability gap still open in the current runtime.
 
-Optional but strongly recommended package for:
+Implement in small slices:
 
-- generating new `AgentPackage` directory trees;
-- enforcing the package interface through scaffolding;
-- reusing the same templates from CLI and future Studio flows.
+1. git transport secret delivery from host-owned secret references;
+2. remote repository selection and provisioning policy;
+3. remote publication from the runner artifact backend;
+4. remote retrieval and handoff validation for downstream nodes.
 
-## Hackathon-first implementation profile
+Acceptance for the phase:
+
+- a runner can publish a git-backed artifact to a named remote git service;
+- a second node can retrieve and consume that artifact by reference;
+- publication and retrieval failures are explicit, typed, and persisted.
+
+## Phase 2: Real agent-engine execution
+
+Replace the current stub execution path with a real first-party engine slice.
+
+Implement in small slices:
+
+1. the first real provider adapter, with `anthropic` as the canonical first
+   adapter;
+2. provider-agnostic turn execution through the internal engine package;
+3. bounded multi-turn execution and tool-loop support;
+4. normalized real usage, stop-reason, and error reporting.
+
+Acceptance for the phase:
+
+- live runner execution no longer depends on a stub engine;
+- provider-native types do not leak into runner contracts;
+- the engine path is test-covered and reusable across runner scenarios.
+
+## Phase 3: Host control-plane completion
+
+Complete the missing host surfaces after the core runtime capabilities are in
+place.
+
+Implement in small slices:
+
+1. host event stream;
+2. revision inspection and history surfaces;
+3. node and edge resource mutation surfaces;
+4. restart, degraded, and richer reconciliation semantics.
+
+Acceptance for the phase:
+
+- Studio and CLI can consume live host events;
+- host API coverage aligns more closely with the published control-plane spec;
+- runtime state changes are inspectable and auditable without reading files by
+  hand.
+
+## Phase 4: Studio completion
+
+Deepen Studio only on top of completed host capability, not by adding
+client-owned control logic.
+
+Implement in small slices:
+
+1. richer runtime and reconciliation views;
+2. artifact and session inspection;
+3. bounded package, node, edge, and runtime mutation flows;
+4. live event-driven updates via the host event stream.
+
+Acceptance for the phase:
+
+- Studio becomes a real operator surface;
+- all mutations still go through the host boundary;
+- Studio shows real state instead of inferred or fake state.
+
+## Phase 5: CLI completion
+
+Keep CLI thinner than Studio but operationally serious.
+
+Implement in small slices:
+
+1. fuller host resource coverage;
+2. stronger automation-oriented JSON flows;
+3. live watch or event-stream consumption where valuable.
+
+Acceptance for the phase:
+
+- a power user can operate the local system headlessly;
+- CLI remains a client, not a second control plane.
+
+## Phase 6: Deployment and integration hardening
+
+Finish the local operator profile as a real product-quality environment.
+
+Implement in small slices:
+
+1. stronger Docker-backed end-to-end runtime smoke;
+2. richer CI integration coverage across relay, host, runner, and git service;
+3. documented operator bootstrap and recovery flows;
+4. restart, failure, and degraded-state verification.
+
+Acceptance for the phase:
+
+- the local deployment profile is proven end to end;
+- the repository quality bar is enforced by automation, not by hope.
+
+## Non-negotiable rules
 
 ### Strong yes
 
-- define schemas first;
-- establish real quality gates early, before behavior spreads across packages;
-- define the deployment resource catalog and node binding references before
-  hardcoding relay, git, or model endpoints into runtime code;
-- introduce a host/control-plane service before making Studio responsible for runtime lifecycle;
-- treat Studio as a first-class hackathon deliverable, not a late cosmetic layer;
-- implement runner with one engine adapter;
-- use git as first artifact backend;
-- implement wiki memory folder and update phase;
-- use one relay profile;
-- keep graph small and deterministic.
+- define and consume contracts before widening behavior;
+- keep quality gates strict and boring;
+- keep resource binding deployment-scoped instead of hardcoding runtime
+  assumptions;
+- keep Studio and CLI as clients of the host;
+- keep artifacts as durable work products instead of collapsing them into
+  message content;
+- keep provider integration behind the internal engine boundary;
+- keep every slice small enough to audit properly.
 
 ### Strong no
 
-- do not build a fake graph UI that does not reflect real runtime state;
-- do not make package structure graph-specific;
-- do not let the model control conversation stopping alone;
-- do not collapse artifacts into chat messages;
-- do not bind the entire architecture to one engine's internal assumptions.
-- do not make Studio directly own Docker or process lifecycle logic.
+- do not widen scope inside a slice;
+- do not add UI-owned orchestration logic;
+- do not introduce hidden fallback behavior for identity, transport, or git
+  selection;
+- do not justify canonical shortcuts with hackathon pressure;
+- do not let old planning survive once implementation reality contradicts it.
 
-## Suggested order of implementation
+## Definition of done for the first serious product slice
 
-1. define core types;
-2. define deployment resource catalog and binding types;
-3. define runner lifecycle;
-4. define A2A protocol;
-5. freeze schema ownership and host API DTO ownership in `packages/types`;
-6. implement validator;
-7. establish lint, test, and CI baselines around the first real contracts;
-8. implement `entangle-agent-engine`;
-9. implement `entangle-host` and local runtime-backend abstraction;
-10. implement local package admission + node execution;
-   First serious host slice:
-   - fully support `local_path` package admission;
-   - keep `local_archive` in the canonical model, but defer archive
-     materialization until the import pipeline exists;
-   - persist catalog, package-source, and graph desired state before dynamic
-     runtime management.
-11. implement Nostr messaging;
-12. implement git artifact handoff;
-13. implement model-endpoint adapter binding;
-14. implement wiki update phase;
-15. implement Studio graph and runtime view against host APIs;
-16. add bounded graph editing, node admission, and runtime controls in Studio;
-17. add thin CLI access to the same host control-plane surfaces;
-18. add thin package scaffolding through shared scaffold utilities.
-
-The repository now has partial completion through step 13, with step 11 now
-implemented through a real local relay path:
-
-- types, validator, quality gates, and CI baseline are in place;
-- host owns desired graph and resource state;
-- host now materializes runtime intents, effective bindings, and injected
-  runtime context;
-- runner now consumes injected runtime context for both its bootstrap path and
-  its first long-lived local intake loop;
-- runner now has a real Nostr transport adapter using NIP-59 gift wrapping and
-  a dedicated Entangle rumor kind, plus a successful local live-relay smoke;
-- CLI already covers validation, scaffolding, and the first runtime host
-  operations.
-
-## Definition of done for the first serious version
-
-The first serious version is done when:
+The first serious slice is done when:
 
 - node packages validate;
 - graph instances validate;
-- host can admit, bind, and manage multiple local nodes;
-- runner can execute multiple nodes locally under host control;
-- nodes exchange signed messages over Nostr;
-- at least one git-backed artifact handoff occurs;
-- user can watch the session subgraph;
-- the resulting architecture clearly extends to remote nodes later without changing core types.
+- host can admit, bind, manage, and observe multiple local nodes;
+- runners can exchange signed messages over Nostr using real runtime identities;
+- at least one git-backed artifact can be published remotely and retrieved by a
+  second node;
+- live runner execution uses a real internal engine path rather than a stub;
+- Studio can inspect and operate the system through host APIs;
+- CLI can operate the same system headlessly;
+- the deployment profile is demonstrably reproducible and verifiable.
 
-The phase gates for moving from specification to architecture and implementation are defined in [30-quality-gates-and-acceptance-criteria.md](30-quality-gates-and-acceptance-criteria.md).
+The quality gates that govern movement between phases remain defined in
+[30-quality-gates-and-acceptance-criteria.md](30-quality-gates-and-acceptance-criteria.md).
