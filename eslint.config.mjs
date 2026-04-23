@@ -33,7 +33,7 @@ export default tseslint.config(
             "services/runner/src/*.test.ts",
             "services/runner/src/test-fixtures.ts"
           ],
-          defaultProject: "tsconfig.base.json"
+          defaultProject: "tsconfig.eslint.json"
         },
         tsconfigRootDir: import.meta.dirname
       }

@@ -58,6 +58,11 @@ a shared root Vitest config with explicit workspace-source aliases, so package
 tests exercise current contracts from source instead of whatever old build may
 happen to be present on disk.
 
+Package-local typed linting over tests must follow the same rule. The current
+baseline therefore uses a dedicated root `tsconfig.eslint.json` with explicit
+workspace-source path mappings, so test files lint against current sibling
+sources rather than stale published-style `dist/` declarations.
+
 ## What lint must mean
 
 `lint` must be a real static-quality pass, not a disguised typecheck.

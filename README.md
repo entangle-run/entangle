@@ -143,6 +143,9 @@ This repository currently contains:
 - a quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - shared Vitest workspace-source resolution so package-local tests do not
   rely on stale sibling `dist/` outputs;
+- shared ESLint test-project resolution through a root `tsconfig.eslint.json`
+  so type-aware lint over tests also resolves current workspace sources instead
+  of stale sibling `dist/` declarations;
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.

@@ -152,6 +152,9 @@ The repository now also contains the first real implementation baseline:
 - a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
 - shared Vitest workspace-source resolution so package-local tests do not
   accidentally execute against stale sibling build outputs;
+- shared ESLint test-project resolution through a root `tsconfig.eslint.json`,
+  so typed linting over tests resolves current workspace sources instead of
+  stale sibling declarations;
 - an explicit composite TypeScript build graph with solution-build typechecking
   for internal packages and Node services;
 - targeted tests over validator semantics, host-client error handling, package

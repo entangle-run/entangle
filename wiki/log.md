@@ -329,6 +329,10 @@ Extended `entangle-host` from runtime materialization into a first real runtime-
 
 Clarified and enforced that workspace-wide typechecking must not silently depend on stale generated contract outputs. The local quality baseline now treats fresh contract builds as part of the type-safety gate so downstream packages do not drift behind newly changed shared schemas.
 
+## [2026-04-23] quality | Fixed typed lint workspace-source resolution for tests
+
+Extended the quality baseline so package-local typed linting over test files no longer resolves sibling workspace packages through stale published-style `dist/` declarations. Added a root `tsconfig.eslint.json` with explicit workspace-source path mappings and pointed the ESLint project-service default project at that config, so strict linting now evaluates tests against current source contracts just like the shared Vitest path already did.
+
 ## [2026-04-22] verification | Smoke-validated the Docker runtime backend against a real runner container
 
 Built the local `entangle-runner:local` image, admitted a package, applied a graph under the Docker backend profile, and confirmed that `entangle-host` created and observed a real runner container as `running`. Cleaned up the temporary runtime afterward.

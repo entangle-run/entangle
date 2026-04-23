@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@entangle/agent-engine": [
+        "./packages/agent-engine/src/index.ts"
+      ],
+      "@entangle/host": [
+        "./services/host/src/index.ts"
+      ],
+      "@entangle/host-client": [
+        "./packages/host-client/src/index.ts"
+      ],
+      "@entangle/package-scaffold": [
+        "./packages/package-scaffold/src/index.ts"
+      ],
+      "@entangle/runner": [
+        "./services/runner/src/index.ts"
+      ],
+      "@entangle/types": [
+        "./packages/types/src/index.ts"
+      ],
+      "@entangle/validator": [
+        "./packages/validator/src/index.ts"
+      ]
+    }
+  }
+}
