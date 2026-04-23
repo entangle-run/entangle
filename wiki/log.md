@@ -300,3 +300,12 @@ when service and namespace selection are unambiguous. Updated the local
 deployment profile with `ENTANGLE_DEFAULT_GIT_REMOTE_BASE`, hardened the shared
 type layer and host tests around the new contract, and locked the current
 policy to a graph-shared repository target derived from `graphId`.
+
+## [2026-04-23] implementation | Added explicit artifact publication-state metadata
+
+Extended `ArtifactRecord` with a machine-readable `publication` object so the
+repository can distinguish local materialization from remote publication
+outcomes without overloading `ref.status`. The current local git-backed
+artifact path now persists `publication.state: "not_requested"`, and the shared
+type and runner tests lock the rules for `not_requested`, `published`, and
+`failed` publication metadata.

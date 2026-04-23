@@ -88,6 +88,7 @@ describe("RunnerService", () => {
     expect(artifactRecord.ref.backend).toBe("git");
     expect(artifactRecord.ref.artifactKind).toBe("report_file");
     expect(artifactRecord.ref.status).toBe("materialized");
+    expect(artifactRecord.publication?.state).toBe("not_requested");
     expect(artifactRecord.materialization?.repoPath).toBe(
       runtimeContext.workspace.artifactWorkspaceRoot
     );
@@ -182,6 +183,7 @@ describe("RunnerService", () => {
       throw new Error("Expected an artifact record for the persisted turn.");
     }
     expect(artifactRecords[0].ref.backend).toBe("git");
+    expect(artifactRecords[0].publication?.state).toBe("not_requested");
   });
 
   it("ignores envelopes addressed to another node id", async () => {

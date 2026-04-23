@@ -82,9 +82,88 @@ export const artifactMaterializationSchema = z
     }
   );
 
+export const artifactPublicationStateSchema = z.enum([
+  "not_requested",
+  "published",
+  "failed"
+]);
+
+export const artifactPublicationSchema = z
+  .object({
+    state: artifactPublicationStateSchema,
+    lastAttemptAt: nonEmptyStringSchema.optional(),
+    lastError: nonEmptyStringSchema.optional(),
+    publishedAt: nonEmptyStringSchema.optional(),
+    remoteName: identifierSchema.optional(),
+    remoteUrl: nonEmptyStringSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (value.state === "published") {
+      if (!value.publishedAt) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Published artifact publication metadata must include publishedAt.",
+          path: ["publishedAt"]
+        });
+      }
+
+      if (!value.remoteName) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Published artifact publication metadata must include remoteName.",
+          path: ["remoteName"]
+        });
+      }
+
+      if (!value.remoteUrl) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Published artifact publication metadata must include remoteUrl.",
+          path: ["remoteUrl"]
+        });
+      }
+    }
+
+    if (value.state === "failed") {
+      if (!value.lastAttemptAt) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Failed artifact publication metadata must include lastAttemptAt.",
+          path: ["lastAttemptAt"]
+        });
+      }
+
+      if (!value.lastError) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Failed artifact publication metadata must include lastError.",
+          path: ["lastError"]
+        });
+      }
+    }
+
+    if (value.state !== "published" && value.publishedAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only published artifact metadata may include publishedAt.",
+        path: ["publishedAt"]
+      });
+    }
+
+    if (value.state !== "failed" && value.lastError) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only failed artifact metadata may include lastError.",
+        path: ["lastError"]
+      });
+    }
+  });
+
 export const artifactRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
   materialization: artifactMaterializationSchema.optional(),
+  publication: artifactPublicationSchema.optional(),
   ref: artifactRefSchema,
   turnId: identifierSchema.optional(),
   updatedAt: nonEmptyStringSchema
@@ -97,5 +176,7 @@ export type GitArtifactLocator = z.infer<typeof gitArtifactLocatorSchema>;
 export type WikiArtifactLocator = z.infer<typeof wikiArtifactLocatorSchema>;
 export type LocalFileArtifactLocator = z.infer<typeof localFileArtifactLocatorSchema>;
 export type ArtifactMaterialization = z.infer<typeof artifactMaterializationSchema>;
+export type ArtifactPublicationState = z.infer<typeof artifactPublicationStateSchema>;
+export type ArtifactPublication = z.infer<typeof artifactPublicationSchema>;
 export type ArtifactRef = z.infer<typeof artifactRefSchema>;
 export type ArtifactRecord = z.infer<typeof artifactRecordSchema>;

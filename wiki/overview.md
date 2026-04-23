@@ -100,7 +100,9 @@ The repository now also contains the first real implementation baseline:
   committed markdown turn reports under the runtime artifact workspace, and a
   host read surface for runtime artifact inspection; protocol-facing
   `ArtifactRef` locators are now kept portable while runtime-local filesystem
-  details remain under persisted artifact-record materialization metadata;
+  details remain under persisted artifact-record materialization metadata, and
+  artifact records now also carry explicit publication-state metadata so local
+  materialization and future remote publication are not conflated;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay
@@ -186,7 +188,8 @@ The current implementation-truth audit now lives in
 
 - complete remote git publication and retrieval on top of the existing local
   git-backed artifact model, the resolved git principal secret-delivery
-  bindings, and the now-explicit primary repository-target contract;
+  bindings, the now-explicit primary repository-target contract, and the new
+  artifact publication-state record model;
 - replace the stub engine path with the first real model-backed internal
   `agent-engine` adapter;
 - complete the host event stream and remaining core host resource surfaces;

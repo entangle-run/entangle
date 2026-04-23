@@ -168,6 +168,8 @@ artifact-collaboration depth, not the runner boundary itself.
 - artifact linkage into runner-local session, conversation, and turn state;
 - deterministic primary remote repository target resolution from git service
   profiles, namespace hints, and graph identity;
+- explicit artifact publication-state metadata separating local materialization
+  from remote publication outcome;
 - host inspection surface for runtime artifacts.
 
 ### Still missing or incomplete
@@ -326,9 +328,9 @@ This ordering preserves the best current properties of the repository:
 - it keeps deployment hardening as a real finalization phase rather than a
   premature distraction.
 
-The git secret-delivery and repository-target-resolution slices are now
-complete, so the next best capability move inside that first phase is remote
-publication semantics.
+The git secret-delivery, repository-target-resolution, and artifact
+publication-state slices are now complete, so the next best capability move
+inside that first phase is remote publication semantics.
 
 ## What should not happen next
 

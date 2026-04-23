@@ -120,6 +120,9 @@ The first two preparation slices are now implemented:
 - git transport secret delivery from host-owned secret references;
 - deterministic remote repository selection and provisioning policy.
 
+The artifact-record publication-state contract is now also implemented, so the
+remaining work in this phase can land on a clean lifecycle model.
+
 The remaining work in this phase is:
 
 - remote publication from the runner artifact backend;

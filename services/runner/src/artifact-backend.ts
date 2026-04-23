@@ -260,6 +260,9 @@ async function createGitReportArtifact(
       localPath: reportAbsolutePath,
       repoPath
     },
+    publication: {
+      state: "not_requested"
+    },
     ref: {
       artifactId: `report-${input.turnId}`,
       artifactKind: "report_file",

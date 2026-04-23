@@ -102,7 +102,9 @@ This repository currently contains:
   report file into a node-local git workspace, commit it, and attach the
   resulting portable artifact reference to outbound `task.result` messages
   without leaking runtime-local filesystem paths into the protocol-facing
-  locator;
+  locator, while now also persisting explicit publication-state metadata that
+  distinguishes local-only materialization from future remote publication
+  outcomes;
 - a host read surface for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,

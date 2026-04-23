@@ -81,6 +81,9 @@ describe("artifact contracts", () => {
         localPath: "/tmp/entangle-runner/workspace/reports/session-alpha/turn-001.md",
         repoPath: "/tmp/entangle-runner/workspace"
       },
+      publication: {
+        state: "not_requested"
+      },
       ref: {
         artifactId: "report-turn-001",
         artifactKind: "report_file",
@@ -105,6 +108,37 @@ describe("artifact contracts", () => {
 
     expect(result.ref.backend).toBe("git");
     expect(result.ref.locator.path).toContain("reports/session-alpha");
+    expect(result.publication?.state).toBe("not_requested");
+  });
+
+  it("rejects published artifact metadata that omits remote publication details", () => {
+    expect(
+      artifactRecordSchema.safeParse({
+        createdAt: "2026-04-22T00:00:00.000Z",
+        materialization: {
+          localPath: "/tmp/entangle-runner/workspace/reports/session-alpha/turn-001.md"
+        },
+        publication: {
+          state: "published",
+          publishedAt: "2026-04-22T00:01:00.000Z"
+        },
+        ref: {
+          artifactId: "report-turn-001",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review-patch",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            path: "reports/session-alpha/turn-001.md"
+          },
+          preferred: true,
+          status: "published"
+        },
+        updatedAt: "2026-04-22T00:01:00.000Z"
+      }).success
+    ).toBe(false);
   });
 });
 
