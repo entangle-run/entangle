@@ -195,6 +195,27 @@ hostGraphCommand
     printJson(await client.getGraph());
   });
 
+const hostGraphRevisionsCommand = hostGraphCommand
+  .command("revisions")
+  .description("Inspect persisted graph revisions through entangle-host.");
+
+hostGraphRevisionsCommand
+  .command("list")
+  .description("List persisted graph revisions.")
+  .action(async (_options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.listGraphRevisions());
+  });
+
+hostGraphRevisionsCommand
+  .command("get")
+  .argument("<revisionId>", "Graph revision identifier.")
+  .description("Inspect one persisted graph revision.")
+  .action(async (revisionId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getGraphRevision(revisionId));
+  });
+
 hostGraphCommand
   .command("validate")
   .argument("<file>", "Path to a graph JSON file.")

@@ -114,6 +114,11 @@ The repository now also contains the first real implementation baseline:
   canonical event records, lists them over `GET /v1/events`, streams them over
   WebSocket on the same route, and exposes the shared event boundary through
   `packages/host-client` for future Studio and CLI live usage;
+- a typed graph-revision history surface where `entangle-host` now persists
+  canonical revision records, exposes `GET /v1/graph/revisions` plus
+  `GET /v1/graph/revisions/{revisionId}`, keeps backward compatibility with
+  older raw graph-snapshot revision files, and shares that inspection boundary
+  through `packages/host-client` and the CLI;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -231,6 +236,7 @@ The current implementation-truth audit now lives in
   loop, especially around builtin tool surface depth and richer model-guided
   memory maintenance;
 - complete the remaining core host resource surfaces and widen the now
-  implemented host event surface into deeper session and runner activity;
+  implemented host event surface into deeper session and runner activity,
+  especially node/edge mutation and runtime-restart surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

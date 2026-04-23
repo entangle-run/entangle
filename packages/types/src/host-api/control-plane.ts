@@ -56,6 +56,33 @@ export const graphInspectionResponseSchema = z.object({
   activeRevisionId: identifierSchema.optional()
 });
 
+export const activeGraphRevisionRecordSchema = z.object({
+  activeRevisionId: identifierSchema,
+  appliedAt: nonEmptyStringSchema
+});
+
+export const graphRevisionRecordSchema = z.object({
+  appliedAt: nonEmptyStringSchema,
+  graph: graphSpecSchema,
+  revisionId: identifierSchema
+});
+
+export const graphRevisionMetadataSchema = z.object({
+  appliedAt: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  isActive: z.boolean(),
+  revisionId: identifierSchema
+});
+
+export const graphRevisionInspectionResponseSchema = z.object({
+  graph: graphSpecSchema,
+  revision: graphRevisionMetadataSchema
+});
+
+export const graphRevisionListResponseSchema = z.object({
+  revisions: z.array(graphRevisionMetadataSchema)
+});
+
 export const graphMutationResponseSchema = z.object({
   graph: graphSpecSchema.optional(),
   activeRevisionId: identifierSchema.optional(),
@@ -85,6 +112,19 @@ export type PackageSourceListResponse = z.infer<
 >;
 export type GraphInspectionResponse = z.infer<
   typeof graphInspectionResponseSchema
+>;
+export type ActiveGraphRevisionRecord = z.infer<
+  typeof activeGraphRevisionRecordSchema
+>;
+export type GraphRevisionRecord = z.infer<typeof graphRevisionRecordSchema>;
+export type GraphRevisionMetadata = z.infer<
+  typeof graphRevisionMetadataSchema
+>;
+export type GraphRevisionInspectionResponse = z.infer<
+  typeof graphRevisionInspectionResponseSchema
+>;
+export type GraphRevisionListResponse = z.infer<
+  typeof graphRevisionListResponseSchema
 >;
 export type GraphMutationResponse = z.infer<
   typeof graphMutationResponseSchema

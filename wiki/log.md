@@ -404,3 +404,14 @@ HTTP inspection plus WebSocket live streaming on the same route, and extended
 Closed the slice only after fixing the replay/live WebSocket race, tightening
 strict TypeScript and ESLint compliance around the shared client surface, and
 verifying the batch with targeted tests plus `pnpm verify`.
+
+## [2026-04-23] implementation | Added typed graph-revision history inspection through the host boundary
+
+Promoted persisted graph revisions from a host-internal file detail into a real
+control-plane surface. Added canonical graph-revision DTOs in
+`packages/types`, switched new revision persistence to typed revision records,
+kept backward-compatible reads for older raw graph-snapshot revision files, and
+exposed `GET /v1/graph/revisions` plus `GET /v1/graph/revisions/{revisionId}`
+through `entangle-host`, `packages/host-client`, and the CLI. Closed the slice
+only after tightening strict test parsing under ESLint, normalizing the last
+stale active-revision read path in host state, and re-running `pnpm verify`.

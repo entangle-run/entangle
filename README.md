@@ -167,6 +167,11 @@ This repository currently contains:
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary
   through `packages/host-client` for future Studio and CLI live consumption;
+- a typed graph-revision history surface where `entangle-host` now persists
+  canonical revision records, exposes `GET /v1/graph/revisions` and
+  `GET /v1/graph/revisions/{revisionId}`, preserves backward compatibility with
+  earlier raw graph snapshots, and shares the inspection boundary through
+  `packages/host-client` and the CLI;
 
 The highest-value remaining gaps are:
 
@@ -175,7 +180,7 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper session-level and runner-originated host event coverage plus fuller
-  host resource surfaces;
+  node/edge mutation and runtime-restart host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

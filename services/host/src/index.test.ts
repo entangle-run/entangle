@@ -15,6 +15,8 @@ import { WebSocket } from "ws";
 import {
   artifactRecordSchema,
   externalPrincipalInspectionResponseSchema,
+  graphRevisionInspectionResponseSchema,
+  graphRevisionListResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -688,6 +690,77 @@ describe("buildHostServer", () => {
       } finally {
         socket.close();
       }
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and inspects persisted graph revisions through the host boundary", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/graph/revisions"
+      });
+
+      expect(listResponse.statusCode).toBe(200);
+      const listResponseBody: unknown = listResponse.json();
+      const listedRevisions = graphRevisionListResponseSchema.parse(
+        listResponseBody
+      );
+      expect(listedRevisions.revisions).toHaveLength(1);
+      const [activeRevision] = listedRevisions.revisions;
+      expect(activeRevision).toBeDefined();
+      if (!activeRevision) {
+        throw new Error("Expected one active graph revision.");
+      }
+      expect(activeRevision).toMatchObject({
+        graphId: "team-alpha",
+        isActive: true
+      });
+
+      const revisionId = activeRevision.revisionId;
+      const revisionResponse = await server.inject({
+        method: "GET",
+        url: `/v1/graph/revisions/${revisionId}`
+      });
+
+      expect(revisionResponse.statusCode).toBe(200);
+      const revisionResponseBody: unknown = revisionResponse.json();
+      const revisionInspection = graphRevisionInspectionResponseSchema.parse(
+        revisionResponseBody
+      );
+      expect(revisionInspection).toMatchObject({
+        graph: {
+          graphId: "team-alpha"
+        },
+        revision: {
+          isActive: true,
+          revisionId
+        }
+      });
+
+      const missingRevisionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/graph/revisions/missing-revision"
+      });
+
+      expect(missingRevisionResponse.statusCode).toBe(404);
+      const missingRevisionErrorBody: unknown = missingRevisionResponse.json();
+      const missingRevisionError = hostErrorResponseSchema.parse(
+        missingRevisionErrorBody
+      );
+      expect(missingRevisionError).toMatchObject({
+        code: "not_found"
+      });
     } finally {
       await server.close();
     }

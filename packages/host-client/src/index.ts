@@ -5,6 +5,8 @@ import {
   externalPrincipalMutationRequestSchema,
   graphInspectionResponseSchema,
   graphMutationResponseSchema,
+  graphRevisionInspectionResponseSchema,
+  graphRevisionListResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -22,6 +24,8 @@ import {
   type ExternalPrincipalMutationRequest,
   type GraphInspectionResponse,
   type GraphMutationResponse,
+  type GraphRevisionInspectionResponse,
+  type GraphRevisionListResponse,
   type HostEventListResponse,
   type HostEventRecord,
   type HostStatusResponse,
@@ -327,6 +331,22 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/graph`),
         graphInspectionResponseSchema
+      );
+    },
+
+    async listGraphRevisions(): Promise<GraphRevisionListResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/graph/revisions`),
+        graphRevisionListResponseSchema
+      );
+    },
+
+    async getGraphRevision(
+      revisionId: string
+    ): Promise<GraphRevisionInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/graph/revisions/${revisionId}`),
+        graphRevisionInspectionResponseSchema
       );
     },
 

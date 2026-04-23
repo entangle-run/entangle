@@ -119,6 +119,75 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses graph revision list and inspection responses from the host surface", async () => {
+    const responses = [
+      createMockResponse({
+        body: JSON.stringify({
+          revisions: [
+            {
+              appliedAt: "2026-04-23T00:00:00.000Z",
+              graphId: "team-alpha",
+              isActive: true,
+              revisionId: "team-alpha-20260423-000000"
+            }
+          ]
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          graph: {
+            graphId: "team-alpha",
+            name: "Team Alpha",
+            schemaVersion: "1",
+            nodes: [
+              {
+                bindings: {},
+                displayName: "User",
+                nodeId: "user-main",
+                nodeKind: "user",
+                runtime: {
+                  enabled: false
+                }
+              }
+            ],
+            edges: []
+          },
+          revision: {
+            appliedAt: "2026-04-23T00:00:00.000Z",
+            graphId: "team-alpha",
+            isActive: true,
+            revisionId: "team-alpha-20260423-000000"
+          }
+        }),
+        ok: true,
+        status: 200
+      })
+    ];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () => Promise.resolve(responses.shift()!)
+    });
+
+    await expect(client.listGraphRevisions()).resolves.toMatchObject({
+      revisions: [
+        {
+          revisionId: "team-alpha-20260423-000000",
+          isActive: true
+        }
+      ]
+    });
+
+    await expect(
+      client.getGraphRevision("team-alpha-20260423-000000")
+    ).resolves.toMatchObject({
+      revision: {
+        graphId: "team-alpha"
+      }
+    });
+  });
+
   it("formats structured host conflict errors for runtime context requests", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

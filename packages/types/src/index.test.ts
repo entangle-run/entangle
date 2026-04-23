@@ -7,6 +7,7 @@ import {
   engineToolExecutionRequestSchema,
   engineToolExecutionResultSchema,
   externalPrincipalRecordSchema,
+  graphRevisionInspectionResponseSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
   hostEventRecordSchema,
@@ -233,6 +234,39 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("runtime.observed_state.changed");
     expect(result.category).toBe("runtime");
+  });
+});
+
+describe("graph revision contracts", () => {
+  it("accepts graph revision inspection responses", () => {
+    const result = graphRevisionInspectionResponseSchema.parse({
+      graph: {
+        graphId: "team-alpha",
+        name: "Team Alpha",
+        schemaVersion: "1",
+        nodes: [
+          {
+            bindings: {},
+            displayName: "User",
+            nodeId: "user-main",
+            nodeKind: "user",
+            runtime: {
+              enabled: false
+            }
+          }
+        ],
+        edges: []
+      },
+      revision: {
+        appliedAt: "2026-04-23T00:00:00.000Z",
+        graphId: "team-alpha",
+        isActive: true,
+        revisionId: "team-alpha-20260423-000000"
+      }
+    });
+
+    expect(result.revision.isActive).toBe(true);
+    expect(result.graph.graphId).toBe("team-alpha");
   });
 });
 

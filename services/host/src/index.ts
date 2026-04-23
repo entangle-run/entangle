@@ -8,6 +8,8 @@ import {
   externalPrincipalMutationRequestSchema,
   graphMutationResponseSchema,
   graphInspectionResponseSchema,
+  graphRevisionInspectionResponseSchema,
+  graphRevisionListResponseSchema,
   type HostEventRecord,
   hostEventListQuerySchema,
   hostEventListResponseSchema,
@@ -35,7 +37,9 @@ import {
   listHostEvents,
   getCatalogInspection,
   getGraphInspection,
+  getGraphRevision,
   listExternalPrincipals,
+  listGraphRevisions,
   getPackageSourceInspection,
   initializeHostState,
   listRuntimeInspections,
@@ -309,6 +313,25 @@ export async function buildHostServer() {
   server.get("/v1/graph", async () =>
     graphInspectionResponseSchema.parse(await getGraphInspection())
   );
+
+  server.get("/v1/graph/revisions", async () =>
+    graphRevisionListResponseSchema.parse(await listGraphRevisions())
+  );
+
+  server.get("/v1/graph/revisions/:revisionId", async (request, reply) => {
+    const params = request.params as { revisionId: string };
+    const inspection = await getGraphRevision(params.revisionId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Graph revision '${params.revisionId}' was not found.`
+      });
+    }
+
+    return graphRevisionInspectionResponseSchema.parse(inspection);
+  });
 
   server.post("/v1/graph/validate", async (request) =>
     graphMutationResponseSchema.parse(await validateGraphCandidate(request.body))

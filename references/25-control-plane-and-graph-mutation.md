@@ -187,6 +187,10 @@ Recommended model:
 - sessions bind to a graph snapshot or revision at start time;
 - active sessions do not silently reinterpret themselves against a different topology.
 
+The current implementation now persists typed graph revision records under the
+host desired-state root and exposes revision-history inspection through the host
+API, shared host client, and CLI.
+
 ## 6. Session interaction with graph mutations
 
 Graph mutations and sessions must interact predictably.

@@ -47,8 +47,7 @@ The repository does **not** yet include:
 
 - a broad builtin tool surface and richer model-guided memory maintenance
   inside the internal runtime execution path;
-- full resource-oriented host mutation coverage for nodes, edges, and revision
-  history;
+- full resource-oriented host mutation coverage for nodes and edges;
 - Studio as a complete operator surface;
 - CLI parity with all core host workflows;
 - end-to-end deployment hardening for the full local product profile.
@@ -85,6 +84,8 @@ The most important stable conclusions remain:
   context, A2A payloads, artifact records, external principals, host DTOs, and
   runner-local state;
 - canonical host-event DTOs for persisted inspection and WebSocket streaming;
+- canonical graph-revision DTOs for active revision records, revision history
+  metadata, and revision inspection responses;
 - explicit package-level tool catalog contracts with manifest-owned
   `runtime.toolsPath` and structured `runtime/tools.json` documents;
 - semantic validation in `packages/validator` for graph-resource consistency,
@@ -113,6 +114,7 @@ This layer is strong and directionally correct. It is not a blocker.
 - package-source admission and inspection;
 - external-principal persistence and inspection;
 - graph apply, inspection, and validation;
+- graph revision-history listing and revision-detail inspection;
 - runtime inspection, start, stop, context inspection, and artifact inspection;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
@@ -127,7 +129,6 @@ This layer is strong and directionally correct. It is not a blocker.
 
 - resource-oriented node mutation surfaces;
 - resource-oriented edge mutation surfaces;
-- graph revision history inspection APIs;
 - runtime restart surface;
 - session-level and richer runner-originated event classes on top of the new
   host event surface;

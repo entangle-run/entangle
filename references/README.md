@@ -76,6 +76,7 @@ This directory is the canonical design corpus for Entangle.
 70. [69-builtin-tool-executor-and-bounded-anthropic-tool-loop-slice.md](69-builtin-tool-executor-and-bounded-anthropic-tool-loop-slice.md)
 71. [70-deterministic-post-turn-memory-update-slice.md](70-deterministic-post-turn-memory-update-slice.md)
 72. [71-host-event-surface-slice.md](71-host-event-surface-slice.md)
+73. [72-graph-revision-history-inspection-slice.md](72-graph-revision-history-inspection-slice.md)
 
 ## Role of this corpus
 

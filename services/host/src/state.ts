@@ -13,9 +13,14 @@ import {
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import {
+  activeGraphRevisionRecordSchema,
   artifactRecordSchema,
+  graphRevisionInspectionResponseSchema,
+  graphRevisionListResponseSchema,
+  graphRevisionRecordSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
+  type ActiveGraphRevisionRecord,
   type HostEventListResponse,
   type HostEventRecord,
   gitRepositoryProvisioningRecordSchema,
@@ -35,6 +40,8 @@ import {
   type ExternalPrincipalRecord,
   externalPrincipalRecordSchema,
   type GraphInspectionResponse,
+  type GraphRevisionInspectionResponse,
+  type GraphRevisionListResponse,
   type GraphSpec,
   type GraphMutationResponse,
   graphSpecSchema,
@@ -122,11 +129,6 @@ const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
 const packageStoreMetadataFileName = ".package-store.json";
-
-type GraphRevisionRecord = {
-  activeRevisionId: string;
-  appliedAt: string;
-};
 
 type LocalPathPackageSourceRecord = Extract<
   PackageSourceRecord,
@@ -1023,14 +1025,109 @@ async function readActiveGraphState(): Promise<{
   }
 
   const graph = graphSpecSchema.parse(await readJsonFile(currentGraphPath));
-  const revisionRecord = (await pathExists(activeGraphRevisionPath))
-    ? await readJsonFile<GraphRevisionRecord>(activeGraphRevisionPath)
-    : undefined;
+  const revisionRecord = await readActiveGraphRevisionRecord();
 
   return {
     graph,
     activeRevisionId: revisionRecord?.activeRevisionId
   };
+}
+
+async function readActiveGraphRevisionRecord(): Promise<
+  ActiveGraphRevisionRecord | undefined
+> {
+  await initializeHostState();
+
+  if (!(await pathExists(activeGraphRevisionPath))) {
+    return undefined;
+  }
+
+  return activeGraphRevisionRecordSchema.parse(
+    await readJsonFile(activeGraphRevisionPath)
+  );
+}
+
+async function readGraphRevisionInspection(
+  revisionId: string,
+  activeRevisionRecord?: ActiveGraphRevisionRecord
+): Promise<GraphRevisionInspectionResponse | undefined> {
+  const filePath = path.join(graphRevisionsRoot, `${revisionId}.json`);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  const persisted = await readJsonFile(filePath);
+  const parsedRecord = graphRevisionRecordSchema.safeParse(persisted);
+  const resolvedRecord = parsedRecord.success
+    ? parsedRecord.data
+    : graphRevisionRecordSchema.parse({
+        appliedAt:
+          activeRevisionRecord?.activeRevisionId === revisionId
+            ? activeRevisionRecord.appliedAt
+            : (await stat(filePath)).mtime.toISOString(),
+        graph: graphSpecSchema.parse(persisted),
+        revisionId
+      });
+
+  return graphRevisionInspectionResponseSchema.parse({
+    graph: resolvedRecord.graph,
+    revision: {
+      appliedAt: resolvedRecord.appliedAt,
+      graphId: resolvedRecord.graph.graphId,
+      isActive: activeRevisionRecord?.activeRevisionId === revisionId,
+      revisionId: resolvedRecord.revisionId
+    }
+  });
+}
+
+export async function listGraphRevisions(): Promise<GraphRevisionListResponse> {
+  await initializeHostState();
+
+  if (!(await pathExists(graphRevisionsRoot))) {
+    return graphRevisionListResponseSchema.parse({
+      revisions: []
+    });
+  }
+
+  const activeRevisionRecord = await readActiveGraphRevisionRecord();
+  const revisionIds = (await readdir(graphRevisionsRoot))
+    .filter((entry) => entry.endsWith(".json"))
+    .map((entry) => entry.slice(0, -".json".length));
+  const revisions = (
+    await Promise.all(
+      revisionIds.map((revisionId) =>
+        readGraphRevisionInspection(revisionId, activeRevisionRecord)
+      )
+    )
+  )
+    .filter((revision): revision is GraphRevisionInspectionResponse =>
+      revision !== undefined
+    )
+    .map((revision) => revision.revision)
+    .sort((left, right) => {
+      const appliedAtOrdering = right.appliedAt.localeCompare(left.appliedAt);
+
+      if (appliedAtOrdering !== 0) {
+        return appliedAtOrdering;
+      }
+
+      return right.revisionId.localeCompare(left.revisionId);
+    });
+
+  return graphRevisionListResponseSchema.parse({
+    revisions
+  });
+}
+
+export async function getGraphRevision(
+  revisionId: string
+): Promise<GraphRevisionInspectionResponse | undefined> {
+  await initializeHostState();
+  return readGraphRevisionInspection(
+    revisionId,
+    await readActiveGraphRevisionRecord()
+  );
 }
 
 async function listPackageSourceRecords(): Promise<PackageSourceRecord[]> {
@@ -1656,9 +1753,7 @@ export async function getGraphInspection(): Promise<GraphInspectionResponse> {
   }
 
   const graph = graphSpecSchema.parse(await readJsonFile(currentGraphPath));
-  const revisionRecord = (await pathExists(activeGraphRevisionPath))
-    ? await readJsonFile<GraphRevisionRecord>(activeGraphRevisionPath)
-    : undefined;
+  const revisionRecord = await readActiveGraphRevisionRecord();
 
   return {
     graph,
@@ -2415,15 +2510,19 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
   }
 
   const activeRevisionId = buildGraphRevisionId(candidate.graph.graphId);
-  const revisionRecord: GraphRevisionRecord = {
+  const revisionRecord = activeGraphRevisionRecordSchema.parse({
     activeRevisionId,
     appliedAt: nowIsoString()
-  };
+  });
 
   await writeJsonFile(currentGraphPath, candidate.graph);
   await writeJsonFile(
     path.join(graphRevisionsRoot, `${activeRevisionId}.json`),
-    candidate.graph
+    graphRevisionRecordSchema.parse({
+      appliedAt: revisionRecord.appliedAt,
+      graph: candidate.graph,
+      revisionId: activeRevisionId
+    })
   );
   await writeJsonFile(activeGraphRevisionPath, revisionRecord);
   await synchronizeCurrentGraphRuntimeState();

@@ -78,6 +78,11 @@ materialization until archive import tooling exists.
 The desired graph revision and associated defaults currently chosen by the
 operator.
 
+The current implementation now also exposes:
+
+- revision-history listing through `GET /v1/graph/revisions`; and
+- revision-detail inspection through `GET /v1/graph/revisions/{revisionId}`.
+
 ### Applied node binding
 
 The graph-local node binding plus effective runtime and resource references.
@@ -242,6 +247,8 @@ Purpose:
 - inspect current desired graph;
 - inspect revision history;
 - validate proposed graph mutations.
+
+The current implementation now covers all five routes in this subsection.
 
 ### 8.4 Node bindings
 
