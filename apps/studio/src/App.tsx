@@ -22,6 +22,7 @@ import type {
   HostEventRecord,
   HostSessionSummary,
   HostStatusResponse,
+  PackageSourceInspectionResponse,
   RuntimeInspectionResponse,
   RuntimeRecoveryInspectionResponse
 } from "@entangle/types";
@@ -36,9 +37,24 @@ import {
   formatGraphEdgeLabel,
   isEdgeEditorDraftUninitialized,
   sortGraphEdges,
-  summarizeValidationReport,
   type EdgeEditorDraft
 } from "./graph-edge-mutation.js";
+import { summarizeValidationReport } from "./graph-mutation-feedback.js";
+import {
+  buildManagedNodeCreateRequest,
+  buildManagedNodeEditorDraft,
+  buildManagedNodeReplacementRequest,
+  createDefaultManagedNodeEditorDraft,
+  createEmptyManagedNodeEditorDraft,
+  formatManagedNodeDetail,
+  formatManagedNodeLabel,
+  formatPackageSourceOptionLabel,
+  isManagedNodeEditorDraftUninitialized,
+  managedNodeKindOptions,
+  sortManagedGraphNodes,
+  sortPackageSourceInspections,
+  type ManagedNodeEditorDraft
+} from "./graph-node-mutation.js";
 import {
   collectRuntimeRecoveryEvents,
   deriveSelectedRuntimeId,
@@ -76,6 +92,7 @@ type FlowProjection = {
 
 type EventStreamState = "connecting" | "live" | "closed" | "error";
 type EdgeMutationAction = "create" | "delete" | "replace";
+type NodeMutationAction = "create" | "delete" | "replace";
 
 function normalizeError(
   caught: unknown,
@@ -241,8 +258,19 @@ export function App() {
   const [status, setStatus] = useState<HostStatusResponse | null>(null);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);
+  const [packageSources, setPackageSources] = useState<
+    PackageSourceInspectionResponse[]
+  >([]);
+  const [packageSourceError, setPackageSourceError] = useState<string | null>(null);
   const [runtimes, setRuntimes] = useState<RuntimeInspectionResponse[]>([]);
   const [selectedRuntimeId, setSelectedRuntimeId] = useState<string | null>(null);
+  const [selectedManagedNodeId, setSelectedManagedNodeId] = useState<string | null>(null);
+  const [nodeDraft, setNodeDraft] = useState<ManagedNodeEditorDraft>(
+    createEmptyManagedNodeEditorDraft
+  );
+  const [nodeMutationError, setNodeMutationError] = useState<string | null>(null);
+  const [pendingNodeMutation, setPendingNodeMutation] =
+    useState<NodeMutationAction | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [edgeDraft, setEdgeDraft] = useState<EdgeEditorDraft>(
     createEmptyEdgeEditorDraft
@@ -267,26 +295,57 @@ export function App() {
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
 
   const loadOverview = useCallback(async () => {
-    try {
-      const [nextStatus, nextGraphInspection, nextRuntimeList] = await Promise.all([
+    const [statusResult, graphResult, runtimeListResult, packageSourceResult] =
+      await Promise.allSettled([
         client.getHostStatus(),
         client.getGraph(),
-        client.listRuntimes()
+        client.listRuntimes(),
+        client.listPackageSources()
       ]);
 
-      startTransition(() => {
-        setStatus(nextStatus);
-        setGraphInspection(nextGraphInspection);
-        setRuntimes(nextRuntimeList.runtimes);
-        setError(null);
-      });
-    } catch (caught: unknown) {
+    if (
+      statusResult.status === "rejected" ||
+      graphResult.status === "rejected" ||
+      runtimeListResult.status === "rejected"
+    ) {
+      const overviewError: unknown =
+        statusResult.status === "rejected"
+          ? statusResult.reason
+          : graphResult.status === "rejected"
+            ? graphResult.reason
+            : runtimeListResult.status === "rejected"
+              ? runtimeListResult.reason
+              : new Error("Host overview refresh failed unexpectedly.");
+
       startTransition(() => {
         setError(
-          normalizeError(caught, "Unknown error while loading host state.")
+          normalizeError(overviewError, "Unknown error while loading host state.")
         );
       });
+      return;
     }
+
+    startTransition(() => {
+      setStatus(statusResult.value);
+      setGraphInspection(graphResult.value);
+      setRuntimes(runtimeListResult.value.runtimes);
+      setError(null);
+
+      if (packageSourceResult.status === "fulfilled") {
+        setPackageSources(
+          sortPackageSourceInspections(packageSourceResult.value.packageSources)
+        );
+        setPackageSourceError(null);
+      } else {
+        setPackageSources([]);
+        setPackageSourceError(
+          normalizeError(
+            packageSourceResult.reason,
+            "Unknown error while loading admitted package sources."
+          )
+        );
+      }
+    });
   }, [client]);
 
   const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
@@ -413,9 +472,106 @@ export function App() {
     () => graphInspection?.graph?.nodes.map((node) => node.nodeId) ?? [],
     [graphInspection]
   );
+  const managedGraphNodes = useMemo(
+    () => sortManagedGraphNodes(graphInspection?.graph),
+    [graphInspection]
+  );
   const graphEdges = useMemo(
     () => sortGraphEdges(graphInspection?.graph?.edges ?? []),
     [graphInspection]
+  );
+
+  const resetManagedNodeDraft = useCallback(() => {
+    setSelectedManagedNodeId(null);
+    setNodeDraft(createDefaultManagedNodeEditorDraft(packageSources));
+    setNodeMutationError(null);
+  }, [packageSources]);
+
+  const selectManagedNode = useCallback(
+    (nodeId: string) => {
+      const node = managedGraphNodes.find((candidate) => candidate.nodeId === nodeId);
+
+      if (!node) {
+        return;
+      }
+
+      setSelectedManagedNodeId(nodeId);
+      setSelectedRuntimeId(nodeId);
+      setNodeDraft(buildManagedNodeEditorDraft(node));
+      setNodeMutationError(null);
+    },
+    [managedGraphNodes]
+  );
+
+  const mutateManagedNode = useCallback(
+    async (action: NodeMutationAction) => {
+      try {
+        setPendingNodeMutation(action);
+
+        if (action === "delete") {
+          if (!selectedManagedNodeId) {
+            return;
+          }
+
+          await client.deleteNode(selectedManagedNodeId);
+          await loadOverview();
+
+          if (selectedRuntimeId === selectedManagedNodeId) {
+            setSelectedRuntimeId(null);
+          }
+
+          setSelectedManagedNodeId(null);
+          setNodeDraft(createDefaultManagedNodeEditorDraft(packageSources));
+          setNodeMutationError(null);
+          return;
+        }
+
+        const response =
+          action === "create"
+            ? await client.createNode(buildManagedNodeCreateRequest(nodeDraft))
+            : selectedManagedNodeId
+              ? await client.replaceNode(
+                  selectedManagedNodeId,
+                  buildManagedNodeReplacementRequest(nodeDraft)
+                )
+              : null;
+
+        if (!response) {
+          return;
+        }
+
+        const validationMessage = summarizeValidationReport(response.validation);
+
+        if (validationMessage) {
+          setNodeMutationError(validationMessage);
+          return;
+        }
+
+        await loadOverview();
+
+        const nextNodeId = response.node?.binding.node.nodeId ?? nodeDraft.nodeId;
+        setSelectedManagedNodeId(nextNodeId);
+        setSelectedRuntimeId(nextNodeId);
+        setNodeMutationError(null);
+      } catch (caught: unknown) {
+        setNodeMutationError(
+          normalizeError(
+            caught,
+            `Unknown error while trying to ${action} the managed node.`
+          )
+        );
+      } finally {
+        setPendingNodeMutation(null);
+      }
+    },
+    [
+      client,
+      loadOverview,
+      nodeDraft,
+      packageSources,
+      selectedManagedNodeId,
+      selectedRuntimeId
+    ]
   );
 
   const resetEdgeDraft = useCallback(() => {
@@ -553,10 +709,32 @@ export function App() {
 
   useEffect(() => {
     if (!graphInspection?.graph) {
+      setSelectedManagedNodeId(null);
+      setNodeDraft(createEmptyManagedNodeEditorDraft());
+      setNodeMutationError(null);
       setSelectedEdgeId(null);
       setEdgeDraft(createEmptyEdgeEditorDraft());
       setEdgeMutationError(null);
       return;
+    }
+
+    if (selectedManagedNodeId) {
+      const selectedNode = managedGraphNodes.find(
+        (node) => node.nodeId === selectedManagedNodeId
+      );
+
+      if (selectedNode) {
+        setNodeDraft(buildManagedNodeEditorDraft(selectedNode));
+      } else {
+        setSelectedManagedNodeId(null);
+        setNodeDraft(createDefaultManagedNodeEditorDraft(packageSources));
+      }
+    } else {
+      setNodeDraft((current) =>
+        isManagedNodeEditorDraftUninitialized(current)
+          ? createDefaultManagedNodeEditorDraft(packageSources)
+          : current
+      );
     }
 
     if (selectedEdgeId) {
@@ -577,7 +755,14 @@ export function App() {
         ? createDefaultEdgeEditorDraft(graphInspection.graph)
         : current
     );
-  }, [graphEdges, graphInspection, selectedEdgeId]);
+  }, [
+    graphEdges,
+    graphInspection,
+    managedGraphNodes,
+    packageSources,
+    selectedEdgeId,
+    selectedManagedNodeId
+  ]);
 
   useEffect(() => {
     setEventStreamState("connecting");
@@ -670,7 +855,7 @@ export function App() {
                 }}
                 onNodeClick={(_event, node) => {
                   if (runtimes.some((runtime) => runtime.nodeId === node.id)) {
-                    setSelectedRuntimeId(node.id);
+                    selectManagedNode(node.id);
                   }
                 }}
               >
@@ -690,6 +875,182 @@ export function App() {
           </div>
 
           <div className="graph-editor-grid">
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Managed Nodes</h3>
+                <span className="panel-caption">
+                  {managedGraphNodes.length} managed nodes
+                </span>
+              </div>
+
+              {managedGraphNodes.length > 0 ? (
+                <div className="node-list">
+                  {managedGraphNodes.map((node) => (
+                    <button
+                      key={node.nodeId}
+                      className={`node-chip ${node.nodeId === selectedManagedNodeId ? "is-selected" : ""}`}
+                      onClick={() => {
+                        selectManagedNode(node.nodeId);
+                      }}
+                      type="button"
+                    >
+                      <strong>{formatManagedNodeLabel(node)}</strong>
+                      <span>{formatManagedNodeDetail(node)}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>No managed nodes are currently defined in the applied graph.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Managed Node Editor</h3>
+                <span className="panel-caption">
+                  {selectedManagedNodeId ? "Replace or delete" : "Create a new node"}
+                </span>
+              </div>
+
+              {packageSourceError ? <p className="error-box">{packageSourceError}</p> : null}
+              {nodeMutationError ? <p className="error-box">{nodeMutationError}</p> : null}
+
+              {graphInspection?.graph ? (
+                <>
+                  <div className="field-grid">
+                    <label className="field">
+                      <span>Node id</span>
+                      <input
+                        disabled={selectedManagedNodeId !== null || pendingNodeMutation !== null}
+                        onChange={(event) => {
+                          setNodeDraft((current) => ({
+                            ...current,
+                            nodeId: event.target.value
+                          }));
+                        }}
+                        type="text"
+                        value={nodeDraft.nodeId}
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Display name</span>
+                      <input
+                        disabled={pendingNodeMutation !== null}
+                        onChange={(event) => {
+                          setNodeDraft((current) => ({
+                            ...current,
+                            displayName: event.target.value
+                          }));
+                        }}
+                        type="text"
+                        value={nodeDraft.displayName}
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Node kind</span>
+                      <select
+                        disabled={pendingNodeMutation !== null}
+                        onChange={(event) => {
+                          setNodeDraft((current) => ({
+                            ...current,
+                            nodeKind: event.target.value as ManagedNodeEditorDraft["nodeKind"]
+                          }));
+                        }}
+                        value={nodeDraft.nodeKind}
+                      >
+                        {managedNodeKindOptions.map((nodeKind) => (
+                          <option key={nodeKind} value={nodeKind}>
+                            {nodeKind}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>Package source</span>
+                      <select
+                        disabled={pendingNodeMutation !== null || packageSources.length === 0}
+                        onChange={(event) => {
+                          setNodeDraft((current) => ({
+                            ...current,
+                            packageSourceRef: event.target.value
+                          }));
+                        }}
+                        value={nodeDraft.packageSourceRef}
+                      >
+                        <option value="">Select one admitted package source</option>
+                        {packageSources.map((inspection) => (
+                          <option
+                            key={inspection.packageSource.packageSourceId}
+                            value={inspection.packageSource.packageSourceId}
+                          >
+                            {formatPackageSourceOptionLabel(inspection)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <p className="editor-meta">
+                    This bounded slice edits only the managed node identity,
+                    role, display name, and package binding. Existing autonomy
+                    and resource bindings are preserved on replace and use safe
+                    defaults on create.
+                  </p>
+
+                  <div className="action-row">
+                    <button
+                      className="action-button"
+                      disabled={pendingNodeMutation !== null}
+                      onClick={resetManagedNodeDraft}
+                      type="button"
+                    >
+                      New Node
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={
+                        pendingNodeMutation !== null ||
+                        nodeDraft.nodeId.trim() === "" ||
+                        nodeDraft.displayName.trim() === "" ||
+                        nodeDraft.packageSourceRef === ""
+                      }
+                      onClick={() => {
+                        void mutateManagedNode(
+                          selectedManagedNodeId ? "replace" : "create"
+                        );
+                      }}
+                      type="button"
+                    >
+                      {pendingNodeMutation === "create" || pendingNodeMutation === "replace"
+                        ? "Saving..."
+                        : selectedManagedNodeId
+                          ? "Save Node"
+                          : "Create Node"}
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={pendingNodeMutation !== null || selectedManagedNodeId === null}
+                      onClick={() => {
+                        void mutateManagedNode("delete");
+                      }}
+                      type="button"
+                    >
+                      {pendingNodeMutation === "delete" ? "Deleting..." : "Delete Node"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>Apply a graph before editing managed nodes from Studio.</p>
+                </div>
+              )}
+            </div>
+
             <div className="subpanel">
               <div className="section-header">
                 <h3>Graph Edges</h3>
@@ -936,7 +1297,7 @@ export function App() {
                     key={runtime.nodeId}
                     className={`runtime-chip ${runtime.nodeId === selectedRuntimeId ? "is-selected" : ""}`}
                     onClick={() => {
-                      setSelectedRuntimeId(runtime.nodeId);
+                      selectManagedNode(runtime.nodeId);
                     }}
                     type="button"
                   >

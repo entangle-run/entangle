@@ -94,6 +94,7 @@ This directory is the canonical design corpus for Entangle.
 88. [87-studio-runtime-artifact-inspection-slice.md](87-studio-runtime-artifact-inspection-slice.md)
 89. [88-studio-runtime-session-inspection-slice.md](88-studio-runtime-session-inspection-slice.md)
 90. [89-studio-graph-edge-mutation-slice.md](89-studio-graph-edge-mutation-slice.md)
+91. [90-studio-managed-node-mutation-slice.md](90-studio-managed-node-mutation-slice.md)
 
 ## Role of this corpus
 

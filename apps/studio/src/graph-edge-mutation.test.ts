@@ -7,9 +7,9 @@ import {
   createDefaultEdgeEditorDraft,
   formatGraphEdgeDetail,
   formatGraphEdgeLabel,
-  sortGraphEdges,
-  summarizeValidationReport
+  sortGraphEdges
 } from "./graph-edge-mutation.js";
+import { summarizeValidationReport } from "./graph-mutation-feedback.js";
 
 const graph: GraphSpec = {
   defaults: {

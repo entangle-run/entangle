@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio managed-node mutation
+
+Closed the next bounded Studio mutation slice by exposing host-owned managed
+node create/replace/delete flows. Studio now selects admitted package sources
+for managed nodes, preserves hidden node bindings on replace, and keeps runtime
+selection aligned with explicit managed-node selection.
+
 ## [2026-04-24] implementation | Added Studio graph edge mutation
 
 Closed the first bounded graph-mutation slice in Studio by exposing host-owned

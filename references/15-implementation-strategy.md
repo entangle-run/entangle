@@ -212,6 +212,9 @@ Completed in the current repository state:
 - the first bounded Studio graph-mutation slice through host-owned edge
   mutation flows, with edge selection, create/replace/delete, and canonical
   post-mutation refresh.
+- the next bounded Studio mutation slice through host-owned managed-node
+  mutation flows, with package-source-backed node binding selection and
+  preservation of hidden bindings on replace.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -223,13 +226,11 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. bounded managed-node mutation on top of the now-richer runtime and graph
-   inspection surface;
-2. bounded package-source admission on top of the existing host package-source
+1. bounded package-source admission on top of the existing host package-source
    surface;
-3. deeper session drilldown only where the existing host session read model
+2. deeper session drilldown only where the existing host session read model
    creates real operator leverage;
-4. live event-driven updates via the host event stream where additional
+3. live event-driven updates via the host event stream where additional
    operator value still exists.
 
 Acceptance for the phase:

@@ -251,10 +251,13 @@ This repository currently contains:
 - the first bounded Studio graph-mutation slice where operators can now select,
   create, replace, and delete graph edges through host-owned edge resource
   routes instead of keeping Studio read-only on topology;
+- the next bounded Studio mutation slice where operators can now create,
+  replace, and delete managed nodes through host-owned node resource routes
+  while binding them to admitted package sources from Studio itself;
 
 The highest-value remaining gaps are:
 
-- bounded Studio managed-node mutation and package admission flows;
+- bounded Studio package admission flows;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;

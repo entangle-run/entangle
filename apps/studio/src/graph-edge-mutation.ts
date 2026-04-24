@@ -3,8 +3,7 @@ import type {
   EdgeCreateRequest,
   EdgeRelation,
   EdgeReplacementRequest,
-  GraphSpec,
-  ValidationReport
+  GraphSpec
 } from "@entangle/types";
 
 export const edgeRelationOptions: EdgeRelation[] = [
@@ -126,23 +125,4 @@ export function formatGraphEdgeDetail(edge: Edge): string {
       : "shared graph relay set";
 
   return `${edge.fromNodeId} -> ${edge.toNodeId} · ${state} · channel ${edge.transportPolicy.channel} · ${relaySummary}`;
-}
-
-export function summarizeValidationReport(
-  report: ValidationReport
-): string | null {
-  if (report.ok) {
-    return null;
-  }
-
-  const errors = report.findings.filter((finding) => finding.severity === "error");
-
-  if (errors.length === 0) {
-    return "The host rejected the candidate graph mutation.";
-  }
-
-  return errors
-    .slice(0, 3)
-    .map((finding) => finding.message)
-    .join(" ");
 }
