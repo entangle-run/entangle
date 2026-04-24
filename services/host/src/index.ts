@@ -82,12 +82,22 @@ import {
 } from "./state.js";
 
 class HostHttpError extends Error {
-  readonly code: "bad_request" | "conflict" | "not_found" | "internal_error";
+  readonly code:
+    | "bad_request"
+    | "conflict"
+    | "unauthorized"
+    | "not_found"
+    | "internal_error";
   readonly details: Record<string, unknown> | undefined;
   readonly statusCode: number;
 
   constructor(options: {
-    code: "bad_request" | "conflict" | "not_found" | "internal_error";
+    code:
+      | "bad_request"
+      | "conflict"
+      | "unauthorized"
+      | "not_found"
+      | "internal_error";
     details?: Record<string, unknown>;
     message: string;
     statusCode: number;
@@ -106,6 +116,56 @@ type HostEventStreamSocket = {
   readyState: number;
   send(payload: string): void;
 };
+
+function normalizeOperatorToken(token: string | undefined): string | undefined {
+  const normalizedToken = token?.trim();
+  return normalizedToken && normalizedToken.length > 0
+    ? normalizedToken
+    : undefined;
+}
+
+function extractBearerToken(authorization: string | undefined): string | undefined {
+  const prefix = "Bearer ";
+
+  if (!authorization?.startsWith(prefix)) {
+    return undefined;
+  }
+
+  return normalizeOperatorToken(authorization.slice(prefix.length));
+}
+
+function extractWebSocketAccessToken(query: unknown): string | undefined {
+  if (typeof query !== "object" || query === null || !("access_token" in query)) {
+    return undefined;
+  }
+
+  const rawAccessToken = (query as { access_token?: unknown }).access_token;
+  return typeof rawAccessToken === "string"
+    ? normalizeOperatorToken(rawAccessToken)
+    : undefined;
+}
+
+function isWebSocketUpgrade(upgrade: string | undefined): boolean {
+  return upgrade?.toLowerCase() === "websocket";
+}
+
+function requestHasValidOperatorToken(input: {
+  authorization: string | undefined;
+  operatorToken: string;
+  query: unknown;
+  upgrade: string | undefined;
+}): boolean {
+  const bearerToken = extractBearerToken(input.authorization);
+
+  if (bearerToken === input.operatorToken) {
+    return true;
+  }
+
+  return (
+    isWebSocketUpgrade(input.upgrade) &&
+    extractWebSocketAccessToken(input.query) === input.operatorToken
+  );
+}
 
 function parseRequestInput<T>(
   schema: ZodType<T>,
@@ -213,7 +273,34 @@ export async function buildHostServer() {
   const server = Fastify({
     logger: true
   });
+  const operatorToken = normalizeOperatorToken(
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  );
   await server.register(websocket);
+
+  if (operatorToken) {
+    server.addHook("preHandler", (request, reply, done) => {
+      if (
+        requestHasValidOperatorToken({
+          authorization: request.headers.authorization,
+          operatorToken,
+          query: request.query,
+          upgrade: request.headers.upgrade
+        })
+      ) {
+        done();
+        return;
+      }
+
+      reply.header("www-authenticate", "Bearer realm=\"entangle-host\"");
+      reply.status(401).send(
+        hostErrorResponseSchema.parse({
+          code: "unauthorized",
+          message: "Entangle host operator token is required."
+        })
+      );
+    });
+  }
 
   server.get("/v1/host/status", async () =>
     hostStatusResponseSchema.parse(await buildHostStatus())
@@ -238,6 +325,20 @@ export async function buildHostServer() {
     },
     wsHandler: (rawSocket, request) => {
       const socket = rawSocket as HostEventStreamSocket;
+
+      if (
+        operatorToken &&
+        !requestHasValidOperatorToken({
+          authorization: request.headers.authorization,
+          operatorToken,
+          query: request.query,
+          upgrade: request.headers.upgrade
+        })
+      ) {
+        socket.close(1008, "Entangle host operator token is required.");
+        return;
+      }
+
       const parsedQuery = hostEventStreamQuerySchema.safeParse(request.query);
 
       if (!parsedQuery.success) {
@@ -880,6 +981,8 @@ export async function buildHostServer() {
               ? "not_found"
               : statusCode === 409
                 ? "conflict"
+                : statusCode === 401
+                  ? "unauthorized"
                 : statusCode < 500
                   ? "bad_request"
                   : "internal_error",

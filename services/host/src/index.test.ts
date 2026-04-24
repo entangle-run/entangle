@@ -23,6 +23,7 @@ import {
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
+  hostStatusResponseSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
@@ -525,9 +526,10 @@ async function readNextSocketEvent(
 }
 
 async function injectTestSocket(
-  server: InjectableWebSocketServer
+  server: InjectableWebSocketServer,
+  path = "/v1/events"
 ): Promise<TestWebSocket> {
-  return (await server.injectWS("/v1/events")) as TestWebSocket;
+  return (await server.injectWS(path)) as TestWebSocket;
 }
 
 async function applySingleWorkerGraph(input: {
@@ -583,6 +585,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
   delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
+  delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   vi.unstubAllGlobals();
   vi.resetModules();
 
@@ -594,6 +597,52 @@ afterEach(async () => {
 });
 
 describe("buildHostServer", () => {
+  it("requires the configured operator token before serving host routes", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    const server = await createTestServer();
+
+    try {
+      const missingTokenResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(missingTokenResponse.statusCode).toBe(401);
+      expect(hostErrorResponseSchema.parse(missingTokenResponse.json())).toEqual({
+        code: "unauthorized",
+        message: "Entangle host operator token is required."
+      });
+      expect(missingTokenResponse.headers["www-authenticate"]).toBe(
+        "Bearer realm=\"entangle-host\""
+      );
+
+      const invalidTokenResponse = await server.inject({
+        headers: {
+          authorization: "Bearer wrong-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(invalidTokenResponse.statusCode).toBe(401);
+
+      const authorizedResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(authorizedResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(authorizedResponse.json()).service).toBe(
+        "entangle-host"
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
   it("returns a structured 400 response for invalid package-source admission payloads", async () => {
     const server = await createTestServer();
 

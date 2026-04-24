@@ -39,6 +39,98 @@ function createMockWebSocket() {
 }
 
 describe("createHostClient", () => {
+  it("adds the configured host auth token to HTTP requests", async () => {
+    const requests: Array<{ headers?: Record<string, string>; url: string }> = [];
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          headers: init?.headers,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              service: "entangle-host",
+              status: "healthy",
+              reconciliation: {
+                backendKind: "memory",
+                blockedRuntimeCount: 0,
+                degradedRuntimeCount: 0,
+                failedRuntimeCount: 0,
+                findingCodes: [],
+                issueCount: 0,
+                managedRuntimeCount: 0,
+                runningRuntimeCount: 0,
+                stoppedRuntimeCount: 0,
+                transitioningRuntimeCount: 0
+              },
+              runtimeCounts: {
+                desired: 0,
+                observed: 0,
+                running: 0
+              },
+              timestamp: "2026-04-24T00:00:00.000Z"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.getHostStatus()).resolves.toMatchObject({
+      service: "entangle-host"
+    });
+    expect(requests).toEqual([
+      {
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        url: "http://entangle-host.test/v1/host/status"
+      }
+    ]);
+  });
+
+  it("preserves JSON headers while adding the configured host auth token", async () => {
+    const requests: Array<{ headers?: Record<string, string> }> = [];
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (_url, init) => {
+        requests.push({
+          headers: init?.headers
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              validation: {
+                findings: [],
+                ok: false
+              }
+            }),
+            ok: false,
+            status: 400
+          })
+        );
+      }
+    });
+
+    await expect(client.applyGraph({})).resolves.toEqual({
+      validation: {
+        findings: [],
+        ok: false
+      }
+    });
+    expect(requests[0]?.headers).toEqual({
+      "content-type": "application/json",
+      authorization: "Bearer host-secret"
+    });
+  });
+
   it("parses host event list responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
@@ -1076,6 +1168,36 @@ describe("createHostClient", () => {
         nodeId: "worker-it",
         type: "runtime.recovery_controller.updated"
       }
+    ]);
+  });
+
+  it("adds the configured host auth token to event stream websocket URLs", () => {
+    const openedUrls: string[] = [];
+    const mockWebSocket = createMockWebSocket();
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({ events: [] }),
+            ok: true,
+            status: 200
+          })
+        ),
+      webSocketFactory: (url) => {
+        openedUrls.push(url);
+        return mockWebSocket.socket;
+      }
+    });
+
+    client.subscribeToEvents({
+      onEvent() {},
+      replay: 3
+    });
+
+    expect(openedUrls).toEqual([
+      "ws://entangle-host.test/v1/events?replay=3&access_token=host-secret"
     ]);
   });
 });

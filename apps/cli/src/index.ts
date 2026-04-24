@@ -81,13 +81,37 @@ function resolveHostUrl(command: Command): string {
   );
 }
 
+function resolveHostToken(command: Command): string | undefined {
+  const rootOptions = command.parent?.opts<{ hostToken?: string }>();
+  const nestedRootOptions = command.parent?.parent?.opts<{ hostToken?: string }>();
+  const token =
+    rootOptions?.hostToken ??
+    nestedRootOptions?.hostToken ??
+    process.env.ENTANGLE_HOST_TOKEN ??
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
+  const normalizedToken = token?.trim();
+
+  return normalizedToken && normalizedToken.length > 0
+    ? normalizedToken
+    : undefined;
+}
+
+function createCliHostClient(command: Command) {
+  const authToken = resolveHostToken(command);
+  const baseUrl = resolveHostUrl(command);
+
+  return createHostClient(
+    authToken === undefined ? { baseUrl } : { authToken, baseUrl }
+  );
+}
+
 async function watchHostEvents(input: {
   command: Command;
   filterOptions: Parameters<typeof buildHostEventFilter>[0];
   replay: number;
   summary: boolean;
 }): Promise<void> {
-  const client = createHostClient({ baseUrl: resolveHostUrl(input.command) });
+  const client = createCliHostClient(input.command);
   const filter = buildHostEventFilter(input.filterOptions);
 
   await new Promise<void>((resolve, reject) => {
@@ -196,13 +220,18 @@ const hostCommand = program
     "--host-url <url>",
     "Base URL for entangle-host.",
     process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
   );
 
 hostCommand
   .command("status")
   .description("Fetch the current status from a running entangle-host.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getHostStatus());
   });
 
@@ -247,7 +276,7 @@ hostEventsCommand
       },
       command: Command
     ) => {
-      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const client = createCliHostClient(command);
       const response = await client.listHostEvents(Number.parseInt(options.limit, 10));
       renderCliHostEvents(
         filterHostEvents(
@@ -313,7 +342,7 @@ hostCatalogCommand
   .command("get")
   .description("Print the active deployment resource catalog and validation report.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getCatalog());
   });
 
@@ -322,7 +351,7 @@ hostCatalogCommand
   .argument("<file>", "Path to a catalog JSON file.")
   .description("Validate a catalog document against the running host contract.")
   .action(async (file: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.validateCatalog(await readJsonDocument(path.resolve(file))));
   });
 
@@ -335,7 +364,7 @@ hostCatalogCommand
   )
   .description("Apply a catalog document through entangle-host.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     const request = await readJsonDocument(path.resolve(file));
 
     if (options.dryRun) {
@@ -359,7 +388,7 @@ hostPackageSourcesCommand
   .command("list")
   .description("List admitted package sources.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listPackageSources());
   });
 
@@ -368,7 +397,7 @@ hostPackageSourcesCommand
   .argument("<packageSourceId>", "Package source identifier.")
   .description("Inspect one admitted package source.")
   .action(async (packageSourceId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getPackageSource(packageSourceId));
   });
 
@@ -404,7 +433,7 @@ hostPackageSourcesCommand
       },
       command: Command
     ) => {
-      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const client = createCliHostClient(command);
       const request = buildPackageSourceAdmissionRequestFromCli({
         inputPath,
         ...(options.packageSourceId
@@ -435,7 +464,7 @@ hostExternalPrincipalsCommand
   .command("list")
   .description("List bound external principals.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listExternalPrincipals());
   });
 
@@ -444,7 +473,7 @@ hostExternalPrincipalsCommand
   .argument("<principalId>", "External principal identifier.")
   .description("Inspect one external principal.")
   .action(async (principalId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getExternalPrincipal(principalId));
   });
 
@@ -457,7 +486,7 @@ hostExternalPrincipalsCommand
   )
   .description("Create or update one external principal through entangle-host.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     const request = externalPrincipalMutationRequestSchema.parse(
       await readJsonDocument(path.resolve(file))
     );
@@ -483,7 +512,7 @@ hostGraphCommand
   .command("get")
   .description("Print the active graph and revision metadata.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getGraph());
   });
 
@@ -495,7 +524,7 @@ hostGraphRevisionsCommand
   .command("list")
   .description("List persisted graph revisions.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listGraphRevisions());
   });
 
@@ -504,7 +533,7 @@ hostGraphRevisionsCommand
   .argument("<revisionId>", "Graph revision identifier.")
   .description("Inspect one persisted graph revision.")
   .action(async (revisionId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getGraphRevision(revisionId));
   });
 
@@ -513,7 +542,7 @@ hostGraphCommand
   .argument("<file>", "Path to a graph JSON file.")
   .description("Validate a graph candidate against the host catalog and admitted package sources.")
   .action(async (file: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.validateGraph(await readJsonDocument(path.resolve(file))));
   });
 
@@ -526,7 +555,7 @@ hostGraphCommand
   )
   .description("Apply a graph candidate through entangle-host.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     const request = await readJsonDocument(path.resolve(file));
 
     if (options.dryRun) {
@@ -550,7 +579,7 @@ hostNodesCommand
   .command("list")
   .description("List applied non-user node bindings for the active graph.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listNodes());
   });
 
@@ -559,7 +588,7 @@ hostNodesCommand
   .argument("<nodeId>", "Node identifier in the active graph.")
   .description("Inspect one applied non-user node binding.")
   .action(async (nodeId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getNode(nodeId));
   });
 
@@ -572,7 +601,7 @@ hostNodesCommand
   )
   .description("Create one managed non-user node in the active graph.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     const request = nodeCreateRequestSchema.parse(
       await readJsonDocument(path.resolve(file))
     );
@@ -608,7 +637,7 @@ hostNodesCommand
       options: { dryRun?: boolean },
       command: Command
     ) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
       const request = nodeReplacementRequestSchema.parse(
         await readJsonDocument(path.resolve(file))
       );
@@ -640,7 +669,7 @@ hostNodesCommand
     "Delete one managed non-user node from the active graph. This fails if graph edges still reference the node."
   )
   .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
 
     if (options.dryRun) {
       printJson(
@@ -665,7 +694,7 @@ hostEdgesCommand
   .command("list")
   .description("List applied edges for the active graph.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listEdges());
   });
 
@@ -678,7 +707,7 @@ hostEdgesCommand
   )
   .description("Create one edge in the active graph.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     const request = edgeCreateRequestSchema.parse(
       await readJsonDocument(path.resolve(file))
     );
@@ -712,7 +741,7 @@ hostEdgesCommand
       options: { dryRun?: boolean },
       command: Command
     ) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
       const request = edgeReplacementRequestSchema.parse(
         await readJsonDocument(path.resolve(file))
       );
@@ -742,7 +771,7 @@ hostEdgesCommand
   )
   .description("Delete one edge from the active graph.")
   .action(async (edgeId: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
 
     if (options.dryRun) {
       printJson(
@@ -767,7 +796,7 @@ hostRuntimesCommand
   .command("list")
   .description("List runtime inspections for the active graph.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listRuntimes());
   });
 
@@ -776,7 +805,7 @@ hostRuntimesCommand
   .argument("<nodeId>", "Node identifier in the active graph.")
   .description("Inspect one runtime in the active graph.")
   .action(async (nodeId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getRuntime(nodeId));
   });
 
@@ -785,7 +814,7 @@ hostRuntimesCommand
   .argument("<nodeId>", "Node identifier in the active graph.")
   .description("Print the effective runtime context for one runtime.")
   .action(async (nodeId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getRuntimeContext(nodeId));
   });
 
@@ -832,7 +861,7 @@ hostRuntimesCommand
       },
       command: Command
     ) => {
-      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const client = createCliHostClient(command);
       const response = await client.listRuntimeArtifacts(nodeId);
 
       printJson({
@@ -857,7 +886,7 @@ hostRuntimesCommand
       },
       command: Command
     ) => {
-      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const client = createCliHostClient(command);
       printJson(await client.getRuntimeRecovery(nodeId, Number.parseInt(options.limit, 10)));
     }
   );
@@ -878,7 +907,7 @@ hostRuntimesCommand
       options: { dryRun?: boolean },
       command: Command
     ) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
       const request = runtimeRecoveryPolicyMutationRequestSchema.parse(
         await readJsonDocument(path.resolve(file))
       );
@@ -908,7 +937,7 @@ hostRuntimesCommand
   )
   .description("Set one runtime's desired state to running.")
   .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
 
     if (options.dryRun) {
       printJson(
@@ -934,7 +963,7 @@ hostRuntimesCommand
   )
   .description("Set one runtime's desired state to stopped.")
   .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
 
     if (options.dryRun) {
       printJson(
@@ -960,7 +989,7 @@ hostRuntimesCommand
   )
   .description("Request deterministic runtime recreation while keeping the desired state running.")
   .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
 
     if (options.dryRun) {
       printJson(
@@ -985,7 +1014,7 @@ hostSessionsCommand
   .command("list")
   .description("List aggregated persisted sessions across the current host runtimes.")
   .action(async (_options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.listSessions());
   });
 
@@ -994,7 +1023,7 @@ hostSessionsCommand
   .argument("<sessionId>", "Session identifier in the current host runtime state.")
   .description("Inspect one persisted session aggregated across participating nodes.")
   .action(async (sessionId: string, _options, command: Command) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    const client = createCliHostClient(command);
     printJson(await client.getSession(sessionId));
   });
 

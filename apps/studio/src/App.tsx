@@ -278,7 +278,16 @@ export function App() {
   >(null);
   const baseUrl =
     import.meta.env.VITE_ENTANGLE_HOST_URL ?? "http://localhost:7071";
-  const client = useMemo(() => createHostClient({ baseUrl }), [baseUrl]);
+  const authToken = import.meta.env.VITE_ENTANGLE_HOST_TOKEN?.trim();
+  const client = useMemo(
+    () =>
+      createHostClient(
+        authToken === undefined || authToken.length === 0
+          ? { baseUrl }
+          : { authToken, baseUrl }
+      ),
+    [authToken, baseUrl]
+  );
   const [status, setStatus] = useState<HostStatusResponse | null>(null);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);

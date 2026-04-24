@@ -35,6 +35,12 @@ That means:
 This simplifies the first implementation without weakening the architectural
 model.
 
+The current implementation now includes an optional bootstrap operator-token
+guard. When `ENTANGLE_HOST_OPERATOR_TOKEN` is set, host HTTP routes require
+`Authorization: Bearer <token>`, and the event stream validates the same token
+before starting. This is a local hardening step, not the final enterprise
+identity or authorization model.
+
 Canonical request and response DTO schemas for this API should live in
 `packages/types`, while semantic checks and reconciler behavior remain owned by
 `packages/validator` and `services/host`.

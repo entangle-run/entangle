@@ -111,6 +111,7 @@ interface HostClientWebSocket {
 type WebSocketFactory = (url: string) => HostClientWebSocket;
 
 export interface HostClientOptions {
+  authToken?: string;
   baseUrl: string;
   fetchImpl?: FetchLike;
   webSocketFactory?: WebSocketFactory;
@@ -132,11 +133,44 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 }
 
-function buildEventStreamUrl(baseUrl: string, replay: number): string {
+function normalizeAuthToken(authToken: string | undefined): string | undefined {
+  const normalizedToken = authToken?.trim();
+  return normalizedToken && normalizedToken.length > 0
+    ? normalizedToken
+    : undefined;
+}
+
+function buildAuthenticatedRequest(
+  request: FetchRequest | undefined,
+  authToken: string | undefined
+): FetchRequest | undefined {
+  if (!authToken) {
+    return request;
+  }
+
+  return {
+    ...request,
+    headers: {
+      ...(request?.headers ?? {}),
+      authorization: `Bearer ${authToken}`
+    }
+  };
+}
+
+function buildEventStreamUrl(
+  baseUrl: string,
+  replay: number,
+  authToken: string | undefined
+): string {
   const url = new URL(baseUrl);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/events`;
   url.searchParams.set("replay", String(replay));
+
+  if (authToken) {
+    url.searchParams.set("access_token", authToken);
+  }
+
   return url.toString();
 }
 
@@ -220,6 +254,7 @@ async function parseResponse<T>(
 }
 
 export function createHostClient(options: HostClientOptions) {
+  const authToken = normalizeAuthToken(options.authToken);
   const baseUrl = normalizeBaseUrl(options.baseUrl);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const webSocketFactory: WebSocketFactory =
@@ -238,10 +273,13 @@ export function createHostClient(options: HostClientOptions) {
     throw new Error("A fetch implementation is required to create an Entangle host client.");
   }
 
+  const hostFetch: FetchLike = (input, init) =>
+    fetchImpl(input, buildAuthenticatedRequest(init, authToken));
+
   return {
     async getHostStatus(): Promise<HostStatusResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/host/status`),
+        await hostFetch(`${baseUrl}/v1/host/status`),
         hostStatusResponseSchema
       );
     },
@@ -251,21 +289,21 @@ export function createHostClient(options: HostClientOptions) {
       url.searchParams.set("limit", String(limit));
 
       return parseResponse(
-        await fetchImpl(url.toString()),
+        await hostFetch(url.toString()),
         hostEventListResponseSchema
       );
     },
 
     async getCatalog(): Promise<CatalogInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/catalog`),
+        await hostFetch(`${baseUrl}/v1/catalog`),
         catalogInspectionResponseSchema
       );
     },
 
     async validateCatalog(catalog: unknown): Promise<CatalogInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/catalog/validate`, {
+        await hostFetch(`${baseUrl}/v1/catalog/validate`, {
           method: "POST",
           headers: {
             "content-type": "application/json"
@@ -278,7 +316,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async applyCatalog(catalog: unknown): Promise<CatalogInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/catalog`, {
+        await hostFetch(`${baseUrl}/v1/catalog`, {
           method: "PUT",
           headers: {
             "content-type": "application/json"
@@ -292,14 +330,14 @@ export function createHostClient(options: HostClientOptions) {
 
     async listPackageSources(): Promise<PackageSourceListResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/package-sources`),
+        await hostFetch(`${baseUrl}/v1/package-sources`),
         packageSourceListResponseSchema
       );
     },
 
     async listExternalPrincipals(): Promise<ExternalPrincipalListResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/external-principals`),
+        await hostFetch(`${baseUrl}/v1/external-principals`),
         externalPrincipalListResponseSchema
       );
     },
@@ -308,7 +346,7 @@ export function createHostClient(options: HostClientOptions) {
       principalId: string
     ): Promise<ExternalPrincipalInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/external-principals/${principalId}`),
+        await hostFetch(`${baseUrl}/v1/external-principals/${principalId}`),
         externalPrincipalInspectionResponseSchema
       );
     },
@@ -319,7 +357,7 @@ export function createHostClient(options: HostClientOptions) {
       const canonicalPrincipal = externalPrincipalMutationRequestSchema.parse(principal);
 
       return parseResponse(
-        await fetchImpl(
+        await hostFetch(
           `${baseUrl}/v1/external-principals/${canonicalPrincipal.principalId}`,
           {
             method: "PUT",
@@ -337,7 +375,7 @@ export function createHostClient(options: HostClientOptions) {
       packageSourceId: string
     ): Promise<PackageSourceInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/package-sources/${packageSourceId}`),
+        await hostFetch(`${baseUrl}/v1/package-sources/${packageSourceId}`),
         packageSourceInspectionResponseSchema
       );
     },
@@ -348,7 +386,7 @@ export function createHostClient(options: HostClientOptions) {
       const canonicalRequest = packageSourceAdmissionRequestSchema.parse(request);
 
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/package-sources/admit`, {
+        await hostFetch(`${baseUrl}/v1/package-sources/admit`, {
           method: "POST",
           headers: {
             "content-type": "application/json"
@@ -362,14 +400,14 @@ export function createHostClient(options: HostClientOptions) {
 
     async getGraph(): Promise<GraphInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/graph`),
+        await hostFetch(`${baseUrl}/v1/graph`),
         graphInspectionResponseSchema
       );
     },
 
     async listGraphRevisions(): Promise<GraphRevisionListResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/graph/revisions`),
+        await hostFetch(`${baseUrl}/v1/graph/revisions`),
         graphRevisionListResponseSchema
       );
     },
@@ -378,18 +416,18 @@ export function createHostClient(options: HostClientOptions) {
       revisionId: string
     ): Promise<GraphRevisionInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/graph/revisions/${revisionId}`),
+        await hostFetch(`${baseUrl}/v1/graph/revisions/${revisionId}`),
         graphRevisionInspectionResponseSchema
       );
     },
 
     async listNodes(): Promise<NodeListResponse> {
-      return parseResponse(await fetchImpl(`${baseUrl}/v1/nodes`), nodeListResponseSchema);
+      return parseResponse(await hostFetch(`${baseUrl}/v1/nodes`), nodeListResponseSchema);
     },
 
     async getNode(nodeId: string): Promise<NodeInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/nodes/${nodeId}`),
+        await hostFetch(`${baseUrl}/v1/nodes/${nodeId}`),
         nodeInspectionResponseSchema
       );
     },
@@ -398,7 +436,7 @@ export function createHostClient(options: HostClientOptions) {
       const canonicalRequest = nodeCreateRequestSchema.parse(request);
 
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/nodes`, {
+        await hostFetch(`${baseUrl}/v1/nodes`, {
           method: "POST",
           headers: {
             "content-type": "application/json"
@@ -417,7 +455,7 @@ export function createHostClient(options: HostClientOptions) {
       const canonicalRequest = nodeReplacementRequestSchema.parse(request);
 
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/nodes/${nodeId}`, {
+        await hostFetch(`${baseUrl}/v1/nodes/${nodeId}`, {
           method: "PATCH",
           headers: {
             "content-type": "application/json"
@@ -431,7 +469,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async deleteNode(nodeId: string): Promise<NodeDeletionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/nodes/${nodeId}`, {
+        await hostFetch(`${baseUrl}/v1/nodes/${nodeId}`, {
           method: "DELETE"
         }),
         nodeDeletionResponseSchema
@@ -439,14 +477,14 @@ export function createHostClient(options: HostClientOptions) {
     },
 
     async listEdges(): Promise<EdgeListResponse> {
-      return parseResponse(await fetchImpl(`${baseUrl}/v1/edges`), edgeListResponseSchema);
+      return parseResponse(await hostFetch(`${baseUrl}/v1/edges`), edgeListResponseSchema);
     },
 
     async createEdge(request: EdgeCreateRequest): Promise<EdgeMutationResponse> {
       const canonicalRequest = edgeCreateRequestSchema.parse(request);
 
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/edges`, {
+        await hostFetch(`${baseUrl}/v1/edges`, {
           method: "POST",
           headers: {
             "content-type": "application/json"
@@ -465,7 +503,7 @@ export function createHostClient(options: HostClientOptions) {
       const canonicalRequest = edgeReplacementRequestSchema.parse(request);
 
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/edges/${edgeId}`, {
+        await hostFetch(`${baseUrl}/v1/edges/${edgeId}`, {
           method: "PATCH",
           headers: {
             "content-type": "application/json"
@@ -479,7 +517,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async deleteEdge(edgeId: string): Promise<EdgeDeletionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/edges/${edgeId}`, {
+        await hostFetch(`${baseUrl}/v1/edges/${edgeId}`, {
           method: "DELETE"
         }),
         edgeDeletionResponseSchema
@@ -488,7 +526,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async validateGraph(graph: unknown): Promise<GraphMutationResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/graph/validate`, {
+        await hostFetch(`${baseUrl}/v1/graph/validate`, {
           method: "POST",
           headers: {
             "content-type": "application/json"
@@ -501,7 +539,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async applyGraph(graph: unknown): Promise<GraphMutationResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/graph`, {
+        await hostFetch(`${baseUrl}/v1/graph`, {
           method: "PUT",
           headers: {
             "content-type": "application/json"
@@ -515,14 +553,14 @@ export function createHostClient(options: HostClientOptions) {
 
     async listRuntimes(): Promise<RuntimeListResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes`),
+        await hostFetch(`${baseUrl}/v1/runtimes`),
         runtimeListResponseSchema
       );
     },
 
     async getRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}`),
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}`),
         runtimeInspectionResponseSchema
       );
     },
@@ -531,14 +569,14 @@ export function createHostClient(options: HostClientOptions) {
       nodeId: string
     ): Promise<RuntimeContextInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/context`),
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/context`),
         runtimeContextInspectionResponseSchema
       );
     },
 
     async listRuntimeArtifacts(nodeId: string): Promise<RuntimeArtifactListResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/artifacts`),
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/artifacts`),
         runtimeArtifactListResponseSchema
       );
     },
@@ -551,7 +589,7 @@ export function createHostClient(options: HostClientOptions) {
       url.searchParams.set("limit", String(limit));
 
       return parseResponse(
-        await fetchImpl(url.toString()),
+        await hostFetch(url.toString()),
         runtimeRecoveryInspectionResponseSchema
       );
     },
@@ -561,7 +599,7 @@ export function createHostClient(options: HostClientOptions) {
       policy: RuntimeRecoveryPolicyMutationRequest
     ): Promise<RuntimeRecoveryInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/recovery-policy`, {
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/recovery-policy`, {
           method: "PUT",
           headers: {
             "content-type": "application/json"
@@ -576,21 +614,21 @@ export function createHostClient(options: HostClientOptions) {
 
     async listSessions(): Promise<SessionListResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/sessions`),
+        await hostFetch(`${baseUrl}/v1/sessions`),
         sessionListResponseSchema
       );
     },
 
     async getSession(sessionId: string): Promise<SessionInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/sessions/${sessionId}`),
+        await hostFetch(`${baseUrl}/v1/sessions/${sessionId}`),
         sessionInspectionResponseSchema
       );
     },
 
     async startRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/start`, {
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/start`, {
           method: "POST"
         }),
         runtimeInspectionResponseSchema
@@ -599,7 +637,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async stopRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/stop`, {
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/stop`, {
           method: "POST"
         }),
         runtimeInspectionResponseSchema
@@ -608,7 +646,7 @@ export function createHostClient(options: HostClientOptions) {
 
     async restartRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
       return parseResponse(
-        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/restart`, {
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/restart`, {
           method: "POST"
         }),
         runtimeInspectionResponseSchema
@@ -619,7 +657,7 @@ export function createHostClient(options: HostClientOptions) {
       options: HostEventSubscriptionOptions
     ): HostEventSubscription {
       const socket = webSocketFactory(
-        buildEventStreamUrl(baseUrl, options.replay ?? 0)
+        buildEventStreamUrl(baseUrl, options.replay ?? 0, authToken)
       );
 
       socket.addEventListener("open", () => {

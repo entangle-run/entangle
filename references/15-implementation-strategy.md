@@ -257,6 +257,10 @@ Completed in the current repository state:
     persists a bounded runtime-local audit trail for closed, completed,
     replaced, consolidated, and exact resolution-overlap lifecycle transitions
     without polluting the human-facing wiki pages.
+30. an optional bootstrap host operator-token boundary where
+    `ENTANGLE_HOST_OPERATOR_TOKEN` enables bearer-token enforcement on host
+    HTTP routes, and the shared host client, CLI, and Studio can propagate the
+    same token for local profiles that require a closed control-plane surface.
 
 Remaining work in this phase:
 
@@ -281,6 +285,10 @@ Remaining work in this phase:
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.
+4. deepen the bootstrap host operator token into production-grade identity and
+   authorization only after the next contracts can preserve user attribution,
+   policy decisions, and host auditability without collapsing the local
+   operator profile.
 
 Acceptance for the phase:
 

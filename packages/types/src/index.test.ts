@@ -14,6 +14,7 @@ import {
   graphRevisionInspectionResponseSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
+  hostErrorResponseSchema,
   hostEventRecordSchema,
   hostStatusResponseSchema,
   isAllowedApprovalLifecycleTransition,
@@ -32,6 +33,20 @@ import {
   resolvePrimaryGitRepositoryTarget,
   secretRefSchema
 } from "./index.js";
+
+describe("host API error contracts", () => {
+  it("accepts unauthorized responses from the bootstrap host auth boundary", () => {
+    expect(
+      hostErrorResponseSchema.parse({
+        code: "unauthorized",
+        message: "Entangle host operator token is required."
+      })
+    ).toEqual({
+      code: "unauthorized",
+      message: "Entangle host operator token is required."
+    });
+  });
+});
 
 describe("Entangle A2A machine-readable contracts", () => {
   it("accepts a valid task request payload", () => {

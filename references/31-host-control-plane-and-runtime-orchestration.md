@@ -65,6 +65,13 @@ The host should:
 - reconcile desired state with actual running state;
 - expose runtime and mutation results to Studio.
 
+The host also now has an optional bootstrap operator-token boundary. When
+`ENTANGLE_HOST_OPERATOR_TOKEN` is configured, HTTP control-plane calls require
+`Authorization: Bearer <token>`, and the event stream validates the same token
+before exposing live host events. This does not replace future user, workspace,
+or role-aware authorization, but it prevents the local host from remaining an
+unconditionally open mutation surface.
+
 ## 3. Canonical local control-plane objects
 
 The host should manage at least these local objects:

@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added bootstrap host operator-token auth
+
+Started the accepted production redesign program with a bounded control-plane
+security slice. `entangle-host` can now enforce
+`ENTANGLE_HOST_OPERATOR_TOKEN`, host errors include a canonical
+`unauthorized` code, and `packages/host-client`, the CLI, and Studio can
+propagate the token for local operator profiles that should not expose an open
+host mutation surface.
+
 ## [2026-04-24] decision | Accepted production redesign program
 
 Accepted `wiki/decisions/production-redesign-program.md` as the active

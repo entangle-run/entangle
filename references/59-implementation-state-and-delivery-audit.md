@@ -131,6 +131,9 @@ This layer is strong and directionally correct. It is not a blocker.
   runner session state;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
+- optional bootstrap operator-token enforcement through
+  `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token support in the shared host
+  client and local operator surfaces;
 - richer reconciliation semantics with per-runtime derived reconciliation
   summaries, persisted blocked/degraded/transitioning counts, and host status
   derived from those findings instead of from raw failure counts alone;
@@ -156,6 +159,8 @@ This layer is strong and directionally correct. It is not a blocker.
 
 - narrower diagnostics-oriented event classes beyond the now-implemented trace
   surface, especially where later operator workflows justify them.
+- production-grade identity remains future work: the current operator token is
+  not workspace-aware authentication, RBAC, ABAC, or audited user attribution.
 
 ### Assessment
 
@@ -433,6 +438,8 @@ delivery.
   overview and selected-runtime reads now react to host-owned control-plane,
   runtime, recovery, session, and artifact events without relying on polling
   or reconnecting the event stream on runtime selection changes;
+- `VITE_ENTANGLE_HOST_TOKEN` propagation through the shared host client for
+  local operator profiles where the host requires a bootstrap bearer token;
 - access to a broader typed trace surface that now includes conversations,
   approvals, artifacts, sessions, runner turns, and runtime recovery events;
 - bounded shared runtime-trace detail presentation over host-owned
@@ -474,6 +481,9 @@ workflow completeness, not missing mutation or liveness foundations.
   conversation, approval, and artifact event classes;
 - runtime-trace-only event filtering plus structured runtime-trace summary
   output over the existing host event list/watch flows.
+- `--host-token`, `ENTANGLE_HOST_TOKEN`, and local
+  `ENTANGLE_HOST_OPERATOR_TOKEN` fallback support for hosts running with the
+  bootstrap operator-token boundary enabled.
 
 ### Still missing or incomplete
 
