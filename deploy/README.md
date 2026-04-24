@@ -128,12 +128,15 @@ pnpm ops:smoke-local:disposable:runtime
 
 This variant performs the disposable profile smoke and then admits a temporary
 package into the host container, applies a temporary graph with a local
-model-secret binding, starts the managed runner container, verifies restart
-generation recreation and the durable restart host event, publishes a real
-NIP-59 `task.request` through the local relay, proves provider-backed
+model-secret binding, bootstraps local Gitea with a disposable user and HTTPS
+token, starts two managed runner containers, verifies restart generation
+recreation and the durable restart host event, publishes real NIP-59
+`task.request` messages through the local relay, proves provider-backed
 OpenAI-compatible execution against a credential-checking model stub, verifies
-completed host session and runner-turn state, verifies git-backed artifact
-materialization, stops the runtime, and tears the profile down with volumes.
+completed host session and runner-turn state, verifies published git-backed
+artifact materialization, verifies downstream retrieval of the upstream
+artifact by `ArtifactRef`, stops both runtimes, and tears the profile down
+with volumes.
 
 For an already-running local profile, the runtime lifecycle smoke can be run
 directly:

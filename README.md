@@ -133,9 +133,10 @@ This repository currently contains:
   primary `gitea_api` repository targets with persisted provisioning-state
   records and runtime realizability gated on provisioning success, and now
   supports HTTPS-token git transport through a non-persistent `GIT_ASKPASS`
-  environment in addition to the existing SSH-key path, with runner-level
-  coverage proving that one node can publish a git artifact and a downstream
-  node can retrieve it into local engine context from the same remote;
+  environment in addition to the existing SSH-key path, with runner-level and
+  Docker-backed disposable-profile coverage proving that one node can publish
+  a git artifact and a downstream node can retrieve it into local engine
+  context from the same remote;
 - host read surfaces for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus matching
@@ -181,13 +182,15 @@ This repository currently contains:
   Compose services, waits for active smoke success, and tears the profile down;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-local:runtime`
   and `pnpm ops:smoke-local:disposable:runtime` that admits a disposable
-  package, applies a smoke graph with a local model-secret binding, starts a
-  real runner container, verifies restart generation recreation plus the
-  durable restart host event, publishes a real NIP-59 `task.request` through
-  the local relay, verifies provider-backed OpenAI-compatible execution
-  against a credential-checking model stub, observes completed host session
-  and runner-turn state, verifies git-backed artifact materialization, and
-  stops the runtime;
+  package, bootstraps local Gitea with a disposable user and HTTPS token,
+  applies a smoke graph with two managed worker runtimes and a local
+  model-secret binding, verifies restart generation recreation plus the
+  durable restart host event, publishes real NIP-59 `task.request` messages
+  through the local relay, verifies provider-backed OpenAI-compatible
+  execution against a credential-checking model stub, observes completed host
+  session and runner-turn state, verifies published git-backed artifact
+  materialization, verifies downstream retrieval of the upstream artifact by
+  `ArtifactRef`, and stops both runtimes;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;
@@ -493,9 +496,9 @@ The highest-value remaining gaps are:
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;
-- stronger end-to-end deployment and integration hardening, especially the
-  Docker/Gitea-backed version of the now-proven runner-level multi-node git
-  handoff.
+- stronger end-to-end deployment and integration hardening beyond the current
+  disposable local profile, especially CI-grade coverage and non-disposable
+  upgrade/repair behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

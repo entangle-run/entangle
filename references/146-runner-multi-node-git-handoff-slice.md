@@ -6,10 +6,10 @@ Prove the core runner artifact handoff path with two distinct node contexts:
 one node produces and publishes a git-backed artifact, and a downstream node
 retrieves that published `ArtifactRef` into its own local engine request.
 
-This closes the runner-level proof for the architectural rule that messages
-coordinate work while artifacts carry work. It does not yet claim that the
-Docker Compose profile can bootstrap a fully authenticated Gitea collaboration
-surface for this flow.
+This closed the first runner-level proof for the architectural rule that
+messages coordinate work while artifacts carry work. A later runtime-smoke
+hardening pass has now promoted the same handoff to the Docker-backed local
+profile with bootstrapped Gitea and two managed runner containers.
 
 ## Implemented behavior
 
@@ -27,7 +27,7 @@ surface for this flow.
   session, conversation, turn, retrieval, and publication state remain
   inspectable through the existing runner state model.
 
-## Boundary decisions
+## Original boundary decisions
 
 The test uses a local bare git remote because the current local Compose Gitea
 service is only readiness-checked as a web surface; it is not yet bootstrapped
@@ -38,13 +38,16 @@ That is a deliberate boundary. The runner artifact contract, git publication,
 git retrieval, and engine input path are now proven without pretending that
 Gitea bootstrap exists in the deployment profile.
 
-## Next deployment-grade gap
+## Follow-up status
 
-The next integration hardening step is to bootstrap local Gitea for the
-disposable runtime smoke, then start two managed runner containers and prove
-the same publish-then-retrieve handoff over the host, relay, runtime, model,
-git, and artifact read surfaces.
+The deployment-grade gap identified by this slice is now closed by the
+runtime lifecycle smoke. `pnpm ops:smoke-local:disposable:runtime` now
+bootstraps local Gitea, starts two managed runner containers, publishes an
+upstream git-backed artifact, and verifies downstream retrieval by
+`ArtifactRef` over the real host, relay, runtime, model, git, and artifact
+surfaces.
 
 ## Verification
 
 - `pnpm --filter @entangle/runner test -- --runInBand`
+- `pnpm ops:smoke-local:disposable:runtime`

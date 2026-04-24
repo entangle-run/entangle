@@ -416,9 +416,10 @@ The repository now also contains the first real implementation baseline:
   runtime-realizability error instead of deferring it to the runner; URL-based
   runner git operations now support both SSH-key and HTTPS-token transport
   principals without writing token material into runtime files or remote URLs;
-  runner-level integration coverage now proves a real two-node handoff where
-  one node publishes a git artifact to a remote and a downstream node retrieves
-  that artifact into local engine context by `ArtifactRef`;
+  runner-level integration coverage and the Docker-backed disposable runtime
+  smoke now prove a real two-node handoff where one node publishes a git
+  artifact to a remote and a downstream node retrieves that artifact into
+  local engine context by `ArtifactRef`;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay
@@ -442,12 +443,14 @@ The repository now also contains the first real implementation baseline:
 - a Docker-backed runtime lifecycle smoke through
   `pnpm ops:smoke-local:runtime` and
   `pnpm ops:smoke-local:disposable:runtime`, covering disposable package
-  admission, smoke graph application, local model-secret binding, managed
-  runner start, restart-generation recreation, restart event persistence,
-  real NIP-59 task intake through the local relay, provider-backed
-  OpenAI-compatible execution against a credential-checking model stub,
-  completed host session and runner-turn inspection, git-backed artifact
-  materialization, stop, and disposable teardown;
+  admission, local Gitea disposable user/token bootstrap, smoke graph
+  application, local model-secret binding, two managed runner starts,
+  restart-generation recreation, restart event persistence, real NIP-59 task
+  intake through the local relay, provider-backed OpenAI-compatible execution
+  against a credential-checking model stub, completed host session and
+  runner-turn inspection, published git-backed artifact materialization,
+  downstream artifact retrieval by `ArtifactRef`, stop, and disposable
+  teardown;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;
@@ -533,8 +536,8 @@ The current implementation-truth audit now lives in
   locator-specific retrieval path, the resolved git principal secret-delivery
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
-  model; the next deployment-grade gap is proving the same multi-node handoff
-  through Docker-managed runtimes and a bootstrapped local Gitea service;
+  model; the next deployment-grade gap is non-disposable local-profile
+  upgrade and repair behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - deepen the new bootstrap host operator-token and request-audit boundary into
   real production identity and authorization only through explicit contracts,

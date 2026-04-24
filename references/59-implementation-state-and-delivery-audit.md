@@ -195,7 +195,8 @@ and widening, not rethinking the boundary.
 
 ### Still missing or incomplete
 
-- broader multi-node live-flow coverage;
+- broader autonomous node-to-node live-flow coverage beyond the current
+  user-mediated multi-node artifact handoff smoke;
 - more explicit upward surfacing of runtime events.
 
 ### Assessment
@@ -584,11 +585,13 @@ priority widening.
 - Docker-backed runtime lifecycle smoke through
   `pnpm ops:smoke-local:runtime` and
   `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
-  admission, smoke graph application, local model-secret binding, managed
-  runner start, restart-generation recreation, restart event persistence, real
-  NIP-59 task intake, provider-backed OpenAI-compatible execution against a
+  admission, local Gitea disposable user/token bootstrap, smoke graph
+  application, local model-secret binding, two managed runner starts,
+  restart-generation recreation, restart event persistence, real NIP-59 task
+  intake, provider-backed OpenAI-compatible execution against a
   credential-checking model stub, completed host session and runner-turn
-  inspection, git-backed artifact materialization, and stop;
+  inspection, published git-backed artifact materialization, downstream
+  artifact retrieval by `ArtifactRef`, and stop;
 - explicit local Compose volume names for the host state and secret volumes so
   host-managed runner containers created through the Docker Engine API mount
   the same state and secret roots as the Compose-managed host service;
@@ -604,11 +607,8 @@ priority widening.
 ### Still missing or incomplete
 
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
-- richer Docker-backed runtime smoke coverage around the now-proven
-  runner-level artifact-aware multi-node flow, specifically through
-  Docker-managed runtimes and a bootstrapped local Gitea service rather than
-  only the current same-node provider-backed turn and local git artifact
-  materialization path.
+- non-disposable upgrade and repair coverage for already-running local
+  profiles whose Gitea data volume predates the installed-mode local profile.
 
 ### Assessment
 
@@ -639,8 +639,8 @@ The current best delivery order is:
    engine-outcome surface, broader provider/runtime metadata, and any later
    model-guided runtime/memory deepening that builds on the now stronger
    bounded builtin tool surface;
-2. harden end-to-end deployment coverage for the now-proven runner-level
-   artifact-aware multi-node integration path;
+2. harden end-to-end deployment coverage beyond the disposable local profile,
+   especially non-disposable upgrade and repair behavior;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;
 4. widen git collaboration only where later delivery needs justify going beyond
@@ -659,10 +659,10 @@ The git secret-delivery, repository-target-resolution, publication-state,
 preexisting-repository publication, locator-specific retrieval, host-owned
 `gitea_api` provisioning, first real provider-backed engine, first bounded
 tool-loop, deterministic post-turn memory, first host-event-surface, and
-same-node provider-backed Docker runtime smoke slices are now complete for the
-current local operator profile, so the next best capability move is controlled
-multi-node runtime deepening and host-surface completion rather than another
-foundational rewrite.
+Docker/Gitea-backed multi-node provider-backed runtime smoke slices are now
+complete for the current disposable local operator profile, so the next best
+capability move is controlled autonomous multi-node runtime deepening and
+host-surface completion rather than another foundational rewrite.
 
 ## What should not happen next
 

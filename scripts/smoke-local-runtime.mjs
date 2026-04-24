@@ -30,16 +30,24 @@ const packageSourceId = `runtime-smoke-source-${suffix}`;
 const graphId = `runtime-smoke-graph-${suffix}`;
 const userNodeId = `runtime-smoke-user-${suffix}`;
 const workerNodeId = `runtime-smoke-worker-${suffix}`;
+const downstreamNodeId = `runtime-smoke-downstream-${suffix}`;
 const edgeId = `runtime-smoke-edge-${suffix}`;
+const downstreamEdgeId = `runtime-smoke-downstream-edge-${suffix}`;
 const modelEndpointId = `runtime-smoke-model-${suffix}`;
 const modelStubContainerName = `entangle-runtime-smoke-model-${suffix}`;
-const runnerContainerName = `entangle-runner-${workerNodeId}`;
 const secretRef = `secret://local/runtime-smoke-model-${suffix}`;
+const gitPrincipalId = `runtime-smoke-git-${suffix}`;
+const gitProvisioningSecretRef = `secret://git-services/runtime-smoke-${suffix}/provisioning`;
+const gitPrincipalSecretRef = `secret://git/runtime-smoke-${suffix}/https-token`;
+const giteaUsername = `runtime-smoke-${suffix}`;
+const giteaPassword = `runtime-smoke-password-${suffix}`;
 const hostPackagePath = `/tmp/${packageSourceId}`;
 const smokeSecret = `runtime-smoke-secret-${suffix}`;
 const smokeSessionId = `runtime-smoke-session-${suffix}`;
 const smokeConversationId = `runtime-smoke-conversation-${suffix}`;
+const downstreamConversationId = `runtime-smoke-downstream-conversation-${suffix}`;
 const smokeTurnId = `runtime-smoke-turn-${suffix}`;
+const downstreamTurnId = `runtime-smoke-downstream-turn-${suffix}`;
 
 function readFlagValue(name) {
   const inlinePrefix = `${name}=`;
@@ -119,10 +127,45 @@ function requireSuccess(step, command, commandArgs) {
   }
 }
 
+function requireCapturedSuccess(step, command, commandArgs) {
+  const result = run(command, commandArgs, { capture: true });
+
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        `${step} failed with exit code ${result.status ?? "unknown"}.`,
+        formatCapturedOutput(result)
+      ]
+        .filter(Boolean)
+        .join("\n")
+    );
+  }
+
+  return formatCapturedOutput(result);
+}
+
 function sleep(milliseconds) {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
+}
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+function secretRefStoragePath(ref) {
+  const parsed = new URL(ref);
+  const segments = [
+    parsed.hostname,
+    ...parsed.pathname.split("/").filter((segment) => segment.length > 0)
+  ];
+
+  return `/entangle-secrets/refs/${segments.join("/")}`;
+}
+
+function runnerContainerNameFor(nodeId) {
+  return `entangle-runner-${nodeId}`;
 }
 
 async function writeJsonFile(filePath, value) {
@@ -326,6 +369,100 @@ async function startModelStubContainer() {
   await waitForModelStub();
 }
 
+async function waitForGiteaHealth() {
+  const deadline = Date.now() + timeoutMs;
+  let lastOutput = "";
+
+  while (Date.now() <= deadline) {
+    const result = run(
+      "docker",
+      [
+        "compose",
+        "-f",
+        composeFile,
+        "exec",
+        "-T",
+        "gitea",
+        "bash",
+        "-lc",
+        "curl -fsS http://127.0.0.1:3000/api/healthz >/dev/null"
+      ],
+      { capture: true }
+    );
+
+    if (result.status === 0) {
+      printPass("runtime-smoke:gitea-health", "api=ready");
+      return;
+    }
+
+    lastOutput = formatCapturedOutput(result);
+    await sleep(500);
+  }
+
+  throw new Error(
+    `Gitea API did not become ready within ${timeoutMs}ms. ${lastOutput}`
+  );
+}
+
+async function bootstrapGiteaCollaboration() {
+  await waitForGiteaHealth();
+
+  const output = requireCapturedSuccess("Create runtime smoke Gitea user", "docker", [
+    "compose",
+    "-f",
+    composeFile,
+    "exec",
+    "-T",
+    "-u",
+    "git",
+    "gitea",
+    "bash",
+    "-lc",
+    [
+      "gitea admin user create",
+      `--username ${shellQuote(giteaUsername)}`,
+      `--email ${shellQuote(`${giteaUsername}@entangle.invalid`)}`,
+      `--password ${shellQuote(giteaPassword)}`,
+      "--admin",
+      "--must-change-password=false",
+      "--access-token",
+      `--access-token-name ${shellQuote(`entangle-${suffix}`)}`,
+      "--access-token-scopes all"
+    ].join(" ")
+  ]);
+  const tokenMatch = output.match(/Access token.*\s([a-f0-9]{40,})\s*$/i);
+  const token = tokenMatch?.[1];
+
+  if (!token) {
+    throw new Error(
+      `Gitea user creation did not return a parseable access token. Output: ${output}`
+    );
+  }
+
+  requireSuccess("Verify runtime smoke Gitea token", "docker", [
+    "compose",
+    "-f",
+    composeFile,
+    "exec",
+    "-T",
+    "gitea",
+    "bash",
+    "-lc",
+    [
+      "curl -fsS",
+      `-H ${shellQuote(`Authorization: token ${token}`)}`,
+      "http://127.0.0.1:3000/api/v1/user >/dev/null"
+    ].join(" ")
+  ]);
+
+  printPass(
+    "runtime-smoke:gitea-bootstrap",
+    `user=${giteaUsername}; token=${token.slice(0, 8)}...`
+  );
+
+  return token;
+}
+
 async function writeSmokePackage(packageRoot) {
   await Promise.all([
     mkdir(path.join(packageRoot, "prompts"), { recursive: true }),
@@ -434,8 +571,28 @@ function assertValidationOk(label, response) {
 }
 
 function buildSmokeCatalog(catalog) {
+  const gitServiceRef = catalog.defaults.gitServiceRef ?? "local-gitea";
+  const smokeGitService = {
+    authMode: "https_token",
+    baseUrl: "http://gitea:3000",
+    defaultNamespace: giteaUsername,
+    displayName: "Runtime Smoke Gitea",
+    id: gitServiceRef,
+    provisioning: {
+      apiBaseUrl: "http://gitea:3000/api/v1",
+      mode: "gitea_api",
+      secretRef: gitProvisioningSecretRef
+    },
+    remoteBase: "http://gitea:3000",
+    transportKind: "https"
+  };
+  const gitServicesWithoutSmokeService = catalog.gitServices.filter(
+    (service) => service.id !== gitServiceRef
+  );
+
   return {
     ...catalog,
+    gitServices: [...gitServicesWithoutSmokeService, smokeGitService],
     modelEndpoints: [
       ...catalog.modelEndpoints.filter(
         (endpoint) => endpoint.id !== modelEndpointId
@@ -452,6 +609,7 @@ function buildSmokeCatalog(catalog) {
     ],
     defaults: {
       ...catalog.defaults,
+      gitServiceRef,
       modelEndpointRef: modelEndpointId
     }
   };
@@ -461,6 +619,14 @@ function buildSmokeGraph(catalog) {
   const relayProfileRefs = catalog.defaults.relayProfileRefs;
   const primaryRelayProfileRef = relayProfileRefs[0];
   const gitServiceRef = catalog.defaults.gitServiceRef;
+  const sharedResourceBindings = {
+    relayProfileRefs,
+    ...(primaryRelayProfileRef ? { primaryRelayProfileRef } : {}),
+    gitServiceRefs: gitServiceRef ? [gitServiceRef] : [],
+    ...(gitServiceRef ? { primaryGitServiceRef: gitServiceRef } : {}),
+    modelEndpointProfileRef: modelEndpointId,
+    externalPrincipalRefs: [gitPrincipalId]
+  };
 
   return {
     schemaVersion: "1",
@@ -477,14 +643,14 @@ function buildSmokeGraph(catalog) {
         displayName: "Runtime Smoke Worker",
         nodeKind: "worker",
         packageSourceRef: packageSourceId,
-        resourceBindings: {
-          relayProfileRefs,
-          ...(primaryRelayProfileRef ? { primaryRelayProfileRef } : {}),
-          gitServiceRefs: gitServiceRef ? [gitServiceRef] : [],
-          ...(gitServiceRef ? { primaryGitServiceRef: gitServiceRef } : {}),
-          modelEndpointProfileRef: modelEndpointId,
-          externalPrincipalRefs: []
-        }
+        resourceBindings: sharedResourceBindings
+      },
+      {
+        nodeId: downstreamNodeId,
+        displayName: "Runtime Smoke Downstream Worker",
+        nodeKind: "worker",
+        packageSourceRef: packageSourceId,
+        resourceBindings: sharedResourceBindings
       }
     ],
     edges: [
@@ -499,28 +665,61 @@ function buildSmokeGraph(catalog) {
           relayProfileRefs,
           channel: "runtime-smoke"
         }
+      },
+      {
+        edgeId: downstreamEdgeId,
+        fromNodeId: userNodeId,
+        toNodeId: downstreamNodeId,
+        relation: "delegates_to",
+        enabled: true,
+        transportPolicy: {
+          mode: "bidirectional_shared_set",
+          relayProfileRefs,
+          channel: "runtime-smoke-handoff"
+        }
       }
     ],
     defaults: {
-      resourceBindings: {
-        relayProfileRefs,
-        ...(primaryRelayProfileRef ? { primaryRelayProfileRef } : {}),
-        gitServiceRefs: gitServiceRef ? [gitServiceRef] : [],
-        ...(gitServiceRef ? { primaryGitServiceRef: gitServiceRef } : {}),
-        modelEndpointProfileRef: modelEndpointId,
-        externalPrincipalRefs: []
-      },
+      resourceBindings: sharedResourceBindings,
       runtimeProfile: "hackathon_local"
     }
   };
 }
 
-async function waitForRuntime(predicate, label) {
+async function upsertSmokeGitPrincipal(gitServiceRef) {
+  const response = await hostRequest(
+    "PUT",
+    `/v1/external-principals/${gitPrincipalId}`,
+    {
+      principalId: gitPrincipalId,
+      displayName: "Runtime Smoke Git Principal",
+      systemKind: "git",
+      gitServiceRef,
+      subject: giteaUsername,
+      transportAuthMode: "https_token",
+      secretRef: gitPrincipalSecretRef,
+      attribution: {
+        displayName: "Runtime Smoke Git Principal",
+        email: `${giteaUsername}@entangle.invalid`
+      },
+      signing: {
+        mode: "none"
+      }
+    }
+  );
+
+  printPass(
+    "runtime-smoke:git-principal",
+    response.principal?.principalId ?? gitPrincipalId
+  );
+}
+
+async function waitForRuntime(nodeId, predicate, label) {
   const deadline = Date.now() + timeoutMs;
   let lastInspection;
 
   while (Date.now() <= deadline) {
-    const inspection = await hostRequest("GET", `/v1/runtimes/${workerNodeId}`);
+    const inspection = await hostRequest("GET", `/v1/runtimes/${nodeId}`);
     lastInspection = inspection;
 
     if (predicate(inspection)) {
@@ -551,20 +750,20 @@ async function loadNostrTools() {
   return nostrTools.default ?? nostrTools["module.exports"] ?? nostrTools;
 }
 
-async function publishSmokeTask(runtimeContext) {
+async function publishSmokeTask(input) {
   const nostrTools = await loadNostrTools();
   const userSecretKey = nostrTools.generateSecretKey();
   const userPubkey = nostrTools.getPublicKey(userSecretKey);
-  const workerPubkey = runtimeContext.identityContext.publicKey;
+  const targetPubkey = input.runtimeContext.identityContext.publicKey;
   const taskMessage = {
     constraints: {
       approvalRequiredBeforeAction: false
     },
-    conversationId: smokeConversationId,
+    conversationId: input.conversationId,
     fromNodeId: userNodeId,
     fromPubkey: userPubkey,
     graphId,
-    intent: "Validate the local runtime message path.",
+    intent: input.intent,
     messageType: "task.request",
     protocol: "entangle.a2a.v1",
     responsePolicy: {
@@ -573,16 +772,15 @@ async function publishSmokeTask(runtimeContext) {
       responseRequired: false
     },
     sessionId: smokeSessionId,
-    toNodeId: workerNodeId,
-    toPubkey: workerPubkey,
-    turnId: smokeTurnId,
+    toNodeId: input.nodeId,
+    toPubkey: targetPubkey,
+    turnId: input.turnId,
     work: {
-      artifactRefs: [],
+      artifactRefs: input.artifactRefs ?? [],
       metadata: {
         smoke: true
       },
-      summary:
-        "Run a provider-backed smoke turn and materialize a git-backed report artifact."
+      summary: input.summary
     }
   };
   const rumor = nostrTools.nip59.createRumor(
@@ -593,8 +791,8 @@ async function publishSmokeTask(runtimeContext) {
     },
     userSecretKey
   );
-  const seal = nostrTools.nip59.createSeal(rumor, userSecretKey, workerPubkey);
-  const wrappedEvent = nostrTools.nip59.createWrap(seal, workerPubkey);
+  const seal = nostrTools.nip59.createSeal(rumor, userSecretKey, targetPubkey);
+  const wrappedEvent = nostrTools.nip59.createWrap(seal, targetPubkey);
   const pool = new nostrTools.SimplePool();
 
   try {
@@ -605,11 +803,12 @@ async function publishSmokeTask(runtimeContext) {
 
   printPass(
     "runtime-smoke:task-published",
-    `session=${smokeSessionId}; event=${rumor.id}`
+    `node=${input.nodeId}; session=${smokeSessionId}; event=${rumor.id}`
   );
 
   return {
     eventId: rumor.id,
+    nodeId: input.nodeId,
     sessionId: smokeSessionId
   };
 }
@@ -621,11 +820,11 @@ async function waitForMessageCompletion(input) {
   while (Date.now() <= deadline) {
     const [sessionInspection, turnList, artifactList] = await Promise.all([
       tryHostRequest("GET", `/v1/sessions/${input.sessionId}`),
-      tryHostRequest("GET", `/v1/runtimes/${workerNodeId}/turns`),
-      tryHostRequest("GET", `/v1/runtimes/${workerNodeId}/artifacts`)
+      tryHostRequest("GET", `/v1/runtimes/${input.nodeId}/turns`),
+      tryHostRequest("GET", `/v1/runtimes/${input.nodeId}/artifacts`)
     ]);
     const sessionNode = sessionInspection?.nodes?.find(
-      (node) => node.nodeId === workerNodeId
+      (node) => node.nodeId === input.nodeId
     );
     const turn = turnList?.turns?.find(
       (candidate) => candidate.messageId === input.eventId
@@ -648,6 +847,7 @@ async function waitForMessageCompletion(input) {
         ? {
             engineOutcome: turn.engineOutcome,
             phase: turn.phase,
+            consumedArtifactIds: turn.consumedArtifactIds,
             producedArtifactIds: turn.producedArtifactIds
           }
         : undefined
@@ -659,16 +859,25 @@ async function waitForMessageCompletion(input) {
       );
     }
 
+    const consumedArtifactReady =
+      !input.expectedConsumedArtifactId ||
+      turn?.consumedArtifactIds?.includes(input.expectedConsumedArtifactId);
+    const producedArtifactReady =
+      producedArtifact &&
+      (!input.expectedArtifactStatus ||
+        producedArtifact.ref.status === input.expectedArtifactStatus);
+
     if (
       sessionNode?.session?.status === "completed" &&
       turn?.engineOutcome?.stopReason === "completed" &&
       turn.engineOutcome.providerMetadata?.adapterKind === "openai_compatible" &&
       turn.engineOutcome.providerMetadata?.profileId === modelEndpointId &&
-      producedArtifact
+      consumedArtifactReady &&
+      producedArtifactReady
     ) {
       printPass(
         "runtime-smoke:message-turn",
-        `turn=${turn.turnId}; artifact=${producedArtifact.ref.artifactId}`
+        `node=${input.nodeId}; turn=${turn.turnId}; artifact=${producedArtifact.ref.artifactId}`
       );
       return {
         artifact: producedArtifact,
@@ -689,18 +898,18 @@ function printPass(name, detail) {
   console.log(`PASS ${name}: ${detail}`);
 }
 
-async function assertRestartEvent(restartGeneration) {
+async function assertRestartEvent(nodeId, restartGeneration) {
   const response = await hostRequest("GET", "/v1/events?limit=100");
   const matchingEvent = response.events?.find(
     (event) =>
       event.type === "runtime.restart.requested" &&
-      event.nodeId === workerNodeId &&
+      event.nodeId === nodeId &&
       event.restartGeneration === restartGeneration
   );
 
   if (!matchingEvent) {
     throw new Error(
-      `No runtime.restart.requested host event was found for '${workerNodeId}' generation '${restartGeneration}'.`
+      `No runtime.restart.requested host event was found for '${nodeId}' generation '${restartGeneration}'.`
     );
   }
 
@@ -718,6 +927,7 @@ async function main() {
     const packageRoot = path.join(tempRoot, packageId);
     await writeSmokePackage(packageRoot);
     await startModelStubContainer();
+    const giteaToken = await bootstrapGiteaCollaboration();
 
     requireSuccess("Remove stale host smoke package", "docker", [
       "compose",
@@ -738,7 +948,7 @@ async function main() {
       packageRoot,
       `host:${hostPackagePath}`
     ]);
-    requireSuccess("Write smoke model secret", "docker", [
+    requireSuccess("Write smoke secrets", "docker", [
       "compose",
       "-f",
       composeFile,
@@ -748,10 +958,29 @@ async function main() {
       "sh",
       "-lc",
       [
-        "mkdir -p /entangle-secrets/refs/local",
-        `printf '%s\\n' '${smokeSecret}' > /entangle-secrets/refs/local/${secretRef.split("/").at(-1)}`,
-        `chmod 600 /entangle-secrets/refs/local/${secretRef.split("/").at(-1)}`
-      ].join(" && ")
+        {
+          ref: secretRef,
+          value: smokeSecret
+        },
+        {
+          ref: gitProvisioningSecretRef,
+          value: giteaToken
+        },
+        {
+          ref: gitPrincipalSecretRef,
+          value: giteaToken
+        }
+      ]
+        .flatMap((secret) => {
+          const storagePath = secretRefStoragePath(secret.ref);
+
+          return [
+            `mkdir -p ${path.posix.dirname(storagePath)}`,
+            `printf '%s\\n' ${shellQuote(secret.value)} > ${storagePath}`,
+            `chmod 600 ${storagePath}`
+          ];
+        })
+        .join(" && ")
     ]);
     printPass("runtime-smoke:host-fixtures", hostPackagePath);
 
@@ -768,6 +997,7 @@ async function main() {
     );
     assertValidationOk("Runtime smoke catalog", catalogResponse);
     printPass("runtime-smoke:catalog", modelEndpointId);
+    await upsertSmokeGitPrincipal(catalogResponse.catalog.defaults.gitServiceRef);
 
     const packageResponse = await hostRequest("POST", "/v1/package-sources/admit", {
       sourceKind: "local_path",
@@ -792,8 +1022,18 @@ async function main() {
     if (!startInspection.contextAvailable) {
       throw new Error(`Runtime context was unavailable: ${JSON.stringify(startInspection)}`);
     }
+    const downstreamStartInspection = await hostRequest(
+      "POST",
+      `/v1/runtimes/${downstreamNodeId}/start`
+    );
+    if (!downstreamStartInspection.contextAvailable) {
+      throw new Error(
+        `Downstream runtime context was unavailable: ${JSON.stringify(downstreamStartInspection)}`
+      );
+    }
 
     const runningInspection = await waitForRuntime(
+      workerNodeId,
       (inspection) =>
         inspection.desiredState === "running" &&
         inspection.observedState === "running" &&
@@ -802,7 +1042,19 @@ async function main() {
     );
     printPass(
       "runtime-smoke:start",
-      `observed=${runningInspection.observedState}; generation=${runningInspection.restartGeneration}`
+      `node=${workerNodeId}; observed=${runningInspection.observedState}; generation=${runningInspection.restartGeneration}`
+    );
+    const downstreamRunningInspection = await waitForRuntime(
+      downstreamNodeId,
+      (inspection) =>
+        inspection.desiredState === "running" &&
+        inspection.observedState === "running" &&
+        inspection.contextAvailable,
+      "Downstream runtime start"
+    );
+    printPass(
+      "runtime-smoke:start",
+      `node=${downstreamNodeId}; observed=${downstreamRunningInspection.observedState}; generation=${downstreamRunningInspection.restartGeneration}`
     );
 
     const restartResponse = await hostRequest(
@@ -811,6 +1063,7 @@ async function main() {
     );
     const expectedRestartGeneration = restartResponse.restartGeneration;
     const restartedInspection = await waitForRuntime(
+      workerNodeId,
       (inspection) =>
         inspection.desiredState === "running" &&
         inspection.observedState === "running" &&
@@ -819,23 +1072,72 @@ async function main() {
     );
     printPass(
       "runtime-smoke:restart",
-      `observed=${restartedInspection.observedState}; generation=${restartedInspection.restartGeneration}`
+      `node=${workerNodeId}; observed=${restartedInspection.observedState}; generation=${restartedInspection.restartGeneration}`
     );
-    await assertRestartEvent(expectedRestartGeneration);
+    await assertRestartEvent(workerNodeId, expectedRestartGeneration);
 
     const runtimeContext = await hostRequest(
       "GET",
       `/v1/runtimes/${workerNodeId}/context`
     );
-    const publishedTask = await publishSmokeTask(runtimeContext);
-    const messageRun = await waitForMessageCompletion(publishedTask);
+    const downstreamRuntimeContext = await hostRequest(
+      "GET",
+      `/v1/runtimes/${downstreamNodeId}/context`
+    );
+    const publishedTask = await publishSmokeTask({
+      artifactRefs: [],
+      conversationId: smokeConversationId,
+      intent: "Validate the local runtime message path.",
+      nodeId: workerNodeId,
+      runtimeContext,
+      summary:
+        "Run a provider-backed smoke turn and publish a git-backed report artifact.",
+      turnId: smokeTurnId
+    });
+    const messageRun = await waitForMessageCompletion({
+      ...publishedTask,
+      expectedArtifactStatus: "published"
+    });
     printPass(
       "runtime-smoke:message-session",
-      `status=${messageRun.session.status}; stop=${messageRun.turn.engineOutcome.stopReason}`
+      `node=${workerNodeId}; status=${messageRun.session.status}; stop=${messageRun.turn.engineOutcome.stopReason}`
     );
 
+    const downstreamTask = await publishSmokeTask({
+      artifactRefs: [messageRun.artifact.ref],
+      conversationId: downstreamConversationId,
+      intent: "Validate the local runtime artifact handoff path.",
+      nodeId: downstreamNodeId,
+      runtimeContext: downstreamRuntimeContext,
+      summary:
+        "Retrieve the upstream published artifact and produce a downstream report.",
+      turnId: downstreamTurnId
+    });
+    const downstreamMessageRun = await waitForMessageCompletion({
+      ...downstreamTask,
+      expectedArtifactStatus: "published",
+      expectedConsumedArtifactId: messageRun.artifact.ref.artifactId
+    });
+    printPass(
+      "runtime-smoke:handoff-session",
+      `node=${downstreamNodeId}; consumed=${messageRun.artifact.ref.artifactId}; produced=${downstreamMessageRun.artifact.ref.artifactId}`
+    );
+
+    await hostRequest("POST", `/v1/runtimes/${downstreamNodeId}/stop`);
     await hostRequest("POST", `/v1/runtimes/${workerNodeId}/stop`);
+    const downstreamStoppedInspection = await waitForRuntime(
+      downstreamNodeId,
+      (inspection) =>
+        inspection.desiredState === "stopped" &&
+        inspection.observedState === "stopped",
+      "Downstream runtime stop"
+    );
+    printPass(
+      "runtime-smoke:stop",
+      `node=${downstreamNodeId}; observed=${downstreamStoppedInspection.observedState}; generation=${downstreamStoppedInspection.restartGeneration}`
+    );
     const stoppedInspection = await waitForRuntime(
+      workerNodeId,
       (inspection) =>
         inspection.desiredState === "stopped" &&
         inspection.observedState === "stopped",
@@ -843,17 +1145,23 @@ async function main() {
     );
     printPass(
       "runtime-smoke:stop",
-      `observed=${stoppedInspection.observedState}; generation=${stoppedInspection.restartGeneration}`
+      `node=${workerNodeId}; observed=${stoppedInspection.observedState}; generation=${stoppedInspection.restartGeneration}`
     );
 
-    console.log("Local runtime lifecycle and message smoke passed.");
+    console.log("Local runtime lifecycle, message, and git handoff smoke passed.");
   } finally {
     if (tempRoot) {
       await rm(tempRoot, { force: true, recursive: true });
     }
 
+    await tryHostRequest("POST", `/v1/runtimes/${downstreamNodeId}/stop`);
     await tryHostRequest("POST", `/v1/runtimes/${workerNodeId}/stop`);
-    run("docker", ["rm", "-f", runnerContainerName], { capture: true });
+    run("docker", ["rm", "-f", runnerContainerNameFor(downstreamNodeId)], {
+      capture: true
+    });
+    run("docker", ["rm", "-f", runnerContainerNameFor(workerNodeId)], {
+      capture: true
+    });
     run(
       "docker",
       [

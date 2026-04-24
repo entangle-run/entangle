@@ -126,10 +126,11 @@ The first two preparation slices are now implemented:
 The artifact-record publication-state contract, remote publication, downstream
 retrieval, locator-specific handoff widening, host-owned `gitea_api`
 provisioning, and runner HTTPS-token git transport are now also implemented,
-and runner-level integration coverage now proves the complete
-publish-then-retrieve handoff between two node contexts over a shared remote
-git repository. The remaining work in this phase can therefore land on a clean
-lifecycle model instead of re-proving the artifact substrate at every layer.
+and both runner-level and Docker-backed disposable runtime coverage now prove
+the complete publish-then-retrieve handoff between two node contexts over a
+shared remote git repository. The remaining work in this phase can therefore
+land on a clean lifecycle model instead of re-proving the artifact substrate at
+every layer.
 
 The remaining work in this phase is:
 
@@ -500,17 +501,20 @@ Completed in the current repository state:
 - Docker-backed runtime lifecycle smoke coverage is available through
   `pnpm ops:smoke-local:runtime` and
   `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
-  admission, smoke graph application, local model-secret binding, managed
-  runner start, restart-generation recreation, restart event persistence, real
-  NIP-59 task intake, provider-backed OpenAI-compatible execution against a
+  admission, local Gitea disposable user/token bootstrap, smoke graph
+  application, local model-secret binding, two managed runner starts,
+  restart-generation recreation, restart event persistence, real NIP-59 task
+  intake, provider-backed OpenAI-compatible execution against a
   credential-checking model stub, completed host session and runner-turn
-  inspection, git-backed artifact materialization, and stop;
+  inspection, published git-backed artifact materialization, downstream
+  artifact retrieval by `ArtifactRef`, and stop;
 - host and runner image builds now clean stale TypeScript incremental metadata,
   assert deploy payload presence for service and workspace-package outputs,
   and package the runtime git toolchain required by the runner artifact backend;
-- runner-level integration coverage now proves a multi-node git handoff where
-  one node publishes a git-backed report to a shared remote and a downstream
-  node retrieves that published `ArtifactRef` into its local engine request;
+- runner-level integration coverage and the Docker-backed disposable runtime
+  smoke now both prove a multi-node git handoff where one node publishes a
+  git-backed report to a shared remote and a downstream node retrieves that
+  published `ArtifactRef` into its local engine request;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
   profile while preserving future Compose-level integration work as a separate
   hardening track.

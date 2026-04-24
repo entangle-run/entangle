@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-24] operations | Proved Docker/Gitea multi-node handoff smoke
+
+`pnpm ops:smoke-local:disposable:runtime` now bootstraps local Gitea in
+installed mode, creates a disposable user and HTTPS token, binds that token as
+both the host provisioning credential and runner git principal, starts two
+managed runner containers, and proves that the downstream runtime can retrieve
+the upstream runtime's published git artifact by `ArtifactRef`.
+
+The full disposable runtime smoke was rerun without `--skip-build`, so the
+proof includes the runner image build, host/studio profile startup, provider
+model stub, NIP-59 task intake, Gitea-backed publication, downstream retrieval,
+and teardown with volumes.
+
 ## [2026-04-24] runtime | Proved runner-level multi-node git handoff
 
 Added runner integration coverage for a real two-node artifact handoff. One
@@ -8,11 +21,9 @@ and a downstream `RunnerService` retrieves the published `ArtifactRef` into
 its own local engine request while persisting consumed and produced artifact
 linkage.
 
-This deliberately stays below the Docker/Gitea smoke layer because the current
-local Gitea profile is only readiness-checked as a web surface, not yet
-bootstrapped with an authenticated git collaboration account. The next
-deployment-grade gap is proving the same handoff through two host-managed
-runners and local Gitea.
+That runner-level proof has now been promoted into the Docker-backed
+disposable runtime smoke with local Gitea bootstrap and two host-managed
+runners.
 
 ## [2026-04-24] operations | Added provider-backed runtime message smoke
 
