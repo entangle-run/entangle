@@ -13,6 +13,7 @@ import {
   runtimeObservedStateSchema,
   runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
+import { runnerTurnRecordSchema } from "../runtime/session-state.js";
 
 export const runtimeInspectionResponseSchema = z
   .object({
@@ -62,9 +63,21 @@ export const runtimeArtifactInspectionResponseSchema = z.object({
   artifact: artifactRecordSchema
 });
 
+export const runtimeTurnListResponseSchema = z.object({
+  turns: z.array(runnerTurnRecordSchema)
+});
+
+export const runtimeTurnInspectionResponseSchema = z.object({
+  turn: runnerTurnRecordSchema
+});
+
 export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponseSchema>;
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;
 export type RuntimeContextInspectionResponse = z.infer<typeof runtimeContextInspectionResponseSchema>;
 export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResponseSchema>;
 export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;
+export type RuntimeTurnListResponse = z.infer<typeof runtimeTurnListResponseSchema>;
+export type RuntimeTurnInspectionResponse = z.infer<
+  typeof runtimeTurnInspectionResponseSchema
+>;

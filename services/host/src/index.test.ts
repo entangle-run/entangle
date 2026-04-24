@@ -42,6 +42,8 @@ import {
   runtimeInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
+  runtimeTurnInspectionResponseSchema,
+  runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema
 } from "@entangle/types";
@@ -2787,6 +2789,94 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(missingArtifactResponse.json())).toEqual({
         code: "not_found",
         message: "Artifact 'missing-artifact' was not found for runtime 'worker-it'."
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and inspects persisted runtime turns through the host surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      const turnRecord = {
+        consumedArtifactIds: ["artifact-inbound-001"],
+        conversationId: "conv-alpha",
+        engineOutcome: {
+          providerStopReason: "end_turn",
+          stopReason: "completed",
+          toolExecutions: [
+            {
+              outcome: "success",
+              sequence: 1,
+              toolCallId: "toolu_alpha",
+              toolId: "inspect_artifact_input"
+            }
+          ],
+          usage: {
+            inputTokens: 42,
+            outputTokens: 12
+          }
+        },
+        graphId: "team-alpha",
+        nodeId: "worker-it",
+        phase: "emitting",
+        producedArtifactIds: ["report-turn-001"],
+        sessionId: "session-alpha",
+        startedAt: "2026-04-24T10:00:00.000Z",
+        triggerKind: "message",
+        turnId: "turn-alpha",
+        updatedAt: "2026-04-24T10:05:00.000Z"
+      };
+      await writeJsonFile(
+        path.join(runtimeContext.workspace.runtimeRoot, "turns", "turn-alpha.json"),
+        turnRecord
+      );
+
+      const turnsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/turns"
+      });
+
+      expect(turnsResponse.statusCode).toBe(200);
+      expect(runtimeTurnListResponseSchema.parse(turnsResponse.json())).toEqual({
+        turns: [turnRecord]
+      });
+
+      const turnResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/turns/turn-alpha"
+      });
+
+      expect(turnResponse.statusCode).toBe(200);
+      expect(runtimeTurnInspectionResponseSchema.parse(turnResponse.json())).toEqual({
+        turn: turnRecord
+      });
+
+      const missingTurnResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/turns/missing-turn"
+      });
+
+      expect(missingTurnResponse.statusCode).toBe(404);
+      expect(hostErrorResponseSchema.parse(missingTurnResponse.json())).toEqual({
+        code: "not_found",
+        message: "Turn 'missing-turn' was not found for runtime 'worker-it'."
       });
     } finally {
       await server.close();

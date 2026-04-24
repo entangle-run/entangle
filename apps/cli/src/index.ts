@@ -898,6 +898,25 @@ hostRuntimesCommand
   });
 
 hostRuntimesCommand
+  .command("turn")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<turnId>", "Runner turn identifier to inspect.")
+  .description("Inspect one persisted runner turn.")
+  .action(async (nodeId: string, turnId: string, _options, command: Command) => {
+    const client = createCliHostClient(command);
+    printJson(await client.getRuntimeTurn(nodeId, turnId));
+  });
+
+hostRuntimesCommand
+  .command("turns")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Inspect persisted runner turns for one runtime.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createCliHostClient(command);
+    printJson(await client.listRuntimeTurns(nodeId));
+  });
+
+hostRuntimesCommand
   .command("artifact")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<artifactId>", "Artifact identifier to inspect.")

@@ -1159,6 +1159,56 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses runtime turn list and inspection responses from the host surface", async () => {
+    const requests: string[] = [];
+    const turn = {
+      consumedArtifactIds: [],
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      phase: "emitting",
+      producedArtifactIds: [],
+      startedAt: "2026-04-24T00:00:00.000Z",
+      triggerKind: "message",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(
+              url.endsWith("/turn-alpha") ? { turn } : { turns: [turn] }
+            ),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.listRuntimeTurns("worker-it")).resolves.toMatchObject({
+      turns: [
+        {
+          turnId: "turn-alpha"
+        }
+      ]
+    });
+    await expect(
+      client.getRuntimeTurn("worker-it", "turn-alpha")
+    ).resolves.toMatchObject({
+      turn: {
+        turnId: "turn-alpha"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/turns",
+      "http://entangle-host.test/v1/runtimes/worker-it/turns/turn-alpha"
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

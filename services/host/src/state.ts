@@ -120,6 +120,10 @@ import {
   runtimeIntentRecordSchema,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
+  type RuntimeTurnInspectionResponse,
+  type RuntimeTurnListResponse,
+  runtimeTurnInspectionResponseSchema,
+  runtimeTurnListResponseSchema,
   runtimeListResponseSchema,
   runnerTurnRecordSchema,
   type ApprovalRecord,
@@ -4167,6 +4171,35 @@ export async function getRuntimeArtifactInspection(input: {
   return artifact
     ? runtimeArtifactInspectionResponseSchema.parse({ artifact })
     : null;
+}
+
+export async function listRuntimeTurns(
+  nodeId: string
+): Promise<RuntimeTurnListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeTurnListResponseSchema.parse({
+    turns: await listRuntimeTurnRecords(context.workspace.runtimeRoot)
+  });
+}
+
+export async function getRuntimeTurnInspection(input: {
+  nodeId: string;
+  turnId: string;
+}): Promise<RuntimeTurnInspectionResponse | null> {
+  const turns = await listRuntimeTurns(input.nodeId);
+
+  if (!turns) {
+    return null;
+  }
+
+  const turn = turns.turns.find((candidate) => candidate.turnId === input.turnId);
+
+  return turn ? runtimeTurnInspectionResponseSchema.parse({ turn }) : null;
 }
 
 export async function getRuntimeRecoveryInspection(input: {

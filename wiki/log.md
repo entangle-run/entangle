@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added runtime turn inspection
+
+`entangle-host` now exposes persisted runner turns through
+`GET /v1/runtimes/{nodeId}/turns` and
+`GET /v1/runtimes/{nodeId}/turns/{turnId}`. The shared host client and CLI can
+consume the same boundary, giving operators durable turn list/detail inspection
+without reading runner-local files or reconstructing state from event history.
+
 ## [2026-04-24] implementation | Hardened package scaffolding and CLI init options
 
 `entangle package init` now exposes package name, package id, default node

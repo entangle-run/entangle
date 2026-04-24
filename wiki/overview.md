@@ -366,6 +366,11 @@ The repository now also contains the first real implementation baseline:
   runner session records across the current host runtime set, and shares the
   same boundary through `packages/host-client` and the CLI so future event
   widening can build on a stable read model instead of event-only logic;
+- a host-owned runner-turn inspection surface where `entangle-host` now exposes
+  `GET /v1/runtimes/{nodeId}/turns` plus
+  `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary
+  through `packages/host-client` and the CLI for audit workflows that need
+  persisted turn records instead of event summaries only;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, persists those observations under observed host

@@ -34,6 +34,8 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeTurnInspectionResponseSchema,
+  runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   type CatalogInspectionResponse,
@@ -70,6 +72,8 @@ import {
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
+  type RuntimeTurnInspectionResponse,
+  type RuntimeTurnListResponse,
   type SessionInspectionResponse,
   type SessionListResponse,
 } from "@entangle/types";
@@ -599,6 +603,23 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/context`),
         runtimeContextInspectionResponseSchema
+      );
+    },
+
+    async listRuntimeTurns(nodeId: string): Promise<RuntimeTurnListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/turns`),
+        runtimeTurnListResponseSchema
+      );
+    },
+
+    async getRuntimeTurn(
+      nodeId: string,
+      turnId: string
+    ): Promise<RuntimeTurnInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/turns/${turnId}`),
+        runtimeTurnInspectionResponseSchema
       );
     },
 

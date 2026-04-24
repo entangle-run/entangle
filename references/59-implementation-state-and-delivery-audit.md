@@ -131,7 +131,7 @@ This layer is strong and directionally correct. It is not a blocker.
 - resource-oriented edge listing plus creation, full replacement, and deletion
   through the host API, including typed `edge.updated` control-plane events;
 - runtime inspection, start, stop, deterministic restart, context inspection,
-  and artifact inspection;
+  runner-turn inspection, and artifact inspection;
 - host-owned session summary and session-detail inspection backed by persisted
   runner session state;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
@@ -514,6 +514,8 @@ workflow completeness, not missing mutation or liveness foundations.
 - runtime artifact inspection parity through the existing host artifact read
   surface, including deterministic local filtering over artifact backend,
   kind, lifecycle, publication, and retrieval state;
+- runtime turn list/detail inspection through the existing host runtime
+  boundary;
 - single-runtime-artifact inspection by id through the shared host client;
 - dry-run previews for the main host-facing mutation commands, including
   package-source admission, graph apply, node and edge mutation, external

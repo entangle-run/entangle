@@ -30,6 +30,8 @@ import {
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
+  runtimeTurnInspectionResponseSchema,
+  runtimeTurnListResponseSchema,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
   resolvePrimaryGitRepositoryTarget,
@@ -83,6 +85,29 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.artifact.ref.artifactId).toBe("report-turn-001");
+  });
+});
+
+describe("runtime turn host API contracts", () => {
+  it("accepts runtime turn list and inspection responses", () => {
+    const turn = {
+      consumedArtifactIds: [],
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      phase: "emitting",
+      producedArtifactIds: [],
+      startedAt: "2026-04-24T00:00:00.000Z",
+      triggerKind: "message",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+
+    expect(runtimeTurnListResponseSchema.parse({ turns: [turn] }).turns).toHaveLength(
+      1
+    );
+    expect(runtimeTurnInspectionResponseSchema.parse({ turn }).turn.turnId).toBe(
+      "turn-alpha"
+    );
   });
 });
 

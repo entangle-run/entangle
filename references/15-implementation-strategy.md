@@ -325,8 +325,9 @@ Acceptance for the phase:
 - runtime lifecycle changes, including deterministic restart and explicit
   degraded-state semantics, explicit recovery policy, bounded automatic
   recovery, persisted session inspection, host-derived session/runner activity
-  events, host-owned runtime recovery history, and host-owned runtime recovery
-  events, are inspectable and auditable without reading files by hand.
+  events, host-owned runner-turn inspection, host-owned runtime recovery
+  history, and host-owned runtime recovery events, are inspectable and
+  auditable without reading files by hand.
 
 Completed in the current repository state:
 
@@ -347,6 +348,10 @@ Completed in the current repository state:
 - a runtime artifact detail read surface through
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus shared host-client
   and CLI consumption for one artifact record by id.
+- a runtime turn list/detail read surface through
+  `GET /v1/runtimes/{nodeId}/turns` and
+  `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
+  consumption for persisted runner-turn records.
 - Studio runtime artifact detail inspection through the same host item
   boundary, with stale-selection guards and separate detail failure state.
 - deeper Studio runtime session inspection on top of the already implemented
@@ -433,6 +438,7 @@ Completed in the current repository state:
 - runtime artifact inspection through the existing host artifact read surface,
   including deterministic local filtering over host-owned artifact records.
 - single-runtime-artifact inspection by id through the same host boundary.
+- runtime turn list/detail inspection through the same host boundary.
 - dry-run previews across the main host-facing mutation commands, including
   package-source admission, graph apply, node and edge mutation, external
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle

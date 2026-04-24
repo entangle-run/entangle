@@ -138,6 +138,10 @@ This repository currently contains:
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus matching
   host-client coverage;
+- host read surfaces for persisted runner turns through
+  `GET /v1/runtimes/{nodeId}/turns` and
+  `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
+  coverage for deeper runtime auditability;
 - a host-owned session inspection surface through `GET /v1/sessions` and
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
