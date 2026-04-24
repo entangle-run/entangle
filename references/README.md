@@ -114,6 +114,7 @@ This directory is the canonical design corpus for Entangle.
 108. [107-engine-outcome-aware-working-context-slice.md](107-engine-outcome-aware-working-context-slice.md)
 109. [108-execution-insight-carry-forward-slice.md](108-execution-insight-carry-forward-slice.md)
 110. [109-execution-aware-deterministic-memory-baseline-slice.md](109-execution-aware-deterministic-memory-baseline-slice.md)
+111. [110-final-state-session-context-memory-synthesis-slice.md](110-final-state-session-context-memory-synthesis-slice.md)
 
 ## Role of this corpus
 

@@ -425,6 +425,8 @@ describe("RunnerService", () => {
     const runtimeContext = await loadRuntimeContext(fixture.contextPath);
     const transport = new InMemoryRunnerTransport();
     let capturedSynthesisInput: RunnerMemorySynthesisInput | undefined;
+    let synthesisConversationStatus: string | undefined;
+    let synthesisSessionStatus: string | undefined;
     const service = new RunnerService({
       context: runtimeContext,
       engine: {
@@ -442,8 +444,15 @@ describe("RunnerService", () => {
         }
       },
       memorySynthesizer: {
-        synthesize(input) {
+        async synthesize(input) {
           capturedSynthesisInput = input;
+          const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+          const [sessionRecord, conversationRecord] = await Promise.all([
+            readSessionRecord(statePaths, input.envelope.message.sessionId),
+            readConversationRecord(statePaths, input.envelope.message.conversationId)
+          ]);
+          synthesisConversationStatus = conversationRecord?.status;
+          synthesisSessionStatus = sessionRecord?.status;
 
           return Promise.resolve({
             ok: true,
@@ -479,6 +488,8 @@ describe("RunnerService", () => {
     expect(capturedSynthesisInput?.artifactInputs[1]?.localPath).toContain(
       path.join("reports", "session-alpha")
     );
+    expect(synthesisConversationStatus).toBe("closed");
+    expect(synthesisSessionStatus).toBe("completed");
   });
 
   it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {

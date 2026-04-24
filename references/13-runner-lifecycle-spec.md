@@ -166,7 +166,8 @@ That implemented slice currently includes:
   turns, rebuilds a derived recent-work summary page for future turn
   assembly, and now also supports a bounded model-guided
   `memory/wiki/summaries/working-context.md` synthesis pass without giving the
-  model arbitrary filesystem authority;
+  model arbitrary filesystem authority, now grounded in final post-turn
+  lifecycle state rather than pre-completion session state;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

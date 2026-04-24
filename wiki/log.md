@@ -783,3 +783,15 @@ Closed the slice only after widening runner-memory assertions over both task
 pages and recent-work output, re-running targeted runner lint/test/typecheck
 gates, and then confirming the full `pnpm verify` plus `git diff --check`
 gates.
+
+## [2026-04-24] implementation | Added final-state session-context memory synthesis
+
+Corrected the model-guided working-context path so optional memory synthesis now
+runs against the runner's final post-turn conversation/session state instead of
+the earlier pre-completion snapshot. The durable `working-context.md` page now
+also carries bounded session-context lines plus synthesized session insights.
+
+Closed the slice only after widening runner-memory assertions over durable
+session-context output, proving via service tests that synthesis now sees the
+final `closed` / `completed` lifecycle state, and then re-running targeted
+runner gates plus the full `pnpm verify` and `git diff --check` gates.

@@ -2,8 +2,10 @@ import { randomUUID } from "node:crypto";
 import type {
   AgentEngineTurnResult,
   ArtifactRecord,
+  ArtifactRef,
   ConversationLifecycleState,
   ConversationRecord,
+  EngineArtifactInput,
   EngineProviderMetadata,
   EngineToolDefinition,
   EngineTurnFailure,
@@ -510,6 +512,39 @@ export class RunnerService {
     return this.toolDefinitionsPromise;
   }
 
+  private async runOptionalMemorySynthesis(input: {
+    artifactInputs: EngineArtifactInput[];
+    artifactRefs: ArtifactRef[];
+    consumedArtifactIds: string[];
+    envelope: RunnerInboundEnvelope;
+    producedArtifactIds: string[];
+    recentWorkSummaryPath: string;
+    result: AgentEngineTurnResult;
+    taskPagePath: string;
+    turnId: string;
+  }): Promise<void> {
+    if (!this.memorySynthesizer) {
+      return;
+    }
+
+    try {
+      await this.memorySynthesizer.synthesize({
+        artifactInputs: input.artifactInputs,
+        artifactRefs: input.artifactRefs,
+        consumedArtifactIds: input.consumedArtifactIds,
+        context: this.context,
+        envelope: input.envelope,
+        producedArtifactIds: input.producedArtifactIds,
+        recentWorkSummaryPath: input.recentWorkSummaryPath,
+        result: input.result,
+        taskPagePath: input.taskPagePath,
+        turnId: input.turnId
+      });
+    } catch {
+      /* Best-effort only. Memory synthesis must not invalidate the completed turn. */
+    }
+  }
+
   async handleInboundEnvelope(
     envelope: RunnerInboundEnvelope
   ): Promise<RunnerServiceHandleResult> {
@@ -698,32 +733,25 @@ export class RunnerService {
         result,
         turnId: turnRecord.turnId
       });
-      if (this.memorySynthesizer) {
-        try {
-          await this.memorySynthesizer.synthesize({
-            artifactInputs: [
-              ...retrievedArtifacts.artifactInputs,
-              ...buildArtifactInputsFromMaterializedRecords(
-                materializedArtifacts.artifacts
-              )
-            ],
-            artifactRefs: [
-              ...envelope.message.work.artifactRefs,
-              ...materializedArtifacts.artifacts.map((artifactRecord) => artifactRecord.ref)
-            ],
-            consumedArtifactIds,
-            context: this.context,
-            envelope,
-            producedArtifactIds,
-            recentWorkSummaryPath: memoryUpdate.summaryPagePath,
-            result,
-            taskPagePath: memoryUpdate.taskPagePath,
-            turnId: turnRecord.turnId
-          });
-        } catch {
-          /* Best-effort only. Memory synthesis must not invalidate the completed turn. */
-        }
-      }
+      const memorySynthesisInput = {
+        artifactInputs: [
+          ...retrievedArtifacts.artifactInputs,
+          ...buildArtifactInputsFromMaterializedRecords(
+            materializedArtifacts.artifacts
+          )
+        ],
+        artifactRefs: [
+          ...envelope.message.work.artifactRefs,
+          ...materializedArtifacts.artifacts.map((artifactRecord) => artifactRecord.ref)
+        ],
+        consumedArtifactIds,
+        envelope,
+        producedArtifactIds,
+        recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+        result,
+        taskPagePath: memoryUpdate.taskPagePath,
+        turnId: turnRecord.turnId
+      };
 
       currentConversation = await transitionConversationStatus(
         statePaths,
@@ -741,7 +769,7 @@ export class RunnerService {
 
       if (!envelope.message.responsePolicy.responseRequired) {
         if (envelope.message.responsePolicy.closeOnResult) {
-          await transitionConversationStatus(
+          currentConversation = await transitionConversationStatus(
             statePaths,
             currentConversation,
             "closed",
@@ -750,6 +778,8 @@ export class RunnerService {
             }
           );
         }
+
+        await this.runOptionalMemorySynthesis(memorySynthesisInput);
 
         return {
           handled: true,
@@ -766,7 +796,7 @@ export class RunnerService {
       });
       const publishedEnvelope = await this.transport.publish(responseMessage);
 
-      await transitionConversationStatus(
+      currentConversation = await transitionConversationStatus(
         statePaths,
         currentConversation,
         envelope.message.responsePolicy.closeOnResult ? "closed" : "resolved",
@@ -776,10 +806,16 @@ export class RunnerService {
           lastOutboundMessageId: publishedEnvelope.eventId
         }
       );
-      await transitionSessionStatus(statePaths, currentSession, "completed", {
-        lastMessageId: publishedEnvelope.eventId,
-        lastMessageType: responseMessage.messageType
-      });
+      currentSession = await transitionSessionStatus(
+        statePaths,
+        currentSession,
+        "completed",
+        {
+          lastMessageId: publishedEnvelope.eventId,
+          lastMessageType: responseMessage.messageType
+        }
+      );
+      await this.runOptionalMemorySynthesis(memorySynthesisInput);
 
       return {
         handled: true,

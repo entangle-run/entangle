@@ -250,6 +250,10 @@ describe("model-guided memory synthesis", () => {
                 openQuestions: [
                   "Does the current recovery trace expose enough detail for operators?"
                 ],
+                sessionInsights: [
+                  "The session is still active and centered on the relay recovery follow-up.",
+                  "The live conversation with the reviewer remains the coordination path for the next checkpoint."
+                ],
                 stableFacts: [
                   "The runner already persists recovery history through the host.",
                   "The latest turn completed without additional blockers."
@@ -462,6 +466,14 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain("## Current Focus");
     expect(workingContextPage).toContain(
       "Keep the recovery follow-up aligned with the relay-runtime work."
+    );
+    expect(workingContextPage).toContain("## Session Context");
+    expect(workingContextPage).toContain("- Session status: `active`");
+    expect(workingContextPage).toContain("- Active conversations: 1");
+    expect(workingContextPage).toContain("- Recent turns in snapshot: 1");
+    expect(workingContextPage).toContain("### Durable Session Insights");
+    expect(workingContextPage).toContain(
+      "The live conversation with the reviewer remains the coordination path for the next checkpoint."
     );
     expect(workingContextPage).toContain("### Consumed Artifacts");
     expect(workingContextPage).toContain("Consumed artifact: `artifact-input`");

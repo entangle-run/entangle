@@ -24,6 +24,7 @@ import {
 import { buildRunnerStatePaths } from "./state-store.js";
 import {
   buildRunnerSessionStateSnapshot,
+  type RunnerSessionStateSnapshot,
   renderRunnerSessionStateSnapshotForPrompt
 } from "./session-state-snapshot.js";
 import { collectMemoryRefs } from "./runtime-context.js";
@@ -209,6 +210,7 @@ function parseWorkingContextSummaryInput(input: unknown):
         focus: string;
         nextActions: string[];
         openQuestions: string[];
+        sessionInsights: string[];
         stableFacts: string[];
         summary: string;
       };
@@ -230,20 +232,22 @@ function parseWorkingContextSummaryInput(input: unknown):
     "artifactInsights",
     "executionInsights",
     "focus",
-    "summary",
-    "stableFacts",
+    "nextActions",
     "openQuestions",
-    "nextActions"
+    "sessionInsights",
+    "stableFacts",
+    "summary"
   ]);
   const inputRecord = input as Record<string, unknown>;
   const extraKeys = Object.keys(inputRecord).filter((key) => !allowedKeys.has(key));
   const artifactInsights = coerceStringArray(inputRecord.artifactInsights);
   const executionInsights = coerceStringArray(inputRecord.executionInsights);
   const focus = coerceNonEmptyString(inputRecord.focus);
-  const summary = coerceNonEmptyString(inputRecord.summary);
-  const stableFacts = coerceStringArray(inputRecord.stableFacts);
-  const openQuestions = coerceStringArray(inputRecord.openQuestions);
   const nextActions = coerceStringArray(inputRecord.nextActions);
+  const openQuestions = coerceStringArray(inputRecord.openQuestions);
+  const sessionInsights = coerceStringArray(inputRecord.sessionInsights);
+  const stableFacts = coerceStringArray(inputRecord.stableFacts);
+  const summary = coerceNonEmptyString(inputRecord.summary);
   const issues: string[] = [];
 
   if (!focus) {
@@ -259,6 +263,12 @@ function parseWorkingContextSummaryInput(input: unknown):
   if (!executionInsights) {
     issues.push(
       "The 'executionInsights' field must be an array of non-empty strings."
+    );
+  }
+
+  if (!sessionInsights) {
+    issues.push(
+      "The 'sessionInsights' field must be an array of non-empty strings."
     );
   }
 
@@ -299,6 +309,15 @@ function parseWorkingContextSummaryInput(input: unknown):
   ) {
     issues.push(
       `The 'executionInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    sessionInsights &&
+    sessionInsights.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'sessionInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
     );
   }
 
@@ -344,6 +363,7 @@ function parseWorkingContextSummaryInput(input: unknown):
       focus: focus!,
       nextActions: nextActions!,
       openQuestions: openQuestions!,
+      sessionInsights: sessionInsights!,
       stableFacts: stableFacts!,
       summary: summary!
     }
@@ -377,6 +397,14 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         executionInsights: {
           description:
             "A bounded list of durable execution signals worth carrying forward from the current turn.",
+          items: {
+            type: "string"
+          },
+          type: "array"
+        },
+        sessionInsights: {
+          description:
+            "A bounded list of durable session or coordination observations worth carrying forward.",
           items: {
             type: "string"
           },
@@ -417,6 +445,7 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         "artifactInsights",
         "executionInsights",
         "summary",
+        "sessionInsights",
         "stableFacts",
         "openQuestions",
         "nextActions"
@@ -428,7 +457,9 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
 }
 
 export async function buildModelGuidedMemorySynthesisTurnRequest(
-  input: RunnerMemorySynthesisInput
+  input: RunnerMemorySynthesisInput & {
+    sessionSnapshot?: RunnerSessionStateSnapshot;
+  }
 ): Promise<AgentEngineTurnRequest> {
   const assistantSummary =
     input.result.assistantMessages.join("\n").trim() ||
@@ -439,13 +470,6 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
     wikiRoot,
     input.recentWorkSummaryPath
   );
-  const sessionSnapshot = await buildRunnerSessionStateSnapshot({
-    maxArtifacts: maxSynthesisArtifacts,
-    maxRecentTurns: maxSynthesisRecentTurns,
-    sessionId: input.envelope.message.sessionId,
-    statePaths: buildRunnerStatePaths(input.context.workspace.runtimeRoot)
-  });
-
   return {
     sessionId: input.envelope.message.sessionId,
     nodeId: input.context.binding.node.nodeId,
@@ -453,6 +477,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "You are maintaining the node's private working memory after a completed turn.",
       "You do not write files directly. Use the provided tool exactly once to update the canonical working-context summary.",
       "Keep the summary concise, durable, and grounded in the current turn plus the injected memory references.",
+      "Preserve only durable session or coordination observations that future turns should retain; do not restate transient workflow state verbatim.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
       "Do not include secrets, speculative claims, or verbose restatement of logs."
@@ -476,9 +501,9 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       }`,
       renderCurrentTurnOutcomeForPrompt(input.result),
       `Current assistant outcome:\n${assistantSummary}`,
-      ...(sessionSnapshot
+      ...(input.sessionSnapshot
         ? [
-            renderRunnerSessionStateSnapshotForPrompt(sessionSnapshot)
+            renderRunnerSessionStateSnapshotForPrompt(input.sessionSnapshot)
           ]
         : [])
     ],
@@ -497,6 +522,21 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
   };
 }
 
+function renderSessionContextLines(
+  sessionSnapshot: RunnerSessionStateSnapshot | undefined
+): string[] {
+  if (!sessionSnapshot) {
+    return ["- No current session snapshot was available during synthesis."];
+  }
+
+  return [
+    `- Session status: \`${sessionSnapshot.session.status}\``,
+    `- Active conversations: ${sessionSnapshot.session.activeConversationIds.length}`,
+    `- Waiting approvals: ${sessionSnapshot.session.waitingApprovalIds.length}`,
+    `- Recent turns in snapshot: ${sessionSnapshot.recentTurns.length}`
+  ];
+}
+
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
@@ -512,6 +552,8 @@ function buildWorkingContextSummaryContent(input: {
   wikiRoot: string;
   nextActions: string[];
   openQuestions: string[];
+  sessionInsights: string[];
+  sessionSnapshot: RunnerSessionStateSnapshot | undefined;
 }): string {
   const taskPageRelativePath = toPosixRelativePath(input.wikiRoot, input.taskPagePath);
   const recentWorkRelativePath = toPosixRelativePath(
@@ -535,6 +577,17 @@ function buildWorkingContextSummaryContent(input: {
     "## Summary",
     "",
     input.summary,
+    "",
+    "## Session Context",
+    "",
+    ...renderSessionContextLines(input.sessionSnapshot),
+    "",
+    "### Durable Session Insights",
+    "",
+    ...renderBulletList(
+      input.sessionInsights,
+      "- No durable session-state observations were synthesized."
+    ),
     "",
     "## Stable Facts",
     "",
@@ -608,6 +661,7 @@ function buildMemorySynthesisLogEntry(input: {
 }
 
 function createWorkingContextSummaryToolExecutor(input: {
+  sessionSnapshot: RunnerSessionStateSnapshot | undefined;
   synthesis: RunnerMemorySynthesisInput;
   writePathCapture: {
     workingContextPagePath: string | undefined;
@@ -646,6 +700,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         executionInsights: normalizeListEntries(parsedInput.value.executionInsights),
         nextActions: normalizeListEntries(parsedInput.value.nextActions),
         openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
+        sessionInsights: normalizeListEntries(parsedInput.value.sessionInsights),
         stableFacts: normalizeListEntries(parsedInput.value.stableFacts)
       };
       const content = buildWorkingContextSummaryContent({
@@ -658,6 +713,8 @@ function createWorkingContextSummaryToolExecutor(input: {
         producedArtifactIds: input.synthesis.producedArtifactIds,
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
         sessionId: input.synthesis.envelope.message.sessionId,
+        sessionInsights: normalizedInput.sessionInsights,
+        sessionSnapshot: input.sessionSnapshot,
         stableFacts: normalizedInput.stableFacts,
         summary: normalizedInput.summary,
         taskPagePath: input.synthesis.taskPagePath,
@@ -719,12 +776,19 @@ export function createModelGuidedMemorySynthesizer(input: {
     async synthesize(
       synthesis: RunnerMemorySynthesisInput
     ): Promise<RunnerMemorySynthesisResult> {
+      const sessionSnapshot = await buildRunnerSessionStateSnapshot({
+        maxArtifacts: maxSynthesisArtifacts,
+        maxRecentTurns: maxSynthesisRecentTurns,
+        sessionId: synthesis.envelope.message.sessionId,
+        statePaths: buildRunnerStatePaths(synthesis.context.workspace.runtimeRoot)
+      });
       const writePathCapture: {
         workingContextPagePath: string | undefined;
       } = {
         workingContextPagePath: undefined
       };
       const toolExecutor = createWorkingContextSummaryToolExecutor({
+        sessionSnapshot,
         synthesis,
         writePathCapture
       });
@@ -736,7 +800,14 @@ export function createModelGuidedMemorySynthesizer(input: {
         });
 
       try {
-        const request = await buildModelGuidedMemorySynthesisTurnRequest(synthesis);
+        const request = await buildModelGuidedMemorySynthesisTurnRequest(
+          sessionSnapshot
+            ? {
+                ...synthesis,
+                sessionSnapshot
+              }
+            : synthesis
+        );
         await engine.executeTurn(request);
 
         if (!writePathCapture.workingContextPagePath) {

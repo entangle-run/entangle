@@ -94,6 +94,8 @@ runner-owned:
 
 The current implementation now includes that first widening through a bounded
 working-context summary page generated via model-guided synthesis but written
-through a runner-owned structured path.
+through a runner-owned structured path, now grounded in final post-turn
+lifecycle state and carrying bounded session, artifact, and execution context
+durably.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

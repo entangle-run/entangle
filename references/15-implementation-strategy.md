@@ -199,6 +199,11 @@ Completed in the current repository state:
     runner-owned task pages and the derived recent-work summary now preserve
     richer normalized execution detail before any model-guided synthesis
     widening is applied.
+17. a final-state session-context refinement of that same synthesis path where
+    optional working-context synthesis now runs against final post-turn
+    conversation/session state and the durable `working-context.md` page now
+    preserves bounded session-context signals instead of leaving session
+    awareness trapped in prompt-time context alone.
 
 Remaining work in this phase:
 
