@@ -23,6 +23,7 @@ import {
   graphRevisionRecordSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
+  hostSessionSummarySchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
@@ -88,6 +89,9 @@ import {
   type RuntimeDesiredState,
   runtimeIdentityContextSchema,
   secretRefSchema,
+  sessionInspectionResponseSchema,
+  sessionListResponseSchema,
+  sessionRecordSchema,
   type RuntimeIdentityRecord,
   runtimeIdentityRecordSchema,
   runtimeArtifactListResponseSchema,
@@ -96,6 +100,9 @@ import {
   runtimeIntentRecordSchema,
   type RuntimeArtifactListResponse,
   runtimeListResponseSchema,
+  type SessionInspectionResponse,
+  type SessionListResponse,
+  type SessionRecord,
   type RuntimeListResponse,
   type RuntimeObservedState,
   type RuntimeIntentRecord,
@@ -2950,6 +2957,155 @@ export async function listRuntimeArtifacts(
 
   return runtimeArtifactListResponseSchema.parse({
     artifacts
+  });
+}
+
+async function listRuntimeSessionRecords(
+  runtimeRoot: string
+): Promise<SessionRecord[]> {
+  const sessionsRoot = path.join(runtimeRoot, "sessions");
+
+  if (!(await pathExists(sessionsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(sessionsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sessionRecordSchema.parse(
+        await readJsonFile(path.join(sessionsRoot, fileName))
+      )
+    )
+  );
+}
+
+async function collectSessionInspectionNodes(): Promise<
+  Map<string, SessionInspectionResponse["nodes"]>
+> {
+  const { runtimes } = await synchronizeCurrentGraphRuntimeState();
+  const sessions = new Map<string, SessionInspectionResponse["nodes"]>();
+
+  for (const runtime of runtimes) {
+    if (!runtime.contextAvailable || !runtime.contextPath) {
+      continue;
+    }
+
+    const context = effectiveRuntimeContextSchema.parse(
+      await readJsonFile(runtime.contextPath)
+    );
+    const sessionRecords = await listRuntimeSessionRecords(
+      context.workspace.runtimeRoot
+    );
+
+    for (const sessionRecord of sessionRecords) {
+      const entries = sessions.get(sessionRecord.sessionId) ?? [];
+      entries.push({
+        nodeId: runtime.nodeId,
+        runtime,
+        session: sessionRecord
+      });
+      sessions.set(sessionRecord.sessionId, entries);
+    }
+  }
+
+  for (const entries of sessions.values()) {
+    entries.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
+  }
+
+  return sessions;
+}
+
+function buildSessionSummary(
+  sessionId: string,
+  nodes: SessionInspectionResponse["nodes"]
+) {
+  const [firstNode] = nodes;
+
+  if (!firstNode) {
+    throw new Error(
+      `Cannot build a host session summary for session '${sessionId}' without any node records.`
+    );
+  }
+
+  const graphIds = new Set(nodes.map((entry) => entry.session.graphId));
+
+  if (graphIds.size !== 1) {
+    throw new Error(
+      `Session '${sessionId}' contains inconsistent graph ids across node-owned session records.`
+    );
+  }
+
+  const traceIds = new Set<string>();
+
+  for (const entry of nodes) {
+    traceIds.add(entry.session.traceId);
+  }
+
+  return hostSessionSummarySchema.parse({
+    graphId: firstNode.session.graphId,
+    nodeIds: nodes.map((entry) => entry.nodeId),
+    nodeStatuses: nodes.map((entry) => ({
+      nodeId: entry.nodeId,
+      status: entry.session.status
+    })),
+    sessionId,
+    traceIds: Array.from(traceIds).sort(),
+    updatedAt: nodes
+      .map((entry) => entry.session.updatedAt)
+      .sort((left, right) => right.localeCompare(left))[0]
+  });
+}
+
+export async function listSessions(): Promise<SessionListResponse> {
+  const sessions = await collectSessionInspectionNodes();
+  const summaries = Array.from(sessions.entries())
+    .map(([sessionId, nodes]) => buildSessionSummary(sessionId, nodes))
+    .sort((left, right) => {
+      const updatedAtOrdering = right.updatedAt.localeCompare(left.updatedAt);
+
+      if (updatedAtOrdering !== 0) {
+        return updatedAtOrdering;
+      }
+
+      return left.sessionId.localeCompare(right.sessionId);
+    });
+
+  return sessionListResponseSchema.parse({
+    sessions: summaries
+  });
+}
+
+export async function getSessionInspection(
+  sessionId: string
+): Promise<SessionInspectionResponse | null> {
+  const sessions = await collectSessionInspectionNodes();
+  const nodes = sessions.get(sessionId);
+
+  if (!nodes || nodes.length === 0) {
+    return null;
+  }
+
+  const [firstNode] = nodes;
+
+  if (!firstNode) {
+    return null;
+  }
+
+  const graphIds = new Set(nodes.map((entry) => entry.session.graphId));
+
+  if (graphIds.size !== 1) {
+    throw new Error(
+      `Session '${sessionId}' contains inconsistent graph ids across node-owned session records.`
+    );
+  }
+
+  return sessionInspectionResponseSchema.parse({
+    graphId: firstNode.session.graphId,
+    nodes,
+    sessionId
   });
 }
 

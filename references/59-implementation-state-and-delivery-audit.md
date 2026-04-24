@@ -48,7 +48,8 @@ The repository does **not** yet include:
 - a broad builtin tool surface and richer model-guided memory maintenance
   inside the internal runtime execution path;
 - deeper session-level and runner-originated host event coverage plus richer
-  recovery diagnostics on top of the now-implemented degraded-state model;
+  recovery diagnostics on top of the now-implemented degraded-state model and
+  session-inspection boundary;
 - Studio as a complete operator surface;
 - CLI parity with all core host workflows;
 - end-to-end deployment hardening for the full local product profile.
@@ -127,6 +128,8 @@ This layer is strong and directionally correct. It is not a blocker.
   through the host API, including typed `edge.updated` control-plane events;
 - runtime inspection, start, stop, deterministic restart, context inspection,
   and artifact inspection;
+- host-owned session summary and session-detail inspection backed by persisted
+  runner session state;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
 - richer reconciliation semantics with per-runtime derived reconciliation
@@ -142,7 +145,7 @@ This layer is strong and directionally correct. It is not a blocker.
 ### Still missing or incomplete
 
 - session-level and richer runner-originated event classes on top of the new
-  host event surface;
+  host event surface and session-inspection read model;
 - richer recovery diagnostics and restart or retry policy above the current
   degraded-state model;
 - broader recovery-history and inspection surfaces.

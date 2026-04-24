@@ -98,6 +98,7 @@ It now contains:
 - the canonical specification corpus;
 - shared machine-readable contracts and semantic validation;
 - a real local host control plane;
+- host-owned session inspection over persisted runner state;
 - host-managed runtime identity and external-principal binding;
 - host-resolved git principal secret-delivery metadata in runtime context;
 - a long-lived runner with real Nostr transport;
@@ -176,22 +177,20 @@ place.
 
 Implement in small slices:
 
-1. widen the newly implemented host event surface beyond the first
-   control-plane/runtime/reconciliation classes into deeper session and runner
-   activity;
+1. widen the newly implemented host event surface into deeper session and
+   runner activity on top of the now-implemented session-inspection boundary;
 2. stronger runtime recovery diagnostics and restart or retry policy on top of
    the now-implemented degraded-state and reconciliation semantics;
-3. deeper host-event widening into session and runner activity after the
-   current first event, revision-history, node-inspection, edge-mutation, and
-   richer host-status slices.
+3. broader recovery-history and inspection surfaces where those diagnostics
+   need durable host-owned read models.
 
 Acceptance for the phase:
 
 - Studio and CLI can consume live host events;
 - host API coverage aligns more closely with the published control-plane spec;
 - runtime lifecycle changes, including deterministic restart and explicit
-  degraded-state semantics, are inspectable and auditable without reading
-  files by hand.
+  degraded-state semantics, plus persisted session inspection, are inspectable
+  and auditable without reading files by hand.
 
 ## Phase 4: Studio completion
 

@@ -412,6 +412,27 @@ hostRuntimesCommand
     printJson(await client.restartRuntime(nodeId));
   });
 
+const hostSessionsCommand = hostCommand
+  .command("sessions")
+  .description("Inspect persisted runtime sessions through entangle-host.");
+
+hostSessionsCommand
+  .command("list")
+  .description("List aggregated persisted sessions across the current host runtimes.")
+  .action(async (_options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.listSessions());
+  });
+
+hostSessionsCommand
+  .command("get")
+  .argument("<sessionId>", "Session identifier in the current host runtime state.")
+  .description("Inspect one persisted session aggregated across participating nodes.")
+  .action(async (sessionId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getSession(sessionId));
+  });
+
 const graphCommand = program
   .command("graph")
   .description("Inspect graph files from the terminal.");

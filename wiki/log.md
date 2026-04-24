@@ -464,3 +464,15 @@ runtime backend to recreate managed containers when the restart generation
 changes even if the runtime context path is unchanged. Closed the slice only
 after adding contract, host-client, host integration, and Docker backend tests
 and re-running `pnpm verify`.
+
+## [2026-04-24] implementation | Added host-owned session inspection surfaces
+
+Promoted persisted runner session records from host-internal runtime files into
+a real read-only control-plane surface. Added canonical session DTOs in
+`packages/types`, exposed `GET /v1/sessions` plus
+`GET /v1/sessions/{sessionId}` through `entangle-host`, wired the same
+boundary through `packages/host-client` and the CLI, and hardened host-side
+aggregation so inconsistent cross-node graph ids for the same session fail as
+an invariant violation instead of being silently merged. Closed the slice only
+after targeted `types`, `host-client`, and `host` tests, a full `pnpm verify`,
+and `git diff --check`.

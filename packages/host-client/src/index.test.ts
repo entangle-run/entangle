@@ -462,6 +462,100 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses session list and inspection responses from the host surface", async () => {
+    const responses = [
+      createMockResponse({
+        body: JSON.stringify({
+          sessions: [
+            {
+              graphId: "team-alpha",
+              nodeIds: ["worker-it"],
+              nodeStatuses: [
+                {
+                  nodeId: "worker-it",
+                  status: "active"
+                }
+              ],
+              sessionId: "session-alpha",
+              traceIds: ["trace-alpha"],
+              updatedAt: "2026-04-24T10:05:00.000Z"
+            }
+          ]
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          graphId: "team-alpha",
+          nodes: [
+            {
+              nodeId: "worker-it",
+              runtime: {
+                backendKind: "docker",
+                contextAvailable: true,
+                contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+                desiredState: "running",
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260424-000001",
+                nodeId: "worker-it",
+                observedState: "running",
+                restartGeneration: 0
+              },
+              session: {
+                activeConversationIds: [],
+                graphId: "team-alpha",
+                intent: "Review the latest patch set.",
+                openedAt: "2026-04-24T10:00:00.000Z",
+                ownerNodeId: "worker-it",
+                rootArtifactIds: [],
+                sessionId: "session-alpha",
+                status: "active",
+                traceId: "trace-alpha",
+                updatedAt: "2026-04-24T10:05:00.000Z",
+                waitingApprovalIds: []
+              }
+            }
+          ],
+          sessionId: "session-alpha"
+        }),
+        ok: true,
+        status: 200
+      })
+    ];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () => Promise.resolve(responses.shift()!)
+    });
+
+    await expect(client.listSessions()).resolves.toMatchObject({
+      sessions: [
+        {
+          graphId: "team-alpha",
+          nodeIds: ["worker-it"],
+          sessionId: "session-alpha"
+        }
+      ]
+    });
+
+    await expect(client.getSession("session-alpha")).resolves.toMatchObject({
+      graphId: "team-alpha",
+      nodes: [
+        {
+          nodeId: "worker-it",
+          runtime: {
+            nodeId: "worker-it",
+            observedState: "running"
+          },
+          session: {
+            sessionId: "session-alpha",
+            status: "active"
+          }
+        }
+      ]
+    });
+  });
+
   it("formats structured host conflict errors for managed node creation", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

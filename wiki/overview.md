@@ -142,6 +142,11 @@ The repository now also contains the first real implementation baseline:
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` now derives health from explicit
   reconciliation findings instead of raw failure counts alone;
+- a host-owned session inspection surface where `entangle-host` now exposes
+  `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
+  runner session records across the current host runtime set, and shares the
+  same boundary through `packages/host-client` and the CLI so future event
+  widening can build on a stable read model instead of event-only logic;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -255,6 +260,8 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
+- widen the host event surface into deeper session and runner activity now
+  that the host owns a stable session-inspection boundary;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided
   memory maintenance;

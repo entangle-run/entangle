@@ -31,7 +31,9 @@ import {
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
-  runtimeListResponseSchema
+  runtimeListResponseSchema,
+  sessionInspectionResponseSchema,
+  sessionListResponseSchema
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -2163,6 +2165,117 @@ describe("buildHostServer", () => {
       expect(artifactsResponse.statusCode).toBe(200);
       expect(runtimeArtifactListResponseSchema.parse(artifactsResponse.json())).toEqual({
         artifacts: [artifactRecord]
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and inspects persisted runtime sessions through the host surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "sessions",
+          "session-alpha.json"
+        ),
+        {
+          activeConversationIds: ["conv-alpha"],
+          graphId: "team-alpha",
+          intent: "Review the latest patch set.",
+          openedAt: "2026-04-24T10:00:00.000Z",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: ["report-turn-001"],
+          sessionId: "session-alpha",
+          status: "active",
+          traceId: "trace-alpha",
+          updatedAt: "2026-04-24T10:05:00.000Z",
+          waitingApprovalIds: []
+        }
+      );
+
+      const listedSessionsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions"
+      });
+
+      expect(listedSessionsResponse.statusCode).toBe(200);
+      expect(
+        sessionListResponseSchema.parse(listedSessionsResponse.json())
+      ).toEqual({
+        sessions: [
+          {
+            graphId: "team-alpha",
+            nodeIds: ["worker-it"],
+            nodeStatuses: [
+              {
+                nodeId: "worker-it",
+                status: "active"
+              }
+            ],
+            sessionId: "session-alpha",
+            traceIds: ["trace-alpha"],
+            updatedAt: "2026-04-24T10:05:00.000Z"
+          }
+        ]
+      });
+
+      const sessionInspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/session-alpha"
+      });
+
+      expect(sessionInspectionResponse.statusCode).toBe(200);
+      expect(
+        sessionInspectionResponseSchema.parse(sessionInspectionResponse.json())
+      ).toMatchObject({
+        graphId: "team-alpha",
+        nodes: [
+          {
+            nodeId: "worker-it",
+            runtime: {
+              nodeId: "worker-it",
+              observedState: "running"
+            },
+            session: {
+              graphId: "team-alpha",
+              sessionId: "session-alpha",
+              status: "active",
+              traceId: "trace-alpha"
+            }
+          }
+        ],
+        sessionId: "session-alpha"
+      });
+
+      const missingSessionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/missing-session"
+      });
+
+      expect(missingSessionResponse.statusCode).toBe(404);
+      expect(hostErrorResponseSchema.parse(missingSessionResponse.json())).toEqual({
+        code: "not_found",
+        message:
+          "Session 'missing-session' was not found in the current host runtime state."
       });
     } finally {
       await server.close();

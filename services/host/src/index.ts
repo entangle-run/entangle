@@ -33,7 +33,9 @@ import {
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
-  runtimeListResponseSchema
+  runtimeListResponseSchema,
+  sessionInspectionResponseSchema,
+  sessionListResponseSchema
 } from "@entangle/types";
 import { ZodError, type ZodType } from "zod";
 import {
@@ -59,8 +61,10 @@ import {
   listGraphRevisions,
   listNodeInspections,
   getPackageSourceInspection,
+  getSessionInspection,
   initializeHostState,
   listRuntimeInspections,
+  listSessions,
   listPackageSources,
   restartRuntime,
   replaceEdge,
@@ -664,6 +668,25 @@ export async function buildHostServer() {
     }
 
     return runtimeArtifactListResponseSchema.parse(artifacts);
+  });
+
+  server.get("/v1/sessions", async () =>
+    sessionListResponseSchema.parse(await listSessions())
+  );
+
+  server.get("/v1/sessions/:sessionId", async (request, reply) => {
+    const params = request.params as { sessionId: string };
+    const inspection = await getSessionInspection(params.sessionId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Session '${params.sessionId}' was not found in the current host runtime state.`
+      });
+    }
+
+    return sessionInspectionResponseSchema.parse(inspection);
   });
 
   server.post("/v1/runtimes/:nodeId/start", async (request) => {

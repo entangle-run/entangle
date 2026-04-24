@@ -125,6 +125,10 @@ This repository currently contains:
   records and runtime realizability gated on provisioning success;
 - a host read surface for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
+- a host-owned session inspection surface through `GET /v1/sessions` and
+  `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
+  across the current host runtime set and exposing the same boundary through
+  `packages/host-client` and the CLI;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
   a dedicated Entangle rumor kind, relay-readiness preconnect semantics, and a
   verified local relay smoke where a real wrapped message produces persisted
@@ -205,7 +209,8 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper session-level and runner-originated host event coverage plus richer
-  recovery diagnostics on top of the new degraded-state host surfaces;
+  recovery diagnostics on top of the new degraded-state and session-inspection
+  host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

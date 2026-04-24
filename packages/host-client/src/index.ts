@@ -29,6 +29,8 @@ import {
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeListResponseSchema,
+  sessionInspectionResponseSchema,
+  sessionListResponseSchema,
   type CatalogInspectionResponse,
   type EdgeCreateRequest,
   type EdgeDeletionResponse,
@@ -58,6 +60,8 @@ import {
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
   type RuntimeListResponse,
+  type SessionInspectionResponse,
+  type SessionListResponse,
 } from "@entangle/types";
 
 type FetchResponse = {
@@ -532,6 +536,20 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/artifacts`),
         runtimeArtifactListResponseSchema
+      );
+    },
+
+    async listSessions(): Promise<SessionListResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/sessions`),
+        sessionListResponseSchema
+      );
+    },
+
+    async getSession(sessionId: string): Promise<SessionInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/sessions/${sessionId}`),
+        sessionInspectionResponseSchema
       );
     },
 

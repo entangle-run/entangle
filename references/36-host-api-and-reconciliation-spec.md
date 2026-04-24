@@ -300,7 +300,22 @@ The current edge-mutation semantics are:
 - invalid edge endpoints remain validation failures, not implicit node
   creation or resource conflicts.
 
-### 8.6 Runtime lifecycle
+### 8.6 Sessions
+
+- `GET /v1/sessions`
+- `GET /v1/sessions/{sessionId}`
+
+Purpose:
+
+- inspect persisted runner session state through a host-owned read model;
+- expose aggregated session summaries plus per-node session detail without
+  requiring Studio or CLI to read runner files directly;
+- provide the stable inspection boundary that future host event widening for
+  session and runner activity should build upon.
+
+The current implementation now covers both routes in this subsection.
+
+### 8.7 Runtime lifecycle
 
 - `GET /v1/runtimes`
 - `GET /v1/runtimes/{nodeId}`
@@ -337,6 +352,8 @@ The current repository implementation now concretely includes:
 - `POST /v1/edges`
 - `PATCH /v1/edges/{edgeId}`
 - `DELETE /v1/edges/{edgeId}`
+- `GET /v1/sessions`
+- `GET /v1/sessions/{sessionId}`
 - `GET /v1/runtimes`
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
@@ -386,15 +403,15 @@ Purpose:
 
 - enable Studio, CLI, and CI-like flows to validate without mutating state.
 
-### 8.8 Session and trace inspection
+### 8.8 Trace inspection and future widening
 
-- `GET /v1/sessions`
-- `GET /v1/sessions/{sessionId}`
 - `GET /v1/sessions/{sessionId}/trace`
 
 Purpose:
 
-- inspect current or historical runtime sessions in a stable way.
+- widen the now-implemented session-inspection boundary into deeper trace
+  inspection without collapsing trace semantics into the first session-summary
+  slice.
 
 ## 10. Recommended WebSocket event stream
 
