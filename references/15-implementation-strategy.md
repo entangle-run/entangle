@@ -228,6 +228,11 @@ Completed in the current repository state:
     implicitly from focused memory, and future turns can consume durable
     resolved questions and completed actions directly instead of inferring
     closure only from rewritten prose.
+23. a focused-register lifecycle-discipline refinement where the same bounded
+    synthesis pass now sees the current
+    open-questions/next-actions/resolutions baseline explicitly and
+    runner-owned reconciliation removes exact resolved overlaps from active
+    registers instead of letting closure drift survive as silent duplication.
 
 Remaining work in this phase:
 
@@ -238,12 +243,14 @@ Remaining work in this phase:
    working-context synthesis plus current-turn engine-outcome grounding and
    execution-insight carry-forward plus focused
    decisions/stable-facts/open-questions/next-actions/resolutions summary
-   registers,
+   registers with explicit baseline continuity and exact closure
+   reconciliation,
    before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work, working-context, decisions,
    stable-facts, open-questions, next-actions, and resolutions summary layers,
-   into broader model-guided memory maintenance;
+   into broader model-guided memory maintenance with stronger aging and
+   stale-item discipline;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

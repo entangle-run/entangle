@@ -151,6 +151,32 @@ function normalizeListEntries(entries: string[]): string[] {
   );
 }
 
+type FocusedRegisterBaseline = {
+  nextActions: string[];
+  openQuestions: string[];
+  resolutions: string[];
+};
+
+function normalizeRegisterEntryKey(entry: string): string {
+  return entry.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function reconcileFocusedRegisterLifecycle(input: FocusedRegisterBaseline): FocusedRegisterBaseline {
+  const resolutionKeys = new Set(
+    input.resolutions.map((resolution) => normalizeRegisterEntryKey(resolution))
+  );
+
+  return {
+    nextActions: input.nextActions.filter(
+      (nextAction) => !resolutionKeys.has(normalizeRegisterEntryKey(nextAction))
+    ),
+    openQuestions: input.openQuestions.filter(
+      (openQuestion) => !resolutionKeys.has(normalizeRegisterEntryKey(openQuestion))
+    ),
+    resolutions: input.resolutions
+  };
+}
+
 function dedupeArtifactRefs(artifactRefs: ArtifactRef[]): ArtifactRef[] {
   const refsById = new Map<string, ArtifactRef>();
 
@@ -211,6 +237,97 @@ function coerceStringArray(value: unknown): string[] | undefined {
   }
 
   return normalizedEntries;
+}
+
+function isRegisterFallbackEntry(entry: string): boolean {
+  return new Set([
+    "No durable open questions were synthesized.",
+    "No durable recent resolutions were synthesized.",
+    "No immediate next actions were synthesized."
+  ]).has(entry);
+}
+
+function parseSummarySectionBulletList(input: {
+  markdown: string;
+  sectionHeading: string;
+}): string[] {
+  const lines = input.markdown.split(/\r?\n/);
+  const sectionMarker = `## ${input.sectionHeading}`;
+  const entries: string[] = [];
+  let inSection = false;
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+
+    if (!inSection) {
+      if (trimmedLine === sectionMarker) {
+        inSection = true;
+      }
+
+      continue;
+    }
+
+    if (trimmedLine.startsWith("## ")) {
+      break;
+    }
+
+    if (!trimmedLine.startsWith("- ")) {
+      continue;
+    }
+
+    const entry = trimmedLine.slice(2).trim();
+
+    if (entry.length === 0 || isRegisterFallbackEntry(entry)) {
+      continue;
+    }
+
+    entries.push(entry);
+  }
+
+  return normalizeListEntries(entries);
+}
+
+async function readFocusedRegisterBaseline(
+  wikiRoot: string
+): Promise<FocusedRegisterBaseline> {
+  const [openQuestionsMarkdown, nextActionsMarkdown, resolutionsMarkdown] =
+    await Promise.all([
+      readTextFileOrDefault(resolveOpenQuestionsSummaryPath(wikiRoot), ""),
+      readTextFileOrDefault(resolveNextActionsSummaryPath(wikiRoot), ""),
+      readTextFileOrDefault(resolveResolutionsSummaryPath(wikiRoot), "")
+    ]);
+
+  return {
+    nextActions: parseSummarySectionBulletList({
+      markdown: nextActionsMarkdown,
+      sectionHeading: "Next Actions"
+    }),
+    openQuestions: parseSummarySectionBulletList({
+      markdown: openQuestionsMarkdown,
+      sectionHeading: "Open Questions"
+    }),
+    resolutions: parseSummarySectionBulletList({
+      markdown: resolutionsMarkdown,
+      sectionHeading: "Resolutions"
+    })
+  };
+}
+
+function renderFocusedRegisterBaselineForPrompt(
+  baseline: FocusedRegisterBaseline
+): string {
+  const renderRegisterEntries = (entries: string[]): string[] =>
+    entries.length > 0 ? entries.map((entry) => `  - ${entry}`) : ["  - none"];
+
+  return [
+    "Current focused register baseline:",
+    "- open questions:",
+    ...renderRegisterEntries(baseline.openQuestions),
+    "- next actions:",
+    ...renderRegisterEntries(baseline.nextActions),
+    "- resolutions:",
+    ...renderRegisterEntries(baseline.resolutions)
+  ].join("\n");
 }
 
 function parseWorkingContextSummaryInput(input: unknown):
@@ -534,6 +651,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
     wikiRoot,
     input.recentWorkSummaryPath
   );
+  const focusedRegisterBaseline = await readFocusedRegisterBaseline(wikiRoot);
   return {
     sessionId: input.envelope.message.sessionId,
     nodeId: input.context.binding.node.nodeId,
@@ -544,7 +662,10 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Preserve only durable session or coordination observations that future turns should retain; do not restate transient workflow state verbatim.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
+      "Review the current focused register baseline before deciding what remains open, what remains pending, and what is now resolved.",
+      "Preserve still-active open questions and next actions when they remain relevant after the completed turn; move closed items into bounded resolutions instead of dropping them silently.",
       "When a question is no longer open or an action is complete, record that closure in bounded resolutions instead of letting it disappear silently.",
+      "Do not repeat the same item across open questions, next actions, and resolutions. Resolved items belong only in resolutions.",
       "Do not include secrets, speculative claims, or verbose restatement of logs."
     ],
     interactionPromptParts: [
@@ -564,6 +685,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
           ? input.producedArtifactIds.join(", ")
           : "none"
       }`,
+      renderFocusedRegisterBaselineForPrompt(focusedRegisterBaseline),
       renderCurrentTurnOutcomeForPrompt(input.result),
       `Current assistant outcome:\n${assistantSummary}`,
       ...(input.sessionSnapshot
@@ -995,21 +1117,23 @@ function createWorkingContextSummaryToolExecutor(input: {
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
         decisions: normalizeListEntries(parsedInput.value.decisions),
         executionInsights: normalizeListEntries(parsedInput.value.executionInsights),
-        nextActions: normalizeListEntries(parsedInput.value.nextActions),
-        openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
-        resolutions: normalizeListEntries(parsedInput.value.resolutions),
         sessionInsights: normalizeListEntries(parsedInput.value.sessionInsights),
         stableFacts: normalizeListEntries(parsedInput.value.stableFacts)
       };
+      const reconciledLifecycleRegisters = reconcileFocusedRegisterLifecycle({
+        nextActions: normalizeListEntries(parsedInput.value.nextActions),
+        openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
+        resolutions: normalizeListEntries(parsedInput.value.resolutions)
+      });
       const content = buildWorkingContextSummaryContent({
         artifactInsights: normalizedInput.artifactInsights,
         consumedArtifactIds: input.synthesis.consumedArtifactIds,
         decisions: normalizedInput.decisions,
         executionInsights: normalizedInput.executionInsights,
         focus: normalizedInput.focus,
-        nextActions: normalizedInput.nextActions,
-        openQuestions: normalizedInput.openQuestions,
-        resolutions: normalizedInput.resolutions,
+        nextActions: reconciledLifecycleRegisters.nextActions,
+        openQuestions: reconciledLifecycleRegisters.openQuestions,
+        resolutions: reconciledLifecycleRegisters.resolutions,
         producedArtifactIds: input.synthesis.producedArtifactIds,
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
         sessionId: input.synthesis.envelope.message.sessionId,
@@ -1040,7 +1164,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         workingContextPagePath
       });
       const openQuestionsContent = buildOpenQuestionsSummaryContent({
-        openQuestions: normalizedInput.openQuestions,
+        openQuestions: reconciledLifecycleRegisters.openQuestions,
         nextActionsPagePath,
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
         sessionId: input.synthesis.envelope.message.sessionId,
@@ -1050,7 +1174,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         workingContextPagePath
       });
       const nextActionsContent = buildNextActionsSummaryContent({
-        nextActions: normalizedInput.nextActions,
+        nextActions: reconciledLifecycleRegisters.nextActions,
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
         sessionId: input.synthesis.envelope.message.sessionId,
         taskPagePath: input.synthesis.taskPagePath,
@@ -1060,7 +1184,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       });
       const resolutionsContent = buildResolutionsSummaryContent({
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
-        resolutions: normalizedInput.resolutions,
+        resolutions: reconciledLifecycleRegisters.resolutions,
         sessionId: input.synthesis.envelope.message.sessionId,
         taskPagePath: input.synthesis.taskPagePath,
         turnId: input.synthesis.turnId,

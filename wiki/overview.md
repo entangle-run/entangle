@@ -176,6 +176,11 @@ The repository now also contains the first real implementation baseline:
   from focused memory, and future turns can consume durable resolved
   questions and completed actions directly instead of inferring closure only
   from rewritten prose;
+- a focused-register lifecycle-discipline refinement where that same bounded
+  synthesis pass now sees the current open-questions/next-actions/resolutions
+  baseline explicitly and runner-owned reconciliation removes exact resolved
+  overlaps from active registers instead of letting closure drift survive as
+  silent duplication;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

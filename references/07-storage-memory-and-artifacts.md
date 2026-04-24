@@ -105,5 +105,9 @@ through a runner-owned structured path. That durable set now includes:
 
 Those focused pages are grounded in final post-turn lifecycle state and carry
 bounded session, artifact, execution, decision, and planning context durably.
+They are now also continuity-aware at synthesis time through an explicit
+focused-register baseline, with runner-owned exact closure reconciliation that
+removes entries from active open-question and next-action registers when the
+same normalized item is explicitly carried in `resolutions.md`.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

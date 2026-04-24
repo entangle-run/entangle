@@ -328,6 +328,11 @@ not modeling.
   from focused memory, and future turns can consume durable resolved
   questions and completed actions directly instead of inferring closure only
   from rewritten prose;
+- a focused-register lifecycle-discipline refinement where that same bounded
+  synthesis pass now sees the current
+  open-questions/next-actions/resolutions baseline explicitly and
+  runner-owned reconciliation removes exact resolved overlaps from active
+  registers instead of letting closure drift survive as silent duplication;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -351,7 +356,8 @@ not modeling.
   artifact-aware/artifact-carrying/engine-outcome-aware/execution-insight-carrying
   working-context summary, focused
   decisions/stable-facts/open-questions/next-actions/resolutions summary
-  registers, and bounded current-session inspection baseline;
+  registers with explicit baseline continuity and exact closure
+  reconciliation, and bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 

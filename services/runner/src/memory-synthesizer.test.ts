@@ -215,6 +215,69 @@ describe("model-guided memory synthesis", () => {
       },
       turnId: "turn-memory-005"
     });
+    const previousOpenQuestion =
+      "Will the relay recovery trace stay readable for operators after the next deploy?";
+    const previousNextAction =
+      "Confirm the operator checkpoint once the next relay run finishes.";
+    const previousResolution =
+      "The earlier alert-routing concern is closed for the current review.";
+    await Promise.all([
+      writeFile(
+        path.join(
+          context.workspace.memoryRoot,
+          "wiki",
+          "summaries",
+          "open-questions.md"
+        ),
+        [
+          "# Open Questions Summary",
+          "",
+          "## Open Questions",
+          "",
+          `- ${previousOpenQuestion}`,
+          ""
+        ].join("\n"),
+        "utf8"
+      ),
+      writeFile(
+        path.join(
+          context.workspace.memoryRoot,
+          "wiki",
+          "summaries",
+          "next-actions.md"
+        ),
+        [
+          "# Next Actions Summary",
+          "",
+          "## Next Actions",
+          "",
+          `- ${previousNextAction}`,
+          ""
+        ].join("\n"),
+        "utf8"
+      ),
+      writeFile(
+        path.join(
+          context.workspace.memoryRoot,
+          "wiki",
+          "summaries",
+          "resolutions.md"
+        ),
+        [
+          "# Resolutions Summary",
+          "",
+          "## Resolutions",
+          "",
+          `- ${previousResolution}`,
+          ""
+        ].join("\n"),
+        "utf8"
+      )
+    ]);
+    const resolvedQuestion =
+      "Does the current recovery trace expose enough detail for operators?";
+    const resolvedAction =
+      "Validate the recovery checkpoint against the latest runner behavior.";
 
     let capturedRequest: AgentEngineTurnRequest | undefined;
     const synthesizer = createModelGuidedMemorySynthesizer({
@@ -248,13 +311,16 @@ describe("model-guided memory synthesis", () => {
                 ],
                 focus: "Keep the recovery follow-up aligned with the relay-runtime work.",
                 nextActions: [
-                  "Validate the recovery checkpoint against the latest runner behavior.",
+                  resolvedAction,
                   "Confirm the relay failure path in the next session."
                 ],
                 openQuestions: [
-                  "Does the current recovery trace expose enough detail for operators?"
+                  resolvedQuestion,
+                  "Which operator should validate the next checkpoint once the review closes?"
                 ],
                 resolutions: [
+                  resolvedQuestion,
+                  resolvedAction,
                   "The earlier relay-capacity concern is considered resolved for the current checkpoint review.",
                   "The previous draft action item to gather raw relay logs is complete."
                 ],
@@ -482,6 +548,18 @@ describe("model-guided memory synthesis", () => {
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "artifact-output [git/report_file/published]"
     );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Current focused register baseline:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      previousOpenQuestion
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      previousNextAction
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      previousResolution
+    );
     expect(capturedRequest?.artifactInputs.map((artifactInput) => artifactInput.artifactId))
       .toEqual(["artifact-input", "report-turn-005"]);
     expect(capturedRequest?.artifactRefs.map((artifactRef) => artifactRef.artifactId)).toEqual(
@@ -587,18 +665,22 @@ describe("model-guided memory synthesis", () => {
     );
     expect(openQuestionsPage).toContain("# Open Questions Summary");
     expect(openQuestionsPage).toContain("## Open Questions");
+    expect(openQuestionsPage).not.toContain(resolvedQuestion);
     expect(openQuestionsPage).toContain(
-      "Does the current recovery trace expose enough detail for operators?"
+      "Which operator should validate the next checkpoint once the review closes?"
     );
     expect(openQuestionsPage).toContain("## Coordination");
     expect(openQuestionsPage).toContain("[Next Actions Summary](summaries/next-actions.md)");
     expect(nextActionsPage).toContain("# Next Actions Summary");
     expect(nextActionsPage).toContain("## Next Actions");
+    expect(nextActionsPage).not.toContain(resolvedAction);
     expect(nextActionsPage).toContain(
-      "Validate the recovery checkpoint against the latest runner behavior."
+      "Confirm the relay failure path in the next session."
     );
     expect(resolutionsPage).toContain("# Resolutions Summary");
     expect(resolutionsPage).toContain("## Resolutions");
+    expect(resolutionsPage).toContain(resolvedQuestion);
+    expect(resolutionsPage).toContain(resolvedAction);
     expect(resolutionsPage).toContain(
       "The previous draft action item to gather raw relay logs is complete."
     );

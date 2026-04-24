@@ -173,7 +173,9 @@ That implemented slice currently includes:
   register `memory/wiki/summaries/next-actions.md` and the focused closure
   register `memory/wiki/summaries/resolutions.md`, without giving the model
   arbitrary filesystem authority, now grounded in final post-turn lifecycle
-  state rather than pre-completion session state;
+  state rather than pre-completion session state, with the current focused
+  register baseline made explicit to synthesis and exact resolved overlaps
+  removed from active registers through runner-owned reconciliation;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

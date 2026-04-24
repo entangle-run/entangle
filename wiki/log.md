@@ -861,3 +861,17 @@ canonical `memoryRefs`.
 Closed the slice only after widening runner, host, host-client, Studio, and
 shared-contract assertions, then re-running targeted package tests plus the
 full `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added focused-register lifecycle discipline
+
+Strengthened the bounded memory layer so model-guided synthesis now sees the
+current open-questions, next-actions, and resolutions baseline explicitly
+instead of relying only on implicit carry-forward through raw summary pages.
+Also added runner-owned exact closure reconciliation: when the same normalized
+item appears in `resolutions.md`, it is removed from active open-question and
+next-action registers instead of surviving as silent duplication.
+
+Closed the slice only after widening runner tests to prove prompt-time
+register continuity and exact closure reconciliation, then re-running targeted
+runner quality gates plus the full `pnpm verify` and `git diff --check`
+gates.
