@@ -207,6 +207,10 @@ The repository now also contains the first real implementation baseline:
   persisted runtime artifacts through the existing host artifact surface and
   apply deterministic local filters over backend, kind, lifecycle,
   publication, and retrieval state;
+- the next bounded Studio completion slice where the operator can now select
+  one runtime-scoped session summary and inspect host-backed per-node session
+  detail through the existing session read surface, without introducing
+  client-owned session state;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the

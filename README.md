@@ -269,11 +269,13 @@ This repository currently contains:
   persisted runtime artifacts through the existing host artifact surface and
   apply deterministic local filters over backend, kind, lifecycle,
   publication, and retrieval state;
+- the next bounded Studio completion slice where the operator can now select
+  one runtime-scoped session summary and inspect host-backed per-node session
+  detail without widening the host API or inventing client-owned session
+  state;
 
 The highest-value remaining gaps are:
 
-- deeper session drilldown only where the current session-summary view leaves
-  real operator blind spots;
 - stronger automation-oriented JSON and dry-run flows where they add real
   headless operational leverage;
 - a broader builtin tool surface and richer model-guided memory/wiki

@@ -21,6 +21,7 @@ import type {
   GraphInspectionResponse,
   GraphSpec,
   HostEventRecord,
+  SessionInspectionResponse,
   HostSessionSummary,
   HostStatusResponse,
   PackageSourceInspectionResponse,
@@ -84,9 +85,14 @@ import {
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
 import {
+  collectSessionInspectionTraceIds,
   filterRuntimeSessions,
+  formatSessionInspectionNodeDetail,
+  formatSessionInspectionNodeLabel,
   formatRuntimeSessionDetail,
-  formatRuntimeSessionLabel
+  formatRuntimeSessionLabel,
+  sessionInspectionReferencesRuntime,
+  sortSessionInspectionNodes
 } from "./runtime-session-inspection.js";
 import {
   canRestartRuntime,
@@ -305,6 +311,10 @@ export function App() {
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSessionInspection, setSelectedSessionInspection] =
+    useState<SessionInspectionResponse | null>(null);
+  const [sessionDetailError, setSessionDetailError] = useState<string | null>(null);
   const [hostEvents, setHostEvents] = useState<HostEventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -314,6 +324,11 @@ export function App() {
   const [eventStreamState, setEventStreamState] =
     useState<EventStreamState>("connecting");
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
+  const selectedRuntimeIdRef = useRef<string | null>(null);
+  const selectedSessionIdRef = useRef<string | null>(null);
+
+  selectedRuntimeIdRef.current = selectedRuntimeId;
+  selectedSessionIdRef.current = selectedSessionId;
 
   const loadOverview = useCallback(async () => {
     const [statusResult, graphResult, runtimeListResult, packageSourceResult] =
@@ -369,6 +384,48 @@ export function App() {
     });
   }, [client]);
 
+  const loadSelectedSessionInspection = useCallback(
+    async (nodeId: string, sessionId: string) => {
+      try {
+        const inspection = await client.getSession(sessionId);
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedSessionIdRef.current !== sessionId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          if (!sessionInspectionReferencesRuntime(inspection, nodeId)) {
+            setSelectedSessionId(null);
+            setSelectedSessionInspection(null);
+            setSessionDetailError(null);
+            return;
+          }
+
+          setSelectedSessionInspection(inspection);
+          setSessionDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedSessionIdRef.current !== sessionId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedSessionInspection(null);
+          setSessionDetailError(
+            normalizeError(caught, "Unknown error while loading session detail.")
+          );
+        });
+      }
+    },
+    [client]
+  );
+
   const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
     const [
       statusResult,
@@ -384,6 +441,23 @@ export function App() {
         client.listRuntimeArtifacts(nodeId),
         client.listSessions()
       ]);
+    const nextSelectedSessions =
+      sessionResult.status === "fulfilled"
+        ? filterRuntimeSessions(sessionResult.value.sessions, nodeId)
+        : [];
+    const currentSelectedSessionId = selectedSessionId;
+    const shouldRefreshSelectedSession =
+      currentSelectedSessionId !== null &&
+      nextSelectedSessions.some(
+        (session) => session.sessionId === currentSelectedSessionId
+      );
+    const selectedSessionResult = shouldRefreshSelectedSession
+      ? (
+          await Promise.allSettled([
+            client.getSession(currentSelectedSessionId)
+          ])
+        )[0]
+      : null;
 
     if (statusResult.status === "rejected" || runtimeListResult.status === "rejected") {
       const runtimeStateError: unknown =
@@ -436,8 +510,34 @@ export function App() {
       }
 
       if (sessionResult.status === "fulfilled") {
-        setSelectedSessions(filterRuntimeSessions(sessionResult.value.sessions, nodeId));
+        setSelectedSessions(nextSelectedSessions);
         setSessionError(null);
+
+        if (!selectedSessionId) {
+          setSelectedSessionInspection(null);
+          setSessionDetailError(null);
+        } else if (!shouldRefreshSelectedSession) {
+          setSelectedSessionId(null);
+          setSelectedSessionInspection(null);
+          setSessionDetailError(null);
+        } else if (selectedSessionResult?.status === "fulfilled") {
+          if (sessionInspectionReferencesRuntime(selectedSessionResult.value, nodeId)) {
+            setSelectedSessionInspection(selectedSessionResult.value);
+            setSessionDetailError(null);
+          } else {
+            setSelectedSessionId(null);
+            setSelectedSessionInspection(null);
+            setSessionDetailError(null);
+          }
+        } else if (selectedSessionResult?.status === "rejected") {
+          setSelectedSessionInspection(null);
+          setSessionDetailError(
+            normalizeError(
+              selectedSessionResult.reason,
+              "Unknown error while loading session detail."
+            )
+          );
+        }
       } else {
         setSelectedSessions([]);
         setSessionError(
@@ -446,9 +546,11 @@ export function App() {
             "Unknown error while loading runtime sessions."
           )
         );
+        setSelectedSessionInspection(null);
+        setSessionDetailError(null);
       }
     });
-  }, [client]);
+  }, [client, selectedSessionId]);
 
   const mutateSelectedRuntime = useCallback(
     async (action: RuntimeLifecycleAction) => {
@@ -487,6 +589,20 @@ export function App() {
       }
     },
     [client, refreshSelectedRuntimeDetails, selectedRuntimeId]
+  );
+
+  const selectRuntimeSession = useCallback(
+    async (sessionId: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedSessionId(sessionId);
+      setSelectedSessionInspection(null);
+      setSessionDetailError(null);
+      await loadSelectedSessionInspection(selectedRuntimeId, sessionId);
+    },
+    [loadSelectedSessionInspection, selectedRuntimeId]
   );
 
   const graphNodeIds = useMemo(
@@ -770,6 +886,9 @@ export function App() {
       setSelectedArtifacts([]);
       setSessionError(null);
       setSelectedSessions([]);
+      setSelectedSessionId(null);
+      setSelectedSessionInspection(null);
+      setSessionDetailError(null);
       setSelectedRecovery(null);
       setMutationError(null);
       setRecoveryError(null);
@@ -780,6 +899,9 @@ export function App() {
     setSelectedArtifacts([]);
     setSessionError(null);
     setSelectedSessions([]);
+    setSelectedSessionId(null);
+    setSelectedSessionInspection(null);
+    setSessionDetailError(null);
     setMutationError(null);
     setSelectedRecovery(null);
     void refreshSelectedRuntimeDetails(selectedRuntimeId);
@@ -887,6 +1009,20 @@ export function App() {
       runtimes.find((runtime) => runtime.nodeId === selectedRuntimeId) ??
       selectedRecovery?.currentRuntime,
     [runtimes, selectedRecovery, selectedRuntimeId]
+  );
+  const selectedSessionNodes = useMemo(
+    () =>
+      selectedRuntimeId && selectedSessionInspection
+        ? sortSessionInspectionNodes(selectedSessionInspection, selectedRuntimeId)
+        : [],
+    [selectedRuntimeId, selectedSessionInspection]
+  );
+  const selectedSessionTraceIds = useMemo(
+    () =>
+      selectedSessionInspection
+        ? collectSessionInspectionTraceIds(selectedSessionInspection)
+        : [],
+    [selectedSessionInspection]
   );
   const statusTone = useMemo(() => status?.status ?? "pending", [status]);
   const flowProjection = useMemo(
@@ -1735,13 +1871,21 @@ export function App() {
                       <ul className="timeline-list">
                         {selectedSessions.slice(0, 8).map((session) => (
                           <li key={session.sessionId} className="timeline-item">
-                            <div className="timeline-row">
-                              <strong>
-                                {formatRuntimeSessionLabel(session, selectedRuntimeId)}
-                              </strong>
-                              <span>{session.updatedAt}</span>
-                            </div>
-                            <p>{formatRuntimeSessionDetail(session)}</p>
+                            <button
+                              className={`timeline-button ${selectedSessionId === session.sessionId ? "is-selected" : ""}`}
+                              onClick={() => {
+                                void selectRuntimeSession(session.sessionId);
+                              }}
+                              type="button"
+                            >
+                              <div className="timeline-row">
+                                <strong>
+                                  {formatRuntimeSessionLabel(session, selectedRuntimeId)}
+                                </strong>
+                                <span>{session.updatedAt}</span>
+                              </div>
+                              <p>{formatRuntimeSessionDetail(session)}</p>
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -1750,6 +1894,77 @@ export function App() {
                         <p>No persisted sessions currently reference this runtime.</p>
                       </div>
                     )}
+
+                    {sessionDetailError ? (
+                      <p className="error-box">{sessionDetailError}</p>
+                    ) : null}
+
+                    {selectedSessionInspection ? (
+                      <div className="session-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Session Detail</h3>
+                          <span className="panel-caption">
+                            {selectedSessionInspection.sessionId}
+                          </span>
+                        </div>
+
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Session</dt>
+                            <dd>{selectedSessionInspection.sessionId}</dd>
+                          </div>
+                          <div>
+                            <dt>Graph</dt>
+                            <dd>{selectedSessionInspection.graphId}</dd>
+                          </div>
+                          <div>
+                            <dt>Intent</dt>
+                            <dd>
+                              {selectedSessionNodes[0]?.session.intent ?? "not available"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Trace ids</dt>
+                            <dd>
+                              {selectedSessionTraceIds.length > 0
+                                ? selectedSessionTraceIds.join(", ")
+                                : "none"}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <ul className="timeline-list">
+                          {selectedSessionNodes.map((entry) => (
+                            <li key={entry.nodeId} className="timeline-item">
+                              <div className="timeline-row">
+                                <strong>
+                                  {formatSessionInspectionNodeLabel(
+                                    entry,
+                                    selectedRuntimeId
+                                  )}
+                                </strong>
+                                <span>{entry.session.updatedAt}</span>
+                              </div>
+                              <p>{formatSessionInspectionNodeDetail(entry)}</p>
+                              <p className="artifact-meta">
+                                Trace {entry.session.traceId}
+                                {entry.session.lastMessageType
+                                  ? ` · last message ${entry.session.lastMessageType}`
+                                  : ""}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : selectedSessionId ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected session detail...</p>
+                      </div>
+                    ) : selectedSessions.length > 0 ? (
+                      <div className="inline-empty-state">
+                        <p>Select one session summary to inspect per-node detail.</p>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="subpanel">

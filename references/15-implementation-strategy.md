@@ -222,10 +222,12 @@ Completed in the current repository state:
   where overview and selected-runtime reads are now coalesced off the existing
   host event stream without reconnecting the subscription on runtime
   selection changes.
+- the next bounded Studio completion slice through host-backed session-detail
+  drilldown, where one runtime-scoped session summary can now be selected and
+  expanded into per-node session/runtime detail through the existing
+  `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is now Phase 5 CLI completion, while keeping
-narrower Studio session drilldown available only where it adds real operator
-value beyond the current event-driven runtime surface.
+The next best current move remains Phase 5 CLI completion.
 
 ## Phase 4: Studio completion
 
@@ -234,8 +236,8 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. deeper session drilldown only where the existing host session read model
-   creates real operator leverage.
+1. further operator workflow completion only where the existing host surface
+   still leaves a real blind spot.
 
 Acceptance for the phase:
 
@@ -265,6 +267,10 @@ Completed in the current repository state:
   sources, including optional explicit package-source ids through the CLI.
 - runtime artifact inspection through the existing host artifact read surface,
   including deterministic local filtering over host-owned artifact records.
+
+The next best current move is now stronger automation-oriented CLI JSON and
+dry-run flows where the existing host surface already creates real headless
+operator leverage.
 
 ## Phase 6: Deployment and integration hardening
 

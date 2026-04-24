@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio session drilldown
+
+Closed the next bounded Studio slice by adding selected-session drilldown on
+top of the existing host session read surface. The selected runtime view now
+keeps the existing runtime-scoped session summary list, but one summary can
+also be selected and expanded into host-backed per-node session/runtime detail
+through `getSession()`, with bounded stale-selection guards and no widening of
+the host API.
+
 ## [2026-04-24] implementation | Added CLI runtime artifact inspection parity
 
 Closed the next bounded CLI parity slice by exposing runtime artifact

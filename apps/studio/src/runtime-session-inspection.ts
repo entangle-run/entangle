@@ -1,4 +1,8 @@
-import type { HostSessionSummary } from "@entangle/types";
+import type {
+  HostSessionNodeInspection,
+  HostSessionSummary,
+  SessionInspectionResponse
+} from "@entangle/types";
 
 export function filterRuntimeSessions(
   sessions: HostSessionSummary[],
@@ -31,4 +35,56 @@ export function formatRuntimeSessionDetail(
     session.traceIds.length > 0 ? session.traceIds.join(", ") : "no trace ids";
 
   return `Nodes ${nodeSummary} · traces ${traceSummary}`;
+}
+
+export function sessionInspectionReferencesRuntime(
+  inspection: SessionInspectionResponse,
+  nodeId: string
+): boolean {
+  return inspection.nodes.some((entry) => entry.nodeId === nodeId);
+}
+
+export function sortSessionInspectionNodes(
+  inspection: SessionInspectionResponse,
+  selectedRuntimeId: string
+): HostSessionNodeInspection[] {
+  return [...inspection.nodes].sort((left, right) => {
+    const leftPriority = left.nodeId === selectedRuntimeId ? 0 : 1;
+    const rightPriority = right.nodeId === selectedRuntimeId ? 0 : 1;
+
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority;
+    }
+
+    return left.nodeId.localeCompare(right.nodeId);
+  });
+}
+
+export function collectSessionInspectionTraceIds(
+  inspection: SessionInspectionResponse
+): string[] {
+  return Array.from(
+    new Set(inspection.nodes.map((entry) => entry.session.traceId))
+  ).sort();
+}
+
+export function formatSessionInspectionNodeLabel(
+  entry: HostSessionNodeInspection,
+  selectedRuntimeId: string
+): string {
+  const roleLabel =
+    entry.nodeId === selectedRuntimeId ? "selected runtime" : "peer runtime";
+
+  return `${entry.nodeId} · ${entry.session.status} · ${roleLabel}`;
+}
+
+export function formatSessionInspectionNodeDetail(
+  entry: HostSessionNodeInspection
+): string {
+  return [
+    `Runtime ${entry.runtime.desiredState}/${entry.runtime.observedState}`,
+    `conversations ${entry.session.activeConversationIds.length}`,
+    `approvals ${entry.session.waitingApprovalIds.length}`,
+    `root artifacts ${entry.session.rootArtifactIds.length}`
+  ].join(" · ");
 }

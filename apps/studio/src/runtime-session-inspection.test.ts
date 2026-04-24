@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { HostSessionSummary } from "@entangle/types";
+import type {
+  HostSessionSummary,
+  SessionInspectionResponse
+} from "@entangle/types";
 import {
+  collectSessionInspectionTraceIds,
   filterRuntimeSessions,
+  formatSessionInspectionNodeDetail,
+  formatSessionInspectionNodeLabel,
   formatRuntimeSessionDetail,
-  formatRuntimeSessionLabel
+  formatRuntimeSessionLabel,
+  sessionInspectionReferencesRuntime,
+  sortSessionInspectionNodes
 } from "./runtime-session-inspection.js";
 
 function createSession(
@@ -52,5 +60,92 @@ describe("studio runtime session inspection helpers", () => {
     );
     expect(formatRuntimeSessionDetail(session)).toContain("lead-it:planning");
     expect(formatRuntimeSessionDetail(session)).toContain("trace-session-alpha");
+  });
+
+  it("supports selected session drilldown helpers without inventing client state", () => {
+    const inspection: SessionInspectionResponse = {
+      graphId: "team-alpha",
+      nodes: [
+        {
+          nodeId: "lead-it",
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260424-000000",
+            nodeId: "lead-it",
+            observedState: "running",
+            reconciliation: {
+              findingCodes: [],
+              state: "aligned"
+            },
+            restartGeneration: 1
+          },
+          session: {
+            activeConversationIds: ["conv-lead"],
+            graphId: "team-alpha",
+            intent: "Review the latest patch set.",
+            openedAt: "2026-04-24T10:00:00.000Z",
+            ownerNodeId: "lead-it",
+            rootArtifactIds: ["artifact-lead"],
+            sessionId: "session-alpha",
+            status: "planning",
+            traceId: "trace-alpha",
+            updatedAt: "2026-04-24T10:03:00.000Z",
+            waitingApprovalIds: []
+          }
+        },
+        {
+          nodeId: "worker-it",
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260424-000000",
+            nodeId: "worker-it",
+            observedState: "running",
+            reconciliation: {
+              findingCodes: [],
+              state: "aligned"
+            },
+            restartGeneration: 1
+          },
+          session: {
+            activeConversationIds: ["conv-worker"],
+            graphId: "team-alpha",
+            intent: "Review the latest patch set.",
+            openedAt: "2026-04-24T10:00:00.000Z",
+            ownerNodeId: "worker-it",
+            rootArtifactIds: ["artifact-worker"],
+            sessionId: "session-alpha",
+            status: "active",
+            traceId: "trace-alpha",
+            updatedAt: "2026-04-24T10:05:00.000Z",
+            waitingApprovalIds: ["approval-worker"]
+          }
+        }
+      ],
+      sessionId: "session-alpha"
+    };
+
+    expect(sessionInspectionReferencesRuntime(inspection, "worker-it")).toBe(true);
+    expect(sessionInspectionReferencesRuntime(inspection, "worker-marketing")).toBe(
+      false
+    );
+    const sortedInspectionNodes = sortSessionInspectionNodes(inspection, "worker-it");
+    const [workerEntry] = sortedInspectionNodes;
+
+    expect(sortedInspectionNodes.map((entry) => entry.nodeId)).toEqual([
+      "worker-it",
+      "lead-it"
+    ]);
+    expect(collectSessionInspectionTraceIds(inspection)).toEqual(["trace-alpha"]);
+    expect(workerEntry).toBeDefined();
+    expect(formatSessionInspectionNodeLabel(workerEntry!, "worker-it")).toBe(
+      "worker-it · active · selected runtime"
+    );
+    expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain("approvals 1");
   });
 });

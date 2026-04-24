@@ -305,6 +305,10 @@ delivery.
 - runtime session inspection on top of the existing host session read model,
   with selected-runtime refresh now also carrying filtered host session
   summaries for the selected runtime;
+- deeper Studio session drilldown on top of the existing host session read
+  model, where one runtime-scoped session summary can now be selected and
+  expanded into host-backed per-node session/runtime detail without widening
+  the host API;
 - bounded Studio graph edge mutation on top of the host-owned edge resource
   surface, including live edge selection plus create/replace/delete flows;
 - bounded Studio managed-node mutation on top of the host-owned managed-node
@@ -323,7 +327,8 @@ delivery.
 
 ### Still missing or incomplete
 
-- deeper session drilldown beyond the current session-summary view.
+- further operator workflow completion only where later host capability growth
+  creates a real blind spot.
 
 ### Assessment
 
@@ -403,8 +408,8 @@ surface:
 
 The current best delivery order is:
 
-1. deepen session drilldown only where the existing host session read model
-   creates real operator leverage;
+1. strengthen automation-oriented CLI JSON and dry-run flows where the
+   existing host surface already creates real headless operator leverage;
 2. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
@@ -414,7 +419,8 @@ The current best delivery order is:
 
 This ordering preserves the best current properties of the repository:
 
-- it closes the core collaboration substrate before UI polish;
+- it closes the remaining high-value headless operational gaps before more UI
+  widening;
 - it keeps engine/provider logic behind the existing internal boundary;
 - it finishes control-plane completeness before broadening client complexity;
 - it keeps deployment hardening as a real finalization phase rather than a
