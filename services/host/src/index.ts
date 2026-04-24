@@ -35,6 +35,7 @@ import {
   runtimeInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryListQuerySchema,
+  runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema
@@ -73,6 +74,7 @@ import {
   replaceEdge,
   replaceManagedNode,
   setRuntimeDesiredState,
+  setRuntimeRecoveryPolicy,
   subscribeToHostEvents,
   upsertExternalPrincipal,
   validateCatalogCandidate,
@@ -689,6 +691,32 @@ export async function buildHostServer() {
       return hostErrorResponseSchema.parse({
         code: "not_found",
         message: `Runtime recovery history for '${params.nodeId}' was not found in current host state.`
+      });
+    }
+
+    return runtimeRecoveryInspectionResponseSchema.parse(inspection);
+  });
+
+  server.put("/v1/runtimes/:nodeId/recovery-policy", async (request) => {
+    const params = request.params as { nodeId: string };
+    const policy = parseRequestInput(
+      runtimeRecoveryPolicyMutationRequestSchema,
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected schema."
+      }
+    );
+    const inspection = await setRuntimeRecoveryPolicy({
+      nodeId: params.nodeId,
+      policy
+    });
+
+    if (!inspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
       });
     }
 

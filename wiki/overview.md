@@ -147,6 +147,11 @@ The repository now also contains the first real implementation baseline:
   records under observed host state, deduplicates unchanged runtime states
   with canonicalized fingerprints, and serializes host reconciliation reads so
   identical successive inspections do not create duplicate history entries;
+- an explicit host-owned runtime recovery-policy slice where `entangle-host`
+  now persists desired recovery-policy records, observed recovery-controller
+  state, exposes `PUT /v1/runtimes/{nodeId}/recovery-policy`, and can perform
+  bounded automatic `restart_on_failure` recovery against stable failure
+  fingerprints instead of treating retries as implicit or unbounded behavior;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the

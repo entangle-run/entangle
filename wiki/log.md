@@ -499,3 +499,15 @@ fingerprints under observed host state, emit events only on durable change, and
 clean up stale activity records when runtimes or activity disappear. Closed the
 slice only after targeted `types` and `host` tests, a full `pnpm verify`, and
 `git diff --check`.
+
+## [2026-04-24] implementation | Added explicit host-owned runtime recovery policy
+
+Extended the runtime recovery surface from read-only history into a real
+control-plane model. Added desired recovery-policy records, observed
+recovery-controller state, `PUT /v1/runtimes/{nodeId}/recovery-policy`,
+typed recovery-policy and recovery-attempt/exhaustion host events, and bounded
+automatic `restart_on_failure` behavior with attempt accounting anchored in a
+stable failure fingerprint instead of restart-generation churn. Closed the
+slice only after widening shared contracts, adding deterministic host tests via
+an injectable runtime backend, and re-running targeted package tests plus the
+full `pnpm verify` gate.

@@ -262,6 +262,35 @@ describe("host event contracts", () => {
     expect(result.restartGeneration).toBe(1);
   });
 
+  it("accepts a typed runtime recovery-policy-updated event", () => {
+    const result = hostEventRecordSchema.parse({
+      category: "runtime",
+      eventId: "runtime-worker-it-recovery-policy-001",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260423-000000",
+      message: "Runtime 'worker-it' recovery policy is now 'restart_on_failure'.",
+      nodeId: "worker-it",
+      policy: {
+        cooldownSeconds: 30,
+        maxAttempts: 3,
+        mode: "restart_on_failure"
+      },
+      previousPolicy: {
+        mode: "manual"
+      },
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:00:00.000Z",
+      type: "runtime.recovery_policy.updated"
+    });
+
+    expect(result.type).toBe("runtime.recovery_policy.updated");
+    expect(result).toMatchObject({
+      policy: {
+        mode: "restart_on_failure"
+      }
+    });
+  });
+
   it("accepts typed session and runner-turn activity events", () => {
     const sessionEvent = hostEventRecordSchema.parse({
       category: "session",
@@ -344,6 +373,18 @@ describe("host event contracts", () => {
 describe("runtime recovery contracts", () => {
   it("accepts a runtime recovery inspection response", () => {
     const result = runtimeRecoveryInspectionResponseSchema.parse({
+      controller: {
+        activeFailureFingerprint: "fp-worker-it",
+        attemptsUsed: 1,
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260424-000001",
+        lastAttemptedAt: "2026-04-24T10:06:00.000Z",
+        lastFailureAt: "2026-04-24T10:06:00.000Z",
+        nodeId: "worker-it",
+        schemaVersion: "1",
+        state: "cooldown",
+        updatedAt: "2026-04-24T10:06:00.000Z"
+      },
       currentRuntime: {
         backendKind: "docker",
         contextAvailable: true,
@@ -372,11 +413,23 @@ describe("runtime recovery contracts", () => {
           }
         }
       ],
-      nodeId: "worker-it"
+      nodeId: "worker-it",
+      policy: {
+        nodeId: "worker-it",
+        policy: {
+          cooldownSeconds: 30,
+          maxAttempts: 3,
+          mode: "restart_on_failure"
+        },
+        schemaVersion: "1",
+        updatedAt: "2026-04-24T10:05:30.000Z"
+      }
     });
 
     expect(result.nodeId).toBe("worker-it");
     expect(result.entries).toHaveLength(1);
+    expect(result.controller.state).toBe("cooldown");
+    expect(result.policy.policy.mode).toBe("restart_on_failure");
   });
 });
 

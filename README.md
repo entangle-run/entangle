@@ -211,6 +211,11 @@ This repository currently contains:
   canonicalized recovery fingerprints, and serializes reconciliation reads so
   recovery inspection does not create duplicate history under rapid successive
   calls;
+- an explicit host-owned runtime recovery-policy slice where `entangle-host`
+  now persists desired recovery policy records, observed recovery-controller
+  state, exposes `PUT /v1/runtimes/{nodeId}/recovery-policy`, and can perform
+  bounded automatic `restart_on_failure` recovery with stable failure-series
+  accounting instead of retrying blindly on every reconciliation;
 
 The highest-value remaining gaps are:
 
@@ -219,9 +224,9 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper conversation, approval, artifact, and recovery-oriented host event
-  coverage plus explicit retry-policy and recovery-automation semantics on top
-  of the new degraded-state, recovery-history, session-inspection, and
-  session/runner-activity host surfaces;
+  coverage on top of the new degraded-state, recovery-policy,
+  recovery-history, session-inspection, and session/runner-activity host
+  surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

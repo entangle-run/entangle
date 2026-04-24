@@ -138,6 +138,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - host-owned runtime recovery-history inspection with durable per-node
   recovery records, canonicalized fingerprint-based deduplication, and a
   stable `GET /v1/runtimes/{nodeId}/recovery` read boundary;
+- explicit host-owned runtime recovery policy records, recovery-controller
+  state, and bounded automatic restart-on-failure behavior exposed through the
+  same runtime recovery surface plus `PUT /v1/runtimes/{nodeId}/recovery-policy`;
 - host-managed runtime identity persistence;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
@@ -148,9 +151,7 @@ This layer is strong and directionally correct. It is not a blocker.
 ### Still missing or incomplete
 
 - broader conversation, approval, artifact, and recovery-oriented event
-  classes on top of the now-implemented session and runner activity events;
-- explicit retry policy and recovery automation above the current
-  degraded-state, restart, and recovery-history model.
+  classes on top of the now-implemented session and runner activity events.
 
 ### Assessment
 
@@ -177,7 +178,6 @@ and widening, not rethinking the boundary.
 
 ### Still missing or incomplete
 
-- richer runtime restart and recovery behavior;
 - broader multi-node live-flow coverage;
 - more explicit upward surfacing of runtime events.
 
@@ -365,8 +365,8 @@ The current best delivery order is:
 1. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
-2. complete the remaining core host resource surfaces and widen host events to
-   deeper session-level runtime activity;
+2. widen host events and diagnostics on top of the now-implemented recovery
+   policy, recovery controller, session, and runner activity surfaces;
 3. deepen Studio into a real operator surface on top of those host capabilities;
 4. complete CLI parity for the core host workflows;
 5. harden end-to-end deployment, restart, and integration coverage;

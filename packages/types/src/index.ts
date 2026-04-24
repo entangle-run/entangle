@@ -29,6 +29,7 @@ export * from "./runtime/git-resolution.js";
 export * from "./runtime/runtime-identity.js";
 export * from "./runtime/activity-observation.js";
 export * from "./runtime/reconciliation.js";
+export * from "./runtime/recovery-policy.js";
 export * from "./runtime/secret-delivery.js";
 export * from "./runtime/session-state.js";
 export * from "./runtime/runtime-state.js";

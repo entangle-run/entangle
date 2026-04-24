@@ -29,6 +29,7 @@ import {
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
+  runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
@@ -61,6 +62,7 @@ import {
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
   type RuntimeRecoveryInspectionResponse,
+  type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
   type SessionInspectionResponse,
   type SessionListResponse,
@@ -550,6 +552,24 @@ export function createHostClient(options: HostClientOptions) {
 
       return parseResponse(
         await fetchImpl(url.toString()),
+        runtimeRecoveryInspectionResponseSchema
+      );
+    },
+
+    async setRuntimeRecoveryPolicy(
+      nodeId: string,
+      policy: RuntimeRecoveryPolicyMutationRequest
+    ): Promise<RuntimeRecoveryInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/recovery-policy`, {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(
+            runtimeRecoveryPolicyMutationRequestSchema.parse(policy)
+          )
+        }),
         runtimeRecoveryInspectionResponseSchema
       );
     },

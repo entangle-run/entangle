@@ -100,6 +100,11 @@ import {
   runtimeInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryRecordSchema,
+  runtimeRecoveryControllerRecordSchema,
+  runtimeRecoveryPolicyRecordSchema,
+  type RuntimeRecoveryControllerRecord,
+  type RuntimeRecoveryPolicy,
+  type RuntimeRecoveryPolicyRecord,
   type RuntimeInspectionResponse,
   runtimeIntentRecordSchema,
   type RuntimeArtifactListResponse,
@@ -128,7 +133,10 @@ import {
 } from "@entangle/validator";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
 import { GiteaApiClient } from "./gitea-api-client.js";
-import { createRuntimeBackend } from "./runtime-backend.js";
+import {
+  createRuntimeBackend,
+  type RuntimeBackend
+} from "./runtime-backend.js";
 
 const hostStateRoot = path.join(
   path.resolve(process.env.ENTANGLE_HOME ?? path.resolve(process.cwd(), ".entangle")),
@@ -157,7 +165,15 @@ const graphRevisionsRoot = path.join(graphRoot, "revisions");
 const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const observedRuntimesRoot = path.join(observedRoot, "runtimes");
+const runtimeRecoveryPoliciesRoot = path.join(
+  desiredRoot,
+  "runtime-recovery-policies"
+);
 const runtimeRecoveryHistoryRoot = path.join(observedRoot, "runtime-recovery");
+const runtimeRecoveryControllersRoot = path.join(
+  observedRoot,
+  "runtime-recovery-controllers"
+);
 const gitRepositoryTargetsRoot = path.join(observedRoot, "git-repository-targets");
 const observedRunnerTurnActivityRoot = path.join(
   observedRoot,
@@ -185,7 +201,10 @@ type RuntimeResolution = {
   inspection: RuntimeInspectionResponse;
 };
 
-const runtimeBackend = createRuntimeBackend(hostStateRoot, secretStateRoot);
+let runtimeBackendOverride:
+  | (() => RuntimeBackend)
+  | undefined;
+let runtimeBackendSingleton: RuntimeBackend | undefined;
 const hostEventSubscribers = new Set<(event: HostEventRecord) => void>();
 
 type CurrentGraphRuntimeSynchronizationResult = {
@@ -197,6 +216,23 @@ type CurrentGraphRuntimeSynchronizationResult = {
 let currentGraphRuntimeSynchronizationPromise:
   | Promise<CurrentGraphRuntimeSynchronizationResult>
   | undefined;
+
+function getRuntimeBackend(): RuntimeBackend {
+  if (!runtimeBackendSingleton) {
+    runtimeBackendSingleton = runtimeBackendOverride
+      ? runtimeBackendOverride()
+      : createRuntimeBackend(hostStateRoot, secretStateRoot);
+  }
+
+  return runtimeBackendSingleton;
+}
+
+export function configureRuntimeBackendForProcess(
+  factory: (() => RuntimeBackend) | undefined
+): void {
+  runtimeBackendOverride = factory;
+  runtimeBackendSingleton = undefined;
+}
 
 type CatalogUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "catalog.updated" }>,
@@ -228,6 +264,18 @@ type RuntimeDesiredStateChangedEventInput = Omit<
 >;
 type RuntimeRestartRequestedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.restart.requested" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeRecoveryPolicyUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.recovery_policy.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeRecoveryAttemptedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.recovery.attempted" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeRecoveryExhaustedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.recovery.exhausted" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type RuntimeObservedStateChangedEventInput = Omit<
@@ -1450,6 +1498,32 @@ async function readRuntimeIntentRecord(
   return runtimeIntentRecordSchema.parse(await readJsonFile(filePath));
 }
 
+async function readRuntimeRecoveryPolicyRecord(
+  nodeId: string
+): Promise<RuntimeRecoveryPolicyRecord | undefined> {
+  const filePath = runtimeRecoveryPolicyRecordPath(nodeId);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return runtimeRecoveryPolicyRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function ensureRuntimeRecoveryPolicyRecord(
+  nodeId: string
+): Promise<RuntimeRecoveryPolicyRecord> {
+  const existingRecord = await readRuntimeRecoveryPolicyRecord(nodeId);
+
+  if (existingRecord) {
+    return existingRecord;
+  }
+
+  const defaultRecord = buildDefaultRuntimeRecoveryPolicy(nodeId);
+  await writeJsonFile(runtimeRecoveryPolicyRecordPath(nodeId), defaultRecord);
+  return defaultRecord;
+}
+
 async function readObservedRuntimeRecord(
   nodeId: string
 ): Promise<ObservedRuntimeRecord | undefined> {
@@ -1460,6 +1534,18 @@ async function readObservedRuntimeRecord(
   }
 
   return observedRuntimeRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function readRuntimeRecoveryControllerRecord(
+  nodeId: string
+): Promise<RuntimeRecoveryControllerRecord | undefined> {
+  const filePath = runtimeRecoveryControllerRecordPath(nodeId);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return runtimeRecoveryControllerRecordSchema.parse(await readJsonFile(filePath));
 }
 
 async function listRuntimeRecoveryRecords(input: {
@@ -1645,6 +1731,45 @@ function runtimeRecoveryHistoryNodeRoot(nodeId: string): string {
   return path.join(runtimeRecoveryHistoryRoot, nodeId);
 }
 
+function runtimeRecoveryPolicyRecordPath(nodeId: string): string {
+  return path.join(runtimeRecoveryPoliciesRoot, `${nodeId}.json`);
+}
+
+function runtimeRecoveryControllerRecordPath(nodeId: string): string {
+  return path.join(runtimeRecoveryControllersRoot, `${nodeId}.json`);
+}
+
+function buildDefaultRuntimeRecoveryPolicy(nodeId: string): RuntimeRecoveryPolicyRecord {
+  return runtimeRecoveryPolicyRecordSchema.parse({
+    nodeId,
+    policy: {
+      mode: "manual"
+    },
+    schemaVersion: "1",
+    updatedAt: nowIsoString()
+  });
+}
+
+function buildIdleRuntimeRecoveryController(input: {
+  graphId?: string;
+  graphRevisionId?: string;
+  nodeId: string;
+}): RuntimeRecoveryControllerRecord {
+  return runtimeRecoveryControllerRecordSchema.parse({
+    attemptsUsed: 0,
+    ...(input.graphId ? { graphId: input.graphId } : {}),
+    ...(input.graphRevisionId ? { graphRevisionId: input.graphRevisionId } : {}),
+    nodeId: input.nodeId,
+    schemaVersion: "1",
+    state: "idle",
+    updatedAt: nowIsoString()
+  });
+}
+
+function addSecondsToIsoString(isoString: string, seconds: number): string {
+  return new Date(Date.parse(isoString) + seconds * 1000).toISOString();
+}
+
 function buildRuntimeRecoveryRecordId(input: {
   fingerprint: string;
   nodeId: string;
@@ -1653,6 +1778,26 @@ function buildRuntimeRecoveryRecordId(input: {
   return sanitizeIdentifier(
     `${input.nodeId}-${input.recordedAt}-${input.fingerprint.slice(0, 12)}`
   );
+}
+
+function buildRuntimeRecoveryFailureFingerprint(input: {
+  inspection: RuntimeInspectionResponse;
+  lastError: string | undefined;
+}): string {
+  return buildObservationFingerprint({
+    ...(input.lastError ? { lastError: input.lastError } : {}),
+    runtime: {
+      backendKind: input.inspection.backendKind,
+      contextAvailable: input.inspection.contextAvailable,
+      desiredState: input.inspection.desiredState,
+      graphId: input.inspection.graphId,
+      graphRevisionId: input.inspection.graphRevisionId,
+      nodeId: input.inspection.nodeId,
+      observedState: input.inspection.observedState,
+      reason: input.inspection.reason,
+      statusMessage: input.inspection.statusMessage
+    }
+  });
 }
 
 function buildRuntimeRecoveryComparable(input: {
@@ -1735,6 +1880,110 @@ function buildRuntimeInspectionFromState(input: {
   });
 }
 
+async function reconcileObservedRuntimeState(input: {
+  context: EffectiveRuntimeContext | undefined;
+  desiredState: RuntimeDesiredState;
+  existingObservedRecord: ObservedRuntimeRecord | undefined;
+  graphId: string;
+  graphRevisionId: string;
+  nodeId: string;
+  packageSourceId: string | undefined;
+  primaryGitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
+  reason: string | undefined;
+  restartGeneration: number;
+  runtimeIdentitySecret: string | undefined;
+}): Promise<{
+  inspection: RuntimeInspectionResponse;
+  observedRecord: ObservedRuntimeRecord;
+}> {
+  const runtimeBackend = getRuntimeBackend();
+  const contextPath = input.context
+    ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName)
+    : undefined;
+  let observedRuntime: Awaited<ReturnType<RuntimeBackend["reconcileRuntime"]>>;
+
+  try {
+    observedRuntime = await runtimeBackend.reconcileRuntime({
+      context: input.context,
+      contextPath,
+      desiredState: input.desiredState,
+      graphId: input.graphId,
+      graphRevisionId: input.graphRevisionId,
+      nodeId: input.nodeId,
+      reason: input.reason,
+      restartGeneration: input.restartGeneration,
+      ...(input.context && input.runtimeIdentitySecret
+        ? {
+            secretEnvironment: {
+              ENTANGLE_NOSTR_SECRET_KEY: input.runtimeIdentitySecret
+            }
+          }
+        : {})
+    });
+  } catch (error: unknown) {
+    observedRuntime = {
+      backendKind: runtimeBackend.kind,
+      lastError: formatUnknownError(error),
+      observedState: "failed",
+      runtimeHandle: undefined,
+      statusMessage: `Runtime reconciliation failed: ${formatUnknownError(error)}`
+    };
+  }
+  const observedRecord = observedRuntimeRecordSchema.parse({
+    backendKind: observedRuntime.backendKind,
+    graphId: input.graphId,
+    graphRevisionId: input.graphRevisionId,
+    lastError: observedRuntime.lastError,
+    lastSeenAt: nowIsoString(),
+    nodeId: input.nodeId,
+    observedState: observedRuntime.observedState,
+    runtimeContextPath: contextPath,
+    runtimeHandle: observedRuntime.runtimeHandle,
+    schemaVersion: "1",
+    statusMessage: observedRuntime.statusMessage
+  });
+  await writeJsonFileIfChanged(
+    path.join(observedRuntimesRoot, `${input.nodeId}.json`),
+    observedRecord
+  );
+
+  if (didObservedRuntimeChange(input.existingObservedRecord, observedRecord)) {
+    await appendHostEvent({
+      backendKind: observedRecord.backendKind,
+      category: "runtime",
+      desiredState: input.desiredState,
+      graphId: input.graphId,
+      graphRevisionId: input.graphRevisionId,
+      message: `Runtime '${input.nodeId}' observed state is now '${observedRecord.observedState}'.`,
+      nodeId: input.nodeId,
+      observedState: observedRecord.observedState,
+      previousObservedState: input.existingObservedRecord?.observedState,
+      runtimeHandle: observedRecord.runtimeHandle,
+      statusMessage: observedRecord.statusMessage,
+      type: "runtime.observed_state.changed"
+    } satisfies RuntimeObservedStateChangedEventInput);
+  }
+
+  return {
+    inspection: buildRuntimeInspectionFromState({
+      backendKind: observedRecord.backendKind,
+      context: input.context,
+      desiredState: input.desiredState,
+      graphId: input.graphId,
+      graphRevisionId: input.graphRevisionId,
+      nodeId: input.nodeId,
+      observedState: observedRecord.observedState,
+      packageSourceId: input.packageSourceId,
+      primaryGitRepositoryProvisioning: input.primaryGitRepositoryProvisioning,
+      reason: input.reason,
+      restartGeneration: input.restartGeneration,
+      runtimeHandle: observedRecord.runtimeHandle,
+      statusMessage: observedRecord.statusMessage
+    }),
+    observedRecord
+  };
+}
+
 function buildReconciliationSnapshot(input: {
   backendKind: ReconciliationSnapshot["backendKind"];
   graphId: string | undefined;
@@ -1806,10 +2055,12 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
+    ensureDirectory(runtimeRecoveryPoliciesRoot),
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
     ensureDirectory(runtimeRecoveryHistoryRoot),
+    ensureDirectory(runtimeRecoveryControllersRoot),
     ensureDirectory(gitRepositoryTargetsRoot),
     ensureDirectory(observedRunnerTurnActivityRoot),
     ensureDirectory(observedSessionActivityRoot),
@@ -2513,6 +2764,7 @@ async function buildRuntimeResolution(input: {
   );
 
   const existingIntent = await readRuntimeIntentRecord(node.nodeId);
+  const recoveryPolicyRecord = await ensureRuntimeRecoveryPolicyRecord(node.nodeId);
   const operatorStopped =
     existingIntent?.desiredState === "stopped" &&
     existingIntent.reason === "stopped_by_operator";
@@ -2567,90 +2819,228 @@ async function buildRuntimeResolution(input: {
     } satisfies RuntimeDesiredStateChangedEventInput);
   }
 
-  const reconcileInput = {
-    context,
-    contextPath: context
-      ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
-      : undefined,
-    desiredState: intentRecord.desiredState,
-    graphId: graph.graphId,
-    graphRevisionId: activeRevisionId,
-    nodeId: node.nodeId,
-    reason: intentRecord.reason,
-    restartGeneration: intentRecord.restartGeneration,
-    ...(context
-      ? {
-          secretEnvironment: {
-            ENTANGLE_NOSTR_SECRET_KEY: runtimeIdentitySecret
-          }
-        }
-      : {})
-  };
   const existingObservedRecord = await readObservedRuntimeRecord(node.nodeId);
-  const observedRuntime = await runtimeBackend
-    .reconcileRuntime(reconcileInput)
-    .catch((error: unknown) => ({
-      backendKind: runtimeBackend.kind,
-      lastError: formatUnknownError(error),
-      observedState: "failed" as const,
-      runtimeHandle: undefined,
-      statusMessage: `Runtime reconciliation failed: ${formatUnknownError(error)}`
-    }));
-  const observedRecord = observedRuntimeRecordSchema.parse({
-    backendKind: observedRuntime.backendKind,
-    graphId: graph.graphId,
-    graphRevisionId: activeRevisionId,
-    lastError: observedRuntime.lastError,
-    lastSeenAt: nowIsoString(),
-    nodeId: node.nodeId,
-    observedState: observedRuntime.observedState,
-    runtimeContextPath: context
-      ? path.join(context.workspace.injectedRoot, runtimeContextFileName)
-      : undefined,
-    runtimeHandle: observedRuntime.runtimeHandle,
-    schemaVersion: "1",
-    statusMessage: observedRuntime.statusMessage
-  });
-  await writeJsonFileIfChanged(
-    path.join(observedRuntimesRoot, `${node.nodeId}.json`),
-    observedRecord
-  );
-  if (didObservedRuntimeChange(existingObservedRecord, observedRecord)) {
-    await appendHostEvent({
-      backendKind: observedRecord.backendKind,
-      category: "runtime",
-      desiredState: intentRecord.desiredState,
-      graphId: graph.graphId,
-      graphRevisionId: activeRevisionId,
-      message: `Runtime '${node.nodeId}' observed state is now '${observedRecord.observedState}'.`,
-      nodeId: node.nodeId,
-      observedState: observedRecord.observedState,
-      previousObservedState: existingObservedRecord?.observedState,
-      runtimeHandle: observedRecord.runtimeHandle,
-      statusMessage: observedRecord.statusMessage,
-      type: "runtime.observed_state.changed"
-    } satisfies RuntimeObservedStateChangedEventInput);
-  }
-
-  const inspection = buildRuntimeInspectionFromState({
+  let currentIntentRecord = intentRecord;
+  let { inspection, observedRecord } = await reconcileObservedRuntimeState({
     context,
-    desiredState: intentRecord.desiredState,
+    desiredState: currentIntentRecord.desiredState,
+    existingObservedRecord,
     graphId: graph.graphId,
     graphRevisionId: activeRevisionId,
     nodeId: node.nodeId,
-    observedState: observedRecord.observedState,
     packageSourceId: packageSource?.packageSourceId,
     primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
-    reason: intentRecord.reason,
-    restartGeneration: intentRecord.restartGeneration,
-    runtimeHandle: observedRecord.runtimeHandle,
-    statusMessage: observedRecord.statusMessage,
-    backendKind: observedRecord.backendKind
+    reason: currentIntentRecord.reason,
+    restartGeneration: currentIntentRecord.restartGeneration,
+    runtimeIdentitySecret
   });
   await synchronizeRuntimeRecoveryHistory({
     inspection,
     lastError: observedRecord.lastError
   });
+
+  const existingRecoveryController = await readRuntimeRecoveryControllerRecord(
+    node.nodeId
+  );
+  let nextRecoveryController = buildIdleRuntimeRecoveryController({
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    nodeId: node.nodeId
+  });
+
+  if (
+    inspection.desiredState === "running" &&
+    inspection.contextAvailable &&
+    inspection.observedState === "failed"
+  ) {
+    const failureFingerprint = buildRuntimeRecoveryFailureFingerprint({
+      inspection,
+      lastError: observedRecord.lastError
+    });
+    const previousControllerForFailure =
+      existingRecoveryController?.activeFailureFingerprint === failureFingerprint
+        ? existingRecoveryController
+        : undefined;
+    const lastFailureAt = nowIsoString();
+
+    if (recoveryPolicyRecord.policy.mode === "manual") {
+      nextRecoveryController = createRuntimeRecoveryControllerRecord({
+        activeFailureFingerprint: failureFingerprint,
+        attemptsUsed: 0,
+        existingRecord: existingRecoveryController,
+        graphId: graph.graphId,
+        graphRevisionId: activeRevisionId,
+        lastFailureAt,
+        nodeId: node.nodeId,
+        state: "manual_required"
+      });
+    } else {
+      const attemptsUsed = previousControllerForFailure?.attemptsUsed ?? 0;
+      const nextEligibleAt = previousControllerForFailure?.nextEligibleAt;
+      const now = nowIsoString();
+
+      if (nextEligibleAt && nextEligibleAt > now) {
+        nextRecoveryController = createRuntimeRecoveryControllerRecord({
+          activeFailureFingerprint: failureFingerprint,
+          attemptsUsed,
+          existingRecord: existingRecoveryController,
+          graphId: graph.graphId,
+          graphRevisionId: activeRevisionId,
+          ...(previousControllerForFailure?.lastAttemptedAt
+            ? { lastAttemptedAt: previousControllerForFailure.lastAttemptedAt }
+            : {}),
+          lastFailureAt,
+          nextEligibleAt,
+          nodeId: node.nodeId,
+          state: "cooldown"
+        });
+      } else if (attemptsUsed >= recoveryPolicyRecord.policy.maxAttempts) {
+        nextRecoveryController = createRuntimeRecoveryControllerRecord({
+          activeFailureFingerprint: failureFingerprint,
+          attemptsUsed,
+          existingRecord: existingRecoveryController,
+          graphId: graph.graphId,
+          graphRevisionId: activeRevisionId,
+          ...(previousControllerForFailure?.lastAttemptedAt
+            ? { lastAttemptedAt: previousControllerForFailure.lastAttemptedAt }
+            : {}),
+          lastFailureAt,
+          nodeId: node.nodeId,
+          state: "exhausted"
+        });
+      } else {
+        const attemptedAt = nowIsoString();
+        const nextRestartGeneration =
+          Math.max(
+            currentIntentRecord.restartGeneration,
+            existingIntent?.restartGeneration ?? 0
+          ) + 1;
+        const attemptedIntentRecord = createRuntimeIntentRecord({
+          desiredState: "running",
+          existingIntent: currentIntentRecord,
+          graphId: graph.graphId,
+          graphRevisionId: activeRevisionId,
+          nodeId: node.nodeId,
+          reason: undefined,
+          restartGeneration: nextRestartGeneration
+        });
+        await writeJsonFile(
+          path.join(runtimeIntentsRoot, `${node.nodeId}.json`),
+          attemptedIntentRecord
+        );
+        await appendHostEvent({
+          category: "runtime",
+          graphId: graph.graphId,
+          graphRevisionId: activeRevisionId,
+          message:
+            `Runtime '${node.nodeId}' restart was requested with generation '${nextRestartGeneration}'.`,
+          nodeId: node.nodeId,
+          previousRestartGeneration: currentIntentRecord.restartGeneration,
+          restartGeneration: nextRestartGeneration,
+          type: "runtime.restart.requested"
+        } satisfies RuntimeRestartRequestedEventInput);
+
+        currentIntentRecord = attemptedIntentRecord;
+        const retryResult = await reconcileObservedRuntimeState({
+          context,
+          desiredState: currentIntentRecord.desiredState,
+          existingObservedRecord: observedRecord,
+          graphId: graph.graphId,
+          graphRevisionId: activeRevisionId,
+          nodeId: node.nodeId,
+          packageSourceId: packageSource?.packageSourceId,
+          primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
+          reason: currentIntentRecord.reason,
+          restartGeneration: currentIntentRecord.restartGeneration,
+          runtimeIdentitySecret
+        });
+        inspection = retryResult.inspection;
+        observedRecord = retryResult.observedRecord;
+        await synchronizeRuntimeRecoveryHistory({
+          inspection,
+          lastError: observedRecord.lastError
+        });
+
+        const attemptsAfterAttempt = attemptsUsed + 1;
+        const cooldownUntil =
+          recoveryPolicyRecord.policy.cooldownSeconds > 0
+            ? addSecondsToIsoString(
+                attemptedAt,
+                recoveryPolicyRecord.policy.cooldownSeconds
+              )
+            : undefined;
+        await appendHostEvent({
+          attemptNumber: attemptsAfterAttempt,
+          category: "runtime",
+          cooldownSeconds: recoveryPolicyRecord.policy.cooldownSeconds,
+          failureFingerprint,
+          graphId: graph.graphId,
+          graphRevisionId: activeRevisionId,
+          maxAttempts: recoveryPolicyRecord.policy.maxAttempts,
+          message:
+            `Runtime '${node.nodeId}' automatic recovery attempted restart generation '${currentIntentRecord.restartGeneration}'.`,
+          ...(cooldownUntil ? { nextEligibleAt: cooldownUntil } : {}),
+          nodeId: node.nodeId,
+          restartGeneration: currentIntentRecord.restartGeneration,
+          type: "runtime.recovery.attempted"
+        } satisfies RuntimeRecoveryAttemptedEventInput);
+
+        if (inspection.observedState === "failed") {
+          const nextControllerState =
+            attemptsAfterAttempt >= recoveryPolicyRecord.policy.maxAttempts
+              ? "exhausted"
+              : "cooldown";
+          nextRecoveryController = createRuntimeRecoveryControllerRecord({
+            activeFailureFingerprint: failureFingerprint,
+            attemptsUsed: attemptsAfterAttempt,
+            existingRecord: existingRecoveryController,
+            graphId: graph.graphId,
+            graphRevisionId: activeRevisionId,
+            lastAttemptedAt: attemptedAt,
+            lastFailureAt,
+            ...(attemptsAfterAttempt < recoveryPolicyRecord.policy.maxAttempts &&
+            cooldownUntil
+              ? { nextEligibleAt: cooldownUntil }
+              : {}),
+            nodeId: node.nodeId,
+            state: nextControllerState
+          });
+
+          if (
+            nextControllerState === "exhausted" &&
+            (existingRecoveryController?.state !== "exhausted" ||
+              existingRecoveryController.activeFailureFingerprint !==
+                failureFingerprint ||
+              existingRecoveryController.attemptsUsed !== attemptsAfterAttempt)
+          ) {
+            await appendHostEvent({
+              attemptsUsed: attemptsAfterAttempt,
+              category: "runtime",
+              failureFingerprint,
+              graphId: graph.graphId,
+              graphRevisionId: activeRevisionId,
+              maxAttempts: recoveryPolicyRecord.policy.maxAttempts,
+              message:
+                `Runtime '${node.nodeId}' exhausted automatic recovery after '${attemptsAfterAttempt}' attempts.`,
+              nodeId: node.nodeId,
+              type: "runtime.recovery.exhausted"
+            } satisfies RuntimeRecoveryExhaustedEventInput);
+          }
+        } else {
+          nextRecoveryController = buildIdleRuntimeRecoveryController({
+            graphId: graph.graphId,
+            graphRevisionId: activeRevisionId,
+            nodeId: node.nodeId
+          });
+        }
+      }
+    }
+  }
+
+  await writeJsonFileIfChanged(
+    runtimeRecoveryControllerRecordPath(node.nodeId),
+    nextRecoveryController
+  );
 
   return {
     binding: effectiveBinding,
@@ -2663,6 +3053,7 @@ async function buildRuntimeResolution(input: {
 async function performCurrentGraphRuntimeStateSynchronization(): Promise<CurrentGraphRuntimeSynchronizationResult> {
   const { graph, activeRevisionId } = await readActiveGraphState();
   const previousSnapshot = await readLatestReconciliationSnapshot();
+  const runtimeBackend = getRuntimeBackend();
 
   if (!graph || !activeRevisionId) {
     const emptySnapshot = reconciliationSnapshotSchema.parse({
@@ -2684,6 +3075,7 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
     });
     await writeJsonFileIfChanged(latestReconciliationPath, emptySnapshot);
     await removeJsonFilesExcept(gitRepositoryTargetsRoot, new Set());
+    await removeJsonFilesExcept(runtimeRecoveryControllersRoot, new Set());
     await removeJsonFilesExcept(observedSessionActivityRoot, new Set());
     await removeJsonFilesExcept(observedRunnerTurnActivityRoot, new Set());
     if (didReconciliationSnapshotChange(previousSnapshot, emptySnapshot)) {
@@ -2732,6 +3124,7 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
 
   await removeJsonFilesExcept(nodeBindingsRoot, activeNodeIds);
   await removeJsonFilesExcept(runtimeIntentsRoot, activeNodeIds);
+  await removeJsonFilesExcept(runtimeRecoveryControllersRoot, activeNodeIds);
   await removeJsonFilesExcept(observedRuntimesRoot, activeNodeIds);
 
   for (const node of runtimeNodes) {
@@ -3165,19 +3558,35 @@ export async function getRuntimeRecoveryInspection(input: {
   nodeId: string;
 }): Promise<RuntimeRecoveryInspectionResponse | null> {
   const inspection = await getRuntimeInspection(input.nodeId);
+  const existingPolicy = await readRuntimeRecoveryPolicyRecord(input.nodeId);
+  const controller =
+    (await readRuntimeRecoveryControllerRecord(input.nodeId)) ??
+    buildIdleRuntimeRecoveryController({
+      ...(inspection ? { graphId: inspection.graphId } : {}),
+      ...(inspection ? { graphRevisionId: inspection.graphRevisionId } : {}),
+      nodeId: input.nodeId
+    });
   const entries = await listRuntimeRecoveryRecords({
     limit: input.limit ?? 50,
     nodeId: input.nodeId
   });
 
-  if (!inspection && entries.length === 0) {
+  if (!inspection && entries.length === 0 && !existingPolicy) {
     return null;
   }
 
+  const policy =
+    existingPolicy ??
+    (inspection
+      ? await ensureRuntimeRecoveryPolicyRecord(input.nodeId)
+      : buildDefaultRuntimeRecoveryPolicy(input.nodeId));
+
   return runtimeRecoveryInspectionResponseSchema.parse({
+    controller,
     ...(inspection ? { currentRuntime: inspection } : {}),
     entries,
-    nodeId: input.nodeId
+    nodeId: input.nodeId,
+    policy
   });
 }
 
@@ -3433,6 +3842,84 @@ async function synchronizeRuntimeRecoveryHistory(input: {
     record
   );
   await pruneRuntimeRecoveryHistory(input.inspection.nodeId);
+}
+
+function didRuntimeRecoveryPolicyChange(
+  previous: RuntimeRecoveryPolicyRecord | undefined,
+  next: RuntimeRecoveryPolicyRecord
+): boolean {
+  return !previous || JSON.stringify(previous.policy) !== JSON.stringify(next.policy);
+}
+
+function createRuntimeRecoveryPolicyRecord(input: {
+  existingRecord: RuntimeRecoveryPolicyRecord | undefined;
+  nodeId: string;
+  policy: RuntimeRecoveryPolicy;
+}): RuntimeRecoveryPolicyRecord {
+  const isEquivalentToExisting =
+    input.existingRecord &&
+    JSON.stringify(input.existingRecord.policy) === JSON.stringify(input.policy);
+
+  return runtimeRecoveryPolicyRecordSchema.parse({
+    nodeId: input.nodeId,
+    policy: input.policy,
+    schemaVersion: "1",
+    updatedAt:
+      isEquivalentToExisting && input.existingRecord
+        ? input.existingRecord.updatedAt
+        : nowIsoString()
+  });
+}
+
+function createRuntimeRecoveryControllerRecord(input: {
+  activeFailureFingerprint?: string;
+  attemptsUsed: number;
+  existingRecord: RuntimeRecoveryControllerRecord | undefined;
+  graphId?: string;
+  graphRevisionId?: string;
+  lastAttemptedAt?: string;
+  lastFailureAt?: string;
+  nextEligibleAt?: string;
+  nodeId: string;
+  state: RuntimeRecoveryControllerRecord["state"];
+}): RuntimeRecoveryControllerRecord {
+  const nextRecord = runtimeRecoveryControllerRecordSchema.parse({
+    ...(input.activeFailureFingerprint
+      ? { activeFailureFingerprint: input.activeFailureFingerprint }
+      : {}),
+    attemptsUsed: input.attemptsUsed,
+    ...(input.graphId ? { graphId: input.graphId } : {}),
+    ...(input.graphRevisionId ? { graphRevisionId: input.graphRevisionId } : {}),
+    ...(input.lastAttemptedAt ? { lastAttemptedAt: input.lastAttemptedAt } : {}),
+    ...(input.lastFailureAt ? { lastFailureAt: input.lastFailureAt } : {}),
+    ...(input.nextEligibleAt ? { nextEligibleAt: input.nextEligibleAt } : {}),
+    nodeId: input.nodeId,
+    schemaVersion: "1",
+    state: input.state,
+    updatedAt: nowIsoString()
+  });
+
+  if (!input.existingRecord) {
+    return nextRecord;
+  }
+
+  const comparableNext = {
+    ...nextRecord,
+    updatedAt: ""
+  };
+  const comparableExisting = {
+    ...input.existingRecord,
+    updatedAt: ""
+  };
+
+  if (JSON.stringify(comparableExisting) === JSON.stringify(comparableNext)) {
+    return runtimeRecoveryControllerRecordSchema.parse({
+      ...nextRecord,
+      updatedAt: input.existingRecord.updatedAt
+    });
+  }
+
+  return nextRecord;
 }
 
 async function collectSessionInspectionNodes(): Promise<
@@ -3884,6 +4371,46 @@ export async function restartRuntime(
   return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
 }
 
+export async function setRuntimeRecoveryPolicy(input: {
+  nodeId: string;
+  policy: RuntimeRecoveryPolicy;
+}): Promise<RuntimeRecoveryInspectionResponse | null> {
+  const inspection = await getRuntimeInspection(input.nodeId);
+
+  if (!inspection) {
+    return null;
+  }
+
+  const existingPolicyRecord = await readRuntimeRecoveryPolicyRecord(input.nodeId);
+  const nextPolicyRecord = createRuntimeRecoveryPolicyRecord({
+    existingRecord: existingPolicyRecord,
+    nodeId: input.nodeId,
+    policy: input.policy
+  });
+  await writeJsonFile(
+    runtimeRecoveryPolicyRecordPath(input.nodeId),
+    nextPolicyRecord
+  );
+
+  if (didRuntimeRecoveryPolicyChange(existingPolicyRecord, nextPolicyRecord)) {
+    await appendHostEvent({
+      category: "runtime",
+      graphId: inspection.graphId,
+      graphRevisionId: inspection.graphRevisionId,
+      message:
+        `Runtime '${input.nodeId}' recovery policy is now '${nextPolicyRecord.policy.mode}'.`,
+      nodeId: input.nodeId,
+      policy: nextPolicyRecord.policy,
+      previousPolicy: existingPolicyRecord?.policy,
+      type: "runtime.recovery_policy.updated"
+    } satisfies RuntimeRecoveryPolicyUpdatedEventInput);
+  }
+
+  return getRuntimeRecoveryInspection({
+    nodeId: input.nodeId
+  });
+}
+
 export async function applyGraph(input: unknown): Promise<GraphMutationResponse> {
   const candidate = await validateGraphCandidate(input);
 
@@ -3901,6 +4428,7 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const runtimeInspections = await listRuntimeInspections();
+  const runtimeBackend = getRuntimeBackend();
   const reconciliationSnapshot =
     (await readLatestReconciliationSnapshot()) ??
     reconciliationSnapshotSchema.parse({

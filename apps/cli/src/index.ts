@@ -8,7 +8,8 @@ import {
   edgeReplacementRequestSchema,
   externalPrincipalMutationRequestSchema,
   nodeCreateRequestSchema,
-  nodeReplacementRequestSchema
+  nodeReplacementRequestSchema,
+  runtimeRecoveryPolicyMutationRequestSchema
 } from "@entangle/types";
 import {
   formatValidationReport,
@@ -402,6 +403,23 @@ hostRuntimesCommand
       printJson(await client.getRuntimeRecovery(nodeId, Number.parseInt(options.limit, 10)));
     }
   );
+
+hostRuntimesCommand
+  .command("recovery-policy")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<file>", "Path to a runtime recovery policy JSON file.")
+  .description("Apply one runtime recovery policy through entangle-host.")
+  .action(async (nodeId: string, file: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(
+      await client.setRuntimeRecoveryPolicy(
+        nodeId,
+        runtimeRecoveryPolicyMutationRequestSchema.parse(
+          await readJsonDocument(path.resolve(file))
+        )
+      )
+    );
+  });
 
 hostRuntimesCommand
   .command("start")

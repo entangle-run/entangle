@@ -469,6 +469,15 @@ describe("createHostClient", () => {
         Promise.resolve(
           createMockResponse({
             body: JSON.stringify({
+              controller: {
+                attemptsUsed: 0,
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260424-000001",
+                nodeId: "worker-it",
+                schemaVersion: "1",
+                state: "idle",
+                updatedAt: "2026-04-24T10:05:00.000Z"
+              },
               currentRuntime: {
                 backendKind: "docker",
                 contextAvailable: true,
@@ -498,7 +507,15 @@ describe("createHostClient", () => {
                   }
                 }
               ],
-              nodeId: "worker-it"
+              nodeId: "worker-it",
+              policy: {
+                nodeId: "worker-it",
+                policy: {
+                  mode: "manual"
+                },
+                schemaVersion: "1",
+                updatedAt: "2026-04-24T10:04:00.000Z"
+              }
             }),
             ok: true,
             status: 200
@@ -507,7 +524,15 @@ describe("createHostClient", () => {
     });
 
     await expect(client.getRuntimeRecovery("worker-it", 20)).resolves.toMatchObject({
+      controller: {
+        state: "idle"
+      },
       nodeId: "worker-it",
+      policy: {
+        policy: {
+          mode: "manual"
+        }
+      },
       entries: [
         {
           runtime: {
@@ -908,6 +933,67 @@ describe("createHostClient", () => {
           }
         }
       ]
+    });
+  });
+
+  it("parses runtime recovery policy mutation responses from the host surface", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              controller: {
+                attemptsUsed: 0,
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260424-000001",
+                nodeId: "worker-it",
+                schemaVersion: "1",
+                state: "idle",
+                updatedAt: "2026-04-24T12:00:00.000Z"
+              },
+              currentRuntime: {
+                backendKind: "memory",
+                contextAvailable: true,
+                desiredState: "running",
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260424-000001",
+                nodeId: "worker-it",
+                observedState: "running",
+                restartGeneration: 1
+              },
+              entries: [],
+              nodeId: "worker-it",
+              policy: {
+                nodeId: "worker-it",
+                policy: {
+                  cooldownSeconds: 30,
+                  maxAttempts: 2,
+                  mode: "restart_on_failure"
+                },
+                schemaVersion: "1",
+                updatedAt: "2026-04-24T12:00:00.000Z"
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        )
+    });
+
+    await expect(
+      client.setRuntimeRecoveryPolicy("worker-it", {
+        cooldownSeconds: 30,
+        maxAttempts: 2,
+        mode: "restart_on_failure"
+      })
+    ).resolves.toMatchObject({
+      nodeId: "worker-it",
+      policy: {
+        policy: {
+          mode: "restart_on_failure"
+        }
+      }
     });
   });
 

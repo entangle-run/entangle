@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
+import { runtimeRecoveryPolicySchema } from "../runtime/recovery-policy.js";
 import {
   runnerPhaseSchema,
   runnerTriggerKindSchema,
@@ -86,6 +87,41 @@ export const runtimeRestartRequestedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("runtime.restart.requested")
 });
 
+export const runtimeRecoveryPolicyUpdatedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("runtime"),
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  nodeId: identifierSchema,
+  policy: runtimeRecoveryPolicySchema,
+  previousPolicy: runtimeRecoveryPolicySchema.optional(),
+  type: z.literal("runtime.recovery_policy.updated")
+});
+
+export const runtimeRecoveryAttemptedEventSchema = hostEventBaseSchema.extend({
+  attemptNumber: z.number().int().positive(),
+  category: z.literal("runtime"),
+  cooldownSeconds: z.number().int().nonnegative(),
+  failureFingerprint: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  maxAttempts: z.number().int().positive(),
+  nextEligibleAt: nonEmptyStringSchema.optional(),
+  nodeId: identifierSchema,
+  restartGeneration: runtimeRestartGenerationSchema,
+  type: z.literal("runtime.recovery.attempted")
+});
+
+export const runtimeRecoveryExhaustedEventSchema = hostEventBaseSchema.extend({
+  attemptsUsed: z.number().int().positive(),
+  category: z.literal("runtime"),
+  failureFingerprint: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  maxAttempts: z.number().int().positive(),
+  nodeId: identifierSchema,
+  type: z.literal("runtime.recovery.exhausted")
+});
+
 export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend({
   backendKind: runtimeBackendKindSchema,
   category: z.literal("runtime"),
@@ -154,6 +190,9 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   edgeUpdatedEventSchema,
   runtimeDesiredStateChangedEventSchema,
   runtimeRestartRequestedEventSchema,
+  runtimeRecoveryPolicyUpdatedEventSchema,
+  runtimeRecoveryAttemptedEventSchema,
+  runtimeRecoveryExhaustedEventSchema,
   runtimeObservedStateChangedEventSchema,
   sessionUpdatedEventSchema,
   runnerTurnUpdatedEventSchema,
@@ -191,6 +230,15 @@ export type RuntimeDesiredStateChangedEvent = z.infer<
 >;
 export type RuntimeRestartRequestedEvent = z.infer<
   typeof runtimeRestartRequestedEventSchema
+>;
+export type RuntimeRecoveryPolicyUpdatedEvent = z.infer<
+  typeof runtimeRecoveryPolicyUpdatedEventSchema
+>;
+export type RuntimeRecoveryAttemptedEvent = z.infer<
+  typeof runtimeRecoveryAttemptedEventSchema
+>;
+export type RuntimeRecoveryExhaustedEvent = z.infer<
+  typeof runtimeRecoveryExhaustedEventSchema
 >;
 export type RuntimeObservedStateChangedEvent = z.infer<
   typeof runtimeObservedStateChangedEventSchema

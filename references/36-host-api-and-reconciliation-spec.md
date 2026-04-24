@@ -359,6 +359,7 @@ The current repository implementation now concretely includes:
 - `GET /v1/runtimes/{nodeId}/context`
 - `GET /v1/runtimes/{nodeId}/artifacts`
 - `GET /v1/runtimes/{nodeId}/recovery`
+- `PUT /v1/runtimes/{nodeId}/recovery-policy`
 - `GET /v1/events`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
@@ -367,7 +368,6 @@ The current repository implementation now concretely includes:
 The currently missing runtime lifecycle elements are:
 
 - `DELETE /v1/runtimes/{nodeId}`
-- richer retry and recovery automation semantics;
 - broader recovery-oriented event classes.
 
 Purpose:
@@ -388,6 +388,13 @@ The current implementation also exposes:
 - read-only persisted runtime recovery-history inspection through
   `GET /v1/runtimes/{nodeId}/recovery`, with durable per-node records and
   canonicalized fingerprint-based deduplication;
+- explicit host-owned recovery policy mutation through
+  `PUT /v1/runtimes/{nodeId}/recovery-policy`;
+- persisted recovery-policy records plus observed recovery-controller state,
+  both exposed through the runtime recovery inspection surface;
+- bounded automatic `restart_on_failure` recovery owned by the host control
+  plane rather than by the runner, with durable exhaustion accounting anchored
+  in stable failure fingerprints;
 - host-managed external principal inspection and mutation;
 - host-level reconciliation status via `GET /v1/host/status`;
 - richer host-level reconciliation counters for blocked, degraded,

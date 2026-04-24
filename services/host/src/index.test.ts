@@ -12,6 +12,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Fastify from "fastify";
 import { WebSocket } from "ws";
+import type { RuntimeBackend } from "./runtime-backend.js";
 import {
   artifactRecordSchema,
   edgeDeletionResponseSchema,
@@ -367,7 +368,11 @@ function buildProvisioningCatalog(input: {
 }
 
 async function createTestServer(
-  options: { includeModelEndpoint?: boolean; includeModelSecret?: boolean } = {}
+  options: {
+    includeModelEndpoint?: boolean;
+    includeModelSecret?: boolean;
+    runtimeBackend?: RuntimeBackend;
+  } = {}
 ) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-host-"));
   createdDirectories.push(tempRoot);
@@ -399,9 +404,22 @@ async function createTestServer(
     import("./state.js")
   ]);
 
+  stateModule.configureRuntimeBackendForProcess(
+    options.runtimeBackend ? () => options.runtimeBackend! : undefined
+  );
   await stateModule.initializeHostState();
 
   return await hostModule.buildHostServer();
+}
+
+function createMockRuntimeBackend(
+  reconcile: RuntimeBackend["reconcileRuntime"]
+): RuntimeBackend {
+  return {
+    kind: "memory",
+    reconcileRuntime: reconcile,
+    removeInactiveRuntime: vi.fn(async () => {})
+  };
 }
 
 async function admitPackageSource(
@@ -2427,6 +2445,10 @@ describe("buildHostServer", () => {
         firstRecoveryResponse.json()
       );
 
+      expect(firstRecovery.policy.policy).toEqual({
+        mode: "manual"
+      });
+      expect(firstRecovery.controller.state).toBe("idle");
       expect(firstRecovery.currentRuntime).toMatchObject({
         nodeId: "worker-it",
         observedState: "running"
@@ -2459,6 +2481,10 @@ describe("buildHostServer", () => {
         thirdRecoveryResponse.json()
       );
 
+      expect(thirdRecovery.policy.policy).toEqual({
+        mode: "manual"
+      });
+      expect(thirdRecovery.controller.state).toBe("idle");
       expect(thirdRecovery.currentRuntime).toMatchObject({
         desiredState: "stopped",
         nodeId: "worker-it",
@@ -2467,6 +2493,234 @@ describe("buildHostServer", () => {
       expect(thirdRecovery.entries).toHaveLength(2);
       expect(thirdRecovery.entries[0]?.runtime.observedState).toBe("stopped");
       expect(thirdRecovery.entries[1]?.runtime.observedState).toBe("running");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("allows the operator to set a runtime recovery policy and inspect it through the recovery surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const applyPolicyResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          cooldownSeconds: 30,
+          maxAttempts: 2,
+          mode: "restart_on_failure"
+        },
+        url: "/v1/runtimes/worker-it/recovery-policy"
+      });
+
+      expect(applyPolicyResponse.statusCode).toBe(200);
+      const inspection = runtimeRecoveryInspectionResponseSchema.parse(
+        applyPolicyResponse.json()
+      );
+      expect(inspection.policy.policy).toEqual({
+        cooldownSeconds: 30,
+        maxAttempts: 2,
+        mode: "restart_on_failure"
+      });
+      expect(inspection.controller.state).toBe("idle");
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      expect(eventsResponse.statusCode).toBe(200);
+      expect(hostEventListResponseSchema.parse(eventsResponse.json()).events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "runtime.recovery_policy.updated",
+            nodeId: "worker-it",
+            policy: {
+              cooldownSeconds: 30,
+              maxAttempts: 2,
+              mode: "restart_on_failure"
+            },
+            previousPolicy: {
+              mode: "manual"
+            }
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("marks a failed runtime as manual-required when automatic recovery is disabled", async () => {
+    const runtimeBackend = createMockRuntimeBackend((input) => {
+      if (input.desiredState !== "running") {
+        return {
+          backendKind: "memory",
+          lastError: undefined,
+          observedState: "stopped",
+          runtimeHandle: undefined,
+          statusMessage: input.reason ?? "Runtime intentionally stopped."
+        };
+      }
+
+      return {
+        backendKind: "memory",
+        lastError: "Injected runtime failure.",
+        observedState: "failed",
+        runtimeHandle: undefined,
+        statusMessage: "Injected runtime failure."
+      };
+    });
+    const server = await createTestServer({
+      includeModelEndpoint: true,
+      runtimeBackend
+    });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const recoveryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/recovery?limit=10"
+      });
+
+      expect(recoveryResponse.statusCode).toBe(200);
+      const recovery = runtimeRecoveryInspectionResponseSchema.parse(
+        recoveryResponse.json()
+      );
+      expect(recovery.currentRuntime).toMatchObject({
+        nodeId: "worker-it",
+        observedState: "failed",
+        restartGeneration: 0
+      });
+      expect(recovery.policy.policy).toEqual({
+        mode: "manual"
+      });
+      expect(recovery.controller).toMatchObject({
+        attemptsUsed: 0,
+        state: "manual_required"
+      });
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      expect(eventsResponse.statusCode).toBe(200);
+      expect(hostEventListResponseSchema.parse(eventsResponse.json()).events).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "runtime.recovery.attempted"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("automatically retries failed runtimes and records exhaustion when the configured attempt budget is spent", async () => {
+    const runtimeBackend = createMockRuntimeBackend((input) => {
+      if (input.desiredState !== "running") {
+        return {
+          backendKind: "memory",
+          lastError: undefined,
+          observedState: "stopped",
+          runtimeHandle: undefined,
+          statusMessage: input.reason ?? "Runtime intentionally stopped."
+        };
+      }
+
+      if (input.restartGeneration >= 1) {
+        return {
+          backendKind: "memory",
+          lastError: "Injected runtime failure after retry.",
+          observedState: "failed",
+          runtimeHandle: undefined,
+          statusMessage: "Injected runtime failure after retry."
+        };
+      }
+
+      return {
+        backendKind: "memory",
+        lastError: "Injected runtime failure before retry.",
+        observedState: "failed",
+        runtimeHandle: undefined,
+        statusMessage: "Injected runtime failure before retry."
+      };
+    });
+    const server = await createTestServer({
+      includeModelEndpoint: true,
+      runtimeBackend
+    });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const applyPolicyResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          cooldownSeconds: 0,
+          maxAttempts: 1,
+          mode: "restart_on_failure"
+        },
+        url: "/v1/runtimes/worker-it/recovery-policy"
+      });
+
+      expect(applyPolicyResponse.statusCode).toBe(200);
+      const recoveryInspection = runtimeRecoveryInspectionResponseSchema.parse(
+        applyPolicyResponse.json()
+      );
+      expect(recoveryInspection.currentRuntime).toMatchObject({
+        nodeId: "worker-it",
+        observedState: "failed",
+        restartGeneration: 1
+      });
+      expect(recoveryInspection.controller).toMatchObject({
+        attemptsUsed: 1,
+        state: "exhausted"
+      });
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=30"
+      });
+      expect(eventsResponse.statusCode).toBe(200);
+      expect(hostEventListResponseSchema.parse(eventsResponse.json()).events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "runtime.restart.requested",
+            nodeId: "worker-it",
+            restartGeneration: 1
+          }),
+          expect.objectContaining({
+            type: "runtime.recovery.attempted",
+            nodeId: "worker-it",
+            attemptNumber: 1,
+            maxAttempts: 1
+          }),
+          expect.objectContaining({
+            type: "runtime.recovery.exhausted",
+            nodeId: "worker-it",
+            attemptsUsed: 1,
+            maxAttempts: 1
+          })
+        ])
+      );
     } finally {
       await server.close();
     }

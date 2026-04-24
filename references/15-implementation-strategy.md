@@ -177,21 +177,20 @@ place.
 
 Implement in small slices:
 
-1. explicit retry or recovery policy on top of the now-implemented degraded
-   state, deterministic restart, and host-owned runtime recovery-history
-   surfaces;
-2. broader recovery-oriented event classes and diagnostics widening on top of
+1. broader recovery-oriented event classes and diagnostics widening on top of
    those now-implemented host recovery read models.
+2. richer Studio and CLI inspection over the now-implemented runtime recovery
+   policy, controller, and history surfaces.
 
 Acceptance for the phase:
 
 - Studio and CLI can consume live host events;
 - host API coverage aligns more closely with the published control-plane spec;
 - runtime lifecycle changes, including deterministic restart and explicit
-  degraded-state semantics, plus persisted session inspection, host-derived
-  session/runner activity events, and host-owned runtime recovery history,
-  session/runner activity events, are inspectable and auditable without
-  reading files by hand.
+  degraded-state semantics, explicit recovery policy, bounded automatic
+  recovery, persisted session inspection, host-derived session/runner activity
+  events, and host-owned runtime recovery history, are inspectable and
+  auditable without reading files by hand.
 
 ## Phase 4: Studio completion
 

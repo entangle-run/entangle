@@ -85,6 +85,7 @@ This directory is the canonical design corpus for Entangle.
 79. [78-session-inspection-slice.md](78-session-inspection-slice.md)
 80. [79-session-and-runner-activity-event-slice.md](79-session-and-runner-activity-event-slice.md)
 81. [80-runtime-recovery-history-slice.md](80-runtime-recovery-history-slice.md)
+82. [81-runtime-recovery-policy-slice.md](81-runtime-recovery-policy-slice.md)
 
 ## Role of this corpus
 

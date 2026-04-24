@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { runtimeInspectionResponseSchema } from "./runtime.js";
+import {
+  runtimeRecoveryControllerRecordSchema,
+  runtimeRecoveryPolicyRecordSchema,
+  runtimeRecoveryPolicySchema
+} from "../runtime/recovery-policy.js";
 
 export const runtimeRecoveryRecordSchema = z.object({
   lastError: nonEmptyStringSchema.optional(),
@@ -14,13 +19,21 @@ export const runtimeRecoveryListQuerySchema = z.object({
 });
 
 export const runtimeRecoveryInspectionResponseSchema = z.object({
+  controller: runtimeRecoveryControllerRecordSchema,
   currentRuntime: runtimeInspectionResponseSchema.optional(),
   entries: z.array(runtimeRecoveryRecordSchema),
-  nodeId: identifierSchema
+  nodeId: identifierSchema,
+  policy: runtimeRecoveryPolicyRecordSchema
 });
+
+export const runtimeRecoveryPolicyMutationRequestSchema =
+  runtimeRecoveryPolicySchema;
 
 export type RuntimeRecoveryRecord = z.infer<typeof runtimeRecoveryRecordSchema>;
 export type RuntimeRecoveryListQuery = z.infer<typeof runtimeRecoveryListQuerySchema>;
 export type RuntimeRecoveryInspectionResponse = z.infer<
   typeof runtimeRecoveryInspectionResponseSchema
+>;
+export type RuntimeRecoveryPolicyMutationRequest = z.infer<
+  typeof runtimeRecoveryPolicyMutationRequestSchema
 >;
