@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import type {
@@ -236,14 +236,67 @@ function buildGitRemoteName(gitServiceRef: string): string {
   return `entangle-${sanitizeBranchComponent(gitServiceRef)}`;
 }
 
-function buildGitCommandEnvForRemoteOperation(input: {
+async function readDeliveredSecretValue(input: {
+  principalId: string;
+  secretPurpose: string;
+  transport: EffectiveRuntimeContext["artifactContext"]["gitPrincipalBindings"][number]["transport"];
+}): Promise<string> {
+  if (input.transport.status !== "available" || !input.transport.delivery) {
+    throw new Error(
+      `Remote git operations require an available ${input.secretPurpose} secret for git principal '${input.principalId}'.`
+    );
+  }
+
+  const secretValue =
+    input.transport.delivery.mode === "mounted_file"
+      ? await readFile(input.transport.delivery.filePath, "utf8")
+      : process.env[input.transport.delivery.envVar];
+  const normalizedSecretValue = secretValue?.trim();
+
+  if (!normalizedSecretValue) {
+    throw new Error(
+      `Remote git operations require non-empty ${input.secretPurpose} secret material for git principal '${input.principalId}'.`
+    );
+  }
+
+  return normalizedSecretValue;
+}
+
+async function ensureGitHttpsAskPassScript(
+  context: EffectiveRuntimeContext
+): Promise<string> {
+  const askPassScriptPath = path.join(
+    context.workspace.runtimeRoot,
+    "git-https-askpass.sh"
+  );
+  const askPassScript = [
+    "#!/bin/sh",
+    "case \"$1\" in",
+    "  *Username*) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_USERNAME\" ;;",
+    "  *Password*) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_TOKEN\" ;;",
+    "  *) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_TOKEN\" ;;",
+    "esac",
+    ""
+  ].join("\n");
+
+  await mkdir(path.dirname(askPassScriptPath), { recursive: true });
+  await writeFile(askPassScriptPath, askPassScript, {
+    encoding: "utf8",
+    mode: 0o700
+  });
+  await chmod(askPassScriptPath, 0o700);
+
+  return askPassScriptPath;
+}
+
+export async function buildGitCommandEnvForRemoteOperation(input: {
   context: EffectiveRuntimeContext;
   target: {
     gitServiceRef: string;
     remoteUrl: string;
     transportKind: "https" | "ssh";
   };
-}): NodeJS.ProcessEnv | undefined {
+}): Promise<NodeJS.ProcessEnv | undefined> {
   // Bounded local/test profiles may target a directly mounted bare repository path.
   // Those remotes do not require transport-level credentials.
   if (!input.target.remoteUrl.includes("://")) {
@@ -267,41 +320,57 @@ function buildGitCommandEnvForRemoteOperation(input: {
     );
   }
 
-  if (input.target.transportKind !== "ssh") {
-    throw new Error(
-      `Remote git operations for transport kind '${input.target.transportKind}' are not implemented yet.`
-    );
-  }
-
   const principalBinding = principalResolution.binding;
 
-  if (principalBinding.principal.transportAuthMode !== "ssh_key") {
+  if (input.target.transportKind === "ssh") {
+    if (principalBinding.principal.transportAuthMode !== "ssh_key") {
+      throw new Error(
+        `Remote git SSH operations require an SSH-key git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
+      );
+    }
+
+    if (
+      principalBinding.transport.status !== "available" ||
+      principalBinding.transport.delivery?.mode !== "mounted_file"
+    ) {
+      throw new Error(
+        `Remote git SSH operations require an available mounted SSH key for git principal '${principalBinding.principal.principalId}'.`
+      );
+    }
+
+    return {
+      GIT_SSH_COMMAND: [
+        "ssh",
+        "-F",
+        "/dev/null",
+        "-i",
+        principalBinding.transport.delivery.filePath,
+        "-o",
+        "IdentitiesOnly=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new"
+      ].join(" ")
+    };
+  }
+
+  if (principalBinding.principal.transportAuthMode !== "https_token") {
     throw new Error(
-      `Remote git operations require an SSH-key git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
+      `Remote git HTTPS operations require an HTTPS-token git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
     );
   }
 
-  if (
-    principalBinding.transport.status !== "available" ||
-    principalBinding.transport.delivery?.mode !== "mounted_file"
-  ) {
-    throw new Error(
-      `Remote git operations require an available mounted SSH key for git principal '${principalBinding.principal.principalId}'.`
-    );
-  }
+  const token = await readDeliveredSecretValue({
+    principalId: principalBinding.principal.principalId,
+    secretPurpose: "HTTPS token",
+    transport: principalBinding.transport
+  });
+  const askPassScriptPath = await ensureGitHttpsAskPassScript(input.context);
 
   return {
-    GIT_SSH_COMMAND: [
-      "ssh",
-      "-F",
-      "/dev/null",
-      "-i",
-      principalBinding.transport.delivery.filePath,
-      "-o",
-      "IdentitiesOnly=yes",
-      "-o",
-      "StrictHostKeyChecking=accept-new"
-    ].join(" ")
+    ENTANGLE_GIT_ASKPASS_TOKEN: token,
+    ENTANGLE_GIT_ASKPASS_USERNAME: principalBinding.principal.subject,
+    GIT_ASKPASS: askPassScriptPath,
+    GIT_TERMINAL_PROMPT: "0"
   };
 }
 
@@ -420,7 +489,7 @@ async function publishGitArtifactRecord(input: {
   const attemptTimestamp = nowIsoString();
 
   try {
-    const gitEnv = buildGitCommandEnvForRemoteOperation({
+    const gitEnv = await buildGitCommandEnvForRemoteOperation({
       context: input.context,
       target
     });
@@ -515,7 +584,7 @@ async function retrieveGitArtifact(input: {
   const repoPath = path.join(retrievalRoot, "repo");
   const localPath = path.join(repoPath, input.artifactRef.locator.path);
   const gitDirectoryPath = path.join(repoPath, ".git");
-  const gitEnv = buildGitCommandEnvForRemoteOperation({
+  const gitEnv = await buildGitCommandEnvForRemoteOperation({
     context: input.context,
     target
   });

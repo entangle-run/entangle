@@ -1,9 +1,14 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
-import { sessionRecordSchema, type AgentEngineTurnRequest } from "@entangle/types";
+import {
+  sessionRecordSchema,
+  type AgentEngineTurnRequest,
+  type EffectiveRuntimeContext
+} from "@entangle/types";
+import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import { loadRuntimeContext } from "./runtime-context.js";
 import type { RunnerMemorySynthesisInput } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
@@ -26,8 +31,78 @@ import { InMemoryRunnerTransport } from "./transport.js";
 
 afterEach(async () => {
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
+  delete process.env.ENTANGLE_TEST_GIT_HTTPS_TOKEN;
   await cleanupRuntimeFixtures();
 });
+
+function buildHttpsRuntimeContext(input: {
+  context: EffectiveRuntimeContext;
+  delivery:
+    | {
+        filePath: string;
+        mode: "mounted_file";
+      }
+    | {
+        envVar: string;
+        mode: "env_var";
+      };
+}): EffectiveRuntimeContext {
+  return {
+    ...input.context,
+    artifactContext: {
+      ...input.context.artifactContext,
+      gitPrincipalBindings: [
+        {
+          principal: {
+            principalId: "worker-it-git-https",
+            displayName: "Worker IT HTTPS Git Principal",
+            systemKind: "git",
+            gitServiceRef: "local-gitea",
+            subject: "worker-it",
+            transportAuthMode: "https_token",
+            secretRef: "secret://git/worker-it/https-token",
+            attribution: {
+              displayName: "Worker IT HTTPS Git Principal",
+              email: "worker-it@entangle.local"
+            },
+            signing: {
+              mode: "none"
+            }
+          },
+          transport: {
+            delivery: input.delivery,
+            secretRef: "secret://git/worker-it/https-token",
+            status: "available"
+          }
+        }
+      ],
+      gitServices: [
+        {
+          authMode: "https_token",
+          baseUrl: "https://gitea.example",
+          defaultNamespace: "team-alpha",
+          displayName: "Local Gitea",
+          id: "local-gitea",
+          provisioning: {
+            mode: "preexisting"
+          },
+          remoteBase: "https://gitea.example/git",
+          transportKind: "https"
+        }
+      ],
+      primaryGitPrincipalRef: "worker-it-git-https",
+      primaryGitRepositoryTarget: {
+        gitServiceRef: "local-gitea",
+        namespace: "team-alpha",
+        provisioningMode: "preexisting",
+        remoteUrl: "https://gitea.example/git/team-alpha/graph-alpha.git",
+        repositoryName: "graph-alpha",
+        transportKind: "https"
+      },
+      primaryGitServiceRef: "local-gitea"
+    }
+  };
+}
 
 describe("RunnerService", () => {
   it("retrieves published inbound git artifacts from the primary remote and passes them to the engine", async () => {
@@ -981,5 +1056,84 @@ describe("RunnerService", () => {
     expect(responses).toHaveLength(1);
 
     await service.stop();
+  });
+});
+
+describe("buildGitCommandEnvForRemoteOperation", () => {
+  const httpsTokenEnvVar = "ENTANGLE_TEST_GIT_HTTPS_TOKEN";
+
+  it("builds a non-persistent askpass environment for HTTPS token mounted files", async () => {
+    const fixture = await createRuntimeFixture();
+    const tokenPath = path.join(
+      fixture.context.workspace.runtimeRoot,
+      "https-token"
+    );
+    await writeFile(tokenPath, "mounted-token\n", "utf8");
+    const context = buildHttpsRuntimeContext({
+      context: fixture.context,
+      delivery: {
+        filePath: tokenPath,
+        mode: "mounted_file"
+      }
+    });
+
+    const env = await buildGitCommandEnvForRemoteOperation({
+      context,
+      target: context.artifactContext.primaryGitRepositoryTarget!
+    });
+
+    expect(env).toMatchObject({
+      ENTANGLE_GIT_ASKPASS_TOKEN: "mounted-token",
+      ENTANGLE_GIT_ASKPASS_USERNAME: "worker-it",
+      GIT_TERMINAL_PROMPT: "0"
+    });
+    expect(env?.GIT_ASKPASS).toBe(
+      path.join(context.workspace.runtimeRoot, "git-https-askpass.sh")
+    );
+
+    const askPassScript = await readFile(env?.GIT_ASKPASS ?? "", "utf8");
+    expect(askPassScript).toContain("ENTANGLE_GIT_ASKPASS_TOKEN");
+    expect(askPassScript).not.toContain("mounted-token");
+  });
+
+  it("builds a non-interactive askpass environment from env-var delivery", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env[httpsTokenEnvVar] = "env-token";
+    const context = buildHttpsRuntimeContext({
+      context: fixture.context,
+      delivery: {
+        envVar: httpsTokenEnvVar,
+        mode: "env_var"
+      }
+    });
+
+    const env = await buildGitCommandEnvForRemoteOperation({
+      context,
+      target: context.artifactContext.primaryGitRepositoryTarget!
+    });
+
+    expect(env?.ENTANGLE_GIT_ASKPASS_TOKEN).toBe("env-token");
+    expect(env?.ENTANGLE_GIT_ASKPASS_USERNAME).toBe("worker-it");
+    expect(env?.GIT_TERMINAL_PROMPT).toBe("0");
+  });
+
+  it("rejects HTTPS token principals when secret material is unavailable", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = buildHttpsRuntimeContext({
+      context: fixture.context,
+      delivery: {
+        envVar: httpsTokenEnvVar,
+        mode: "env_var"
+      }
+    });
+
+    await expect(
+      buildGitCommandEnvForRemoteOperation({
+        context,
+        target: context.artifactContext.primaryGitRepositoryTarget!
+      })
+    ).rejects.toThrow(
+      "Remote git operations require non-empty HTTPS token secret material"
+    );
   });
 });

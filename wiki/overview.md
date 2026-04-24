@@ -372,10 +372,12 @@ The repository now also contains the first real implementation baseline:
   published git handoffs from locator-specific repository targets into an
   explicit retrieval cache partitioned by service, namespace, repository, and
   artifact id, with deterministic service-scoped git-principal selection and
-  typed local artifact inputs into the engine request; the host now also provisions primary `gitea_api`
-  repository targets itself, persists provisioning-state records, and treats
-  provisioning failure as a runtime-realizability error instead of deferring
-  it to the runner;
+  typed local artifact inputs into the engine request; the host now also
+  provisions primary `gitea_api` repository targets itself, persists
+  provisioning-state records, and treats provisioning failure as a
+  runtime-realizability error instead of deferring it to the runner; URL-based
+  runner git operations now support both SSH-key and HTTPS-token transport
+  principals without writing token material into runtime files or remote URLs;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay

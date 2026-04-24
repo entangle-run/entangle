@@ -127,7 +127,9 @@ This repository currently contains:
   with deterministic service-scoped transport-principal selection and
   repository-partitioned retrieval caches, plus host-owned provisioning of
   primary `gitea_api` repository targets with persisted provisioning-state
-  records and runtime realizability gated on provisioning success;
+  records and runtime realizability gated on provisioning success, and now
+  supports HTTPS-token git transport through a non-persistent `GIT_ASKPASS`
+  environment in addition to the existing SSH-key path;
 - host read surfaces for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus matching

@@ -135,6 +135,7 @@ This directory is the canonical design corpus for Entangle.
 129. [128-local-archive-package-source-admission-slice.md](128-local-archive-package-source-admission-slice.md)
 130. [129-package-source-deletion-slice.md](129-package-source-deletion-slice.md)
 131. [130-studio-package-source-deletion-slice.md](130-studio-package-source-deletion-slice.md)
+132. [131-runner-git-https-token-transport-slice.md](131-runner-git-https-token-transport-slice.md)
 
 ## Role of this corpus
 

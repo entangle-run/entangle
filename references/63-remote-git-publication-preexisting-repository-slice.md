@@ -81,6 +81,12 @@ The current first-class authenticated path is:
 - principal transport auth mode: `ssh_key`
 - secret delivery: mounted file resolved by the host
 
+Later implementation has also added HTTPS-token git transport. For
+`transportKind: "https"` targets, the runner now resolves an `https_token` git
+principal and supplies username/token material to git through a runtime-local
+`GIT_ASKPASS` script that reads environment variables. The script itself
+contains no token material, and tokens are not embedded into remote URLs.
+
 This keeps the auth boundary explicit and consistent with the earlier
 principal-binding slice.
 

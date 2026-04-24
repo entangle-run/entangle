@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added runner HTTPS-token git transport
+
+Closed the contradiction between the catalog/principal model, which already
+allowed HTTPS-token git services, and the runner artifact backend, which still
+accepted only SSH-key URL remotes. Runner git publication and retrieval now
+build a non-interactive `GIT_ASKPASS` environment for `https_token` principals
+from mounted-file or env-var secret delivery without writing token material
+into runtime files or remote URLs.
+
 ## [2026-04-24] implementation | Added Studio package-source deletion
 
 Closed the visual operator side of the package-source deletion boundary.

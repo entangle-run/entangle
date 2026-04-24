@@ -226,6 +226,10 @@ artifact-collaboration depth, not the runner boundary itself.
 - host-owned provisioning of primary repository targets whose selected git
   service declares `gitea_api`, with persisted provisioning-state records and
   runtime realizability gated on provisioning success;
+- URL-based runner git operations over both SSH-key and HTTPS-token transport
+  principals, with HTTPS token material supplied through a non-persistent
+  `GIT_ASKPASS` environment rather than written into remote URLs or runtime
+  files;
 - host collection and item inspection surfaces for runtime artifacts.
 
 ### Still missing or incomplete

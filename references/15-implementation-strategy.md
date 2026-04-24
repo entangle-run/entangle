@@ -121,8 +121,10 @@ The first two preparation slices are now implemented:
 - git transport secret delivery from host-owned secret references;
 - deterministic remote repository selection and provisioning policy.
 
-The artifact-record publication-state contract is now also implemented, so the
-remaining work in this phase can land on a clean lifecycle model.
+The artifact-record publication-state contract, remote publication, downstream
+retrieval, locator-specific handoff widening, host-owned `gitea_api`
+provisioning, and runner HTTPS-token git transport are now also implemented,
+so the remaining work in this phase can land on a clean lifecycle model.
 
 The remaining work in this phase is:
 
