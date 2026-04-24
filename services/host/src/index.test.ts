@@ -2461,7 +2461,8 @@ describe("buildHostServer", () => {
               "/tmp/entangle-runner/memory/wiki/summaries/decisions.md",
               "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
               "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md",
-              "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md"
+              "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md",
+              "/tmp/entangle-runner/memory/wiki/summaries/resolutions.md"
             ],
             workingContextPagePath:
               "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
@@ -2559,7 +2560,8 @@ describe("buildHostServer", () => {
                 "/tmp/entangle-runner/memory/wiki/summaries/decisions.md",
                 "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
                 "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md",
-                "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md"
+                "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md",
+                "/tmp/entangle-runner/memory/wiki/summaries/resolutions.md"
               ],
               workingContextPagePath:
                 "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"

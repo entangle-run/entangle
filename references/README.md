@@ -119,6 +119,7 @@ This directory is the canonical design corpus for Entangle.
 113. [112-focused-memory-summary-registers-slice.md](112-focused-memory-summary-registers-slice.md)
 114. [113-decision-register-memory-slice.md](113-decision-register-memory-slice.md)
 115. [114-next-actions-register-memory-slice.md](114-next-actions-register-memory-slice.md)
+116. [115-resolutions-register-memory-slice.md](115-resolutions-register-memory-slice.md)
 
 ## Role of this corpus
 

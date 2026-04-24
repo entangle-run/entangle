@@ -323,6 +323,11 @@ not modeling.
   focused pending-work surface, and future turns can consume durable next
   actions directly instead of inferring them only from `working-context.md`
   or the mixed open-questions page;
+- a resolutions-register refinement where that same bounded synthesis pass now
+  updates `resolutions.md`, recent closures no longer disappear implicitly
+  from focused memory, and future turns can consume durable resolved
+  questions and completed actions directly instead of inferring closure only
+  from rewritten prose;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -345,8 +350,8 @@ not modeling.
   page, log/index, derived recent-work summary, session-aware plus
   artifact-aware/artifact-carrying/engine-outcome-aware/execution-insight-carrying
   working-context summary, focused
-  decisions/stable-facts/open-questions/next-actions summary registers, and
-  bounded current-session inspection baseline;
+  decisions/stable-facts/open-questions/next-actions/resolutions summary
+  registers, and bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 

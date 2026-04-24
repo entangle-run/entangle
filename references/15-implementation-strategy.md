@@ -223,6 +223,11 @@ Completed in the current repository state:
     focused pending-work surface, and future turns can consume durable next
     actions directly instead of inferring them only from `working-context.md`
     or the mixed open-questions page.
+22. a resolutions-register refinement where the same bounded synthesis pass
+    now updates `resolutions.md`, recent closures no longer disappear
+    implicitly from focused memory, and future turns can consume durable
+    resolved questions and completed actions directly instead of inferring
+    closure only from rewritten prose.
 
 Remaining work in this phase:
 
@@ -232,12 +237,13 @@ Remaining work in this phase:
    synthesis paths, now including artifact-aware and artifact-carrying
    working-context synthesis plus current-turn engine-outcome grounding and
    execution-insight carry-forward plus focused
-   decisions/stable-facts/open-questions/next-actions summary registers,
+   decisions/stable-facts/open-questions/next-actions/resolutions summary
+   registers,
    before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work, working-context, decisions,
-   stable-facts, open-questions, and next-actions summary layers, into broader
-   model-guided memory maintenance;
+   stable-facts, open-questions, next-actions, and resolutions summary layers,
+   into broader model-guided memory maintenance;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

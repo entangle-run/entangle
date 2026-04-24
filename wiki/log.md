@@ -846,3 +846,18 @@ directly through the dedicated next-actions register in canonical `memoryRefs`.
 Closed the slice only after widening runner, host, host-client, Studio, and
 shared-contract assertions, then re-running targeted package tests plus the
 full `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added resolutions register to model-guided memory
+
+Closed the next lifecycle gap in the bounded memory layer by adding
+`memory/wiki/summaries/resolutions.md` to the same strict model-guided
+synthesis pass that already maintained working-context, decisions,
+stable-facts, open-questions, and next-actions summaries. Recent closures no
+longer disappear implicitly when open questions are rewritten or pending work
+is completed; future turns can now consume durable resolved questions and
+completed actions directly through the dedicated resolutions register in
+canonical `memoryRefs`.
+
+Closed the slice only after widening runner, host, host-client, Studio, and
+shared-contract assertions, then re-running targeted package tests plus the
+full `pnpm verify` and `git diff --check` gates.

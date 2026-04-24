@@ -141,7 +141,8 @@ describe("studio runtime trace inspection helpers", () => {
           "/tmp/entangle-runner/memory/wiki/summaries/decisions.md",
           "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
           "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md",
-          "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md"
+          "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md",
+          "/tmp/entangle-runner/memory/wiki/summaries/resolutions.md"
         ],
         workingContextPagePath:
           "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
@@ -168,7 +169,7 @@ describe("studio runtime trace inspection helpers", () => {
       "Usage: 42 input / 12 output tokens",
       "Tool executions: 2 total (1 success, 1 error)",
       "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_execution_failed)",
-      "Memory synthesis: updated 5 summary pages"
+      "Memory synthesis: updated 6 summary pages"
     ]);
   });
 });

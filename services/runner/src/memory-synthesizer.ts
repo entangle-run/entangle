@@ -20,6 +20,7 @@ import {
   resolveNextActionsSummaryPath,
   readTextFileOrDefault,
   resolveOpenQuestionsSummaryPath,
+  resolveResolutionsSummaryPath,
   resolveStableFactsSummaryPath,
   resolveWorkingContextSummaryPath,
   workingContextSummaryRelativePath,
@@ -47,6 +48,7 @@ const openQuestionsSummaryBullet =
   "- [Open Questions Summary](summaries/open-questions.md)";
 const decisionsSummaryBullet = "- [Decisions Summary](summaries/decisions.md)";
 const nextActionsSummaryBullet = "- [Next Actions Summary](summaries/next-actions.md)";
+const resolutionsSummaryBullet = "- [Resolutions Summary](summaries/resolutions.md)";
 
 export type RunnerMemorySynthesisInput = {
   artifactInputs: EngineArtifactInput[];
@@ -221,6 +223,7 @@ function parseWorkingContextSummaryInput(input: unknown):
         focus: string;
         nextActions: string[];
         openQuestions: string[];
+        resolutions: string[];
         sessionInsights: string[];
         stableFacts: string[];
         summary: string;
@@ -246,6 +249,7 @@ function parseWorkingContextSummaryInput(input: unknown):
     "focus",
     "nextActions",
     "openQuestions",
+    "resolutions",
     "sessionInsights",
     "stableFacts",
     "summary"
@@ -258,6 +262,7 @@ function parseWorkingContextSummaryInput(input: unknown):
   const focus = coerceNonEmptyString(inputRecord.focus);
   const nextActions = coerceStringArray(inputRecord.nextActions);
   const openQuestions = coerceStringArray(inputRecord.openQuestions);
+  const resolutions = coerceStringArray(inputRecord.resolutions);
   const sessionInsights = coerceStringArray(inputRecord.sessionInsights);
   const stableFacts = coerceStringArray(inputRecord.stableFacts);
   const summary = coerceNonEmptyString(inputRecord.summary);
@@ -303,6 +308,10 @@ function parseWorkingContextSummaryInput(input: unknown):
 
   if (!nextActions) {
     issues.push("The 'nextActions' field must be an array of non-empty strings.");
+  }
+
+  if (!resolutions) {
+    issues.push("The 'resolutions' field must be an array of non-empty strings.");
   }
 
   if (extraKeys.length > 0) {
@@ -374,6 +383,15 @@ function parseWorkingContextSummaryInput(input: unknown):
     );
   }
 
+  if (
+    resolutions &&
+    resolutions.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'resolutions' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
   if (issues.length > 0) {
     return {
       issues,
@@ -390,6 +408,7 @@ function parseWorkingContextSummaryInput(input: unknown):
       focus: focus!,
       nextActions: nextActions!,
       openQuestions: openQuestions!,
+      resolutions: resolutions!,
       sessionInsights: sessionInsights!,
       stableFacts: stableFacts!,
       summary: summary!
@@ -466,6 +485,14 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
           },
           type: "array"
         },
+        resolutions: {
+          description:
+            "A bounded list of recently resolved questions, completed actions, or closed uncertainties worth carrying forward so they are not reopened implicitly.",
+          items: {
+            type: "string"
+          },
+          type: "array"
+        },
         nextActions: {
           description:
             "A bounded list of immediate next actions that likely matter for subsequent turns.",
@@ -484,6 +511,7 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         "sessionInsights",
         "stableFacts",
         "openQuestions",
+        "resolutions",
         "nextActions"
       ],
       additionalProperties: false
@@ -516,6 +544,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Preserve only durable session or coordination observations that future turns should retain; do not restate transient workflow state verbatim.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
+      "When a question is no longer open or an action is complete, record that closure in bounded resolutions instead of letting it disappear silently.",
       "Do not include secrets, speculative claims, or verbose restatement of logs."
     ],
     interactionPromptParts: [
@@ -589,6 +618,7 @@ function buildWorkingContextSummaryContent(input: {
   wikiRoot: string;
   nextActions: string[];
   openQuestions: string[];
+  resolutions: string[];
   sessionInsights: string[];
   sessionSnapshot: RunnerSessionStateSnapshot | undefined;
 }): string {
@@ -641,6 +671,13 @@ function buildWorkingContextSummaryContent(input: {
     "## Next Actions",
     "",
     ...renderBulletList(input.nextActions, "- No immediate next actions were recorded."),
+    "",
+    "## Recent Resolutions",
+    "",
+    ...renderBulletList(
+      input.resolutions,
+      "- No durable recently resolved items were synthesized."
+    ),
     "",
     "## Artifact Context",
     "",
@@ -841,6 +878,45 @@ function buildNextActionsSummaryContent(input: {
   ].join("\n");
 }
 
+function buildResolutionsSummaryContent(input: {
+  recentWorkSummaryPath: string;
+  resolutions: string[];
+  sessionId: string;
+  taskPagePath: string;
+  turnId: string;
+  wikiRoot: string;
+  workingContextPagePath: string;
+}): string {
+  const taskPageRelativePath = toPosixRelativePath(input.wikiRoot, input.taskPagePath);
+  const recentWorkRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.recentWorkSummaryPath
+  );
+  const workingContextRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.workingContextPagePath
+  );
+
+  return [
+    "# Resolutions Summary",
+    "",
+    `- Updated at: \`${nowIsoString()}\``,
+    `- Session: \`${input.sessionId}\``,
+    `- Turn: \`${input.turnId}\``,
+    `- Task page: [Current Task Memory](${taskPageRelativePath})`,
+    `- Working context: [Working Context Summary](${workingContextRelativePath})`,
+    `- Recent work: [Recent Work Summary](${recentWorkRelativePath})`,
+    "",
+    "## Resolutions",
+    "",
+    ...renderBulletList(
+      input.resolutions,
+      "- No durable recent resolutions were synthesized."
+    ),
+    ""
+  ].join("\n");
+}
+
 function buildMemorySynthesisLogEntry(input: {
   errorMessage?: string;
   updatedSummaryRelativePaths?: string[];
@@ -877,6 +953,7 @@ function createWorkingContextSummaryToolExecutor(input: {
     decisionsPagePath: string | undefined;
     nextActionsPagePath: string | undefined;
     openQuestionsPagePath: string | undefined;
+    resolutionsPagePath: string | undefined;
     stableFactsPagePath: string | undefined;
     workingContextPagePath: string | undefined;
   };
@@ -912,6 +989,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       const stableFactsPagePath = resolveStableFactsSummaryPath(wikiRoot);
       const openQuestionsPagePath = resolveOpenQuestionsSummaryPath(wikiRoot);
       const nextActionsPagePath = resolveNextActionsSummaryPath(wikiRoot);
+      const resolutionsPagePath = resolveResolutionsSummaryPath(wikiRoot);
       const normalizedInput = {
         ...parsedInput.value,
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
@@ -919,6 +997,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         executionInsights: normalizeListEntries(parsedInput.value.executionInsights),
         nextActions: normalizeListEntries(parsedInput.value.nextActions),
         openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
+        resolutions: normalizeListEntries(parsedInput.value.resolutions),
         sessionInsights: normalizeListEntries(parsedInput.value.sessionInsights),
         stableFacts: normalizeListEntries(parsedInput.value.stableFacts)
       };
@@ -930,6 +1009,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         focus: normalizedInput.focus,
         nextActions: normalizedInput.nextActions,
         openQuestions: normalizedInput.openQuestions,
+        resolutions: normalizedInput.resolutions,
         producedArtifactIds: input.synthesis.producedArtifactIds,
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
         sessionId: input.synthesis.envelope.message.sessionId,
@@ -978,17 +1058,28 @@ function createWorkingContextSummaryToolExecutor(input: {
         wikiRoot,
         workingContextPagePath
       });
+      const resolutionsContent = buildResolutionsSummaryContent({
+        recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
+        resolutions: normalizedInput.resolutions,
+        sessionId: input.synthesis.envelope.message.sessionId,
+        taskPagePath: input.synthesis.taskPagePath,
+        turnId: input.synthesis.turnId,
+        wikiRoot,
+        workingContextPagePath
+      });
 
       await Promise.all([
         writeTextFile(workingContextPagePath, `${content.trimEnd()}\n`),
         writeTextFile(decisionsPagePath, `${decisionsContent.trimEnd()}\n`),
         writeTextFile(stableFactsPagePath, `${stableFactsContent.trimEnd()}\n`),
         writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`),
-        writeTextFile(nextActionsPagePath, `${nextActionsContent.trimEnd()}\n`)
+        writeTextFile(nextActionsPagePath, `${nextActionsContent.trimEnd()}\n`),
+        writeTextFile(resolutionsPagePath, `${resolutionsContent.trimEnd()}\n`)
       ]);
       input.writePathCapture.decisionsPagePath = decisionsPagePath;
       input.writePathCapture.nextActionsPagePath = nextActionsPagePath;
       input.writePathCapture.openQuestionsPagePath = openQuestionsPagePath;
+      input.writePathCapture.resolutionsPagePath = resolutionsPagePath;
       input.writePathCapture.stableFactsPagePath = stableFactsPagePath;
       input.writePathCapture.workingContextPagePath = workingContextPagePath;
 
@@ -1039,6 +1130,7 @@ async function ensureWorkingContextIndexed(
   nextIndex = appendSectionBullet(nextIndex, "Summaries", stableFactsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", openQuestionsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", nextActionsSummaryBullet);
+  nextIndex = appendSectionBullet(nextIndex, "Summaries", resolutionsSummaryBullet);
 
   await writeTextFile(indexPath, nextIndex);
 }
@@ -1061,12 +1153,14 @@ export function createModelGuidedMemorySynthesizer(input: {
         decisionsPagePath: string | undefined;
         nextActionsPagePath: string | undefined;
         openQuestionsPagePath: string | undefined;
+        resolutionsPagePath: string | undefined;
         stableFactsPagePath: string | undefined;
         workingContextPagePath: string | undefined;
       } = {
         decisionsPagePath: undefined,
         nextActionsPagePath: undefined,
         openQuestionsPagePath: undefined,
+        resolutionsPagePath: undefined,
         stableFactsPagePath: undefined,
         workingContextPagePath: undefined
       };
@@ -1118,13 +1212,19 @@ export function createModelGuidedMemorySynthesizer(input: {
             "Model-guided memory synthesis completed without updating the next actions summary."
           );
         }
+        if (!writePathCapture.resolutionsPagePath) {
+          throw new Error(
+            "Model-guided memory synthesis completed without updating the resolutions summary."
+          );
+        }
 
         const updatedSummaryPagePaths = [
           writePathCapture.workingContextPagePath,
           writePathCapture.decisionsPagePath,
           writePathCapture.stableFactsPagePath,
           writePathCapture.openQuestionsPagePath,
-          writePathCapture.nextActionsPagePath
+          writePathCapture.nextActionsPagePath,
+          writePathCapture.resolutionsPagePath
         ];
 
         await Promise.all([

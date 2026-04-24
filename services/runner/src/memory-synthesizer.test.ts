@@ -254,6 +254,10 @@ describe("model-guided memory synthesis", () => {
                 openQuestions: [
                   "Does the current recovery trace expose enough detail for operators?"
                 ],
+                resolutions: [
+                  "The earlier relay-capacity concern is considered resolved for the current checkpoint review.",
+                  "The previous draft action item to gather raw relay logs is complete."
+                ],
                 sessionInsights: [
                   "The session is still active and centered on the relay recovery follow-up.",
                   "The live conversation with the reviewer remains the coordination path for the next checkpoint."
@@ -431,6 +435,12 @@ describe("model-guided memory synthesis", () => {
             summaryPagePath.endsWith(path.join("summaries", "next-actions.md"))
           )
         : undefined;
+    const resolutionsPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(path.join("summaries", "resolutions.md"))
+          )
+        : undefined;
 
     expect(capturedRequest?.toolChoice).toEqual({
       type: "tool",
@@ -498,12 +508,17 @@ describe("model-guided memory synthesis", () => {
       throw new Error("Expected a next actions summary path.");
     }
 
+    if (!resolutionsPagePath) {
+      throw new Error("Expected a resolutions summary path.");
+    }
+
     const [
       workingContextPage,
       decisionsPage,
       stableFactsPage,
       openQuestionsPage,
       nextActionsPage,
+      resolutionsPage,
       indexPage,
       logPage,
       followupTurnRequest
@@ -514,6 +529,7 @@ describe("model-guided memory synthesis", () => {
         readFile(stableFactsPagePath, "utf8"),
         readFile(openQuestionsPagePath, "utf8"),
         readFile(nextActionsPagePath, "utf8"),
+        readFile(resolutionsPagePath, "utf8"),
         readFile(memoryUpdate.indexPath, "utf8"),
         readFile(memoryUpdate.logPath, "utf8"),
         buildAgentEngineTurnRequest(context)
@@ -555,6 +571,10 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain(
       "Treat the inbound recovery notes as the canonical baseline for the next checkpoint review."
     );
+    expect(workingContextPage).toContain("## Recent Resolutions");
+    expect(workingContextPage).toContain(
+      "The earlier relay-capacity concern is considered resolved for the current checkpoint review."
+    );
     expect(decisionsPage).toContain("# Decisions Summary");
     expect(decisionsPage).toContain("## Decisions");
     expect(decisionsPage).toContain(
@@ -577,6 +597,11 @@ describe("model-guided memory synthesis", () => {
     expect(nextActionsPage).toContain(
       "Validate the recovery checkpoint against the latest runner behavior."
     );
+    expect(resolutionsPage).toContain("# Resolutions Summary");
+    expect(resolutionsPage).toContain("## Resolutions");
+    expect(resolutionsPage).toContain(
+      "The previous draft action item to gather raw relay logs is complete."
+    );
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
     expect(indexPage).toContain("[Decisions Summary](summaries/decisions.md)");
     expect(indexPage).toContain("[Stable Facts Summary](summaries/stable-facts.md)");
@@ -584,12 +609,14 @@ describe("model-guided memory synthesis", () => {
       "[Open Questions Summary](summaries/open-questions.md)"
     );
     expect(indexPage).toContain("[Next Actions Summary](summaries/next-actions.md)");
+    expect(indexPage).toContain("[Resolutions Summary](summaries/resolutions.md)");
     expect(logPage).toContain("memory synthesis | turn-memory-005");
     expect(followupTurnRequest.memoryRefs).toContain(workingContextPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(decisionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(stableFactsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(nextActionsPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(resolutionsPagePath);
   });
 
   it("records synthesis failure in the wiki log without throwing", async () => {

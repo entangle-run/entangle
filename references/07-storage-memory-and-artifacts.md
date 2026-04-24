@@ -101,6 +101,7 @@ through a runner-owned structured path. That durable set now includes:
 - `stable-facts.md`
 - `open-questions.md`
 - `next-actions.md`
+- `resolutions.md`
 
 Those focused pages are grounded in final post-turn lifecycle state and carry
 bounded session, artifact, execution, decision, and planning context durably.
