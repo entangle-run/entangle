@@ -338,6 +338,8 @@ describe("model-guided memory synthesis", () => {
                 ],
                 closedOpenQuestions: [previousOpenQuestion],
                 completedNextActions: [previousNextAction],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [],
                 decisions: [
                   "Treat the inbound recovery notes as the canonical baseline for the next checkpoint review.",
                   "Carry the produced report forward as the current proposal for the next operator validation step."
@@ -889,6 +891,8 @@ describe("model-guided memory synthesis", () => {
                 artifactInsights: [],
                 closedOpenQuestions: [],
                 completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Keep the relay operator follow-up active.",
@@ -1024,6 +1028,8 @@ describe("model-guided memory synthesis", () => {
                 artifactInsights: [],
                 closedOpenQuestions: ["A missing baseline question."],
                 completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Review a mismatched closure reference.",
@@ -1175,6 +1181,8 @@ describe("model-guided memory synthesis", () => {
                 artifactInsights: [],
                 closedOpenQuestions: [],
                 completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Review stale baseline retirement discipline.",
@@ -1331,6 +1339,8 @@ describe("model-guided memory synthesis", () => {
                 artifactInsights: [],
                 closedOpenQuestions: [],
                 completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Narrow the stale operator-facing review question.",
@@ -1498,6 +1508,8 @@ describe("model-guided memory synthesis", () => {
                 artifactInsights: [],
                 closedOpenQuestions: [],
                 completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Reject an invalid stale-question replacement.",
@@ -1563,6 +1575,364 @@ describe("model-guided memory synthesis", () => {
       },
       taskPagePath: memoryUpdate.taskPagePath,
       turnId: "turn-memory-011"
+    });
+
+    expect(synthesisResult).toEqual({
+      errorMessage:
+        "Model-guided memory synthesis completed without updating the working-context summary.",
+      ok: false
+    });
+  });
+
+  it("allows explicitly consolidating multiple stale open questions into one narrower active question", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const envelope = buildInboundTaskRequest({
+      summary: "Consolidate overlapping stale relay-review questions."
+    });
+    const memoryUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      result: {
+        assistantMessages: ["Consolidated overlapping stale relay-review questions."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      turnId: "turn-memory-012"
+    });
+    const staleOpenQuestionOne =
+      "Will the relay recovery trace stay readable for operators after the next deploy?";
+    const staleOpenQuestionTwo =
+      "Do operators still need a separate readability review for the relay recovery trace after the next deploy?";
+    const consolidatedOpenQuestion =
+      "Which relay-trace readability checks still need explicit operator confirmation after the next deploy?";
+    const openQuestionsPagePath = path.join(
+      context.workspace.memoryRoot,
+      "wiki",
+      "summaries",
+      "open-questions.md"
+    );
+    await writeFile(
+      openQuestionsPagePath,
+      [
+        "# Open Questions Summary",
+        "",
+        "## Open Questions",
+        "",
+        `- ${staleOpenQuestionOne}`,
+        `- ${staleOpenQuestionTwo}`,
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+    const statePaths = await ensureRunnerStatePaths(context.workspace.runtimeRoot);
+    await writeFocusedRegisterState(statePaths, {
+      registers: {
+        nextActions: [],
+        openQuestions: [
+          {
+            carryCount: 3,
+            firstObservedTurnId: "turn-memory-009",
+            lastObservedTurnId: "turn-memory-011",
+            normalizedKey:
+              "will the relay recovery trace stay readable for operators after the next deploy?",
+            text: staleOpenQuestionOne
+          },
+          {
+            carryCount: 4,
+            firstObservedTurnId: "turn-memory-008",
+            lastObservedTurnId: "turn-memory-011",
+            normalizedKey:
+              "do operators still need a separate readability review for the relay recovery trace after the next deploy?",
+            text: staleOpenQuestionTwo
+          }
+        ],
+        resolutions: []
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T13:30:00.000Z",
+      updatedTurnId: "turn-memory-011"
+    });
+
+    const synthesizer = createModelGuidedMemorySynthesizer({
+      context,
+      engineFactory(toolExecutor): AgentEngine {
+        return {
+          async executeTurn(request) {
+            const summaryTool = request.toolDefinitions.find(
+              (toolDefinition) => toolDefinition.id === "write_memory_summary"
+            );
+
+            if (!summaryTool) {
+              throw new Error("Expected the working-context synthesis tool.");
+            }
+
+            const toolResult = await toolExecutor.executeToolCall({
+              artifactInputs: [],
+              input: {
+                artifactInsights: [],
+                closedOpenQuestions: [],
+                completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [
+                  {
+                    from: [staleOpenQuestionOne, staleOpenQuestionTwo],
+                    to: consolidatedOpenQuestion
+                  }
+                ],
+                decisions: [],
+                executionInsights: [],
+                focus: "Consolidate overlapping stale relay-review questions.",
+                nextActions: [],
+                openQuestions: [consolidatedOpenQuestion],
+                replacedNextActions: [],
+                replacedOpenQuestions: [],
+                resolutions: [],
+                sessionInsights: [],
+                stableFacts: [],
+                summary:
+                  "Two overlapping stale relay-review questions were consolidated into one narrower active question."
+              },
+              memoryRefs: request.memoryRefs,
+              nodeId: request.nodeId,
+              sessionId: request.sessionId,
+              tool: summaryTool,
+              toolCallId: "toolu_working_context"
+            });
+
+            expect(toolResult.isError).toBe(false);
+
+            return {
+              assistantMessages: ["The stale questions were consolidated."],
+              stopReason: "completed",
+              toolExecutions: [],
+              toolRequests: [],
+              usage: {
+                inputTokens: 1,
+                outputTokens: 1
+              }
+            };
+          }
+        };
+      }
+    });
+
+    const synthesisResult = await synthesizer.synthesize({
+      artifactInputs: [],
+      artifactRefs: [],
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+      result: {
+        assistantMessages: ["Consolidated overlapping stale relay-review questions."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      taskPagePath: memoryUpdate.taskPagePath,
+      turnId: "turn-memory-012"
+    });
+
+    expect(synthesisResult.ok).toBe(true);
+
+    const openQuestionsPage = await readFile(openQuestionsPagePath, "utf8");
+    const focusedRegisterState = await readFocusedRegisterState(statePaths);
+
+    expect(openQuestionsPage).toContain(consolidatedOpenQuestion);
+    expect(openQuestionsPage).not.toContain(staleOpenQuestionOne);
+    expect(openQuestionsPage).not.toContain(staleOpenQuestionTwo);
+    expect(
+      focusedRegisterState?.registers.openQuestions.find(
+        (entry) => entry.text === consolidatedOpenQuestion
+      )?.carryCount
+    ).toBe(1);
+    expect(
+      focusedRegisterState?.registers.openQuestions.find(
+        (entry) => entry.text === staleOpenQuestionOne
+      )
+    ).toBeUndefined();
+    expect(
+      focusedRegisterState?.registers.openQuestions.find(
+        (entry) => entry.text === staleOpenQuestionTwo
+      )
+    ).toBeUndefined();
+  });
+
+  it("rejects explicit stale consolidation refs whose target is missing from the resulting active list", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const envelope = buildInboundTaskRequest({
+      summary: "Reject an invalid stale-question consolidation."
+    });
+    const memoryUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      result: {
+        assistantMessages: ["Reviewed the invalid stale consolidation."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      turnId: "turn-memory-013"
+    });
+    const staleOpenQuestionOne =
+      "Will the relay recovery trace stay readable for operators after the next deploy?";
+    const staleOpenQuestionTwo =
+      "Do operators still need a separate readability review for the relay recovery trace after the next deploy?";
+    const consolidatedOpenQuestion =
+      "Which relay-trace readability checks still need explicit operator confirmation after the next deploy?";
+    await writeFile(
+      path.join(
+        context.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "open-questions.md"
+      ),
+      [
+        "# Open Questions Summary",
+        "",
+        "## Open Questions",
+        "",
+        `- ${staleOpenQuestionOne}`,
+        `- ${staleOpenQuestionTwo}`,
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+    const statePaths = await ensureRunnerStatePaths(context.workspace.runtimeRoot);
+    await writeFocusedRegisterState(statePaths, {
+      registers: {
+        nextActions: [],
+        openQuestions: [
+          {
+            carryCount: 3,
+            firstObservedTurnId: "turn-memory-010",
+            lastObservedTurnId: "turn-memory-012",
+            normalizedKey:
+              "will the relay recovery trace stay readable for operators after the next deploy?",
+            text: staleOpenQuestionOne
+          },
+          {
+            carryCount: 4,
+            firstObservedTurnId: "turn-memory-009",
+            lastObservedTurnId: "turn-memory-012",
+            normalizedKey:
+              "do operators still need a separate readability review for the relay recovery trace after the next deploy?",
+            text: staleOpenQuestionTwo
+          }
+        ],
+        resolutions: []
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T13:40:00.000Z",
+      updatedTurnId: "turn-memory-012"
+    });
+
+    const synthesizer = createModelGuidedMemorySynthesizer({
+      context,
+      engineFactory(toolExecutor): AgentEngine {
+        return {
+          async executeTurn(request) {
+            const summaryTool = request.toolDefinitions.find(
+              (toolDefinition) => toolDefinition.id === "write_memory_summary"
+            );
+
+            if (!summaryTool) {
+              throw new Error("Expected the working-context synthesis tool.");
+            }
+
+            const toolResult = await toolExecutor.executeToolCall({
+              artifactInputs: [],
+              input: {
+                artifactInsights: [],
+                closedOpenQuestions: [],
+                completedNextActions: [],
+                consolidatedNextActions: [],
+                consolidatedOpenQuestions: [
+                  {
+                    from: [staleOpenQuestionOne, staleOpenQuestionTwo],
+                    to: consolidatedOpenQuestion
+                  }
+                ],
+                decisions: [],
+                executionInsights: [],
+                focus: "Reject an invalid stale-question consolidation.",
+                nextActions: [],
+                openQuestions: [],
+                replacedNextActions: [],
+                replacedOpenQuestions: [],
+                resolutions: [],
+                sessionInsights: [],
+                stableFacts: [],
+                summary: "The stale-question consolidation target was omitted."
+              },
+              memoryRefs: request.memoryRefs,
+              nodeId: request.nodeId,
+              sessionId: request.sessionId,
+              tool: summaryTool,
+              toolCallId: "toolu_working_context"
+            });
+
+            expect(toolResult.isError).toBe(true);
+            expect(JSON.stringify(toolResult.content)).toContain("invalid_input");
+            expect(JSON.stringify(toolResult.content)).toContain(
+              "must appear in the resulting openQuestions list"
+            );
+
+            return {
+              assistantMessages: ["The invalid stale consolidation was rejected."],
+              stopReason: "completed",
+              toolExecutions: [],
+              toolRequests: [],
+              usage: {
+                inputTokens: 1,
+                outputTokens: 1
+              }
+            };
+          }
+        };
+      }
+    });
+
+    const synthesisResult = await synthesizer.synthesize({
+      artifactInputs: [],
+      artifactRefs: [],
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+      result: {
+        assistantMessages: ["Reviewed the invalid stale consolidation."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      taskPagePath: memoryUpdate.taskPagePath,
+      turnId: "turn-memory-013"
     });
 
     expect(synthesisResult).toEqual({

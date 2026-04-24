@@ -125,5 +125,9 @@ The focused memory layer also now supports explicit runner-validated
 replacement refs for stale active open questions and next actions, so a turn
 can retire a stale baseline item by mapping it to exact resulting active items
 instead of forcing that stale item to remain active or be recorded as closed.
+On top of that, the focused memory layer now supports explicit
+runner-validated consolidation refs for stale active open questions and next
+actions, so multiple overlapping stale items can collapse into one narrower
+active successor instead of surviving as parallel active noise.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

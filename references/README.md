@@ -125,6 +125,7 @@ This directory is the canonical design corpus for Entangle.
 119. [118-explicit-closure-reference-memory-slice.md](118-explicit-closure-reference-memory-slice.md)
 120. [119-stale-item-disappearance-discipline-slice.md](119-stale-item-disappearance-discipline-slice.md)
 121. [120-explicit-stale-item-replacement-slice.md](120-explicit-stale-item-replacement-slice.md)
+122. [121-explicit-stale-item-consolidation-slice.md](121-explicit-stale-item-consolidation-slice.md)
 
 ## Role of this corpus
 

@@ -194,6 +194,11 @@ type FocusedRegisterReplacementRef = {
   to: string[];
 };
 
+type FocusedRegisterConsolidationRef = {
+  from: string[];
+  to: string;
+};
+
 function normalizeRegisterEntryKey(entry: string): string {
   return entry.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -475,12 +480,70 @@ function normalizeReplacementRefs(
   }));
 }
 
+function coerceFocusedRegisterConsolidationRefArray(
+  value: unknown
+): FocusedRegisterConsolidationRef[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const normalizedEntries: FocusedRegisterConsolidationRef[] = [];
+
+  for (const entry of value) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      return undefined;
+    }
+
+    const entryRecord = entry as Record<string, unknown>;
+    const extraKeys = Object.keys(entryRecord).filter(
+      (key) => key !== "from" && key !== "to"
+    );
+
+    if (extraKeys.length > 0) {
+      return undefined;
+    }
+
+    const from = coerceStringArray(entryRecord.from);
+    const to = coerceNonEmptyString(entryRecord.to);
+
+    if (!from || !to || from.length === 0) {
+      return undefined;
+    }
+
+    normalizedEntries.push({
+      from,
+      to
+    });
+  }
+
+  return normalizedEntries;
+}
+
+function normalizeConsolidationRefs(
+  consolidationRefs: FocusedRegisterConsolidationRef[]
+): FocusedRegisterConsolidationRef[] {
+  return consolidationRefs.map((consolidationRef) => ({
+    from: consolidationRef.from.map((entry) => entry.trim()).filter(Boolean),
+    to: consolidationRef.to.trim()
+  }));
+}
+
 function buildNormalizedReplacementFromKeySet(
   replacementRefs: FocusedRegisterReplacementRef[]
 ): Set<string> {
   return new Set(
     replacementRefs.map((replacementRef) =>
       normalizeRegisterEntryKey(replacementRef.from)
+    )
+  );
+}
+
+function buildNormalizedConsolidationFromKeySet(
+  consolidationRefs: FocusedRegisterConsolidationRef[]
+): Set<string> {
+  return new Set(
+    consolidationRefs.flatMap((consolidationRef) =>
+      consolidationRef.from.map((entry) => normalizeRegisterEntryKey(entry))
     )
   );
 }
@@ -774,9 +837,196 @@ function validateExplicitReplacementRefs(input: {
       };
 }
 
+function validateExplicitConsolidationRefs(input: {
+  closedOpenQuestions: string[];
+  completedNextActions: string[];
+  consolidatedNextActions: FocusedRegisterConsolidationRef[];
+  consolidatedOpenQuestions: FocusedRegisterConsolidationRef[];
+  nextActions: string[];
+  openQuestions: string[];
+  promptBaseline: FocusedRegisterPromptBaseline;
+  replacedNextActions: FocusedRegisterReplacementRef[];
+  replacedOpenQuestions: FocusedRegisterReplacementRef[];
+  resolutions: string[];
+}):
+  | {
+      ok: true;
+    }
+  | {
+      issues: string[];
+      ok: false;
+    } {
+  const issues: string[] = [];
+  const staleOpenQuestionKeys = buildNormalizedEntryKeySet(
+    input.promptBaseline.openQuestions
+      .filter((entry) => entry.stale)
+      .map((entry) => entry.entry)
+  );
+  const staleNextActionKeys = buildNormalizedEntryKeySet(
+    input.promptBaseline.nextActions
+      .filter((entry) => entry.stale)
+      .map((entry) => entry.entry)
+  );
+  const nextOpenQuestionKeys = buildNormalizedEntryKeySet(input.openQuestions);
+  const nextActionKeys = buildNormalizedEntryKeySet(input.nextActions);
+  const closedOpenQuestionKeys = buildNormalizedEntryKeySet(
+    input.closedOpenQuestions
+  );
+  const completedNextActionKeys = buildNormalizedEntryKeySet(
+    input.completedNextActions
+  );
+  const resolutionKeys = buildNormalizedEntryKeySet(input.resolutions);
+  const replacedOpenQuestionKeys = buildNormalizedReplacementFromKeySet(
+    input.replacedOpenQuestions
+  );
+  const replacedNextActionKeys = buildNormalizedReplacementFromKeySet(
+    input.replacedNextActions
+  );
+  const replacementOpenQuestionTargetKeys = new Set(
+    input.replacedOpenQuestions.flatMap((replacementRef) =>
+      replacementRef.to.map((entry) => normalizeRegisterEntryKey(entry))
+    )
+  );
+  const replacementNextActionTargetKeys = new Set(
+    input.replacedNextActions.flatMap((replacementRef) =>
+      replacementRef.to.map((entry) => normalizeRegisterEntryKey(entry))
+    )
+  );
+
+  const validateRegisterConsolidations = (config: {
+    activeKeys: Set<string>;
+    closureKeys: Set<string>;
+    consolidationRefs: FocusedRegisterConsolidationRef[];
+    label: "open question" | "next action";
+    replacedSourceKeys: Set<string>;
+    replacementTargetKeys: Set<string>;
+    resolutionKeys: Set<string>;
+    staleBaselineKeys: Set<string>;
+  }): void => {
+    const seenSourceKeys = new Set<string>();
+    const consolidationTargetKeys = new Set<string>();
+
+    for (const consolidationRef of config.consolidationRefs) {
+      if (consolidationRef.from.length < 2) {
+        issues.push(
+          `The consolidation target '${consolidationRef.to}' must reference at least two stale ${config.label} entries in 'from'.`
+        );
+      }
+
+      const sourceKeys = consolidationRef.from.map((entry) =>
+        normalizeRegisterEntryKey(entry)
+      );
+
+      if (new Set(sourceKeys).size !== sourceKeys.length) {
+        issues.push(
+          `The consolidation target '${consolidationRef.to}' contains duplicate stale ${config.label} sources.`
+        );
+      }
+
+      const consolidationTargetKey = normalizeRegisterEntryKey(
+        consolidationRef.to
+      );
+
+      if (!config.activeKeys.has(consolidationTargetKey)) {
+        issues.push(
+          `The consolidation target '${consolidationRef.to}' must appear in the resulting ${config.label === "open question" ? "openQuestions" : "nextActions"} list.`
+        );
+      }
+
+      if (config.replacementTargetKeys.has(consolidationTargetKey)) {
+        issues.push(
+          `The consolidation target '${consolidationRef.to}' may not also be used as an explicit replacement target for stale ${config.label} entries.`
+        );
+      }
+
+      if (consolidationTargetKeys.has(consolidationTargetKey)) {
+        issues.push(
+          `The consolidation target '${consolidationRef.to}' is assigned more than once for stale ${config.label} entries.`
+        );
+      }
+
+      consolidationTargetKeys.add(consolidationTargetKey);
+
+      for (const sourceEntry of consolidationRef.from) {
+        const sourceKey = normalizeRegisterEntryKey(sourceEntry);
+
+        if (!config.staleBaselineKeys.has(sourceKey)) {
+          issues.push(
+            `The consolidation source '${sourceEntry}' does not match any current stale focused-register ${config.label}.`
+          );
+        }
+
+        if (seenSourceKeys.has(sourceKey)) {
+          issues.push(
+            `The stale focused-register ${config.label} '${sourceEntry}' is referenced more than once across consolidation refs.`
+          );
+        }
+
+        seenSourceKeys.add(sourceKey);
+
+        if (config.replacedSourceKeys.has(sourceKey)) {
+          issues.push(
+            `The stale focused-register ${config.label} '${sourceEntry}' may not be both replaced and consolidated.`
+          );
+        }
+
+        if (config.activeKeys.has(sourceKey)) {
+          issues.push(
+            `The consolidated ${config.label} '${sourceEntry}' must not remain in the active ${config.label === "open question" ? "openQuestions" : "nextActions"} list.`
+          );
+        }
+
+        if (config.closureKeys.has(sourceKey) || config.resolutionKeys.has(sourceKey)) {
+          issues.push(
+            `The consolidated ${config.label} '${sourceEntry}' may not also be retired through explicit closure refs or copied verbatim into resolutions.`
+          );
+        }
+
+        if (sourceKey === consolidationTargetKey) {
+          issues.push(
+            `The consolidation target '${consolidationRef.to}' must differ from each consolidated stale ${config.label} source.`
+          );
+        }
+      }
+    }
+  };
+
+  validateRegisterConsolidations({
+    activeKeys: nextOpenQuestionKeys,
+    closureKeys: closedOpenQuestionKeys,
+    consolidationRefs: input.consolidatedOpenQuestions,
+    label: "open question",
+    replacedSourceKeys: replacedOpenQuestionKeys,
+    replacementTargetKeys: replacementOpenQuestionTargetKeys,
+    resolutionKeys,
+    staleBaselineKeys: staleOpenQuestionKeys
+  });
+  validateRegisterConsolidations({
+    activeKeys: nextActionKeys,
+    closureKeys: completedNextActionKeys,
+    consolidationRefs: input.consolidatedNextActions,
+    label: "next action",
+    replacedSourceKeys: replacedNextActionKeys,
+    replacementTargetKeys: replacementNextActionTargetKeys,
+    resolutionKeys,
+    staleBaselineKeys: staleNextActionKeys
+  });
+
+  return issues.length > 0
+    ? {
+        issues,
+        ok: false
+      }
+    : {
+        ok: true
+      };
+}
+
 function validateStaleBaselineRetention(input: {
   closedOpenQuestions: string[];
   completedNextActions: string[];
+  consolidatedNextActions: FocusedRegisterConsolidationRef[];
+  consolidatedOpenQuestions: FocusedRegisterConsolidationRef[];
   nextActions: string[];
   openQuestions: string[];
   promptBaseline: FocusedRegisterPromptBaseline;
@@ -805,6 +1055,12 @@ function validateStaleBaselineRetention(input: {
   const replacedNextActionKeys = buildNormalizedReplacementFromKeySet(
     input.replacedNextActions
   );
+  const consolidatedOpenQuestionKeys = buildNormalizedConsolidationFromKeySet(
+    input.consolidatedOpenQuestions
+  );
+  const consolidatedNextActionKeys = buildNormalizedConsolidationFromKeySet(
+    input.consolidatedNextActions
+  );
   const nextOpenQuestionKeys = buildNormalizedEntryKeySet(input.openQuestions);
   const nextActionKeys = buildNormalizedEntryKeySet(input.nextActions);
 
@@ -818,6 +1074,7 @@ function validateStaleBaselineRetention(input: {
     if (
       nextOpenQuestionKeys.has(normalizedKey) ||
       closedOpenQuestionKeys.has(normalizedKey) ||
+      consolidatedOpenQuestionKeys.has(normalizedKey) ||
       replacedOpenQuestionKeys.has(normalizedKey) ||
       resolutionKeys.has(normalizedKey)
     ) {
@@ -825,7 +1082,7 @@ function validateStaleBaselineRetention(input: {
     }
 
     issues.push(
-      `The stale open-question baseline entry '${openQuestion.entry}' cannot disappear silently. Keep it active, replace it explicitly, reference it in 'closedOpenQuestions', or carry the same exact text into 'resolutions'.`
+      `The stale open-question baseline entry '${openQuestion.entry}' cannot disappear silently. Keep it active, replace or consolidate it explicitly, reference it in 'closedOpenQuestions', or carry the same exact text into 'resolutions'.`
     );
   }
 
@@ -839,6 +1096,7 @@ function validateStaleBaselineRetention(input: {
     if (
       nextActionKeys.has(normalizedKey) ||
       completedNextActionKeys.has(normalizedKey) ||
+      consolidatedNextActionKeys.has(normalizedKey) ||
       replacedNextActionKeys.has(normalizedKey) ||
       resolutionKeys.has(normalizedKey)
     ) {
@@ -846,7 +1104,7 @@ function validateStaleBaselineRetention(input: {
     }
 
     issues.push(
-      `The stale next-action baseline entry '${nextAction.entry}' cannot disappear silently. Keep it active, replace it explicitly, reference it in 'completedNextActions', or carry the same exact text into 'resolutions'.`
+      `The stale next-action baseline entry '${nextAction.entry}' cannot disappear silently. Keep it active, replace or consolidate it explicitly, reference it in 'completedNextActions', or carry the same exact text into 'resolutions'.`
     );
   }
 
@@ -867,6 +1125,8 @@ function parseWorkingContextSummaryInput(input: unknown):
         artifactInsights: string[];
         closedOpenQuestions: string[];
         completedNextActions: string[];
+        consolidatedNextActions: FocusedRegisterConsolidationRef[];
+        consolidatedOpenQuestions: FocusedRegisterConsolidationRef[];
         decisions: string[];
         executionInsights: string[];
         focus: string;
@@ -897,6 +1157,8 @@ function parseWorkingContextSummaryInput(input: unknown):
     "artifactInsights",
     "closedOpenQuestions",
     "completedNextActions",
+    "consolidatedNextActions",
+    "consolidatedOpenQuestions",
     "decisions",
     "executionInsights",
     "focus",
@@ -914,6 +1176,12 @@ function parseWorkingContextSummaryInput(input: unknown):
   const artifactInsights = coerceStringArray(inputRecord.artifactInsights);
   const closedOpenQuestions = coerceStringArray(inputRecord.closedOpenQuestions);
   const completedNextActions = coerceStringArray(inputRecord.completedNextActions);
+  const consolidatedNextActions = coerceFocusedRegisterConsolidationRefArray(
+    inputRecord.consolidatedNextActions
+  );
+  const consolidatedOpenQuestions = coerceFocusedRegisterConsolidationRefArray(
+    inputRecord.consolidatedOpenQuestions
+  );
   const decisions = coerceStringArray(inputRecord.decisions);
   const executionInsights = coerceStringArray(inputRecord.executionInsights);
   const focus = coerceNonEmptyString(inputRecord.focus);
@@ -960,6 +1228,18 @@ function parseWorkingContextSummaryInput(input: unknown):
   if (!completedNextActions) {
     issues.push(
       "The 'completedNextActions' field must be an array of non-empty strings."
+    );
+  }
+
+  if (!consolidatedOpenQuestions) {
+    issues.push(
+      "The 'consolidatedOpenQuestions' field must be an array of consolidation objects with non-empty 'from' lists and a non-empty 'to' entry."
+    );
+  }
+
+  if (!consolidatedNextActions) {
+    issues.push(
+      "The 'consolidatedNextActions' field must be an array of consolidation objects with non-empty 'from' lists and a non-empty 'to' entry."
     );
   }
 
@@ -1040,6 +1320,46 @@ function parseWorkingContextSummaryInput(input: unknown):
   ) {
     issues.push(
       `The 'completedNextActions' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    consolidatedOpenQuestions &&
+    consolidatedOpenQuestions.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'consolidatedOpenQuestions' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    consolidatedNextActions &&
+    consolidatedNextActions.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'consolidatedNextActions' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    consolidatedOpenQuestions &&
+    consolidatedOpenQuestions.some(
+      (consolidationRef) => consolidationRef.from.length > maxWorkingContextListEntries
+    )
+  ) {
+    issues.push(
+      `Each 'consolidatedOpenQuestions' entry may reference at most ${maxWorkingContextListEntries} stale open questions.`
+    );
+  }
+
+  if (
+    consolidatedNextActions &&
+    consolidatedNextActions.some(
+      (consolidationRef) => consolidationRef.from.length > maxWorkingContextListEntries
+    )
+  ) {
+    issues.push(
+      `Each 'consolidatedNextActions' entry may reference at most ${maxWorkingContextListEntries} stale next actions.`
     );
   }
 
@@ -1150,6 +1470,8 @@ function parseWorkingContextSummaryInput(input: unknown):
       artifactInsights: artifactInsights!,
       closedOpenQuestions: closedOpenQuestions!,
       completedNextActions: completedNextActions!,
+      consolidatedNextActions: consolidatedNextActions!,
+      consolidatedOpenQuestions: consolidatedOpenQuestions!,
       decisions: decisions!,
       executionInsights: executionInsights!,
       focus: focus!,
@@ -1202,6 +1524,48 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
             "A bounded list of exact current next-action entries from the focused-register baseline that are now complete or otherwise no longer active, even if the resolutions wording is different.",
           items: {
             type: "string"
+          },
+          type: "array"
+        },
+        consolidatedOpenQuestions: {
+          description:
+            "A bounded list of stale current open-question baseline groups that should collapse into one narrower active open question. Each object must use exact stale baseline texts in 'from' and the exact resulting active open question text in 'to'.",
+          items: {
+            type: "object",
+            properties: {
+              from: {
+                items: {
+                  type: "string"
+                },
+                type: "array"
+              },
+              to: {
+                type: "string"
+              }
+            },
+            required: ["from", "to"],
+            additionalProperties: false
+          },
+          type: "array"
+        },
+        consolidatedNextActions: {
+          description:
+            "A bounded list of stale current next-action baseline groups that should collapse into one narrower active next action. Each object must use exact stale baseline texts in 'from' and the exact resulting active next-action text in 'to'.",
+          items: {
+            type: "object",
+            properties: {
+              from: {
+                items: {
+                  type: "string"
+                },
+                type: "array"
+              },
+              to: {
+                type: "string"
+              }
+            },
+            required: ["from", "to"],
+            additionalProperties: false
           },
           type: "array"
         },
@@ -1314,6 +1678,8 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         "artifactInsights",
         "closedOpenQuestions",
         "completedNextActions",
+        "consolidatedOpenQuestions",
+        "consolidatedNextActions",
         "decisions",
         "executionInsights",
         "summary",
@@ -1364,9 +1730,10 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
       "Review the current focused register baseline before deciding what remains open, what remains pending, and what is now resolved.",
       "Treat repeatedly carried open questions and next actions as explicit review candidates: keep them only when they remain concretely active, otherwise narrow them, replace them, or close them through bounded resolutions.",
+      "When several stale baseline items should collapse into one narrower active item, populate the explicit consolidation-reference fields with the exact stale baseline texts in 'from' and the exact successor active text in 'to'.",
       "When you replace a stale current open question or stale current next action with narrower active items, populate the explicit replacement-reference fields with the exact original stale baseline text in 'from' and the exact resulting active item texts in 'to'.",
       "When you close a current open question or complete a current next action using wording that differs from the original baseline entry, populate the explicit closure-reference fields with the exact original baseline text so the runner can retire it deterministically.",
-      "A stale-review candidate from the current baseline may not disappear silently. Keep it active, replace it explicitly, reference it explicitly as closed/completed, or carry the same exact text into resolutions.",
+      "A stale-review candidate from the current baseline may not disappear silently. Keep it active, replace or consolidate it explicitly, reference it explicitly as closed/completed, or carry the same exact text into resolutions.",
       "Preserve still-active open questions and next actions when they remain relevant after the completed turn; move closed items into bounded resolutions instead of dropping them silently.",
       "When a question is no longer open or an action is complete, record that closure in bounded resolutions instead of letting it disappear silently.",
       "Do not repeat the same item across open questions, next actions, and resolutions. Resolved items belong only in resolutions.",
@@ -1813,15 +2180,39 @@ function createWorkingContextSummaryToolExecutor(input: {
         });
       }
 
+      const normalizedClosedOpenQuestions = normalizeListEntries(
+        parsedInput.value.closedOpenQuestions
+      );
+      const normalizedCompletedNextActions = normalizeListEntries(
+        parsedInput.value.completedNextActions
+      );
+      const normalizedNextActions = normalizeListEntries(
+        parsedInput.value.nextActions
+      );
+      const normalizedOpenQuestions = normalizeListEntries(
+        parsedInput.value.openQuestions
+      );
+      const normalizedResolutions = normalizeListEntries(
+        parsedInput.value.resolutions
+      );
+      const normalizedReplacedNextActions = normalizeReplacementRefs(
+        parsedInput.value.replacedNextActions
+      );
+      const normalizedReplacedOpenQuestions = normalizeReplacementRefs(
+        parsedInput.value.replacedOpenQuestions
+      );
+      const normalizedConsolidatedNextActions = normalizeConsolidationRefs(
+        parsedInput.value.consolidatedNextActions
+      );
+      const normalizedConsolidatedOpenQuestions = normalizeConsolidationRefs(
+        parsedInput.value.consolidatedOpenQuestions
+      );
+
       const explicitClosureValidation = validateExplicitClosureRefs({
         baseline: input.focusedRegisterContext.baseline,
-        closedOpenQuestions: normalizeListEntries(
-          parsedInput.value.closedOpenQuestions
-        ),
-        completedNextActions: normalizeListEntries(
-          parsedInput.value.completedNextActions
-        ),
-        resolutions: normalizeListEntries(parsedInput.value.resolutions)
+        closedOpenQuestions: normalizedClosedOpenQuestions,
+        completedNextActions: normalizedCompletedNextActions,
+        resolutions: normalizedResolutions
       });
 
       if (!explicitClosureValidation.ok) {
@@ -1836,22 +2227,14 @@ function createWorkingContextSummaryToolExecutor(input: {
       }
 
       const explicitReplacementValidation = validateExplicitReplacementRefs({
-        closedOpenQuestions: normalizeListEntries(
-          parsedInput.value.closedOpenQuestions
-        ),
-        completedNextActions: normalizeListEntries(
-          parsedInput.value.completedNextActions
-        ),
-        nextActions: normalizeListEntries(parsedInput.value.nextActions),
-        openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
+        closedOpenQuestions: normalizedClosedOpenQuestions,
+        completedNextActions: normalizedCompletedNextActions,
+        nextActions: normalizedNextActions,
+        openQuestions: normalizedOpenQuestions,
         promptBaseline: input.focusedRegisterContext.promptBaseline,
-        replacedNextActions: normalizeReplacementRefs(
-          parsedInput.value.replacedNextActions
-        ),
-        replacedOpenQuestions: normalizeReplacementRefs(
-          parsedInput.value.replacedOpenQuestions
-        ),
-        resolutions: normalizeListEntries(parsedInput.value.resolutions)
+        replacedNextActions: normalizedReplacedNextActions,
+        replacedOpenQuestions: normalizedReplacedOpenQuestions,
+        resolutions: normalizedResolutions
       });
 
       if (!explicitReplacementValidation.ok) {
@@ -1865,23 +2248,41 @@ function createWorkingContextSummaryToolExecutor(input: {
         });
       }
 
-      const staleBaselineRetentionValidation = validateStaleBaselineRetention({
-        closedOpenQuestions: normalizeListEntries(
-          parsedInput.value.closedOpenQuestions
-        ),
-        completedNextActions: normalizeListEntries(
-          parsedInput.value.completedNextActions
-        ),
-        nextActions: normalizeListEntries(parsedInput.value.nextActions),
-        openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
+      const explicitConsolidationValidation = validateExplicitConsolidationRefs({
+        closedOpenQuestions: normalizedClosedOpenQuestions,
+        completedNextActions: normalizedCompletedNextActions,
+        consolidatedNextActions: normalizedConsolidatedNextActions,
+        consolidatedOpenQuestions: normalizedConsolidatedOpenQuestions,
+        nextActions: normalizedNextActions,
+        openQuestions: normalizedOpenQuestions,
         promptBaseline: input.focusedRegisterContext.promptBaseline,
-        replacedNextActions: normalizeReplacementRefs(
-          parsedInput.value.replacedNextActions
-        ),
-        replacedOpenQuestions: normalizeReplacementRefs(
-          parsedInput.value.replacedOpenQuestions
-        ),
-        resolutions: normalizeListEntries(parsedInput.value.resolutions)
+        replacedNextActions: normalizedReplacedNextActions,
+        replacedOpenQuestions: normalizedReplacedOpenQuestions,
+        resolutions: normalizedResolutions
+      });
+
+      if (!explicitConsolidationValidation.ok) {
+        return engineToolExecutionResultSchema.parse({
+          content: {
+            error: "invalid_input",
+            issues: explicitConsolidationValidation.issues,
+            toolId: request.tool.id
+          },
+          isError: true
+        });
+      }
+
+      const staleBaselineRetentionValidation = validateStaleBaselineRetention({
+        closedOpenQuestions: normalizedClosedOpenQuestions,
+        completedNextActions: normalizedCompletedNextActions,
+        consolidatedNextActions: normalizedConsolidatedNextActions,
+        consolidatedOpenQuestions: normalizedConsolidatedOpenQuestions,
+        nextActions: normalizedNextActions,
+        openQuestions: normalizedOpenQuestions,
+        promptBaseline: input.focusedRegisterContext.promptBaseline,
+        replacedNextActions: normalizedReplacedNextActions,
+        replacedOpenQuestions: normalizedReplacedOpenQuestions,
+        resolutions: normalizedResolutions
       });
 
       if (!staleBaselineRetentionValidation.ok) {

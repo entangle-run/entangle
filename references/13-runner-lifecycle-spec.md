@@ -184,7 +184,9 @@ That implemented slice currently includes:
   from the original active entry text, plus a runner-owned rule that stale
   active baseline items may not disappear silently from focused memory, plus
   runner-validated explicit stale-item replacement refs that can map a stale
-  active question or action to exact narrower successor items;
+  active question or action to exact narrower successor items, plus
+  runner-validated explicit stale-item consolidation refs that can collapse
+  multiple stale active questions or actions into one narrower successor item;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

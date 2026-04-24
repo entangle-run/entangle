@@ -259,6 +259,10 @@ This repository currently contains:
   next actions may now be replaced deterministically by narrower active items
   through runner-validated `from -> to` mappings instead of being forced to
   stay active or pretend to be resolved;
+- an explicit stale-item consolidation refinement where multiple stale open
+  questions or next actions may now collapse deterministically into one
+  narrower active successor through runner-validated many-to-one mappings
+  instead of surviving as overlapping active noise;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

@@ -249,6 +249,10 @@ Completed in the current repository state:
     and next actions may now be replaced deterministically by narrower active
     items through runner-validated `from -> to` mappings instead of being
     forced to stay active or pretend to be resolved.
+28. an explicit stale-item consolidation refinement where multiple stale open
+    questions or next actions may now collapse deterministically into one
+    narrower active successor through runner-validated many-to-one mappings
+    instead of surviving as overlapping active noise.
 
 Remaining work in this phase:
 
@@ -268,7 +272,7 @@ Remaining work in this phase:
    into broader model-guided memory maintenance with stronger semantic aging
    and retirement discipline beyond the newly implemented carry-count,
    stale-review, explicit-closure-reference, no-silent-drop, and
-   explicit-replacement baseline;
+   explicit-replacement and explicit-consolidation baseline;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

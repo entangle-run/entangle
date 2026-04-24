@@ -919,3 +919,17 @@ Closed the slice only after widening runner tests to prove valid replacement
 flows succeed and invalid replacement refs fail deterministically, then
 re-running targeted runner quality gates plus the full `pnpm verify` and
 `git diff --check` gates.
+
+## [2026-04-24] implementation | Added explicit stale-item consolidation
+
+Closed the next long-horizon lifecycle gap in the bounded memory layer by
+letting multiple overlapping stale review candidates collapse into one
+narrower successor item. The runner now validates exact many-to-one
+consolidation mappings for stale open questions and next actions, so stale
+active overlap can be reduced deterministically without silent loss and
+without pretending the overlap is already resolved.
+
+Closed the slice only after widening runner tests to prove valid
+consolidation flows succeed and invalid consolidation refs fail
+deterministically, then re-running targeted runner quality gates plus the
+full `pnpm verify` and `git diff --check` gates.
