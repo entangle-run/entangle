@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added CLI package-source parity
+
+Closed the next bounded CLI parity slice by widening the package-source command
+tree to match the existing host contract. The CLI can now inspect one admitted
+package source and admit both canonical `local_path` and `local_archive`
+sources with optional explicit package-source ids through the same thin
+host-client boundary.
+
 ## [2026-04-24] implementation | Added Studio live refresh over host events
 
 Closed the next Studio completion slice by using the existing host event

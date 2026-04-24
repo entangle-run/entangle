@@ -261,6 +261,10 @@ This repository currently contains:
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and selected-runtime
   refresh instead of depending only on explicit reload loops after mutations;
+- the next bounded CLI parity slice where headless operators can now inspect
+  one admitted package source and admit canonical `local_path` or
+  `local_archive` sources with optional explicit package-source ids instead of
+  relying on a directory-only shortcut;
 
 The highest-value remaining gaps are:
 

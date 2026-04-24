@@ -97,6 +97,7 @@ This directory is the canonical design corpus for Entangle.
 91. [90-studio-managed-node-mutation-slice.md](90-studio-managed-node-mutation-slice.md)
 92. [91-studio-package-admission-slice.md](91-studio-package-admission-slice.md)
 93. [92-studio-live-refresh-slice.md](92-studio-live-refresh-slice.md)
+94. [93-cli-package-source-parity-slice.md](93-cli-package-source-parity-slice.md)
 
 ## Role of this corpus
 

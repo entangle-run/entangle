@@ -338,13 +338,18 @@ workflow completeness, not missing mutation or liveness foundations.
 - package scaffolding;
 - host status, catalog, package-source, graph, external-principal, and runtime
   inspection and basic mutation commands;
+- package-source detail inspection plus canonical package admission for both
+  `local_path` and `local_archive`, including optional explicit
+  package-source ids in the CLI layer;
 - typed host-event listing and live watch commands, including recovery-focused
   filtering over the shared host event boundary and the new trace-oriented
   conversation, approval, and artifact event classes.
 
 ### Still missing or incomplete
 
-- fuller coverage of resource mutation workflows;
+- runtime artifact inspection parity through the existing host artifact read
+  surface;
+- fuller coverage of the remaining high-value resource workflows;
 - stronger automation-oriented ergonomics around live operations.
 
 ### Assessment
@@ -395,7 +400,8 @@ surface:
 
 The current best delivery order is:
 
-1. complete CLI parity for the core host workflows;
+1. complete CLI runtime artifact inspection parity for the core host
+   workflows;
 2. deepen session drilldown only where the existing host session read model
    creates real operator leverage;
 3. widen the internal `agent-engine` beyond the first bounded tool loop,

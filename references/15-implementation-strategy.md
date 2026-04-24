@@ -249,7 +249,8 @@ Keep CLI thinner than Studio but operationally serious.
 
 Implement in small slices:
 
-1. fuller host resource coverage;
+1. runtime artifact inspection and adjacent read parity where the host surface
+   is already implemented;
 2. stronger automation-oriented JSON flows;
 3. live watch or event-stream consumption where valuable.
 
@@ -257,6 +258,13 @@ Acceptance for the phase:
 
 - a power user can operate the local system headlessly;
 - CLI remains a client, not a second control plane.
+
+Completed in the current repository state:
+
+- package-source list and detail inspection through the existing host read
+  surface;
+- canonical package-source admission for both `local_path` and `local_archive`
+  sources, including optional explicit package-source ids through the CLI.
 
 ## Phase 6: Deployment and integration hardening
 

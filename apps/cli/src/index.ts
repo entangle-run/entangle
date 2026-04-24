@@ -22,6 +22,7 @@ import {
   validatePackageDirectory
 } from "@entangle/validator";
 import { buildHostEventFilter } from "./host-event-inspection.js";
+import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
 
 async function readJsonDocument(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
@@ -304,18 +305,55 @@ hostPackageSourcesCommand
   });
 
 hostPackageSourcesCommand
+  .command("get")
+  .argument("<packageSourceId>", "Package source identifier.")
+  .description("Inspect one admitted package source.")
+  .action(async (packageSourceId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.getPackageSource(packageSourceId));
+  });
+
+hostPackageSourcesCommand
   .command("admit")
-  .argument("<directory>", "Absolute or relative path to an AgentPackage directory.")
-  .description("Admit a local package directory into entangle-host desired state.")
-  .action(async (directory: string, _options, command: Command) => {
+  .argument(
+    "<path>",
+    "Absolute or relative path to an AgentPackage directory or archive."
+  )
+  .option(
+    "--source-kind <sourceKind>",
+    "Package source kind to admit. Supported values: local_path, local_archive.",
+    "local_path"
+  )
+  .option(
+    "--package-source-id <packageSourceId>",
+    "Optional explicit package source identifier."
+  )
+  .description(
+    "Admit a canonical local package path or archive into entangle-host desired state."
+  )
+  .action(
+    async (
+      inputPath: string,
+      options: {
+        packageSourceId?: string;
+        sourceKind: string;
+      },
+      command: Command
+    ) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
     printJson(
-      await client.admitPackageSource({
-        sourceKind: "local_path",
-        absolutePath: path.resolve(directory)
-      })
+      await client.admitPackageSource(
+        buildPackageSourceAdmissionRequestFromCli({
+          inputPath,
+          ...(options.packageSourceId
+            ? { packageSourceId: options.packageSourceId }
+            : {}),
+          sourceKind: options.sourceKind
+        })
+      )
     );
-  });
+    }
+  );
 
 const hostExternalPrincipalsCommand = hostCommand
   .command("external-principals")
