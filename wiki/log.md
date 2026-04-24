@@ -948,3 +948,25 @@ Closed the slice only after widening runner tests to prove valid
 consolidation flows succeed and invalid consolidation refs fail
 deterministically, then re-running targeted runner quality gates plus the
 full `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added focused-register transition history
+
+Closed the next runner-memory quality slice by deriving bounded
+focused-register transition-history entries from validated lifecycle changes.
+The runner now preserves runtime-local audit records for closure, completion,
+replacement, consolidation, and exact resolution-overlap retirement decisions
+without adding lifecycle bookkeeping noise to the durable wiki pages.
+
+## [2026-04-24] implementation | Hardened host verification without socket binds
+
+Closed a verification portability gap in the host test suite by replacing
+socket-bound harness mechanics with in-process request, fetch, and WebSocket
+injection paths. Docker Engine client coverage now mocks `node:http.request`
+while still asserting socket-path and API request shape, fake Gitea API
+coverage now uses Fastify injection behind a typed fetch stub, and the host
+event-stream test now avoids an in-process listener race by subscribing before
+the event-producing mutation.
+
+Closed the slice only after rerunning host lint, typecheck, and tests; the
+focused-register targeted gates already in the worktree; full repository
+`pnpm verify`; and `git diff --check`.

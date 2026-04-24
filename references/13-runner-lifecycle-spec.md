@@ -186,7 +186,10 @@ That implemented slice currently includes:
   runner-validated explicit stale-item replacement refs that can map a stale
   active question or action to exact narrower successor items, plus
   runner-validated explicit stale-item consolidation refs that can collapse
-  multiple stale active questions or actions into one narrower successor item;
+  multiple stale active questions or actions into one narrower successor item,
+  plus bounded runner-owned focused-register transition history for closure,
+  completion, replacement, consolidation, and exact resolution-overlap
+  retirements without adding lifecycle metadata to the wiki pages;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

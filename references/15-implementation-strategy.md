@@ -253,6 +253,10 @@ Completed in the current repository state:
     questions or next actions may now collapse deterministically into one
     narrower active successor through runner-validated many-to-one mappings
     instead of surviving as overlapping active noise.
+29. a focused-register transition-history refinement where the runner now
+    persists a bounded runtime-local audit trail for closed, completed,
+    replaced, consolidated, and exact resolution-overlap lifecycle transitions
+    without polluting the human-facing wiki pages.
 
 Remaining work in this phase:
 
@@ -272,7 +276,8 @@ Remaining work in this phase:
    into broader model-guided memory maintenance with stronger semantic aging
    and retirement discipline beyond the newly implemented carry-count,
    stale-review, explicit-closure-reference, no-silent-drop, and
-   explicit-replacement and explicit-consolidation baseline;
+   explicit-replacement, explicit-consolidation, and bounded transition-history
+   baseline;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.
@@ -407,6 +412,15 @@ Acceptance for the phase:
 
 - the local deployment profile is proven end to end;
 - the repository quality bar is enforced by automation, not by hope.
+
+Completed in the current repository state:
+
+- ordinary host service tests no longer require real Unix or TCP socket
+  binding for Docker API request-shape coverage, fake Gitea API coverage, or
+  host event-stream coverage;
+- repository-wide `pnpm verify` can pass in the current constrained sandbox
+  profile while preserving future Compose-level integration work as a separate
+  hardening track.
 
 ## Non-negotiable rules
 

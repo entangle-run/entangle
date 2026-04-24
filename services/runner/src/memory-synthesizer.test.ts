@@ -311,6 +311,7 @@ describe("model-guided memory synthesis", () => {
         ]
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T11:04:50.000Z",
       updatedTurnId: "turn-memory-004"
     });
@@ -762,6 +763,41 @@ describe("model-guided memory synthesis", () => {
         (entry) => entry.text === previousResolution
       )
     ).toBeUndefined();
+    const closedTransition = focusedRegisterState?.transitionHistory.find(
+      (transition) =>
+        transition.kind === "closed" &&
+        transition.sourceTexts.includes(previousOpenQuestion)
+    );
+    const completedTransition = focusedRegisterState?.transitionHistory.find(
+      (transition) =>
+        transition.kind === "completed" &&
+        transition.sourceTexts.includes(previousNextAction)
+    );
+
+    expect(closedTransition).toEqual(
+      expect.objectContaining({
+        kind: "closed",
+        register: "openQuestions",
+        sourceTexts: [previousOpenQuestion],
+        targetTexts: [],
+        turnId: "turn-memory-005"
+      })
+    );
+    expect(closedTransition?.resolutionTexts).toContain(
+      "The current checkpoint review no longer needs extra operator-detail validation."
+    );
+    expect(completedTransition).toEqual(
+      expect.objectContaining({
+        kind: "completed",
+        register: "nextActions",
+        sourceTexts: [previousNextAction],
+        targetTexts: [],
+        turnId: "turn-memory-005"
+      })
+    );
+    expect(completedTransition?.resolutionTexts).toContain(
+      "The previous draft action item to gather raw relay logs is complete."
+    );
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
     expect(indexPage).toContain("[Decisions Summary](summaries/decisions.md)");
     expect(indexPage).toContain("[Stable Facts Summary](summaries/stable-facts.md)");
@@ -868,6 +904,7 @@ describe("model-guided memory synthesis", () => {
         resolutions: []
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T12:00:00.000Z",
       updatedTurnId: "turn-memory-006"
     });
@@ -1158,6 +1195,7 @@ describe("model-guided memory synthesis", () => {
         resolutions: []
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T13:00:00.000Z",
       updatedTurnId: "turn-memory-008"
     });
@@ -1316,6 +1354,7 @@ describe("model-guided memory synthesis", () => {
         resolutions: []
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T13:10:00.000Z",
       updatedTurnId: "turn-memory-009"
     });
@@ -1422,6 +1461,18 @@ describe("model-guided memory synthesis", () => {
         (entry) => entry.text === staleOpenQuestion
       )
     ).toBeUndefined();
+    expect(focusedRegisterState?.transitionHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "replaced",
+          register: "openQuestions",
+          resolutionTexts: [],
+          sourceTexts: [staleOpenQuestion],
+          targetTexts: [narrowedOpenQuestion],
+          turnId: "turn-memory-010"
+        })
+      ])
+    );
   });
 
   it("rejects explicit stale replacement refs whose targets are missing from the resulting active list", async () => {
@@ -1485,6 +1536,7 @@ describe("model-guided memory synthesis", () => {
         resolutions: []
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T13:20:00.000Z",
       updatedTurnId: "turn-memory-010"
     });
@@ -1657,6 +1709,7 @@ describe("model-guided memory synthesis", () => {
         resolutions: []
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T13:30:00.000Z",
       updatedTurnId: "turn-memory-011"
     });
@@ -1769,6 +1822,18 @@ describe("model-guided memory synthesis", () => {
         (entry) => entry.text === staleOpenQuestionTwo
       )
     ).toBeUndefined();
+    expect(focusedRegisterState?.transitionHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "consolidated",
+          register: "openQuestions",
+          resolutionTexts: [],
+          sourceTexts: [staleOpenQuestionOne, staleOpenQuestionTwo],
+          targetTexts: [consolidatedOpenQuestion],
+          turnId: "turn-memory-012"
+        })
+      ])
+    );
   });
 
   it("rejects explicit stale consolidation refs whose target is missing from the resulting active list", async () => {
@@ -1843,6 +1908,7 @@ describe("model-guided memory synthesis", () => {
         resolutions: []
       },
       schemaVersion: "1",
+      transitionHistory: [],
       updatedAt: "2026-04-24T13:40:00.000Z",
       updatedTurnId: "turn-memory-012"
     });

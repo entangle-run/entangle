@@ -148,7 +148,9 @@ This repository currently contains:
   test files from runtime payloads;
 - verified portable deploy payloads for host and runner built from the real
   `build -> deploy` path used by the service images;
-- a quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- a quality baseline with ESLint, Vitest, GitHub Actions CI, and
+  socketless host service tests that keep ordinary verification portable in
+  constrained sandbox or CI profiles;
 - shared Vitest workspace-source resolution so package-local tests do not
   rely on stale sibling `dist/` outputs;
 - shared ESLint test-project resolution through a root `tsconfig.eslint.json`
@@ -263,6 +265,10 @@ This repository currently contains:
   questions or next actions may now collapse deterministically into one
   narrower active successor through runner-validated many-to-one mappings
   instead of surviving as overlapping active noise;
+- a focused-register transition-history refinement where the runner now
+  persists a bounded runtime-local audit trail of closed, completed, replaced,
+  consolidated, and exact resolution-overlap lifecycle transitions without
+  adding noisy bookkeeping metadata to the human-facing wiki pages;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

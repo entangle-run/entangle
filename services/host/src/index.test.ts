@@ -11,7 +11,6 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Fastify from "fastify";
-import { WebSocket } from "ws";
 import type { RuntimeBackend } from "./runtime-backend.js";
 import {
   artifactRecordSchema,
@@ -40,15 +39,32 @@ import {
 
 const createdDirectories: string[] = [];
 
+type TestSocketPayload = ArrayBuffer | Buffer | Buffer[];
+
 type TestWebSocket = {
-  close(code?: number, reason?: string): void;
+  close(): void;
   once(event: "error", listener: (error: Error) => void): void;
-  once(event: "open", listener: () => void): void;
-  once(event: "message", listener: (payload: Buffer) => void): void;
+  once(event: "message", listener: (payload: TestSocketPayload) => void): void;
   terminate(): void;
 };
 
-type TestWebSocketConstructor = new (url: string) => TestWebSocket;
+type InjectableWebSocketServer = {
+  injectWS(path: string): Promise<unknown>;
+};
+
+type MockFetchInput = string | URL | { url: string };
+
+type MockFetchInit = {
+  body?: unknown;
+  headers?: Record<string, string>;
+  method?: string;
+};
+
+type MockFetchResponse = {
+  json(): Promise<unknown>;
+  status: number;
+  text(): Promise<string>;
+};
 
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
@@ -177,6 +193,43 @@ function buildGitPrincipalRecord(
   };
 }
 
+function resolveFetchUrl(input: MockFetchInput): URL {
+  if (typeof input === "string" || input instanceof URL) {
+    return new URL(input);
+  }
+
+  return new URL(input.url);
+}
+
+function coerceMockFetchBody(body: unknown): string | undefined {
+  if (typeof body === "undefined" || body === null) {
+    return undefined;
+  }
+
+  if (typeof body === "string") {
+    return body;
+  }
+
+  throw new Error("The test Gitea fetch mock only supports string request bodies.");
+}
+
+function coerceMockFetchHeaders(
+  headers: MockFetchInit["headers"]
+): Record<string, string> {
+  return headers ?? {};
+}
+
+function buildMockFetchResponse(input: {
+  body: string;
+  statusCode: number;
+}): MockFetchResponse {
+  return {
+    status: input.statusCode,
+    json: () => Promise.resolve(JSON.parse(input.body) as unknown),
+    text: () => Promise.resolve(input.body)
+  };
+}
+
 async function createTestGiteaApiServer(options: {
   currentUserLogin?: string;
   existingRepositories?: Array<{
@@ -302,15 +355,31 @@ async function createTestGiteaApiServer(options: {
     };
   });
 
-  await server.listen({
-    host: "127.0.0.1",
-    port: 0
+  await server.ready();
+
+  const origin = "http://gitea.test";
+
+  vi.stubGlobal("fetch", async (input: MockFetchInput, init?: MockFetchInit) => {
+    const url = resolveFetchUrl(input);
+
+    if (url.origin !== origin) {
+      throw new Error(`Unexpected test fetch target: ${url.toString()}`);
+    }
+
+    const response = await server.inject({
+      headers: coerceMockFetchHeaders(init?.headers),
+      method: init?.method ?? "GET",
+      payload: coerceMockFetchBody(init?.body),
+      url: `${url.pathname}${url.search}`
+    });
+
+    return buildMockFetchResponse(response as { body: string; statusCode: number });
   });
 
   return {
     close: () => server.close(),
     requests,
-    url: server.listeningOrigin
+    url: origin
   };
 }
 
@@ -446,23 +515,19 @@ async function readNextSocketEvent(
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     socket.once("message", (payload) => {
-      resolve(JSON.parse(payload.toString("utf8")) as unknown);
+      const payloadText = Array.isArray(payload)
+        ? Buffer.concat(payload).toString("utf8")
+        : Buffer.from(payload).toString("utf8");
+      resolve(JSON.parse(payloadText) as unknown);
     });
     socket.once("error", reject);
   });
 }
 
-async function openSocket(url: string): Promise<TestWebSocket> {
-  const socket = new (WebSocket as unknown as TestWebSocketConstructor)(url);
-
-  await new Promise<void>((resolve, reject) => {
-    socket.once("open", () => {
-      resolve();
-    });
-    socket.once("error", reject);
-  });
-
-  return socket;
+async function injectTestSocket(
+  server: InjectableWebSocketServer
+): Promise<TestWebSocket> {
+  return (await server.injectWS("/v1/events")) as TestWebSocket;
 }
 
 async function applySingleWorkerGraph(input: {
@@ -518,6 +583,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
   delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
+  vi.unstubAllGlobals();
   vi.resetModules();
 
   await Promise.all(
@@ -690,13 +756,10 @@ describe("buildHostServer", () => {
         ])
       );
 
-      const address = await server.listen({
-        host: "127.0.0.1",
-        port: 0
-      });
-      const socket = await openSocket(`${address.replace(/^http/, "ws")}/v1/events`);
+      const socket = await injectTestSocket(server);
 
       try {
+        const liveEventPromise = readNextSocketEvent(socket);
         const upsertResponse = await server.inject({
           method: "PUT",
           payload: buildGitPrincipalRecord({
@@ -707,9 +770,7 @@ describe("buildHostServer", () => {
 
         expect(upsertResponse.statusCode).toBe(200);
 
-        const liveEvent = hostEventRecordSchema.parse(
-          await readNextSocketEvent(socket)
-        );
+        const liveEvent = hostEventRecordSchema.parse(await liveEventPromise);
         expect(liveEvent).toMatchObject({
           category: "control_plane",
           principalId: "worker-it-git-stream",
@@ -1634,8 +1695,8 @@ describe("buildHostServer", () => {
   });
 
   it("provisions an organization-backed primary repository target through the Gitea API when it is missing", async () => {
-    const giteaApi = await createTestGiteaApiServer();
     const server = await createTestServer({ includeModelEndpoint: true });
+    const giteaApi = await createTestGiteaApiServer();
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {
@@ -1725,10 +1786,10 @@ describe("buildHostServer", () => {
   });
 
   it("provisions the current user's repository through /user/repos when the namespace matches the authenticated user", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
     const giteaApi = await createTestGiteaApiServer({
       currentUserLogin: "team-alpha"
     });
-    const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {
@@ -1787,6 +1848,7 @@ describe("buildHostServer", () => {
   });
 
   it("reuses an existing primary repository target without issuing a create call", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
     const giteaApi = await createTestGiteaApiServer({
       existingRepositories: [
         {
@@ -1795,7 +1857,6 @@ describe("buildHostServer", () => {
         }
       ]
     });
-    const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {
@@ -1849,8 +1910,8 @@ describe("buildHostServer", () => {
   });
 
   it("keeps the runtime unavailable when a gitea_api target cannot be provisioned", async () => {
-    const giteaApi = await createTestGiteaApiServer();
     const server = await createTestServer({ includeModelEndpoint: true });
+    const giteaApi = await createTestGiteaApiServer();
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {

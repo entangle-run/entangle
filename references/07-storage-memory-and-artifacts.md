@@ -129,5 +129,10 @@ On top of that, the focused memory layer now supports explicit
 runner-validated consolidation refs for stale active open questions and next
 actions, so multiple overlapping stale items can collapse into one narrower
 active successor instead of surviving as parallel active noise.
+The runner also now persists a bounded runtime-local focused-register
+transition history for closure, completion, replacement, consolidation, and
+exact resolution-overlap retirements. That trace stays in
+`memory-state/focused-register-state.json`, preserving auditability without
+polluting the human-facing wiki pages with lifecycle bookkeeping.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

@@ -201,6 +201,10 @@ The repository now also contains the first real implementation baseline:
   questions or next actions may now collapse deterministically into one
   narrower active successor through runner-validated many-to-one mappings
   instead of surviving as overlapping active noise;
+- a focused-register transition-history refinement where the runner now
+  persists bounded runtime-local lifecycle audit entries for closure,
+  completion, replacement, consolidation, and exact resolution-overlap
+  retirements while keeping the wiki pages clean and human-readable;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -361,7 +365,9 @@ The repository now also contains the first real implementation baseline:
 - machine-readable Entangle A2A payloads and runner-local session,
   conversation, approval, and turn-state contracts owned by `packages/types`
   plus validator entrypoints for those surfaces in `packages/validator`;
-- a real quality baseline with ESLint, Vitest, and GitHub Actions CI;
+- a real quality baseline with ESLint, Vitest, GitHub Actions CI, and
+  socketless host service tests that keep ordinary verification portable in
+  constrained sandbox or CI profiles;
 - shared Vitest workspace-source resolution so package-local tests do not
   accidentally execute against stale sibling build outputs;
 - shared ESLint test-project resolution through a root `tsconfig.eslint.json`,

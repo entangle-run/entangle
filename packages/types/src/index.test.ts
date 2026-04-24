@@ -229,6 +229,36 @@ describe("focused register state contracts", () => {
 
     expect(result.registers.nextActions[0]?.carryCount).toBe(2);
     expect(result.registers.resolutions).toHaveLength(1);
+    expect(result.transitionHistory).toEqual([]);
+  });
+
+  it("accepts persisted focused-register transition history", () => {
+    const result = focusedRegisterStateSchema.parse({
+      registers: {
+        nextActions: [],
+        openQuestions: [],
+        resolutions: []
+      },
+      schemaVersion: "1",
+      transitionHistory: [
+        {
+          kind: "replaced",
+          observedAt: "2026-04-24T00:01:00.000Z",
+          register: "openQuestions",
+          resolutionTexts: [],
+          sourceTexts: ["Will the relay recovery trace remain readable?"],
+          targetTexts: [
+            "Which relay recovery trace fields still need operator review?"
+          ],
+          turnId: "turn-003"
+        }
+      ],
+      updatedAt: "2026-04-24T00:01:00.000Z",
+      updatedTurnId: "turn-003"
+    });
+
+    expect(result.transitionHistory[0]?.kind).toBe("replaced");
+    expect(result.transitionHistory[0]?.register).toBe("openQuestions");
   });
 });
 

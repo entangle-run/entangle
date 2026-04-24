@@ -14,7 +14,8 @@ import {
   type EffectiveRuntimeContext,
   type EngineToolDefinition,
   type FocusedRegisterEntryState,
-  type FocusedRegisterState
+  type FocusedRegisterState,
+  type FocusedRegisterTransitionState
 } from "@entangle/types";
 import {
   appendSectionBullet,
@@ -45,6 +46,7 @@ const maxWorkingContextListEntries = 6;
 const maxSynthesisArtifacts = 6;
 const maxSynthesisRecentTurns = 4;
 const maxSynthesisToolObservations = 4;
+const maxFocusedRegisterTransitionHistoryEntries = 60;
 const staleFocusedRegisterCarryThreshold = 3;
 
 const workingContextSummaryToolId = "write_memory_summary";
@@ -214,6 +216,7 @@ function buildEmptyFocusedRegisterState(input: {
       resolutions: []
     },
     schemaVersion: "1",
+    transitionHistory: [],
     updatedAt: input.updatedAt,
     updatedTurnId: input.updatedTurnId
   };
@@ -295,6 +298,7 @@ async function readFocusedRegisterContext(input: {
 function buildNextFocusedRegisterState(input: {
   previousState: FocusedRegisterState | undefined;
   registers: FocusedRegisterBaseline;
+  transitionHistory: FocusedRegisterTransitionState[];
   turnId: string;
   updatedAt: string;
 }): FocusedRegisterState {
@@ -335,6 +339,10 @@ function buildNextFocusedRegisterState(input: {
   return {
     registers: nextRegisters,
     schemaVersion: "1",
+    transitionHistory: [
+      ...(input.previousState?.transitionHistory ?? []),
+      ...input.transitionHistory
+    ].slice(-maxFocusedRegisterTransitionHistoryEntries),
     updatedAt: input.updatedAt,
     updatedTurnId: input.turnId
   };
@@ -342,6 +350,157 @@ function buildNextFocusedRegisterState(input: {
 
 function buildNormalizedEntryKeySet(entries: string[]): Set<string> {
   return new Set(entries.map((entry) => normalizeRegisterEntryKey(entry)));
+}
+
+function buildFocusedRegisterTransitionHistory(input: {
+  baseline: FocusedRegisterBaseline;
+  closedOpenQuestions: string[];
+  completedNextActions: string[];
+  consolidatedNextActions: FocusedRegisterConsolidationRef[];
+  consolidatedOpenQuestions: FocusedRegisterConsolidationRef[];
+  replacedNextActions: FocusedRegisterReplacementRef[];
+  replacedOpenQuestions: FocusedRegisterReplacementRef[];
+  resolutions: string[];
+  turnId: string;
+  updatedAt: string;
+}): FocusedRegisterTransitionState[] {
+  const transitions: FocusedRegisterTransitionState[] = [];
+  const resolutionTextByKey = new Map(
+    input.resolutions.map((resolution) => [
+      normalizeRegisterEntryKey(resolution),
+      resolution
+    ] as const)
+  );
+  const consumedOpenQuestionKeys = new Set<string>();
+  const consumedNextActionKeys = new Set<string>();
+
+  const addConsumedKeys = (target: Set<string>, entries: string[]): void => {
+    for (const entry of entries) {
+      target.add(normalizeRegisterEntryKey(entry));
+    }
+  };
+
+  const pushTransition = (transition: Omit<
+    FocusedRegisterTransitionState,
+    "observedAt" | "turnId"
+  >): void => {
+    const sourceTexts = normalizeListEntries(transition.sourceTexts);
+
+    if (sourceTexts.length === 0) {
+      return;
+    }
+
+    transitions.push({
+      ...transition,
+      observedAt: input.updatedAt,
+      resolutionTexts: normalizeListEntries(transition.resolutionTexts),
+      sourceTexts,
+      targetTexts: normalizeListEntries(transition.targetTexts),
+      turnId: input.turnId
+    });
+  };
+
+  for (const closedOpenQuestion of input.closedOpenQuestions) {
+    consumedOpenQuestionKeys.add(normalizeRegisterEntryKey(closedOpenQuestion));
+    pushTransition({
+      kind: "closed",
+      register: "openQuestions",
+      resolutionTexts: input.resolutions,
+      sourceTexts: [closedOpenQuestion],
+      targetTexts: []
+    });
+  }
+
+  for (const completedNextAction of input.completedNextActions) {
+    consumedNextActionKeys.add(normalizeRegisterEntryKey(completedNextAction));
+    pushTransition({
+      kind: "completed",
+      register: "nextActions",
+      resolutionTexts: input.resolutions,
+      sourceTexts: [completedNextAction],
+      targetTexts: []
+    });
+  }
+
+  for (const replacementRef of input.replacedOpenQuestions) {
+    consumedOpenQuestionKeys.add(normalizeRegisterEntryKey(replacementRef.from));
+    pushTransition({
+      kind: "replaced",
+      register: "openQuestions",
+      resolutionTexts: [],
+      sourceTexts: [replacementRef.from],
+      targetTexts: replacementRef.to
+    });
+  }
+
+  for (const replacementRef of input.replacedNextActions) {
+    consumedNextActionKeys.add(normalizeRegisterEntryKey(replacementRef.from));
+    pushTransition({
+      kind: "replaced",
+      register: "nextActions",
+      resolutionTexts: [],
+      sourceTexts: [replacementRef.from],
+      targetTexts: replacementRef.to
+    });
+  }
+
+  for (const consolidationRef of input.consolidatedOpenQuestions) {
+    addConsumedKeys(consumedOpenQuestionKeys, consolidationRef.from);
+    pushTransition({
+      kind: "consolidated",
+      register: "openQuestions",
+      resolutionTexts: [],
+      sourceTexts: consolidationRef.from,
+      targetTexts: [consolidationRef.to]
+    });
+  }
+
+  for (const consolidationRef of input.consolidatedNextActions) {
+    addConsumedKeys(consumedNextActionKeys, consolidationRef.from);
+    pushTransition({
+      kind: "consolidated",
+      register: "nextActions",
+      resolutionTexts: [],
+      sourceTexts: consolidationRef.from,
+      targetTexts: [consolidationRef.to]
+    });
+  }
+
+  for (const openQuestion of input.baseline.openQuestions) {
+    const openQuestionKey = normalizeRegisterEntryKey(openQuestion);
+
+    if (
+      resolutionTextByKey.has(openQuestionKey) &&
+      !consumedOpenQuestionKeys.has(openQuestionKey)
+    ) {
+      pushTransition({
+        kind: "resolved_overlap",
+        register: "openQuestions",
+        resolutionTexts: [resolutionTextByKey.get(openQuestionKey) ?? openQuestion],
+        sourceTexts: [openQuestion],
+        targetTexts: []
+      });
+    }
+  }
+
+  for (const nextAction of input.baseline.nextActions) {
+    const nextActionKey = normalizeRegisterEntryKey(nextAction);
+
+    if (
+      resolutionTextByKey.has(nextActionKey) &&
+      !consumedNextActionKeys.has(nextActionKey)
+    ) {
+      pushTransition({
+        kind: "resolved_overlap",
+        register: "nextActions",
+        resolutionTexts: [resolutionTextByKey.get(nextActionKey) ?? nextAction],
+        sourceTexts: [nextAction],
+        targetTexts: []
+      });
+    }
+  }
+
+  return transitions;
 }
 
 function reconcileFocusedRegisterLifecycle(input: FocusedRegisterBaseline & FocusedRegisterClosureRefs): FocusedRegisterBaseline {
@@ -2323,9 +2482,22 @@ function createWorkingContextSummaryToolExecutor(input: {
         resolutions: normalizeListEntries(parsedInput.value.resolutions)
       });
       const updatedAt = nowIsoString();
+      const transitionHistory = buildFocusedRegisterTransitionHistory({
+        baseline: input.focusedRegisterContext.baseline,
+        closedOpenQuestions: normalizedClosedOpenQuestions,
+        completedNextActions: normalizedCompletedNextActions,
+        consolidatedNextActions: normalizedConsolidatedNextActions,
+        consolidatedOpenQuestions: normalizedConsolidatedOpenQuestions,
+        replacedNextActions: normalizedReplacedNextActions,
+        replacedOpenQuestions: normalizedReplacedOpenQuestions,
+        resolutions: normalizedResolutions,
+        turnId: input.synthesis.turnId,
+        updatedAt
+      });
       const nextFocusedRegisterState = buildNextFocusedRegisterState({
         previousState: input.focusedRegisterContext.state,
         registers: reconciledLifecycleRegisters,
+        transitionHistory,
         turnId: input.synthesis.turnId,
         updatedAt
       });

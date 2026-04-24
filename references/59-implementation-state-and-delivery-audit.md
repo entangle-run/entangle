@@ -354,6 +354,10 @@ not modeling.
   questions or next actions may now collapse deterministically into one
   narrower active successor through runner-validated many-to-one mappings
   instead of surviving as overlapping active noise;
+- a focused-register transition-history refinement where the runner now
+  persists bounded runtime-local lifecycle audit entries for closure,
+  completion, replacement, consolidation, and exact resolution-overlap
+  retirements without widening host, CLI, Studio, or wiki page contracts;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -378,7 +382,8 @@ not modeling.
   working-context summary, focused
   decisions/stable-facts/open-questions/next-actions/resolutions summary
   registers with explicit baseline continuity and exact closure
-  reconciliation, and bounded current-session inspection baseline;
+  reconciliation, bounded transition history, and bounded current-session
+  inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 
@@ -491,7 +496,8 @@ priority widening.
 - pinned multi-stage Docker builds for host and runner;
 - static Nginx-based Studio runtime image;
 - local `strfry` profile and local `Gitea` profile in Compose;
-- ESLint, Vitest, GitHub Actions CI, and repository-wide `pnpm verify`;
+- ESLint, Vitest, GitHub Actions CI, repository-wide `pnpm verify`, and
+  socketless host service tests for ordinary sandbox/CI verification;
 - package-local Vitest source aliasing to avoid stale sibling build artifacts.
 
 ### Still missing or incomplete
