@@ -296,6 +296,10 @@ The repository now also contains the first real implementation baseline:
 - a first bounded Studio runtime-lifecycle mutation slice where the selected
   runtime can now be started, stopped, and restarted strictly through the
   existing host lifecycle surfaces instead of through client-owned state;
+- a bounded Studio recovery-policy mutation slice where the selected-runtime
+  view can now apply manual or restart-on-failure policy records through the
+  existing host recovery-policy boundary, with local draft validation matching
+  host schema limits;
 - a deeper Studio runtime-artifact inspection slice where the selected-runtime
   surface now exposes persisted artifact records from the host read model,
   including deterministic sorting, lifecycle/publication/retrieval summaries,

@@ -342,6 +342,9 @@ Completed in the current repository state:
 - the first bounded Studio runtime lifecycle mutation flow, where the visual
   operator surface now starts, stops, and restarts selected runtimes strictly
   through existing host lifecycle surfaces.
+- the bounded Studio recovery-policy mutation flow, where the visual operator
+  surface now applies manual or bounded restart-on-failure policy records
+  through the existing host recovery-policy boundary.
 - deeper Studio runtime artifact inspection on top of the already implemented
   host runtime-artifact read surface, with partial-failure-tolerant selected
   runtime refresh instead of all-or-nothing panel failure.

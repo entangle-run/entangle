@@ -371,6 +371,10 @@ This repository currently contains:
 - a first bounded Studio runtime-lifecycle mutation slice where the selected
   runtime can now be started, stopped, and restarted strictly through the
   existing host lifecycle surfaces instead of through client-owned state;
+- a bounded Studio recovery-policy mutation slice where visual operators can
+  switch selected runtimes between manual recovery and bounded
+  restart-on-failure policy through `PUT /v1/runtimes/{nodeId}/recovery-policy`
+  without bypassing the host control plane;
 - a deeper Studio runtime-artifact inspection slice where the selected-runtime
   surface now exposes persisted artifact records from the host read model,
   including deterministic sorting, lifecycle/publication/retrieval summaries,

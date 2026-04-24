@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { HostEventRecord, RuntimeInspectionResponse } from "@entangle/types";
 import {
+  buildRuntimeRecoveryPolicyMutationRequest,
   collectRuntimeRecoveryEvents,
+  createRuntimeRecoveryPolicyDraft,
   deriveSelectedRuntimeId,
   describeRuntimeRecoveryController,
   describeRuntimeRecoveryPolicy,
-  formatRuntimeRecoveryEventLabel
+  formatRuntimeRecoveryEventLabel,
+  hasRuntimeRecoveryPolicyDraftChanged,
+  isRuntimeRecoveryPolicyDraftValid
 } from "./recovery-inspection.js";
 
 function createRuntime(nodeId: string): RuntimeInspectionResponse {
@@ -65,6 +69,52 @@ describe("studio recovery inspection helpers", () => {
         updatedAt: "2026-04-24T10:00:00.000Z"
       })
     ).toContain("Cooldown until");
+  });
+
+  it("builds and validates recovery-policy mutation drafts", () => {
+    const policyRecord = {
+      nodeId: "worker-it",
+      policy: {
+        cooldownSeconds: 30,
+        maxAttempts: 3,
+        mode: "restart_on_failure"
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T10:00:00.000Z"
+    } as const;
+    const draft = createRuntimeRecoveryPolicyDraft(policyRecord);
+
+    expect(draft).toEqual({
+      cooldownSeconds: "30",
+      maxAttempts: "3",
+      mode: "restart_on_failure"
+    });
+    expect(isRuntimeRecoveryPolicyDraftValid(draft)).toBe(true);
+    expect(buildRuntimeRecoveryPolicyMutationRequest(draft)).toEqual(
+      policyRecord.policy
+    );
+    expect(hasRuntimeRecoveryPolicyDraftChanged(policyRecord, draft)).toBe(false);
+    expect(
+      hasRuntimeRecoveryPolicyDraftChanged(policyRecord, {
+        ...draft,
+        maxAttempts: "4"
+      })
+    ).toBe(true);
+    expect(
+      isRuntimeRecoveryPolicyDraftValid({
+        ...draft,
+        cooldownSeconds: "3601"
+      })
+    ).toBe(false);
+    expect(
+      buildRuntimeRecoveryPolicyMutationRequest({
+        cooldownSeconds: "9999",
+        maxAttempts: "9999",
+        mode: "manual"
+      })
+    ).toEqual({
+      mode: "manual"
+    });
   });
 
   it("filters runtime recovery events for one runtime and formats labels", () => {

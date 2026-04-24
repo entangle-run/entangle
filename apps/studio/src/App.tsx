@@ -81,11 +81,16 @@ import {
   shouldRefreshSelectedRuntimeFromHostEvent
 } from "./host-event-refresh.js";
 import {
+  buildRuntimeRecoveryPolicyMutationRequest,
   collectRuntimeRecoveryEvents,
+  createRuntimeRecoveryPolicyDraft,
   deriveSelectedRuntimeId,
   describeRuntimeRecoveryController,
   describeRuntimeRecoveryPolicy,
-  formatRuntimeRecoveryEventLabel
+  formatRuntimeRecoveryEventLabel,
+  hasRuntimeRecoveryPolicyDraftChanged,
+  isRuntimeRecoveryPolicyDraftValid,
+  type RuntimeRecoveryPolicyDraft
 } from "./recovery-inspection.js";
 import {
   collectRuntimeTraceEvents,
@@ -351,6 +356,11 @@ export function App() {
     useState<EdgeMutationAction | null>(null);
   const [selectedRecovery, setSelectedRecovery] =
     useState<RuntimeRecoveryInspectionResponse | null>(null);
+  const [recoveryPolicyDraft, setRecoveryPolicyDraft] =
+    useState<RuntimeRecoveryPolicyDraft>(createRuntimeRecoveryPolicyDraft);
+  const [recoveryPolicyError, setRecoveryPolicyError] = useState<string | null>(null);
+  const [pendingRecoveryPolicyMutation, setPendingRecoveryPolicyMutation] =
+    useState(false);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [selectedArtifactInspection, setSelectedArtifactInspection] =
@@ -382,6 +392,7 @@ export function App() {
   const selectedArtifactIdRef = useRef<string | null>(null);
   const selectedTurnIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
+  const recoveryPolicySeedRef = useRef<string | null>(null);
 
   selectedRuntimeIdRef.current = selectedRuntimeId;
   selectedArtifactIdRef.current = selectedArtifactId;
@@ -834,6 +845,46 @@ export function App() {
     [client, refreshSelectedRuntimeDetails, selectedRuntimeId]
   );
 
+  const saveSelectedRuntimeRecoveryPolicy = useCallback(async () => {
+    if (!selectedRuntimeId) {
+      return;
+    }
+
+    try {
+      setPendingRecoveryPolicyMutation(true);
+      const request =
+        buildRuntimeRecoveryPolicyMutationRequest(recoveryPolicyDraft);
+      const inspection = await client.setRuntimeRecoveryPolicy(
+        selectedRuntimeId,
+        request
+      );
+
+      startTransition(() => {
+        setSelectedRecovery(inspection);
+        setRecoveryPolicyDraft(createRuntimeRecoveryPolicyDraft(inspection.policy));
+        setRecoveryPolicyError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setRecoveryPolicyError(
+          normalizeError(
+            caught,
+            "Unknown error while updating runtime recovery policy."
+          )
+        );
+      });
+    } finally {
+      setPendingRecoveryPolicyMutation(false);
+    }
+  }, [
+    client,
+    recoveryPolicyDraft,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId
+  ]);
+
   const selectRuntimeSession = useCallback(
     async (sessionId: string) => {
       if (!selectedRuntimeId) {
@@ -1245,6 +1296,8 @@ export function App() {
       setSelectedRecovery(null);
       setMutationError(null);
       setRecoveryError(null);
+      setRecoveryPolicyDraft(createRuntimeRecoveryPolicyDraft());
+      setRecoveryPolicyError(null);
       return;
     }
 
@@ -1265,8 +1318,29 @@ export function App() {
     setSessionDetailError(null);
     setMutationError(null);
     setSelectedRecovery(null);
+    setRecoveryPolicyError(null);
     void refreshSelectedRuntimeDetails(selectedRuntimeId);
   }, [refreshSelectedRuntimeDetails, selectedRuntimeId]);
+
+  useEffect(() => {
+    const nextPolicySeed = selectedRecovery
+      ? JSON.stringify(selectedRecovery.policy)
+      : null;
+
+    if (recoveryPolicySeedRef.current === nextPolicySeed) {
+      return;
+    }
+
+    recoveryPolicySeedRef.current = nextPolicySeed;
+
+    if (!selectedRecovery) {
+      setRecoveryPolicyDraft(createRuntimeRecoveryPolicyDraft());
+      return;
+    }
+
+    setRecoveryPolicyDraft(createRuntimeRecoveryPolicyDraft(selectedRecovery.policy));
+    setRecoveryPolicyError(null);
+  }, [selectedRecovery]);
 
   useEffect(() => {
     if (!graphInspection?.graph) {
@@ -1407,6 +1481,18 @@ export function App() {
   const runtimeStateTone = useMemo(
     () => formatRuntimeStateTone(selectedRuntime),
     [selectedRuntime]
+  );
+  const recoveryPolicyDraftValid = useMemo(
+    () => isRuntimeRecoveryPolicyDraftValid(recoveryPolicyDraft),
+    [recoveryPolicyDraft]
+  );
+  const recoveryPolicyDraftChanged = useMemo(
+    () =>
+      hasRuntimeRecoveryPolicyDraftChanged(
+        selectedRecovery?.policy ?? null,
+        recoveryPolicyDraft
+      ),
+    [recoveryPolicyDraft, selectedRecovery]
   );
 
   return (
@@ -2255,6 +2341,125 @@ export function App() {
                 {mutationError ? <p className="error-box">{mutationError}</p> : null}
 
                 <div className="recovery-column">
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Recovery Policy</h3>
+                      <span className="panel-caption">
+                        {selectedRecovery?.policy.updatedAt ?? "not loaded"}
+                      </span>
+                    </div>
+
+                    {recoveryPolicyError ? (
+                      <p className="error-box">{recoveryPolicyError}</p>
+                    ) : null}
+
+                    <div className="field-grid">
+                      <label className="field">
+                        <span>Policy mode</span>
+                        <select
+                          disabled={
+                            !selectedRecovery || pendingRecoveryPolicyMutation
+                          }
+                          onChange={(event) => {
+                            const mode =
+                              event.target
+                                .value as RuntimeRecoveryPolicyDraft["mode"];
+
+                            setRecoveryPolicyDraft((current) => ({
+                              ...current,
+                              mode
+                            }));
+                          }}
+                          value={recoveryPolicyDraft.mode}
+                        >
+                          <option value="manual">manual</option>
+                          <option value="restart_on_failure">
+                            restart_on_failure
+                          </option>
+                        </select>
+                      </label>
+
+                      {recoveryPolicyDraft.mode === "restart_on_failure" ? (
+                        <>
+                          <label className="field">
+                            <span>Max attempts</span>
+                            <input
+                              disabled={
+                                !selectedRecovery ||
+                                pendingRecoveryPolicyMutation
+                              }
+                              max={20}
+                              min={1}
+                              onChange={(event) => {
+                                setRecoveryPolicyDraft((current) => ({
+                                  ...current,
+                                  maxAttempts: event.target.value
+                                }));
+                              }}
+                              type="number"
+                              value={recoveryPolicyDraft.maxAttempts}
+                            />
+                          </label>
+
+                          <label className="field">
+                            <span>Cooldown seconds</span>
+                            <input
+                              disabled={
+                                !selectedRecovery ||
+                                pendingRecoveryPolicyMutation
+                              }
+                              max={3600}
+                              min={0}
+                              onChange={(event) => {
+                                setRecoveryPolicyDraft((current) => ({
+                                  ...current,
+                                  cooldownSeconds: event.target.value
+                                }));
+                              }}
+                              type="number"
+                              value={recoveryPolicyDraft.cooldownSeconds}
+                            />
+                          </label>
+                        </>
+                      ) : null}
+                    </div>
+
+                    <div className="action-row">
+                      <button
+                        className="action-button"
+                        disabled={!selectedRecovery || pendingRecoveryPolicyMutation}
+                        onClick={() => {
+                          setRecoveryPolicyDraft(
+                            createRuntimeRecoveryPolicyDraft(
+                              selectedRecovery?.policy
+                            )
+                          );
+                          setRecoveryPolicyError(null);
+                        }}
+                        type="button"
+                      >
+                        Reset Policy
+                      </button>
+                      <button
+                        className="action-button"
+                        disabled={
+                          !selectedRecovery ||
+                          pendingRecoveryPolicyMutation ||
+                          !recoveryPolicyDraftValid ||
+                          !recoveryPolicyDraftChanged
+                        }
+                        onClick={() => {
+                          void saveSelectedRuntimeRecoveryPolicy();
+                        }}
+                        type="button"
+                      >
+                        {pendingRecoveryPolicyMutation
+                          ? "Saving..."
+                          : "Save Policy"}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="subpanel">
                     <div className="section-header">
                       <h3>Recovery History</h3>

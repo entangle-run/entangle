@@ -435,6 +435,9 @@ delivery.
 - a first bounded runtime lifecycle mutation flow where Studio now starts,
   stops, and restarts the selected runtime strictly through existing host
   lifecycle surfaces;
+- bounded recovery-policy mutation from the selected-runtime view, using the
+  existing host recovery-policy route with local draft validation for manual
+  and restart-on-failure policies;
 - runtime artifact inspection on top of the existing host runtime-artifact read
   model, with selected-runtime refresh now degrading partially instead of
   failing wholesale when one selected-runtime sub-read fails;

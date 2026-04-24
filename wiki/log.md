@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio recovery-policy mutation
+
+Studio can now update the selected runtime's recovery policy through the
+existing host boundary. The visual surface supports manual recovery and bounded
+restart-on-failure policy drafts with local validation matching the host schema,
+then refreshes host-owned recovery state after the mutation is accepted.
+
 ## [2026-04-24] implementation | Added Studio runtime turn detail
 
 Studio now consumes the host-owned runtime-turn inspection surface. Visual
