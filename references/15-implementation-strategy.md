@@ -341,6 +341,8 @@ Completed in the current repository state:
 - a runtime artifact detail read surface through
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus shared host-client
   and CLI consumption for one artifact record by id.
+- Studio runtime artifact detail inspection through the same host item
+  boundary, with stale-selection guards and separate detail failure state.
 - deeper Studio runtime session inspection on top of the already implemented
   host session read model, again preserving partial-failure-tolerant
   selected-runtime refresh semantics.

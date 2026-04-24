@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio runtime artifact detail
+
+Extended Studio's runtime artifact panel over the new host item boundary.
+Visual operators can now select one runtime artifact, load its host-backed
+detail record through `packages/host-client`, and keep artifact-detail failures
+isolated from the broader selected-runtime panel.
+
 ## [2026-04-24] implementation | Added runtime artifact detail inspection
 
 Added a read-only item boundary for persisted runtime artifacts through

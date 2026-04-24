@@ -389,6 +389,9 @@ This repository currently contains:
 - the next artifact-governance slice where headless operators can inspect one
   runtime artifact by id through the shared host boundary instead of reading
   runner-local artifact files directly;
+- the matching Studio artifact-detail slice where visual operators can select
+  one runtime artifact and inspect its host-backed item record without
+  introducing client-owned artifact truth;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

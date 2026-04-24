@@ -25,6 +25,7 @@ import type {
   HostSessionSummary,
   HostStatusResponse,
   PackageSourceInspectionResponse,
+  RuntimeArtifactInspectionResponse,
   RuntimeInspectionResponse,
   RuntimeRecoveryInspectionResponse
 } from "@entangle/types";
@@ -80,6 +81,7 @@ import {
   formatRuntimeTraceEventLabel
 } from "./runtime-trace-inspection.js";
 import {
+  formatRuntimeArtifactDetailLines,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,
@@ -318,7 +320,11 @@ export function App() {
   const [selectedRecovery, setSelectedRecovery] =
     useState<RuntimeRecoveryInspectionResponse | null>(null);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
+  const [selectedArtifactInspection, setSelectedArtifactInspection] =
+    useState<RuntimeArtifactInspectionResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
+  const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -335,9 +341,11 @@ export function App() {
     useState<EventStreamState>("connecting");
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
   const selectedRuntimeIdRef = useRef<string | null>(null);
+  const selectedArtifactIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
 
   selectedRuntimeIdRef.current = selectedRuntimeId;
+  selectedArtifactIdRef.current = selectedArtifactId;
   selectedSessionIdRef.current = selectedSessionId;
 
   const loadOverview = useCallback(async () => {
@@ -436,6 +444,41 @@ export function App() {
     [client]
   );
 
+  const loadSelectedArtifactInspection = useCallback(
+    async (nodeId: string, artifactId: string) => {
+      try {
+        const inspection = await client.getRuntimeArtifact(nodeId, artifactId);
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedArtifactIdRef.current !== artifactId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedArtifactInspection(inspection);
+          setArtifactDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedArtifactIdRef.current !== artifactId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedArtifactInspection(null);
+          setArtifactDetailError(
+            normalizeError(caught, "Unknown error while loading artifact detail.")
+          );
+        });
+      }
+    },
+    [client]
+  );
+
   const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
     const [
       statusResult,
@@ -455,6 +498,23 @@ export function App() {
       sessionResult.status === "fulfilled"
         ? filterRuntimeSessions(sessionResult.value.sessions, nodeId)
         : [];
+    const nextSelectedArtifacts =
+      artifactResult.status === "fulfilled"
+        ? sortRuntimeArtifacts(artifactResult.value.artifacts)
+        : [];
+    const currentSelectedArtifactId = selectedArtifactId;
+    const shouldRefreshSelectedArtifact =
+      currentSelectedArtifactId !== null &&
+      nextSelectedArtifacts.some(
+        (artifact) => artifact.ref.artifactId === currentSelectedArtifactId
+      );
+    const selectedArtifactResult = shouldRefreshSelectedArtifact
+      ? (
+          await Promise.allSettled([
+            client.getRuntimeArtifact(nodeId, currentSelectedArtifactId)
+          ])
+        )[0]
+      : null;
     const currentSelectedSessionId = selectedSessionId;
     const shouldRefreshSelectedSession =
       currentSelectedSessionId !== null &&
@@ -507,8 +567,28 @@ export function App() {
       }
 
       if (artifactResult.status === "fulfilled") {
-        setSelectedArtifacts(sortRuntimeArtifacts(artifactResult.value.artifacts));
+        setSelectedArtifacts(nextSelectedArtifacts);
         setArtifactError(null);
+
+        if (!selectedArtifactId) {
+          setSelectedArtifactInspection(null);
+          setArtifactDetailError(null);
+        } else if (!shouldRefreshSelectedArtifact) {
+          setSelectedArtifactId(null);
+          setSelectedArtifactInspection(null);
+          setArtifactDetailError(null);
+        } else if (selectedArtifactResult?.status === "fulfilled") {
+          setSelectedArtifactInspection(selectedArtifactResult.value);
+          setArtifactDetailError(null);
+        } else if (selectedArtifactResult?.status === "rejected") {
+          setSelectedArtifactInspection(null);
+          setArtifactDetailError(
+            normalizeError(
+              selectedArtifactResult.reason,
+              "Unknown error while loading artifact detail."
+            )
+          );
+        }
       } else {
         setSelectedArtifacts([]);
         setArtifactError(
@@ -517,6 +597,9 @@ export function App() {
             "Unknown error while loading runtime artifacts."
           )
         );
+        setSelectedArtifactId(null);
+        setSelectedArtifactInspection(null);
+        setArtifactDetailError(null);
       }
 
       if (sessionResult.status === "fulfilled") {
@@ -560,7 +643,7 @@ export function App() {
         setSessionDetailError(null);
       }
     });
-  }, [client, selectedSessionId]);
+  }, [client, selectedArtifactId, selectedSessionId]);
 
   const mutateSelectedRuntime = useCallback(
     async (action: RuntimeLifecycleAction) => {
@@ -613,6 +696,20 @@ export function App() {
       await loadSelectedSessionInspection(selectedRuntimeId, sessionId);
     },
     [loadSelectedSessionInspection, selectedRuntimeId]
+  );
+
+  const selectRuntimeArtifact = useCallback(
+    async (artifactId: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedArtifactId(artifactId);
+      setSelectedArtifactInspection(null);
+      setArtifactDetailError(null);
+      await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
+    },
+    [loadSelectedArtifactInspection, selectedRuntimeId]
   );
 
   const graphNodeIds = useMemo(
@@ -894,6 +991,9 @@ export function App() {
     if (!selectedRuntimeId) {
       setArtifactError(null);
       setSelectedArtifacts([]);
+      setSelectedArtifactId(null);
+      setSelectedArtifactInspection(null);
+      setArtifactDetailError(null);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -907,6 +1007,9 @@ export function App() {
 
     setArtifactError(null);
     setSelectedArtifacts([]);
+    setSelectedArtifactId(null);
+    setSelectedArtifactInspection(null);
+    setArtifactDetailError(null);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -1989,14 +2092,22 @@ export function App() {
                       <ul className="timeline-list">
                         {selectedArtifacts.slice(0, 8).map((artifact) => (
                           <li key={artifact.ref.artifactId} className="timeline-item">
-                            <div className="timeline-row">
-                              <strong>{formatRuntimeArtifactLabel(artifact)}</strong>
-                              <span>{artifact.updatedAt}</span>
-                            </div>
-                            <p>{formatRuntimeArtifactStatus(artifact)}</p>
-                            <p className="artifact-meta">
-                              {formatRuntimeArtifactLocator(artifact)}
-                            </p>
+                            <button
+                              className={`timeline-button ${selectedArtifactId === artifact.ref.artifactId ? "is-selected" : ""}`}
+                              onClick={() => {
+                                void selectRuntimeArtifact(artifact.ref.artifactId);
+                              }}
+                              type="button"
+                            >
+                              <div className="timeline-row">
+                                <strong>{formatRuntimeArtifactLabel(artifact)}</strong>
+                                <span>{artifact.updatedAt}</span>
+                              </div>
+                              <p>{formatRuntimeArtifactStatus(artifact)}</p>
+                              <p className="artifact-meta">
+                                {formatRuntimeArtifactLocator(artifact)}
+                              </p>
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -2005,6 +2116,65 @@ export function App() {
                         <p>No persisted runtime artifacts are visible for this runtime yet.</p>
                       </div>
                     )}
+
+                    {artifactDetailError ? (
+                      <p className="error-box">{artifactDetailError}</p>
+                    ) : null}
+
+                    {selectedArtifactInspection ? (
+                      <div className="artifact-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Artifact Detail</h3>
+                          <span className="panel-caption">
+                            {selectedArtifactInspection.artifact.ref.artifactId}
+                          </span>
+                        </div>
+
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Artifact</dt>
+                            <dd>{selectedArtifactInspection.artifact.ref.artifactId}</dd>
+                          </div>
+                          <div>
+                            <dt>Backend</dt>
+                            <dd>
+                              {selectedArtifactInspection.artifact.ref.backend}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Kind</dt>
+                            <dd>
+                              {selectedArtifactInspection.artifact.ref.artifactKind ??
+                                "unspecified"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Locator</dt>
+                            <dd>
+                              {formatRuntimeArtifactLocator(
+                                selectedArtifactInspection.artifact
+                              )}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <ul className="detail-list">
+                          {formatRuntimeArtifactDetailLines(
+                            selectedArtifactInspection.artifact
+                          ).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : selectedArtifactId ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected artifact detail...</p>
+                      </div>
+                    ) : selectedArtifacts.length > 0 ? (
+                      <div className="inline-empty-state">
+                        <p>Select one artifact to inspect its host-backed detail.</p>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="subpanel">

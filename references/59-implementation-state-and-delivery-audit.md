@@ -424,6 +424,9 @@ delivery.
 - host and CLI single-artifact detail inspection through the same
   runtime-artifact read model, giving artifact records a stable item resource
   without exposing runner-local filesystem paths as a client contract;
+- Studio single-artifact detail inspection through the same runtime-artifact
+  item resource, with stale-selection guards and detail failures isolated from
+  the broader selected-runtime panel;
 - runtime session inspection on top of the existing host session read model,
   with selected-runtime refresh now also carrying filtered host session
   summaries for the selected runtime;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ArtifactRecord } from "@entangle/types";
 import {
+  formatRuntimeArtifactDetailLines,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,
@@ -57,5 +58,13 @@ describe("studio runtime artifact inspection helpers", () => {
     );
     expect(formatRuntimeArtifactStatus(artifact)).toContain("publication published");
     expect(formatRuntimeArtifactLocator(artifact)).toContain("worker-it:artifacts/artifact-report.md");
+    expect(formatRuntimeArtifactDetailLines(artifact)).toEqual(
+      expect.arrayContaining([
+        "created 2026-04-24T11:00:00.000Z",
+        "updated 2026-04-24T11:00:00.000Z",
+        "publication published",
+        "published remote ssh://git@example.com/team-alpha/worker-it.git"
+      ])
+    );
   });
 });

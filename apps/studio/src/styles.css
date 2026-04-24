@@ -381,7 +381,8 @@ code {
   color: rgba(247, 241, 232, 0.72);
 }
 
-.session-detail-card {
+.session-detail-card,
+.artifact-detail-card {
   display: grid;
   gap: 14px;
   border-radius: 18px;
