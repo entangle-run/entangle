@@ -16,6 +16,7 @@ import {
   mapPackageToolCatalogToEngineToolDefinitions,
   resolveRuntimeContextPath
 } from "./runtime-context.js";
+import { createModelGuidedMemorySynthesizer } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
 import { createBuiltinToolExecutor } from "./tool-executor.js";
 import type { RunnerTransport } from "./transport.js";
@@ -100,6 +101,7 @@ export async function createConfiguredRunnerService(
   runtimeContextPath?: string,
   input: {
     engine?: AgentEngine;
+    memorySynthesizer?: ReturnType<typeof createModelGuidedMemorySynthesizer>;
     transport?: RunnerTransport;
   } = {}
 ): Promise<{
@@ -120,6 +122,11 @@ export async function createConfiguredRunnerService(
       context: runtimeContext,
       secretKey
     });
+  const memorySynthesizer =
+    input.memorySynthesizer ??
+    createModelGuidedMemorySynthesizer({
+      context: runtimeContext
+    });
   const service = new RunnerService({
     context: runtimeContext,
     engine:
@@ -130,6 +137,7 @@ export async function createConfiguredRunnerService(
           toolCatalog: packageToolCatalog
         })
       }),
+    memorySynthesizer,
     toolDefinitions,
     transport
   });
@@ -187,6 +195,7 @@ export async function runRunnerOnce(input: {
 export async function runRunnerServiceUntilSignal(input: {
   abortSignal?: AbortSignal;
   engine?: AgentEngine;
+  memorySynthesizer?: ReturnType<typeof createModelGuidedMemorySynthesizer>;
   runtimeContextPath?: string;
   transport?: RunnerTransport;
 } = {}): Promise<{
@@ -200,6 +209,9 @@ export async function runRunnerServiceUntilSignal(input: {
     input.runtimeContextPath,
     {
       ...(input.engine ? { engine: input.engine } : {}),
+      ...(input.memorySynthesizer
+        ? { memorySynthesizer: input.memorySynthesizer }
+        : {}),
       ...(input.transport ? { transport: input.transport } : {})
     }
   );

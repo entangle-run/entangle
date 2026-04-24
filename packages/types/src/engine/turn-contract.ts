@@ -12,8 +12,19 @@ import {
 export const engineToolDefinitionSchema = z.object({
   id: identifierSchema,
   description: nonEmptyStringSchema,
-  inputSchema: z.record(z.string(), z.unknown()).default({})
+  inputSchema: z.record(z.string(), z.unknown()).default({}),
+  strict: z.boolean().optional()
 });
+
+export const engineToolChoiceSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("auto")
+  }),
+  z.object({
+    type: z.literal("tool"),
+    toolId: identifierSchema
+  })
+]);
 
 export const engineToolRequestSchema = z.object({
   toolId: identifierSchema,
@@ -51,6 +62,7 @@ export const agentEngineTurnRequestSchema = z.object({
   nodeId: identifierSchema,
   systemPromptParts: z.array(nonEmptyStringSchema).min(1),
   interactionPromptParts: z.array(nonEmptyStringSchema).min(1),
+  toolChoice: engineToolChoiceSchema.optional(),
   toolDefinitions: z.array(engineToolDefinitionSchema).default([]),
   artifactRefs: z.array(artifactRefSchema).default([]),
   artifactInputs: z.array(engineArtifactInputSchema).default([]),
@@ -84,6 +96,7 @@ export const agentEngineTurnResultSchema = z.object({
 });
 
 export type EngineToolDefinition = z.infer<typeof engineToolDefinitionSchema>;
+export type EngineToolChoice = z.infer<typeof engineToolChoiceSchema>;
 export type EngineToolRequest = z.infer<typeof engineToolRequestSchema>;
 export type EngineToolExecutionRequest = z.infer<
   typeof engineToolExecutionRequestSchema

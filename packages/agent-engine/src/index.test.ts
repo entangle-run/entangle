@@ -449,6 +449,144 @@ describe("agent-engine anthropic adapter", () => {
     });
   });
 
+  it("maps strict tool definitions and forced tool_choice into the Anthropic request", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "anthropic-api-key";
+
+    let capturedRequest:
+      | {
+          tool_choice: unknown;
+          tools: Array<unknown> | undefined;
+        }
+      | undefined;
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext(),
+      clientFactory: () => ({
+        messages: {
+          create(request) {
+            capturedRequest = {
+              tool_choice: request.tool_choice,
+              tools: request.tools
+            };
+
+            return Promise.resolve({
+              id: "msg_final",
+              type: "message",
+              role: "assistant",
+              content: [
+                {
+                  type: "text",
+                  text: "Structured tool request prepared."
+                }
+              ],
+              model: "claude-opus-4-7",
+              stop_reason: "end_turn",
+              stop_sequence: null,
+              usage: {
+                input_tokens: 8,
+                output_tokens: 3
+              }
+            } as unknown as Message);
+          }
+        }
+      })
+    });
+
+    await engine.executeTurn({
+      sessionId: "session-alpha",
+      nodeId: "worker-it",
+      systemPromptParts: ["System prompt."],
+      interactionPromptParts: ["Update the bounded memory summary."],
+      toolChoice: {
+        type: "tool",
+        toolId: "write_memory_summary"
+      },
+      toolDefinitions: [
+        {
+          id: "write_memory_summary",
+          description: "Write the bounded memory summary.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              summary: {
+                type: "string"
+              }
+            },
+            required: ["summary"],
+            additionalProperties: false
+          },
+          strict: true
+        }
+      ],
+      artifactRefs: [],
+      artifactInputs: [],
+      memoryRefs: [],
+      executionLimits: {
+        maxToolTurns: 1,
+        maxOutputTokens: 512
+      }
+    });
+
+    expect(capturedRequest?.tool_choice).toEqual({
+      type: "tool",
+      name: "write_memory_summary"
+    });
+    expect(capturedRequest?.tools).toEqual([
+      {
+        description: "Write the bounded memory summary.",
+        input_schema: {
+          type: "object",
+          properties: {
+            summary: {
+              type: "string"
+            }
+          },
+          required: ["summary"],
+          additionalProperties: false
+        },
+        name: "write_memory_summary",
+        strict: true
+      }
+    ]);
+  });
+
+  it("rejects forced tool_choice values that do not match a declared tool", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "anthropic-api-key";
+
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext(),
+      clientFactory: () => ({
+        messages: {
+          create() {
+            throw new Error("The provider should not be called for invalid tool_choice.");
+          }
+        }
+      })
+    });
+
+    await expect(
+      engine.executeTurn({
+        sessionId: "session-alpha",
+        nodeId: "worker-it",
+        systemPromptParts: ["System prompt."],
+        interactionPromptParts: ["Update the bounded memory summary."],
+        toolChoice: {
+          type: "tool",
+          toolId: "missing_tool"
+        },
+        toolDefinitions: [],
+        artifactRefs: [],
+        artifactInputs: [],
+        memoryRefs: [],
+        executionLimits: {
+          maxToolTurns: 1,
+          maxOutputTokens: 512
+        }
+      })
+    ).rejects.toMatchObject({
+      name: "AgentEngineConfigurationError"
+    });
+  });
+
   it("fails deterministically when the model exceeds the configured tool loop budget", async () => {
     process.env.ENTANGLE_MODEL_SECRET = "anthropic-api-key";
 

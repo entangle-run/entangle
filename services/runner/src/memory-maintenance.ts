@@ -22,7 +22,8 @@ type PostTurnMemoryUpdateResult = {
   taskPagePath: string;
 };
 
-const recentWorkSummaryRelativePath = "summaries/recent-work.md";
+export const recentWorkSummaryRelativePath = "summaries/recent-work.md";
+export const workingContextSummaryRelativePath = "summaries/working-context.md";
 const maxRecentSummaryEntries = 5;
 
 function buildTaskPageRelativePath(input: {
@@ -40,7 +41,7 @@ function isFileMissingError(error: unknown): boolean {
   );
 }
 
-async function readTextFileOrDefault(
+export async function readTextFileOrDefault(
   filePath: string,
   fallback: string
 ): Promise<string> {
@@ -55,7 +56,10 @@ async function readTextFileOrDefault(
   }
 }
 
-async function writeTextFile(filePath: string, content: string): Promise<void> {
+export async function writeTextFile(
+  filePath: string,
+  content: string
+): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, content, "utf8");
 }
@@ -69,7 +73,7 @@ function renderArtifactIdLines(
     : [fallback];
 }
 
-function appendSectionBullet(
+export function appendSectionBullet(
   currentContent: string,
   heading: string,
   bulletLine: string
@@ -118,6 +122,10 @@ function resolveTaskPagePath(input: {
 
 function resolveRecentWorkSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, recentWorkSummaryRelativePath);
+}
+
+export function resolveWorkingContextSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, workingContextSummaryRelativePath);
 }
 
 function buildTaskPageTitle(input: {

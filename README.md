@@ -177,6 +177,10 @@ This repository currently contains:
 - a richer deterministic memory-summary slice where the runner now rebuilds
   `memory/wiki/summaries/recent-work.md` from the freshest task pages and
   includes that summary in future bounded `memoryRefs`.
+- a first bounded model-guided memory-synthesis slice where the runner now
+  maintains `memory/wiki/summaries/working-context.md` through a strict
+  forced tool call while preserving runner ownership of the actual wiki
+  write path and keeping synthesis failure additive rather than turn-fatal;
 - a first typed host-event surface where `entangle-host` now persists and
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary

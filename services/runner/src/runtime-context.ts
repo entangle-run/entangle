@@ -59,15 +59,16 @@ async function readRuntimeConfig(
   }
 }
 
-async function collectMemoryRefs(
+export async function collectMemoryRefs(
   context: EffectiveRuntimeContext
 ): Promise<string[]> {
   const recentTaskRefs = await collectRecentTaskMemoryRefs(context);
   const candidatePaths = [
     path.join(context.workspace.memoryRoot, "schema", "AGENTS.md"),
+    path.join(context.workspace.memoryRoot, "wiki", "summaries", "working-context.md"),
+    path.join(context.workspace.memoryRoot, "wiki", "summaries", "recent-work.md"),
     path.join(context.workspace.memoryRoot, "wiki", "log.md"),
     path.join(context.workspace.memoryRoot, "wiki", "index.md"),
-    path.join(context.workspace.memoryRoot, "wiki", "summaries", "recent-work.md"),
     ...recentTaskRefs
   ];
   const resolvedRefs: string[] = [];

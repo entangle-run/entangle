@@ -218,6 +218,49 @@ describe("RunnerService", () => {
     );
   });
 
+  it("keeps the completed turn successful when optional memory synthesis throws", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context: runtimeContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Handled the task successfully."],
+            stopReason: "completed",
+            toolRequests: [],
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0
+            }
+          });
+        }
+      },
+      memorySynthesizer: {
+        synthesize() {
+          throw new Error("synthetic memory synthesis failure");
+        }
+      },
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(buildInboundTaskRequest());
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const [sessionRecord, conversationRecord, logPage] = await Promise.all([
+      readSessionRecord(statePaths, "session-alpha"),
+      readConversationRecord(statePaths, "conv-alpha"),
+      readFile(path.join(runtimeContext.workspace.memoryRoot, "wiki", "log.md"), "utf8")
+    ]);
+
+    expect(result.handled).toBe(true);
+    expect(sessionRecord?.status).toBe("completed");
+    expect(conversationRecord?.status).toBe("closed");
+    expect(logPage).toContain("runner turn | session-alpha /");
+  });
+
   it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {
     const fixture = await createRuntimeFixture({
       remotePublication: "bare_repo"

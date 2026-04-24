@@ -261,9 +261,41 @@ function mapToolDefinitionsToAnthropicTools(
     return {
       description: toolDefinition.description,
       input_schema: toolDefinition.inputSchema as Tool["input_schema"],
-      name: toolDefinition.id
+      name: toolDefinition.id,
+      ...(toolDefinition.strict ? { strict: true } : {})
     };
   });
+}
+
+function mapToolChoice(
+  request: AgentEngineTurnRequest
+): MessageCreateParamsNonStreaming["tool_choice"] | undefined {
+  const toolChoice = request.toolChoice;
+
+  if (!toolChoice) {
+    return undefined;
+  }
+
+  if (toolChoice.type === "auto") {
+    return {
+      type: "auto"
+    };
+  }
+
+  const matchedToolDefinition = request.toolDefinitions.find(
+    (toolDefinition) => toolDefinition.id === toolChoice.toolId
+  );
+
+  if (!matchedToolDefinition) {
+    throw new AgentEngineConfigurationError(
+      `Requested tool_choice '${toolChoice.toolId}' is not declared for this turn.`
+    );
+  }
+
+  return {
+    type: "tool",
+    name: matchedToolDefinition.id
+  };
 }
 
 async function buildInitialAnthropicUserMessage(
@@ -294,12 +326,14 @@ async function buildAnthropicRequest(
   const messages =
     input.messages ?? [await buildInitialAnthropicUserMessage(request)];
   const tools = mapToolDefinitionsToAnthropicTools(request);
+  const toolChoice = mapToolChoice(request);
 
   return {
     max_tokens: request.executionLimits.maxOutputTokens,
     system: request.systemPromptParts.join("\n\n"),
     messages,
-    ...(tools ? { tools } : {})
+    ...(tools ? { tools } : {}),
+    ...(toolChoice ? { tool_choice: toolChoice } : {})
   };
 }
 
@@ -633,6 +667,10 @@ export function createAnthropicAgentEngine(input: {
           toolLoopCount += 1;
         }
       } catch (error) {
+        if (error instanceof AgentEngineConfigurationError) {
+          throw error;
+        }
+
         if (error instanceof AgentEngineExecutionError) {
           throw error;
         }

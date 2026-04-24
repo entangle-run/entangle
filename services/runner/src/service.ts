@@ -40,6 +40,7 @@ import {
   type RunnerArtifactBackend
 } from "./artifact-backend.js";
 import { performPostTurnMemoryUpdate } from "./memory-maintenance.js";
+import type { RunnerMemorySynthesizer } from "./memory-synthesizer.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -372,6 +373,7 @@ export class RunnerService {
   private readonly context: EffectiveRuntimeContext;
   private readonly engine: AgentEngine;
   private readonly explicitToolDefinitions: EngineToolDefinition[] | undefined;
+  private readonly memorySynthesizer: RunnerMemorySynthesizer | undefined;
   private readonly transport: RunnerTransport;
   private subscription: RunnerTransportSubscription | undefined;
   private statePaths: RunnerStatePaths | undefined;
@@ -381,6 +383,7 @@ export class RunnerService {
     artifactBackend?: RunnerArtifactBackend;
     context: EffectiveRuntimeContext;
     engine?: AgentEngine;
+    memorySynthesizer?: RunnerMemorySynthesizer;
     toolDefinitions?: EngineToolDefinition[];
     transport: RunnerTransport;
   }) {
@@ -389,6 +392,7 @@ export class RunnerService {
     this.context = input.context;
     this.engine = input.engine ?? createStubAgentEngine();
     this.explicitToolDefinitions = input.toolDefinitions;
+    this.memorySynthesizer = input.memorySynthesizer;
     this.transport = input.transport;
   }
 
@@ -565,7 +569,7 @@ export class RunnerService {
         )
       };
       await writeSessionRecord(statePaths, currentSession);
-      await performPostTurnMemoryUpdate({
+      const memoryUpdate = await performPostTurnMemoryUpdate({
         consumedArtifactIds,
         context: this.context,
         envelope,
@@ -573,6 +577,22 @@ export class RunnerService {
         result,
         turnId: turnRecord.turnId
       });
+      if (this.memorySynthesizer) {
+        try {
+          await this.memorySynthesizer.synthesize({
+            consumedArtifactIds,
+            context: this.context,
+            envelope,
+            producedArtifactIds,
+            recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+            result,
+            taskPagePath: memoryUpdate.taskPagePath,
+            turnId: turnRecord.turnId
+          });
+        } catch {
+          /* Best-effort only. Memory synthesis must not invalidate the completed turn. */
+        }
+      }
 
       currentConversation = await transitionConversationStatus(
         statePaths,

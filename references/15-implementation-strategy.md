@@ -157,15 +157,19 @@ Completed in the current repository state:
    runner-owned tool executor;
 6. a richer deterministic memory-maintenance layer where the runner now
    rebuilds a recent-work summary page from canonical task pages and feeds that
-   summary back into future turn assembly.
+   summary back into future turn assembly;
+7. a first bounded model-guided memory-synthesis pass where the runner now
+   maintains `memory/wiki/summaries/working-context.md` through a strict
+   forced tool call while preserving runner ownership of the actual wiki
+   write path.
 
 Remaining work in this phase:
 
 1. continue widening the builtin tool surface beyond the now-implemented
    artifact-inspection and bounded memory-ref inspection paths;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
-   now including the derived recent-work summary layer, into richer
-   model-guided memory maintenance;
+   now including the derived recent-work and working-context summary layers,
+   into broader model-guided memory maintenance;
 3. deepen normalized provider metadata, error reporting, and runtime
    observability as engine depth grows.
 
@@ -235,7 +239,8 @@ Completed in the current repository state:
   `GET /v1/sessions/{sessionId}` surface.
 
 The next best current move is still Phase 2 agent-engine deepening, with
-bounded model-guided memory synthesis now the highest-value narrow follow-on.
+richer tool-execution and engine observability now the highest-value narrow
+follow-on.
 
 ## Phase 4: Studio completion
 
@@ -281,7 +286,8 @@ Completed in the current repository state:
   intents.
 
 The next best current move is still Phase 2 agent-engine deepening, with
-bounded model-guided memory synthesis now the highest-value narrow follow-on.
+richer tool-execution and engine observability now the highest-value narrow
+follow-on.
 
 ## Phase 6: Deployment and integration hardening
 

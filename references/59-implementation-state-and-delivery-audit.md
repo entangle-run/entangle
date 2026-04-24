@@ -270,6 +270,10 @@ not modeling.
 - a richer deterministic summary layer where runner-owned memory maintenance
   now rebuilds `memory/wiki/summaries/recent-work.md` from the freshest task
   pages and feeds that summary back into future turn assembly;
+- a first bounded model-guided memory-synthesis layer where the runner now
+  maintains `memory/wiki/summaries/working-context.md` through a strict
+  structured tool call while preserving runner ownership of the actual wiki
+  write path and keeping synthesis failure additive rather than turn-fatal;
 - typed provider-error normalization and isolated engine tests that do not
   require live model calls.
 
@@ -278,7 +282,8 @@ not modeling.
 - a broader builtin tool surface beyond the now-implemented artifact and
   bounded memory-ref inspection paths;
 - richer model-guided memory maintenance beyond the current deterministic task
-  page, log/index, and derived recent-work summary baseline;
+  page, log/index, and derived recent-work plus working-context summary
+  baseline;
 - richer provider metadata and broader error surfacing through the runner.
 
 ### Assessment
@@ -417,9 +422,9 @@ surface:
 
 The current best delivery order is:
 
-1. deepen the internal `agent-engine`, especially around bounded
-   model-guided memory synthesis and any later builtin-tool widening that still
-   adds real runtime value;
+1. deepen the internal `agent-engine`, especially around richer
+   tool-execution observability, broader provider/runtime metadata, and any
+   later bounded builtin-tool widening that still adds real runtime value;
 2. harden end-to-end deployment, restart, and integration coverage;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;

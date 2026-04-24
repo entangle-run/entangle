@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added bounded model-guided working-context memory synthesis
+
+Closed the next runner-memory slice by adding a separate bounded
+`RunnerMemorySynthesizer` path on top of the deterministic task-page and
+recent-work baseline. The runner now maintains
+`memory/wiki/summaries/working-context.md` through a strict forced tool call,
+but still owns the actual write path and treats synthesis failure as additive
+instead of turn-fatal.
+
 ## [2026-04-24] implementation | Added deterministic recent-work memory summary
 
 Closed the next bounded runner-memory slice by making post-turn memory

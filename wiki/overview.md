@@ -116,6 +116,10 @@ The repository now also contains the first real implementation baseline:
 - a richer deterministic memory-summary slice where the runner now rebuilds
   `memory/wiki/summaries/recent-work.md` from canonical task pages and feeds
   that summary back into future bounded turn assembly;
+- a first bounded model-guided memory-synthesis slice where the runner now
+  maintains `memory/wiki/summaries/working-context.md` through a strict
+  forced tool call while preserving runner ownership of the actual wiki
+  write path and keeping synthesis failure additive rather than turn-fatal;
 - a first typed host-event surface where `entangle-host` now persists
   canonical event records, lists them over `GET /v1/events`, streams them over
   WebSocket on the same route, and exposes the shared event boundary through
@@ -344,8 +348,9 @@ The current implementation-truth audit now lives in
   model;
 - complete CLI parity where it adds real headless operational value;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
-  loop, especially around bounded model-guided memory synthesis and any later
-  builtin-tool widening that still adds real bounded runtime value;
+  loop, especially around richer tool-execution observability, broader
+  provider/runtime metadata, and any later bounded builtin-tool widening that
+  still adds real runtime value;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

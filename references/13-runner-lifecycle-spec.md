@@ -163,8 +163,10 @@ That implemented slice currently includes:
   workspace;
 - deterministic post-turn wiki maintenance that now writes task pages, keeps
   `memory/wiki/index.md` plus `memory/wiki/log.md` aligned with completed
-  turns, and rebuilds a derived recent-work summary page for future turn
-  assembly;
+  turns, rebuilds a derived recent-work summary page for future turn
+  assembly, and now also supports a bounded model-guided
+  `memory/wiki/summaries/working-context.md` synthesis pass without giving the
+  model arbitrary filesystem authority;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact
@@ -174,7 +176,7 @@ That implemented slice currently includes:
 - live relay smoke validation against a real local `strfry` instance.
 
 The runner lifecycle is therefore no longer only conceptual prose plus a single
-bootstrap turn. The next meaningful gaps are bounded model-guided memory
-synthesis, clearer upward surfacing of runtime/session activity, and broader
-artifact and tool-execution depth beyond the current first report-file and
-bounded builtin inspection paths.
+bootstrap turn. The next meaningful gaps are clearer upward surfacing of
+runtime/session activity plus broader artifact and tool-execution depth beyond
+the current first report-file, bounded builtin inspection paths, and bounded
+working-context synthesis.
