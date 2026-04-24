@@ -113,8 +113,32 @@ Options:
 - `--timeout-ms <milliseconds>` controls the total readiness window.
 - `--probe-timeout-ms <milliseconds>` controls each smoke probe timeout.
 - `--skip-build` reuses an existing `entangle-runner:local` image.
+- `--include-runtime` also runs the Docker-backed runtime lifecycle smoke.
 - `--keep-running` leaves services running after the smoke.
 - `--preserve-volumes` keeps local profile volumes during teardown.
+
+For the full disposable runtime lifecycle path, use:
+
+```sh
+pnpm ops:smoke-local:disposable:runtime
+```
+
+This variant performs the disposable profile smoke and then admits a temporary
+package into the host container, applies a temporary graph with a local
+model-secret binding, starts the managed runner container, verifies restart
+generation recreation, stops the runtime, and tears the profile down with
+volumes.
+
+For an already-running local profile, the runtime lifecycle smoke can be run
+directly:
+
+```sh
+pnpm ops:smoke-local:runtime
+```
+
+The direct runtime smoke mutates the active host catalog and graph for the
+smoke run. Prefer the disposable runtime variant unless the current local
+profile is dedicated to operational testing.
 
 ## Operator Token
 

@@ -577,6 +577,11 @@ priority widening.
 - disposable local profile smoke through `pnpm ops:smoke-local:disposable` for
   strict preflight, runner image build, stable service startup, active smoke
   readiness probing, and teardown;
+- Docker-backed runtime lifecycle smoke through
+  `pnpm ops:smoke-local:runtime` and
+  `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
+  admission, smoke graph application, local model-secret binding, managed
+  runner start, restart-generation recreation, and stop;
 - deterministic host and runner Docker builds that clean TypeScript incremental
   state and assert service/workspace-package deploy payloads before creating
   runtime images;
@@ -587,8 +592,8 @@ priority widening.
 ### Still missing or incomplete
 
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
-- richer Docker-backed runtime smoke coverage around restart and artifact-aware
-  multi-node flows.
+- richer Docker-backed runtime smoke coverage around artifact-aware multi-node
+  flows.
 
 ### Assessment
 
@@ -619,7 +624,7 @@ The current best delivery order is:
    engine-outcome surface, broader provider/runtime metadata, and any later
    model-guided runtime/memory deepening that builds on the now stronger
    bounded builtin tool surface;
-2. harden end-to-end deployment, restart, and integration coverage;
+2. harden end-to-end deployment and artifact-aware multi-node integration coverage;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;
 4. widen git collaboration only where later delivery needs justify going beyond

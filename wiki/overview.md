@@ -436,6 +436,11 @@ The repository now also contains the first real implementation baseline:
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;
+- a Docker-backed runtime lifecycle smoke through
+  `pnpm ops:smoke-local:runtime` and
+  `pnpm ops:smoke-local:disposable:runtime`, covering disposable package
+  admission, smoke graph application, local model-secret binding, managed
+  runner start, restart-generation recreation, stop, and disposable teardown;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;

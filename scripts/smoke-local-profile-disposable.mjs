@@ -15,6 +15,7 @@ const args = process.argv.slice(2);
 const keepRunning = args.includes("--keep-running");
 const preserveVolumes = args.includes("--preserve-volumes");
 const skipBuild = args.includes("--skip-build");
+const includeRuntime = args.includes("--include-runtime");
 
 function readFlagValue(name) {
   const inlinePrefix = `${name}=`;
@@ -153,6 +154,13 @@ try {
   ]);
 
   await waitForSmoke();
+
+  if (includeRuntime) {
+    requireSuccess("Runtime lifecycle smoke", process.execPath, [
+      "scripts/smoke-local-runtime.mjs"
+    ]);
+  }
+
   console.log("Disposable local profile smoke passed.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

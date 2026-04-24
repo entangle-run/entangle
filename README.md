@@ -177,6 +177,11 @@ This repository currently contains:
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
+- a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-local:runtime`
+  and `pnpm ops:smoke-local:disposable:runtime` that admits a disposable
+  package, applies a smoke graph with a local model-secret binding, starts a
+  real runner container, verifies restart generation recreation, and stops the
+  runtime;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

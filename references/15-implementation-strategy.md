@@ -494,6 +494,11 @@ Completed in the current repository state:
 - disposable local profile smoke coverage is available through
   `pnpm ops:smoke-local:disposable`, covering strict preflight, runner image
   build, stable service startup, active smoke readiness probing, and teardown;
+- Docker-backed runtime lifecycle smoke coverage is available through
+  `pnpm ops:smoke-local:runtime` and
+  `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
+  admission, smoke graph application, local model-secret binding, managed
+  runner start, restart-generation recreation, and stop;
 - host and runner image builds now clean stale TypeScript incremental metadata
   and assert deploy payload presence for service and workspace-package outputs;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
