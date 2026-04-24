@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   artifactRecordSchema,
+  edgeCreateRequestSchema,
   entangleA2AMessageSchema,
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
@@ -255,9 +256,39 @@ describe("host event contracts", () => {
     expect(result.type).toBe("node.binding.updated");
     expect(result.mutationKind).toBe("created");
   });
+
+  it("accepts a typed edge mutation event", () => {
+    const result = hostEventRecordSchema.parse({
+      activeRevisionId: "graph-alpha-20260423-000001",
+      category: "control_plane",
+      edgeId: "user-to-reviewer",
+      eventId: "evt-edge-001",
+      graphId: "graph-alpha",
+      message: "Created edge 'user-to-reviewer' in graph 'graph-alpha'.",
+      mutationKind: "created",
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:00:00.000Z",
+      type: "edge.updated"
+    });
+
+    expect(result.type).toBe("edge.updated");
+    expect(result.mutationKind).toBe("created");
+  });
 });
 
 describe("graph revision contracts", () => {
+  it("accepts edge create requests with canonical defaults", () => {
+    const result = edgeCreateRequestSchema.parse({
+      edgeId: "user-to-worker",
+      fromNodeId: "user-main",
+      toNodeId: "worker-it",
+      relation: "delegates_to"
+    });
+
+    expect(result.enabled).toBe(true);
+    expect(result.transportPolicy.channel).toBe("default");
+  });
+
   it("accepts graph revision inspection responses", () => {
     const result = graphRevisionInspectionResponseSchema.parse({
       graph: {

@@ -181,6 +181,12 @@ This repository currently contains:
   and `DELETE /v1/nodes/{nodeId}` on top of graph-as-source-of-truth
   semantics, with explicit `409` conflicts for edge-connected deletes, typed
   `node.binding.updated` host events, and shared host-client plus CLI support;
+- a first resource-oriented edge mutation surface where `entangle-host` now
+  supports `GET /v1/edges`, `POST /v1/edges`, `PATCH /v1/edges/{edgeId}`, and
+  `DELETE /v1/edges/{edgeId}` on top of the same graph-as-source-of-truth
+  apply path, with typed `edge.updated` control-plane events, shared
+  host-client plus CLI support, and explicit separation between `400`
+  validation failures and `404`/`409` resource conflicts;
 
 The highest-value remaining gaps are:
 
@@ -189,7 +195,7 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper session-level and runner-originated host event coverage plus fuller
-  edge mutation and runtime-restart host surfaces;
+  runtime-restart and reconciliation host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

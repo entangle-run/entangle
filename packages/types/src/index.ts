@@ -9,6 +9,7 @@ export * from "./engine/turn-contract.js";
 export * from "./graph/effective-bindings.js";
 export * from "./graph/graph-spec.js";
 export * from "./host-api/control-plane.js";
+export * from "./host-api/edges.js";
 export * from "./host-api/events.js";
 export * from "./host-api/error.js";
 export * from "./host-api/nodes.js";

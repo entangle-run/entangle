@@ -460,6 +460,158 @@ describe("createHostClient", () => {
     );
   });
 
+  it("parses edge list and mutation responses from the host surface", async () => {
+    const responses = [
+      createMockResponse({
+        body: JSON.stringify({
+          edges: [
+            {
+              edgeId: "user-to-worker",
+              fromNodeId: "user-main",
+              relation: "delegates_to",
+              toNodeId: "worker-it"
+            }
+          ]
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          activeRevisionId: "team-alpha-20260423-000001",
+          edge: {
+            edgeId: "user-to-reviewer",
+            fromNodeId: "user-main",
+            relation: "consults",
+            toNodeId: "reviewer-it"
+          },
+          validation: {
+            ok: true,
+            findings: []
+          }
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          activeRevisionId: "team-alpha-20260423-000002",
+          edge: {
+            edgeId: "user-to-reviewer",
+            enabled: false,
+            fromNodeId: "user-main",
+            relation: "reviews",
+            toNodeId: "reviewer-it",
+            transportPolicy: {
+              channel: "review",
+              mode: "bidirectional_shared_set",
+              relayProfileRefs: []
+            }
+          },
+          validation: {
+            ok: true,
+            findings: []
+          }
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          activeRevisionId: "team-alpha-20260423-000003",
+          deletedEdgeId: "user-to-reviewer",
+          validation: {
+            ok: true,
+            findings: []
+          }
+        }),
+        ok: true,
+        status: 200
+      })
+    ];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () => Promise.resolve(responses.shift()!)
+    });
+
+    await expect(client.listEdges()).resolves.toMatchObject({
+      edges: [
+        {
+          edgeId: "user-to-worker",
+          relation: "delegates_to"
+        }
+      ]
+    });
+
+    await expect(
+      client.createEdge({
+        edgeId: "user-to-reviewer",
+        fromNodeId: "user-main",
+        relation: "consults",
+        toNodeId: "reviewer-it"
+      })
+    ).resolves.toMatchObject({
+      edge: {
+        edgeId: "user-to-reviewer",
+        relation: "consults"
+      }
+    });
+
+    await expect(
+      client.replaceEdge("user-to-reviewer", {
+        enabled: false,
+        fromNodeId: "user-main",
+        relation: "reviews",
+        toNodeId: "reviewer-it",
+        transportPolicy: {
+          channel: "review",
+          mode: "bidirectional_shared_set",
+          relayProfileRefs: []
+        }
+      })
+    ).resolves.toMatchObject({
+      edge: {
+        enabled: false,
+        relation: "reviews"
+      }
+    });
+
+    await expect(client.deleteEdge("user-to-reviewer")).resolves.toMatchObject({
+      deletedEdgeId: "user-to-reviewer",
+      validation: {
+        ok: true
+      }
+    });
+  });
+
+  it("formats structured host conflict errors for edge creation", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              code: "conflict",
+              message: "Edge 'user-to-reviewer' already exists in the active graph."
+            }),
+            ok: false,
+            status: 409
+          })
+        )
+    });
+
+    await expect(
+      client.createEdge({
+        edgeId: "user-to-reviewer",
+        fromNodeId: "user-main",
+        relation: "consults",
+        toNodeId: "reviewer-it"
+      })
+    ).rejects.toThrow(
+      "Host request failed with 409 [conflict]: Edge 'user-to-reviewer' already exists in the active graph."
+    );
+  });
+
   it("formats structured host conflict errors for runtime context requests", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

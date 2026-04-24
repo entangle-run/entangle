@@ -3,6 +3,11 @@ import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import {
   catalogInspectionResponseSchema,
+  edgeCreateRequestSchema,
+  edgeDeletionResponseSchema,
+  edgeListResponseSchema,
+  edgeMutationResponseSchema,
+  edgeReplacementRequestSchema,
   externalPrincipalInspectionResponseSchema,
   externalPrincipalListResponseSchema,
   externalPrincipalMutationRequestSchema,
@@ -36,7 +41,9 @@ import {
   applyCatalog,
   applyGraph,
   buildHostStatus,
+  createEdge,
   createManagedNode,
+  deleteEdge,
   deleteManagedNode,
   getNodeInspection,
   getRuntimeContext,
@@ -48,12 +55,14 @@ import {
   getGraphInspection,
   getGraphRevision,
   listExternalPrincipals,
+  listEdges,
   listGraphRevisions,
   listNodeInspections,
   getPackageSourceInspection,
   initializeHostState,
   listRuntimeInspections,
   listPackageSources,
+  replaceEdge,
   replaceManagedNode,
   setRuntimeDesiredState,
   subscribeToHostEvents,
@@ -153,6 +162,33 @@ function throwForManagedNodeMutationConflict(conflict: {
       throw new HostHttpError({
         code: "not_found",
         message: `Managed node '${conflict.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+  }
+}
+
+function throwForEdgeMutationConflict(conflict: {
+  kind: "edge_exists" | "edge_not_found" | "graph_missing";
+  edgeId?: string;
+  message?: string;
+}): never {
+  switch (conflict.kind) {
+    case "graph_missing":
+      throw new HostHttpError({
+        code: "conflict",
+        message: conflict.message ?? "Edge mutation requires an active graph revision.",
+        statusCode: 409
+      });
+    case "edge_exists":
+      throw new HostHttpError({
+        code: "conflict",
+        message: `Edge '${conflict.edgeId}' already exists in the active graph.`,
+        statusCode: 409
+      });
+    case "edge_not_found":
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Edge '${conflict.edgeId}' was not found in the active graph.`,
         statusCode: 404
       });
   }
@@ -452,6 +488,62 @@ export async function buildHostServer() {
     }
 
     return nodeDeletionResponseSchema.parse(result.response);
+  });
+
+  server.get("/v1/edges", async () =>
+    edgeListResponseSchema.parse(await listEdges())
+  );
+
+  server.post("/v1/edges", async (request, reply) => {
+    const mutation = parseRequestInput(edgeCreateRequestSchema, request.body, {
+      detailsKey: "bodyIssues",
+      message: "Request body did not match the expected edge create schema."
+    });
+    const result = await createEdge(mutation);
+
+    if (!result.ok) {
+      throwForEdgeMutationConflict(result.conflict);
+    }
+
+    if (!result.response.validation.ok) {
+      reply.status(400);
+    }
+
+    return edgeMutationResponseSchema.parse(result.response);
+  });
+
+  server.patch("/v1/edges/:edgeId", async (request, reply) => {
+    const params = request.params as { edgeId: string };
+    const replacement = parseRequestInput(
+      edgeReplacementRequestSchema,
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected edge replacement schema."
+      }
+    );
+    const result = await replaceEdge(params.edgeId, replacement);
+
+    if (!result.ok) {
+      throwForEdgeMutationConflict(result.conflict);
+    }
+
+    if (!result.response.validation.ok) {
+      reply.status(400);
+    }
+
+    return edgeMutationResponseSchema.parse(result.response);
+  });
+
+  server.delete("/v1/edges/:edgeId", async (request) => {
+    const params = request.params as { edgeId: string };
+    const result = await deleteEdge(params.edgeId);
+
+    if (!result.ok) {
+      throwForEdgeMutationConflict(result.conflict);
+    }
+
+    return edgeDeletionResponseSchema.parse(result.response);
   });
 
   server.post("/v1/graph/validate", async (request) =>

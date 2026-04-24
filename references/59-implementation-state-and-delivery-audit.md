@@ -98,8 +98,8 @@ The most important stable conclusions remain:
 
 ### Still missing or incomplete
 
-- fuller host API DTO coverage for node/edge resource mutation surfaces not yet
-  implemented;
+- fuller host API DTO coverage for the remaining control-plane resource
+  surfaces, especially runtime restart and richer event-stream payloads;
 - richer engine/tool-execution observability contracts once tool activity is
   surfaced more explicitly through host and Studio.
 
@@ -121,6 +121,8 @@ This layer is strong and directionally correct. It is not a blocker.
 - resource-oriented managed-node creation, full replacement, and deletion
   through the host API, including typed `node.binding.updated` control-plane
   events;
+- resource-oriented edge listing plus creation, full replacement, and deletion
+  through the host API, including typed `edge.updated` control-plane events;
 - runtime inspection, start, stop, context inspection, and artifact inspection;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
@@ -133,7 +135,6 @@ This layer is strong and directionally correct. It is not a blocker.
 
 ### Still missing or incomplete
 
-- resource-oriented edge mutation surfaces;
 - runtime restart surface;
 - session-level and richer runner-originated event classes on top of the new
   host event surface;

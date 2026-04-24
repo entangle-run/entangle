@@ -1,5 +1,10 @@
 import {
   catalogInspectionResponseSchema,
+  edgeCreateRequestSchema,
+  edgeDeletionResponseSchema,
+  edgeListResponseSchema,
+  edgeMutationResponseSchema,
+  edgeReplacementRequestSchema,
   externalPrincipalInspectionResponseSchema,
   externalPrincipalListResponseSchema,
   externalPrincipalMutationRequestSchema,
@@ -25,6 +30,11 @@ import {
   runtimeInspectionResponseSchema,
   runtimeListResponseSchema,
   type CatalogInspectionResponse,
+  type EdgeCreateRequest,
+  type EdgeDeletionResponse,
+  type EdgeListResponse,
+  type EdgeMutationResponse,
+  type EdgeReplacementRequest,
   type ExternalPrincipalInspectionResponse,
   type ExternalPrincipalListResponse,
   type ExternalPrincipalMutationRequest,
@@ -417,6 +427,54 @@ export function createHostClient(options: HostClientOptions) {
           method: "DELETE"
         }),
         nodeDeletionResponseSchema
+      );
+    },
+
+    async listEdges(): Promise<EdgeListResponse> {
+      return parseResponse(await fetchImpl(`${baseUrl}/v1/edges`), edgeListResponseSchema);
+    },
+
+    async createEdge(request: EdgeCreateRequest): Promise<EdgeMutationResponse> {
+      const canonicalRequest = edgeCreateRequestSchema.parse(request);
+
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/edges`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        edgeMutationResponseSchema,
+        { acceptedErrorStatuses: [400] }
+      );
+    },
+
+    async replaceEdge(
+      edgeId: string,
+      request: EdgeReplacementRequest
+    ): Promise<EdgeMutationResponse> {
+      const canonicalRequest = edgeReplacementRequestSchema.parse(request);
+
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/edges/${edgeId}`, {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        edgeMutationResponseSchema,
+        { acceptedErrorStatuses: [400] }
+      );
+    },
+
+    async deleteEdge(edgeId: string): Promise<EdgeDeletionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/edges/${edgeId}`, {
+          method: "DELETE"
+        }),
+        edgeDeletionResponseSchema
       );
     },
 

@@ -48,6 +48,15 @@ export const nodeBindingUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("node.binding.updated")
 });
 
+export const edgeUpdatedEventSchema = hostEventBaseSchema.extend({
+  activeRevisionId: identifierSchema,
+  category: z.literal("control_plane"),
+  edgeId: identifierSchema,
+  graphId: identifierSchema,
+  mutationKind: z.enum(["created", "replaced", "deleted"]),
+  type: z.literal("edge.updated")
+});
+
 export const runtimeDesiredStateChangedEventSchema = hostEventBaseSchema.extend({
   category: z.literal("runtime"),
   desiredState: runtimeDesiredStateSchema,
@@ -92,6 +101,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   externalPrincipalUpdatedEventSchema,
   graphRevisionAppliedEventSchema,
   nodeBindingUpdatedEventSchema,
+  edgeUpdatedEventSchema,
   runtimeDesiredStateChangedEventSchema,
   runtimeObservedStateChangedEventSchema,
   hostReconciliationCompletedEventSchema
@@ -122,6 +132,7 @@ export type GraphRevisionAppliedEvent = z.infer<
 export type NodeBindingUpdatedEvent = z.infer<
   typeof nodeBindingUpdatedEventSchema
 >;
+export type EdgeUpdatedEvent = z.infer<typeof edgeUpdatedEventSchema>;
 export type RuntimeDesiredStateChangedEvent = z.infer<
   typeof runtimeDesiredStateChangedEventSchema
 >;

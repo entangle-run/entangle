@@ -289,6 +289,17 @@ Purpose:
 
 - manage topology and policy edges with full validation.
 
+The current implementation now covers all four routes in this subsection.
+
+The current edge-mutation semantics are:
+
+- `POST` creates a new edge in the active graph;
+- `PATCH` performs full normalized replacement of an edge without renaming
+  `edgeId`;
+- `DELETE` removes the edge from the active graph;
+- invalid edge endpoints remain validation failures, not implicit node
+  creation or resource conflicts.
+
 ### 8.6 Runtime lifecycle
 
 - `GET /v1/runtimes`
@@ -314,6 +325,10 @@ The current repository implementation now concretely includes:
 - `GET /v1/graph`
 - `PUT /v1/graph`
 - `POST /v1/graph/validate`
+- `GET /v1/edges`
+- `POST /v1/edges`
+- `PATCH /v1/edges/{edgeId}`
+- `DELETE /v1/edges/{edgeId}`
 - `GET /v1/runtimes`
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
@@ -341,6 +356,7 @@ The current implementation also exposes:
 - host-level reconciliation status via `GET /v1/host/status`;
 - typed host-event inspection through `GET /v1/events`;
 - live host-event streaming over WebSocket upgrade on `GET /v1/events`.
+- typed control-plane `edge.updated` events for graph-backed edge mutations.
 
 ### 8.7 Validation and dry-run
 

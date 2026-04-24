@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added graph-backed edge mutation surfaces through entangle-host
+
+Completed the next host control-plane resource slice by adding `GET /v1/edges`,
+`POST /v1/edges`, `PATCH /v1/edges/{edgeId}`, and
+`DELETE /v1/edges/{edgeId}` through `entangle-host`, the shared host client,
+and the CLI. The slice keeps the graph as the only source of truth, applies
+every edge mutation through validated graph revisions, treats invalid edge
+candidates as `400` validation results rather than implicit node creation, and
+emits typed `edge.updated` control-plane events.
+
 ## [2026-04-24] implementation | Added managed-node mutation surfaces through entangle-host
 
 Completed the first resource-oriented managed-node mutation slice on top of the existing applied-node inspection boundary. `entangle-host` now supports `POST /v1/nodes`, `PATCH /v1/nodes/{nodeId}`, and `DELETE /v1/nodes/{nodeId}` for non-user managed nodes, keeps the graph as the single source of truth by applying validated graph revisions for every mutation, rejects deletion while edges still reference the node, and emits typed `node.binding.updated` events. Closed the slice only after tightening host-client error semantics so only validation-backed `400` responses are parsed as node-mutation DTOs, while `404` and `409` continue to surface as structured host errors.

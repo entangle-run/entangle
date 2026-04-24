@@ -15,6 +15,9 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   activeGraphRevisionRecordSchema,
   artifactRecordSchema,
+  edgeDeletionResponseSchema,
+  edgeListResponseSchema,
+  edgeMutationResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
   graphRevisionRecordSchema,
@@ -44,6 +47,12 @@ import {
   type ExternalPrincipalListResponse,
   type ExternalPrincipalRecord,
   externalPrincipalRecordSchema,
+  type Edge,
+  type EdgeCreateRequest,
+  type EdgeDeletionResponse,
+  type EdgeListResponse,
+  type EdgeMutationResponse,
+  type EdgeReplacementRequest,
   type GraphInspectionResponse,
   type GraphRevisionInspectionResponse,
   type GraphRevisionListResponse,
@@ -176,6 +185,10 @@ type NodeBindingUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "node.binding.updated" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type EdgeUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "edge.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 type RuntimeDesiredStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.desired_state.changed" }>,
   "eventId" | "schemaVersion" | "timestamp"
@@ -215,6 +228,30 @@ type ManagedNodeMutationResult<T> =
     }
   | {
       conflict: ManagedNodeMutationConflict;
+      ok: false;
+    };
+
+type EdgeMutationConflict =
+  | {
+      kind: "graph_missing";
+      message: string;
+    }
+  | {
+      edgeId: string;
+      kind: "edge_exists";
+    }
+  | {
+      edgeId: string;
+      kind: "edge_not_found";
+    };
+
+type EdgeMutationResult<T> =
+  | {
+      ok: true;
+      response: T;
+    }
+  | {
+      conflict: EdgeMutationConflict;
       ok: false;
     };
 
@@ -2488,6 +2525,14 @@ export async function listNodeInspections(): Promise<NodeListResponse> {
   });
 }
 
+export async function listEdges(): Promise<EdgeListResponse> {
+  const { graph } = await readActiveGraphState();
+
+  return edgeListResponseSchema.parse({
+    edges: graph?.edges ?? []
+  });
+}
+
 export async function getNodeInspection(
   nodeId: string
 ): Promise<NodeInspectionResponse | null> {
@@ -2534,6 +2579,45 @@ export async function createManagedNode(
   };
 }
 
+export async function createEdge(
+  input: EdgeCreateRequest
+): Promise<EdgeMutationResult<EdgeMutationResponse>> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return {
+      conflict: buildEdgeMissingGraphConflict(),
+      ok: false
+    };
+  }
+
+  if (graph.edges.some((edge) => edge.edgeId === input.edgeId)) {
+    return {
+      conflict: {
+        edgeId: input.edgeId,
+        kind: "edge_exists"
+      },
+      ok: false
+    };
+  }
+
+  const applied = await applyEdgeGraphCandidate({
+    candidateGraph: graphSpecSchema.parse({
+      ...graph,
+      edges: [...graph.edges, input]
+    }),
+    edgeId: input.edgeId,
+    mutationKind: "created"
+  });
+
+  return {
+    ok: true,
+    response: buildEdgeMutationSuccessResponse({
+      applied
+    })
+  };
+}
+
 export async function replaceManagedNode(
   nodeId: string,
   replacement: NodeReplacementRequest
@@ -2573,6 +2657,50 @@ export async function replaceManagedNode(
   return {
     ok: true,
     response: buildManagedNodeMutationSuccessResponse({
+      applied
+    })
+  };
+}
+
+export async function replaceEdge(
+  edgeId: string,
+  replacement: EdgeReplacementRequest
+): Promise<EdgeMutationResult<EdgeMutationResponse>> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return {
+      conflict: buildEdgeMissingGraphConflict(),
+      ok: false
+    };
+  }
+
+  if (!findEdge(graph, edgeId)) {
+    return {
+      conflict: {
+        edgeId,
+        kind: "edge_not_found"
+      },
+      ok: false
+    };
+  }
+
+  const nextEdge: Edge = {
+    ...replacement,
+    edgeId
+  };
+  const applied = await applyEdgeGraphCandidate({
+    candidateGraph: graphSpecSchema.parse({
+      ...graph,
+      edges: graph.edges.map((edge) => (edge.edgeId === edgeId ? nextEdge : edge))
+    }),
+    edgeId,
+    mutationKind: "replaced"
+  });
+
+  return {
+    ok: true,
+    response: buildEdgeMutationSuccessResponse({
       applied
     })
   };
@@ -2630,6 +2758,46 @@ export async function deleteManagedNode(
     response: buildManagedNodeDeletionSuccessResponse({
       applied,
       nodeId
+    })
+  };
+}
+
+export async function deleteEdge(
+  edgeId: string
+): Promise<EdgeMutationResult<EdgeDeletionResponse>> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return {
+      conflict: buildEdgeMissingGraphConflict(),
+      ok: false
+    };
+  }
+
+  if (!findEdge(graph, edgeId)) {
+    return {
+      conflict: {
+        edgeId,
+        kind: "edge_not_found"
+      },
+      ok: false
+    };
+  }
+
+  const applied = await applyEdgeGraphCandidate({
+    candidateGraph: graphSpecSchema.parse({
+      ...graph,
+      edges: graph.edges.filter((edge) => edge.edgeId !== edgeId)
+    }),
+    edgeId,
+    mutationKind: "deleted"
+  });
+
+  return {
+    ok: true,
+    response: buildEdgeDeletionSuccessResponse({
+      applied,
+      edgeId
     })
   };
 }
@@ -2740,6 +2908,17 @@ function findManagedNode(graph: GraphSpec, nodeId: string): NodeBinding | undefi
   );
 }
 
+function buildEdgeMissingGraphConflict(): EdgeMutationConflict {
+  return {
+    kind: "graph_missing",
+    message: "Edge mutation requires an active graph revision."
+  };
+}
+
+function findEdge(graph: GraphSpec, edgeId: string): Edge | undefined {
+  return graph.edges.find((candidate) => candidate.edgeId === edgeId);
+}
+
 async function applyNodeGraphCandidate(input: {
   candidateGraph: GraphSpec;
   nodeId: string;
@@ -2795,6 +2974,61 @@ async function applyNodeGraphCandidate(input: {
   };
 }
 
+async function applyEdgeGraphCandidate(input: {
+  candidateGraph: GraphSpec;
+  edgeId: string;
+  mutationKind: "created" | "deleted" | "replaced";
+}): Promise<
+  | {
+      activeRevisionId: string;
+      edge: Edge | undefined;
+      graph: GraphSpec;
+      validation: GraphMutationResponse["validation"];
+    }
+  | {
+      validation: GraphMutationResponse["validation"];
+    }
+> {
+  const candidate = await validateGraphCandidate(input.candidateGraph);
+
+  if (!candidate.validation.ok || !candidate.graph) {
+    return {
+      validation: candidate.validation
+    };
+  }
+
+  const applied = await applyValidatedGraphDocument(candidate.graph);
+  const edge = applied.graph.edges.find(
+    (inspection) => inspection.edgeId === input.edgeId
+  );
+
+  if (input.mutationKind !== "deleted" && !edge) {
+    throw new Error(
+      `Edge '${input.edgeId}' was not materialized after a successful '${input.mutationKind}' mutation.`
+    );
+  }
+
+  await appendHostEvent({
+    activeRevisionId: applied.activeRevisionId,
+    category: "control_plane",
+    edgeId: input.edgeId,
+    graphId: applied.graph.graphId,
+    message:
+      input.mutationKind === "deleted"
+        ? `Deleted edge '${input.edgeId}' in graph '${applied.graph.graphId}'.`
+        : `${input.mutationKind === "created" ? "Created" : "Replaced"} edge '${input.edgeId}' in graph '${applied.graph.graphId}'.`,
+    mutationKind: input.mutationKind,
+    type: "edge.updated"
+  } satisfies EdgeUpdatedEventInput);
+
+  return {
+    activeRevisionId: applied.activeRevisionId,
+    edge,
+    graph: applied.graph,
+    validation: candidate.validation
+  };
+}
+
 function buildManagedNodeMutationSuccessResponse(input: {
   applied:
     | {
@@ -2811,6 +3045,26 @@ function buildManagedNodeMutationSuccessResponse(input: {
     activeRevisionId:
       "activeRevisionId" in input.applied ? input.applied.activeRevisionId : undefined,
     node: "node" in input.applied ? input.applied.node : undefined,
+    validation: input.applied.validation
+  });
+}
+
+function buildEdgeMutationSuccessResponse(input: {
+  applied:
+    | {
+        activeRevisionId: string;
+        edge: Edge | undefined;
+        graph: GraphSpec;
+        validation: GraphMutationResponse["validation"];
+      }
+    | {
+        validation: GraphMutationResponse["validation"];
+      };
+}): EdgeMutationResponse {
+  return edgeMutationResponseSchema.parse({
+    activeRevisionId:
+      "activeRevisionId" in input.applied ? input.applied.activeRevisionId : undefined,
+    edge: "edge" in input.applied ? input.applied.edge : undefined,
     validation: input.applied.validation
   });
 }
@@ -2832,6 +3086,27 @@ function buildManagedNodeDeletionSuccessResponse(input: {
     activeRevisionId:
       "activeRevisionId" in input.applied ? input.applied.activeRevisionId : undefined,
     deletedNodeId: "activeRevisionId" in input.applied ? input.nodeId : undefined,
+    validation: input.applied.validation
+  });
+}
+
+function buildEdgeDeletionSuccessResponse(input: {
+  applied:
+    | {
+        activeRevisionId: string;
+        edge: Edge | undefined;
+        graph: GraphSpec;
+        validation: GraphMutationResponse["validation"];
+      }
+    | {
+        validation: GraphMutationResponse["validation"];
+      };
+  edgeId: string;
+}): EdgeDeletionResponse {
+  return edgeDeletionResponseSchema.parse({
+    activeRevisionId:
+      "activeRevisionId" in input.applied ? input.applied.activeRevisionId : undefined,
+    deletedEdgeId: "activeRevisionId" in input.applied ? input.edgeId : undefined,
     validation: input.applied.validation
   });
 }

@@ -14,6 +14,9 @@ import Fastify from "fastify";
 import { WebSocket } from "ws";
 import {
   artifactRecordSchema,
+  edgeDeletionResponseSchema,
+  edgeListResponseSchema,
+  edgeMutationResponseSchema,
   externalPrincipalInspectionResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
@@ -1065,6 +1068,195 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(createResponse.json())).toMatchObject({
         code: "conflict"
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and mutates graph edges through the host boundary", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const createNodeResponse = await server.inject({
+        method: "POST",
+        payload: {
+          autonomy: {
+            canInitiateSessions: false,
+            canMutateGraph: false
+          },
+          displayName: "Reviewer IT",
+          nodeId: "reviewer-it",
+          nodeKind: "reviewer",
+          packageSourceRef: packageSourceId,
+          resourceBindings: {
+            gitServiceRefs: ["local-gitea"],
+            primaryGitServiceRef: "local-gitea",
+            relayProfileRefs: ["local-relay"]
+          }
+        },
+        url: "/v1/nodes"
+      });
+
+      expect(createNodeResponse.statusCode).toBe(200);
+
+      const initialEdgesResponse = await server.inject({
+        method: "GET",
+        url: "/v1/edges"
+      });
+      const initialEdges = edgeListResponseSchema.parse(initialEdgesResponse.json());
+      expect(initialEdges.edges).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            edgeId: "user-to-worker",
+            relation: "delegates_to"
+          })
+        ])
+      );
+
+      const createEdgeResponse = await server.inject({
+        method: "POST",
+        payload: {
+          edgeId: "user-to-reviewer",
+          fromNodeId: "user-main",
+          relation: "consults",
+          toNodeId: "reviewer-it"
+        },
+        url: "/v1/edges"
+      });
+
+      expect(createEdgeResponse.statusCode).toBe(200);
+      const createdEdge = edgeMutationResponseSchema.parse(createEdgeResponse.json());
+      expect(createdEdge.validation.ok).toBe(true);
+      expect(createdEdge).toMatchObject({
+        edge: {
+          edgeId: "user-to-reviewer",
+          relation: "consults"
+        }
+      });
+
+      const replaceEdgeResponse = await server.inject({
+        method: "PATCH",
+        payload: {
+          enabled: false,
+          fromNodeId: "user-main",
+          relation: "reviews",
+          toNodeId: "reviewer-it",
+          transportPolicy: {
+            channel: "review",
+            mode: "bidirectional_shared_set",
+            relayProfileRefs: []
+          }
+        },
+        url: "/v1/edges/user-to-reviewer"
+      });
+
+      expect(replaceEdgeResponse.statusCode).toBe(200);
+      const replacedEdge = edgeMutationResponseSchema.parse(
+        replaceEdgeResponse.json()
+      );
+      expect(replacedEdge.validation.ok).toBe(true);
+      expect(replacedEdge).toMatchObject({
+        edge: {
+          edgeId: "user-to-reviewer",
+          enabled: false,
+          relation: "reviews",
+          transportPolicy: {
+            channel: "review"
+          }
+        }
+      });
+
+      const deleteEdgeResponse = await server.inject({
+        method: "DELETE",
+        url: "/v1/edges/user-to-reviewer"
+      });
+
+      expect(deleteEdgeResponse.statusCode).toBe(200);
+      const deletedEdge = edgeDeletionResponseSchema.parse(deleteEdgeResponse.json());
+      expect(deletedEdge).toMatchObject({
+        deletedEdgeId: "user-to-reviewer",
+        validation: {
+          ok: true
+        }
+      });
+
+      const finalEdgesResponse = await server.inject({
+        method: "GET",
+        url: "/v1/edges"
+      });
+      const finalEdges = edgeListResponseSchema.parse(finalEdgesResponse.json());
+      expect(finalEdges.edges.find((edge) => edge.edgeId === "user-to-reviewer")).toBe(
+        undefined
+      );
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=30"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            edgeId: "user-to-reviewer",
+            mutationKind: "created",
+            type: "edge.updated"
+          }),
+          expect.objectContaining({
+            edgeId: "user-to-reviewer",
+            mutationKind: "replaced",
+            type: "edge.updated"
+          }),
+          expect.objectContaining({
+            edgeId: "user-to-reviewer",
+            mutationKind: "deleted",
+            type: "edge.updated"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects invalid edge candidates through the host boundary", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const createEdgeResponse = await server.inject({
+        method: "POST",
+        payload: {
+          edgeId: "user-to-missing",
+          fromNodeId: "user-main",
+          relation: "consults",
+          toNodeId: "missing-node"
+        },
+        url: "/v1/edges"
+      });
+
+      expect(createEdgeResponse.statusCode).toBe(400);
+      const mutation = edgeMutationResponseSchema.parse(createEdgeResponse.json());
+      expect(mutation.validation.ok).toBe(false);
+      expect(mutation.validation.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "unknown_edge_target"
+          })
+        ])
+      );
     } finally {
       await server.close();
     }

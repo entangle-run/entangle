@@ -4,6 +4,8 @@ import { Command } from "commander";
 import { createHostClient } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
 import {
+  edgeCreateRequestSchema,
+  edgeReplacementRequestSchema,
   externalPrincipalMutationRequestSchema,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema
@@ -300,6 +302,57 @@ hostNodesCommand
   .action(async (nodeId: string, _options, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
     printJson(await client.deleteNode(nodeId));
+  });
+
+const hostEdgesCommand = hostCommand
+  .command("edges")
+  .description("Inspect and mutate applied graph edges through entangle-host.");
+
+hostEdgesCommand
+  .command("list")
+  .description("List applied edges for the active graph.")
+  .action(async (_options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.listEdges());
+  });
+
+hostEdgesCommand
+  .command("add")
+  .argument("<file>", "Path to an edge JSON file.")
+  .description("Create one edge in the active graph.")
+  .action(async (file: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(
+      await client.createEdge(
+        edgeCreateRequestSchema.parse(await readJsonDocument(path.resolve(file)))
+      )
+    );
+  });
+
+hostEdgesCommand
+  .command("replace")
+  .argument("<edgeId>", "Edge identifier in the active graph.")
+  .argument("<file>", "Path to an edge replacement JSON file.")
+  .description("Replace one edge in the active graph without renaming the edge id.")
+  .action(async (edgeId: string, file: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(
+      await client.replaceEdge(
+        edgeId,
+        edgeReplacementRequestSchema.parse(
+          await readJsonDocument(path.resolve(file))
+        )
+      )
+    );
+  });
+
+hostEdgesCommand
+  .command("delete")
+  .argument("<edgeId>", "Edge identifier in the active graph.")
+  .description("Delete one edge from the active graph.")
+  .action(async (edgeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.deleteEdge(edgeId));
   });
 
 const hostRuntimesCommand = hostCommand
