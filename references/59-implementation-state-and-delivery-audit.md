@@ -45,11 +45,12 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- a broad builtin tool surface and richer model-guided memory maintenance
-  inside the internal runtime execution path;
-- Studio as a complete operator surface beyond the now-implemented recovery
-  and trace-inspection paths;
-- CLI parity with all core host workflows;
+- a broad builtin tool surface plus richer provider metadata and bounded
+  failure reporting inside the internal runtime execution path;
+- broader model-guided memory maintenance beyond the current deterministic and
+  bounded derived-summary baseline;
+- fuller Studio and CLI depth only where later operator workflows expose real
+  blind spots rather than surface-area vanity;
 - end-to-end deployment hardening for the full local product profile.
 
 ## High-confidence conclusions
@@ -278,6 +279,11 @@ not modeling.
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
   observed runner activity, and durable host `runner.turn.updated` events;
+- a first shared operator-facing runtime-trace consumption slice where
+  `packages/host-client` now owns bounded runtime-trace labels and detail-line
+  generation, Studio renders those shared trace details in the selected-runtime
+  panel, and the CLI can filter to runtime-trace events plus print structured
+  trace summaries without inventing a separate event model.
 - typed provider-error normalization and isolated engine tests that do not
   require live model calls.
 
@@ -288,9 +294,8 @@ not modeling.
 - richer model-guided memory maintenance beyond the current deterministic task
   page, log/index, and derived recent-work plus working-context summary
   baseline;
-- richer operator-facing consumption of the now-implemented engine-turn
-  observability surface, plus broader provider metadata and error surfacing as
-  engine depth grows.
+- broader provider metadata and bounded failure surfacing now that the first
+  shared operator-facing runtime-trace consumption path is complete.
 
 ### Assessment
 
@@ -339,7 +344,11 @@ delivery.
   runtime, recovery, session, and artifact events without relying on polling
   or reconnecting the event stream on runtime selection changes;
 - access to a broader typed trace surface that now includes conversations,
-  approvals, artifacts, sessions, runner turns, and runtime recovery events.
+  approvals, artifacts, sessions, runner turns, and runtime recovery events;
+- bounded shared runtime-trace detail presentation over host-owned
+  `engineOutcome`, so the selected-runtime trace panel now shows normalized
+  stop reason, provider stop reason, token usage, and bounded tool-execution
+  summaries instead of only raw event messages.
 
 ### Still missing or incomplete
 
@@ -371,7 +380,9 @@ workflow completeness, not missing mutation or liveness foundations.
   intents;
 - typed host-event listing and live watch commands, including recovery-focused
   filtering over the shared host event boundary and the new trace-oriented
-  conversation, approval, and artifact event classes.
+  conversation, approval, and artifact event classes;
+- runtime-trace-only event filtering plus structured runtime-trace summary
+  output over the existing host event list/watch flows.
 
 ### Still missing or incomplete
 

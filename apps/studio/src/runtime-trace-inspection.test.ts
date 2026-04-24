@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { HostEventRecord } from "@entangle/types";
 import {
   collectRuntimeTraceEvents,
+  formatRuntimeTraceEventDetailLines,
   formatRuntimeTraceEventLabel
 } from "./runtime-trace-inspection.js";
 
@@ -98,5 +99,56 @@ describe("studio runtime trace inspection helpers", () => {
         updatedAt: "2026-04-24T11:00:00.000Z"
       })
     ).toContain("Artifact artifact-report is published");
+  });
+
+  it("surfaces bounded engine-outcome detail lines for runner-turn events", () => {
+    const detailLines = formatRuntimeTraceEventDetailLines({
+      category: "runner",
+      consumedArtifactIds: ["artifact-inbound"],
+      engineOutcome: {
+        providerStopReason: "end_turn",
+        stopReason: "completed",
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "toolu_alpha",
+            toolId: "inspect_artifact_input"
+          },
+          {
+            errorCode: "tool_execution_failed",
+            outcome: "error",
+            sequence: 2,
+            toolCallId: "toolu_beta",
+            toolId: "inspect_memory_ref"
+          }
+        ],
+        usage: {
+          inputTokens: 42,
+          outputTokens: 12
+        }
+      },
+      eventId: "evt-runner-turn-observed",
+      graphId: "team-alpha",
+      message: "Runner turn 'turn-alpha' observed a completed engine outcome.",
+      nodeId: "worker-it",
+      phase: "persisting",
+      producedArtifactIds: ["artifact-report"],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      startedAt: "2026-04-24T11:00:02.000Z",
+      timestamp: "2026-04-24T11:00:03.000Z",
+      triggerKind: "message",
+      turnId: "turn-alpha",
+      type: "runner.turn.updated",
+      updatedAt: "2026-04-24T11:00:03.000Z"
+    });
+
+    expect(detailLines).toEqual([
+      "Outcome: completed (provider: end_turn)",
+      "Usage: 42 input / 12 output tokens",
+      "Tool executions: 2 total (1 success, 1 error)",
+      "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_execution_failed)"
+    ]);
   });
 });

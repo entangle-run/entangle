@@ -166,6 +166,10 @@ Completed in the current repository state:
    now records structured tool requests and bounded tool-execution outcomes,
    and that normalized engine outcome now persists through runner-turn state
    into host-owned runner activity events.
+9. a shared runtime-trace consumption slice where Studio and CLI now read that
+   normalized engine outcome through shared `host-client` presentation helpers
+   instead of leaving operator-facing trace inspection trapped in raw host-event
+   JSON.
 
 Remaining work in this phase:
 
@@ -174,9 +178,9 @@ Remaining work in this phase:
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;
-3. consume the now-implemented engine-turn observability surface more deeply in
-   operator-facing runtime trace inspection, then continue widening normalized
-   provider metadata and error reporting as engine depth grows.
+3. continue widening normalized provider metadata and bounded failure reporting
+   in engine outcomes now that the first shared operator-facing runtime-trace
+   consumption path is complete.
 
 Acceptance for the phase:
 
@@ -243,9 +247,9 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is to consume the now-implemented engine-turn
-observability surface in Studio and CLI runtime trace inspection before
-returning to broader tool-surface and memory widening.
+The next best current move is to widen normalized provider metadata and bounded
+failure reporting in engine outcomes now that Studio and CLI consume the shared
+runtime-trace presentation model.
 
 ## Phase 4: Studio completion
 
@@ -290,9 +294,9 @@ Completed in the current repository state:
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle
   intents.
 
-The next best current move is to consume the now-implemented engine-turn
-observability surface in Studio and CLI runtime trace inspection before
-returning to broader engine widening.
+The next best current move is to widen normalized provider metadata and bounded
+failure reporting in engine outcomes now that shared runtime-trace summaries
+are visible in both Studio and CLI.
 
 ## Phase 6: Deployment and integration hardening
 

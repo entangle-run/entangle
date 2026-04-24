@@ -124,6 +124,10 @@ The repository now also contains the first real implementation baseline:
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
   host-owned runner activity events;
+- a shared runtime-trace consumption slice where `packages/host-client` now
+  owns bounded labels and detail-line generation for runtime-trace events, and
+  both Studio and CLI consume that shared presentation over the existing
+  host-owned event surface;
 - a first typed host-event surface where `entangle-host` now persists
   canonical event records, lists them over `GET /v1/events`, streams them over
   WebSocket on the same route, and exposes the shared event boundary through
@@ -351,9 +355,9 @@ The current implementation-truth audit now lives in
   provisioning record model, and the publication/retrieval-state record
   model;
 - complete CLI parity where it adds real headless operational value;
-- consume the now-implemented engine-turn observability surface more deeply in
-  Studio and CLI runtime trace inspection, then continue broadening provider
-  metadata and later bounded builtin-tool widening only where they add real
+- continue broadening normalized provider metadata and bounded failure
+  reporting now that Studio and CLI consume shared runtime-trace summaries,
+  then widen builtin tools or model-guided memory only where they add real
   runtime value;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;

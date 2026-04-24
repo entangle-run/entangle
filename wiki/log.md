@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added shared runtime-trace summaries for Studio and CLI
+
+Closed the next operator-consumption slice by moving runtime-trace presentation
+into `packages/host-client` and teaching both Studio and the CLI to consume
+that shared model. The selected-runtime trace panel now shows bounded
+`engineOutcome` detail, and the CLI can filter to runtime-trace events and
+print structured summaries without inventing a parallel event model.
+
 ## [2026-04-24] implementation | Added bounded model-guided working-context memory synthesis
 
 Closed the next runner-memory slice by adding a separate bounded

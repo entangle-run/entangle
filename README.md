@@ -185,6 +185,10 @@ This repository currently contains:
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
   host-owned runner activity events;
+- a shared runtime-trace consumption slice where Studio and CLI now surface
+  that normalized engine outcome through shared `packages/host-client`
+  presentation helpers instead of leaving runtime-trace inspection trapped in
+  raw host-event JSON;
 - a first typed host-event surface where `entangle-host` now persists and
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary
@@ -299,9 +303,9 @@ This repository currently contains:
 
 The highest-value remaining gaps are:
 
-- bounded model-guided memory/wiki synthesis inside the internal runtime
-  execution path, plus any later builtin-tool widening that still adds real
-  bounded runtime value;
+- bounded widening of provider metadata and failure surfacing in engine
+  outcomes, plus any later builtin-tool or model-guided memory widening that
+  still adds real runtime value;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.

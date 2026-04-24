@@ -1,4 +1,5 @@
 import {
+  runtimeTraceEventTypePrefixes,
   runtimeRecoveryEventTypePrefixes,
   type HostEventFilter
 } from "@entangle/host-client";
@@ -8,6 +9,7 @@ export interface HostEventInspectionOptions {
   category?: HostEventRecord["category"];
   nodeId?: string;
   recoveryOnly?: boolean;
+  runtimeTraceOnly?: boolean;
   typePrefixes?: string[];
 }
 
@@ -20,7 +22,8 @@ export function buildHostEventFilter(
 ): HostEventFilter {
   const typePrefixes = deduplicateStrings([
     ...(options.typePrefixes ?? []),
-    ...(options.recoveryOnly ? runtimeRecoveryEventTypePrefixes : [])
+    ...(options.recoveryOnly ? runtimeRecoveryEventTypePrefixes : []),
+    ...(options.runtimeTraceOnly ? runtimeTraceEventTypePrefixes : [])
   ]);
 
   return {

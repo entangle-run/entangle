@@ -332,6 +332,23 @@ code {
   line-height: 1.45;
 }
 
+.detail-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: rgba(247, 241, 232, 0.72);
+}
+
+.detail-list li {
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .artifact-meta {
   font-family:
     "IBM Plex Mono",

@@ -663,3 +663,9 @@ export {
   runtimeTraceEventTypePrefixes,
   type HostEventFilter
 } from "./event-inspection.js";
+export {
+  collectRuntimeTraceEvents,
+  describeRuntimeTraceEvent,
+  formatRuntimeTraceEventLabel,
+  type RuntimeTraceEventPresentation
+} from "./runtime-trace.js";

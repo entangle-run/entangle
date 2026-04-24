@@ -28,6 +28,7 @@ import {
   filterRuntimeArtifactsForCli,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
+import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
 async function readJsonDocument(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
@@ -45,14 +46,27 @@ function buildCliHostEventInspectionOptions(options: {
   category?: HostEventRecord["category"];
   nodeId?: string;
   recoveryOnly?: boolean;
+  runtimeTraceOnly?: boolean;
   typePrefix: string[];
 }) {
   return {
     ...(options.category ? { category: options.category } : {}),
     ...(options.nodeId ? { nodeId: options.nodeId } : {}),
     ...(options.recoveryOnly ? { recoveryOnly: true } : {}),
+    ...(options.runtimeTraceOnly ? { runtimeTraceOnly: true } : {}),
     ...(options.typePrefix.length > 0 ? { typePrefixes: options.typePrefix } : {})
   };
+}
+
+function renderCliHostEvents(events: HostEventRecord[], summary: boolean): void {
+  if (!summary) {
+    printJson({ events });
+    return;
+  }
+
+  printJson({
+    events: events.map((event) => projectRuntimeTraceSummary(event))
+  });
 }
 
 function resolveHostUrl(command: Command): string {
@@ -71,6 +85,7 @@ async function watchHostEvents(input: {
   command: Command;
   filterOptions: Parameters<typeof buildHostEventFilter>[0];
   replay: number;
+  summary: boolean;
 }): Promise<void> {
   const client = createHostClient({ baseUrl: resolveHostUrl(input.command) });
   const filter = buildHostEventFilter(input.filterOptions);
@@ -113,7 +128,9 @@ async function watchHostEvents(input: {
       },
       onEvent: (event) => {
         if (hostEventMatchesFilter(event, filter)) {
-          printJson(event);
+          printJson(
+            input.summary ? projectRuntimeTraceSummary(event) : event
+          );
         }
       }
     });
@@ -208,6 +225,14 @@ hostEventsCommand
     "--recovery-only",
     "Limit results to runtime recovery-related host events."
   )
+  .option(
+    "--runtime-trace-only",
+    "Limit results to host-derived runtime trace events."
+  )
+  .option(
+    "--summary",
+    "Print structured runtime-trace summaries instead of raw host event objects."
+  )
   .description("List typed host events from entangle-host with optional local filtering.")
   .action(
     async (
@@ -216,19 +241,21 @@ hostEventsCommand
         limit: string;
         nodeId?: string;
         recoveryOnly?: boolean;
+        runtimeTraceOnly?: boolean;
+        summary?: boolean;
         typePrefix: string[];
       },
       command: Command
     ) => {
       const client = createHostClient({ baseUrl: resolveHostUrl(command) });
       const response = await client.listHostEvents(Number.parseInt(options.limit, 10));
-
-      printJson({
-        events: filterHostEvents(
+      renderCliHostEvents(
+        filterHostEvents(
           response.events,
           buildHostEventFilter(buildCliHostEventInspectionOptions(options))
-        )
-      });
+        ),
+        options.summary === true
+      );
     }
   );
 
@@ -247,6 +274,14 @@ hostEventsCommand
     "--recovery-only",
     "Limit the live stream to runtime recovery-related host events."
   )
+  .option(
+    "--runtime-trace-only",
+    "Limit the live stream to host-derived runtime trace events."
+  )
+  .option(
+    "--summary",
+    "Print structured runtime-trace summaries instead of raw host event objects."
+  )
   .description("Stream typed host events from entangle-host until interrupted.")
   .action(
     async (
@@ -255,6 +290,8 @@ hostEventsCommand
         nodeId?: string;
         recoveryOnly?: boolean;
         replay: string;
+        runtimeTraceOnly?: boolean;
+        summary?: boolean;
         typePrefix: string[];
       },
       command: Command
@@ -262,7 +299,8 @@ hostEventsCommand
       await watchHostEvents({
         command,
         filterOptions: buildCliHostEventInspectionOptions(options),
-        replay: Number.parseInt(options.replay, 10)
+        replay: Number.parseInt(options.replay, 10),
+        summary: options.summary === true
       });
     }
   );

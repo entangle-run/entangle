@@ -76,6 +76,7 @@ import {
 } from "./recovery-inspection.js";
 import {
   collectRuntimeTraceEvents,
+  formatRuntimeTraceEventDetailLines,
   formatRuntimeTraceEventLabel
 } from "./runtime-trace-inspection.js";
 import {
@@ -2011,15 +2012,26 @@ export function App() {
 
                     {runtimeTraceEvents.length > 0 ? (
                       <ul className="timeline-list">
-                        {runtimeTraceEvents.map((event) => (
-                          <li key={event.eventId} className="timeline-item">
-                            <div className="timeline-row">
-                              <strong>{formatRuntimeTraceEventLabel(event)}</strong>
-                              <span>{event.timestamp}</span>
-                            </div>
-                            <p>{event.message}</p>
-                          </li>
-                        ))}
+                        {runtimeTraceEvents.map((event) => {
+                          const detailLines = formatRuntimeTraceEventDetailLines(event);
+
+                          return (
+                            <li key={event.eventId} className="timeline-item">
+                              <div className="timeline-row">
+                                <strong>{formatRuntimeTraceEventLabel(event)}</strong>
+                                <span>{event.timestamp}</span>
+                              </div>
+                              {detailLines.length > 0 ? (
+                                <ul className="detail-list">
+                                  {detailLines.map((detailLine) => (
+                                    <li key={`${event.eventId}-${detailLine}`}>{detailLine}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                              <p>{event.message}</p>
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
                       <div className="inline-empty-state">
