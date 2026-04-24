@@ -18,6 +18,7 @@ import {
 import { createHostClient } from "@entangle/host-client";
 import type {
   ArtifactRecord,
+  ExternalPrincipalInspectionResponse,
   GraphInspectionResponse,
   GraphSpec,
   HostEventRecord,
@@ -66,6 +67,13 @@ import {
   sortPackageSourceInspections,
   type PackageSourceAdmissionDraft
 } from "./package-source-admission.js";
+import {
+  collectExternalPrincipalReferenceNodeIds,
+  formatExternalPrincipalDetail,
+  formatExternalPrincipalLabel,
+  formatExternalPrincipalReferenceSummary,
+  sortExternalPrincipalInspections
+} from "./external-principal-inspection.js";
 import {
   shouldRefreshOverviewFromHostEvent,
   shouldRefreshSelectedRuntimeFromHostEvent
@@ -299,6 +307,16 @@ export function App() {
     PackageSourceInspectionResponse[]
   >([]);
   const [packageSourceError, setPackageSourceError] = useState<string | null>(null);
+  const [externalPrincipals, setExternalPrincipals] = useState<
+    ExternalPrincipalInspectionResponse[]
+  >([]);
+  const [externalPrincipalError, setExternalPrincipalError] = useState<string | null>(
+    null
+  );
+  const [externalPrincipalDeletionError, setExternalPrincipalDeletionError] =
+    useState<string | null>(null);
+  const [pendingExternalPrincipalDeletionId, setPendingExternalPrincipalDeletionId] =
+    useState<string | null>(null);
   const [packageAdmissionDraft, setPackageAdmissionDraft] =
     useState<PackageSourceAdmissionDraft>(createEmptyPackageSourceAdmissionDraft);
   const [packageAdmissionError, setPackageAdmissionError] = useState<string | null>(null);
@@ -354,12 +372,19 @@ export function App() {
   selectedSessionIdRef.current = selectedSessionId;
 
   const loadOverview = useCallback(async () => {
-    const [statusResult, graphResult, runtimeListResult, packageSourceResult] =
+    const [
+      statusResult,
+      graphResult,
+      runtimeListResult,
+      packageSourceResult,
+      externalPrincipalResult
+    ] =
       await Promise.allSettled([
         client.getHostStatus(),
         client.getGraph(),
         client.listRuntimes(),
-        client.listPackageSources()
+        client.listPackageSources(),
+        client.listExternalPrincipals()
       ]);
 
     if (
@@ -401,6 +426,21 @@ export function App() {
           normalizeError(
             packageSourceResult.reason,
             "Unknown error while loading admitted package sources."
+          )
+        );
+      }
+
+      if (externalPrincipalResult.status === "fulfilled") {
+        setExternalPrincipals(
+          sortExternalPrincipalInspections(externalPrincipalResult.value.principals)
+        );
+        setExternalPrincipalError(null);
+      } else {
+        setExternalPrincipals([]);
+        setExternalPrincipalError(
+          normalizeError(
+            externalPrincipalResult.reason,
+            "Unknown error while loading external principals."
           )
         );
       }
@@ -893,6 +933,39 @@ export function App() {
     [client, loadOverview]
   );
 
+  const deleteExternalPrincipal = useCallback(
+    async (principalId: string) => {
+      try {
+        setPendingExternalPrincipalDeletionId(principalId);
+        setExternalPrincipalDeletionError(null);
+
+        await client.deleteExternalPrincipal(principalId);
+        await loadOverview();
+
+        setNodeDraft((current) => ({
+          ...current,
+          resourceBindings: {
+            ...current.resourceBindings,
+            externalPrincipalRefs:
+              current.resourceBindings.externalPrincipalRefs.filter(
+                (externalPrincipalRef) => externalPrincipalRef !== principalId
+              )
+          }
+        }));
+      } catch (caught: unknown) {
+        setExternalPrincipalDeletionError(
+          normalizeError(
+            caught,
+            "Unknown error while deleting the external principal."
+          )
+        );
+      } finally {
+        setPendingExternalPrincipalDeletionId(null);
+      }
+    },
+    [client, loadOverview]
+  );
+
   const resetEdgeDraft = useCallback(() => {
     setSelectedEdgeId(null);
     setEdgeDraft(createDefaultEdgeEditorDraft(graphInspection?.graph));
@@ -1319,6 +1392,73 @@ export function App() {
               ) : (
                 <div className="inline-empty-state">
                   <p>No package sources are admitted yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>External Principals</h3>
+                <span className="panel-caption">
+                  {externalPrincipals.length} bound principals
+                </span>
+              </div>
+
+              {externalPrincipalError ? (
+                <p className="error-box">{externalPrincipalError}</p>
+              ) : null}
+              {externalPrincipalDeletionError ? (
+                <p className="error-box">{externalPrincipalDeletionError}</p>
+              ) : null}
+
+              {externalPrincipals.length > 0 ? (
+                <div className="external-principal-list">
+                  {externalPrincipals.map((inspection) => {
+                    const principalId = inspection.principal.principalId;
+                    const referenceNodeIds =
+                      collectExternalPrincipalReferenceNodeIds(
+                        graphInspection?.graph,
+                        principalId
+                      );
+                    const isDeleting =
+                      pendingExternalPrincipalDeletionId === principalId;
+
+                    return (
+                      <div key={principalId} className="external-principal-card">
+                        <strong>{formatExternalPrincipalLabel(inspection)}</strong>
+                        <span>{formatExternalPrincipalDetail(inspection)}</span>
+                        <span>
+                          {formatExternalPrincipalReferenceSummary(
+                            referenceNodeIds
+                          )}
+                        </span>
+                        <div className="action-row">
+                          <button
+                            className="action-button"
+                            disabled={
+                              pendingExternalPrincipalDeletionId !== null ||
+                              referenceNodeIds.length > 0
+                            }
+                            onClick={() => {
+                              void deleteExternalPrincipal(principalId);
+                            }}
+                            title={
+                              referenceNodeIds.length > 0
+                                ? "Delete or rebind referencing nodes before deleting this external principal."
+                                : "Delete this external principal binding from the host."
+                            }
+                            type="button"
+                          >
+                            {isDeleting ? "Deleting..." : "Delete Principal"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>No external principals are bound yet.</p>
                 </div>
               )}
             </div>

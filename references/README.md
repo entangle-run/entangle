@@ -138,6 +138,7 @@ This directory is the canonical design corpus for Entangle.
 132. [131-runner-git-https-token-transport-slice.md](131-runner-git-https-token-transport-slice.md)
 133. [132-openai-compatible-agent-engine-slice.md](132-openai-compatible-agent-engine-slice.md)
 134. [133-external-principal-deletion-slice.md](133-external-principal-deletion-slice.md)
+135. [134-studio-external-principal-lifecycle-slice.md](134-studio-external-principal-lifecycle-slice.md)
 
 ## Role of this corpus
 

@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio external-principal lifecycle visibility
+
+Studio now loads host-managed external principals into the graph editor,
+renders deterministic principal rows with effective active-graph reference
+summaries, disables known-conflicting deletes, and deletes unreferenced
+principal bindings through the shared host client.
+
 ## [2026-04-24] implementation | Added external-principal deletion
 
 Closed the host-managed external-principal lifecycle gap. `entangle-host` now

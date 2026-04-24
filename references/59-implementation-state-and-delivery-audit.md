@@ -252,6 +252,8 @@ artifact model is strong enough to extend without redesign.
 - host-managed external principals for git-facing identities;
 - safe deletion for unused external principal records through the host API,
   shared host client, and CLI dry-run surface;
+- Studio inventory and deletion for unused external principal bindings with
+  effective active-graph reference guards;
 - graph-local binding of principals by reference;
 - effective runtime resolution of git principals and primary-principal hints;
 - resolved git secret-delivery metadata for bound git principals in runtime

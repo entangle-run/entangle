@@ -374,6 +374,9 @@ Completed in the current repository state:
 - the matching Studio package-source deletion flow, where the operator can
   inspect graph references per admitted source, delete unreferenced sources
   through the shared host client, and avoid browser-owned deletion state.
+- the matching Studio external-principal lifecycle slice, where the operator
+  can inspect host-bound principal records, see effective graph references,
+  and delete unreferenced principal bindings through the shared host client.
 - the next bounded Studio completion slice through host-event-driven refresh,
   where overview and selected-runtime reads are now coalesced off the existing
   host event stream without reconnecting the subscription on runtime

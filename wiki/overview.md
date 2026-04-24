@@ -329,6 +329,10 @@ The repository now also contains the first real implementation baseline:
   lists active source references, disables known-conflicting deletes, calls the
   host-owned deletion route for unreferenced sources, and clears stale local
   drafts after host confirmation;
+- the matching Studio external-principal lifecycle slice, where the graph
+  editor lists host-bound principal records, shows effective active-graph
+  references, disables known-conflicting deletes, and calls the host-owned
+  deletion route for unreferenced principal bindings;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and
   selected-runtime refresh instead of depending only on explicit post-mutation

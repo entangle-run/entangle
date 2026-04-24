@@ -400,6 +400,9 @@ This repository currently contains:
   graph references for each admitted source, delete unreferenced sources
   through the shared host client, and keep draft state coherent after host
   confirmation;
+- a Studio external-principal inventory and deletion flow where visual
+  operators can inspect bound principal records, see active graph references,
+  and delete unreferenced principal bindings through the shared host client;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and selected-runtime
   refresh instead of depending only on explicit reload loops after mutations;
