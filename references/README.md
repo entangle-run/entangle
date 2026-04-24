@@ -144,6 +144,7 @@ This directory is the canonical design corpus for Entangle.
 138. [137-studio-runtime-turn-detail-slice.md](137-studio-runtime-turn-detail-slice.md)
 139. [138-studio-recovery-policy-mutation-slice.md](138-studio-recovery-policy-mutation-slice.md)
 140. [139-studio-graph-revision-history-slice.md](139-studio-graph-revision-history-slice.md)
+141. [140-local-operator-profile-preflight-slice.md](140-local-operator-profile-preflight-slice.md)
 
 ## Role of this corpus
 

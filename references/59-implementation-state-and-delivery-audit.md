@@ -563,6 +563,9 @@ priority widening.
 - pinned multi-stage Docker builds for host and runner;
 - static Nginx-based Studio runtime image;
 - local `strfry` profile and local `Gitea` profile in Compose;
+- documented local operator bootstrap under `deploy/README.md`;
+- local profile preflight commands through `pnpm ops:check-local` and
+  `pnpm ops:check-local:strict`;
 - ESLint, Vitest, GitHub Actions CI, repository-wide `pnpm verify`, and
   socketless host service tests for ordinary sandbox/CI verification;
 - package-local Vitest source aliasing to avoid stale sibling build artifacts.
@@ -572,7 +575,7 @@ priority widening.
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
 - richer Docker-backed runtime smoke coverage around restart and artifact-aware
   multi-node flows;
-- fully documented local operator bootstrap for the complete product profile.
+- richer active smoke automation after the local profile is already running.
 
 ### Assessment
 

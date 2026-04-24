@@ -477,6 +477,9 @@ Completed in the current repository state:
 - ordinary host service tests no longer require real Unix or TCP socket
   binding for Docker API request-shape coverage, fake Gitea API coverage, or
   host event-stream coverage;
+- local operator bootstrap is now documented under `deploy/README.md`, with
+  non-strict and strict preflight commands for validating the complete local
+  profile before starting the Compose topology;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
   profile while preserving future Compose-level integration work as a separate
   hardening track.

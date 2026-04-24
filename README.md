@@ -165,6 +165,10 @@ This repository currently contains:
   test files from runtime payloads;
 - verified portable deploy payloads for host and runner built from the real
   `build -> deploy` path used by the service images;
+- a documented local operator bootstrap profile under `deploy/`, backed by
+  `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
+  for toolchain, Docker, Docker Compose, daemon access, and Compose config
+  validity;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

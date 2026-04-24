@@ -418,6 +418,10 @@ The repository now also contains the first real implementation baseline:
   pinned `pnpm` installation and store semantics inside build stages, a static
   Nginx Studio runtime, and verified host/runner portable deploy payloads
   built from the real `build -> deploy` path;
+- a documented local operator bootstrap profile under `deploy/`, backed by
+  `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
+  for local profile files, Node/pnpm, Docker, Docker Compose, daemon access,
+  and Compose config validity;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;

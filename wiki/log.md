@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] operations | Added local operator profile preflight
+
+The local Compose profile now has `deploy/README.md` plus
+`pnpm ops:check-local` and `pnpm ops:check-local:strict`. The preflight checks
+profile files, Node/pnpm, Docker, Docker Compose, daemon access, and Compose
+config validity before an operator starts the full local topology.
+
 ## [2026-04-24] implementation | Added Studio graph revision history
 
 Studio now lists persisted applied graph revisions from the host and can drill
