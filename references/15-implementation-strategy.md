@@ -187,6 +187,10 @@ Completed in the current repository state:
     consumed/produced artifact context plus bounded model-guided artifact
     insights instead of leaving artifact awareness trapped in request-time
     context alone.
+14. an engine-outcome-aware refinement of that same synthesis path where the
+    bounded synthesis prompt now carries the just-completed turn's normalized
+    engine outcome instead of relying on assistant text and coarse stop reason
+    alone.
 
 Remaining work in this phase:
 
@@ -194,7 +198,8 @@ Remaining work in this phase:
    now-implemented artifact inspection, bounded memory-ref inspection, bounded
    current-session state inspection, and session-aware working-context
    synthesis paths, now including artifact-aware and artifact-carrying
-   working-context synthesis, before adding more builtin tool kinds;
+   working-context synthesis plus current-turn engine-outcome grounding,
+   before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;

@@ -191,8 +191,22 @@ describe("model-guided memory synthesis", () => {
         assistantMessages: [
           "Reviewed the recovery follow-up and identified the next checkpoint."
         ],
+        providerStopReason: "end_turn",
         stopReason: "completed",
-        toolExecutions: [],
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "toolu_session",
+            toolId: "inspect_session_state"
+          },
+          {
+            outcome: "success",
+            sequence: 2,
+            toolCallId: "toolu_artifact",
+            toolId: "inspect_artifact_input"
+          }
+        ],
         toolRequests: [],
         usage: {
           inputTokens: 12,
@@ -352,8 +366,22 @@ describe("model-guided memory synthesis", () => {
         assistantMessages: [
           "Reviewed the recovery follow-up and identified the next checkpoint."
         ],
+        providerStopReason: "end_turn",
         stopReason: "completed",
-        toolExecutions: [],
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "toolu_session",
+            toolId: "inspect_session_state"
+          },
+          {
+            outcome: "success",
+            sequence: 2,
+            toolCallId: "toolu_artifact",
+            toolId: "inspect_artifact_input"
+          }
+        ],
         toolRequests: [],
         usage: {
           inputTokens: 12,
@@ -386,6 +414,18 @@ describe("model-guided memory synthesis", () => {
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "Current session snapshot:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Current turn engine outcome:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "- provider stop reason: `end_turn`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "  - #1 inspect_session_state [success]"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "  - #2 inspect_artifact_input [success]"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "Session status: `active`"

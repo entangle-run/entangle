@@ -746,3 +746,15 @@ lists plus those synthesized durable artifact observations.
 Closed the slice only after widening runner-memory assertions over the final
 page content, re-running targeted runner lint/test/typecheck gates, and then
 confirming the full `pnpm verify` plus `git diff --check` gates.
+
+## [2026-04-24] implementation | Added engine-outcome-aware working-context synthesis
+
+Deepened the same bounded memory path again by making the synthesis prompt
+carry a dedicated summary of the just-completed turn's normalized engine
+outcome. The model-guided working-context pass can now see bounded tool
+executions, provider stop reason, failure metadata, and token usage for the
+current turn instead of relying on assistant text and coarse stop reason alone.
+
+Closed the slice only after widening runner-memory prompt assertions,
+re-running targeted runner lint/test/typecheck gates, and then confirming the
+full `pnpm verify` plus `git diff --check` gates.

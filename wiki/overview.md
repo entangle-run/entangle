@@ -135,6 +135,10 @@ The repository now also contains the first real implementation baseline:
   consumed/produced artifact context plus bounded model-guided artifact
   insights instead of leaving artifact awareness trapped in request-time
   context alone;
+- an engine-outcome-aware refinement of that same synthesis path where the
+  bounded synthesis prompt now carries the just-completed turn's normalized
+  engine outcome instead of relying on assistant text and coarse stop reason
+  alone;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -377,8 +381,8 @@ The current implementation-truth audit now lives in
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now
-  stronger session-aware and artifact-aware/artifact-carrying bounded runtime
-  inspection surface;
+  stronger session-aware and artifact-aware/artifact-carrying/engine-outcome-aware
+  bounded runtime inspection surface;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

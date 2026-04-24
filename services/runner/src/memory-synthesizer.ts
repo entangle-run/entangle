@@ -32,6 +32,7 @@ import type { RunnerInboundEnvelope } from "./transport.js";
 const maxWorkingContextListEntries = 6;
 const maxSynthesisArtifacts = 6;
 const maxSynthesisRecentTurns = 4;
+const maxSynthesisToolObservations = 4;
 
 const workingContextSummaryToolId = "write_memory_summary";
 const workingContextSummaryBullet =
@@ -80,6 +81,45 @@ function renderBulletList(entries: string[], fallbackLine: string): string[] {
   }
 
   return entries.map((entry) => `- ${entry}`);
+}
+
+function renderCurrentTurnOutcomeForPrompt(
+  result: AgentEngineTurnResult
+): string {
+  const toolExecutionLines =
+    result.toolExecutions.length > 0
+      ? result.toolExecutions
+          .slice(0, maxSynthesisToolObservations)
+          .map((toolExecution) =>
+            [
+              `  - #${toolExecution.sequence} ${toolExecution.toolId}`,
+              `[${toolExecution.outcome}]`,
+              ...(toolExecution.errorCode
+                ? [`error=${toolExecution.errorCode}`]
+                : [])
+            ].join(" ")
+          )
+      : ["  - none"];
+
+  return [
+    "Current turn engine outcome:",
+    `- stop reason: \`${result.stopReason}\``,
+    ...(result.providerStopReason
+      ? [`- provider stop reason: \`${result.providerStopReason}\``]
+      : []),
+    ...(result.usage
+      ? [
+          `- token usage: input=${result.usage.inputTokens} output=${result.usage.outputTokens}`
+        ]
+      : []),
+    ...(result.failure
+      ? [
+          `- failure: \`${result.failure.classification}\` ${result.failure.message}`
+        ]
+      : []),
+    "- tool executions:",
+    ...toolExecutionLines
+  ].join("\n");
 }
 
 function coerceNonEmptyString(value: unknown): string | undefined {
@@ -393,7 +433,6 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       `Node: ${input.context.binding.node.displayName} (${input.context.binding.node.nodeId})`,
       `Inbound intent: ${input.envelope.message.intent}`,
       `Inbound summary: ${input.envelope.message.work.summary}`,
-      `Stop reason: ${input.result.stopReason}`,
       `Current task page: ${taskPageRelativePath}`,
       `Derived recent-work summary: ${recentWorkRelativePath}`,
       `Consumed artifact ids: ${
@@ -406,6 +445,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
           ? input.producedArtifactIds.join(", ")
           : "none"
       }`,
+      renderCurrentTurnOutcomeForPrompt(input.result),
       `Current assistant outcome:\n${assistantSummary}`,
       ...(sessionSnapshot
         ? [
