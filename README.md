@@ -187,6 +187,11 @@ This repository currently contains:
   apply path, with typed `edge.updated` control-plane events, shared
   host-client plus CLI support, and explicit separation between `400`
   validation failures and `404`/`409` resource conflicts;
+- a first-class runtime restart surface where `entangle-host` now supports
+  `POST /v1/runtimes/{nodeId}/restart`, persists monotonic restart
+  generations in runtime intents, emits typed `runtime.restart.requested`
+  host events, and forces deterministic Docker runtime recreation when the
+  restart generation changes even if the runtime context is otherwise stable;
 
 The highest-value remaining gaps are:
 
@@ -194,8 +199,8 @@ The highest-value remaining gaps are:
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
-- deeper session-level and runner-originated host event coverage plus fuller
-  runtime-restart and reconciliation host surfaces;
+- deeper session-level and runner-originated host event coverage plus richer
+  reconciliation and degraded-state host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

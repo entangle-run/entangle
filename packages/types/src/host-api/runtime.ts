@@ -6,7 +6,8 @@ import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
 import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
-  runtimeObservedStateSchema
+  runtimeObservedStateSchema,
+  runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
 
 export const runtimeInspectionResponseSchema = z.object({
@@ -21,6 +22,7 @@ export const runtimeInspectionResponseSchema = z.object({
   packageSourceId: identifierSchema.optional(),
   primaryGitRepositoryProvisioning: gitRepositoryProvisioningRecordSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
+  restartGeneration: runtimeRestartGenerationSchema,
   runtimeHandle: nonEmptyStringSchema.optional(),
   statusMessage: nonEmptyStringSchema.optional()
 });

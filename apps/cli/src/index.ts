@@ -403,6 +403,15 @@ hostRuntimesCommand
     printJson(await client.stopRuntime(nodeId));
   });
 
+hostRuntimesCommand
+  .command("restart")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Request deterministic runtime recreation while keeping the desired state running.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.restartRuntime(nodeId));
+  });
+
 const graphCommand = program
   .command("graph")
   .description("Inspect graph files from the terminal.");

@@ -193,6 +193,10 @@ type RuntimeDesiredStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.desired_state.changed" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type RuntimeRestartRequestedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.restart.requested" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 type RuntimeObservedStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.observed_state.changed" }>,
   "eventId" | "schemaVersion" | "timestamp"
@@ -1453,6 +1457,36 @@ function didRuntimeIntentChange(
   );
 }
 
+function createRuntimeIntentRecord(input: {
+  desiredState: RuntimeDesiredState;
+  existingIntent: RuntimeIntentRecord | undefined;
+  graphId: string;
+  graphRevisionId: string;
+  nodeId: string;
+  reason: string | undefined;
+  restartGeneration: number;
+}): RuntimeIntentRecord {
+  const isEquivalentToExisting =
+    input.existingIntent &&
+    input.existingIntent.desiredState === input.desiredState &&
+    input.existingIntent.reason === input.reason &&
+    input.existingIntent.graphId === input.graphId &&
+    input.existingIntent.graphRevisionId === input.graphRevisionId &&
+    input.existingIntent.restartGeneration === input.restartGeneration;
+  const preservedUpdatedAt = input.existingIntent?.updatedAt;
+
+  return runtimeIntentRecordSchema.parse({
+    desiredState: input.desiredState,
+    graphId: input.graphId,
+    graphRevisionId: input.graphRevisionId,
+    nodeId: input.nodeId,
+    reason: input.reason,
+    restartGeneration: input.restartGeneration,
+    schemaVersion: "1",
+    updatedAt: isEquivalentToExisting && preservedUpdatedAt ? preservedUpdatedAt : nowIsoString()
+  });
+}
+
 function didObservedRuntimeChange(
   previous: ObservedRuntimeRecord | undefined,
   next: ObservedRuntimeRecord
@@ -1494,6 +1528,7 @@ function buildRuntimeInspectionFromState(input: {
   packageSourceId: string | undefined;
   primaryGitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
   reason: string | undefined;
+  restartGeneration: number;
   runtimeHandle: string | undefined;
   statusMessage: string | undefined;
 }): RuntimeInspectionResponse {
@@ -1509,6 +1544,7 @@ function buildRuntimeInspectionFromState(input: {
     packageSourceId: input.packageSourceId,
     primaryGitRepositoryProvisioning: input.primaryGitRepositoryProvisioning,
     reason: input.reason,
+    restartGeneration: input.restartGeneration,
     runtimeHandle: input.runtimeHandle,
     statusMessage: input.statusMessage
   });
@@ -2254,20 +2290,15 @@ async function buildRuntimeResolution(input: {
       : undefined;
 
   const intentRecord = runtimeIntentRecordSchema.parse({
-    desiredState,
-    graphId: graph.graphId,
-    graphRevisionId: activeRevisionId,
-    nodeId: node.nodeId,
-    reason,
-    schemaVersion: "1",
-    updatedAt:
-      existingIntent &&
-      existingIntent.desiredState === desiredState &&
-      existingIntent.reason === reason &&
-      existingIntent.graphId === graph.graphId &&
-      existingIntent.graphRevisionId === activeRevisionId
-        ? existingIntent.updatedAt
-        : nowIsoString()
+    ...createRuntimeIntentRecord({
+      desiredState,
+      existingIntent,
+      graphId: graph.graphId,
+      graphRevisionId: activeRevisionId,
+      nodeId: node.nodeId,
+      reason,
+      restartGeneration: existingIntent?.restartGeneration ?? 0
+    })
   });
   await writeJsonFileIfChanged(
     path.join(runtimeIntentsRoot, `${node.nodeId}.json`),
@@ -2298,6 +2329,7 @@ async function buildRuntimeResolution(input: {
     graphRevisionId: activeRevisionId,
     nodeId: node.nodeId,
     reason: intentRecord.reason,
+    restartGeneration: intentRecord.restartGeneration,
     ...(context
       ? {
           secretEnvironment: {
@@ -2366,6 +2398,7 @@ async function buildRuntimeResolution(input: {
       packageSourceId: packageSource?.packageSourceId,
       primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
       reason: intentRecord.reason,
+      restartGeneration: intentRecord.restartGeneration,
       runtimeHandle: observedRecord.runtimeHandle,
       statusMessage: observedRecord.statusMessage,
       backendKind: observedRecord.backendKind
@@ -3121,16 +3154,58 @@ export async function setRuntimeDesiredState(
     return null;
   }
 
-  const intent = runtimeIntentRecordSchema.parse({
+  const existingIntent = await readRuntimeIntentRecord(nodeId);
+  const intent = createRuntimeIntentRecord({
     desiredState,
+    existingIntent,
     graphId: inspection.graphId,
     graphRevisionId: inspection.graphRevisionId,
     nodeId,
     reason: desiredState === "stopped" ? "stopped_by_operator" : undefined,
-    schemaVersion: "1",
-    updatedAt: nowIsoString()
+    restartGeneration: existingIntent?.restartGeneration ?? inspection.restartGeneration
   });
   await writeJsonFile(path.join(runtimeIntentsRoot, `${nodeId}.json`), intent);
+
+  const { runtimes } = await synchronizeCurrentGraphRuntimeState();
+  return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
+}
+
+export async function restartRuntime(
+  nodeId: string
+): Promise<RuntimeInspectionResponse | null> {
+  const inspection = await getRuntimeInspection(nodeId);
+
+  if (!inspection) {
+    return null;
+  }
+
+  const existingIntent = await readRuntimeIntentRecord(nodeId);
+  const nextRestartGeneration =
+    Math.max(
+      existingIntent?.restartGeneration ?? 0,
+      inspection.restartGeneration
+    ) + 1;
+  const intent = createRuntimeIntentRecord({
+    desiredState: "running",
+    existingIntent,
+    graphId: inspection.graphId,
+    graphRevisionId: inspection.graphRevisionId,
+    nodeId,
+    reason: undefined,
+    restartGeneration: nextRestartGeneration
+  });
+  await writeJsonFile(path.join(runtimeIntentsRoot, `${nodeId}.json`), intent);
+  await appendHostEvent({
+    category: "runtime",
+    graphId: inspection.graphId,
+    graphRevisionId: inspection.graphRevisionId,
+    message:
+      `Runtime '${nodeId}' restart was requested with generation '${nextRestartGeneration}'.`,
+    nodeId,
+    previousRestartGeneration: existingIntent?.restartGeneration ?? inspection.restartGeneration,
+    restartGeneration: nextRestartGeneration,
+    type: "runtime.restart.requested"
+  } satisfies RuntimeRestartRequestedEventInput);
 
   const { runtimes } = await synchronizeCurrentGraphRuntimeState();
   return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;

@@ -304,6 +304,7 @@ The current edge-mutation semantics are:
 
 - `GET /v1/runtimes`
 - `GET /v1/runtimes/{nodeId}`
+- `GET /v1/runtimes/{nodeId}/context`
 - `GET /v1/runtimes/{nodeId}/artifacts`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
@@ -324,7 +325,14 @@ The current repository implementation now concretely includes:
 - `PUT /v1/external-principals/{principalId}`
 - `GET /v1/graph`
 - `PUT /v1/graph`
+- `GET /v1/graph/revisions`
+- `GET /v1/graph/revisions/{revisionId}`
 - `POST /v1/graph/validate`
+- `GET /v1/nodes`
+- `POST /v1/nodes`
+- `GET /v1/nodes/{nodeId}`
+- `PATCH /v1/nodes/{nodeId}`
+- `DELETE /v1/nodes/{nodeId}`
 - `GET /v1/edges`
 - `POST /v1/edges`
 - `PATCH /v1/edges/{edgeId}`
@@ -336,11 +344,13 @@ The current repository implementation now concretely includes:
 - `GET /v1/events`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
+- `POST /v1/runtimes/{nodeId}/restart`
 
 The currently missing runtime lifecycle elements are:
 
-- restart;
 - `DELETE /v1/runtimes/{nodeId}`
+- richer degraded and retry semantics;
+- stronger runtime recovery diagnostics and history surfaces.
 
 Purpose:
 
@@ -351,6 +361,8 @@ The current implementation also exposes:
 - per-runtime backend kind;
 - runtime handles when the backend reports them;
 - runtime status messages suitable for Studio and CLI;
+- restart-generation-backed lifecycle inspection and typed
+  `runtime.restart.requested` events;
 - read-only persisted artifact inspection for active runtimes;
 - host-managed external principal inspection and mutation;
 - host-level reconciliation status via `GET /v1/host/status`;

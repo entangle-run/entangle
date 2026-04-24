@@ -553,6 +553,15 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async restartRuntime(nodeId: string): Promise<RuntimeInspectionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/restart`, {
+          method: "POST"
+        }),
+        runtimeInspectionResponseSchema
+      );
+    },
+
     subscribeToEvents(
       options: HostEventSubscriptionOptions
     ): HostEventSubscription {

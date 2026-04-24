@@ -10,6 +10,7 @@ export const runtimeObservedStateSchema = z.enum([
   "stopped",
   "failed"
 ]);
+export const runtimeRestartGenerationSchema = z.number().int().nonnegative().default(0);
 
 export const runtimeIntentRecordSchema = z.object({
   desiredState: runtimeDesiredStateSchema,
@@ -17,6 +18,7 @@ export const runtimeIntentRecordSchema = z.object({
   graphRevisionId: identifierSchema,
   nodeId: identifierSchema,
   reason: nonEmptyStringSchema.optional(),
+  restartGeneration: runtimeRestartGenerationSchema,
   schemaVersion: z.literal("1"),
   updatedAt: nonEmptyStringSchema
 });
@@ -38,5 +40,6 @@ export const observedRuntimeRecordSchema = z.object({
 export type RuntimeBackendKind = z.infer<typeof runtimeBackendKindSchema>;
 export type RuntimeDesiredState = z.infer<typeof runtimeDesiredStateSchema>;
 export type RuntimeObservedState = z.infer<typeof runtimeObservedStateSchema>;
+export type RuntimeRestartGeneration = z.infer<typeof runtimeRestartGenerationSchema>;
 export type RuntimeIntentRecord = z.infer<typeof runtimeIntentRecordSchema>;
 export type ObservedRuntimeRecord = z.infer<typeof observedRuntimeRecordSchema>;

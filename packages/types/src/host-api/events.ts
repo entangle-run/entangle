@@ -3,7 +3,8 @@ import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js"
 import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
-  runtimeObservedStateSchema
+  runtimeObservedStateSchema,
+  runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
 
 const hostEventBaseSchema = z.object({
@@ -69,6 +70,16 @@ export const runtimeDesiredStateChangedEventSchema = hostEventBaseSchema.extend(
   type: z.literal("runtime.desired_state.changed")
 });
 
+export const runtimeRestartRequestedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("runtime"),
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  nodeId: identifierSchema,
+  previousRestartGeneration: runtimeRestartGenerationSchema,
+  restartGeneration: runtimeRestartGenerationSchema,
+  type: z.literal("runtime.restart.requested")
+});
+
 export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend({
   backendKind: runtimeBackendKindSchema,
   category: z.literal("runtime"),
@@ -103,6 +114,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   nodeBindingUpdatedEventSchema,
   edgeUpdatedEventSchema,
   runtimeDesiredStateChangedEventSchema,
+  runtimeRestartRequestedEventSchema,
   runtimeObservedStateChangedEventSchema,
   hostReconciliationCompletedEventSchema
 ]);
@@ -135,6 +147,9 @@ export type NodeBindingUpdatedEvent = z.infer<
 export type EdgeUpdatedEvent = z.infer<typeof edgeUpdatedEventSchema>;
 export type RuntimeDesiredStateChangedEvent = z.infer<
   typeof runtimeDesiredStateChangedEventSchema
+>;
+export type RuntimeRestartRequestedEvent = z.infer<
+  typeof runtimeRestartRequestedEventSchema
 >;
 export type RuntimeObservedStateChangedEvent = z.infer<
   typeof runtimeObservedStateChangedEventSchema

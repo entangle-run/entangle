@@ -41,6 +41,7 @@ export type RuntimeBackendReconcileInput = {
   graphRevisionId: string;
   nodeId: string;
   reason: string | undefined;
+  restartGeneration: number;
   secretEnvironment?: Record<string, string>;
 };
 
@@ -259,6 +260,7 @@ class DockerRuntimeBackend implements RuntimeBackend {
           "io.entangle.graph_revision_id": input.graphRevisionId,
           "io.entangle.managed": "true",
           "io.entangle.node_id": input.nodeId,
+          "io.entangle.restart_generation": String(input.restartGeneration),
           "io.entangle.runtime_context_path": input.contextPath
         },
         mounts: [...mounts],
@@ -322,6 +324,7 @@ class DockerRuntimeBackend implements RuntimeBackend {
     return (
       inspection.Config.Image !== this.runnerImage ||
       labels["io.entangle.graph_revision_id"] !== input.graphRevisionId ||
+      labels["io.entangle.restart_generation"] !== String(input.restartGeneration) ||
       labels["io.entangle.runtime_context_path"] !== input.contextPath ||
       requiredEnvEntries.some((entry) => !envEntries.has(entry))
     );

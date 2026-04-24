@@ -86,6 +86,7 @@ describe("createRuntimeBackend", () => {
             Image: "entangle-runner:local",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.restart_generation": "0",
               "io.entangle.runtime_context_path": "/entangle-state/context.json"
             }
           }
@@ -107,6 +108,7 @@ describe("createRuntimeBackend", () => {
       graphRevisionId: "rev-1",
       nodeId: "worker-it",
       reason: undefined,
+      restartGeneration: 0,
       secretEnvironment: {
         ENTANGLE_NOSTR_SECRET_KEY:
           "1111111111111111111111111111111111111111111111111111111111111111"
@@ -168,7 +170,8 @@ describe("createRuntimeBackend", () => {
       graphId: "team-alpha",
       graphRevisionId: "rev-1",
       nodeId: "worker-it",
-      reason: "Operator requested stop."
+      reason: "Operator requested stop.",
+      restartGeneration: 0
     });
 
     expect(dockerClient.removeContainer).toHaveBeenCalledWith(
@@ -194,6 +197,7 @@ describe("createRuntimeBackend", () => {
             Image: "entangle-runner:local",
             Labels: {
               "io.entangle.graph_revision_id": "rev-0",
+              "io.entangle.restart_generation": "0",
               "io.entangle.runtime_context_path": "/entangle-state/old.json"
             }
           }
@@ -206,6 +210,7 @@ describe("createRuntimeBackend", () => {
             Image: "entangle-runner:local",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.restart_generation": "0",
               "io.entangle.runtime_context_path": "/entangle-state/new.json"
             }
           }
@@ -227,6 +232,7 @@ describe("createRuntimeBackend", () => {
       graphRevisionId: "rev-1",
       nodeId: "worker-it",
       reason: undefined,
+      restartGeneration: 0,
       secretEnvironment: {
         ENTANGLE_NOSTR_SECRET_KEY:
           "2222222222222222222222222222222222222222222222222222222222222222"
@@ -237,5 +243,69 @@ describe("createRuntimeBackend", () => {
       "entangle-runner-worker-it"
     );
     expect(dockerClient.createContainer).toHaveBeenCalledOnce();
+  });
+
+  it("recreates stale containers when the restart generation changed even if the runtime context stayed the same", async () => {
+    process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+
+    const dockerClient = createFakeDockerClient();
+    dockerClient.inspectImage.mockResolvedValue(true);
+    dockerClient.inspectContainer
+      .mockResolvedValueOnce(
+        buildContainerInspection({
+          Config: {
+            Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/context.json"],
+            Image: "entangle-runner:local",
+            Labels: {
+              "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.restart_generation": "0",
+              "io.entangle.runtime_context_path": "/entangle-state/context.json"
+            }
+          }
+        })
+      )
+      .mockResolvedValueOnce(
+        buildContainerInspection({
+          Config: {
+            Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/context.json"],
+            Image: "entangle-runner:local",
+            Labels: {
+              "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.restart_generation": "1",
+              "io.entangle.runtime_context_path": "/entangle-state/context.json"
+            }
+          }
+        })
+      );
+
+    const backend = createRuntimeBackend(
+      "/repo/.entangle/host",
+      "/repo/.entangle-secrets",
+      {
+        dockerClient
+      }
+    );
+    await backend.reconcileRuntime({
+      context: buildRuntimeContext(),
+      contextPath: "/entangle-state/context.json",
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "rev-1",
+      nodeId: "worker-it",
+      reason: undefined,
+      restartGeneration: 1,
+      secretEnvironment: {
+        ENTANGLE_NOSTR_SECRET_KEY:
+          "3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    });
+
+    expect(dockerClient.removeContainer).toHaveBeenCalledWith(
+      "entangle-runner-worker-it"
+    );
+    expect(dockerClient.createContainer).toHaveBeenCalledOnce();
+    expect(dockerClient.createContainer.mock.calls[0]?.[0].labels).toMatchObject({
+      "io.entangle.restart_generation": "1"
+    });
   });
 });

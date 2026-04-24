@@ -439,3 +439,15 @@ detail into a real resource surface. Added canonical node-inspection DTOs in
 the CLI. Closed the slice only after fixing strict fixture quality in the new
 types test, tightening the host integration assertions for ESLint, and
 re-running `pnpm verify`.
+
+## [2026-04-24] implementation | Added deterministic runtime restart through the host boundary
+
+Promoted runtime restart from a planned lifecycle action into a real
+control-plane surface. Added monotonic `restartGeneration` to runtime intents
+and runtime inspection, introduced the typed `runtime.restart.requested` host
+event, implemented `POST /v1/runtimes/{nodeId}/restart` through
+`entangle-host`, `packages/host-client`, and the CLI, and taught the Docker
+runtime backend to recreate managed containers when the restart generation
+changes even if the runtime context path is unchanged. Closed the slice only
+after adding contract, host-client, host integration, and Docker backend tests
+and re-running `pnpm verify`.

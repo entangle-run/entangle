@@ -239,6 +239,25 @@ describe("host event contracts", () => {
     expect(result.category).toBe("runtime");
   });
 
+  it("accepts a typed runtime restart-requested event", () => {
+    const result = hostEventRecordSchema.parse({
+      category: "runtime",
+      eventId: "runtime-worker-it-restart-001",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260423-000000",
+      message: "Runtime 'worker-it' restart was requested with generation '1'.",
+      nodeId: "worker-it",
+      previousRestartGeneration: 0,
+      restartGeneration: 1,
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:00:00.000Z",
+      type: "runtime.restart.requested"
+    });
+
+    expect(result.type).toBe("runtime.restart.requested");
+    expect(result.restartGeneration).toBe(1);
+  });
+
   it("accepts a typed node-binding mutation event", () => {
     const result = hostEventRecordSchema.parse({
       activeRevisionId: "graph-alpha-20260423-000001",
@@ -394,6 +413,7 @@ describe("node inspection contracts", () => {
         observedState: "running",
         packageSourceId: "worker-it-source",
         reason: "running",
+        restartGeneration: 0,
         runtimeHandle: "container://worker-it",
         statusMessage: "Runtime is healthy."
       }

@@ -179,10 +179,8 @@ Implement in small slices:
 1. widen the newly implemented host event surface beyond the first
    control-plane/runtime/reconciliation classes into deeper session and runner
    activity;
-2. runtime restart surface on top of the now-implemented node and edge
-   resource boundaries;
-3. degraded-state handling and richer reconciliation semantics;
-4. deeper host-event widening into session and runner activity after the
+2. degraded-state handling and richer reconciliation semantics;
+3. deeper host-event widening into session and runner activity after the
    current first event, revision-history, node-inspection, and edge-mutation
    surfaces.
 
@@ -190,8 +188,8 @@ Acceptance for the phase:
 
 - Studio and CLI can consume live host events;
 - host API coverage aligns more closely with the published control-plane spec;
-- runtime state changes are inspectable and auditable without reading files by
-  hand.
+- runtime lifecycle changes, including deterministic restart, are inspectable
+  and auditable without reading files by hand.
 
 ## Phase 4: Studio completion
 

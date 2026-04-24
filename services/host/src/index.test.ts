@@ -2344,6 +2344,137 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("allows the operator to request deterministic runtime recreation without changing the desired state", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource.packageSourceId;
+
+      await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSourceId
+            }
+          ],
+          edges: []
+        },
+        url: "/v1/graph"
+      });
+
+      const restartResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/restart"
+      });
+
+      expect(restartResponse.statusCode).toBe(200);
+      expect(runtimeInspectionResponseSchema.parse(restartResponse.json())).toMatchObject({
+        backendKind: "memory",
+        nodeId: "worker-it",
+        desiredState: "running",
+        contextAvailable: true,
+        observedState: "running",
+        restartGeneration: 1
+      });
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      expect(eventsResponse.statusCode).toBe(200);
+      expect(hostEventListResponseSchema.parse(eventsResponse.json()).events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "runtime.restart.requested",
+            nodeId: "worker-it",
+            previousRestartGeneration: 0,
+            restartGeneration: 1
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("returns a structured 409 response when runtime restart is requested without a realizable context", async () => {
+    const server = await createTestServer({ includeModelEndpoint: false });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_path",
+          absolutePath: packageDirectory
+        },
+        url: "/v1/package-sources/admit"
+      });
+      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      ).packageSource.packageSourceId;
+
+      await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: admittedPackageSourceId
+            }
+          ],
+          edges: []
+        },
+        url: "/v1/graph"
+      });
+
+      const restartResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/restart"
+      });
+
+      expect(restartResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(restartResponse.json())).toMatchObject({
+        code: "conflict"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("reports reconciliation status through the host status surface", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);

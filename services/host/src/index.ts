@@ -62,6 +62,7 @@ import {
   initializeHostState,
   listRuntimeInspections,
   listPackageSources,
+  restartRuntime,
   replaceEdge,
   replaceManagedNode,
   setRuntimeDesiredState,
@@ -716,6 +717,44 @@ export async function buildHostServer() {
     }
 
     const updatedInspection = await setRuntimeDesiredState(params.nodeId, "stopped");
+
+    if (!updatedInspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    return runtimeInspectionResponseSchema.parse(updatedInspection);
+  });
+
+  server.post("/v1/runtimes/:nodeId/restart", async (request) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const updatedInspection = await restartRuntime(params.nodeId);
 
     if (!updatedInspection) {
       throw new HostHttpError({

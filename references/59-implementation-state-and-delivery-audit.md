@@ -99,7 +99,8 @@ The most important stable conclusions remain:
 ### Still missing or incomplete
 
 - fuller host API DTO coverage for the remaining control-plane resource
-  surfaces, especially runtime restart and richer event-stream payloads;
+  surfaces, especially richer event-stream payloads and deeper reconciliation
+  inspection;
 - richer engine/tool-execution observability contracts once tool activity is
   surfaced more explicitly through host and Studio.
 
@@ -123,7 +124,8 @@ This layer is strong and directionally correct. It is not a blocker.
   events;
 - resource-oriented edge listing plus creation, full replacement, and deletion
   through the host API, including typed `edge.updated` control-plane events;
-- runtime inspection, start, stop, context inspection, and artifact inspection;
+- runtime inspection, start, stop, deterministic restart, context inspection,
+  and artifact inspection;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
 - host-managed runtime identity persistence;
@@ -135,10 +137,10 @@ This layer is strong and directionally correct. It is not a blocker.
 
 ### Still missing or incomplete
 
-- runtime restart surface;
 - session-level and richer runner-originated event classes on top of the new
   host event surface;
-- richer reconciliation diagnostics and restart policies.
+- richer reconciliation diagnostics and restart policies;
+- stronger degraded-state and recovery inspection surfaces.
 
 ### Assessment
 

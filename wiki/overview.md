@@ -132,6 +132,11 @@ The repository now also contains the first real implementation baseline:
   supports `GET /v1/edges`, `POST /v1/edges`, `PATCH /v1/edges/{edgeId}`, and
   `DELETE /v1/edges/{edgeId}`, keeps topology mutations on the validated
   graph-apply path, and emits typed `edge.updated` control-plane events;
+- a first-class runtime restart surface where `entangle-host` now supports
+  `POST /v1/runtimes/{nodeId}/restart`, persists monotonic restart
+  generations in runtime intents, emits typed `runtime.restart.requested`
+  host events, and forces deterministic Docker runtime recreation when the
+  restart generation changes;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -250,6 +255,6 @@ The current implementation-truth audit now lives in
   memory maintenance;
 - complete the remaining core host resource surfaces and widen the now
   implemented host event surface into deeper session and runner activity,
-  especially runtime-restart, degraded-state, and reconciliation surfaces;
+  especially degraded-state and reconciliation surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

@@ -432,6 +432,36 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses runtime restart responses from the host surface", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              backendKind: "docker",
+              contextAvailable: true,
+              contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+              desiredState: "running",
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-20260423-000000",
+              nodeId: "worker-it",
+              observedState: "running",
+              restartGeneration: 1
+            }),
+            ok: true,
+            status: 200
+          })
+        )
+    });
+
+    await expect(client.restartRuntime("worker-it")).resolves.toMatchObject({
+      nodeId: "worker-it",
+      desiredState: "running",
+      restartGeneration: 1
+    });
+  });
+
   it("formats structured host conflict errors for managed node creation", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
