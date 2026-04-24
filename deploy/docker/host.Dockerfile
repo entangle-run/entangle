@@ -18,8 +18,15 @@ COPY packages ./packages
 
 RUN --mount=type=cache,id=pnpm-store-host,target=/pnpm/store \
     pnpm install --frozen-lockfile
-RUN pnpm --filter @entangle/host... build
+RUN pnpm --filter @entangle/host... clean \
+    && pnpm --filter @entangle/host... build
 RUN pnpm --filter @entangle/host --prod --legacy deploy /prod/host
+RUN rm -rf /prod/host/dist \
+    && test -f /prod/host/node_modules/@entangle/types/dist/index.js \
+    && test -f /prod/host/node_modules/@entangle/validator/dist/index.js \
+    && mkdir -p /prod/host/dist \
+    && cp -R services/host/dist/. /prod/host/dist/ \
+    && test -f /prod/host/dist/index.js
 
 FROM node:22-bookworm-slim AS runtime
 

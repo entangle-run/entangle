@@ -17,6 +17,7 @@
     "ops:check-local": "node scripts/check-local-profile.mjs",
     "ops:check-local:strict": "node scripts/check-local-profile.mjs --strict",
     "ops:smoke-local": "node scripts/smoke-local-profile.mjs",
+    "ops:smoke-local:disposable": "node scripts/smoke-local-profile-disposable.mjs",
     "test": "turbo run test",
     "test:coverage": "vitest run --config vitest.config.ts packages/**/*.test.ts services/**/*.test.ts --coverage.enabled true",
     "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck",

@@ -47,6 +47,11 @@ materializes active node runtimes through the Docker backend.
 docker compose -f deploy/compose/docker-compose.local.yml --profile runner-build build runner-image
 ```
 
+The host and runner image builds clean TypeScript incremental state before
+compilation, exclude local `*.tsbuildinfo` files from the Docker context, and
+assert that the production payload includes the service `dist/` output plus the
+required workspace package build outputs.
+
 Then start the stable local services:
 
 ```sh
@@ -75,7 +80,7 @@ The smoke checks:
 - the `entangle-runner:local` image exists;
 - host status and host event list endpoints respond with expected JSON shapes;
 - Studio serves the application shell;
-- Gitea exposes its version endpoint;
+- Gitea serves its local web surface;
 - the local `strfry` relay accepts a Nostr WebSocket subscription.
 
 Environment overrides:
@@ -90,6 +95,26 @@ Environment overrides:
 Use `--skip-compose` only when validating endpoint reachability outside the
 repository's Compose project. Use `--skip-runner-image` only when the smoke is
 not intended to prove runtime materialization readiness.
+
+## Disposable Smoke
+
+For CI-like local validation, run the disposable smoke:
+
+```sh
+pnpm ops:smoke-local:disposable
+```
+
+The disposable smoke runs strict preflight, builds the local runner image,
+starts the stable services, waits until `pnpm ops:smoke-local` passes, and then
+tears the Compose profile down with volumes.
+
+Options:
+
+- `--timeout-ms <milliseconds>` controls the total readiness window.
+- `--probe-timeout-ms <milliseconds>` controls each smoke probe timeout.
+- `--skip-build` reuses an existing `entangle-runner:local` image.
+- `--keep-running` leaves services running after the smoke.
+- `--preserve-volumes` keeps local profile volumes during teardown.
 
 ## Operator Token
 

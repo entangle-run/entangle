@@ -490,7 +490,12 @@ Completed in the current repository state:
   profile before starting the Compose topology;
 - active local smoke coverage is available through `pnpm ops:smoke-local` for
   running Compose services, the local runner image, host status/events, Studio,
-  Gitea, and the local Nostr relay WebSocket path;
+  Gitea HTTP reachability, and the local Nostr relay WebSocket path;
+- disposable local profile smoke coverage is available through
+  `pnpm ops:smoke-local:disposable`, covering strict preflight, runner image
+  build, stable service startup, active smoke readiness probing, and teardown;
+- host and runner image builds now clean stale TypeScript incremental metadata
+  and assert deploy payload presence for service and workspace-package outputs;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
   profile while preserving future Compose-level integration work as a separate
   hardening track.

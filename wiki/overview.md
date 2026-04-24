@@ -421,17 +421,21 @@ The repository now also contains the first real implementation baseline:
 - a corrected local `strfry` deployment profile with an explicit mounted relay
   config instead of an invalid config-less command;
 - a hardened local Docker image topology with an explicit `.dockerignore`,
-  pinned `pnpm` installation and store semantics inside build stages, a static
-  Nginx Studio runtime, and verified host/runner portable deploy payloads
-  built from the real `build -> deploy` path;
+  TypeScript incremental build metadata excluded from Docker contexts, clean
+  service builds inside image stages, pinned `pnpm` installation and store
+  semantics, a static Nginx Studio runtime, and verified host/runner portable
+  deploy payloads built from the real `build -> deploy` path;
 - a documented local operator bootstrap profile under `deploy/`, backed by
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for local profile files, Node/pnpm, Docker, Docker Compose, daemon access,
   and Compose config validity;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
-  HTTP, Gitea version reachability, and the local `strfry` Nostr WebSocket
+  HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
   subscription path;
+- a disposable local profile smoke through `pnpm ops:smoke-local:disposable`,
+  covering strict preflight, runner image build, stable service startup,
+  readiness probing through the active smoke, and teardown with volumes;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;

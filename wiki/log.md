@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-24] operations | Added disposable local profile smoke
+
+`pnpm ops:smoke-local:disposable` now runs strict preflight, builds the local
+runner image, starts the stable local Compose services, waits for the active
+smoke to pass, and tears the profile down with volumes by default. The loop also
+repairs host and runner image payload assembly so their production images carry
+the built service and workspace-package `dist/` outputs, excludes local
+TypeScript incremental metadata from Docker contexts, and treats the fresh
+Gitea web surface as the local readiness boundary.
+
 ## [2026-04-24] clients | Shared runtime-turn presentation
 
 `packages/host-client` now owns runtime-turn presentation helpers for labels,
@@ -18,7 +28,7 @@ and shown in Studio runner-turn detail.
 
 The local operator profile now has `pnpm ops:smoke-local` for validating a
 running Compose profile. The smoke checks service presence, runner image
-presence, host status/events, Studio HTTP, Gitea version reachability, and the
+presence, host status/events, Studio HTTP, Gitea HTTP reachability, and the
 local `strfry` Nostr WebSocket subscription path.
 
 ## [2026-04-24] operations | Added local operator profile preflight

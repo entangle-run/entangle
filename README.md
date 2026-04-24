@@ -157,21 +157,26 @@ This repository currently contains:
 - a corrected local `strfry` deployment profile with an explicit mounted config
   file instead of an invalid config-less relay command;
 - a hardened local Docker image topology with an explicit `.dockerignore`,
-  explicit pinned `pnpm` installation inside build stages, a pinned shared
-  pnpm store path for cache mounts, and a static Nginx runtime image for
-  Studio instead of `vite preview`;
+  TypeScript incremental build metadata excluded from Docker contexts,
+  explicit clean service builds, pinned `pnpm` installation inside build
+  stages, a pinned shared pnpm store path for cache mounts, and a static Nginx
+  runtime image for Studio instead of `vite preview`;
 - explicit deploy packaging boundaries for host, runner, CLI, and shared
   packages through `files` allowlists and build outputs that exclude compiled
   test files from runtime payloads;
 - verified portable deploy payloads for host and runner built from the real
-  `build -> deploy` path used by the service images;
+  `build -> deploy` path used by the service images, with image-build
+  assertions for service and workspace package `dist/` payloads;
 - a documented local operator bootstrap profile under `deploy/`, backed by
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for toolchain, Docker, Docker Compose, daemon access, and Compose config
   validity;
 - an active local profile smoke through `pnpm ops:smoke-local` that checks the
   running Compose services, runner image presence, host JSON APIs, Studio HTTP,
-  Gitea version reachability, and the local `strfry` Nostr WebSocket path;
+  Gitea HTTP reachability, and the local `strfry` Nostr WebSocket path;
+- a disposable local profile smoke through `pnpm ops:smoke-local:disposable`
+  that runs strict preflight, builds the runner image, starts the stable
+  Compose services, waits for active smoke success, and tears the profile down;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

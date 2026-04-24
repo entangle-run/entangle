@@ -21,7 +21,7 @@ operator actually uses.
   - `GET /v1/host/status` returns the expected host status shape;
   - `GET /v1/events?limit=1` returns an event-list envelope;
   - Studio serves the Vite application shell;
-  - Gitea exposes `/api/v1/version`;
+  - Gitea serves its local web surface;
   - the local `strfry` relay accepts a Nostr WebSocket subscription and
     responds with a Nostr frame.
 

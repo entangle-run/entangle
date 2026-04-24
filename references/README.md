@@ -148,6 +148,7 @@ This directory is the canonical design corpus for Entangle.
 142. [141-local-operator-profile-active-smoke-slice.md](141-local-operator-profile-active-smoke-slice.md)
 143. [142-tool-execution-diagnostics-slice.md](142-tool-execution-diagnostics-slice.md)
 144. [143-shared-runtime-turn-presentation-slice.md](143-shared-runtime-turn-presentation-slice.md)
+145. [144-disposable-local-profile-smoke-slice.md](144-disposable-local-profile-smoke-slice.md)
 
 ## Role of this corpus
 

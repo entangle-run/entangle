@@ -183,12 +183,12 @@ function validateStudioHtml(body) {
   return "application shell loaded";
 }
 
-function validateGiteaVersion(payload) {
-  if (!payload || typeof payload !== "object" || typeof payload.version !== "string") {
-    throw new Error("Gitea version response did not include a version string.");
+function validateGiteaHtml(body) {
+  if (!/gitea|install/i.test(body)) {
+    throw new Error("Gitea response did not look like the local web surface.");
   }
 
-  return `version=${payload.version}`;
+  return "web surface reachable";
 }
 
 function checkComposeServices() {
@@ -358,7 +358,7 @@ await Promise.all([
     { authToken: hostToken }
   ),
   checkHttpText("studio:http", studioUrl, validateStudioHtml),
-  checkHttpJson("gitea:version", `${giteaUrl}/api/v1/version`, validateGiteaVersion),
+  checkHttpText("gitea:http", giteaUrl, validateGiteaHtml),
   checkRelay()
 ]);
 
