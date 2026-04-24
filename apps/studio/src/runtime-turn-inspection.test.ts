@@ -31,6 +31,7 @@ function createTurn(
         },
         {
           errorCode: "tool_execution_failed",
+          message: "Tool 'inspect_memory_ref' failed during execution.",
           outcome: "error",
           sequence: 2,
           toolCallId: "toolu-beta",
@@ -94,6 +95,7 @@ describe("studio runtime turn inspection helpers", () => {
         "provider stop end_turn",
         "usage 42 input / 12 output tokens",
         "tool executions 2 total (1 success, 1 error)",
+        "tool error #2 inspect_memory_ref: tool_execution_failed - Tool 'inspect_memory_ref' failed during execution.",
         "memory synthesis succeeded with 2 summary pages"
       ])
     );

@@ -93,7 +93,8 @@ function renderToolExecutionLines(
         `[${toolExecution.outcome}]`,
         ...(toolExecution.errorCode
           ? [`error=${toolExecution.errorCode}`]
-          : [])
+          : []),
+        ...(toolExecution.message ? [`message="${toolExecution.message}"`] : [])
       ].join(" ")
     )
   ];

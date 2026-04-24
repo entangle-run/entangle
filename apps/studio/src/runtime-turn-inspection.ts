@@ -94,6 +94,20 @@ export function formatRuntimeTurnDetailLines(
       lines.push(
         `tool executions ${turn.engineOutcome.toolExecutions.length} total (${successCount} success, ${errorCount} error)`
       );
+
+      lines.push(
+        ...turn.engineOutcome.toolExecutions
+          .filter((execution) => execution.outcome === "error")
+          .slice(0, 3)
+          .map((execution) => {
+            const errorCode = execution.errorCode ?? "error";
+            const message = execution.message
+              ? ` - ${truncateRuntimeTurnDetail(execution.message)}`
+              : "";
+
+            return `tool error #${execution.sequence} ${execution.toolId}: ${errorCode}${message}`;
+          })
+      );
     }
   }
 
@@ -114,4 +128,8 @@ export function formatRuntimeTurnDetailLines(
 
 function formatIdList(ids: string[]): string {
   return ids.length > 0 ? ids.join(", ") : "none";
+}
+
+function truncateRuntimeTurnDetail(value: string, maxLength = 96): string {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }

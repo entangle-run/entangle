@@ -727,6 +727,7 @@ function buildToolExecutionObservation(
 ): EngineToolExecutionObservation {
   return engineToolExecutionObservationSchema.parse({
     ...(input.errorCode ? { errorCode: input.errorCode } : {}),
+    ...(input.message ? { message: input.message } : {}),
     outcome: input.outcome,
     sequence: input.sequence,
     toolCallId: input.toolCallId,
@@ -766,6 +767,7 @@ async function executeAnthropicToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             errorCode: "tool_not_declared",
+            message: `Tool '${toolUse.name}' was not declared for this turn.`,
             outcome: "error",
             sequence,
             toolCallId: toolUse.id,
@@ -783,6 +785,7 @@ async function executeAnthropicToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             errorCode: "invalid_input",
+            message: `Tool '${toolUse.name}' produced a non-object input payload.`,
             outcome: "error",
             sequence,
             toolCallId: toolUse.id,
@@ -813,6 +816,9 @@ async function executeAnthropicToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             ...(executionResult.isError ? { errorCode: "tool_result_error" } : {}),
+            ...(executionResult.isError
+              ? { message: `Tool '${toolUse.name}' returned an error result.` }
+              : {}),
             outcome: executionResult.isError ? "error" : "success",
             sequence,
             toolCallId: toolUse.id,
@@ -830,6 +836,7 @@ async function executeAnthropicToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             errorCode: "tool_execution_failed",
+            message: `Tool '${toolUse.name}' failed during execution.`,
             outcome: "error",
             sequence,
             toolCallId: toolUse.id,
@@ -958,6 +965,7 @@ async function executeOpenAICompatibleToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             errorCode: "tool_not_declared",
+            message: `Tool '${toolCall.function.name}' was not declared for this turn.`,
             outcome: "error",
             sequence,
             toolCallId: toolCall.id,
@@ -975,6 +983,7 @@ async function executeOpenAICompatibleToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             errorCode: "invalid_input",
+            message: `Tool '${toolCall.function.name}' produced invalid JSON object arguments.`,
             outcome: "error",
             sequence,
             toolCallId: toolCall.id,
@@ -1005,6 +1014,11 @@ async function executeOpenAICompatibleToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             ...(executionResult.isError ? { errorCode: "tool_result_error" } : {}),
+            ...(executionResult.isError
+              ? {
+                  message: `Tool '${toolCall.function.name}' returned an error result.`
+                }
+              : {}),
             outcome: executionResult.isError ? "error" : "success",
             sequence,
             toolCallId: toolCall.id,
@@ -1020,6 +1034,7 @@ async function executeOpenAICompatibleToolRound(input: {
         return {
           toolExecution: buildToolExecutionObservation({
             errorCode: "tool_execution_failed",
+            message: `Tool '${toolCall.function.name}' failed during execution.`,
             outcome: "error",
             sequence,
             toolCallId: toolCall.id,

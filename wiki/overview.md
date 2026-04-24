@@ -382,6 +382,9 @@ The repository now also contains the first real implementation baseline:
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary
   through `packages/host-client` and the CLI for audit workflows that need
   persisted turn records instead of event summaries only;
+- bounded tool-execution diagnostics where normalized tool observations now
+  carry optional diagnostic messages that flow into runner memory, shared
+  runtime-trace details, and Studio runner-turn detail;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, persists those observations under observed host

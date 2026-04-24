@@ -68,6 +68,7 @@ describe("runtime trace helpers", () => {
           },
           {
             errorCode: "tool_result_error",
+            message: "Tool 'inspect_memory_ref' returned an error result.",
             outcome: "error",
             sequence: 2,
             toolCallId: "toolu_beta",
@@ -115,7 +116,7 @@ describe("runtime trace helpers", () => {
         "Outcome: completed (provider: end_turn)",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
-        "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error)",
+        "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error) - Tool 'inspect_memory_ref' returned an error result.",
         "Memory synthesis: updated 6 summary pages"
       ],
       label: "Turn turn-alpha is emitting"

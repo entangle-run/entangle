@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] runtime | Added tool execution diagnostics
+
+Normalized tool execution observations now carry optional bounded diagnostic
+messages. The diagnostics are written into runner memory, included in
+model-guided synthesis context, surfaced through shared runtime-trace detail,
+and shown in Studio runner-turn detail.
+
 ## [2026-04-24] operations | Added active local profile smoke
 
 The local operator profile now has `pnpm ops:smoke-local` for validating a

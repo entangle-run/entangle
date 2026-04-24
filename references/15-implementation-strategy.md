@@ -271,6 +271,10 @@ Completed in the current repository state:
     host mutation requests now emit `host.operator_request.completed`
     `security` events with non-secret request metadata, response status, auth
     mode, and bootstrap operator id.
+33. a tool-execution diagnostic refinement where bounded tool execution
+    observations now carry optional operator-facing diagnostic messages and
+    those messages flow into runner memory, shared runtime-trace presentation,
+    and Studio turn detail without exposing raw provider or filesystem state.
 
 Remaining work in this phase:
 

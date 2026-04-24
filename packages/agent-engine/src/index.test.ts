@@ -579,6 +579,7 @@ describe("agent-engine anthropic adapter", () => {
       toolExecutions: [
         {
           errorCode: "tool_execution_failed",
+          message: "Tool 'inspect_artifact_input' failed during execution.",
           outcome: "error",
           sequence: 1,
           toolCallId: "toolu_failed",

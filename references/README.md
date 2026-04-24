@@ -146,6 +146,7 @@ This directory is the canonical design corpus for Entangle.
 140. [139-studio-graph-revision-history-slice.md](139-studio-graph-revision-history-slice.md)
 141. [140-local-operator-profile-preflight-slice.md](140-local-operator-profile-preflight-slice.md)
 142. [141-local-operator-profile-active-smoke-slice.md](141-local-operator-profile-active-smoke-slice.md)
+143. [142-tool-execution-diagnostics-slice.md](142-tool-execution-diagnostics-slice.md)
 
 ## Role of this corpus
 

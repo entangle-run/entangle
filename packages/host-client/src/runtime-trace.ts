@@ -17,6 +17,10 @@ export function collectRuntimeTraceEvents(
   }).slice(0, limit);
 }
 
+function truncateRuntimeTraceDetail(value: string, maxLength = 96): string {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
 function buildRunnerTurnDetailLines(
   event: Extract<HostEventRecord, { type: "runner.turn.updated" }>
 ): string[] {
@@ -67,7 +71,10 @@ function buildRunnerTurnDetailLines(
               : toolExecution.errorCode
                 ? `error:${toolExecution.errorCode}`
                 : "error";
-          return `${toolExecution.sequence}. ${toolExecution.toolId} (${outcomeLabel})`;
+          const messageLabel = toolExecution.message
+            ? ` - ${truncateRuntimeTraceDetail(toolExecution.message)}`
+            : "";
+          return `${toolExecution.sequence}. ${toolExecution.toolId} (${outcomeLabel})${messageLabel}`;
         })
         .join(", ");
 

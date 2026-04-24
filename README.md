@@ -459,6 +459,9 @@ This repository currently contains:
 - the next bounded runtime-deepening slice where runner-owned memory
   maintenance now rebuilds a derived recent-work summary page from canonical
   task pages and feeds it back into future turn assembly;
+- the next runtime-observability slice where tool-execution observations now
+  carry optional bounded diagnostic messages that flow into runner memory,
+  shared runtime-trace details, and Studio turn detail;
 
 The highest-value remaining gaps are:
 

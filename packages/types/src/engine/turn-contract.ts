@@ -76,6 +76,7 @@ export const engineToolExecutionObservationSchema = z.object({
       "tool_result_error"
     ])
     .optional(),
+  message: nonEmptyStringSchema.optional(),
   outcome: z.enum(["success", "error"]),
   sequence: z.number().int().positive(),
   toolCallId: nonEmptyStringSchema,

@@ -392,6 +392,9 @@ not modeling.
   generation, Studio renders those shared trace details in the selected-runtime
   panel, and the CLI can filter to runtime-trace events plus print structured
   trace summaries without inventing a separate event model.
+- bounded tool-execution diagnostic messages that persist in normalized engine
+  outcomes and surface through runner memory, shared runtime-trace detail
+  lines, and Studio runner-turn detail.
 - a bounded provider-metadata and failure-reporting slice where successful
   turns now preserve normalized provider identity, failed turns now persist
   bounded engine failure payloads, and successful engine outcomes remain

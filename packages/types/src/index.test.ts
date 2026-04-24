@@ -6,6 +6,7 @@ import {
   entangleA2AMessageSchema,
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
+  engineToolExecutionObservationSchema,
   engineToolExecutionRequestSchema,
   engineToolExecutionResultSchema,
   engineTurnOutcomeSchema,
@@ -1516,6 +1517,14 @@ describe("package tool catalog contracts", () => {
 
 describe("engine tool execution contracts", () => {
   it("accepts structured tool execution requests and results", () => {
+    const observation = engineToolExecutionObservationSchema.parse({
+      errorCode: "tool_result_error",
+      message: "Tool returned an explicit bounded error result.",
+      outcome: "error",
+      sequence: 1,
+      toolCallId: "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+      toolId: "inspect_artifact_input"
+    });
     const request = engineToolExecutionRequestSchema.parse({
       artifactInputs: [
         {
@@ -1570,6 +1579,9 @@ describe("engine tool execution contracts", () => {
       isError: false
     });
 
+    expect(observation.message).toBe(
+      "Tool returned an explicit bounded error result."
+    );
     expect(request.tool.id).toBe("inspect_artifact_input");
     expect(result.isError).toBe(false);
   });
