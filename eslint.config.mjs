@@ -25,6 +25,7 @@ export default tseslint.config(
       parserOptions: {
         projectService: {
           allowDefaultProject: [
+            "apps/cli/src/*.test.ts",
             "packages/host-client/src/*.test.ts",
             "packages/package-scaffold/src/*.test.ts",
             "packages/types/src/*.test.ts",

@@ -10,6 +10,7 @@
     "dev": "vite",
     "lint": "eslint src vite.config.ts --max-warnings 0",
     "preview": "vite preview",
+    "test": "vitest run --config ../../vitest.config.ts --environment node src/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

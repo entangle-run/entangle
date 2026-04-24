@@ -174,7 +174,7 @@ This repository currently contains:
 - a first typed host-event surface where `entangle-host` now persists and
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary
-  through `packages/host-client` for future Studio and CLI live consumption;
+  through `packages/host-client` for Studio and CLI live consumption;
 - a typed graph-revision history surface where `entangle-host` now persists
   canonical revision records, exposes `GET /v1/graph/revisions` and
   `GET /v1/graph/revisions/{revisionId}`, preserves backward compatibility with
@@ -221,20 +221,25 @@ This repository currently contains:
   `runtime.recovery_controller.updated` events from the same host-owned
   recovery history and controller records exposed through runtime recovery
   inspection, while suppressing trivial idle-bootstrap noise;
+- a first serious runtime-recovery inspection slice across the shared clients,
+  where `packages/host-client` now owns reusable host-event filtering helpers,
+  `entangle-cli` supports `host events list` plus `host events watch` with
+  recovery-oriented filtering, and Studio consumes the live host event stream
+  to inspect runtime recovery policy, controller state, recovery history, and
+  live recovery events without introducing a client-owned recovery model;
 
 The highest-value remaining gaps are:
 
-- a broader builtin tool surface and richer model-guided memory/wiki
-  maintenance inside the internal runtime execution path;
-- advanced git widening beyond the current locator-specific handoff model,
-  especially non-primary target provisioning and replicated fallback paths;
 - deeper conversation, approval, and artifact-oriented host event coverage on
   top of the new degraded-state, recovery-policy, recovery-history,
   session-inspection, session/runner-activity, and runtime-recovery event
   surfaces;
-- richer Studio and CLI inspection over the now-complete runtime recovery
-  policy, controller, history, and event surfaces;
 - deeper Studio runtime and operator workflows;
+- fuller CLI parity for the core host workflows;
+- a broader builtin tool surface and richer model-guided memory/wiki
+  maintenance inside the internal runtime execution path;
+- advanced git widening beyond the current locator-specific handoff model,
+  especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:

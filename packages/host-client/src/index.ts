@@ -655,3 +655,10 @@ export function createHostClient(options: HostClientOptions) {
     }
   };
 }
+
+export {
+  filterHostEvents,
+  hostEventMatchesFilter,
+  runtimeRecoveryEventTypePrefixes,
+  type HostEventFilter
+} from "./event-inspection.js";

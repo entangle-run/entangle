@@ -177,9 +177,7 @@ place.
 
 Implement in small slices:
 
-1. richer Studio and CLI inspection over the now-implemented runtime recovery
-   policy, controller, history, and event surfaces.
-2. broader conversation, approval, artifact, and diagnostics-oriented event
+1. broader conversation, approval, artifact, and diagnostics-oriented event
    widening on top of the now-implemented host event and recovery model.
 
 Acceptance for the phase:
@@ -191,6 +189,14 @@ Acceptance for the phase:
   recovery, persisted session inspection, host-derived session/runner activity
   events, host-owned runtime recovery history, and host-owned runtime recovery
   events, are inspectable and auditable without reading files by hand.
+
+Completed in the current repository state:
+
+- richer Studio and CLI inspection over the now-implemented runtime recovery
+  policy, controller, history, and event surfaces.
+
+This remaining host-event widening slice is now the best current next move
+before deepening Studio further on top of richer host signals.
 
 ## Phase 4: Studio completion
 

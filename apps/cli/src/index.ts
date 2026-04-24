@@ -1,12 +1,17 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Command } from "commander";
-import { createHostClient } from "@entangle/host-client";
+import {
+  createHostClient,
+  filterHostEvents,
+  hostEventMatchesFilter
+} from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
 import {
   edgeCreateRequestSchema,
   edgeReplacementRequestSchema,
   externalPrincipalMutationRequestSchema,
+  type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema
@@ -16,6 +21,7 @@ import {
   validateGraphFile,
   validatePackageDirectory
 } from "@entangle/validator";
+import { buildHostEventFilter } from "./host-event-inspection.js";
 
 async function readJsonDocument(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
@@ -23,6 +29,24 @@ async function readJsonDocument(filePath: string): Promise<unknown> {
 
 function printJson(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
+}
+
+function collectRepeatedOptionValue(value: string, previous: string[] = []): string[] {
+  return [...previous, value];
+}
+
+function buildCliHostEventInspectionOptions(options: {
+  category?: HostEventRecord["category"];
+  nodeId?: string;
+  recoveryOnly?: boolean;
+  typePrefix: string[];
+}) {
+  return {
+    ...(options.category ? { category: options.category } : {}),
+    ...(options.nodeId ? { nodeId: options.nodeId } : {}),
+    ...(options.recoveryOnly ? { recoveryOnly: true } : {}),
+    ...(options.typePrefix.length > 0 ? { typePrefixes: options.typePrefix } : {})
+  };
 }
 
 function resolveHostUrl(command: Command): string {
@@ -35,6 +59,67 @@ function resolveHostUrl(command: Command): string {
     process.env.ENTANGLE_HOST_URL ??
     "http://localhost:7071"
   );
+}
+
+async function watchHostEvents(input: {
+  command: Command;
+  filterOptions: Parameters<typeof buildHostEventFilter>[0];
+  replay: number;
+}): Promise<void> {
+  const client = createHostClient({ baseUrl: resolveHostUrl(input.command) });
+  const filter = buildHostEventFilter(input.filterOptions);
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+
+    const cleanup = () => {
+      process.off("SIGINT", handleSignal);
+      process.off("SIGTERM", handleSignal);
+    };
+
+    const resolveOnce = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      resolve();
+    };
+
+    const rejectOnce = (error: Error) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+
+    const subscription = client.subscribeToEvents({
+      replay: input.replay,
+      onClose: () => {
+        resolveOnce();
+      },
+      onError: (error) => {
+        rejectOnce(error);
+      },
+      onEvent: (event) => {
+        if (hostEventMatchesFilter(event, filter)) {
+          printJson(event);
+        }
+      }
+    });
+
+    const handleSignal = () => {
+      subscription.close(1000, "Operator interrupted host event watch.");
+      resolveOnce();
+    };
+
+    process.once("SIGINT", handleSignal);
+    process.once("SIGTERM", handleSignal);
+  });
 }
 
 const program = new Command();
@@ -97,6 +182,84 @@ hostCommand
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
     printJson(await client.getHostStatus());
   });
+
+const hostEventsCommand = hostCommand
+  .command("events")
+  .description("Inspect and watch typed host events.");
+
+hostEventsCommand
+  .command("list")
+  .option("--limit <n>", "Maximum number of events to fetch.", "100")
+  .option("--category <category>", "Filter by host event category.")
+  .option("--node-id <nodeId>", "Filter to one runtime or session node id.")
+  .option(
+    "--type-prefix <prefix>",
+    "Filter to event types that start with the given prefix. Repeatable.",
+    collectRepeatedOptionValue,
+    [] as string[]
+  )
+  .option(
+    "--recovery-only",
+    "Limit results to runtime recovery-related host events."
+  )
+  .description("List typed host events from entangle-host with optional local filtering.")
+  .action(
+    async (
+      options: {
+        category?: HostEventRecord["category"];
+        limit: string;
+        nodeId?: string;
+        recoveryOnly?: boolean;
+        typePrefix: string[];
+      },
+      command: Command
+    ) => {
+      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const response = await client.listHostEvents(Number.parseInt(options.limit, 10));
+
+      printJson({
+        events: filterHostEvents(
+          response.events,
+          buildHostEventFilter(buildCliHostEventInspectionOptions(options))
+        )
+      });
+    }
+  );
+
+hostEventsCommand
+  .command("watch")
+  .option("--replay <n>", "Replay the last N persisted events before streaming.", "20")
+  .option("--category <category>", "Filter by host event category.")
+  .option("--node-id <nodeId>", "Filter to one runtime or session node id.")
+  .option(
+    "--type-prefix <prefix>",
+    "Filter to event types that start with the given prefix. Repeatable.",
+    collectRepeatedOptionValue,
+    [] as string[]
+  )
+  .option(
+    "--recovery-only",
+    "Limit the live stream to runtime recovery-related host events."
+  )
+  .description("Stream typed host events from entangle-host until interrupted.")
+  .action(
+    async (
+      options: {
+        category?: HostEventRecord["category"];
+        nodeId?: string;
+        recoveryOnly?: boolean;
+        replay: string;
+        typePrefix: string[];
+      },
+      command: Command
+    ) => {
+      await watchHostEvents({
+        command,
+        filterOptions: buildCliHostEventInspectionOptions(options),
+        replay: Number.parseInt(options.replay, 10)
+      });
+    }
+  );
 
 const hostCatalogCommand = hostCommand
   .command("catalog")

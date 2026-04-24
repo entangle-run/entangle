@@ -50,7 +50,8 @@ The repository does **not** yet include:
 - broader conversation, approval, and artifact-oriented host event coverage on
   top of the now-implemented runtime, recovery, session, and runner activity
   event surfaces;
-- Studio as a complete operator surface;
+- Studio as a complete operator surface beyond the now-implemented recovery
+  inspection path;
 - CLI parity with all core host workflows;
 - end-to-end deployment hardening for the full local product profile.
 
@@ -289,11 +290,13 @@ delivery.
 - real host-backed graph and runtime status surface;
 - host-backed topology rendering instead of a fake demo graph;
 - shared host-client support for typed event listing and WebSocket event
-  subscription, ready for Studio consumption.
+  subscription;
+- recovery-focused runtime selection, policy/controller inspection, recovery
+  history inspection, and live recovery-event inspection on top of host-owned
+  runtime recovery reads and events.
 
 ### Still missing or incomplete
 
-- live event consumption;
 - richer runtime, reconciliation, and artifact visibility;
 - bounded mutation flows for package admission, node and edge editing, and
   runtime lifecycle operations.
@@ -310,12 +313,13 @@ operator experience.
 - offline validation;
 - package scaffolding;
 - host status, catalog, package-source, graph, external-principal, and runtime
-  inspection and basic mutation commands.
+  inspection and basic mutation commands;
+- typed host-event listing and live watch commands, including recovery-focused
+  filtering over the shared host event boundary.
 
 ### Still missing or incomplete
 
 - fuller coverage of resource mutation workflows;
-- watch or stream consumption;
 - stronger automation-oriented ergonomics around live operations.
 
 ### Assessment
@@ -366,18 +370,16 @@ surface:
 
 The current best delivery order is:
 
-1. widen the internal `agent-engine` beyond the first bounded tool loop,
-   especially around builtin tool surface depth and richer model-guided memory
-   updates;
-2. deepen Studio and CLI inspection over the now-implemented runtime recovery
-   policy, controller, history, and event surfaces;
-3. widen host events and diagnostics further into conversation, approval, and
+1. widen host events and diagnostics further into conversation, approval, and
    artifact-oriented event classes on top of the now-implemented runtime,
    recovery, session, and runner activity surfaces;
-4. deepen Studio into a real operator surface on top of those host capabilities;
-5. complete CLI parity for the core host workflows;
-6. harden end-to-end deployment, restart, and integration coverage;
-7. widen git collaboration only where later delivery needs justify going beyond
+2. deepen Studio into a real operator surface on top of those host capabilities;
+3. complete CLI parity for the core host workflows;
+4. widen the internal `agent-engine` beyond the first bounded tool loop,
+   especially around builtin tool surface depth and richer model-guided memory
+   updates;
+5. harden end-to-end deployment, restart, and integration coverage;
+6. widen git collaboration only where later delivery needs justify going beyond
    the current locator-specific retrieval and primary-target provisioning model.
 
 This ordering preserves the best current properties of the repository:

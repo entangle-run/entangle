@@ -146,6 +146,11 @@ code {
   color: #f0cf7d;
 }
 
+.status-error {
+  background: rgba(217, 104, 87, 0.14);
+  color: #ffb7ac;
+}
+
 .status-list {
   display: grid;
   gap: 14px;
@@ -185,6 +190,127 @@ code {
   padding-left: 20px;
   color: rgba(247, 241, 232, 0.82);
   line-height: 1.6;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.runtime-section,
+.subpanel {
+  display: grid;
+  gap: 14px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+.runtime-chip-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.runtime-chip {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.runtime-chip strong {
+  font-size: 0.95rem;
+}
+
+.runtime-chip span {
+  color: rgba(247, 241, 232, 0.62);
+  font-size: 0.86rem;
+}
+
+.runtime-chip.is-selected {
+  border-color: rgba(212, 168, 109, 0.66);
+  background: rgba(212, 168, 109, 0.08);
+}
+
+.action-button {
+  border: 1px solid rgba(212, 168, 109, 0.34);
+  border-radius: 999px;
+  background: rgba(212, 168, 109, 0.08);
+  color: #f7f1e8;
+  cursor: pointer;
+  font: inherit;
+  padding: 8px 12px;
+}
+
+.compact-list {
+  gap: 10px;
+}
+
+.compact-list div {
+  padding: 12px 14px;
+}
+
+.recovery-column {
+  display: grid;
+  gap: 14px;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline-item {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+}
+
+.timeline-item p {
+  margin: 8px 0 0;
+  color: rgba(247, 241, 232, 0.72);
+  line-height: 1.45;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.timeline-row span {
+  color: rgba(247, 241, 232, 0.56);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.inline-empty-state {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+
+.inline-empty-state p {
+  margin: 0;
+  color: rgba(247, 241, 232, 0.72);
 }
 
 @media (max-width: 980px) {

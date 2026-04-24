@@ -113,7 +113,7 @@ The repository now also contains the first real implementation baseline:
 - a first typed host-event surface where `entangle-host` now persists
   canonical event records, lists them over `GET /v1/events`, streams them over
   WebSocket on the same route, and exposes the shared event boundary through
-  `packages/host-client` for future Studio and CLI live usage;
+  `packages/host-client` for Studio and CLI live usage;
 - a typed graph-revision history surface where `entangle-host` now persists
   canonical revision records, exposes `GET /v1/graph/revisions` plus
   `GET /v1/graph/revisions/{revisionId}`, keeps backward compatibility with
@@ -157,6 +157,13 @@ The repository now also contains the first real implementation baseline:
   `runtime.recovery_controller.updated` events from the same host-owned
   recovery history and controller state already exposed through runtime
   recovery inspection, while suppressing trivial idle-bootstrap noise;
+- a first serious runtime-recovery inspection slice across the shared clients,
+  where `packages/host-client` now owns reusable host-event filtering helpers,
+  `entangle-cli` supports typed `host events list` and `host events watch`
+  flows with recovery-oriented filtering, and Studio consumes the live host
+  event stream to inspect runtime recovery policy, controller state, recovery
+  history, and live recovery events without introducing a client-owned
+  recovery model;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -279,13 +286,14 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- widen the now-real internal `agent-engine` beyond the first bounded tool
-  loop, especially around builtin tool surface depth and richer model-guided
-  memory maintenance;
-- deepen Studio and CLI inspection over the now-complete runtime recovery
-  policy, controller, history, and event surfaces;
 - widen the host event surface further into conversation-, approval-, and
   artifact-oriented event classes on top of the now-implemented runtime,
   recovery, session, and runner activity surfaces;
-- deepen Studio only after those host capabilities exist, so the client stays
-  clean and host-first.
+- deepen Studio into broader runtime and operator workflows only after those
+  richer host event classes exist;
+- complete CLI parity where it adds real headless operational value;
+- widen the now-real internal `agent-engine` beyond the first bounded tool
+  loop, especially around builtin tool surface depth and richer model-guided
+  memory maintenance;
+- keep Studio host-first as it deepens, so richer operator flows continue to
+  consume host-owned truth instead of inventing client-side control logic.

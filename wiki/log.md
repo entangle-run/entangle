@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio and CLI runtime-recovery inspection
+
+Closed the first serious client-consumption slice on top of the already
+implemented host-owned runtime recovery model. Added reusable recovery-oriented
+host-event filtering to `packages/host-client`, widened `entangle-cli` with
+typed `host events list` and `host events watch` flows, and taught Studio to
+consume the live host event stream for runtime recovery policy, controller,
+history, and recovery-event inspection. The audit loop also tightened the
+frontend behavior before closing the slice: Studio now keeps a stable host
+event subscription instead of reconnecting when the selected runtime changes.
+
 ## [2026-04-24] implementation | Added host-owned runtime recovery-history inspection
 
 Closed the next host control-plane diagnostics slice by adding
