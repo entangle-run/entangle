@@ -98,6 +98,9 @@ This repository currently contains:
   header-secret authentication;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
+- a safer package scaffold flow where `entangle package init` exposes package
+  name, package id, node kind, and explicit `--force` overwrite controls over
+  the shared scaffold utility;
 - an explicit package-level tool catalog contract through
   `manifest.runtime.toolsPath` and `runtime/tools.json`, with scaffolds and
   validators now treating empty tool catalogs as explicit package state rather

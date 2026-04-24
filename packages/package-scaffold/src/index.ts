@@ -1,10 +1,15 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { AgentPackageManifest, NodeKind } from "@entangle/types";
+import {
+  agentPackageManifestSchema,
+  type AgentPackageManifest,
+  type NodeKind
+} from "@entangle/types";
 
 export interface CreateAgentPackageOptions {
   defaultNodeKind?: NodeKind;
   name?: string;
+  overwrite?: boolean;
   packageId?: string;
 }
 
@@ -12,6 +17,20 @@ export interface CreatedPackageScaffold {
   manifest: AgentPackageManifest;
   targetDirectory: string;
   writtenFiles: string[];
+}
+
+export class AgentPackageScaffoldConflictError extends Error {
+  readonly filePath: string;
+  readonly relativePath: string;
+
+  constructor(relativePath: string, filePath: string) {
+    super(
+      `AgentPackage scaffold target already contains '${relativePath}'. Pass overwrite=true only when replacing generated scaffold files intentionally.`
+    );
+    this.name = "AgentPackageScaffoldConflictError";
+    this.filePath = filePath;
+    this.relativePath = relativePath;
+  }
 }
 
 function toIdentifier(input: string): string {
@@ -23,9 +42,35 @@ function toIdentifier(input: string): string {
     .replace(/-{2,}/g, "-");
 }
 
-async function writeTextFile(filePath: string, contents: string): Promise<void> {
+function isFileAlreadyExistsError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "EEXIST"
+  );
+}
+
+async function writeTextFile(
+  filePath: string,
+  relativePath: string,
+  contents: string,
+  overwrite: boolean
+): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, contents, "utf8");
+
+  try {
+    await writeFile(filePath, contents, {
+      encoding: "utf8",
+      flag: overwrite ? "w" : "wx"
+    });
+  } catch (error: unknown) {
+    if (!overwrite && isFileAlreadyExistsError(error)) {
+      throw new AgentPackageScaffoldConflictError(relativePath, filePath);
+    }
+
+    throw error;
+  }
 }
 
 export async function createAgentPackageScaffold(
@@ -35,8 +80,9 @@ export async function createAgentPackageScaffold(
   const packageName = options.name ?? path.basename(targetDirectory);
   const packageId = options.packageId ?? toIdentifier(packageName);
   const defaultNodeKind = options.defaultNodeKind ?? "worker";
+  const overwrite = options.overwrite ?? false;
 
-  const manifest: AgentPackageManifest = {
+  const manifest: AgentPackageManifest = agentPackageManifestSchema.parse({
     schemaVersion: "1",
     packageId,
     name: packageName,
@@ -61,7 +107,7 @@ export async function createAgentPackageScaffold(
       description: `${packageName} agent package scaffold.`,
       tags: []
     }
-  };
+  });
 
   const fileMap = new Map<string, string>([
     [
@@ -137,7 +183,7 @@ export async function createAgentPackageScaffold(
 
   for (const [relativePath, contents] of fileMap) {
     const absolutePath = path.join(targetDirectory, relativePath);
-    await writeTextFile(absolutePath, contents);
+    await writeTextFile(absolutePath, relativePath, contents, overwrite);
     writtenFiles.push(relativePath);
   }
 

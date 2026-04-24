@@ -66,6 +66,9 @@ The repository now also contains the first real implementation baseline:
 - a first local Compose profile and service Dockerfiles;
 - a persistent local host-state model under `.entangle/host`;
 - a separate local secret root for host-owned runtime identities;
+- a safer `entangle package init` path that exposes package name, package id,
+  default node kind, and explicit overwrite controls over the shared scaffold
+  utility;
 - host-managed external principal bindings for git-facing identities, exposed
   through host routes, the shared host client, and the CLI, safely removable
   when unused, and now resolved into effective runtime context instead of

@@ -75,7 +75,8 @@ The thinner but serious headless client responsible for:
 
 - validation-oriented offline operations;
 - host inspection and mutation for automation and terminal workflows;
-- package scaffolding;
+- package scaffolding with explicit package name, package id, default node
+  kind, and overwrite controls;
 - eventual live watch and event consumption.
 
 ### Shared packages
@@ -87,7 +88,8 @@ The thinner but serious headless client responsible for:
 - `entangle-host-client`
   Shared host API client for Studio, CLI, and tests.
 - `entangle-package-scaffold`
-  Shared scaffolding utilities for new `AgentPackage` trees.
+  Shared scaffolding utilities for new `AgentPackage` trees, including
+  default overwrite protection.
 
 ## Current repository state
 

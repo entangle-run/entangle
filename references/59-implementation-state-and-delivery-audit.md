@@ -501,6 +501,9 @@ workflow completeness, not missing mutation or liveness foundations.
 
 - offline validation;
 - package scaffolding;
+- package initialization with explicit name, package id, default node kind,
+  and overwrite controls, backed by a scaffold utility that rejects accidental
+  file replacement by default;
 - host status, catalog, package-source, graph, external-principal, and runtime
   inspection and basic mutation commands;
 - package-source detail inspection plus canonical package admission for both

@@ -83,6 +83,13 @@ Recommended command:
 
 - `entangle package init <path>`
 
+Implemented options:
+
+- `--name <name>`
+- `--package-id <packageId>`
+- `--default-node-kind <kind>`
+- `--force`
+
 Recommended generated structure:
 
 - `manifest.json`
@@ -92,12 +99,17 @@ Recommended generated structure:
 - `prompts/interaction.md`
 - `runtime/config.json`
 - `runtime/capabilities.json`
+- `runtime/tools.json`
 - `memory/seed/wiki/index.md`
 - `memory/seed/wiki/log.md`
 - `memory/schema/AGENTS.md`
 
 The scaffold should generate a valid minimal package, not an impressive but
 opaque template.
+
+The scaffold now rejects accidental overwrites by default. `--force` maps to
+the shared scaffold utility's explicit overwrite mode and should only be used
+when replacing generated scaffold files intentionally.
 
 ## 5. What the hackathon CLI should not try to be
 

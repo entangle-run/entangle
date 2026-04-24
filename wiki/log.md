@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Hardened package scaffolding and CLI init options
+
+`entangle package init` now exposes package name, package id, default node
+kind, and explicit `--force` overwrite controls. The shared package scaffold
+utility now rejects accidental file replacement by default and validates the
+generated manifest through the canonical package schema before writing.
+
 ## [2026-04-24] implementation | Added Studio external-principal lifecycle visibility
 
 Studio now loads host-managed external principals into the graph editor,

@@ -1,8 +1,11 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createAgentPackageScaffold } from "./index.js";
+import {
+  AgentPackageScaffoldConflictError,
+  createAgentPackageScaffold
+} from "./index.js";
 
 const createdDirectories: string[] = [];
 
@@ -47,5 +50,33 @@ describe("createAgentPackageScaffold", () => {
     await expect(
       readTextFile(path.join(targetDirectory, "memory/seed/wiki/index.md"))
     ).resolves.toContain("# Wiki Index");
+  });
+
+  it("rejects accidental overwrites unless overwrite is explicit", async () => {
+    const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-package-"));
+    createdDirectories.push(tempRoot);
+    const targetDirectory = path.join(tempRoot, "existing-package");
+
+    await createAgentPackageScaffold(targetDirectory);
+    await writeFile(
+      path.join(targetDirectory, "prompts/system.md"),
+      "custom prompt\n",
+      "utf8"
+    );
+
+    await expect(createAgentPackageScaffold(targetDirectory)).rejects.toBeInstanceOf(
+      AgentPackageScaffoldConflictError
+    );
+    await expect(
+      readTextFile(path.join(targetDirectory, "prompts/system.md"))
+    ).resolves.toBe("custom prompt\n");
+
+    await createAgentPackageScaffold(targetDirectory, {
+      overwrite: true
+    });
+
+    await expect(
+      readTextFile(path.join(targetDirectory, "prompts/system.md"))
+    ).resolves.toContain("You are an Entangle node");
   });
 });
