@@ -54,6 +54,10 @@ That means:
 - typed engine-specific configuration and execution errors;
 - normalized usage and stop-reason mapping back into Entangle contracts.
 
+Later implementation added the `openai_compatible` chat-completions adapter
+behind the same boundary, so this slice should now be read as the first
+provider-backed engine slice rather than the full provider matrix.
+
 ### 3. Prompt assembly is no longer purely synthetic
 
 The Anthropic adapter now renders a real request from:
@@ -101,7 +105,7 @@ This slice added or tightened:
   - real request assembly,
   - auth-mode mapping,
   - normalized provider error classification,
-  - rejection of unimplemented adapters;
+  - deterministic adapter selection;
 - runner tests updated so product entrypoints use the real engine while unit
   tests remain deterministic via injection.
 

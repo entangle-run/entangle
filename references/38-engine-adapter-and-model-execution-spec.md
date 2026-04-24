@@ -96,16 +96,17 @@ Why this is a strong first choice:
 For the first serious build:
 
 - primary adapter: `anthropic`
-- optional second adapter later: `openai_compatible`
+- second adapter: `openai_compatible`
 
 Reasoning:
 
 - the hackathon is expected to use Claude-backed inference;
 - direct Anthropic support should therefore be first-class;
 - many future systems expose OpenAI-compatible surfaces, so that is the best
-  second adapter once the boundary is stable.
+  second adapter now that the boundary is stable.
 
-The architecture should not require both from day one.
+The architecture does not require every deployment to configure both adapters,
+but the implementation now supports both first-class adapter kinds.
 
 ## 5. Runner-facing contract
 

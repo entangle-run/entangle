@@ -106,6 +106,10 @@ The repository now also contains the first real implementation baseline:
   one-turn execution, explicit model auth-mode contracts with the correct
   Anthropic local default, and live runner entrypoints no longer bound to the
   stub path;
+- a second provider-backed `agent-engine` slice with an OpenAI-compatible chat
+  completions adapter behind the same internal engine boundary, preserving
+  provider-agnostic runner contracts while supporting bearer-token auth,
+  prompt rendering, usage/stop normalization, and bounded tool-call loops;
 - a first bounded tool-execution slice where the runner now loads
   package-declared tool catalogs into turn assembly, the runtime owns an
   Entangle builtin tool executor boundary, and the Anthropic adapter can

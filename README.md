@@ -173,6 +173,10 @@ This repository currently contains:
   normalization, live runner entrypoints wired to the real engine path, and
   tests that exercise request assembly, auth mapping, and provider-failure
   semantics without relying on networked model calls;
+- a second provider-backed `agent-engine` slice with an OpenAI-compatible chat
+  completions adapter behind the same internal boundary, including bearer-token
+  auth, prompt rendering, normalized usage/stop metadata, and bounded tool-call
+  execution;
 - a first bounded internal tool-execution slice where package-declared tool
   catalogs are loaded into runner turn assembly, an Entangle-owned builtin
   tool executor is wired behind the internal engine boundary, and the

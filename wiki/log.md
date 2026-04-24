@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added OpenAI-compatible agent-engine adapter
+
+Closed the provider-matrix gap where `openai_compatible` was already a
+canonical model endpoint adapter kind but `packages/agent-engine` still
+rejected it. The engine now supports OpenAI-compatible chat-completions
+execution behind the same internal turn contract as Anthropic, including
+bearer-token auth, prompt rendering, usage and stop-reason normalization, tool
+definition mapping, and bounded tool-call continuation through Entangle's tool
+executor.
+
 ## [2026-04-24] implementation | Added runner HTTPS-token git transport
 
 Closed the contradiction between the catalog/principal model, which already

@@ -851,13 +851,331 @@ describe("agent-engine anthropic adapter", () => {
     });
   });
 
-  it("rejects unimplemented adapters deterministically", () => {
-    expect(() =>
-      createAgentEngineForModelContext({
-        modelContext: buildModelContext({
-          adapterKind: "openai_compatible"
-        })
+  it("renders prompt parts through an OpenAI-compatible chat-completions request", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "openai-compatible-token";
+
+    let capturedClientOptions:
+      | {
+          apiKey: string;
+          baseURL: string;
+        }
+      | undefined;
+    let capturedRequest:
+      | {
+          max_tokens: number;
+          messages: Array<{ content: string; role: string }>;
+          model: string;
+        }
+      | undefined;
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext({
+        adapterKind: "openai_compatible",
+        authMode: "api_key_bearer",
+        baseUrl: "https://openai-compatible.example/v1",
+        defaultModel: "gpt-compatible"
+      }),
+      openAICompatibleClientFactory(clientOptions) {
+        capturedClientOptions = clientOptions;
+
+        return {
+          createChatCompletion(request) {
+            capturedRequest = request as {
+              max_tokens: number;
+              messages: Array<{ content: string; role: string }>;
+              model: string;
+            };
+
+            return Promise.resolve({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: "OpenAI-compatible path executed."
+                  }
+                }
+              ],
+              model: "gpt-compatible",
+              usage: {
+                completion_tokens: 9,
+                prompt_tokens: 21
+              }
+            });
+          }
+        };
+      }
+    });
+
+    const result = await engine.executeTurn({
+      sessionId: "session-alpha",
+      nodeId: "worker-it",
+      systemPromptParts: ["System prompt from package."],
+      interactionPromptParts: ["Review the inbound artifact carefully."],
+      toolDefinitions: [],
+      artifactRefs: [],
+      artifactInputs: [],
+      memoryRefs: [],
+      executionLimits: {
+        maxToolTurns: 8,
+        maxOutputTokens: 1024
+      }
+    });
+
+    expect(capturedClientOptions).toEqual({
+      apiKey: "openai-compatible-token",
+      baseURL: "https://openai-compatible.example/v1"
+    });
+    expect(capturedRequest).toMatchObject({
+      max_tokens: 1024,
+      model: "gpt-compatible"
+    });
+    expect(capturedRequest?.messages).toEqual([
+      {
+        content: "System prompt from package.",
+        role: "system"
+      },
+      {
+        content: "Review the inbound artifact carefully.",
+        role: "user"
+      }
+    ]);
+    expect(result).toMatchObject({
+      assistantMessages: ["OpenAI-compatible path executed."],
+      providerMetadata: {
+        adapterKind: "openai_compatible",
+        modelId: "gpt-compatible",
+        profileId: "shared-model"
+      },
+      providerStopReason: "stop",
+      stopReason: "completed",
+      usage: {
+        inputTokens: 21,
+        outputTokens: 9
+      }
+    });
+  });
+
+  it("runs an OpenAI-compatible tool loop through Entangle tool execution", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "openai-compatible-token";
+
+    const capturedRequests: Array<{
+      messages: Array<unknown>;
+      tool_choice?: unknown;
+      tools?: Array<unknown>;
+    }> = [];
+    const capturedToolCalls: Array<{
+      input: Record<string, unknown>;
+      toolCallId: string;
+      toolId: string;
+    }> = [];
+    let callCount = 0;
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext({
+        adapterKind: "openai_compatible",
+        authMode: "api_key_bearer",
+        baseUrl: "https://openai-compatible.example/v1",
+        defaultModel: "gpt-compatible"
+      }),
+      toolExecutor: {
+        executeToolCall(request) {
+          capturedToolCalls.push({
+            input: request.input,
+            toolCallId: request.toolCallId,
+            toolId: request.tool.id
+          });
+
+          return Promise.resolve({
+            content: {
+              artifactId: request.input.artifactId,
+              preview: "Inbound artifact content."
+            },
+            isError: false
+          });
+        }
+      },
+      openAICompatibleClientFactory() {
+        return {
+          createChatCompletion(request) {
+            capturedRequests.push({
+              messages: request.messages,
+              ...(request.tool_choice ? { tool_choice: request.tool_choice } : {}),
+              ...(request.tools ? { tools: request.tools } : {})
+            });
+            callCount += 1;
+
+            if (callCount === 1) {
+              return Promise.resolve({
+                choices: [
+                  {
+                    finish_reason: "tool_calls",
+                    message: {
+                      content: "I will inspect the artifact first.",
+                      tool_calls: [
+                        {
+                          function: {
+                            arguments: JSON.stringify({
+                              artifactId: "artifact-alpha"
+                            }),
+                            name: "inspect_artifact_input"
+                          },
+                          id: "call_001",
+                          type: "function"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                model: "gpt-compatible",
+                usage: {
+                  completion_tokens: 5,
+                  prompt_tokens: 13
+                }
+              });
+            }
+
+            return Promise.resolve({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: "The inspected artifact looks consistent."
+                  }
+                }
+              ],
+              model: "gpt-compatible",
+              usage: {
+                completion_tokens: 7,
+                prompt_tokens: 11
+              }
+            });
+          }
+        };
+      }
+    });
+
+    const result = await engine.executeTurn({
+      sessionId: "session-alpha",
+      nodeId: "worker-it",
+      systemPromptParts: ["System prompt."],
+      interactionPromptParts: ["Inspect the inbound artifact."],
+      toolDefinitions: [
+        {
+          id: "inspect_artifact_input",
+          description: "Inspect a retrieved inbound artifact by artifact id.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              artifactId: {
+                type: "string"
+              }
+            },
+            required: ["artifactId"]
+          }
+        }
+      ],
+      toolChoice: {
+        type: "auto"
+      },
+      artifactRefs: [],
+      artifactInputs: [],
+      memoryRefs: [],
+      executionLimits: {
+        maxToolTurns: 2,
+        maxOutputTokens: 1024
+      }
+    });
+
+    expect(capturedRequests).toHaveLength(2);
+    expect(capturedRequests[0]?.tool_choice).toBe("auto");
+    expect(capturedRequests[0]?.tools).toEqual([
+      {
+        function: {
+          description: "Inspect a retrieved inbound artifact by artifact id.",
+          name: "inspect_artifact_input",
+          parameters: {
+            type: "object",
+            properties: {
+              artifactId: {
+                type: "string"
+              }
+            },
+            required: ["artifactId"]
+          }
+        },
+        type: "function"
+      }
+    ]);
+    expect(capturedRequests[1]?.messages).toHaveLength(4);
+    expect(capturedToolCalls).toEqual([
+      {
+        input: {
+          artifactId: "artifact-alpha"
+        },
+        toolCallId: "call_001",
+        toolId: "inspect_artifact_input"
+      }
+    ]);
+    expect(result).toMatchObject({
+      assistantMessages: ["The inspected artifact looks consistent."],
+      providerMetadata: {
+        adapterKind: "openai_compatible",
+        modelId: "gpt-compatible",
+        profileId: "shared-model"
+      },
+      providerStopReason: "stop",
+      stopReason: "completed",
+      toolExecutions: [
+        {
+          outcome: "success",
+          sequence: 1,
+          toolCallId: "call_001",
+          toolId: "inspect_artifact_input"
+        }
+      ],
+      toolRequests: [
+        {
+          input: {
+            artifactId: "artifact-alpha"
+          },
+          toolId: "inspect_artifact_input"
+        }
+      ],
+      usage: {
+        inputTokens: 24,
+        outputTokens: 12
+      }
+    });
+  });
+
+  it("requires bearer-token auth for OpenAI-compatible adapters", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "openai-compatible-token";
+
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext({
+        adapterKind: "openai_compatible",
+        authMode: "header_secret",
+        baseUrl: "https://openai-compatible.example/v1",
+        defaultModel: "gpt-compatible"
+      }),
+      openAICompatibleClientFactory() {
+        throw new Error("The provider should not be constructed.");
+      }
+    });
+
+    await expect(
+      engine.executeTurn({
+        sessionId: "session-alpha",
+        nodeId: "worker-it",
+        systemPromptParts: ["System prompt."],
+        interactionPromptParts: ["Hello."],
+        toolDefinitions: [],
+        artifactRefs: [],
+        artifactInputs: [],
+        memoryRefs: [],
+        executionLimits: {
+          maxToolTurns: 8,
+          maxOutputTokens: 512
+        }
       })
-    ).toThrow(AgentEngineConfigurationError);
+    ).rejects.toThrow(AgentEngineConfigurationError);
   });
 });

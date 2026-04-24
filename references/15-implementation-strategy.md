@@ -151,119 +151,121 @@ The first provider-backed engine slice is now complete.
 Completed in the current repository state:
 
 1. a first real `anthropic` adapter behind the internal engine boundary;
-2. provider-agnostic turn execution through the internal engine package;
-3. host-resolved model credential delivery into the effective runtime context;
-4. live runner entrypoints wired to the real engine path instead of the stub;
-5. a bounded builtin tool surface that now includes deterministic
+2. a first `openai_compatible` chat-completions adapter behind the same
+   internal engine boundary;
+3. provider-agnostic turn execution through the internal engine package;
+4. host-resolved model credential delivery into the effective runtime context;
+5. live runner entrypoints wired to the real engine path instead of the stub;
+6. a bounded builtin tool surface that now includes deterministic
    artifact-input inspection, bounded memory-ref inspection, and bounded
    current-session state inspection through the runner-owned tool executor;
-6. a richer deterministic memory-maintenance layer where the runner now
+7. a richer deterministic memory-maintenance layer where the runner now
    rebuilds a recent-work summary page from canonical task pages and feeds that
    summary back into future turn assembly;
-7. a first bounded model-guided memory-synthesis pass where the runner now
+8. a first bounded model-guided memory-synthesis pass where the runner now
    maintains `memory/wiki/summaries/working-context.md` through a strict
    forced tool call while preserving runner ownership of the actual wiki
    write path;
-8. a first bounded engine-turn observability slice where the internal tool loop
+9. a first bounded engine-turn observability slice where the internal tool loop
    now records structured tool requests and bounded tool-execution outcomes,
    and that normalized engine outcome now persists through runner-turn state
    into host-owned runner activity events.
-9. a shared runtime-trace consumption slice where Studio and CLI now read that
+10. a shared runtime-trace consumption slice where Studio and CLI now read that
    normalized engine outcome through shared `host-client` presentation helpers
    instead of leaving operator-facing trace inspection trapped in raw host-event
    JSON.
-10. a bounded provider-metadata and engine-failure-reporting slice where
+11. a bounded provider-metadata and engine-failure-reporting slice where
     successful turns now preserve normalized provider identity, failed turns now
     persist bounded failure payloads, and successful engine outcomes survive
     later artifact-materialization failures.
-11. a session-aware working-context synthesis slice where the model-guided
+12. a session-aware working-context synthesis slice where the model-guided
     memory pass now consumes the same bounded current-session snapshot used by
     `inspect_session_state`, instead of keeping session reasoning trapped in
     the builtin tool path alone.
-12. an artifact-aware refinement of that same working-context synthesis path
+13. an artifact-aware refinement of that same working-context synthesis path
     where the runner now passes explicit retrieved and produced artifact
     context into memory synthesis instead of leaving work-product visibility
     trapped in the main task-execution path.
-13. an artifact-context carry-forward refinement of that same synthesis path
+14. an artifact-context carry-forward refinement of that same synthesis path
     where the durable `working-context.md` page now preserves deterministic
     consumed/produced artifact context plus bounded model-guided artifact
     insights instead of leaving artifact awareness trapped in request-time
     context alone.
-14. an engine-outcome-aware refinement of that same synthesis path where the
+15. an engine-outcome-aware refinement of that same synthesis path where the
     bounded synthesis prompt now carries the just-completed turn's normalized
     engine outcome instead of relying on assistant text and coarse stop reason
     alone.
-15. an execution-insight carry-forward refinement of that same synthesis path
+16. an execution-insight carry-forward refinement of that same synthesis path
     where the durable `working-context.md` page now preserves bounded
     execution insights instead of leaving current-turn execution awareness
     trapped in prompt-time context alone.
-16. an execution-aware deterministic memory-baseline refinement where
+17. an execution-aware deterministic memory-baseline refinement where
     runner-owned task pages and the derived recent-work summary now preserve
     richer normalized execution detail before any model-guided synthesis
     widening is applied.
-17. a final-state session-context refinement of that same synthesis path where
+18. a final-state session-context refinement of that same synthesis path where
     optional working-context synthesis now runs against final post-turn
     conversation/session state and the durable `working-context.md` page now
     preserves bounded session-context signals instead of leaving session
     awareness trapped in prompt-time context alone.
-18. a memory-synthesis observability refinement where optional synthesis now
+19. a memory-synthesis observability refinement where optional synthesis now
     persists a canonical bounded outcome on `RunnerTurnRecord` and that same
     outcome now surfaces through host-owned runner activity and runtime-trace
     inspection instead of remaining trapped in wiki logs alone.
-19. a focused memory-summary-register widening where the same bounded
+20. a focused memory-summary-register widening where the same bounded
     model-guided synthesis pass now updates `working-context.md`,
     `stable-facts.md`, and `open-questions.md`, and future turns now consume
     those focused summaries directly through canonical `memoryRefs` instead of
     collapsing all durable synthesis into one omnibus page;
-20. a decision-register refinement where the same bounded synthesis pass now
+21. a decision-register refinement where the same bounded synthesis pass now
     updates `decisions.md`, the durable `working-context.md` page now carries
     bounded decision carry-forward, and future turns can consume prior
     decisions directly instead of inferring them only from broader summary
     prose;
-21. a next-actions register refinement where the same bounded synthesis pass
+22. a next-actions register refinement where the same bounded synthesis pass
     now updates `next-actions.md`, open questions no longer double as the only
     focused pending-work surface, and future turns can consume durable next
     actions directly instead of inferring them only from `working-context.md`
     or the mixed open-questions page.
-22. a resolutions-register refinement where the same bounded synthesis pass
+23. a resolutions-register refinement where the same bounded synthesis pass
     now updates `resolutions.md`, recent closures no longer disappear
     implicitly from focused memory, and future turns can consume durable
     resolved questions and completed actions directly instead of inferring
     closure only from rewritten prose.
-23. a focused-register lifecycle-discipline refinement where the same bounded
+24. a focused-register lifecycle-discipline refinement where the same bounded
     synthesis pass now sees the current
     open-questions/next-actions/resolutions baseline explicitly and
     runner-owned reconciliation removes exact resolved overlaps from active
     registers instead of letting closure drift survive as silent duplication.
-24. a focused-register aging-signals refinement where the runner now persists
+25. a focused-register aging-signals refinement where the runner now persists
     a separate carry-state file for the focused registers and feeds bounded
     stale-review hints back into synthesis for repeatedly carried active
     items, without adding noisy lifecycle metadata to the durable wiki pages.
-25. an explicit closure-reference refinement where the bounded synthesis pass
+26. an explicit closure-reference refinement where the bounded synthesis pass
     can now retire active open questions and next actions through
     runner-validated references to the current baseline, even when the new
     resolutions wording differs from the original active entry text.
-26. a stale-item disappearance-discipline refinement where stale review
+27. a stale-item disappearance-discipline refinement where stale review
     candidates from the focused-register baseline may no longer disappear
     silently: the runner now requires explicit retention or explicit
     retirement semantics for those entries.
-27. an explicit stale-item replacement refinement where stale open questions
+28. an explicit stale-item replacement refinement where stale open questions
     and next actions may now be replaced deterministically by narrower active
     items through runner-validated `from -> to` mappings instead of being
     forced to stay active or pretend to be resolved.
-28. an explicit stale-item consolidation refinement where multiple stale open
+29. an explicit stale-item consolidation refinement where multiple stale open
     questions or next actions may now collapse deterministically into one
     narrower active successor through runner-validated many-to-one mappings
     instead of surviving as overlapping active noise.
-29. a focused-register transition-history refinement where the runner now
+30. a focused-register transition-history refinement where the runner now
     persists a bounded runtime-local audit trail for closed, completed,
     replaced, consolidated, and exact resolution-overlap lifecycle transitions
     without polluting the human-facing wiki pages.
-30. an optional bootstrap host operator-token boundary where
+31. an optional bootstrap host operator-token boundary where
     `ENTANGLE_HOST_OPERATOR_TOKEN` enables bearer-token enforcement on host
     HTTP routes, and the shared host client, CLI, and Studio can propagate the
     same token for local profiles that require a closed control-plane surface.
-31. a typed bootstrap operator request audit primitive where token-protected
+32. a typed bootstrap operator request audit primitive where token-protected
     host mutation requests now emit `host.operator_request.completed`
     `security` events with non-secret request metadata, response status, auth
     mode, and bootstrap operator id.

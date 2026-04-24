@@ -273,6 +273,10 @@ not modeling.
 - provider-agnostic turn contracts;
 - a first real `anthropic` adapter using the official Anthropic TypeScript SDK
   behind the stable internal engine boundary;
+- a first `openai_compatible` chat-completions adapter behind the same
+  internal engine boundary, including bearer-token auth, prompt rendering,
+  usage/stop normalization, tool definition mapping, and bounded tool-call
+  continuation;
 - resolved model-auth delivery consumed at runtime instead of assuming ambient
   process configuration;
 - one-turn provider-backed execution with normalized usage and stop-reason
