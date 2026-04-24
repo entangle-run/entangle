@@ -20,6 +20,8 @@ import type {
   ArtifactRecord,
   ExternalPrincipalInspectionResponse,
   GraphInspectionResponse,
+  GraphRevisionInspectionResponse,
+  GraphRevisionMetadata,
   GraphSpec,
   HostEventRecord,
   SessionInspectionResponse,
@@ -80,6 +82,12 @@ import {
   shouldRefreshOverviewFromHostEvent,
   shouldRefreshSelectedRuntimeFromHostEvent
 } from "./host-event-refresh.js";
+import {
+  formatGraphRevisionDetail,
+  formatGraphRevisionInspectionSummary,
+  formatGraphRevisionLabel,
+  sortGraphRevisions
+} from "./graph-revision-inspection.js";
 import {
   buildRuntimeRecoveryPolicyMutationRequest,
   collectRuntimeRecoveryEvents,
@@ -317,6 +325,14 @@ export function App() {
   const [status, setStatus] = useState<HostStatusResponse | null>(null);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);
+  const [graphRevisions, setGraphRevisions] = useState<GraphRevisionMetadata[]>([]);
+  const [graphRevisionError, setGraphRevisionError] = useState<string | null>(null);
+  const [selectedGraphRevisionId, setSelectedGraphRevisionId] =
+    useState<string | null>(null);
+  const [selectedGraphRevisionInspection, setSelectedGraphRevisionInspection] =
+    useState<GraphRevisionInspectionResponse | null>(null);
+  const [graphRevisionDetailError, setGraphRevisionDetailError] =
+    useState<string | null>(null);
   const [packageSources, setPackageSources] = useState<
     PackageSourceInspectionResponse[]
   >([]);
@@ -388,12 +404,14 @@ export function App() {
   const [eventStreamState, setEventStreamState] =
     useState<EventStreamState>("connecting");
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
+  const selectedGraphRevisionIdRef = useRef<string | null>(null);
   const selectedRuntimeIdRef = useRef<string | null>(null);
   const selectedArtifactIdRef = useRef<string | null>(null);
   const selectedTurnIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
   const recoveryPolicySeedRef = useRef<string | null>(null);
 
+  selectedGraphRevisionIdRef.current = selectedGraphRevisionId;
   selectedRuntimeIdRef.current = selectedRuntimeId;
   selectedArtifactIdRef.current = selectedArtifactId;
   selectedTurnIdRef.current = selectedTurnId;
@@ -403,6 +421,7 @@ export function App() {
     const [
       statusResult,
       graphResult,
+      graphRevisionResult,
       runtimeListResult,
       packageSourceResult,
       externalPrincipalResult
@@ -410,6 +429,7 @@ export function App() {
       await Promise.allSettled([
         client.getHostStatus(),
         client.getGraph(),
+        client.listGraphRevisions(),
         client.listRuntimes(),
         client.listPackageSources(),
         client.listExternalPrincipals()
@@ -443,6 +463,37 @@ export function App() {
       setRuntimes(runtimeListResult.value.runtimes);
       setError(null);
 
+      if (graphRevisionResult.status === "fulfilled") {
+        const nextGraphRevisions = sortGraphRevisions(
+          graphRevisionResult.value.revisions
+        );
+        setGraphRevisions(nextGraphRevisions);
+        setGraphRevisionError(null);
+
+        if (
+          selectedGraphRevisionIdRef.current &&
+          !nextGraphRevisions.some(
+            (revision) =>
+              revision.revisionId === selectedGraphRevisionIdRef.current
+          )
+        ) {
+          setSelectedGraphRevisionId(null);
+          setSelectedGraphRevisionInspection(null);
+          setGraphRevisionDetailError(null);
+        }
+      } else {
+        setGraphRevisions([]);
+        setGraphRevisionError(
+          normalizeError(
+            graphRevisionResult.reason,
+            "Unknown error while loading graph revision history."
+          )
+        );
+        setSelectedGraphRevisionId(null);
+        setSelectedGraphRevisionInspection(null);
+        setGraphRevisionDetailError(null);
+      }
+
       if (packageSourceResult.status === "fulfilled") {
         setPackageSources(
           sortPackageSourceInspections(packageSourceResult.value.packageSources)
@@ -474,6 +525,38 @@ export function App() {
       }
     });
   }, [client]);
+
+  const loadSelectedGraphRevisionInspection = useCallback(
+    async (revisionId: string) => {
+      try {
+        const inspection = await client.getGraphRevision(revisionId);
+
+        if (selectedGraphRevisionIdRef.current !== revisionId) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedGraphRevisionInspection(inspection);
+          setGraphRevisionDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (selectedGraphRevisionIdRef.current !== revisionId) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedGraphRevisionInspection(null);
+          setGraphRevisionDetailError(
+            normalizeError(
+              caught,
+              "Unknown error while loading graph revision detail."
+            )
+          );
+        });
+      }
+    },
+    [client]
+  );
 
   const loadSelectedSessionInspection = useCallback(
     async (nodeId: string, sessionId: string) => {
@@ -925,6 +1008,16 @@ export function App() {
       await loadSelectedTurnInspection(selectedRuntimeId, turnId);
     },
     [loadSelectedTurnInspection, selectedRuntimeId]
+  );
+
+  const selectGraphRevision = useCallback(
+    async (revisionId: string) => {
+      setSelectedGraphRevisionId(revisionId);
+      setSelectedGraphRevisionInspection(null);
+      setGraphRevisionDetailError(null);
+      await loadSelectedGraphRevisionInspection(revisionId);
+    },
+    [loadSelectedGraphRevisionInspection]
   );
 
   const graphNodeIds = useMemo(
@@ -2198,6 +2291,95 @@ export function App() {
           </dl>
 
           {error ? <p className="error-box">{error}</p> : null}
+
+          <section className="subpanel">
+            <div className="section-header">
+              <h3>Graph Revisions</h3>
+              <span className="panel-caption">
+                {graphRevisions.length} revisions
+              </span>
+            </div>
+
+            {graphRevisionError ? (
+              <p className="error-box">{graphRevisionError}</p>
+            ) : null}
+
+            {graphRevisions.length > 0 ? (
+              <ul className="timeline-list">
+                {graphRevisions.slice(0, 6).map((revision) => (
+                  <li key={revision.revisionId} className="timeline-item">
+                    <button
+                      className={`timeline-button ${selectedGraphRevisionId === revision.revisionId ? "is-selected" : ""}`}
+                      onClick={() => {
+                        void selectGraphRevision(revision.revisionId);
+                      }}
+                      type="button"
+                    >
+                      <div className="timeline-row">
+                        <strong>{formatGraphRevisionLabel(revision)}</strong>
+                        <span>{revision.appliedAt}</span>
+                      </div>
+                      <p>{formatGraphRevisionDetail(revision)}</p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="inline-empty-state">
+                <p>No graph revisions are persisted yet.</p>
+              </div>
+            )}
+
+            {graphRevisionDetailError ? (
+              <p className="error-box">{graphRevisionDetailError}</p>
+            ) : null}
+
+            {selectedGraphRevisionInspection ? (
+              <div className="artifact-detail-card">
+                <div className="section-header">
+                  <h3>Selected Revision Detail</h3>
+                  <span className="panel-caption">
+                    {selectedGraphRevisionInspection.revision.isActive
+                      ? "active"
+                      : "inactive"}
+                  </span>
+                </div>
+
+                <dl className="status-list compact-list">
+                  <div>
+                    <dt>Revision</dt>
+                    <dd>
+                      {selectedGraphRevisionInspection.revision.revisionId}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Graph</dt>
+                    <dd>{selectedGraphRevisionInspection.revision.graphId}</dd>
+                  </div>
+                  <div>
+                    <dt>Applied</dt>
+                    <dd>{selectedGraphRevisionInspection.revision.appliedAt}</dd>
+                  </div>
+                  <div>
+                    <dt>Topology</dt>
+                    <dd>
+                      {formatGraphRevisionInspectionSummary(
+                        selectedGraphRevisionInspection
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ) : selectedGraphRevisionId ? (
+              <div className="inline-empty-state">
+                <p>Loading selected revision detail...</p>
+              </div>
+            ) : graphRevisions.length > 0 ? (
+              <div className="inline-empty-state">
+                <p>Select one graph revision to inspect persisted topology detail.</p>
+              </div>
+            ) : null}
+          </section>
 
           <section className="runtime-section">
             <div className="section-header">

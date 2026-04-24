@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio graph revision history
+
+Studio now lists persisted applied graph revisions from the host and can drill
+into one revision's host-backed topology snapshot. The active graph view
+remains current-state focused, while revision history now has a visual audit
+surface without introducing client-owned graph history.
+
 ## [2026-04-24] implementation | Added Studio recovery-policy mutation
 
 Studio can now update the selected runtime's recovery policy through the

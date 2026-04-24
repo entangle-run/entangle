@@ -421,6 +421,9 @@ This repository currently contains:
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and selected-runtime
   refresh instead of depending only on explicit reload loops after mutations;
+- a Studio graph-revision history slice where visual operators can inspect the
+  host-owned applied graph revision list and drill into one persisted topology
+  snapshot without adding client-owned graph history state;
 - the next bounded CLI parity slice where headless operators can now inspect
   one admitted package source and admit canonical `local_path` or
   `local_archive` sources with optional explicit package-source ids instead of

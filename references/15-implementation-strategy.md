@@ -394,6 +394,9 @@ Completed in the current repository state:
   where overview and selected-runtime reads are now coalesced off the existing
   host event stream without reconnecting the subscription on runtime
   selection changes.
+- the bounded Studio graph-revision history slice, where visual operators can
+  list and inspect persisted applied graph revisions through the existing host
+  revision read model.
 - the next bounded Studio completion slice through host-backed session-detail
   drilldown, where one runtime-scoped session summary can now be selected and
   expanded into per-node session/runtime detail through the existing

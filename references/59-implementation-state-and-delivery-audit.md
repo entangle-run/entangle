@@ -482,6 +482,9 @@ delivery.
   overview and selected-runtime reads now react to host-owned control-plane,
   runtime, recovery, session, and artifact events without relying on polling
   or reconnecting the event stream on runtime selection changes;
+- graph-revision history inspection on top of the existing host graph-revision
+  read model, including list and item drilldown for persisted topology
+  snapshots;
 - `VITE_ENTANGLE_HOST_TOKEN` propagation through the shared host client for
   local operator profiles where the host requires a bootstrap bearer token;
 - access to a broader typed trace surface that now includes conversations,

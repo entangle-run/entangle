@@ -348,6 +348,9 @@ The repository now also contains the first real implementation baseline:
   the existing host event stream to coalesce live overview and
   selected-runtime refresh instead of depending only on explicit post-mutation
   reloads;
+- the matching Studio graph-revision history slice, where the host status
+  panel now lists persisted applied graph revisions and drills into one
+  host-backed topology snapshot without adding client-owned revision truth;
 - the next bounded CLI parity slice where headless operators can now inspect
   one admitted package source and admit canonical `local_path` or
   `local_archive` sources with optional explicit package-source ids instead of
