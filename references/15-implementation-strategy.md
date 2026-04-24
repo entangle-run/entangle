@@ -275,6 +275,10 @@ Completed in the current repository state:
     observations now carry optional operator-facing diagnostic messages and
     those messages flow into runner memory, shared runtime-trace presentation,
     and Studio turn detail without exposing raw provider or filesystem state.
+34. a shared runtime-turn presentation refinement where `packages/host-client`
+    now owns persisted runner-turn labels, status lines, artifact summaries,
+    and bounded detail lines, Studio consumes that shared formatting, and the
+    CLI can print compact turn summaries for headless audit workflows.
 
 Remaining work in this phase:
 

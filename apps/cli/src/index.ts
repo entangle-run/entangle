@@ -4,7 +4,8 @@ import { Command } from "commander";
 import {
   createHostClient,
   filterHostEvents,
-  hostEventMatchesFilter
+  hostEventMatchesFilter,
+  sortRuntimeTurnsForPresentation
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
 import {
@@ -32,6 +33,7 @@ import {
   filterRuntimeArtifactsForCli,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
+import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
 async function readJsonDocument(filePath: string): Promise<unknown> {
@@ -901,19 +903,44 @@ hostRuntimesCommand
   .command("turn")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<turnId>", "Runner turn identifier to inspect.")
+  .option("--summary", "Print a compact operator-oriented turn summary.")
   .description("Inspect one persisted runner turn.")
-  .action(async (nodeId: string, turnId: string, _options, command: Command) => {
+  .action(async (
+    nodeId: string,
+    turnId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getRuntimeTurn(nodeId, turnId));
+    const response = await client.getRuntimeTurn(nodeId, turnId);
+    printJson(
+      options.summary
+        ? { turn: projectRuntimeTurnSummary(response.turn) }
+        : response
+    );
   });
 
 hostRuntimesCommand
   .command("turns")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--summary", "Print compact operator-oriented turn summaries.")
   .description("Inspect persisted runner turns for one runtime.")
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (
+    nodeId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.listRuntimeTurns(nodeId));
+    const response = await client.listRuntimeTurns(nodeId);
+    printJson(
+      options.summary
+        ? {
+            turns: sortRuntimeTurnsForPresentation(response.turns).map(
+              projectRuntimeTurnSummary
+            )
+          }
+        : response
+    );
   });
 
 hostRuntimesCommand

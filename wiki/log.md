@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] clients | Shared runtime-turn presentation
+
+`packages/host-client` now owns runtime-turn presentation helpers for labels,
+status, artifact summaries, and bounded detail lines. Studio reuses the shared
+helpers, and the CLI now supports `--summary` output for persisted runtime turn
+list and detail commands.
+
 ## [2026-04-24] runtime | Added tool execution diagnostics
 
 Normalized tool execution observations now carry optional bounded diagnostic

@@ -462,6 +462,10 @@ This repository currently contains:
 - the next runtime-observability slice where tool-execution observations now
   carry optional bounded diagnostic messages that flow into runner memory,
   shared runtime-trace details, and Studio turn detail;
+- the next headless runtime-turn inspection slice where `host runtimes turn`
+  and `host runtimes turns` now support `--summary` over shared
+  `host-client` runtime-turn presentation helpers, keeping Studio and CLI
+  operator output aligned;
 
 The highest-value remaining gaps are:
 

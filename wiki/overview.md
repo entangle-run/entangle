@@ -385,6 +385,9 @@ The repository now also contains the first real implementation baseline:
 - bounded tool-execution diagnostics where normalized tool observations now
   carry optional diagnostic messages that flow into runner memory, shared
   runtime-trace details, and Studio runner-turn detail;
+- shared runtime-turn presentation helpers in `packages/host-client`, with
+  Studio consuming the same formatting and the CLI exposing compact
+  `host runtimes turn --summary` and `host runtimes turns --summary` output;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, persists those observations under observed host

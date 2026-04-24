@@ -395,6 +395,8 @@ not modeling.
 - bounded tool-execution diagnostic messages that persist in normalized engine
   outcomes and surface through runner memory, shared runtime-trace detail
   lines, and Studio runner-turn detail.
+- shared runtime-turn presentation helpers in `packages/host-client`, consumed
+  by Studio and CLI summary output for persisted runner-turn audit workflows.
 - a bounded provider-metadata and failure-reporting slice where successful
   turns now preserve normalized provider identity, failed turns now persist
   bounded engine failure payloads, and successful engine outcomes remain
