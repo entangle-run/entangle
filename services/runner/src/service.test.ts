@@ -468,6 +468,26 @@ describe("RunnerService", () => {
 
           return Promise.resolve({
             ok: true,
+            updatedSummaryPagePaths: [
+              path.join(
+                runtimeContext.workspace.memoryRoot,
+                "wiki",
+                "summaries",
+                "working-context.md"
+              ),
+              path.join(
+                runtimeContext.workspace.memoryRoot,
+                "wiki",
+                "summaries",
+                "stable-facts.md"
+              ),
+              path.join(
+                runtimeContext.workspace.memoryRoot,
+                "wiki",
+                "summaries",
+                "open-questions.md"
+              )
+            ],
             workingContextPagePath: path.join(
               runtimeContext.workspace.memoryRoot,
               "wiki",
@@ -520,6 +540,26 @@ describe("RunnerService", () => {
         "working-context.md"
       )
     );
+    expect(turnRecord.memorySynthesisOutcome.updatedSummaryPagePaths).toEqual([
+      path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "working-context.md"
+      ),
+      path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "stable-facts.md"
+      ),
+      path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "open-questions.md"
+      )
+    ]);
   });
 
   it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {

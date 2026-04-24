@@ -80,7 +80,11 @@ function buildRunnerTurnDetailLines(
   if (event.memorySynthesisOutcome) {
     detailLines.push(
       event.memorySynthesisOutcome.status === "succeeded"
-        ? "Memory synthesis: updated working-context summary"
+        ? `Memory synthesis: updated ${event.memorySynthesisOutcome.updatedSummaryPagePaths.length} summary page${
+            event.memorySynthesisOutcome.updatedSummaryPagePaths.length === 1
+              ? ""
+              : "s"
+          }`
         : `Memory synthesis: failed — ${event.memorySynthesisOutcome.errorMessage}`
     );
   }

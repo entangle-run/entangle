@@ -64,6 +64,7 @@ export const runnerTriggerKindSchema = z.enum([
 export const memorySynthesisSuccessOutcomeSchema = z.object({
   status: z.literal("succeeded"),
   updatedAt: nonEmptyStringSchema,
+  updatedSummaryPagePaths: z.array(nonEmptyStringSchema).min(1),
   workingContextPagePath: nonEmptyStringSchema
 });
 

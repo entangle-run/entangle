@@ -807,3 +807,16 @@ failure only lived in wiki files and log entries.
 Closed the slice only after widening contract, runner, host, host-client, and
 Studio trace assertions, then re-running targeted package tests plus the full
 `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added focused memory summary registers
+
+Deepened the bounded model-guided memory layer so one synthesis pass now
+updates `working-context.md`, `stable-facts.md`, and `open-questions.md`
+instead of concentrating all durable synthesized state in one omnibus summary.
+Future turns now consume those focused summary pages directly through canonical
+`memoryRefs`, and successful memory-synthesis outcomes now preserve the full
+updated-page set for runtime trace and operator inspection.
+
+Closed the slice only after widening runner, host, host-client, Studio, and
+shared-contract assertions, then re-running targeted package tests plus the
+full `pnpm verify` and `git diff --check` gates.

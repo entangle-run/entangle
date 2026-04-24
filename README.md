@@ -218,6 +218,11 @@ This repository currently contains:
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
   inspection instead of remaining trapped in wiki logs alone;
+- a focused memory-summary-register widening where the same bounded
+  model-guided synthesis pass now updates `working-context.md`,
+  `stable-facts.md`, and `open-questions.md`, and future turns now consume
+  those focused summaries directly instead of treating one omnibus page as the
+  only durable model-guided memory surface;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

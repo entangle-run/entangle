@@ -550,6 +550,7 @@ export class RunnerService {
         ? {
             status: "succeeded",
             updatedAt: nowIsoString(),
+            updatedSummaryPagePaths: synthesisResult.updatedSummaryPagePaths,
             workingContextPagePath: synthesisResult.workingContextPagePath
           }
         : {

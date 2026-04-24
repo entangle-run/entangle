@@ -116,6 +116,7 @@ This directory is the canonical design corpus for Entangle.
 110. [109-execution-aware-deterministic-memory-baseline-slice.md](109-execution-aware-deterministic-memory-baseline-slice.md)
 111. [110-final-state-session-context-memory-synthesis-slice.md](110-final-state-session-context-memory-synthesis-slice.md)
 112. [111-memory-synthesis-observability-slice.md](111-memory-synthesis-observability-slice.md)
+113. [112-focused-memory-summary-registers-slice.md](112-focused-memory-summary-registers-slice.md)
 
 ## Role of this corpus
 

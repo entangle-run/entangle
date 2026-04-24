@@ -389,6 +389,11 @@ describe("host event contracts", () => {
       memorySynthesisOutcome: {
         status: "succeeded",
         updatedAt: "2026-04-24T00:00:01.000Z",
+        updatedSummaryPagePaths: [
+          "/tmp/entangle-runner/memory/wiki/summaries/working-context.md",
+          "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
+          "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md"
+        ],
         workingContextPagePath:
           "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
       },
@@ -417,6 +422,9 @@ describe("host event contracts", () => {
     }
     expect(runnerTurnEvent.engineOutcome?.toolExecutions).toHaveLength(1);
     expect(runnerTurnEvent.memorySynthesisOutcome?.status).toBe("succeeded");
+    expect(runnerTurnEvent.memorySynthesisOutcome?.updatedSummaryPagePaths).toHaveLength(
+      3
+    );
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

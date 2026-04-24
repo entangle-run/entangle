@@ -403,6 +403,18 @@ describe("model-guided memory synthesis", () => {
     expect(synthesisResult.ok).toBe(true);
     const workingContextPagePath =
       synthesisResult.ok ? synthesisResult.workingContextPagePath : undefined;
+    const stableFactsPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(path.join("summaries", "stable-facts.md"))
+          )
+        : undefined;
+    const openQuestionsPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(path.join("summaries", "open-questions.md"))
+          )
+        : undefined;
 
     expect(capturedRequest?.toolChoice).toEqual({
       type: "tool",
@@ -454,9 +466,26 @@ describe("model-guided memory synthesis", () => {
       throw new Error("Expected a working context summary path.");
     }
 
-    const [workingContextPage, indexPage, logPage, followupTurnRequest] =
+    if (!stableFactsPagePath) {
+      throw new Error("Expected a stable facts summary path.");
+    }
+
+    if (!openQuestionsPagePath) {
+      throw new Error("Expected an open questions summary path.");
+    }
+
+    const [
+      workingContextPage,
+      stableFactsPage,
+      openQuestionsPage,
+      indexPage,
+      logPage,
+      followupTurnRequest
+    ] =
       await Promise.all([
         readFile(workingContextPagePath, "utf8"),
+        readFile(stableFactsPagePath, "utf8"),
+        readFile(openQuestionsPagePath, "utf8"),
         readFile(memoryUpdate.indexPath, "utf8"),
         readFile(memoryUpdate.logPath, "utf8"),
         buildAgentEngineTurnRequest(context)
@@ -494,9 +523,29 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain(
       "The runner already persists recovery history through the host."
     );
+    expect(stableFactsPage).toContain("# Stable Facts Summary");
+    expect(stableFactsPage).toContain("## Stable Facts");
+    expect(stableFactsPage).toContain(
+      "The latest turn completed without additional blockers."
+    );
+    expect(openQuestionsPage).toContain("# Open Questions Summary");
+    expect(openQuestionsPage).toContain("## Open Questions");
+    expect(openQuestionsPage).toContain(
+      "Does the current recovery trace expose enough detail for operators?"
+    );
+    expect(openQuestionsPage).toContain("## Suggested Next Actions");
+    expect(openQuestionsPage).toContain(
+      "Validate the recovery checkpoint against the latest runner behavior."
+    );
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
+    expect(indexPage).toContain("[Stable Facts Summary](summaries/stable-facts.md)");
+    expect(indexPage).toContain(
+      "[Open Questions Summary](summaries/open-questions.md)"
+    );
     expect(logPage).toContain("memory synthesis | turn-memory-005");
     expect(followupTurnRequest.memoryRefs).toContain(workingContextPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(stableFactsPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
   });
 
   it("records synthesis failure in the wiki log without throwing", async () => {

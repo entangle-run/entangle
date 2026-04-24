@@ -24,6 +24,8 @@ type PostTurnMemoryUpdateResult = {
 
 export const recentWorkSummaryRelativePath = "summaries/recent-work.md";
 export const workingContextSummaryRelativePath = "summaries/working-context.md";
+export const stableFactsSummaryRelativePath = "summaries/stable-facts.md";
+export const openQuestionsSummaryRelativePath = "summaries/open-questions.md";
 const maxRecentSummaryEntries = 5;
 
 function buildTaskPageRelativePath(input: {
@@ -147,6 +149,14 @@ function resolveRecentWorkSummaryPath(wikiRoot: string): string {
 
 export function resolveWorkingContextSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, workingContextSummaryRelativePath);
+}
+
+export function resolveStableFactsSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, stableFactsSummaryRelativePath);
+}
+
+export function resolveOpenQuestionsSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, openQuestionsSummaryRelativePath);
 }
 
 function buildTaskPageTitle(input: {

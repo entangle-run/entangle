@@ -309,6 +309,11 @@ not modeling.
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
   inspection instead of remaining trapped in wiki logs alone;
+- a focused memory-summary-register widening where the same bounded
+  model-guided synthesis pass now updates `working-context.md`,
+  `stable-facts.md`, and `open-questions.md`, with future turns consuming the
+  focused summary set directly through canonical `memoryRefs` instead of
+  relying on one omnibus derived page alone;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -330,7 +335,8 @@ not modeling.
 - richer model-guided memory maintenance beyond the current deterministic task
   page, log/index, derived recent-work summary, session-aware plus
   artifact-aware/artifact-carrying/engine-outcome-aware/execution-insight-carrying
-  working-context summary, and bounded current-session inspection baseline;
+  working-context summary, focused stable-facts/open-questions summary
+  registers, and bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 
