@@ -389,8 +389,12 @@ The current implementation also exposes:
 - richer host-level reconciliation counters for blocked, degraded,
   transitioning, and total issue counts;
 - typed host-event inspection through `GET /v1/events`;
-- live host-event streaming over WebSocket upgrade on `GET /v1/events`.
-- typed control-plane `edge.updated` events for graph-backed edge mutations.
+- live host-event streaming over WebSocket upgrade on `GET /v1/events`;
+- typed control-plane `edge.updated` events for graph-backed edge mutations;
+- host-derived `session.updated` events over persisted runner session state;
+- host-derived `runner.turn.updated` events over persisted runner turn state,
+  with durable deduplication anchored in observed host state rather than
+  transient in-memory replay state.
 
 ### 8.7 Validation and dry-run
 
@@ -431,6 +435,8 @@ The implemented event classes currently include:
 - `runtime.desired_state.changed`
 - `runtime.restart.requested`
 - `runtime.observed_state.changed`
+- `session.updated`
+- `runner.turn.updated`
 - `host.reconciliation.completed`
 
 The current `host.reconciliation.completed` event now carries richer aggregate
@@ -449,6 +455,9 @@ Event classes should include at least:
 - `runtime.state.changed`
 - `runtime.health.changed`
 - `session.trace.event`
+- `conversation.trace.event`
+- `approval.trace.event`
+- `artifact.trace.event`
 - `host.reconciliation.started`
 - `host.reconciliation.completed`
 - `host.reconciliation.failed`

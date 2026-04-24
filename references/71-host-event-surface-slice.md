@@ -143,7 +143,8 @@ This slice does not complete host observability.
 
 Still remaining after this batch:
 
-- session-level host event classes and exposure of deeper runner activity
+- deeper conversation, approval, artifact, and recovery-oriented host event
+  classes beyond the now-implemented session and runner-activity widening
 - richer host resource mutation surfaces for nodes, edges, and revision history
 - Studio consumption of the live event stream
 - CLI watch/stream workflows

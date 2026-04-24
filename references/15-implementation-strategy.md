@@ -177,11 +177,9 @@ place.
 
 Implement in small slices:
 
-1. widen the newly implemented host event surface into deeper session and
-   runner activity on top of the now-implemented session-inspection boundary;
-2. stronger runtime recovery diagnostics and restart or retry policy on top of
+1. stronger runtime recovery diagnostics and restart or retry policy on top of
    the now-implemented degraded-state and reconciliation semantics;
-3. broader recovery-history and inspection surfaces where those diagnostics
+2. broader recovery-history and inspection surfaces where those diagnostics
    need durable host-owned read models.
 
 Acceptance for the phase:
@@ -189,8 +187,9 @@ Acceptance for the phase:
 - Studio and CLI can consume live host events;
 - host API coverage aligns more closely with the published control-plane spec;
 - runtime lifecycle changes, including deterministic restart and explicit
-  degraded-state semantics, plus persisted session inspection, are inspectable
-  and auditable without reading files by hand.
+  degraded-state semantics, plus persisted session inspection and host-derived
+  session/runner activity events, are inspectable and auditable without
+  reading files by hand.
 
 ## Phase 4: Studio completion
 

@@ -24,6 +24,8 @@ import {
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostSessionSummarySchema,
+  observedRunnerTurnActivityRecordSchema,
+  observedSessionActivityRecordSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
@@ -100,12 +102,16 @@ import {
   runtimeIntentRecordSchema,
   type RuntimeArtifactListResponse,
   runtimeListResponseSchema,
+  runnerTurnRecordSchema,
   type SessionInspectionResponse,
   type SessionListResponse,
   type SessionRecord,
+  type RunnerTurnRecord,
   type RuntimeListResponse,
   type RuntimeObservedState,
   type RuntimeIntentRecord,
+  type ObservedRunnerTurnActivityRecord,
+  type ObservedSessionActivityRecord,
   type ObservedRuntimeRecord,
   observedRuntimeRecordSchema,
   reconciliationSnapshotSchema,
@@ -148,6 +154,11 @@ const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const observedRuntimesRoot = path.join(observedRoot, "runtimes");
 const gitRepositoryTargetsRoot = path.join(observedRoot, "git-repository-targets");
+const observedRunnerTurnActivityRoot = path.join(
+  observedRoot,
+  "runner-turn-activity"
+);
+const observedSessionActivityRoot = path.join(observedRoot, "session-activity");
 const reconciliationRoot = path.join(observedRoot, "reconciliation");
 const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
 const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
@@ -206,6 +217,14 @@ type RuntimeRestartRequestedEventInput = Omit<
 >;
 type RuntimeObservedStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.observed_state.changed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type SessionUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "session.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RunnerTurnUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runner.turn.updated" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type HostReconciliationCompletedEventInput = Omit<
@@ -1428,6 +1447,35 @@ async function readObservedRuntimeRecord(
   return observedRuntimeRecordSchema.parse(await readJsonFile(filePath));
 }
 
+async function readObservedSessionActivityRecord(
+  nodeId: string,
+  sessionId: string
+): Promise<ObservedSessionActivityRecord | undefined> {
+  const filePath = path.join(
+    observedSessionActivityRoot,
+    `${nodeId}--${sessionId}.json`
+  );
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedSessionActivityRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function readObservedRunnerTurnActivityRecord(
+  nodeId: string,
+  turnId: string
+): Promise<ObservedRunnerTurnActivityRecord | undefined> {
+  const filePath = path.join(observedRunnerTurnActivityRoot, `${nodeId}--${turnId}.json`);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedRunnerTurnActivityRecordSchema.parse(await readJsonFile(filePath));
+}
+
 async function listObservedRuntimeNodeIds(): Promise<string[]> {
   if (!(await pathExists(observedRuntimesRoot))) {
     return [];
@@ -1506,6 +1554,12 @@ function didObservedRuntimeChange(
     previous.graphId !== next.graphId ||
     previous.graphRevisionId !== next.graphRevisionId
   );
+}
+
+function buildObservedActivityFingerprint(value: unknown): string {
+  return createHash("sha1")
+    .update(JSON.stringify(value))
+    .digest("hex");
 }
 
 function didReconciliationSnapshotChange(
@@ -1637,6 +1691,8 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
     ensureDirectory(gitRepositoryTargetsRoot),
+    ensureDirectory(observedRunnerTurnActivityRoot),
+    ensureDirectory(observedSessionActivityRoot),
     ensureDirectory(reconciliationHistoryRoot),
     ensureDirectory(path.join(observedRoot, "health")),
     ensureDirectory(controlPlaneTraceRoot),
@@ -2506,6 +2562,8 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
     });
     await writeJsonFileIfChanged(latestReconciliationPath, emptySnapshot);
     await removeJsonFilesExcept(gitRepositoryTargetsRoot, new Set());
+    await removeJsonFilesExcept(observedSessionActivityRoot, new Set());
+    await removeJsonFilesExcept(observedRunnerTurnActivityRoot, new Set());
     if (didReconciliationSnapshotChange(previousSnapshot, emptySnapshot)) {
       await appendHostEvent({
         backendKind: emptySnapshot.backendKind,
@@ -2576,6 +2634,9 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
     gitRepositoryTargetsRoot,
     new Set(repositoryProvisioningCache.keys())
   );
+  await synchronizeRuntimeActivityEvents({
+    runtimes: inspections
+  });
 
   inspections.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
   nodeInspections.sort((left, right) =>
@@ -2980,6 +3041,174 @@ async function listRuntimeSessionRecords(
       )
     )
   );
+}
+
+async function listRuntimeTurnRecords(
+  runtimeRoot: string
+): Promise<RunnerTurnRecord[]> {
+  const turnsRoot = path.join(runtimeRoot, "turns");
+
+  if (!(await pathExists(turnsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(turnsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      runnerTurnRecordSchema.parse(
+        await readJsonFile(path.join(turnsRoot, fileName))
+      )
+    )
+  );
+}
+
+async function synchronizeSessionActivityObservation(input: {
+  runtime: RuntimeInspectionResponse;
+  sessionRecord: SessionRecord;
+}): Promise<void> {
+  const { runtime, sessionRecord } = input;
+  const fingerprint = buildObservedActivityFingerprint(sessionRecord);
+  const existingRecord = await readObservedSessionActivityRecord(
+    runtime.nodeId,
+    sessionRecord.sessionId
+  );
+  const nextRecord = observedSessionActivityRecordSchema.parse({
+    fingerprint,
+    graphId: sessionRecord.graphId,
+    nodeId: runtime.nodeId,
+    ownerNodeId: sessionRecord.ownerNodeId,
+    schemaVersion: "1",
+    sessionId: sessionRecord.sessionId,
+    status: sessionRecord.status,
+    traceId: sessionRecord.traceId,
+    updatedAt: sessionRecord.updatedAt
+  });
+  await writeJsonFileIfChanged(
+    path.join(
+      observedSessionActivityRoot,
+      `${runtime.nodeId}--${sessionRecord.sessionId}.json`
+    ),
+    nextRecord
+  );
+
+  if (existingRecord?.fingerprint === nextRecord.fingerprint) {
+    return;
+  }
+
+  await appendHostEvent({
+    category: "session",
+    graphId: sessionRecord.graphId,
+    message:
+      `Session '${sessionRecord.sessionId}' on node '${runtime.nodeId}' is now ` +
+      `'${sessionRecord.status}'.`,
+    nodeId: runtime.nodeId,
+    ownerNodeId: sessionRecord.ownerNodeId,
+    sessionId: sessionRecord.sessionId,
+    status: sessionRecord.status,
+    traceId: sessionRecord.traceId,
+    updatedAt: sessionRecord.updatedAt,
+    type: "session.updated"
+  } satisfies SessionUpdatedEventInput);
+}
+
+async function synchronizeRunnerTurnActivityObservation(input: {
+  runtime: RuntimeInspectionResponse;
+  turnRecord: RunnerTurnRecord;
+}): Promise<void> {
+  const { runtime, turnRecord } = input;
+  const fingerprint = buildObservedActivityFingerprint(turnRecord);
+  const existingRecord = await readObservedRunnerTurnActivityRecord(
+    runtime.nodeId,
+    turnRecord.turnId
+  );
+  const nextRecord = observedRunnerTurnActivityRecordSchema.parse({
+    consumedArtifactIds: turnRecord.consumedArtifactIds,
+    conversationId: turnRecord.conversationId,
+    fingerprint,
+    graphId: turnRecord.graphId,
+    nodeId: runtime.nodeId,
+    phase: turnRecord.phase,
+    producedArtifactIds: turnRecord.producedArtifactIds,
+    schemaVersion: "1",
+    sessionId: turnRecord.sessionId,
+    startedAt: turnRecord.startedAt,
+    triggerKind: turnRecord.triggerKind,
+    turnId: turnRecord.turnId,
+    updatedAt: turnRecord.updatedAt
+  });
+  await writeJsonFileIfChanged(
+    path.join(
+      observedRunnerTurnActivityRoot,
+      `${runtime.nodeId}--${turnRecord.turnId}.json`
+    ),
+    nextRecord
+  );
+
+  if (existingRecord?.fingerprint === nextRecord.fingerprint) {
+    return;
+  }
+
+  await appendHostEvent({
+    category: "runner",
+    consumedArtifactIds: turnRecord.consumedArtifactIds,
+    conversationId: turnRecord.conversationId,
+    graphId: turnRecord.graphId,
+    message:
+      `Runner turn '${turnRecord.turnId}' on node '${runtime.nodeId}' is now in phase ` +
+      `'${turnRecord.phase}'.`,
+    nodeId: runtime.nodeId,
+    phase: turnRecord.phase,
+    producedArtifactIds: turnRecord.producedArtifactIds,
+    sessionId: turnRecord.sessionId,
+    startedAt: turnRecord.startedAt,
+    triggerKind: turnRecord.triggerKind,
+    turnId: turnRecord.turnId,
+    updatedAt: turnRecord.updatedAt,
+    type: "runner.turn.updated"
+  } satisfies RunnerTurnUpdatedEventInput);
+}
+
+async function synchronizeRuntimeActivityEvents(input: {
+  runtimes: RuntimeInspectionResponse[];
+}): Promise<void> {
+  const activeSessionActivityIds = new Set<string>();
+  const activeTurnActivityIds = new Set<string>();
+
+  for (const runtime of input.runtimes) {
+    if (!runtime.contextAvailable || !runtime.contextPath) {
+      continue;
+    }
+
+    const context = effectiveRuntimeContextSchema.parse(
+      await readJsonFile(runtime.contextPath)
+    );
+    const [sessionRecords, turnRecords] = await Promise.all([
+      listRuntimeSessionRecords(context.workspace.runtimeRoot),
+      listRuntimeTurnRecords(context.workspace.runtimeRoot)
+    ]);
+
+    for (const sessionRecord of sessionRecords) {
+      activeSessionActivityIds.add(`${runtime.nodeId}--${sessionRecord.sessionId}`);
+      await synchronizeSessionActivityObservation({
+        runtime,
+        sessionRecord
+      });
+    }
+
+    for (const turnRecord of turnRecords) {
+      activeTurnActivityIds.add(`${runtime.nodeId}--${turnRecord.turnId}`);
+      await synchronizeRunnerTurnActivityObservation({
+        runtime,
+        turnRecord
+      });
+    }
+  }
+
+  await removeJsonFilesExcept(observedSessionActivityRoot, activeSessionActivityIds);
+  await removeJsonFilesExcept(observedRunnerTurnActivityRoot, activeTurnActivityIds);
 }
 
 async function collectSessionInspectionNodes(): Promise<

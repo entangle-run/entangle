@@ -47,9 +47,9 @@ The repository does **not** yet include:
 
 - a broad builtin tool surface and richer model-guided memory maintenance
   inside the internal runtime execution path;
-- deeper session-level and runner-originated host event coverage plus richer
-  recovery diagnostics on top of the now-implemented degraded-state model and
-  session-inspection boundary;
+- broader conversation, approval, artifact, and recovery-oriented host event
+  coverage on top of the now-implemented session and runner activity event
+  surface;
 - Studio as a complete operator surface;
 - CLI parity with all core host workflows;
 - end-to-end deployment hardening for the full local product profile.
@@ -144,8 +144,8 @@ This layer is strong and directionally correct. It is not a blocker.
 
 ### Still missing or incomplete
 
-- session-level and richer runner-originated event classes on top of the new
-  host event surface and session-inspection read model;
+- broader conversation, approval, artifact, and recovery-oriented event
+  classes on top of the now-implemented session and runner activity events;
 - richer recovery diagnostics and restart or retry policy above the current
   degraded-state model;
 - broader recovery-history and inspection surfaces.

@@ -129,6 +129,10 @@ This repository currently contains:
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
   `packages/host-client` and the CLI;
+- a widening of the host event surface where `entangle-host` now derives and
+  persists `session.updated` plus `runner.turn.updated` events from persisted
+  runner session and turn state, with durable deduplication anchored in
+  observed host state instead of transient in-memory delivery state;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
   a dedicated Entangle rumor kind, relay-readiness preconnect semantics, and a
   verified local relay smoke where a real wrapped message produces persisted
@@ -208,9 +212,9 @@ The highest-value remaining gaps are:
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
-- deeper session-level and runner-originated host event coverage plus richer
-  recovery diagnostics on top of the new degraded-state and session-inspection
-  host surfaces;
+- deeper conversation, approval, artifact, and recovery-oriented host event
+  coverage plus richer recovery diagnostics on top of the new degraded-state,
+  session-inspection, and session/runner-activity host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

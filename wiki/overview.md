@@ -147,6 +147,10 @@ The repository now also contains the first real implementation baseline:
   runner session records across the current host runtime set, and shares the
   same boundary through `packages/host-client` and the CLI so future event
   widening can build on a stable read model instead of event-only logic;
+- a widening of the host event surface where `entangle-host` now derives
+  `session.updated` plus `runner.turn.updated` records from persisted runner
+  session and turn state, persists those observations under observed host
+  state, and emits them only when the durable observed fingerprint changes;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,

@@ -261,6 +261,48 @@ describe("host event contracts", () => {
     expect(result.restartGeneration).toBe(1);
   });
 
+  it("accepts typed session and runner-turn activity events", () => {
+    const sessionEvent = hostEventRecordSchema.parse({
+      category: "session",
+      eventId: "session-worker-it-001",
+      graphId: "graph-alpha",
+      message: "Session 'session-alpha' on node 'worker-it' is now 'active'.",
+      nodeId: "worker-it",
+      ownerNodeId: "worker-it",
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      status: "active",
+      timestamp: "2026-04-24T00:00:00.000Z",
+      traceId: "trace-alpha",
+      type: "session.updated",
+      updatedAt: "2026-04-24T00:00:00.000Z"
+    });
+    const runnerTurnEvent = hostEventRecordSchema.parse({
+      category: "runner",
+      consumedArtifactIds: ["artifact-inbound-001"],
+      conversationId: "conv-alpha",
+      eventId: "turn-worker-it-001",
+      graphId: "graph-alpha",
+      message: "Runner turn 'turn-alpha' on node 'worker-it' is now in phase 'persisting'.",
+      nodeId: "worker-it",
+      phase: "persisting",
+      producedArtifactIds: ["artifact-report-001"],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      startedAt: "2026-04-24T00:00:00.000Z",
+      timestamp: "2026-04-24T00:00:01.000Z",
+      triggerKind: "message",
+      turnId: "turn-alpha",
+      type: "runner.turn.updated",
+      updatedAt: "2026-04-24T00:00:01.000Z"
+    });
+
+    expect(sessionEvent.type).toBe("session.updated");
+    expect(sessionEvent.category).toBe("session");
+    expect(runnerTurnEvent.type).toBe("runner.turn.updated");
+    expect(runnerTurnEvent.category).toBe("runner");
+  });
+
   it("accepts a typed node-binding mutation event", () => {
     const result = hostEventRecordSchema.parse({
       activeRevisionId: "graph-alpha-20260423-000001",

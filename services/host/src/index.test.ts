@@ -2282,6 +2282,129 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("emits typed session and runner-turn activity events without duplicating unchanged records", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "sessions",
+          "session-alpha.json"
+        ),
+        {
+          activeConversationIds: ["conv-alpha"],
+          graphId: "team-alpha",
+          intent: "Review the latest patch set.",
+          openedAt: "2026-04-24T10:00:00.000Z",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: ["report-turn-001"],
+          sessionId: "session-alpha",
+          status: "active",
+          traceId: "trace-alpha",
+          updatedAt: "2026-04-24T10:05:00.000Z",
+          waitingApprovalIds: []
+        }
+      );
+      await writeJsonFile(
+        path.join(runtimeContext.workspace.runtimeRoot, "turns", "turn-alpha.json"),
+        {
+          consumedArtifactIds: ["artifact-inbound-001"],
+          conversationId: "conv-alpha",
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          phase: "persisting",
+          producedArtifactIds: ["report-turn-001"],
+          sessionId: "session-alpha",
+          startedAt: "2026-04-24T10:00:00.000Z",
+          triggerKind: "message",
+          turnId: "turn-alpha",
+          updatedAt: "2026-04-24T10:05:00.000Z"
+        }
+      );
+
+      const firstSessionsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions"
+      });
+
+      expect(firstSessionsResponse.statusCode).toBe(200);
+
+      const firstEventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=40"
+      });
+      const firstEvents = hostEventListResponseSchema.parse(
+        firstEventsResponse.json()
+      ).events;
+
+      expect(firstEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            category: "session",
+            nodeId: "worker-it",
+            sessionId: "session-alpha",
+            status: "active",
+            type: "session.updated"
+          }),
+          expect.objectContaining({
+            category: "runner",
+            nodeId: "worker-it",
+            phase: "persisting",
+            sessionId: "session-alpha",
+            turnId: "turn-alpha",
+            type: "runner.turn.updated"
+          })
+        ])
+      );
+
+      const firstSessionEventCount = firstEvents.filter(
+        (event) => event.type === "session.updated"
+      ).length;
+      const firstRunnerTurnEventCount = firstEvents.filter(
+        (event) => event.type === "runner.turn.updated"
+      ).length;
+
+      await server.inject({
+        method: "GET",
+        url: "/v1/sessions"
+      });
+
+      const secondEventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=40"
+      });
+      const secondEvents = hostEventListResponseSchema.parse(
+        secondEventsResponse.json()
+      ).events;
+
+      expect(
+        secondEvents.filter((event) => event.type === "session.updated").length
+      ).toBe(firstSessionEventCount);
+      expect(
+        secondEvents.filter((event) => event.type === "runner.turn.updated").length
+      ).toBe(firstRunnerTurnEventCount);
+    } finally {
+      await server.close();
+    }
+  });
+
   it("returns a structured 409 response when runtime context is unavailable", async () => {
     const server = await createTestServer({ includeModelEndpoint: false });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);

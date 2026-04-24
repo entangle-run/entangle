@@ -2,6 +2,11 @@ import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import {
+  runnerPhaseSchema,
+  runnerTriggerKindSchema,
+  sessionLifecycleStateSchema
+} from "../runtime/session-state.js";
+import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
   runtimeObservedStateSchema,
@@ -95,6 +100,34 @@ export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend
   type: z.literal("runtime.observed_state.changed")
 });
 
+export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("session"),
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  ownerNodeId: identifierSchema,
+  sessionId: identifierSchema,
+  status: sessionLifecycleStateSchema,
+  traceId: identifierSchema,
+  updatedAt: nonEmptyStringSchema,
+  type: z.literal("session.updated")
+});
+
+export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("runner"),
+  consumedArtifactIds: z.array(identifierSchema),
+  conversationId: identifierSchema.optional(),
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  phase: runnerPhaseSchema,
+  producedArtifactIds: z.array(identifierSchema),
+  sessionId: identifierSchema.optional(),
+  startedAt: nonEmptyStringSchema,
+  triggerKind: runnerTriggerKindSchema,
+  turnId: identifierSchema,
+  updatedAt: nonEmptyStringSchema,
+  type: z.literal("runner.turn.updated")
+});
+
 export const hostReconciliationCompletedEventSchema = hostEventBaseSchema.extend({
   backendKind: runtimeBackendKindSchema,
   blockedRuntimeCount: z.number().int().nonnegative().optional(),
@@ -122,6 +155,8 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeDesiredStateChangedEventSchema,
   runtimeRestartRequestedEventSchema,
   runtimeObservedStateChangedEventSchema,
+  sessionUpdatedEventSchema,
+  runnerTurnUpdatedEventSchema,
   hostReconciliationCompletedEventSchema
 ]);
 
@@ -160,6 +195,8 @@ export type RuntimeRestartRequestedEvent = z.infer<
 export type RuntimeObservedStateChangedEvent = z.infer<
   typeof runtimeObservedStateChangedEventSchema
 >;
+export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
+export type RunnerTurnUpdatedEvent = z.infer<typeof runnerTurnUpdatedEventSchema>;
 export type HostReconciliationCompletedEvent = z.infer<
   typeof hostReconciliationCompletedEventSchema
 >;

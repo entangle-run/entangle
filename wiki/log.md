@@ -476,3 +476,14 @@ aggregation so inconsistent cross-node graph ids for the same session fail as
 an invariant violation instead of being silently merged. Closed the slice only
 after targeted `types`, `host-client`, and `host` tests, a full `pnpm verify`,
 and `git diff --check`.
+
+## [2026-04-24] implementation | Added host-derived session and runner activity events
+
+Widened the host event surface beyond control-plane and runtime lifecycle
+events by deriving `session.updated` and `runner.turn.updated` records from
+persisted runner session and turn files. Added canonical observation records in
+`packages/types`, taught `services/host` to persist observed activity
+fingerprints under observed host state, emit events only on durable change, and
+clean up stale activity records when runtimes or activity disappear. Closed the
+slice only after targeted `types` and `host` tests, a full `pnpm verify`, and
+`git diff --check`.

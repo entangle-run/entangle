@@ -83,6 +83,7 @@ This directory is the canonical design corpus for Entangle.
 77. [76-runtime-restart-slice.md](76-runtime-restart-slice.md)
 78. [77-reconciliation-and-degraded-state-slice.md](77-reconciliation-and-degraded-state-slice.md)
 79. [78-session-inspection-slice.md](78-session-inspection-slice.md)
+80. [79-session-and-runner-activity-event-slice.md](79-session-and-runner-activity-event-slice.md)
 
 ## Role of this corpus
 
