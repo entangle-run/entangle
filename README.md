@@ -384,6 +384,10 @@ This repository currently contains:
   package sources, reject deletion while active graph nodes still reference
   them, emit typed `package_source.deleted` events, and expose the same
   operation through the shared host client and CLI dry-run flow;
+- a Studio package-source deletion flow where visual operators can see active
+  graph references for each admitted source, delete unreferenced sources
+  through the shared host client, and keep draft state coherent after host
+  confirmation;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and selected-runtime
   refresh instead of depending only on explicit reload loops after mutations;

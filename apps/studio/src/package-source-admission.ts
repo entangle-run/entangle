@@ -1,4 +1,5 @@
 import type {
+  GraphSpec,
   PackageSourceAdmissionRequest,
   PackageSourceInspectionResponse
 } from "@entangle/types";
@@ -70,4 +71,27 @@ export function formatPackageSourceDetail(
     : "not yet materialized";
 
   return `${inspection.packageSource.sourceKind} · ${sourcePath} · ${materializationState}`;
+}
+
+export function collectPackageSourceReferenceNodeIds(
+  graph: GraphSpec | undefined,
+  packageSourceId: string
+): string[] {
+  return (graph?.nodes ?? [])
+    .filter((node) => node.packageSourceRef === packageSourceId)
+    .map((node) => node.nodeId)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+export function formatPackageSourceReferenceSummary(nodeIds: string[]): string {
+  if (nodeIds.length === 0) {
+    return "No active graph references";
+  }
+
+  const visibleNodeIds = nodeIds.slice(0, 3);
+  const hiddenCount = nodeIds.length - visibleNodeIds.length;
+  const suffix = hiddenCount > 0 ? `, +${hiddenCount} more` : "";
+  const noun = nodeIds.length === 1 ? "node" : "nodes";
+
+  return `Referenced by ${nodeIds.length} ${noun}: ${visibleNodeIds.join(", ")}${suffix}`;
 }

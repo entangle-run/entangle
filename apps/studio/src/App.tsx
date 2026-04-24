@@ -58,9 +58,11 @@ import {
 } from "./graph-node-mutation.js";
 import {
   buildPackageSourceAdmissionRequest,
+  collectPackageSourceReferenceNodeIds,
   createEmptyPackageSourceAdmissionDraft,
   formatPackageSourceDetail,
   formatPackageSourceOptionLabel,
+  formatPackageSourceReferenceSummary,
   sortPackageSourceInspections,
   type PackageSourceAdmissionDraft
 } from "./package-source-admission.js";
@@ -301,6 +303,9 @@ export function App() {
     useState<PackageSourceAdmissionDraft>(createEmptyPackageSourceAdmissionDraft);
   const [packageAdmissionError, setPackageAdmissionError] = useState<string | null>(null);
   const [pendingPackageAdmission, setPendingPackageAdmission] = useState(false);
+  const [packageDeletionError, setPackageDeletionError] = useState<string | null>(null);
+  const [pendingPackageSourceDeletionId, setPendingPackageSourceDeletionId] =
+    useState<string | null>(null);
   const [runtimes, setRuntimes] = useState<RuntimeInspectionResponse[]>([]);
   const [selectedRuntimeId, setSelectedRuntimeId] = useState<string | null>(null);
   const [selectedManagedNodeId, setSelectedManagedNodeId] = useState<string | null>(null);
@@ -834,6 +839,7 @@ export function App() {
 
       await loadOverview();
       setPackageAdmissionError(null);
+      setPackageDeletionError(null);
       setPackageAdmissionDraft(createEmptyPackageSourceAdmissionDraft());
     } catch (caught: unknown) {
       setPackageAdmissionError(
@@ -846,6 +852,46 @@ export function App() {
       setPendingPackageAdmission(false);
     }
   }, [client, loadOverview, packageAdmissionDraft]);
+
+  const deletePackageSource = useCallback(
+    async (packageSourceId: string) => {
+      try {
+        setPendingPackageSourceDeletionId(packageSourceId);
+        setPackageDeletionError(null);
+
+        await client.deletePackageSource(packageSourceId);
+        await loadOverview();
+
+        setPackageAdmissionError(null);
+        setPackageAdmissionDraft((current) =>
+          current.packageSourceId.trim() === packageSourceId
+            ? {
+                ...current,
+                packageSourceId: ""
+              }
+            : current
+        );
+        setNodeDraft((current) =>
+          current.packageSourceRef === packageSourceId
+            ? {
+                ...current,
+                packageSourceRef: ""
+              }
+            : current
+        );
+      } catch (caught: unknown) {
+        setPackageDeletionError(
+          normalizeError(
+            caught,
+            "Unknown error while deleting the package source."
+          )
+        );
+      } finally {
+        setPendingPackageSourceDeletionId(null);
+      }
+    },
+    [client, loadOverview]
+  );
 
   const resetEdgeDraft = useCallback(() => {
     setSelectedEdgeId(null);
@@ -1225,18 +1271,50 @@ export function App() {
 
               {packageSourceError ? <p className="error-box">{packageSourceError}</p> : null}
               {packageAdmissionError ? <p className="error-box">{packageAdmissionError}</p> : null}
+              {packageDeletionError ? <p className="error-box">{packageDeletionError}</p> : null}
 
               {packageSources.length > 0 ? (
                 <div className="package-source-list">
-                  {packageSources.map((inspection) => (
-                    <div
-                      key={inspection.packageSource.packageSourceId}
-                      className="package-source-card"
-                    >
-                      <strong>{formatPackageSourceOptionLabel(inspection)}</strong>
-                      <span>{formatPackageSourceDetail(inspection)}</span>
-                    </div>
-                  ))}
+                  {packageSources.map((inspection) => {
+                    const packageSourceId = inspection.packageSource.packageSourceId;
+                    const referenceNodeIds = collectPackageSourceReferenceNodeIds(
+                      graphInspection?.graph,
+                      packageSourceId
+                    );
+                    const isDeleting =
+                      pendingPackageSourceDeletionId === packageSourceId;
+
+                    return (
+                      <div key={packageSourceId} className="package-source-card">
+                        <strong>{formatPackageSourceOptionLabel(inspection)}</strong>
+                        <span>{formatPackageSourceDetail(inspection)}</span>
+                        <span>
+                          {formatPackageSourceReferenceSummary(referenceNodeIds)}
+                        </span>
+                        <div className="action-row">
+                          <button
+                            className="action-button"
+                            disabled={
+                              pendingPackageAdmission ||
+                              pendingPackageSourceDeletionId !== null ||
+                              referenceNodeIds.length > 0
+                            }
+                            onClick={() => {
+                              void deletePackageSource(packageSourceId);
+                            }}
+                            title={
+                              referenceNodeIds.length > 0
+                                ? "Delete or rebind referencing nodes before deleting this package source."
+                                : "Delete this package source admission from the host."
+                            }
+                            type="button"
+                          >
+                            {isDeleting ? "Deleting..." : "Delete Source"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="inline-empty-state">

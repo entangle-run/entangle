@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { PackageSourceInspectionResponse } from "@entangle/types";
+import type { GraphSpec, PackageSourceInspectionResponse } from "@entangle/types";
 import {
   buildPackageSourceAdmissionRequest,
+  collectPackageSourceReferenceNodeIds,
   createEmptyPackageSourceAdmissionDraft,
   formatPackageSourceDetail,
   formatPackageSourceOptionLabel,
+  formatPackageSourceReferenceSummary,
   sortPackageSourceInspections
 } from "./package-source-admission.js";
 
@@ -114,5 +116,77 @@ describe("package source admission helpers", () => {
     expect(formatPackageSourceDetail(inspections[0]!)).toContain("local_path");
     expect(formatPackageSourceDetail(inspections[0]!)).toContain("materialized immutable_store");
     expect(formatPackageSourceDetail(inspections[1]!)).toContain("/tmp/marketing.tar.gz");
+  });
+
+  it("collects and summarizes active graph references for deletion safety", () => {
+    const graph: GraphSpec = {
+      defaults: {
+        resourceBindings: {
+          externalPrincipalRefs: [],
+          gitServiceRefs: [],
+          relayProfileRefs: []
+        },
+        runtimeProfile: "hackathon_local"
+      },
+      edges: [],
+      graphId: "demo",
+      name: "Demo",
+      nodes: [
+        {
+          autonomy: {
+            canInitiateSessions: false,
+            canMutateGraph: false
+          },
+          displayName: "Worker B",
+          nodeId: "worker-b",
+          nodeKind: "worker",
+          packageSourceRef: "shared-source",
+          resourceBindings: {
+            externalPrincipalRefs: [],
+            gitServiceRefs: [],
+            relayProfileRefs: []
+          }
+        },
+        {
+          autonomy: {
+            canInitiateSessions: false,
+            canMutateGraph: false
+          },
+          displayName: "Worker A",
+          nodeId: "worker-a",
+          nodeKind: "worker",
+          packageSourceRef: "shared-source",
+          resourceBindings: {
+            externalPrincipalRefs: [],
+            gitServiceRefs: [],
+            relayProfileRefs: []
+          }
+        },
+        {
+          autonomy: {
+            canInitiateSessions: false,
+            canMutateGraph: false
+          },
+          displayName: "Reviewer",
+          nodeId: "reviewer",
+          nodeKind: "reviewer",
+          packageSourceRef: "other-source",
+          resourceBindings: {
+            externalPrincipalRefs: [],
+            gitServiceRefs: [],
+            relayProfileRefs: []
+          }
+        }
+      ],
+      schemaVersion: "1"
+    };
+
+    const nodeIds = collectPackageSourceReferenceNodeIds(graph, "shared-source");
+
+    expect(nodeIds).toEqual(["worker-a", "worker-b"]);
+    expect(formatPackageSourceReferenceSummary(nodeIds)).toBe(
+      "Referenced by 2 nodes: worker-a, worker-b"
+    );
+    expect(formatPackageSourceReferenceSummary([])).toBe("No active graph references");
   });
 });

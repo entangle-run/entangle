@@ -316,6 +316,10 @@ The repository now also contains the first real implementation baseline:
   removed safely, active graph references block deletion with a typed conflict,
   `package_source.deleted` events refresh Studio overview state, and the CLI
   can perform or dry-run the mutation through the shared host client;
+- the matching Studio package-source deletion flow, where the graph editor
+  lists active source references, disables known-conflicting deletes, calls the
+  host-owned deletion route for unreferenced sources, and clears stale local
+  drafts after host confirmation;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and
   selected-runtime refresh instead of depending only on explicit post-mutation

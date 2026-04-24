@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio package-source deletion
+
+Closed the visual operator side of the package-source deletion boundary.
+Studio now shows active graph references for every admitted package source,
+disables deletion when the current graph already proves the source is still in
+use, calls the shared host client for unreferenced source deletion, surfaces
+mutation failures in the graph editor, and clears local drafts that referenced
+the deleted source after host confirmation.
+
 ## [2026-04-24] implementation | Added package-source deletion
 
 Added a host-owned package-source deletion boundary through

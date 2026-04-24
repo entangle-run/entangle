@@ -363,6 +363,9 @@ Completed in the current repository state:
   removed through `DELETE /v1/package-sources/{packageSourceId}`, active graph
   references produce typed conflicts, and `package_source.deleted` events drive
   downstream refresh.
+- the matching Studio package-source deletion flow, where the operator can
+  inspect graph references per admitted source, delete unreferenced sources
+  through the shared host client, and avoid browser-owned deletion state.
 - the next bounded Studio completion slice through host-event-driven refresh,
   where overview and selected-runtime reads are now coalesced off the existing
   host event stream without reconnecting the subscription on runtime

@@ -456,6 +456,9 @@ delivery.
 - Studio overview refresh over the new `package_source.deleted` event, keeping
   admitted package-source inventory reactive when another host client deletes
   an unused source;
+- Studio package-source deletion through the shared host client, including
+  graph-reference visibility, known-conflict disabling, mutation pending/error
+  state, and local draft cleanup after confirmed deletion;
 - coalesced live Studio refresh on top of the existing host event stream, so
   overview and selected-runtime reads now react to host-owned control-plane,
   runtime, recovery, session, and artifact events without relying on polling
