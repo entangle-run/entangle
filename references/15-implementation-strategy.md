@@ -154,14 +154,18 @@ Completed in the current repository state:
 4. live runner entrypoints wired to the real engine path instead of the stub;
 5. a bounded builtin tool surface that now includes deterministic
    artifact-input inspection plus bounded memory-ref inspection through the
-   runner-owned tool executor.
+   runner-owned tool executor;
+6. a richer deterministic memory-maintenance layer where the runner now
+   rebuilds a recent-work summary page from canonical task pages and feeds that
+   summary back into future turn assembly.
 
 Remaining work in this phase:
 
 1. continue widening the builtin tool surface beyond the now-implemented
    artifact-inspection and bounded memory-ref inspection paths;
-2. deepen the now-implemented deterministic post-turn memory/wiki update phase
-   into richer model-guided memory maintenance;
+2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
+   now including the derived recent-work summary layer, into richer
+   model-guided memory maintenance;
 3. deepen normalized provider metadata, error reporting, and runtime
    observability as engine depth grows.
 
@@ -231,7 +235,7 @@ Completed in the current repository state:
   `GET /v1/sessions/{sessionId}` surface.
 
 The next best current move is still Phase 2 agent-engine deepening, with
-model-guided memory maintenance now the highest-value narrow follow-on.
+bounded model-guided memory synthesis now the highest-value narrow follow-on.
 
 ## Phase 4: Studio completion
 
@@ -277,7 +281,7 @@ Completed in the current repository state:
   intents.
 
 The next best current move is still Phase 2 agent-engine deepening, with
-model-guided memory maintenance now the highest-value narrow follow-on.
+bounded model-guided memory synthesis now the highest-value narrow follow-on.
 
 ## Phase 6: Deployment and integration hardening
 

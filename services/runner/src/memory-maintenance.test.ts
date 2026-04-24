@@ -51,9 +51,11 @@ describe("post-turn memory maintenance", () => {
     expect(indexPage).toContain(
       "[session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
     );
+    expect(indexPage).toContain("[Recent Work Summary](summaries/recent-work.md)");
     expect(turnRequest.memoryRefs).toEqual(
       expect.arrayContaining([
         path.join(context.workspace.memoryRoot, "wiki", "log.md"),
+        memoryUpdate.summaryPagePath,
         memoryUpdate.taskPagePath
       ])
     );
@@ -108,6 +110,59 @@ describe("post-turn memory maintenance", () => {
     expect(taskSection?.[0]).not.toContain("## Concepts");
     expect(indexPage).toMatch(
       /- \[session-alpha \/ turn-memory-002\]\(tasks\/session-alpha\/turn-memory-002\.md\)\n\n## Concepts/
+    );
+  });
+
+  it("rebuilds a recent-work summary page from the freshest task pages", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const firstEnvelope = buildInboundTaskRequest();
+    const secondEnvelope = buildInboundTaskRequest({
+      summary: "Summarize the recovery follow-up plan."
+    });
+
+    await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope: firstEnvelope,
+      producedArtifactIds: ["report-turn-003"],
+      result: {
+        assistantMessages: ["Completed the first review pass and noted one follow-up."],
+        stopReason: "completed",
+        toolRequests: [],
+        usage: {
+          inputTokens: 8,
+          outputTokens: 4
+        }
+      },
+      turnId: "turn-memory-003"
+    });
+    const secondUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope: secondEnvelope,
+      producedArtifactIds: ["report-turn-004"],
+      result: {
+        assistantMessages: ["Drafted the recovery plan and captured the next action."],
+        stopReason: "completed",
+        toolRequests: [],
+        usage: {
+          inputTokens: 9,
+          outputTokens: 5
+        }
+      },
+      turnId: "turn-memory-004"
+    });
+
+    const summaryPage = await readFile(secondUpdate.summaryPagePath, "utf8");
+
+    expect(summaryPage).toContain("# Recent Work Summary");
+    expect(summaryPage).toContain("### session-alpha / turn-memory-004");
+    expect(summaryPage).toContain("### session-alpha / turn-memory-003");
+    expect(summaryPage).toContain("Drafted the recovery plan and captured the next action.");
+    expect(summaryPage).toContain("Completed the first review pass and noted one follow-up.");
+    expect(summaryPage.indexOf("turn-memory-004")).toBeLessThan(
+      summaryPage.indexOf("turn-memory-003")
     );
   });
 });

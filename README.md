@@ -174,6 +174,9 @@ This repository currently contains:
   now writes task-specific wiki pages, appends structured entries to
   `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
   task memory back into future turn assembly.
+- a richer deterministic memory-summary slice where the runner now rebuilds
+  `memory/wiki/summaries/recent-work.md` from the freshest task pages and
+  includes that summary in future bounded `memoryRefs`.
 - a first typed host-event surface where `entangle-host` now persists and
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary
@@ -282,10 +285,13 @@ This repository currently contains:
 - the next bounded runtime-deepening slice where the builtin tool surface now
   includes deterministic bounded memory-ref inspection over the current turn's
   resolved `memoryRefs`, without widening the host or filesystem boundary;
+- the next bounded runtime-deepening slice where runner-owned memory
+  maintenance now rebuilds a derived recent-work summary page from canonical
+  task pages and feeds it back into future turn assembly;
 
 The highest-value remaining gaps are:
 
-- richer model-guided memory/wiki maintenance inside the internal runtime
+- bounded model-guided memory/wiki synthesis inside the internal runtime
   execution path, plus any later builtin-tool widening that still adds real
   bounded runtime value;
 - advanced git widening beyond the current locator-specific handoff model,

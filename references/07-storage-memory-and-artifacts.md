@@ -80,6 +80,7 @@ memory hygiene:
 - append a structured turn log entry;
 - write a task-specific wiki page for the completed turn;
 - keep `index.md` and `log.md` aligned with the new page;
+- rebuild a derived recent-work summary page from canonical task pages;
 - feed the freshest task pages back into future prompt assembly.
 
 Richer model-guided wiki synthesis can widen later, but the runner should own a

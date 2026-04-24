@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   AgentEngineTurnResult,
@@ -18,8 +18,12 @@ type PostTurnMemoryUpdateInput = {
 type PostTurnMemoryUpdateResult = {
   indexPath: string;
   logPath: string;
+  summaryPagePath: string;
   taskPagePath: string;
 };
+
+const recentWorkSummaryRelativePath = "summaries/recent-work.md";
+const maxRecentSummaryEntries = 5;
 
 function buildTaskPageRelativePath(input: {
   sessionId: string;
@@ -112,6 +116,10 @@ function resolveTaskPagePath(input: {
   return path.join(input.wikiRoot, "tasks", input.sessionId, `${input.turnId}.md`);
 }
 
+function resolveRecentWorkSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, recentWorkSummaryRelativePath);
+}
+
 function buildTaskPageTitle(input: {
   sessionId: string;
   turnId: string;
@@ -180,12 +188,154 @@ function buildLogEntry(input: {
   ].join("\n");
 }
 
+async function collectMarkdownFilesRecursively(
+  rootPath: string
+): Promise<string[]> {
+  try {
+    const entries = await readdir(rootPath, { withFileTypes: true });
+    const nestedFiles = await Promise.all(
+      entries.map(async (entry) => {
+        const absolutePath = path.join(rootPath, entry.name);
+
+        if (entry.isDirectory()) {
+          return collectMarkdownFilesRecursively(absolutePath);
+        }
+
+        return absolutePath.endsWith(".md") ? [absolutePath] : [];
+      })
+    );
+
+    return nestedFiles.flat();
+  } catch (error: unknown) {
+    if (isFileMissingError(error)) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function extractTaskPageTitle(content: string, fallbackTitle: string): string {
+  const firstLine = content.split("\n")[0]?.trim();
+
+  if (firstLine?.startsWith("# Task Memory ")) {
+    return firstLine.replace("# Task Memory ", "").trim();
+  }
+
+  return fallbackTitle;
+}
+
+function extractTaskPageOutcome(content: string): {
+  assistantSummary: string;
+  stopReason: string;
+} {
+  const lines = content.split("\n");
+  const outcomeHeadingIndex = lines.findIndex((line) => line.trim() === "## Outcome");
+
+  if (outcomeHeadingIndex === -1) {
+    return {
+      assistantSummary: "No assistant summary was recorded for this task page.",
+      stopReason: "unknown"
+    };
+  }
+
+  const outcomeLines: string[] = [];
+
+  for (const line of lines.slice(outcomeHeadingIndex + 1)) {
+    if (line.trim().startsWith("## ")) {
+      break;
+    }
+
+    outcomeLines.push(line.trimEnd());
+  }
+
+  let stopReason = "unknown";
+  const assistantSummaryLines: string[] = [];
+
+  for (const line of outcomeLines) {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      if (assistantSummaryLines.length > 0) {
+        assistantSummaryLines.push("");
+      }
+      continue;
+    }
+
+    if (trimmedLine.startsWith("- Stop reason: ")) {
+      stopReason = trimmedLine
+        .replace("- Stop reason: ", "")
+        .replaceAll("`", "")
+        .trim();
+      continue;
+    }
+
+    assistantSummaryLines.push(trimmedLine);
+  }
+
+  return {
+    assistantSummary:
+      assistantSummaryLines.join("\n").trim() ||
+      "No assistant summary was recorded for this task page.",
+    stopReason
+  };
+}
+
+async function buildRecentWorkSummaryContent(input: {
+  wikiRoot: string;
+}): Promise<string> {
+  const taskRoot = path.join(input.wikiRoot, "tasks");
+  const taskPaths = await collectMarkdownFilesRecursively(taskRoot);
+  const taskEntries = await Promise.all(
+    taskPaths.map(async (taskPath) => ({
+      content: await readFile(taskPath, "utf8"),
+      modifiedAt: (await stat(taskPath)).mtimeMs,
+      relativePath: path
+        .relative(input.wikiRoot, taskPath)
+        .split(path.sep)
+        .join(path.posix.sep)
+    }))
+  );
+
+  const recentEntries = taskEntries
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, maxRecentSummaryEntries);
+
+  const contentLines = ["# Recent Work Summary", "", "## Latest Turns", ""];
+
+  if (recentEntries.length === 0) {
+    contentLines.push("No completed task pages have been recorded yet.", "");
+    return contentLines.join("\n");
+  }
+
+  for (const entry of recentEntries) {
+    const title = extractTaskPageTitle(
+      entry.content,
+      path.basename(entry.relativePath, ".md")
+    );
+    const outcome = extractTaskPageOutcome(entry.content);
+
+    contentLines.push(
+      `### ${title}`,
+      "",
+      `- Stop reason: \`${outcome.stopReason}\``,
+      `- Task page: [${title}](${entry.relativePath})`,
+      "",
+      outcome.assistantSummary,
+      ""
+    );
+  }
+
+  return contentLines.join("\n");
+}
+
 export async function performPostTurnMemoryUpdate(
   input: PostTurnMemoryUpdateInput
 ): Promise<PostTurnMemoryUpdateResult> {
   const wikiRoot = path.join(input.context.workspace.memoryRoot, "wiki");
   const indexPath = path.join(wikiRoot, "index.md");
   const logPath = path.join(wikiRoot, "log.md");
+  const summaryPagePath = resolveRecentWorkSummaryPath(wikiRoot);
   const taskPageRelativePath = buildTaskPageRelativePath({
     sessionId: input.envelope.message.sessionId,
     turnId: input.turnId
@@ -212,7 +362,12 @@ export async function performPostTurnMemoryUpdate(
     readTextFileOrDefault(logPath, "# Wiki Log\n")
   ]);
   const indexBullet = `- [${taskPageTitle}](${taskPageRelativePath})`;
-  const nextIndex = appendSectionBullet(currentIndex, "Task Pages", indexBullet);
+  const summaryBullet = "- [Recent Work Summary](summaries/recent-work.md)";
+  const nextIndex = appendSectionBullet(
+    appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+    "Summaries",
+    summaryBullet
+  );
   const nextLog = `${currentLog.trimEnd()}\n\n${buildLogEntry({
     nodeId: input.context.binding.node.nodeId,
     result: input.result,
@@ -225,10 +380,16 @@ export async function performPostTurnMemoryUpdate(
     writeTextFile(indexPath, nextIndex),
     writeTextFile(logPath, nextLog)
   ]);
+  const recentWorkSummary = await buildRecentWorkSummaryContent({
+    wikiRoot
+  });
+
+  await writeTextFile(summaryPagePath, `${recentWorkSummary.trimEnd()}\n`);
 
   return {
     indexPath,
     logPath,
+    summaryPagePath,
     taskPagePath
   };
 }

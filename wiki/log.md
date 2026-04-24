@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added deterministic recent-work memory summary
+
+Closed the next bounded runner-memory slice by making post-turn memory
+maintenance rebuild `memory/wiki/summaries/recent-work.md` from the freshest
+canonical task pages. Future turn assembly now sees the schema rules, wiki
+index, wiki log, recent-work summary, and recent task pages together instead
+of only the low-level task-page baseline.
+
 ## [2026-04-24] implementation | Added bounded builtin memory-ref inspection
 
 Closed the next runtime-deepening slice by widening the runner-owned builtin
