@@ -338,6 +338,9 @@ Completed in the current repository state:
 - deeper Studio runtime artifact inspection on top of the already implemented
   host runtime-artifact read surface, with partial-failure-tolerant selected
   runtime refresh instead of all-or-nothing panel failure.
+- a runtime artifact detail read surface through
+  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus shared host-client
+  and CLI consumption for one artifact record by id.
 - deeper Studio runtime session inspection on top of the already implemented
   host session read model, again preserving partial-failure-tolerant
   selected-runtime refresh semantics.
@@ -401,6 +404,7 @@ Completed in the current repository state:
   sources, including optional explicit package-source ids through the CLI.
 - runtime artifact inspection through the existing host artifact read surface,
   including deterministic local filtering over host-owned artifact records.
+- single-runtime-artifact inspection by id through the same host boundary.
 - dry-run previews across the main host-facing mutation commands, including
   package-source admission, graph apply, node and edge mutation, external
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle

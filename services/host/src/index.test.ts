@@ -29,6 +29,7 @@ import {
   nodeListResponseSchema,
   nodeMutationResponseSchema,
   packageSourceInspectionResponseSchema,
+  runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
@@ -2360,6 +2361,29 @@ describe("buildHostServer", () => {
       expect(artifactsResponse.statusCode).toBe(200);
       expect(runtimeArtifactListResponseSchema.parse(artifactsResponse.json())).toEqual({
         artifacts: [artifactRecord]
+      });
+
+      const artifactResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/report-turn-001"
+      });
+
+      expect(artifactResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactInspectionResponseSchema.parse(artifactResponse.json())
+      ).toEqual({
+        artifact: artifactRecord
+      });
+
+      const missingArtifactResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/missing-artifact"
+      });
+
+      expect(missingArtifactResponse.statusCode).toBe(404);
+      expect(hostErrorResponseSchema.parse(missingArtifactResponse.json())).toEqual({
+        code: "not_found",
+        message: "Artifact 'missing-artifact' was not found for runtime 'worker-it'."
       });
     } finally {
       await server.close();

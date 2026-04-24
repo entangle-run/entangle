@@ -319,6 +319,9 @@ The repository now also contains the first real implementation baseline:
   persisted runtime artifacts through the existing host artifact surface and
   apply deterministic local filters over backend, kind, lifecycle,
   publication, and retrieval state;
+- the next artifact-governance slice where headless operators can now inspect
+  one runtime artifact by id through the shared host boundary instead of
+  reading runner-local artifact files directly;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail through the existing session read surface, without introducing
@@ -342,7 +345,8 @@ The repository now also contains the first real implementation baseline:
 - a first git-backed artifact materialization slice in the runner, with
   persisted artifact records, session/conversation/turn artifact linkage,
   committed markdown turn reports under the runtime artifact workspace, and a
-  host read surface for runtime artifact inspection; protocol-facing
+  host collection and item read surface for runtime artifact inspection;
+  protocol-facing
   `ArtifactRef` locators are now kept portable while runtime-local filesystem
   details remain under persisted artifact-record materialization metadata, and
   artifact records now also carry explicit publication-state metadata so local

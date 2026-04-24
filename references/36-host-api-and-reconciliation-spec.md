@@ -329,6 +329,7 @@ The current implementation now covers both routes in this subsection.
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
 - `GET /v1/runtimes/{nodeId}/artifacts`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
 - `POST /v1/runtimes/{nodeId}/restart`
@@ -366,6 +367,7 @@ The current repository implementation now concretely includes:
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
 - `GET /v1/runtimes/{nodeId}/artifacts`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`
 - `GET /v1/runtimes/{nodeId}/recovery`
 - `PUT /v1/runtimes/{nodeId}/recovery-policy`
 - `GET /v1/events`
@@ -391,7 +393,8 @@ The current implementation also exposes:
   model;
 - restart-generation-backed lifecycle inspection and typed
   `runtime.restart.requested` events;
-- read-only persisted artifact inspection for active runtimes;
+- read-only persisted artifact collection and item inspection for active
+  runtimes;
 - read-only persisted runtime recovery-history inspection through
   `GET /v1/runtimes/{nodeId}/recovery`, with durable per-node records and
   canonicalized fingerprint-based deduplication;

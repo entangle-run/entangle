@@ -130,6 +130,7 @@ This directory is the canonical design corpus for Entangle.
 124. [123-host-socketless-verification-slice.md](123-host-socketless-verification-slice.md)
 125. [124-bootstrap-host-operator-token-auth-slice.md](124-bootstrap-host-operator-token-auth-slice.md)
 126. [125-bootstrap-operator-request-audit-slice.md](125-bootstrap-operator-request-audit-slice.md)
+127. [126-runtime-artifact-detail-inspection-slice.md](126-runtime-artifact-detail-inspection-slice.md)
 
 ## Role of this corpus
 

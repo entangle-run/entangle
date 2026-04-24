@@ -58,8 +58,13 @@ export const runtimeArtifactListResponseSchema = z.object({
   artifacts: z.array(artifactRecordSchema)
 });
 
+export const runtimeArtifactInspectionResponseSchema = z.object({
+  artifact: artifactRecordSchema
+});
+
 export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponseSchema>;
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;
 export type RuntimeContextInspectionResponse = z.infer<typeof runtimeContextInspectionResponseSchema>;
 export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResponseSchema>;
+export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;

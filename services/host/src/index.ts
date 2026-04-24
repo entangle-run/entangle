@@ -32,6 +32,7 @@ import {
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
@@ -67,6 +68,7 @@ import {
   listGraphRevisions,
   listNodeInspections,
   getPackageSourceInspection,
+  getRuntimeArtifactInspection,
   getSessionInspection,
   initializeHostState,
   listRuntimeInspections,
@@ -844,6 +846,50 @@ export async function buildHostServer() {
 
     return runtimeArtifactListResponseSchema.parse(artifacts);
   });
+
+  server.get(
+    "/v1/runtimes/:nodeId/artifacts/:artifactId",
+    async (request, reply) => {
+      const params = request.params as { artifactId: string; nodeId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const artifactInspection = await getRuntimeArtifactInspection({
+        artifactId: params.artifactId,
+        nodeId: params.nodeId
+      });
+
+      if (!artifactInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeArtifactInspectionResponseSchema.parse(artifactInspection);
+    }
+  );
 
   server.get("/v1/runtimes/:nodeId/recovery", async (request, reply) => {
     const params = request.params as { nodeId: string };

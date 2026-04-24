@@ -27,6 +27,7 @@ import {
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
   resolvedSecretBindingSchema,
+  runtimeArtifactInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
@@ -45,6 +46,42 @@ describe("host API error contracts", () => {
       code: "unauthorized",
       message: "Entangle host operator token is required."
     });
+  });
+});
+
+describe("runtime artifact host API contracts", () => {
+  it("accepts a single runtime artifact inspection response", () => {
+    const result = runtimeArtifactInspectionResponseSchema.parse({
+      artifact: {
+        createdAt: "2026-04-24T00:00:00.000Z",
+        materialization: {
+          localPath: "/tmp/entangle-runner/reports/turn-001.md",
+          repoPath: "/tmp/entangle-runner"
+        },
+        ref: {
+          artifactId: "report-turn-001",
+          artifactKind: "report_file",
+          backend: "git",
+          contentSummary: "Turn report",
+          conversationId: "conv-alpha",
+          createdByNodeId: "worker-it",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            path: "reports/turn-001.md"
+          },
+          preferred: true,
+          sessionId: "session-alpha",
+          status: "materialized"
+        },
+        turnId: "turn-001",
+        updatedAt: "2026-04-24T00:00:00.000Z"
+      }
+    });
+
+    expect(result.artifact.ref.artifactId).toBe("report-turn-001");
   });
 });
 

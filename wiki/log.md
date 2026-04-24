@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added runtime artifact detail inspection
+
+Added a read-only item boundary for persisted runtime artifacts through
+`GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`. The shared host client and
+CLI can now inspect one artifact record by id, giving later artifact governance
+work a stable resource shape without exposing runner-local artifact files as a
+client contract.
+
 ## [2026-04-24] implementation | Added bootstrap operator request audit events
 
 Deepened the new host operator-token boundary with a typed security event for

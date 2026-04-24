@@ -111,7 +111,9 @@ import {
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
   type RuntimeInspectionResponse,
+  runtimeArtifactInspectionResponseSchema,
   runtimeIntentRecordSchema,
+  type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   runtimeListResponseSchema,
   runnerTurnRecordSchema,
@@ -3648,6 +3650,25 @@ export async function listRuntimeArtifacts(
   return runtimeArtifactListResponseSchema.parse({
     artifacts: await listRuntimeArtifactRecords(context.workspace.runtimeRoot)
   });
+}
+
+export async function getRuntimeArtifactInspection(input: {
+  artifactId: string;
+  nodeId: string;
+}): Promise<RuntimeArtifactInspectionResponse | null> {
+  const artifacts = await listRuntimeArtifacts(input.nodeId);
+
+  if (!artifacts) {
+    return null;
+  }
+
+  const artifact = artifacts.artifacts.find(
+    (candidate) => candidate.ref.artifactId === input.artifactId
+  );
+
+  return artifact
+    ? runtimeArtifactInspectionResponseSchema.parse({ artifact })
+    : null;
 }
 
 export async function getRuntimeRecoveryInspection(input: {

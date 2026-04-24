@@ -1028,6 +1028,67 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses single runtime artifact inspection responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-22T00:00:00.000Z",
+                materialization: {
+                  localPath:
+                    "/tmp/entangle-runner/workspace/reports/session-alpha/turn-001.md",
+                  repoPath: "/tmp/entangle-runner/workspace"
+                },
+                ref: {
+                  artifactId: "report-turn-001",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  contentSummary: "Turn report",
+                  conversationId: "conv-alpha",
+                  createdByNodeId: "worker-it",
+                  locator: {
+                    branch: "worker-it/session-alpha/review-patch",
+                    commit: "abc123",
+                    gitServiceRef: "local-gitea",
+                    namespace: "team-alpha",
+                    path: "reports/session-alpha/turn-001.md"
+                  },
+                  preferred: true,
+                  sessionId: "session-alpha",
+                  status: "materialized"
+                },
+                turnId: "turn-001",
+                updatedAt: "2026-04-22T00:00:00.000Z"
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.getRuntimeArtifact("worker-it", "report-turn-001")
+    ).resolves.toMatchObject({
+      artifact: {
+        ref: {
+          artifactId: "report-turn-001",
+          backend: "git"
+        }
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001"
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

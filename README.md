@@ -128,8 +128,10 @@ This repository currently contains:
   repository-partitioned retrieval caches, plus host-owned provisioning of
   primary `gitea_api` repository targets with persisted provisioning-state
   records and runtime realizability gated on provisioning success;
-- a host read surface for persisted runtime artifacts through
-  `GET /v1/runtimes/{nodeId}/artifacts`, plus matching host-client coverage;
+- host read surfaces for persisted runtime artifacts through
+  `GET /v1/runtimes/{nodeId}/artifacts` and
+  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus matching
+  host-client coverage;
 - a host-owned session inspection surface through `GET /v1/sessions` and
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
@@ -384,6 +386,9 @@ This repository currently contains:
   persisted runtime artifacts through the existing host artifact surface and
   apply deterministic local filters over backend, kind, lifecycle,
   publication, and retrieval state;
+- the next artifact-governance slice where headless operators can inspect one
+  runtime artifact by id through the shared host boundary instead of reading
+  runner-local artifact files directly;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

@@ -819,6 +819,23 @@ hostRuntimesCommand
   });
 
 hostRuntimesCommand
+  .command("artifact")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<artifactId>", "Artifact identifier to inspect.")
+  .description("Inspect one persisted runtime artifact.")
+  .action(
+    async (
+      nodeId: string,
+      artifactId: string,
+      _options,
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      printJson(await client.getRuntimeArtifact(nodeId, artifactId));
+    }
+  );
+
+hostRuntimesCommand
   .command("artifacts")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .option("--backend <backend>", "Filter artifacts by backend.")

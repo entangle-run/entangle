@@ -221,7 +221,7 @@ artifact-collaboration depth, not the runner boundary itself.
 - host-owned provisioning of primary repository targets whose selected git
   service declares `gitea_api`, with persisted provisioning-state records and
   runtime realizability gated on provisioning success;
-- host inspection surface for runtime artifacts.
+- host collection and item inspection surfaces for runtime artifacts.
 
 ### Still missing or incomplete
 
@@ -421,6 +421,9 @@ delivery.
 - runtime artifact inspection on top of the existing host runtime-artifact read
   model, with selected-runtime refresh now degrading partially instead of
   failing wholesale when one selected-runtime sub-read fails;
+- host and CLI single-artifact detail inspection through the same
+  runtime-artifact read model, giving artifact records a stable item resource
+  without exposing runner-local filesystem paths as a client contract;
 - runtime session inspection on top of the existing host session read model,
   with selected-runtime refresh now also carrying filtered host session
   summaries for the selected runtime;
@@ -475,6 +478,7 @@ workflow completeness, not missing mutation or liveness foundations.
 - runtime artifact inspection parity through the existing host artifact read
   surface, including deterministic local filtering over artifact backend,
   kind, lifecycle, publication, and retrieval state;
+- single-runtime-artifact inspection by id through the shared host client;
 - dry-run previews for the main host-facing mutation commands, including
   package-source admission, graph apply, node and edge mutation, external
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle
