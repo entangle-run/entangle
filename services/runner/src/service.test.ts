@@ -52,7 +52,16 @@ describe("RunnerService", () => {
           capturedRequest = request;
           return Promise.resolve({
             assistantMessages: ["Retrieved inbound artifact successfully."],
+            providerStopReason: "end_turn",
             stopReason: "completed",
+            toolExecutions: [
+              {
+                outcome: "success",
+                sequence: 1,
+                toolCallId: "toolu_001",
+                toolId: "inspect_artifact_input"
+              }
+            ],
             toolRequests: [],
             usage: {
               inputTokens: 0,
@@ -101,6 +110,22 @@ describe("RunnerService", () => {
     );
     expect(producedArtifact?.ref.backend).toBe("git");
     expect(turnRecord?.consumedArtifactIds).toContain(inboundArtifact.artifactId);
+    expect(turnRecord?.engineOutcome).toEqual({
+      providerStopReason: "end_turn",
+      stopReason: "completed",
+      toolExecutions: [
+        {
+          outcome: "success",
+          sequence: 1,
+          toolCallId: "toolu_001",
+          toolId: "inspect_artifact_input"
+        }
+      ],
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0
+      }
+    });
   });
 
   it("retrieves published inbound git artifacts from a sibling repository on the primary service", async () => {
@@ -137,6 +162,7 @@ describe("RunnerService", () => {
           return Promise.resolve({
             assistantMessages: ["Retrieved sibling repository artifact successfully."],
             stopReason: "completed",
+            toolExecutions: [],
             toolRequests: [],
             usage: {
               inputTokens: 0,
@@ -231,6 +257,7 @@ describe("RunnerService", () => {
           return Promise.resolve({
             assistantMessages: ["Handled the task successfully."],
             stopReason: "completed",
+            toolExecutions: [],
             toolRequests: [],
             usage: {
               inputTokens: 0,

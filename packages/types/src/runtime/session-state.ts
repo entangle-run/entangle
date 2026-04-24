@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
   entangleA2AMessageTypeSchema,
   entangleA2AResponsePolicySchema
@@ -114,6 +115,7 @@ export const approvalRecordSchema = z.object({
 export const runnerTurnRecordSchema = z.object({
   conversationId: identifierSchema.optional(),
   consumedArtifactIds: z.array(identifierSchema).default([]),
+  engineOutcome: engineTurnOutcomeSchema.optional(),
   graphId: identifierSchema,
   messageId: nostrEventIdSchema.optional(),
   nodeId: identifierSchema,

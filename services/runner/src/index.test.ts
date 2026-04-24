@@ -27,6 +27,7 @@ describe("runner runtime context", () => {
           `Stub execution for node '${request.nodeId}' through the configured runner path.`
         ],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 0,

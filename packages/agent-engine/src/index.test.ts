@@ -441,10 +441,151 @@ describe("agent-engine anthropic adapter", () => {
     ]);
     expect(result).toMatchObject({
       assistantMessages: ["The inspected artifact looks consistent."],
+      providerStopReason: "end_turn",
       stopReason: "completed",
+      toolExecutions: [
+        {
+          outcome: "success",
+          sequence: 1,
+          toolCallId: "toolu_01D7FLrfh4GYq7yT1ULFeyMV",
+          toolId: "inspect_artifact_input"
+        }
+      ],
+      toolRequests: [
+        {
+          input: {
+            artifactId: "artifact-alpha"
+          },
+          toolId: "inspect_artifact_input"
+        }
+      ],
       usage: {
         inputTokens: 50,
         outputTokens: 18
+      }
+    });
+  });
+
+  it("records bounded tool-execution failures without aborting the provider turn", async () => {
+    process.env.ENTANGLE_MODEL_SECRET = "anthropic-api-key";
+
+    let callCount = 0;
+    const engine = createAgentEngineForModelContext({
+      modelContext: buildModelContext(),
+      toolExecutor: {
+        executeToolCall() {
+          throw new Error("synthetic tool executor failure");
+        }
+      },
+      clientFactory: () => ({
+        messages: {
+          create() {
+            callCount += 1;
+
+            if (callCount === 1) {
+              return Promise.resolve({
+                id: "msg_tool_use_error",
+                type: "message",
+                role: "assistant",
+                content: [
+                  {
+                    type: "tool_use",
+                    id: "toolu_failed",
+                    name: "inspect_artifact_input",
+                    input: {
+                      artifactId: "artifact-alpha"
+                    },
+                    caller: "direct"
+                  }
+                ],
+                model: "claude-opus-4-7",
+                stop_reason: "tool_use",
+                stop_sequence: null,
+                usage: {
+                  input_tokens: 12,
+                  output_tokens: 6
+                }
+              } as unknown as Message);
+            }
+
+            return Promise.resolve({
+              id: "msg_after_tool_error",
+              type: "message",
+              role: "assistant",
+              content: [
+                {
+                  type: "text",
+                  text: "The tool failed, so I am stopping with a bounded fallback."
+                }
+              ],
+              model: "claude-opus-4-7",
+              stop_reason: "end_turn",
+              stop_sequence: null,
+              usage: {
+                input_tokens: 8,
+                output_tokens: 4
+              }
+            } as unknown as Message);
+          }
+        }
+      })
+    });
+
+    const result = await engine.executeTurn({
+      sessionId: "session-alpha",
+      nodeId: "worker-it",
+      systemPromptParts: ["System prompt."],
+      interactionPromptParts: ["Inspect the inbound artifact."],
+      toolDefinitions: [
+        {
+          id: "inspect_artifact_input",
+          description: "Inspect a retrieved inbound artifact by artifact id.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              artifactId: {
+                type: "string"
+              }
+            },
+            required: ["artifactId"]
+          }
+        }
+      ],
+      artifactRefs: [],
+      artifactInputs: [],
+      memoryRefs: [],
+      executionLimits: {
+        maxToolTurns: 2,
+        maxOutputTokens: 1024
+      }
+    });
+
+    expect(result).toMatchObject({
+      assistantMessages: [
+        "The tool failed, so I am stopping with a bounded fallback."
+      ],
+      providerStopReason: "end_turn",
+      stopReason: "completed",
+      toolExecutions: [
+        {
+          errorCode: "tool_execution_failed",
+          outcome: "error",
+          sequence: 1,
+          toolCallId: "toolu_failed",
+          toolId: "inspect_artifact_input"
+        }
+      ],
+      toolRequests: [
+        {
+          input: {
+            artifactId: "artifact-alpha"
+          },
+          toolId: "inspect_artifact_input"
+        }
+      ],
+      usage: {
+        inputTokens: 20,
+        outputTokens: 10
       }
     });
   });

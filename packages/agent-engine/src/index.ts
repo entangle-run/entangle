@@ -23,8 +23,12 @@ import {
   agentEngineTurnResultSchema,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
+  engineToolExecutionObservationSchema,
+  type EngineToolExecutionObservation,
   engineToolExecutionRequestSchema,
   engineToolExecutionResultSchema,
+  engineToolRequestSchema,
+  type EngineToolRequest,
   type EngineToolExecutionResult,
   type ModelRuntimeContext,
   type ResolvedSecretBinding
@@ -40,6 +44,12 @@ type AnthropicMessageParamContentBlock = Exclude<
   MessageParam["content"],
   string
 >[number];
+
+type ExecutedAnthropicToolRound = {
+  toolExecutions: EngineToolExecutionObservation[];
+  toolRequests: EngineToolRequest[];
+  toolResults: ToolResultBlockParam[];
+};
 
 export type AgentEngineErrorClassification =
   | "auth_error"
@@ -425,11 +435,28 @@ function isPlainObjectRecord(
   return typeof input === "object" && input !== null && !Array.isArray(input);
 }
 
+function buildToolExecutionObservation(
+  input: Omit<EngineToolExecutionObservation, "sequence" | "toolCallId" | "toolId"> & {
+    sequence: number;
+    toolCallId: string;
+    toolId: string;
+  }
+): EngineToolExecutionObservation {
+  return engineToolExecutionObservationSchema.parse({
+    ...(input.errorCode ? { errorCode: input.errorCode } : {}),
+    outcome: input.outcome,
+    sequence: input.sequence,
+    toolCallId: input.toolCallId,
+    toolId: input.toolId
+  });
+}
+
 async function executeAnthropicToolRound(input: {
   request: AgentEngineTurnRequest;
   response: Message;
+  startingSequence: number;
   toolExecutor: AgentEngineToolExecutor;
-}): Promise<ToolResultBlockParam[]> {
+}): Promise<ExecutedAnthropicToolRound> {
   const toolUses = extractToolUses(input.response);
 
   if (toolUses.length === 0) {
@@ -441,47 +468,105 @@ async function executeAnthropicToolRound(input: {
     );
   }
 
-  return Promise.all(
-    toolUses.map(async (toolUse) => {
+  const roundEntries = await Promise.all(
+    toolUses.map(async (toolUse, index) => {
+      const toolRequest = engineToolRequestSchema.parse({
+        input: isPlainObjectRecord(toolUse.input) ? toolUse.input : {},
+        toolId: toolUse.name
+      });
+      const sequence = input.startingSequence + index + 1;
       const toolDefinition = input.request.toolDefinitions.find(
         (candidate) => candidate.id === toolUse.name
       );
 
       if (!toolDefinition) {
-        return buildToolProtocolErrorResult(
-          toolUse.id,
-          `Tool '${toolUse.name}' was not declared for this turn.`
-        );
+        return {
+          toolExecution: buildToolExecutionObservation({
+            errorCode: "tool_not_declared",
+            outcome: "error",
+            sequence,
+            toolCallId: toolUse.id,
+            toolId: toolUse.name
+          }),
+          toolRequest,
+          toolResult: buildToolProtocolErrorResult(
+            toolUse.id,
+            `Tool '${toolUse.name}' was not declared for this turn.`
+          )
+        };
       }
 
       if (!isPlainObjectRecord(toolUse.input)) {
-        return buildToolProtocolErrorResult(
-          toolUse.id,
-          `Tool '${toolUse.name}' produced a non-object input payload.`
-        );
+        return {
+          toolExecution: buildToolExecutionObservation({
+            errorCode: "invalid_input",
+            outcome: "error",
+            sequence,
+            toolCallId: toolUse.id,
+            toolId: toolUse.name
+          }),
+          toolRequest,
+          toolResult: buildToolProtocolErrorResult(
+            toolUse.id,
+            `Tool '${toolUse.name}' produced a non-object input payload.`
+          )
+        };
       }
 
-      const executionRequest = engineToolExecutionRequestSchema.parse({
-        artifactInputs: input.request.artifactInputs,
-        input: toolUse.input,
-        memoryRefs: input.request.memoryRefs,
-        nodeId: input.request.nodeId,
-        sessionId: input.request.sessionId,
-        tool: toolDefinition,
-        toolCallId: toolUse.id
-      });
-      const executionResult = engineToolExecutionResultSchema.parse(
-        await input.toolExecutor.executeToolCall(executionRequest)
-      );
+      try {
+        const executionRequest = engineToolExecutionRequestSchema.parse({
+          artifactInputs: input.request.artifactInputs,
+          input: toolUse.input,
+          memoryRefs: input.request.memoryRefs,
+          nodeId: input.request.nodeId,
+          sessionId: input.request.sessionId,
+          tool: toolDefinition,
+          toolCallId: toolUse.id
+        });
+        const executionResult = engineToolExecutionResultSchema.parse(
+          await input.toolExecutor.executeToolCall(executionRequest)
+        );
 
-      return {
-        tool_use_id: toolUse.id,
-        type: "tool_result",
-        content: renderToolExecutionContent(executionResult.content),
-        ...(executionResult.isError ? { is_error: true } : {})
-      };
+        return {
+          toolExecution: buildToolExecutionObservation({
+            ...(executionResult.isError ? { errorCode: "tool_result_error" } : {}),
+            outcome: executionResult.isError ? "error" : "success",
+            sequence,
+            toolCallId: toolUse.id,
+            toolId: toolUse.name
+          }),
+          toolRequest,
+          toolResult: {
+            tool_use_id: toolUse.id,
+            type: "tool_result",
+            content: renderToolExecutionContent(executionResult.content),
+            ...(executionResult.isError ? { is_error: true } : {})
+          } satisfies ToolResultBlockParam
+        };
+      } catch {
+        return {
+          toolExecution: buildToolExecutionObservation({
+            errorCode: "tool_execution_failed",
+            outcome: "error",
+            sequence,
+            toolCallId: toolUse.id,
+            toolId: toolUse.name
+          }),
+          toolRequest,
+          toolResult: buildToolProtocolErrorResult(
+            toolUse.id,
+            `Tool '${toolUse.name}' failed during execution.`
+          )
+        };
+      }
     })
   );
+
+  return {
+    toolExecutions: roundEntries.map((entry) => entry.toolExecution),
+    toolRequests: roundEntries.map((entry) => entry.toolRequest),
+    toolResults: roundEntries.map((entry) => entry.toolResult)
+  };
 }
 
 function classifyAnthropicError(
@@ -540,6 +625,10 @@ function mapStopReason(message: Message): AgentEngineTurnResult["stopReason"] {
     default:
       return "error";
   }
+}
+
+function resolveProviderStopReason(message: Message): string | undefined {
+  return message.stop_reason ?? undefined;
 }
 
 function extractAssistantMessages(message: Message): string[] {
@@ -607,6 +696,8 @@ export function createAnthropicAgentEngine(input: {
 
       const client = await clientPromise;
       const normalizedRequest = agentEngineTurnRequestSchema.parse(request);
+      const aggregatedToolExecutions: AgentEngineTurnResult["toolExecutions"] = [];
+      const aggregatedToolRequests: AgentEngineTurnResult["toolRequests"] = [];
       let messages: MessageParam[] | undefined;
       let aggregatedUsage: AgentEngineTurnResult["usage"];
       let toolLoopCount = 0;
@@ -624,7 +715,11 @@ export function createAnthropicAgentEngine(input: {
           if (response.stop_reason !== "tool_use") {
             return agentEngineTurnResultSchema.parse({
               assistantMessages: extractAssistantMessages(response),
-              toolRequests: [],
+              ...(resolveProviderStopReason(response)
+                ? { providerStopReason: resolveProviderStopReason(response) }
+                : {}),
+              toolExecutions: aggregatedToolExecutions,
+              toolRequests: aggregatedToolRequests,
               stopReason: mapStopReason(response),
               usage: aggregatedUsage
             });
@@ -648,11 +743,14 @@ export function createAnthropicAgentEngine(input: {
             );
           }
 
-          const toolResults = await executeAnthropicToolRound({
+          const toolRound = await executeAnthropicToolRound({
             request: normalizedRequest,
             response,
+            startingSequence: aggregatedToolExecutions.length,
             toolExecutor: input.toolExecutor
           });
+          aggregatedToolExecutions.push(...toolRound.toolExecutions);
+          aggregatedToolRequests.push(...toolRound.toolRequests);
 
           messages = [
             ...(messages ?? [
@@ -661,7 +759,7 @@ export function createAnthropicAgentEngine(input: {
             buildAssistantContinuationMessage(response),
             {
               role: "user",
-              content: toolResults
+              content: toolRound.toolResults
             }
           ];
           toolLoopCount += 1;
@@ -719,6 +817,7 @@ export function createStubAgentEngine(): AgentEngine {
           assistantMessages: [
             `Stub engine executed for node '${request.nodeId}' with ${request.toolDefinitions.length} tool definitions.`
           ],
+          toolExecutions: [],
           toolRequests: [],
           stopReason: "completed",
           usage: {

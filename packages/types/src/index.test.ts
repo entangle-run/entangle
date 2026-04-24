@@ -364,6 +364,22 @@ describe("host event contracts", () => {
       category: "runner",
       consumedArtifactIds: ["artifact-inbound-001"],
       conversationId: "conv-alpha",
+      engineOutcome: {
+        providerStopReason: "end_turn",
+        stopReason: "completed",
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "toolu_alpha",
+            toolId: "inspect_artifact_input"
+          }
+        ],
+        usage: {
+          inputTokens: 42,
+          outputTokens: 12
+        }
+      },
       eventId: "turn-worker-it-001",
       graphId: "graph-alpha",
       message: "Runner turn 'turn-alpha' on node 'worker-it' is now in phase 'persisting'.",
@@ -384,6 +400,10 @@ describe("host event contracts", () => {
     expect(sessionEvent.category).toBe("session");
     expect(runnerTurnEvent.type).toBe("runner.turn.updated");
     expect(runnerTurnEvent.category).toBe("runner");
+    if (runnerTurnEvent.type !== "runner.turn.updated") {
+      throw new Error("Expected runner.turn.updated event");
+    }
+    expect(runnerTurnEvent.engineOutcome?.toolExecutions).toHaveLength(1);
   });
 
   it("accepts typed conversation, approval, and artifact trace events", () => {

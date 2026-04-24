@@ -161,7 +161,11 @@ Completed in the current repository state:
 7. a first bounded model-guided memory-synthesis pass where the runner now
    maintains `memory/wiki/summaries/working-context.md` through a strict
    forced tool call while preserving runner ownership of the actual wiki
-   write path.
+   write path;
+8. a first bounded engine-turn observability slice where the internal tool loop
+   now records structured tool requests and bounded tool-execution outcomes,
+   and that normalized engine outcome now persists through runner-turn state
+   into host-owned runner activity events.
 
 Remaining work in this phase:
 
@@ -170,8 +174,9 @@ Remaining work in this phase:
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;
-3. deepen normalized provider metadata, error reporting, and runtime
-   observability as engine depth grows.
+3. consume the now-implemented engine-turn observability surface more deeply in
+   operator-facing runtime trace inspection, then continue widening normalized
+   provider metadata and error reporting as engine depth grows.
 
 Acceptance for the phase:
 
@@ -238,9 +243,9 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is still Phase 2 agent-engine deepening, with
-richer tool-execution and engine observability now the highest-value narrow
-follow-on.
+The next best current move is to consume the now-implemented engine-turn
+observability surface in Studio and CLI runtime trace inspection before
+returning to broader tool-surface and memory widening.
 
 ## Phase 4: Studio completion
 
@@ -285,9 +290,9 @@ Completed in the current repository state:
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle
   intents.
 
-The next best current move is still Phase 2 agent-engine deepening, with
-richer tool-execution and engine observability now the highest-value narrow
-follow-on.
+The next best current move is to consume the now-implemented engine-turn
+observability surface in Studio and CLI runtime trace inspection before
+returning to broader engine widening.
 
 ## Phase 6: Deployment and integration hardening
 

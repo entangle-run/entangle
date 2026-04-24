@@ -667,3 +667,16 @@ controller state transitions, and hardened controller-change detection so
 trivial idle bootstrap state does not create event noise. Closed the slice
 only after widening `types`, `host-client`, and `host` tests and re-running
 `pnpm verify`.
+
+## [2026-04-24] implementation | Added bounded engine-turn observability
+
+Closed the gap where the internal Anthropic tool loop produced real execution
+behavior but lost most of its diagnostic truth after the turn completed.
+Widened the shared engine contracts with bounded tool-execution observations,
+provider stop-reason metadata, and a reusable engine-outcome structure; taught
+the internal engine path to accumulate tool requests plus bounded tool
+execution outcomes across the whole tool loop; persisted normalized engine
+outcome into runner turn records; and propagated the same canonical outcome
+through observed runner activity plus durable `runner.turn.updated` host
+events. Closed the slice only after targeted `types`, `agent-engine`,
+`runner`, and `host` tests, plus a final full `pnpm verify`.

@@ -33,6 +33,7 @@ describe("model-guided memory synthesis", () => {
           "Reviewed the recovery follow-up and identified the next checkpoint."
         ],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 12,
@@ -89,6 +90,7 @@ describe("model-guided memory synthesis", () => {
             return {
               assistantMessages: ["Working context summary updated."],
               stopReason: "completed",
+              toolExecutions: [],
               toolRequests: [],
               usage: {
                 inputTokens: 3,
@@ -111,6 +113,7 @@ describe("model-guided memory synthesis", () => {
           "Reviewed the recovery follow-up and identified the next checkpoint."
         ],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 12,
@@ -180,6 +183,7 @@ describe("model-guided memory synthesis", () => {
       result: {
         assistantMessages: ["Completed the task and handed off the report."],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 10,
@@ -208,6 +212,7 @@ describe("model-guided memory synthesis", () => {
       result: {
         assistantMessages: ["Completed the task and handed off the report."],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 10,

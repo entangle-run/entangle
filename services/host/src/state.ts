@@ -3849,6 +3849,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
   const nextRecord = observedRunnerTurnActivityRecordSchema.parse({
     consumedArtifactIds: turnRecord.consumedArtifactIds,
     conversationId: turnRecord.conversationId,
+    ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
     fingerprint,
     graphId: turnRecord.graphId,
     nodeId: runtime.nodeId,
@@ -3877,6 +3878,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     category: "runner",
     consumedArtifactIds: turnRecord.consumedArtifactIds,
     conversationId: turnRecord.conversationId,
+    ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
     graphId: turnRecord.graphId,
     message:
       `Runner turn '${turnRecord.turnId}' on node '${runtime.nodeId}' is now in phase ` +

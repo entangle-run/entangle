@@ -27,8 +27,42 @@ export const engineToolChoiceSchema = z.discriminatedUnion("type", [
 ]);
 
 export const engineToolRequestSchema = z.object({
-  toolId: identifierSchema,
+  toolId: nonEmptyStringSchema,
   input: z.record(z.string(), z.unknown()).default({})
+});
+
+export const agentEngineStopReasonSchema = z.enum([
+  "completed",
+  "tool_call_requested",
+  "max_turns_reached",
+  "error"
+]);
+
+export const engineTokenUsageSchema = z.object({
+  inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative()
+});
+
+export const engineToolExecutionObservationSchema = z.object({
+  errorCode: z
+    .enum([
+      "invalid_input",
+      "tool_execution_failed",
+      "tool_not_declared",
+      "tool_result_error"
+    ])
+    .optional(),
+  outcome: z.enum(["success", "error"]),
+  sequence: z.number().int().positive(),
+  toolCallId: nonEmptyStringSchema,
+  toolId: nonEmptyStringSchema
+});
+
+export const engineTurnOutcomeSchema = z.object({
+  providerStopReason: nonEmptyStringSchema.optional(),
+  stopReason: agentEngineStopReasonSchema,
+  toolExecutions: z.array(engineToolExecutionObservationSchema).default([]),
+  usage: engineTokenUsageSchema.optional()
 });
 
 export const engineArtifactInputSchema = z.object({
@@ -80,24 +114,22 @@ export const agentEngineTurnRequestSchema = z.object({
 
 export const agentEngineTurnResultSchema = z.object({
   assistantMessages: z.array(nonEmptyStringSchema).default([]),
+  providerStopReason: nonEmptyStringSchema.optional(),
   toolRequests: z.array(engineToolRequestSchema).default([]),
-  stopReason: z.enum([
-    "completed",
-    "tool_call_requested",
-    "max_turns_reached",
-    "error"
-  ]),
-  usage: z
-    .object({
-      inputTokens: z.number().int().nonnegative(),
-      outputTokens: z.number().int().nonnegative()
-    })
-    .optional()
+  stopReason: agentEngineStopReasonSchema,
+  toolExecutions: z.array(engineToolExecutionObservationSchema).default([]),
+  usage: engineTokenUsageSchema.optional()
 });
 
 export type EngineToolDefinition = z.infer<typeof engineToolDefinitionSchema>;
 export type EngineToolChoice = z.infer<typeof engineToolChoiceSchema>;
 export type EngineToolRequest = z.infer<typeof engineToolRequestSchema>;
+export type AgentEngineStopReason = z.infer<typeof agentEngineStopReasonSchema>;
+export type EngineTokenUsage = z.infer<typeof engineTokenUsageSchema>;
+export type EngineToolExecutionObservation = z.infer<
+  typeof engineToolExecutionObservationSchema
+>;
+export type EngineTurnOutcome = z.infer<typeof engineTurnOutcomeSchema>;
 export type EngineToolExecutionRequest = z.infer<
   typeof engineToolExecutionRequestSchema
 >;

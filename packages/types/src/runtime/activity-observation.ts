@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
   artifactBackendSchema,
   artifactKindSchema,
@@ -30,6 +31,7 @@ export const observedSessionActivityRecordSchema = z.object({
 export const observedRunnerTurnActivityRecordSchema = z.object({
   consumedArtifactIds: z.array(identifierSchema).default([]),
   conversationId: identifierSchema.optional(),
+  engineOutcome: engineTurnOutcomeSchema.optional(),
   fingerprint: nonEmptyStringSchema,
   graphId: identifierSchema,
   nodeId: identifierSchema,

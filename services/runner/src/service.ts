@@ -5,6 +5,7 @@ import type {
   ConversationLifecycleState,
   ConversationRecord,
   EngineToolDefinition,
+  EngineTurnOutcome,
   EffectiveRuntimeContext,
   EntangleA2AMessage,
   RunnerPhase,
@@ -13,6 +14,7 @@ import type {
   SessionRecord
 } from "@entangle/types";
 import {
+  engineTurnOutcomeSchema,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition
 } from "@entangle/types";
@@ -368,6 +370,19 @@ function mergeIdentifierLists(
   return [...new Set([...currentValues, ...nextValues])];
 }
 
+function buildEngineTurnOutcome(
+  result: AgentEngineTurnResult
+): EngineTurnOutcome {
+  return engineTurnOutcomeSchema.parse({
+    ...(result.providerStopReason
+      ? { providerStopReason: result.providerStopReason }
+      : {}),
+    stopReason: result.stopReason,
+    toolExecutions: result.toolExecutions,
+    ...(result.usage ? { usage: result.usage } : {})
+  });
+}
+
 export class RunnerService {
   private readonly artifactBackend: RunnerArtifactBackend;
   private readonly context: EffectiveRuntimeContext;
@@ -549,6 +564,7 @@ export class RunnerService {
       );
       turnRecord = {
         ...turnRecord,
+        engineOutcome: buildEngineTurnOutcome(result),
         producedArtifactIds,
         updatedAt: nowIsoString()
       };

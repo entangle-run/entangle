@@ -2437,6 +2437,22 @@ describe("buildHostServer", () => {
         {
           consumedArtifactIds: ["artifact-inbound-001"],
           conversationId: "conv-alpha",
+          engineOutcome: {
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [
+              {
+                outcome: "success",
+                sequence: 1,
+                toolCallId: "toolu_alpha",
+                toolId: "inspect_artifact_input"
+              }
+            ],
+            usage: {
+              inputTokens: 42,
+              outputTokens: 12
+            }
+          },
           graphId: "team-alpha",
           nodeId: "worker-it",
           phase: "persisting",
@@ -2503,6 +2519,22 @@ describe("buildHostServer", () => {
           }),
           expect.objectContaining({
             category: "runner",
+            engineOutcome: {
+              providerStopReason: "end_turn",
+              stopReason: "completed",
+              toolExecutions: [
+                {
+                  outcome: "success",
+                  sequence: 1,
+                  toolCallId: "toolu_alpha",
+                  toolId: "inspect_artifact_input"
+                }
+              ],
+              usage: {
+                inputTokens: 42,
+                outputTokens: 12
+              }
+            },
             nodeId: "worker-it",
             phase: "persisting",
             sessionId: "session-alpha",

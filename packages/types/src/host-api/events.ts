@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
   artifactBackendSchema,
   artifactKindSchema,
@@ -191,6 +192,7 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   category: z.literal("runner"),
   consumedArtifactIds: z.array(identifierSchema),
   conversationId: identifierSchema.optional(),
+  engineOutcome: engineTurnOutcomeSchema.optional(),
   graphId: identifierSchema,
   nodeId: identifierSchema,
   phase: runnerPhaseSchema,

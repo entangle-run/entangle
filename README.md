@@ -181,6 +181,10 @@ This repository currently contains:
   maintains `memory/wiki/summaries/working-context.md` through a strict
   forced tool call while preserving runner ownership of the actual wiki
   write path and keeping synthesis failure additive rather than turn-fatal;
+- a first bounded engine-turn observability slice where the internal tool loop
+  now records structured tool requests plus bounded tool-execution outcomes,
+  and normalized engine outcome now persists through runner-turn state into
+  host-owned runner activity events;
 - a first typed host-event surface where `entangle-host` now persists and
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary

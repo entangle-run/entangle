@@ -27,6 +27,7 @@ describe("post-turn memory maintenance", () => {
       result: {
         assistantMessages: ["Reviewed the parser patch and found no blockers."],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 10,
@@ -92,6 +93,7 @@ describe("post-turn memory maintenance", () => {
       result: {
         assistantMessages: ["Summarized the task without blockers."],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 8,
@@ -129,6 +131,7 @@ describe("post-turn memory maintenance", () => {
       result: {
         assistantMessages: ["Completed the first review pass and noted one follow-up."],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 8,
@@ -145,6 +148,7 @@ describe("post-turn memory maintenance", () => {
       result: {
         assistantMessages: ["Drafted the recovery plan and captured the next action."],
         stopReason: "completed",
+        toolExecutions: [],
         toolRequests: [],
         usage: {
           inputTokens: 9,

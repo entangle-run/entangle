@@ -104,6 +104,7 @@ This directory is the canonical design corpus for Entangle.
 98. [97-builtin-memory-ref-tool-slice.md](97-builtin-memory-ref-tool-slice.md)
 99. [98-recent-work-memory-summary-slice.md](98-recent-work-memory-summary-slice.md)
 100. [99-model-guided-working-context-memory-slice.md](99-model-guided-working-context-memory-slice.md)
+101. [100-engine-turn-observability-slice.md](100-engine-turn-observability-slice.md)
 
 ## Role of this corpus
 
