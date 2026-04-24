@@ -2456,6 +2456,21 @@ describe("buildHostServer", () => {
       expect(firstRecovery.entries).toHaveLength(1);
       expect(firstRecovery.entries[0]?.runtime.observedState).toBe("running");
 
+      const firstEventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      expect(firstEventsResponse.statusCode).toBe(200);
+      expect(hostEventListResponseSchema.parse(firstEventsResponse.json()).events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "runtime.recovery.recorded",
+            nodeId: "worker-it",
+            observedState: "running"
+          })
+        ])
+      );
+
       const secondRecoveryResponse = await server.inject({
         method: "GET",
         url: "/v1/runtimes/worker-it/recovery?limit=10"
@@ -2493,6 +2508,21 @@ describe("buildHostServer", () => {
       expect(thirdRecovery.entries).toHaveLength(2);
       expect(thirdRecovery.entries[0]?.runtime.observedState).toBe("stopped");
       expect(thirdRecovery.entries[1]?.runtime.observedState).toBe("running");
+
+      const thirdEventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=30"
+      });
+      expect(thirdEventsResponse.statusCode).toBe(200);
+      expect(hostEventListResponseSchema.parse(thirdEventsResponse.json()).events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "runtime.recovery.recorded",
+            nodeId: "worker-it",
+            observedState: "stopped"
+          })
+        ])
+      );
     } finally {
       await server.close();
     }
@@ -2616,13 +2646,30 @@ describe("buildHostServer", () => {
         url: "/v1/events?limit=20"
       });
       expect(eventsResponse.statusCode).toBe(200);
-      expect(hostEventListResponseSchema.parse(eventsResponse.json()).events).not.toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            type: "runtime.recovery.attempted"
-          })
-        ])
+      const recordedEvents = hostEventListResponseSchema.parse(
+        eventsResponse.json()
       );
+      expect(
+        recordedEvents.events.some(
+          (event) =>
+            event.type === "runtime.recovery_controller.updated" &&
+            event.nodeId === "worker-it" &&
+            event.controller.state === "manual_required"
+        )
+      ).toBe(true);
+      expect(
+        recordedEvents.events.some(
+          (event) =>
+            event.type === "runtime.recovery.recorded" &&
+            event.nodeId === "worker-it" &&
+            event.observedState === "failed"
+        )
+      ).toBe(true);
+      expect(
+        recordedEvents.events.some(
+          (event) => event.type === "runtime.recovery.attempted"
+        )
+      ).toBe(false);
     } finally {
       await server.close();
     }
@@ -2700,27 +2747,44 @@ describe("buildHostServer", () => {
         url: "/v1/events?limit=30"
       });
       expect(eventsResponse.statusCode).toBe(200);
-      expect(hostEventListResponseSchema.parse(eventsResponse.json()).events).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            type: "runtime.restart.requested",
-            nodeId: "worker-it",
-            restartGeneration: 1
-          }),
-          expect.objectContaining({
-            type: "runtime.recovery.attempted",
-            nodeId: "worker-it",
-            attemptNumber: 1,
-            maxAttempts: 1
-          }),
-          expect.objectContaining({
-            type: "runtime.recovery.exhausted",
-            nodeId: "worker-it",
-            attemptsUsed: 1,
-            maxAttempts: 1
-          })
-        ])
+      const recoveryEvents = hostEventListResponseSchema.parse(
+        eventsResponse.json()
       );
+      expect(
+        recoveryEvents.events.some(
+          (event) =>
+            event.type === "runtime.recovery_controller.updated" &&
+            event.nodeId === "worker-it" &&
+            event.controller.attemptsUsed === 1 &&
+            event.controller.state === "exhausted"
+        )
+      ).toBe(true);
+      expect(
+        recoveryEvents.events.some(
+          (event) =>
+            event.type === "runtime.restart.requested" &&
+            event.nodeId === "worker-it" &&
+            event.restartGeneration === 1
+        )
+      ).toBe(true);
+      expect(
+        recoveryEvents.events.some(
+          (event) =>
+            event.type === "runtime.recovery.attempted" &&
+            event.nodeId === "worker-it" &&
+            event.attemptNumber === 1 &&
+            event.maxAttempts === 1
+        )
+      ).toBe(true);
+      expect(
+        recoveryEvents.events.some(
+          (event) =>
+            event.type === "runtime.recovery.exhausted" &&
+            event.nodeId === "worker-it" &&
+            event.attemptsUsed === 1 &&
+            event.maxAttempts === 1
+        )
+      ).toBe(true);
     } finally {
       await server.close();
     }

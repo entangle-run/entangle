@@ -291,6 +291,59 @@ describe("host event contracts", () => {
     });
   });
 
+  it("accepts typed runtime recovery-recorded and controller-updated events", () => {
+    const recordedEvent = hostEventRecordSchema.parse({
+      category: "runtime",
+      desiredState: "running",
+      eventId: "runtime-worker-it-recovery-recorded-001",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260423-000000",
+      lastError: "Injected runtime failure.",
+      message: "Runtime 'worker-it' recorded a recovery snapshot in observed state 'failed'.",
+      nodeId: "worker-it",
+      observedState: "failed",
+      recordedAt: "2026-04-23T00:01:00.000Z",
+      recoveryId: "worker-it-20260423t000100-abcdef123456",
+      restartGeneration: 1,
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:01:00.000Z",
+      type: "runtime.recovery.recorded"
+    });
+    const controllerEvent = hostEventRecordSchema.parse({
+      category: "runtime",
+      controller: {
+        activeFailureFingerprint: "fp-worker-it",
+        attemptsUsed: 1,
+        graphId: "graph-alpha",
+        graphRevisionId: "graph-alpha-20260423-000000",
+        lastAttemptedAt: "2026-04-23T00:02:00.000Z",
+        lastFailureAt: "2026-04-23T00:02:00.000Z",
+        nodeId: "worker-it",
+        schemaVersion: "1",
+        state: "cooldown",
+        updatedAt: "2026-04-23T00:02:00.000Z"
+      },
+      eventId: "runtime-worker-it-recovery-controller-001",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260423-000000",
+      message: "Runtime 'worker-it' recovery controller is now 'cooldown'.",
+      nodeId: "worker-it",
+      previousAttemptsUsed: 0,
+      previousState: "manual_required",
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:02:00.000Z",
+      type: "runtime.recovery_controller.updated"
+    });
+
+    expect(recordedEvent.type).toBe("runtime.recovery.recorded");
+    expect(recordedEvent.observedState).toBe("failed");
+    if (controllerEvent.type !== "runtime.recovery_controller.updated") {
+      throw new Error("Expected runtime.recovery_controller.updated event");
+    }
+
+    expect(controllerEvent.controller.state).toBe("cooldown");
+  });
+
   it("accepts typed session and runner-turn activity events", () => {
     const sessionEvent = hostEventRecordSchema.parse({
       category: "session",

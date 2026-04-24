@@ -152,6 +152,11 @@ The repository now also contains the first real implementation baseline:
   state, exposes `PUT /v1/runtimes/{nodeId}/recovery-policy`, and can perform
   bounded automatic `restart_on_failure` recovery against stable failure
   fingerprints instead of treating retries as implicit or unbounded behavior;
+- a widening of the host recovery event surface where `entangle-host` now
+  emits durable `runtime.recovery.recorded` and
+  `runtime.recovery_controller.updated` events from the same host-owned
+  recovery history and controller state already exposed through runtime
+  recovery inspection, while suppressing trivial idle-bootstrap noise;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -274,15 +279,13 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- widen the host event surface into deeper session and runner activity now
-  that the host owns a stable session-inspection boundary;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided
   memory maintenance;
-- complete the remaining core host resource surfaces and widen the now
-  implemented host event surface into deeper session and runner activity,
-  especially richer recovery-oriented and runner-originated event classes on
-  top of the now-implemented degraded-state, reconciliation, and runtime
-  recovery-history surfaces;
+- deepen Studio and CLI inspection over the now-complete runtime recovery
+  policy, controller, history, and event surfaces;
+- widen the host event surface further into conversation-, approval-, and
+  artifact-oriented event classes on top of the now-implemented runtime,
+  recovery, session, and runner activity surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

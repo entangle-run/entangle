@@ -278,6 +278,14 @@ type RuntimeRecoveryExhaustedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.recovery.exhausted" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type RuntimeRecoveryRecordedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.recovery.recorded" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeRecoveryControllerUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.recovery_controller.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 type RuntimeObservedStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.observed_state.changed" }>,
   "eventId" | "schemaVersion" | "timestamp"
@@ -3041,6 +3049,25 @@ async function buildRuntimeResolution(input: {
     runtimeRecoveryControllerRecordPath(node.nodeId),
     nextRecoveryController
   );
+  if (didRuntimeRecoveryControllerChange(existingRecoveryController, nextRecoveryController)) {
+    await appendHostEvent({
+      category: "runtime",
+      controller: nextRecoveryController,
+      graphId: graph.graphId,
+      graphRevisionId: activeRevisionId,
+      message:
+        `Runtime '${node.nodeId}' recovery controller is now ` +
+        `'${nextRecoveryController.state}'.`,
+      nodeId: node.nodeId,
+      ...(existingRecoveryController
+        ? {
+            previousAttemptsUsed: existingRecoveryController.attemptsUsed,
+            previousState: existingRecoveryController.state
+          }
+        : {}),
+      type: "runtime.recovery_controller.updated"
+    } satisfies RuntimeRecoveryControllerUpdatedEventInput);
+  }
 
   return {
     binding: effectiveBinding,
@@ -3842,6 +3869,22 @@ async function synchronizeRuntimeRecoveryHistory(input: {
     record
   );
   await pruneRuntimeRecoveryHistory(input.inspection.nodeId);
+  await appendHostEvent({
+    category: "runtime",
+    desiredState: record.runtime.desiredState,
+    graphId: record.runtime.graphId,
+    graphRevisionId: record.runtime.graphRevisionId,
+    ...(record.lastError ? { lastError: record.lastError } : {}),
+    message:
+      `Runtime '${record.runtime.nodeId}' recorded a recovery snapshot in observed state ` +
+      `'${record.runtime.observedState}'.`,
+    nodeId: record.runtime.nodeId,
+    observedState: record.runtime.observedState,
+    recordedAt: record.recordedAt,
+    recoveryId: record.recoveryId,
+    restartGeneration: record.runtime.restartGeneration,
+    type: "runtime.recovery.recorded"
+  } satisfies RuntimeRecoveryRecordedEventInput);
 }
 
 function didRuntimeRecoveryPolicyChange(
@@ -3920,6 +3963,43 @@ function createRuntimeRecoveryControllerRecord(input: {
   }
 
   return nextRecord;
+}
+
+function isTrivialIdleRuntimeRecoveryControllerRecord(
+  record: RuntimeRecoveryControllerRecord | undefined
+): boolean {
+  if (!record) {
+    return true;
+  }
+
+  return (
+    record.state === "idle" &&
+    record.attemptsUsed === 0 &&
+    record.activeFailureFingerprint === undefined &&
+    record.lastAttemptedAt === undefined &&
+    record.lastFailureAt === undefined &&
+    record.nextEligibleAt === undefined
+  );
+}
+
+function didRuntimeRecoveryControllerChange(
+  previous: RuntimeRecoveryControllerRecord | undefined,
+  next: RuntimeRecoveryControllerRecord
+): boolean {
+  if (!previous) {
+    return !isTrivialIdleRuntimeRecoveryControllerRecord(next);
+  }
+
+  const comparablePrevious = {
+    ...previous,
+    updatedAt: ""
+  };
+  const comparableNext = {
+    ...next,
+    updatedAt: ""
+  };
+
+  return JSON.stringify(comparablePrevious) !== JSON.stringify(comparableNext);
 }
 
 async function collectSessionInspectionNodes(): Promise<

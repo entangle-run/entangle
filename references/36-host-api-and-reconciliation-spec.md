@@ -368,7 +368,6 @@ The current repository implementation now concretely includes:
 The currently missing runtime lifecycle elements are:
 
 - `DELETE /v1/runtimes/{nodeId}`
-- broader recovery-oriented event classes.
 
 Purpose:
 
@@ -395,6 +394,12 @@ The current implementation also exposes:
 - bounded automatic `restart_on_failure` recovery owned by the host control
   plane rather than by the runner, with durable exhaustion accounting anchored
   in stable failure fingerprints;
+- typed `runtime.recovery_policy.updated` events for recovery-policy mutation;
+- typed `runtime.recovery.attempted` and `runtime.recovery.exhausted` events
+  for bounded automatic recovery progress;
+- typed `runtime.recovery.recorded` events for durable recovery snapshots;
+- typed `runtime.recovery_controller.updated` events for meaningful
+  recovery-controller state transitions;
 - host-managed external principal inspection and mutation;
 - host-level reconciliation status via `GET /v1/host/status`;
 - richer host-level reconciliation counters for blocked, degraded,
@@ -445,6 +450,11 @@ The implemented event classes currently include:
 - `edge.updated`
 - `runtime.desired_state.changed`
 - `runtime.restart.requested`
+- `runtime.recovery_policy.updated`
+- `runtime.recovery.attempted`
+- `runtime.recovery.exhausted`
+- `runtime.recovery.recorded`
+- `runtime.recovery_controller.updated`
 - `runtime.observed_state.changed`
 - `session.updated`
 - `runner.turn.updated`

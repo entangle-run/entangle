@@ -177,10 +177,10 @@ place.
 
 Implement in small slices:
 
-1. broader recovery-oriented event classes and diagnostics widening on top of
-   those now-implemented host recovery read models.
-2. richer Studio and CLI inspection over the now-implemented runtime recovery
-   policy, controller, and history surfaces.
+1. richer Studio and CLI inspection over the now-implemented runtime recovery
+   policy, controller, history, and event surfaces.
+2. broader conversation, approval, artifact, and diagnostics-oriented event
+   widening on top of the now-implemented host event and recovery model.
 
 Acceptance for the phase:
 
@@ -189,8 +189,8 @@ Acceptance for the phase:
 - runtime lifecycle changes, including deterministic restart and explicit
   degraded-state semantics, explicit recovery policy, bounded automatic
   recovery, persisted session inspection, host-derived session/runner activity
-  events, and host-owned runtime recovery history, are inspectable and
-  auditable without reading files by hand.
+  events, host-owned runtime recovery history, and host-owned runtime recovery
+  events, are inspectable and auditable without reading files by hand.
 
 ## Phase 4: Studio completion
 

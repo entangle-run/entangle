@@ -511,3 +511,15 @@ stable failure fingerprint instead of restart-generation churn. Closed the
 slice only after widening shared contracts, adding deterministic host tests via
 an injectable runtime backend, and re-running targeted package tests plus the
 full `pnpm verify` gate.
+
+## [2026-04-24] implementation | Added runtime recovery host events
+
+Widened the typed host event surface so the already implemented runtime
+recovery model is observable through durable events instead of only through
+polling runtime recovery inspection. Added
+`runtime.recovery.recorded` plus `runtime.recovery_controller.updated` to the
+shared host-event contracts, emitted them from host-owned recovery history and
+controller state transitions, and hardened controller-change detection so
+trivial idle bootstrap state does not create event noise. Closed the slice
+only after widening `types`, `host-client`, and `host` tests and re-running
+`pnpm verify`.

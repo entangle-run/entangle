@@ -1040,11 +1040,41 @@ describe("createHostClient", () => {
         type: "runtime.observed_state.changed"
       })
     });
+    mockWebSocket.dispatch("message", {
+      data: JSON.stringify({
+        category: "runtime",
+        controller: {
+          attemptsUsed: 1,
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-20260423-000000",
+          lastAttemptedAt: "2026-04-23T00:01:00.000Z",
+          lastFailureAt: "2026-04-23T00:01:00.000Z",
+          nodeId: "worker-it",
+          schemaVersion: "1",
+          state: "cooldown",
+          updatedAt: "2026-04-23T00:01:00.000Z"
+        },
+        eventId: "evt-runtime-recovery-controller-001",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260423-000000",
+        message: "Runtime 'worker-it' recovery controller is now 'cooldown'.",
+        nodeId: "worker-it",
+        previousAttemptsUsed: 0,
+        previousState: "manual_required",
+        schemaVersion: "1",
+        timestamp: "2026-04-23T00:01:00.000Z",
+        type: "runtime.recovery_controller.updated"
+      })
+    });
 
     expect(receivedEvents).toEqual([
       {
         nodeId: "worker-it",
         type: "runtime.observed_state.changed"
+      },
+      {
+        nodeId: "worker-it",
+        type: "runtime.recovery_controller.updated"
       }
     ]);
   });

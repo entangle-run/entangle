@@ -47,9 +47,9 @@ The repository does **not** yet include:
 
 - a broad builtin tool surface and richer model-guided memory maintenance
   inside the internal runtime execution path;
-- broader conversation, approval, artifact, and recovery-oriented host event
-  coverage on top of the now-implemented session and runner activity event
-  surface;
+- broader conversation, approval, and artifact-oriented host event coverage on
+  top of the now-implemented runtime, recovery, session, and runner activity
+  event surfaces;
 - Studio as a complete operator surface;
 - CLI parity with all core host workflows;
 - end-to-end deployment hardening for the full local product profile.
@@ -101,8 +101,8 @@ The most important stable conclusions remain:
 ### Still missing or incomplete
 
 - fuller host API DTO coverage for the remaining control-plane resource
-  surfaces, especially richer event-stream payloads and deeper reconciliation
-  inspection;
+  surfaces, especially richer conversation-, approval-, and artifact-oriented
+  event-stream payloads plus deeper reconciliation inspection;
 - richer engine/tool-execution observability contracts once tool activity is
   surfaced more explicitly through host and Studio.
 
@@ -141,6 +141,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - explicit host-owned runtime recovery policy records, recovery-controller
   state, and bounded automatic restart-on-failure behavior exposed through the
   same runtime recovery surface plus `PUT /v1/runtimes/{nodeId}/recovery-policy`;
+- typed recovery-policy, recovery-attempt, recovery-exhaustion,
+  recovery-recorded, and recovery-controller-updated host events exposed
+  through the same persisted event boundary and WebSocket stream;
 - host-managed runtime identity persistence;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
@@ -150,8 +153,9 @@ This layer is strong and directionally correct. It is not a blocker.
 
 ### Still missing or incomplete
 
-- broader conversation, approval, artifact, and recovery-oriented event
-  classes on top of the now-implemented session and runner activity events.
+- broader conversation, approval, and artifact-oriented event classes on top
+  of the now-implemented runtime, recovery, session, and runner activity
+  events.
 
 ### Assessment
 
@@ -365,12 +369,15 @@ The current best delivery order is:
 1. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
-2. widen host events and diagnostics on top of the now-implemented recovery
-   policy, recovery controller, session, and runner activity surfaces;
-3. deepen Studio into a real operator surface on top of those host capabilities;
-4. complete CLI parity for the core host workflows;
-5. harden end-to-end deployment, restart, and integration coverage;
-6. widen git collaboration only where later delivery needs justify going beyond
+2. deepen Studio and CLI inspection over the now-implemented runtime recovery
+   policy, controller, history, and event surfaces;
+3. widen host events and diagnostics further into conversation, approval, and
+   artifact-oriented event classes on top of the now-implemented runtime,
+   recovery, session, and runner activity surfaces;
+4. deepen Studio into a real operator surface on top of those host capabilities;
+5. complete CLI parity for the core host workflows;
+6. harden end-to-end deployment, restart, and integration coverage;
+7. widen git collaboration only where later delivery needs justify going beyond
    the current locator-specific retrieval and primary-target provisioning model.
 
 This ordering preserves the best current properties of the repository:

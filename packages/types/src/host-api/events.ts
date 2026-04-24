@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
-import { runtimeRecoveryPolicySchema } from "../runtime/recovery-policy.js";
+import {
+  runtimeRecoveryControllerRecordSchema,
+  runtimeRecoveryControllerStateSchema,
+  runtimeRecoveryPolicySchema
+} from "../runtime/recovery-policy.js";
 import {
   runnerPhaseSchema,
   runnerTriggerKindSchema,
@@ -122,6 +126,32 @@ export const runtimeRecoveryExhaustedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("runtime.recovery.exhausted")
 });
 
+export const runtimeRecoveryRecordedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("runtime"),
+  desiredState: runtimeDesiredStateSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  lastError: nonEmptyStringSchema.optional(),
+  nodeId: identifierSchema,
+  observedState: runtimeObservedStateSchema,
+  recordedAt: nonEmptyStringSchema,
+  recoveryId: identifierSchema,
+  restartGeneration: runtimeRestartGenerationSchema,
+  type: z.literal("runtime.recovery.recorded")
+});
+
+export const runtimeRecoveryControllerUpdatedEventSchema =
+  hostEventBaseSchema.extend({
+    category: z.literal("runtime"),
+    controller: runtimeRecoveryControllerRecordSchema,
+    graphId: identifierSchema,
+    graphRevisionId: identifierSchema,
+    nodeId: identifierSchema,
+    previousAttemptsUsed: z.number().int().nonnegative().optional(),
+    previousState: runtimeRecoveryControllerStateSchema.optional(),
+    type: z.literal("runtime.recovery_controller.updated")
+  });
+
 export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend({
   backendKind: runtimeBackendKindSchema,
   category: z.literal("runtime"),
@@ -193,6 +223,8 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeRecoveryPolicyUpdatedEventSchema,
   runtimeRecoveryAttemptedEventSchema,
   runtimeRecoveryExhaustedEventSchema,
+  runtimeRecoveryRecordedEventSchema,
+  runtimeRecoveryControllerUpdatedEventSchema,
   runtimeObservedStateChangedEventSchema,
   sessionUpdatedEventSchema,
   runnerTurnUpdatedEventSchema,
@@ -239,6 +271,12 @@ export type RuntimeRecoveryAttemptedEvent = z.infer<
 >;
 export type RuntimeRecoveryExhaustedEvent = z.infer<
   typeof runtimeRecoveryExhaustedEventSchema
+>;
+export type RuntimeRecoveryRecordedEvent = z.infer<
+  typeof runtimeRecoveryRecordedEventSchema
+>;
+export type RuntimeRecoveryControllerUpdatedEvent = z.infer<
+  typeof runtimeRecoveryControllerUpdatedEventSchema
 >;
 export type RuntimeObservedStateChangedEvent = z.infer<
   typeof runtimeObservedStateChangedEventSchema

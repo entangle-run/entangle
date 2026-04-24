@@ -216,6 +216,11 @@ This repository currently contains:
   state, exposes `PUT /v1/runtimes/{nodeId}/recovery-policy`, and can perform
   bounded automatic `restart_on_failure` recovery with stable failure-series
   accounting instead of retrying blindly on every reconciliation;
+- a widening of the host recovery event surface where `entangle-host` now
+  emits durable `runtime.recovery.recorded` and
+  `runtime.recovery_controller.updated` events from the same host-owned
+  recovery history and controller records exposed through runtime recovery
+  inspection, while suppressing trivial idle-bootstrap noise;
 
 The highest-value remaining gaps are:
 
@@ -223,10 +228,12 @@ The highest-value remaining gaps are:
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
-- deeper conversation, approval, artifact, and recovery-oriented host event
-  coverage on top of the new degraded-state, recovery-policy,
-  recovery-history, session-inspection, and session/runner-activity host
+- deeper conversation, approval, and artifact-oriented host event coverage on
+  top of the new degraded-state, recovery-policy, recovery-history,
+  session-inspection, session/runner-activity, and runtime-recovery event
   surfaces;
+- richer Studio and CLI inspection over the now-complete runtime recovery
+  policy, controller, history, and event surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 
