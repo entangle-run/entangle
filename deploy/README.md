@@ -52,6 +52,9 @@ compilation, exclude local `*.tsbuildinfo` files from the Docker context, and
 assert that the production payload includes the service `dist/` output plus the
 required workspace package build outputs.
 
+The runner runtime image also includes the operational git toolchain required
+by the first artifact backend (`git`, `openssh-client`, and CA certificates).
+
 Then start the stable local services:
 
 ```sh
@@ -126,8 +129,11 @@ pnpm ops:smoke-local:disposable:runtime
 This variant performs the disposable profile smoke and then admits a temporary
 package into the host container, applies a temporary graph with a local
 model-secret binding, starts the managed runner container, verifies restart
-generation recreation and the durable restart host event, stops the runtime,
-and tears the profile down with volumes.
+generation recreation and the durable restart host event, publishes a real
+NIP-59 `task.request` through the local relay, proves provider-backed
+OpenAI-compatible execution against a credential-checking model stub, verifies
+completed host session and runner-turn state, verifies git-backed artifact
+materialization, stops the runtime, and tears the profile down with volumes.
 
 For an already-running local profile, the runtime lifecycle smoke can be run
 directly:
@@ -156,6 +162,10 @@ The Compose profile keeps host state and secret state in Docker volumes:
 
 - `entangle-host-state`
 - `entangle-secret-state`
+
+Those volumes have explicit Compose names because managed runner containers are
+created directly by `entangle-host` through the Docker Engine API and must mount
+the same volumes that the Compose-managed host container uses.
 
 Do not delete these volumes unless you intentionally want to reset local host
 state, runtime identities, imported packages, and local secret material.

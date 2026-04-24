@@ -35,6 +35,10 @@ ENV NODE_ENV="production"
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates git openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /prod/runner ./
 
 CMD ["node", "dist/index.js"]

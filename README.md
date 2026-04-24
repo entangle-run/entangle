@@ -181,7 +181,11 @@ This repository currently contains:
   and `pnpm ops:smoke-local:disposable:runtime` that admits a disposable
   package, applies a smoke graph with a local model-secret binding, starts a
   real runner container, verifies restart generation recreation plus the
-  durable restart host event, and stops the runtime;
+  durable restart host event, publishes a real NIP-59 `task.request` through
+  the local relay, verifies provider-backed OpenAI-compatible execution
+  against a credential-checking model stub, observes completed host session
+  and runner-turn state, verifies git-backed artifact materialization, and
+  stops the runtime;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

@@ -79,7 +79,9 @@ services:
 
 volumes:
   entangle-host-state:
+    name: entangle-host-state
   entangle-secret-state:
+    name: entangle-secret-state
   gitea-data:
   strfry-data:
 

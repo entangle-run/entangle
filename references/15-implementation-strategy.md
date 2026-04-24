@@ -498,10 +498,13 @@ Completed in the current repository state:
   `pnpm ops:smoke-local:runtime` and
   `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
   admission, smoke graph application, local model-secret binding, managed
-  runner start, restart-generation recreation, restart event persistence, and
-  stop;
-- host and runner image builds now clean stale TypeScript incremental metadata
-  and assert deploy payload presence for service and workspace-package outputs;
+  runner start, restart-generation recreation, restart event persistence, real
+  NIP-59 task intake, provider-backed OpenAI-compatible execution against a
+  credential-checking model stub, completed host session and runner-turn
+  inspection, git-backed artifact materialization, and stop;
+- host and runner image builds now clean stale TypeScript incremental metadata,
+  assert deploy payload presence for service and workspace-package outputs,
+  and package the runtime git toolchain required by the runner artifact backend;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
   profile while preserving future Compose-level integration work as a separate
   hardening track.

@@ -7,6 +7,7 @@ import {
   rm,
   writeFile
 } from "node:fs/promises";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,8 +18,10 @@ const repositoryRoot = path.resolve(
 );
 const composeFile = "deploy/compose/docker-compose.local.yml";
 const defaultHostUrl = "http://localhost:7071";
+const defaultRelayUrl = "ws://localhost:7777";
 const defaultTimeoutMs = 120_000;
 const defaultPollIntervalMs = 2_000;
+const entangleNostrRumorKind = 24159;
 
 const args = process.argv.slice(2);
 const suffix = Date.now().toString(36);
@@ -29,9 +32,14 @@ const userNodeId = `runtime-smoke-user-${suffix}`;
 const workerNodeId = `runtime-smoke-worker-${suffix}`;
 const edgeId = `runtime-smoke-edge-${suffix}`;
 const modelEndpointId = `runtime-smoke-model-${suffix}`;
+const modelStubContainerName = `entangle-runtime-smoke-model-${suffix}`;
+const runnerContainerName = `entangle-runner-${workerNodeId}`;
 const secretRef = `secret://local/runtime-smoke-model-${suffix}`;
 const hostPackagePath = `/tmp/${packageSourceId}`;
 const smokeSecret = `runtime-smoke-secret-${suffix}`;
+const smokeSessionId = `runtime-smoke-session-${suffix}`;
+const smokeConversationId = `runtime-smoke-conversation-${suffix}`;
+const smokeTurnId = `runtime-smoke-turn-${suffix}`;
 
 function readFlagValue(name) {
   const inlinePrefix = `${name}=`;
@@ -57,6 +65,11 @@ function normalizeHttpUrl(value, fallback) {
   return rawUrl.endsWith("/") ? rawUrl.slice(0, -1) : rawUrl;
 }
 
+function normalizeWebsocketUrl(value, fallback) {
+  const rawUrl = value && value.trim().length > 0 ? value.trim() : fallback;
+  return rawUrl.endsWith("/") ? rawUrl.slice(0, -1) : rawUrl;
+}
+
 const timeoutMs = readPositiveInteger("--timeout-ms", defaultTimeoutMs);
 const pollIntervalMs = readPositiveInteger(
   "--poll-interval-ms",
@@ -65,6 +78,10 @@ const pollIntervalMs = readPositiveInteger(
 const hostUrl = normalizeHttpUrl(
   process.env.ENTANGLE_HOST_URL ?? process.env.ENTANGLE_LOCAL_HOST_URL,
   defaultHostUrl
+);
+const relayUrl = normalizeWebsocketUrl(
+  process.env.ENTANGLE_STRFRY_URL ?? process.env.ENTANGLE_LOCAL_RELAY_URL,
+  defaultRelayUrl
 );
 const hostToken =
   process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
@@ -111,6 +128,202 @@ function sleep(milliseconds) {
 async function writeJsonFile(filePath, value) {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function buildModelStubServerSource() {
+  const expectedToken = JSON.stringify(smokeSecret);
+
+  return `
+const http = require("node:http");
+const expectedToken = ${expectedToken};
+
+function readBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      body += chunk;
+    });
+    request.on("end", () => resolve(body));
+    request.on("error", reject);
+  });
+}
+
+function sendJson(response, statusCode, payload) {
+  response.writeHead(statusCode, {
+    "content-type": "application/json"
+  });
+  response.end(JSON.stringify(payload));
+}
+
+function buildMemorySummaryArguments() {
+  return {
+    artifactInsights: ["Runtime smoke produced a git-backed report artifact."],
+    closedOpenQuestions: [],
+    completedNextActions: [],
+    consolidatedNextActions: [],
+    consolidatedOpenQuestions: [],
+    decisions: ["Runtime smoke completed through the OpenAI-compatible adapter."],
+    executionInsights: ["Provider-backed execution and memory synthesis completed against the local model stub."],
+    focus: "Validate the local Entangle runtime message path.",
+    nextActions: [],
+    openQuestions: [],
+    replacedNextActions: [],
+    replacedOpenQuestions: [],
+    resolutions: ["The local smoke task completed successfully."],
+    sessionInsights: ["The runner processed a NIP-59 task request for the smoke session."],
+    stableFacts: ["The local runtime smoke uses a disposable model endpoint and package source."],
+    summary: "The local runtime smoke exercised message intake, model execution, artifact materialization, and memory synthesis."
+  };
+}
+
+function buildCompletionResponse(request) {
+  const toolChoice = request.tool_choice;
+  const forcedToolName =
+    toolChoice &&
+    toolChoice.type === "function" &&
+    toolChoice.function &&
+    toolChoice.function.name;
+  const hasToolResult = Array.isArray(request.messages)
+    ? request.messages.some((message) => message && message.role === "tool")
+    : false;
+
+  if (forcedToolName === "write_memory_summary" && !hasToolResult) {
+    return {
+      choices: [
+        {
+          finish_reason: "tool_calls",
+          index: 0,
+          message: {
+            content: null,
+            role: "assistant",
+            tool_calls: [
+              {
+                function: {
+                  arguments: JSON.stringify(buildMemorySummaryArguments()),
+                  name: "write_memory_summary"
+                },
+                id: "call_runtime_smoke_memory",
+                type: "function"
+              }
+            ]
+          }
+        }
+      ],
+      created: Math.floor(Date.now() / 1000),
+      id: "chatcmpl-runtime-smoke-memory",
+      model: request.model || "runtime-smoke-model",
+      object: "chat.completion",
+      usage: {
+        completion_tokens: 12,
+        prompt_tokens: 24,
+        total_tokens: 36
+      }
+    };
+  }
+
+  return {
+    choices: [
+      {
+        finish_reason: "stop",
+        index: 0,
+        message: {
+          content: "Runtime smoke model completed the requested Entangle task.",
+          role: "assistant"
+        }
+      }
+    ],
+    created: Math.floor(Date.now() / 1000),
+    id: "chatcmpl-runtime-smoke",
+    model: request.model || "runtime-smoke-model",
+    object: "chat.completion",
+    usage: {
+      completion_tokens: 8,
+      prompt_tokens: 16,
+      total_tokens: 24
+    }
+  };
+}
+
+http
+  .createServer(async (request, response) => {
+    if (request.method === "GET" && request.url === "/health") {
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (request.method !== "POST" || !request.url.endsWith("/chat/completions")) {
+      sendJson(response, 404, { error: "not_found" });
+      return;
+    }
+
+    if (request.headers.authorization !== "Bearer " + expectedToken) {
+      sendJson(response, 401, { error: "missing_or_invalid_authorization" });
+      return;
+    }
+
+    try {
+      const requestBody = JSON.parse(await readBody(request));
+      sendJson(response, 200, buildCompletionResponse(requestBody));
+    } catch (error) {
+      sendJson(response, 400, {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  })
+  .listen(8080, "0.0.0.0");
+`;
+}
+
+async function waitForModelStub() {
+  const deadline = Date.now() + timeoutMs;
+  let lastOutput = "";
+
+  while (Date.now() <= deadline) {
+    const result = run(
+      "docker",
+      [
+        "exec",
+        modelStubContainerName,
+        "node",
+        "-e",
+        "fetch('http://127.0.0.1:8080/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1));"
+      ],
+      { capture: true }
+    );
+
+    if (result.status === 0) {
+      printPass("runtime-smoke:model-stub", modelStubContainerName);
+      return;
+    }
+
+    lastOutput = formatCapturedOutput(result);
+    await sleep(500);
+  }
+
+  throw new Error(
+    `Runtime smoke model stub did not become ready within ${timeoutMs}ms. ${lastOutput}`
+  );
+}
+
+async function startModelStubContainer() {
+  run("docker", ["rm", "-f", modelStubContainerName], { capture: true });
+
+  requireSuccess("Start runtime smoke model stub", "docker", [
+    "run",
+    "--rm",
+    "-d",
+    "--name",
+    modelStubContainerName,
+    "--network",
+    "entangle-local",
+    "node:22-bookworm-slim",
+    "node",
+    "-e",
+    buildModelStubServerSource()
+  ]);
+
+  await waitForModelStub();
 }
 
 async function writeSmokePackage(packageRoot) {
@@ -230,9 +443,9 @@ function buildSmokeCatalog(catalog) {
       {
         id: modelEndpointId,
         displayName: "Runtime Smoke Model Endpoint",
-        adapterKind: "anthropic",
-        baseUrl: "http://runtime-smoke-model.invalid",
-        authMode: "header_secret",
+        adapterKind: "openai_compatible",
+        baseUrl: `http://${modelStubContainerName}:8080/v1`,
+        authMode: "api_key_bearer",
         secretRef,
         defaultModel: "runtime-smoke-model"
       }
@@ -322,6 +535,156 @@ async function waitForRuntime(predicate, label) {
   );
 }
 
+async function tryHostRequest(method, route, body) {
+  try {
+    return await hostRequest(method, route, body);
+  } catch {
+    return undefined;
+  }
+}
+
+async function loadNostrTools() {
+  const runnerRequire = createRequire(
+    path.join(repositoryRoot, "services", "runner", "package.json")
+  );
+  const nostrTools = await import(runnerRequire.resolve("nostr-tools"));
+  return nostrTools.default ?? nostrTools["module.exports"] ?? nostrTools;
+}
+
+async function publishSmokeTask(runtimeContext) {
+  const nostrTools = await loadNostrTools();
+  const userSecretKey = nostrTools.generateSecretKey();
+  const userPubkey = nostrTools.getPublicKey(userSecretKey);
+  const workerPubkey = runtimeContext.identityContext.publicKey;
+  const taskMessage = {
+    constraints: {
+      approvalRequiredBeforeAction: false
+    },
+    conversationId: smokeConversationId,
+    fromNodeId: userNodeId,
+    fromPubkey: userPubkey,
+    graphId,
+    intent: "Validate the local runtime message path.",
+    messageType: "task.request",
+    protocol: "entangle.a2a.v1",
+    responsePolicy: {
+      closeOnResult: true,
+      maxFollowups: 0,
+      responseRequired: false
+    },
+    sessionId: smokeSessionId,
+    toNodeId: workerNodeId,
+    toPubkey: workerPubkey,
+    turnId: smokeTurnId,
+    work: {
+      artifactRefs: [],
+      metadata: {
+        smoke: true
+      },
+      summary:
+        "Run a provider-backed smoke turn and materialize a git-backed report artifact."
+    }
+  };
+  const rumor = nostrTools.nip59.createRumor(
+    {
+      content: JSON.stringify(taskMessage),
+      kind: entangleNostrRumorKind,
+      tags: []
+    },
+    userSecretKey
+  );
+  const seal = nostrTools.nip59.createSeal(rumor, userSecretKey, workerPubkey);
+  const wrappedEvent = nostrTools.nip59.createWrap(seal, workerPubkey);
+  const pool = new nostrTools.SimplePool();
+
+  try {
+    await Promise.all(pool.publish([relayUrl], wrappedEvent));
+  } finally {
+    pool.destroy?.();
+  }
+
+  printPass(
+    "runtime-smoke:task-published",
+    `session=${smokeSessionId}; event=${rumor.id}`
+  );
+
+  return {
+    eventId: rumor.id,
+    sessionId: smokeSessionId
+  };
+}
+
+async function waitForMessageCompletion(input) {
+  const deadline = Date.now() + timeoutMs;
+  let lastObservation;
+
+  while (Date.now() <= deadline) {
+    const [sessionInspection, turnList, artifactList] = await Promise.all([
+      tryHostRequest("GET", `/v1/sessions/${input.sessionId}`),
+      tryHostRequest("GET", `/v1/runtimes/${workerNodeId}/turns`),
+      tryHostRequest("GET", `/v1/runtimes/${workerNodeId}/artifacts`)
+    ]);
+    const sessionNode = sessionInspection?.nodes?.find(
+      (node) => node.nodeId === workerNodeId
+    );
+    const turn = turnList?.turns?.find(
+      (candidate) => candidate.messageId === input.eventId
+    );
+    const erroredTurn = turnList?.turns?.find(
+      (candidate) =>
+        candidate.messageId === input.eventId && candidate.phase === "errored"
+    );
+    const producedArtifactId = turn?.producedArtifactIds?.[0];
+    const producedArtifact = producedArtifactId
+      ? artifactList?.artifacts?.find(
+          (artifact) => artifact.ref.artifactId === producedArtifactId
+        )
+      : undefined;
+
+    lastObservation = {
+      artifacts: artifactList?.artifacts?.length ?? 0,
+      sessionStatus: sessionNode?.session?.status,
+      turn: turn
+        ? {
+            engineOutcome: turn.engineOutcome,
+            phase: turn.phase,
+            producedArtifactIds: turn.producedArtifactIds
+          }
+        : undefined
+    };
+
+    if (erroredTurn) {
+      throw new Error(
+        `Runtime smoke message path failed: runner turn '${erroredTurn.turnId}' entered phase 'errored'. Observation: ${JSON.stringify(lastObservation)}`
+      );
+    }
+
+    if (
+      sessionNode?.session?.status === "completed" &&
+      turn?.engineOutcome?.stopReason === "completed" &&
+      turn.engineOutcome.providerMetadata?.adapterKind === "openai_compatible" &&
+      turn.engineOutcome.providerMetadata?.profileId === modelEndpointId &&
+      producedArtifact
+    ) {
+      printPass(
+        "runtime-smoke:message-turn",
+        `turn=${turn.turnId}; artifact=${producedArtifact.ref.artifactId}`
+      );
+      return {
+        artifact: producedArtifact,
+        session: sessionNode.session,
+        turn
+      };
+    }
+
+    await sleep(pollIntervalMs);
+  }
+
+  throw new Error(
+    `Runtime smoke message path did not complete within ${timeoutMs}ms. Last observation: ${JSON.stringify(lastObservation)}`
+  );
+}
+
 function printPass(name, detail) {
   console.log(`PASS ${name}: ${detail}`);
 }
@@ -354,6 +717,7 @@ async function main() {
     tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-runtime-smoke-"));
     const packageRoot = path.join(tempRoot, packageId);
     await writeSmokePackage(packageRoot);
+    await startModelStubContainer();
 
     requireSuccess("Remove stale host smoke package", "docker", [
       "compose",
@@ -459,6 +823,17 @@ async function main() {
     );
     await assertRestartEvent(expectedRestartGeneration);
 
+    const runtimeContext = await hostRequest(
+      "GET",
+      `/v1/runtimes/${workerNodeId}/context`
+    );
+    const publishedTask = await publishSmokeTask(runtimeContext);
+    const messageRun = await waitForMessageCompletion(publishedTask);
+    printPass(
+      "runtime-smoke:message-session",
+      `status=${messageRun.session.status}; stop=${messageRun.turn.engineOutcome.stopReason}`
+    );
+
     await hostRequest("POST", `/v1/runtimes/${workerNodeId}/stop`);
     const stoppedInspection = await waitForRuntime(
       (inspection) =>
@@ -471,12 +846,14 @@ async function main() {
       `observed=${stoppedInspection.observedState}; generation=${stoppedInspection.restartGeneration}`
     );
 
-    console.log("Local runtime lifecycle smoke passed.");
+    console.log("Local runtime lifecycle and message smoke passed.");
   } finally {
     if (tempRoot) {
       await rm(tempRoot, { force: true, recursive: true });
     }
 
+    await tryHostRequest("POST", `/v1/runtimes/${workerNodeId}/stop`);
+    run("docker", ["rm", "-f", runnerContainerName], { capture: true });
     run(
       "docker",
       [
@@ -492,6 +869,7 @@ async function main() {
       ],
       { capture: true }
     );
+    run("docker", ["rm", "-f", modelStubContainerName], { capture: true });
   }
 }
 

@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-24] operations | Added provider-backed runtime message smoke
+
+`pnpm ops:smoke-local:runtime` now goes beyond lifecycle probing: after
+restart verification it publishes a real NIP-59 `task.request` through the
+local relay, runs the managed runner against a credential-checking
+OpenAI-compatible model stub, verifies completed host session and runner-turn
+state, and verifies git-backed artifact materialization.
+
+The slice also corrected two deployment truths exposed by the stronger smoke:
+the Compose host and host-managed runner now share explicitly named state and
+secret volumes, and the runner runtime image now includes the git toolchain
+needed by the git-backed artifact backend.
+
 ## [2026-04-24] operations | Added Docker-backed runtime lifecycle smoke
 
 `pnpm ops:smoke-local:runtime` now exercises a running local profile by

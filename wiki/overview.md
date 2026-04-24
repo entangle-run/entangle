@@ -441,7 +441,10 @@ The repository now also contains the first real implementation baseline:
   `pnpm ops:smoke-local:disposable:runtime`, covering disposable package
   admission, smoke graph application, local model-secret binding, managed
   runner start, restart-generation recreation, restart event persistence,
-  stop, and disposable teardown;
+  real NIP-59 task intake through the local relay, provider-backed
+  OpenAI-compatible execution against a credential-checking model stub,
+  completed host session and runner-turn inspection, git-backed artifact
+  materialization, stop, and disposable teardown;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;

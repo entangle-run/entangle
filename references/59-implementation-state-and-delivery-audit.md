@@ -581,8 +581,15 @@ priority widening.
   `pnpm ops:smoke-local:runtime` and
   `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
   admission, smoke graph application, local model-secret binding, managed
-  runner start, restart-generation recreation, restart event persistence, and
-  stop;
+  runner start, restart-generation recreation, restart event persistence, real
+  NIP-59 task intake, provider-backed OpenAI-compatible execution against a
+  credential-checking model stub, completed host session and runner-turn
+  inspection, git-backed artifact materialization, and stop;
+- explicit local Compose volume names for the host state and secret volumes so
+  host-managed runner containers created through the Docker Engine API mount
+  the same state and secret roots as the Compose-managed host service;
+- a runner runtime image that includes the git and SSH client tooling required
+  by the git-backed artifact backend;
 - deterministic host and runner Docker builds that clean TypeScript incremental
   state and assert service/workspace-package deploy payloads before creating
   runtime images;
@@ -594,7 +601,8 @@ priority widening.
 
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
 - richer Docker-backed runtime smoke coverage around artifact-aware multi-node
-  flows.
+  flows, now specifically beyond the implemented same-node provider-backed
+  turn and local git artifact materialization path.
 
 ### Assessment
 
@@ -643,10 +651,11 @@ This ordering preserves the best current properties of the repository:
 The git secret-delivery, repository-target-resolution, publication-state,
 preexisting-repository publication, locator-specific retrieval, host-owned
 `gitea_api` provisioning, first real provider-backed engine, first bounded
-tool-loop, deterministic post-turn memory, and first host-event-surface slices
-are now complete for the current local operator profile, so the next best
-capability move is controlled runtime deepening and host-surface completion
-rather than another foundational rewrite.
+tool-loop, deterministic post-turn memory, first host-event-surface, and
+same-node provider-backed Docker runtime smoke slices are now complete for the
+current local operator profile, so the next best capability move is controlled
+multi-node runtime deepening and host-surface completion rather than another
+foundational rewrite.
 
 ## What should not happen next
 
