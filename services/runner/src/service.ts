@@ -4,7 +4,9 @@ import type {
   ArtifactRecord,
   ConversationLifecycleState,
   ConversationRecord,
+  EngineProviderMetadata,
   EngineToolDefinition,
+  EngineTurnFailure,
   EngineTurnOutcome,
   EffectiveRuntimeContext,
   EntangleA2AMessage,
@@ -20,7 +22,11 @@ import {
 } from "@entangle/types";
 import { validateA2AMessageDocument } from "@entangle/validator";
 import type { AgentEngine } from "@entangle/agent-engine";
-import { createStubAgentEngine } from "@entangle/agent-engine";
+import {
+  AgentEngineConfigurationError,
+  AgentEngineExecutionError,
+  createStubAgentEngine
+} from "@entangle/agent-engine";
 import {
   buildAgentEngineTurnRequest,
   loadPackageToolCatalog,
@@ -72,6 +78,63 @@ function nowIsoString(): string {
 
 function buildSyntheticTurnId(prefix: string): string {
   return `${prefix}-${randomUUID().replace(/-/g, "")}`;
+}
+
+function truncateBoundedText(value: string, maxCharacters = 240): string {
+  const normalizedValue = value.trim();
+
+  if (normalizedValue.length <= maxCharacters) {
+    return normalizedValue;
+  }
+
+  return `${normalizedValue.slice(0, maxCharacters - 1)}…`;
+}
+
+function buildEngineProviderMetadataFromContext(
+  context: EffectiveRuntimeContext
+): EngineProviderMetadata | undefined {
+  const profile = context.modelContext.modelEndpointProfile;
+
+  if (!profile) {
+    return undefined;
+  }
+
+  return {
+    adapterKind: profile.adapterKind,
+    ...(profile.defaultModel ? { modelId: profile.defaultModel } : {}),
+    profileId: profile.id
+  };
+}
+
+function buildEngineFailure(
+  context: EffectiveRuntimeContext,
+  error: unknown
+): EngineTurnFailure {
+  if (error instanceof AgentEngineExecutionError) {
+    return {
+      classification: error.classification,
+      message: truncateBoundedText(error.message)
+    };
+  }
+
+  if (error instanceof AgentEngineConfigurationError) {
+    return {
+      classification: "configuration_error",
+      message: truncateBoundedText(error.message)
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      classification: "unknown_provider_error",
+      message: truncateBoundedText(error.message)
+    };
+  }
+
+  return {
+    classification: "unknown_provider_error",
+    message: `Unexpected engine execution failure for node '${context.binding.node.nodeId}'.`
+  };
 }
 
 async function advanceSessionToProcessing(
@@ -371,15 +434,36 @@ function mergeIdentifierLists(
 }
 
 function buildEngineTurnOutcome(
-  result: AgentEngineTurnResult
+  result: AgentEngineTurnResult,
+  context: EffectiveRuntimeContext
 ): EngineTurnOutcome {
   return engineTurnOutcomeSchema.parse({
+    ...(result.failure ? { failure: result.failure } : {}),
+    ...(result.providerMetadata
+      ? { providerMetadata: result.providerMetadata }
+      : buildEngineProviderMetadataFromContext(context)
+        ? { providerMetadata: buildEngineProviderMetadataFromContext(context) }
+        : {}),
     ...(result.providerStopReason
       ? { providerStopReason: result.providerStopReason }
       : {}),
     stopReason: result.stopReason,
     toolExecutions: result.toolExecutions,
     ...(result.usage ? { usage: result.usage } : {})
+  });
+}
+
+function buildFailedEngineTurnOutcome(
+  context: EffectiveRuntimeContext,
+  error: unknown
+): EngineTurnOutcome {
+  return engineTurnOutcomeSchema.parse({
+    failure: buildEngineFailure(context, error),
+    ...(buildEngineProviderMetadataFromContext(context)
+      ? { providerMetadata: buildEngineProviderMetadataFromContext(context) }
+      : {}),
+    stopReason: "error",
+    toolExecutions: []
   });
 }
 
@@ -546,7 +630,26 @@ export class RunnerService {
       });
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
-      const result = await this.engine.executeTurn(turnRequest);
+      let result: AgentEngineTurnResult;
+
+      try {
+        result = await this.engine.executeTurn(turnRequest);
+      } catch (error) {
+        turnRecord = {
+          ...turnRecord,
+          engineOutcome: buildFailedEngineTurnOutcome(this.context, error),
+          updatedAt: nowIsoString()
+        };
+        await writeRunnerTurnRecord(statePaths, turnRecord);
+        throw error;
+      }
+
+      turnRecord = {
+        ...turnRecord,
+        engineOutcome: buildEngineTurnOutcome(result, this.context),
+        updatedAt: nowIsoString()
+      };
+      await writeRunnerTurnRecord(statePaths, turnRecord);
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "persisting");
       const materializedArtifacts = await this.artifactBackend.materializeTurnArtifacts({
         context: this.context,
@@ -564,7 +667,6 @@ export class RunnerService {
       );
       turnRecord = {
         ...turnRecord,
-        engineOutcome: buildEngineTurnOutcome(result),
         producedArtifactIds,
         updatedAt: nowIsoString()
       };

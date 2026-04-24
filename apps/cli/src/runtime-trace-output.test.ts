@@ -8,6 +8,11 @@ describe("projectRuntimeTraceSummary", () => {
       category: "runner",
       consumedArtifactIds: ["artifact-inbound-001"],
       engineOutcome: {
+        providerMetadata: {
+          adapterKind: "anthropic",
+          modelId: "claude-opus-4-7",
+          profileId: "shared-anthropic"
+        },
         providerStopReason: "end_turn",
         stopReason: "completed",
         toolExecutions: [
@@ -41,6 +46,7 @@ describe("projectRuntimeTraceSummary", () => {
 
     expect(projectRuntimeTraceSummary(event)).toEqual({
       detailLines: [
+        "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
         "Outcome: completed (provider: end_turn)",
         "Usage: 42 input / 12 output tokens",
         "Tool executions: 1 total (1 success, 0 error)",

@@ -2,6 +2,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
+import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import { sessionRecordSchema, type AgentEngineTurnRequest } from "@entangle/types";
 import { loadRuntimeContext } from "./runtime-context.js";
 import { RunnerService } from "./service.js";
@@ -111,6 +112,11 @@ describe("RunnerService", () => {
     expect(producedArtifact?.ref.backend).toBe("git");
     expect(turnRecord?.consumedArtifactIds).toContain(inboundArtifact.artifactId);
     expect(turnRecord?.engineOutcome).toEqual({
+      providerMetadata: {
+        adapterKind: "anthropic",
+        modelId: "claude-opus",
+        profileId: "shared-model"
+      },
       providerStopReason: "end_turn",
       stopReason: "completed",
       toolExecutions: [
@@ -242,6 +248,119 @@ describe("RunnerService", () => {
     expect(failedArtifact?.retrieval?.lastError).toContain(
       "cannot resolve the remote repository"
     );
+  });
+
+  it("persists bounded engine failure metadata when model execution throws", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context: runtimeContext,
+      engine: {
+        executeTurn() {
+          throw new AgentEngineExecutionError(
+            "Anthropic engine execution failed because authentication was rejected by the provider.",
+            {
+              classification: "auth_error"
+            }
+          );
+        }
+      },
+      transport
+    });
+
+    await expect(service.handleInboundEnvelope(buildInboundTaskRequest())).rejects.toMatchObject({
+      classification: "auth_error",
+      name: "AgentEngineExecutionError"
+    });
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const [sessionRecord, turnRecord] = await Promise.all([
+      readSessionRecord(statePaths, "session-alpha"),
+      readRunnerTurnRecord(statePaths, (await readdir(statePaths.turnsRoot))[0]!.replace(/\.json$/, ""))
+    ]);
+
+    expect(sessionRecord?.status).toBe("failed");
+    expect(turnRecord?.phase).toBe("errored");
+    expect(turnRecord?.engineOutcome).toEqual({
+      failure: {
+        classification: "auth_error",
+        message:
+          "Anthropic engine execution failed because authentication was rejected by the provider."
+      },
+      providerMetadata: {
+        adapterKind: "anthropic",
+        modelId: "claude-opus",
+        profileId: "shared-model"
+      },
+      stopReason: "error",
+      toolExecutions: []
+    });
+  });
+
+  it("persists engine outcome before artifact materialization so later failures remain inspectable", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      artifactBackend: {
+        materializeTurnArtifacts() {
+          return Promise.reject(new Error("synthetic artifact materialization failure"));
+        },
+        retrieveInboundArtifacts() {
+          return Promise.resolve({
+            artifactInputs: [],
+            artifacts: []
+          });
+        }
+      },
+      context: runtimeContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Completed the core reasoning path."],
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: [],
+            usage: {
+              inputTokens: 21,
+              outputTokens: 9
+            }
+          });
+        }
+      },
+      transport
+    });
+
+    await expect(service.handleInboundEnvelope(buildInboundTaskRequest())).rejects.toThrow(
+      "synthetic artifact materialization failure"
+    );
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const [sessionRecord, turnRecord] = await Promise.all([
+      readSessionRecord(statePaths, "session-alpha"),
+      readRunnerTurnRecord(statePaths, (await readdir(statePaths.turnsRoot))[0]!.replace(/\.json$/, ""))
+    ]);
+
+    expect(sessionRecord?.status).toBe("failed");
+    expect(turnRecord?.phase).toBe("errored");
+    expect(turnRecord?.engineOutcome).toEqual({
+      providerMetadata: {
+        adapterKind: "anthropic",
+        modelId: "claude-opus",
+        profileId: "shared-model"
+      },
+      stopReason: "completed",
+      toolExecutions: [],
+      usage: {
+        inputTokens: 21,
+        outputTokens: 9
+      }
+    });
   });
 
   it("keeps the completed turn successful when optional memory synthesis throws", async () => {

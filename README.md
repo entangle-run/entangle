@@ -189,6 +189,10 @@ This repository currently contains:
   that normalized engine outcome through shared `packages/host-client`
   presentation helpers instead of leaving runtime-trace inspection trapped in
   raw host-event JSON;
+- a bounded provider-metadata and engine-failure-reporting slice where
+  successful turns now preserve normalized provider identity, failed turns now
+  persist bounded failure payloads, and successful engine outcomes survive
+  later artifact-materialization failures;
 - a first typed host-event surface where `entangle-host` now persists and
   normalizes event records, exposes `GET /v1/events` for inspection, streams
   live host events over WebSocket on the same route, and shares that boundary
@@ -303,9 +307,8 @@ This repository currently contains:
 
 The highest-value remaining gaps are:
 
-- bounded widening of provider metadata and failure surfacing in engine
-  outcomes, plus any later builtin-tool or model-guided memory widening that
-  still adds real runtime value;
+- bounded builtin-tool or model-guided memory widening that still adds real
+  runtime value;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.

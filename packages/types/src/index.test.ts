@@ -8,6 +8,7 @@ import {
   entangleNostrRumorKind,
   engineToolExecutionRequestSchema,
   engineToolExecutionResultSchema,
+  engineTurnOutcomeSchema,
   externalPrincipalRecordSchema,
   graphRevisionInspectionResponseSchema,
   gitRepositoryProvisioningRecordSchema,
@@ -365,6 +366,11 @@ describe("host event contracts", () => {
       consumedArtifactIds: ["artifact-inbound-001"],
       conversationId: "conv-alpha",
       engineOutcome: {
+        providerMetadata: {
+          adapterKind: "anthropic",
+          modelId: "claude-opus-4-7",
+          profileId: "shared-anthropic"
+        },
         providerStopReason: "end_turn",
         stopReason: "completed",
         toolExecutions: [
@@ -404,6 +410,19 @@ describe("host event contracts", () => {
       throw new Error("Expected runner.turn.updated event");
     }
     expect(runnerTurnEvent.engineOutcome?.toolExecutions).toHaveLength(1);
+  });
+
+  it("rejects engine outcomes that claim failure without stopReason error", () => {
+    const result = engineTurnOutcomeSchema.safeParse({
+      failure: {
+        classification: "auth_error",
+        message: "Authentication failed."
+      },
+      stopReason: "completed",
+      toolExecutions: []
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it("accepts typed conversation, approval, and artifact trace events", () => {

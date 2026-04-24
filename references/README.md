@@ -106,6 +106,7 @@ This directory is the canonical design corpus for Entangle.
 100. [99-model-guided-working-context-memory-slice.md](99-model-guided-working-context-memory-slice.md)
 101. [100-engine-turn-observability-slice.md](100-engine-turn-observability-slice.md)
 102. [101-runtime-trace-client-consumption-slice.md](101-runtime-trace-client-consumption-slice.md)
+103. [102-engine-provider-metadata-and-failure-reporting-slice.md](102-engine-provider-metadata-and-failure-reporting-slice.md)
 
 ## Role of this corpus
 

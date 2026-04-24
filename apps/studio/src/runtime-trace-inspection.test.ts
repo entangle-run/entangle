@@ -106,6 +106,11 @@ describe("studio runtime trace inspection helpers", () => {
       category: "runner",
       consumedArtifactIds: ["artifact-inbound"],
       engineOutcome: {
+        providerMetadata: {
+          adapterKind: "anthropic",
+          modelId: "claude-opus-4-7",
+          profileId: "shared-anthropic"
+        },
         providerStopReason: "end_turn",
         stopReason: "completed",
         toolExecutions: [
@@ -145,6 +150,7 @@ describe("studio runtime trace inspection helpers", () => {
     });
 
     expect(detailLines).toEqual([
+      "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
       "Outcome: completed (provider: end_turn)",
       "Usage: 42 input / 12 output tokens",
       "Tool executions: 2 total (1 success, 1 error)",

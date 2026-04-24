@@ -170,6 +170,10 @@ Completed in the current repository state:
    normalized engine outcome through shared `host-client` presentation helpers
    instead of leaving operator-facing trace inspection trapped in raw host-event
    JSON.
+10. a bounded provider-metadata and engine-failure-reporting slice where
+    successful turns now preserve normalized provider identity, failed turns now
+    persist bounded failure payloads, and successful engine outcomes survive
+    later artifact-materialization failures.
 
 Remaining work in this phase:
 
@@ -178,9 +182,9 @@ Remaining work in this phase:
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;
-3. continue widening normalized provider metadata and bounded failure reporting
-   in engine outcomes now that the first shared operator-facing runtime-trace
-   consumption path is complete.
+3. widen provider metadata only where later provider adapters or delivery modes
+   justify new canonical fields instead of adding provider-shaped churn
+   prematurely.
 
 Acceptance for the phase:
 
@@ -247,9 +251,9 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is to widen normalized provider metadata and bounded
-failure reporting in engine outcomes now that Studio and CLI consume the shared
-runtime-trace presentation model.
+The next best current move is to return to bounded builtin-tool widening and
+richer model-guided memory maintenance now that the engine failure and provider
+metadata path is operator-visible and durable.
 
 ## Phase 4: Studio completion
 
@@ -294,9 +298,8 @@ Completed in the current repository state:
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle
   intents.
 
-The next best current move is to widen normalized provider metadata and bounded
-failure reporting in engine outcomes now that shared runtime-trace summaries
-are visible in both Studio and CLI.
+The next best current move is to keep CLI widening opportunistic and instead
+return to bounded runtime/tooling depth where it adds real execution value.
 
 ## Phase 6: Deployment and integration hardening
 

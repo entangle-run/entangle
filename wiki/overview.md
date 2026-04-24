@@ -128,6 +128,10 @@ The repository now also contains the first real implementation baseline:
   owns bounded labels and detail-line generation for runtime-trace events, and
   both Studio and CLI consume that shared presentation over the existing
   host-owned event surface;
+- a bounded provider-metadata and engine-failure-reporting slice where
+  successful turns now preserve normalized provider identity, failed turns now
+  persist bounded failure payloads, and successful engine outcomes survive
+  later artifact-materialization failure in durable runner state;
 - a first typed host-event surface where `entangle-host` now persists
   canonical event records, lists them over `GET /v1/events`, streams them over
   WebSocket on the same route, and exposes the shared event boundary through
@@ -356,9 +360,9 @@ The current implementation-truth audit now lives in
   model;
 - complete CLI parity where it adds real headless operational value;
 - continue broadening normalized provider metadata and bounded failure
-  reporting now that Studio and CLI consume shared runtime-trace summaries,
-  then widen builtin tools or model-guided memory only where they add real
-  runtime value;
+  reporting only where later provider adapters justify new canonical fields,
+  and otherwise return to builtin-tool or model-guided memory widening only
+  where they add real runtime value;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

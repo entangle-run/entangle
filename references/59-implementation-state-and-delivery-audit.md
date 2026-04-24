@@ -45,8 +45,7 @@ That means the current system already includes:
 
 The repository does **not** yet include:
 
-- a broad builtin tool surface plus richer provider metadata and bounded
-  failure reporting inside the internal runtime execution path;
+- a broad builtin tool surface inside the internal runtime execution path;
 - broader model-guided memory maintenance beyond the current deterministic and
   bounded derived-summary baseline;
 - fuller Studio and CLI depth only where later operator workflows expose real
@@ -284,6 +283,10 @@ not modeling.
   generation, Studio renders those shared trace details in the selected-runtime
   panel, and the CLI can filter to runtime-trace events plus print structured
   trace summaries without inventing a separate event model.
+- a bounded provider-metadata and failure-reporting slice where successful
+  turns now preserve normalized provider identity, failed turns now persist
+  bounded engine failure payloads, and successful engine outcomes remain
+  durable even when later artifact materialization fails.
 - typed provider-error normalization and isolated engine tests that do not
   require live model calls.
 
@@ -294,8 +297,8 @@ not modeling.
 - richer model-guided memory maintenance beyond the current deterministic task
   page, log/index, and derived recent-work plus working-context summary
   baseline;
-- broader provider metadata and bounded failure surfacing now that the first
-  shared operator-facing runtime-trace consumption path is complete.
+- later provider widening only where new adapters or delivery modes introduce a
+  real canonical contract need.
 
 ### Assessment
 
@@ -347,8 +350,9 @@ delivery.
   approvals, artifacts, sessions, runner turns, and runtime recovery events;
 - bounded shared runtime-trace detail presentation over host-owned
   `engineOutcome`, so the selected-runtime trace panel now shows normalized
-  stop reason, provider stop reason, token usage, and bounded tool-execution
-  summaries instead of only raw event messages.
+  provider identity, stop reason, provider stop reason, token usage, bounded
+  failure payloads, and bounded tool-execution summaries instead of only raw
+  event messages.
 
 ### Still missing or incomplete
 

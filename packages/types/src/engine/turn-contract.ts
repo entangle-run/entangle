@@ -8,6 +8,7 @@ import {
   identifierSchema,
   nonEmptyStringSchema
 } from "../common/primitives.js";
+import { modelEndpointAdapterKindSchema } from "../resources/catalog.js";
 
 export const engineToolDefinitionSchema = z.object({
   id: identifierSchema,
@@ -38,9 +39,32 @@ export const agentEngineStopReasonSchema = z.enum([
   "error"
 ]);
 
+export const agentEngineFailureClassificationSchema = z.enum([
+  "auth_error",
+  "quota_error",
+  "rate_limit",
+  "bad_request",
+  "provider_unavailable",
+  "tool_protocol_error",
+  "context_limit_error",
+  "configuration_error",
+  "unknown_provider_error"
+]);
+
 export const engineTokenUsageSchema = z.object({
   inputTokens: z.number().int().nonnegative(),
   outputTokens: z.number().int().nonnegative()
+});
+
+export const engineProviderMetadataSchema = z.object({
+  adapterKind: modelEndpointAdapterKindSchema,
+  modelId: nonEmptyStringSchema.optional(),
+  profileId: identifierSchema
+});
+
+export const engineTurnFailureSchema = z.object({
+  classification: agentEngineFailureClassificationSchema,
+  message: nonEmptyStringSchema
 });
 
 export const engineToolExecutionObservationSchema = z.object({
@@ -58,12 +82,40 @@ export const engineToolExecutionObservationSchema = z.object({
   toolId: nonEmptyStringSchema
 });
 
-export const engineTurnOutcomeSchema = z.object({
-  providerStopReason: nonEmptyStringSchema.optional(),
-  stopReason: agentEngineStopReasonSchema,
-  toolExecutions: z.array(engineToolExecutionObservationSchema).default([]),
-  usage: engineTokenUsageSchema.optional()
-});
+function refineEngineFailureConsistency(
+  value: {
+    failure?: unknown;
+    stopReason: z.infer<typeof agentEngineStopReasonSchema>;
+  },
+  context: z.RefinementCtx
+): void {
+  if (value.failure && value.stopReason !== "error") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Engine failures can only be recorded when stopReason is 'error'.",
+      path: ["failure"]
+    });
+  }
+
+  if (!value.failure && value.stopReason === "error") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Engine stopReason 'error' must include a bounded failure payload.",
+      path: ["failure"]
+    });
+  }
+}
+
+export const engineTurnOutcomeSchema = z
+  .object({
+    failure: engineTurnFailureSchema.optional(),
+    providerMetadata: engineProviderMetadataSchema.optional(),
+    providerStopReason: nonEmptyStringSchema.optional(),
+    stopReason: agentEngineStopReasonSchema,
+    toolExecutions: z.array(engineToolExecutionObservationSchema).default([]),
+    usage: engineTokenUsageSchema.optional()
+  })
+  .superRefine(refineEngineFailureConsistency);
 
 export const engineArtifactInputSchema = z.object({
   artifactId: identifierSchema,
@@ -112,20 +164,29 @@ export const agentEngineTurnRequestSchema = z.object({
     })
 });
 
-export const agentEngineTurnResultSchema = z.object({
-  assistantMessages: z.array(nonEmptyStringSchema).default([]),
-  providerStopReason: nonEmptyStringSchema.optional(),
-  toolRequests: z.array(engineToolRequestSchema).default([]),
-  stopReason: agentEngineStopReasonSchema,
-  toolExecutions: z.array(engineToolExecutionObservationSchema).default([]),
-  usage: engineTokenUsageSchema.optional()
-});
+export const agentEngineTurnResultSchema = z
+  .object({
+    assistantMessages: z.array(nonEmptyStringSchema).default([]),
+    failure: engineTurnFailureSchema.optional(),
+    providerMetadata: engineProviderMetadataSchema.optional(),
+    providerStopReason: nonEmptyStringSchema.optional(),
+    toolRequests: z.array(engineToolRequestSchema).default([]),
+    stopReason: agentEngineStopReasonSchema,
+    toolExecutions: z.array(engineToolExecutionObservationSchema).default([]),
+    usage: engineTokenUsageSchema.optional()
+  })
+  .superRefine(refineEngineFailureConsistency);
 
 export type EngineToolDefinition = z.infer<typeof engineToolDefinitionSchema>;
 export type EngineToolChoice = z.infer<typeof engineToolChoiceSchema>;
 export type EngineToolRequest = z.infer<typeof engineToolRequestSchema>;
 export type AgentEngineStopReason = z.infer<typeof agentEngineStopReasonSchema>;
+export type AgentEngineFailureClassification = z.infer<
+  typeof agentEngineFailureClassificationSchema
+>;
 export type EngineTokenUsage = z.infer<typeof engineTokenUsageSchema>;
+export type EngineProviderMetadata = z.infer<typeof engineProviderMetadataSchema>;
+export type EngineTurnFailure = z.infer<typeof engineTurnFailureSchema>;
 export type EngineToolExecutionObservation = z.infer<
   typeof engineToolExecutionObservationSchema
 >;

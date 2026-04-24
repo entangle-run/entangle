@@ -441,6 +441,11 @@ describe("agent-engine anthropic adapter", () => {
     ]);
     expect(result).toMatchObject({
       assistantMessages: ["The inspected artifact looks consistent."],
+      providerMetadata: {
+        adapterKind: "anthropic",
+        modelId: "claude-opus-4-7",
+        profileId: "shared-model"
+      },
       providerStopReason: "end_turn",
       stopReason: "completed",
       toolExecutions: [
@@ -564,6 +569,11 @@ describe("agent-engine anthropic adapter", () => {
       assistantMessages: [
         "The tool failed, so I am stopping with a bounded fallback."
       ],
+      providerMetadata: {
+        adapterKind: "anthropic",
+        modelId: "claude-opus-4-7",
+        profileId: "shared-model"
+      },
       providerStopReason: "end_turn",
       stopReason: "completed",
       toolExecutions: [

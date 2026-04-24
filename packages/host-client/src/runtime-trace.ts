@@ -27,10 +27,25 @@ function buildRunnerTurnDetailLines(
     return detailLines;
   }
 
+  if (engineOutcome.providerMetadata) {
+    const providerLabel = `${engineOutcome.providerMetadata.adapterKind}/${engineOutcome.providerMetadata.profileId}`;
+    detailLines.push(
+      engineOutcome.providerMetadata.modelId
+        ? `Provider: ${providerLabel} (${engineOutcome.providerMetadata.modelId})`
+        : `Provider: ${providerLabel}`
+    );
+  }
+
   const stopReasonLine = engineOutcome.providerStopReason
     ? `Outcome: ${engineOutcome.stopReason} (provider: ${engineOutcome.providerStopReason})`
     : `Outcome: ${engineOutcome.stopReason}`;
   detailLines.push(stopReasonLine);
+
+  if (engineOutcome.failure) {
+    detailLines.push(
+      `Failure: ${engineOutcome.failure.classification} — ${engineOutcome.failure.message}`
+    );
+  }
 
   if (engineOutcome.usage) {
     detailLines.push(

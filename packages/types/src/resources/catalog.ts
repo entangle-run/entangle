@@ -94,10 +94,15 @@ export const gitServiceProfileSchema = z
     }
   });
 
+export const modelEndpointAdapterKindSchema = z.enum([
+  "anthropic",
+  "openai_compatible"
+]);
+
 export const modelEndpointProfileSchema = z.object({
   id: identifierSchema,
   displayName: nonEmptyStringSchema,
-  adapterKind: z.enum(["anthropic", "openai_compatible"]),
+  adapterKind: modelEndpointAdapterKindSchema,
   baseUrl: httpUrlSchema,
   authMode: z.enum(["api_key_bearer", "header_secret"]),
   secretRef: secretRefSchema,
@@ -127,6 +132,9 @@ export type GitServiceProvisioning = z.infer<
   typeof gitServiceProvisioningSchema
 >;
 export type GitServiceProfile = z.infer<typeof gitServiceProfileSchema>;
+export type ModelEndpointAdapterKind = z.infer<
+  typeof modelEndpointAdapterKindSchema
+>;
 export type ModelEndpointProfile = z.infer<typeof modelEndpointProfileSchema>;
 export type DeploymentResourceCatalog = z.infer<
   typeof deploymentResourceCatalogSchema

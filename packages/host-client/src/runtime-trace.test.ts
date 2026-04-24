@@ -52,6 +52,11 @@ describe("runtime trace helpers", () => {
       category: "runner",
       consumedArtifactIds: [],
       engineOutcome: {
+        providerMetadata: {
+          adapterKind: "anthropic",
+          modelId: "claude-opus-4-7",
+          profileId: "shared-anthropic"
+        },
         providerStopReason: "end_turn",
         stopReason: "completed",
         toolExecutions: [
@@ -92,12 +97,55 @@ describe("runtime trace helpers", () => {
     expect(formatRuntimeTraceEventLabel(event)).toBe("Turn turn-alpha is emitting");
     expect(describeRuntimeTraceEvent(event)).toEqual({
       detailLines: [
+        "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
         "Outcome: completed (provider: end_turn)",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
         "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error)"
       ],
       label: "Turn turn-alpha is emitting"
+    });
+  });
+
+  it("surfaces bounded engine failures in runtime-trace detail lines", () => {
+    const event: HostEventRecord = {
+      category: "runner",
+      consumedArtifactIds: [],
+      engineOutcome: {
+        failure: {
+          classification: "auth_error",
+          message: "Authentication failed at the provider boundary."
+        },
+        providerMetadata: {
+          adapterKind: "anthropic",
+          modelId: "claude-opus-4-7",
+          profileId: "shared-anthropic"
+        },
+        stopReason: "error",
+        toolExecutions: []
+      },
+      eventId: "evt-turn-error",
+      graphId: "team-alpha",
+      message: "Runner turn 'turn-beta' failed.",
+      nodeId: "worker-it",
+      phase: "errored",
+      producedArtifactIds: [],
+      schemaVersion: "1",
+      startedAt: "2026-04-24T11:00:03.000Z",
+      timestamp: "2026-04-24T11:00:04.000Z",
+      triggerKind: "message",
+      turnId: "turn-beta",
+      type: "runner.turn.updated",
+      updatedAt: "2026-04-24T11:00:04.000Z"
+    };
+
+    expect(describeRuntimeTraceEvent(event)).toEqual({
+      detailLines: [
+        "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
+        "Outcome: error",
+        "Failure: auth_error — Authentication failed at the provider boundary."
+      ],
+      label: "Turn turn-beta is errored"
     });
   });
 });

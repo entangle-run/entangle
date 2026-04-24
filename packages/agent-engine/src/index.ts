@@ -21,8 +21,10 @@ import type {
 import {
   agentEngineTurnRequestSchema,
   agentEngineTurnResultSchema,
+  type AgentEngineFailureClassification,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
+  type EngineProviderMetadata,
   engineToolExecutionObservationSchema,
   type EngineToolExecutionObservation,
   engineToolExecutionRequestSchema,
@@ -51,16 +53,6 @@ type ExecutedAnthropicToolRound = {
   toolResults: ToolResultBlockParam[];
 };
 
-export type AgentEngineErrorClassification =
-  | "auth_error"
-  | "quota_error"
-  | "rate_limit"
-  | "bad_request"
-  | "provider_unavailable"
-  | "tool_protocol_error"
-  | "context_limit_error"
-  | "unknown_provider_error";
-
 export interface AgentEngine {
   executeTurn(request: AgentEngineTurnRequest): Promise<AgentEngineTurnResult>;
 }
@@ -87,12 +79,12 @@ export class AgentEngineConfigurationError extends Error {
 }
 
 export class AgentEngineExecutionError extends Error {
-  readonly classification: AgentEngineErrorClassification;
+  readonly classification: AgentEngineFailureClassification;
 
   constructor(
     message: string,
     input: {
-      classification: AgentEngineErrorClassification;
+      classification: AgentEngineFailureClassification;
       cause?: unknown;
     }
   ) {
@@ -571,7 +563,7 @@ async function executeAnthropicToolRound(input: {
 
 function classifyAnthropicError(
   error: unknown
-): AgentEngineErrorClassification {
+): AgentEngineFailureClassification {
   if (error instanceof AuthenticationError) {
     return "auth_error";
   }
@@ -660,6 +652,25 @@ function resolveConfiguredModelId(
   return configuredModelId;
 }
 
+function buildProviderMetadata(input: {
+  modelContext: ModelRuntimeContext;
+  modelId?: string;
+}): EngineProviderMetadata | undefined {
+  const profile = input.modelContext.modelEndpointProfile;
+
+  if (!profile) {
+    return undefined;
+  }
+
+  return {
+    adapterKind: profile.adapterKind,
+    ...(input.modelId || profile.defaultModel
+      ? { modelId: input.modelId ?? profile.defaultModel }
+      : {}),
+    profileId: profile.id
+  };
+}
+
 export function createAnthropicAgentEngine(input: {
   clientFactory?: AnthropicClientFactory;
   modelContext: ModelRuntimeContext;
@@ -713,8 +724,14 @@ export function createAnthropicAgentEngine(input: {
           aggregatedUsage = accumulateUsage(aggregatedUsage, response);
 
           if (response.stop_reason !== "tool_use") {
+            const providerMetadata = buildProviderMetadata({
+              modelContext: input.modelContext,
+              modelId: response.model
+            });
+
             return agentEngineTurnResultSchema.parse({
               assistantMessages: extractAssistantMessages(response),
+              ...(providerMetadata ? { providerMetadata } : {}),
               ...(resolveProviderStopReason(response)
                 ? { providerStopReason: resolveProviderStopReason(response) }
                 : {}),

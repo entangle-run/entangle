@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added engine provider metadata and failure reporting
+
+Closed the next engine-hardening slice by widening the canonical engine outcome
+contracts with bounded provider identity and failure payloads, teaching the
+Anthropic adapter to preserve provider metadata on successful turns, and making
+the runner persist bounded engine failures and already-computed successful
+engine outcomes before later artifact-materialization failures can erase that
+truth. Studio and CLI now surface the richer detail through the existing shared
+runtime-trace presentation path.
+
 ## [2026-04-24] implementation | Added shared runtime-trace summaries for Studio and CLI
 
 Closed the next operator-consumption slice by moving runtime-trace presentation
