@@ -238,6 +238,10 @@ describe("model-guided memory synthesis", () => {
                   "The inbound recovery notes remain the canonical reference for relay-failure checkpoints.",
                   "The newly produced report captures the next recovery checkpoint to validate with operators."
                 ],
+                decisions: [
+                  "Treat the inbound recovery notes as the canonical baseline for the next checkpoint review.",
+                  "Carry the produced report forward as the current proposal for the next operator validation step."
+                ],
                 executionInsights: [
                   "The current turn needed both session-state and artifact inspection before finalizing the checkpoint.",
                   "The provider reached a normal end_turn stop after the bounded tool work completed."
@@ -403,6 +407,12 @@ describe("model-guided memory synthesis", () => {
     expect(synthesisResult.ok).toBe(true);
     const workingContextPagePath =
       synthesisResult.ok ? synthesisResult.workingContextPagePath : undefined;
+    const decisionsPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(path.join("summaries", "decisions.md"))
+          )
+        : undefined;
     const stableFactsPagePath =
       synthesisResult.ok
         ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
@@ -470,12 +480,17 @@ describe("model-guided memory synthesis", () => {
       throw new Error("Expected a stable facts summary path.");
     }
 
+    if (!decisionsPagePath) {
+      throw new Error("Expected a decisions summary path.");
+    }
+
     if (!openQuestionsPagePath) {
       throw new Error("Expected an open questions summary path.");
     }
 
     const [
       workingContextPage,
+      decisionsPage,
       stableFactsPage,
       openQuestionsPage,
       indexPage,
@@ -484,6 +499,7 @@ describe("model-guided memory synthesis", () => {
     ] =
       await Promise.all([
         readFile(workingContextPagePath, "utf8"),
+        readFile(decisionsPagePath, "utf8"),
         readFile(stableFactsPagePath, "utf8"),
         readFile(openQuestionsPagePath, "utf8"),
         readFile(memoryUpdate.indexPath, "utf8"),
@@ -523,6 +539,15 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain(
       "The runner already persists recovery history through the host."
     );
+    expect(workingContextPage).toContain("## Decisions");
+    expect(workingContextPage).toContain(
+      "Treat the inbound recovery notes as the canonical baseline for the next checkpoint review."
+    );
+    expect(decisionsPage).toContain("# Decisions Summary");
+    expect(decisionsPage).toContain("## Decisions");
+    expect(decisionsPage).toContain(
+      "Carry the produced report forward as the current proposal for the next operator validation step."
+    );
     expect(stableFactsPage).toContain("# Stable Facts Summary");
     expect(stableFactsPage).toContain("## Stable Facts");
     expect(stableFactsPage).toContain(
@@ -538,12 +563,14 @@ describe("model-guided memory synthesis", () => {
       "Validate the recovery checkpoint against the latest runner behavior."
     );
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
+    expect(indexPage).toContain("[Decisions Summary](summaries/decisions.md)");
     expect(indexPage).toContain("[Stable Facts Summary](summaries/stable-facts.md)");
     expect(indexPage).toContain(
       "[Open Questions Summary](summaries/open-questions.md)"
     );
     expect(logPage).toContain("memory synthesis | turn-memory-005");
     expect(followupTurnRequest.memoryRefs).toContain(workingContextPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(decisionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(stableFactsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
   });

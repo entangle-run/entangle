@@ -2458,6 +2458,7 @@ describe("buildHostServer", () => {
             updatedAt: "2026-04-24T10:05:30.000Z",
             updatedSummaryPagePaths: [
               "/tmp/entangle-runner/memory/wiki/summaries/working-context.md",
+              "/tmp/entangle-runner/memory/wiki/summaries/decisions.md",
               "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
               "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md"
             ],
@@ -2554,6 +2555,7 @@ describe("buildHostServer", () => {
               updatedAt: "2026-04-24T10:05:30.000Z",
               updatedSummaryPagePaths: [
                 "/tmp/entangle-runner/memory/wiki/summaries/working-context.md",
+                "/tmp/entangle-runner/memory/wiki/summaries/decisions.md",
                 "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
                 "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md"
               ],

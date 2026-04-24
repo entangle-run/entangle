@@ -165,9 +165,13 @@ That implemented slice currently includes:
   `memory/wiki/index.md` plus `memory/wiki/log.md` aligned with completed
   turns, rebuilds a derived recent-work summary page for future turn
   assembly, and now also supports a bounded model-guided
-  `memory/wiki/summaries/working-context.md` synthesis pass without giving the
-  model arbitrary filesystem authority, now grounded in final post-turn
-  lifecycle state rather than pre-completion session state;
+  focused summary-register synthesis pass for
+  `memory/wiki/summaries/working-context.md`,
+  `memory/wiki/summaries/decisions.md`,
+  `memory/wiki/summaries/stable-facts.md`, and
+  `memory/wiki/summaries/open-questions.md` without giving the model arbitrary
+  filesystem authority, now grounded in final post-turn lifecycle state rather
+  than pre-completion session state;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

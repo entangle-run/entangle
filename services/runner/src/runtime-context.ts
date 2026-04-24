@@ -68,6 +68,7 @@ export async function collectMemoryRefs(
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "working-context.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "stable-facts.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "open-questions.md"),
+    path.join(context.workspace.memoryRoot, "wiki", "summaries", "decisions.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "recent-work.md"),
     path.join(context.workspace.memoryRoot, "wiki", "log.md"),
     path.join(context.workspace.memoryRoot, "wiki", "index.md"),

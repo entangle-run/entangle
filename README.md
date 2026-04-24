@@ -223,6 +223,11 @@ This repository currently contains:
   `stable-facts.md`, and `open-questions.md`, and future turns now consume
   those focused summaries directly instead of treating one omnibus page as the
   only durable model-guided memory surface;
+- a decision-register refinement where that same bounded synthesis pass now
+  updates `decisions.md`, the durable `working-context.md` page now carries
+  bounded decision carry-forward, and future turns can consume prior
+  decisions directly instead of inferring them only from broader summary
+  prose;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

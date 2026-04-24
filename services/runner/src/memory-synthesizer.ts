@@ -16,6 +16,7 @@ import {
 } from "@entangle/types";
 import {
   appendSectionBullet,
+  resolveDecisionsSummaryPath,
   readTextFileOrDefault,
   resolveOpenQuestionsSummaryPath,
   resolveStableFactsSummaryPath,
@@ -43,6 +44,7 @@ const workingContextSummaryBullet =
 const stableFactsSummaryBullet = "- [Stable Facts Summary](summaries/stable-facts.md)";
 const openQuestionsSummaryBullet =
   "- [Open Questions Summary](summaries/open-questions.md)";
+const decisionsSummaryBullet = "- [Decisions Summary](summaries/decisions.md)";
 
 export type RunnerMemorySynthesisInput = {
   artifactInputs: EngineArtifactInput[];
@@ -212,6 +214,7 @@ function parseWorkingContextSummaryInput(input: unknown):
       ok: true;
       value: {
         artifactInsights: string[];
+        decisions: string[];
         executionInsights: string[];
         focus: string;
         nextActions: string[];
@@ -228,7 +231,7 @@ function parseWorkingContextSummaryInput(input: unknown):
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return {
       issues: [
-        "The working-context summary tool expects a JSON object input."
+        "The memory-summary synthesis tool expects a JSON object input."
       ],
       ok: false
     };
@@ -236,6 +239,7 @@ function parseWorkingContextSummaryInput(input: unknown):
 
   const allowedKeys = new Set([
     "artifactInsights",
+    "decisions",
     "executionInsights",
     "focus",
     "nextActions",
@@ -247,6 +251,7 @@ function parseWorkingContextSummaryInput(input: unknown):
   const inputRecord = input as Record<string, unknown>;
   const extraKeys = Object.keys(inputRecord).filter((key) => !allowedKeys.has(key));
   const artifactInsights = coerceStringArray(inputRecord.artifactInsights);
+  const decisions = coerceStringArray(inputRecord.decisions);
   const executionInsights = coerceStringArray(inputRecord.executionInsights);
   const focus = coerceNonEmptyString(inputRecord.focus);
   const nextActions = coerceStringArray(inputRecord.nextActions);
@@ -270,6 +275,10 @@ function parseWorkingContextSummaryInput(input: unknown):
     issues.push(
       "The 'executionInsights' field must be an array of non-empty strings."
     );
+  }
+
+  if (!decisions) {
+    issues.push("The 'decisions' field must be an array of non-empty strings.");
   }
 
   if (!sessionInsights) {
@@ -315,6 +324,15 @@ function parseWorkingContextSummaryInput(input: unknown):
   ) {
     issues.push(
       `The 'executionInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    decisions &&
+    decisions.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'decisions' field may contain at most ${maxWorkingContextListEntries} entries.`
     );
   }
 
@@ -365,6 +383,7 @@ function parseWorkingContextSummaryInput(input: unknown):
     ok: true,
     value: {
       artifactInsights: artifactInsights!,
+      decisions: decisions!,
       executionInsights: executionInsights!,
       focus: focus!,
       nextActions: nextActions!,
@@ -379,7 +398,7 @@ function parseWorkingContextSummaryInput(input: unknown):
 function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
   return {
     description:
-      "Update the canonical working-context summary for this node's private wiki. " +
+      "Update the canonical focused memory-summary registers for this node's private wiki. " +
       "Use this exactly once after reviewing the completed turn and the injected memory references. " +
       "Capture only durable, high-signal information that future turns should retain. " +
       "Do not invent facts, do not restate the full task page, and do not include secrets or speculative claims.",
@@ -395,6 +414,14 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         artifactInsights: {
           description:
             "A bounded list of durable artifact-backed observations worth carrying forward.",
+          items: {
+            type: "string"
+          },
+          type: "array"
+        },
+        decisions: {
+          description:
+            "A bounded list of durable decisions or conclusions that future turns should retain.",
           items: {
             type: "string"
           },
@@ -449,6 +476,7 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
       required: [
         "focus",
         "artifactInsights",
+        "decisions",
         "executionInsights",
         "summary",
         "sessionInsights",
@@ -481,7 +509,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
     nodeId: input.context.binding.node.nodeId,
     systemPromptParts: [
       "You are maintaining the node's private working memory after a completed turn.",
-      "You do not write files directly. Use the provided tool exactly once to update the canonical working-context summary.",
+      "You do not write files directly. Use the provided tool exactly once to update the canonical focused memory-summary registers.",
       "Keep the summary concise, durable, and grounded in the current turn plus the injected memory references.",
       "Preserve only durable session or coordination observations that future turns should retain; do not restate transient workflow state verbatim.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
@@ -546,6 +574,7 @@ function renderSessionContextLines(
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
+  decisions: string[];
   executionInsights: string[];
   focus: string;
   producedArtifactIds: string[];
@@ -599,6 +628,10 @@ function buildWorkingContextSummaryContent(input: {
     "",
     ...renderBulletList(input.stableFacts, "- No durable facts were synthesized."),
     "",
+    "## Decisions",
+    "",
+    ...renderBulletList(input.decisions, "- No durable decisions were synthesized."),
+    "",
     "## Open Questions",
     "",
     ...renderBulletList(input.openQuestions, "- No open questions were recorded."),
@@ -635,6 +668,45 @@ function buildWorkingContextSummaryContent(input: {
     ...renderBulletList(
       input.executionInsights,
       "- No durable execution signals were synthesized."
+    ),
+    ""
+  ].join("\n");
+}
+
+function buildDecisionsSummaryContent(input: {
+  decisions: string[];
+  recentWorkSummaryPath: string;
+  sessionId: string;
+  taskPagePath: string;
+  turnId: string;
+  wikiRoot: string;
+  workingContextPagePath: string;
+}): string {
+  const taskPageRelativePath = toPosixRelativePath(input.wikiRoot, input.taskPagePath);
+  const recentWorkRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.recentWorkSummaryPath
+  );
+  const workingContextRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.workingContextPagePath
+  );
+
+  return [
+    "# Decisions Summary",
+    "",
+    `- Updated at: \`${nowIsoString()}\``,
+    `- Session: \`${input.sessionId}\``,
+    `- Turn: \`${input.turnId}\``,
+    `- Task page: [Current Task Memory](${taskPageRelativePath})`,
+    `- Working context: [Working Context Summary](${workingContextRelativePath})`,
+    `- Recent work: [Recent Work Summary](${recentWorkRelativePath})`,
+    "",
+    "## Decisions",
+    "",
+    ...renderBulletList(
+      input.decisions,
+      "- No durable decisions were synthesized."
     ),
     ""
   ].join("\n");
@@ -739,7 +811,7 @@ function buildMemorySynthesisLogEntry(input: {
     return [
       `## [${nowIsoString()}] memory synthesis failed | ${input.turnId}`,
       "",
-      `Model-guided memory synthesis did not update the working context summary for [${input.turnId}](${taskPageRelativePath}).`,
+      `Model-guided memory synthesis did not update the focused summary registers for [${input.turnId}](${taskPageRelativePath}).`,
       `Reason: ${input.errorMessage}`,
       ""
     ].join("\n");
@@ -759,6 +831,7 @@ function createWorkingContextSummaryToolExecutor(input: {
   sessionSnapshot: RunnerSessionStateSnapshot | undefined;
   synthesis: RunnerMemorySynthesisInput;
   writePathCapture: {
+    decisionsPagePath: string | undefined;
     openQuestionsPagePath: string | undefined;
     stableFactsPagePath: string | undefined;
     workingContextPagePath: string | undefined;
@@ -791,11 +864,13 @@ function createWorkingContextSummaryToolExecutor(input: {
 
       const wikiRoot = path.join(input.synthesis.context.workspace.memoryRoot, "wiki");
       const workingContextPagePath = resolveWorkingContextSummaryPath(wikiRoot);
+      const decisionsPagePath = resolveDecisionsSummaryPath(wikiRoot);
       const stableFactsPagePath = resolveStableFactsSummaryPath(wikiRoot);
       const openQuestionsPagePath = resolveOpenQuestionsSummaryPath(wikiRoot);
       const normalizedInput = {
         ...parsedInput.value,
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
+        decisions: normalizeListEntries(parsedInput.value.decisions),
         executionInsights: normalizeListEntries(parsedInput.value.executionInsights),
         nextActions: normalizeListEntries(parsedInput.value.nextActions),
         openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
@@ -805,6 +880,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       const content = buildWorkingContextSummaryContent({
         artifactInsights: normalizedInput.artifactInsights,
         consumedArtifactIds: input.synthesis.consumedArtifactIds,
+        decisions: normalizedInput.decisions,
         executionInsights: normalizedInput.executionInsights,
         focus: normalizedInput.focus,
         nextActions: normalizedInput.nextActions,
@@ -819,6 +895,15 @@ function createWorkingContextSummaryToolExecutor(input: {
         taskPagePath: input.synthesis.taskPagePath,
         turnId: input.synthesis.turnId,
         wikiRoot
+      });
+      const decisionsContent = buildDecisionsSummaryContent({
+        decisions: normalizedInput.decisions,
+        recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
+        sessionId: input.synthesis.envelope.message.sessionId,
+        taskPagePath: input.synthesis.taskPagePath,
+        turnId: input.synthesis.turnId,
+        wikiRoot,
+        workingContextPagePath
       });
       const stableFactsContent = buildStableFactsSummaryContent({
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
@@ -842,9 +927,11 @@ function createWorkingContextSummaryToolExecutor(input: {
 
       await Promise.all([
         writeTextFile(workingContextPagePath, `${content.trimEnd()}\n`),
+        writeTextFile(decisionsPagePath, `${decisionsContent.trimEnd()}\n`),
         writeTextFile(stableFactsPagePath, `${stableFactsContent.trimEnd()}\n`),
         writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`)
       ]);
+      input.writePathCapture.decisionsPagePath = decisionsPagePath;
       input.writePathCapture.openQuestionsPagePath = openQuestionsPagePath;
       input.writePathCapture.stableFactsPagePath = stableFactsPagePath;
       input.writePathCapture.workingContextPagePath = workingContextPagePath;
@@ -892,6 +979,7 @@ async function ensureWorkingContextIndexed(
   const indexPath = path.join(wikiRoot, "index.md");
   const currentIndex = await readTextFileOrDefault(indexPath, "# Wiki Index\n");
   let nextIndex = appendSectionBullet(currentIndex, "Summaries", workingContextSummaryBullet);
+  nextIndex = appendSectionBullet(nextIndex, "Summaries", decisionsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", stableFactsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", openQuestionsSummaryBullet);
 
@@ -913,10 +1001,12 @@ export function createModelGuidedMemorySynthesizer(input: {
         statePaths: buildRunnerStatePaths(synthesis.context.workspace.runtimeRoot)
       });
       const writePathCapture: {
+        decisionsPagePath: string | undefined;
         openQuestionsPagePath: string | undefined;
         stableFactsPagePath: string | undefined;
         workingContextPagePath: string | undefined;
       } = {
+        decisionsPagePath: undefined,
         openQuestionsPagePath: undefined,
         stableFactsPagePath: undefined,
         workingContextPagePath: undefined
@@ -946,12 +1036,17 @@ export function createModelGuidedMemorySynthesizer(input: {
 
         if (!writePathCapture.workingContextPagePath) {
           throw new Error(
-            "Model-guided memory synthesis completed without updating the working context summary."
+            "Model-guided memory synthesis completed without updating the working-context summary."
           );
         }
         if (!writePathCapture.stableFactsPagePath) {
           throw new Error(
             "Model-guided memory synthesis completed without updating the stable facts summary."
+          );
+        }
+        if (!writePathCapture.decisionsPagePath) {
+          throw new Error(
+            "Model-guided memory synthesis completed without updating the decisions summary."
           );
         }
         if (!writePathCapture.openQuestionsPagePath) {
@@ -962,6 +1057,7 @@ export function createModelGuidedMemorySynthesizer(input: {
 
         const updatedSummaryPagePaths = [
           writePathCapture.workingContextPagePath,
+          writePathCapture.decisionsPagePath,
           writePathCapture.stableFactsPagePath,
           writePathCapture.openQuestionsPagePath
         ];

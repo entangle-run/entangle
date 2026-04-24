@@ -93,9 +93,15 @@ runner-owned:
   recent-work baseline.
 
 The current implementation now includes that first widening through a bounded
-working-context summary page generated via model-guided synthesis but written
-through a runner-owned structured path, now grounded in final post-turn
-lifecycle state and carrying bounded session, artifact, and execution context
-durably.
+focused summary-register set generated via model-guided synthesis but written
+through a runner-owned structured path. That durable set now includes:
+
+- `working-context.md`
+- `decisions.md`
+- `stable-facts.md`
+- `open-questions.md`
+
+Those focused pages are grounded in final post-turn lifecycle state and carry
+bounded session, artifact, execution, decision, and planning context durably.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

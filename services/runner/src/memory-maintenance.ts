@@ -26,6 +26,7 @@ export const recentWorkSummaryRelativePath = "summaries/recent-work.md";
 export const workingContextSummaryRelativePath = "summaries/working-context.md";
 export const stableFactsSummaryRelativePath = "summaries/stable-facts.md";
 export const openQuestionsSummaryRelativePath = "summaries/open-questions.md";
+export const decisionsSummaryRelativePath = "summaries/decisions.md";
 const maxRecentSummaryEntries = 5;
 
 function buildTaskPageRelativePath(input: {
@@ -157,6 +158,10 @@ export function resolveStableFactsSummaryPath(wikiRoot: string): string {
 
 export function resolveOpenQuestionsSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, openQuestionsSummaryRelativePath);
+}
+
+export function resolveDecisionsSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, decisionsSummaryRelativePath);
 }
 
 function buildTaskPageTitle(input: {
