@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio live refresh over host events
+
+Closed the next Studio completion slice by using the existing host event
+stream to coalesce live refresh of the overview and selected-runtime read
+surfaces. Studio now reacts to host-owned topology, runtime, recovery,
+session, and artifact events without polling and without reconnecting the
+event subscription when the selected runtime changes.
+
 ## [2026-04-24] implementation | Added Studio package-source admission
 
 Closed the next bounded Studio mutation slice by exposing host-owned package

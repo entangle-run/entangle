@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useEffectEvent,
+  useRef,
   useMemo,
   useState
 } from "react";
@@ -61,6 +62,10 @@ import {
   sortPackageSourceInspections,
   type PackageSourceAdmissionDraft
 } from "./package-source-admission.js";
+import {
+  shouldRefreshOverviewFromHostEvent,
+  shouldRefreshSelectedRuntimeFromHostEvent
+} from "./host-event-refresh.js";
 import {
   collectRuntimeRecoveryEvents,
   deriveSelectedRuntimeId,
@@ -258,6 +263,12 @@ function formatEventStreamStateTone(state: EventStreamState): string {
 }
 
 export function App() {
+  const overviewRefreshTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(
+    null
+  );
+  const selectedRuntimeRefreshTimeoutRef = useRef<
+    ReturnType<typeof globalThis.setTimeout> | null
+  >(null);
   const baseUrl =
     import.meta.env.VITE_ENTANGLE_HOST_URL ?? "http://localhost:7071";
   const client = useMemo(() => createHostClient({ baseUrl }), [baseUrl]);
@@ -694,26 +705,54 @@ export function App() {
     [client, edgeDraft, graphInspection, loadOverview, selectedEdgeId]
   );
 
+  const scheduleOverviewRefresh = useEffectEvent(() => {
+    if (overviewRefreshTimeoutRef.current !== null) {
+      return;
+    }
+
+    overviewRefreshTimeoutRef.current = globalThis.setTimeout(() => {
+      overviewRefreshTimeoutRef.current = null;
+      void loadOverview();
+    }, 150);
+  });
+
+  const scheduleSelectedRuntimeRefresh = useEffectEvent(() => {
+    if (selectedRuntimeRefreshTimeoutRef.current !== null) {
+      return;
+    }
+
+    selectedRuntimeRefreshTimeoutRef.current = globalThis.setTimeout(() => {
+      selectedRuntimeRefreshTimeoutRef.current = null;
+
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      void refreshSelectedRuntimeDetails(selectedRuntimeId);
+    }, 150);
+  });
+
   const handleHostEvent = useEffectEvent((event: HostEventRecord) => {
     startTransition(() => {
       setHostEvents((current) => [event, ...current].slice(0, 40));
     });
 
-    if (
-      selectedRuntimeId &&
-      collectRuntimeRecoveryEvents([event], selectedRuntimeId, 1).length > 0
-    ) {
-      void refreshSelectedRuntimeDetails(selectedRuntimeId);
-      return;
+    if (shouldRefreshOverviewFromHostEvent(event)) {
+      scheduleOverviewRefresh();
     }
 
-    if (event.type === "artifact.trace.event" && event.nodeId === selectedRuntimeId) {
-      void refreshSelectedRuntimeDetails(selectedRuntimeId);
-      return;
+    if (shouldRefreshSelectedRuntimeFromHostEvent(event, selectedRuntimeId)) {
+      scheduleSelectedRuntimeRefresh();
     }
+  });
 
-    if (event.type === "session.updated" && event.nodeId === selectedRuntimeId) {
-      void refreshSelectedRuntimeDetails(selectedRuntimeId);
+  const handleEventStreamOpen = useEffectEvent(() => {
+    setEventStreamState("live");
+    setEventStreamError(null);
+    scheduleOverviewRefresh();
+
+    if (selectedRuntimeId) {
+      scheduleSelectedRuntimeRefresh();
     }
   });
 
@@ -804,6 +843,20 @@ export function App() {
   ]);
 
   useEffect(() => {
+    return () => {
+      if (overviewRefreshTimeoutRef.current !== null) {
+        globalThis.clearTimeout(overviewRefreshTimeoutRef.current);
+        overviewRefreshTimeoutRef.current = null;
+      }
+
+      if (selectedRuntimeRefreshTimeoutRef.current !== null) {
+        globalThis.clearTimeout(selectedRuntimeRefreshTimeoutRef.current);
+        selectedRuntimeRefreshTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     setEventStreamState("connecting");
     setEventStreamError(null);
 
@@ -819,8 +872,7 @@ export function App() {
         handleHostEvent(event);
       },
       onOpen: () => {
-        setEventStreamState("live");
-        setEventStreamError(null);
+        handleEventStreamOpen();
       },
       replay: 20
     });

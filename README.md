@@ -258,14 +258,15 @@ This repository currently contains:
   sources directly through host-owned `local_path` / `local_archive` package
   admission flows and inspect the current admitted inventory without leaving
   the graph editor surface;
+- the next bounded Studio completion slice where the operator surface now uses
+  the existing host event stream to coalesce live overview and selected-runtime
+  refresh instead of depending only on explicit reload loops after mutations;
 
 The highest-value remaining gaps are:
 
-- live event-driven Studio refresh where the existing host event stream can
-  replace manual reload loops for operator-visible state;
+- fuller CLI parity for the core host workflows;
 - deeper session drilldown only where the current session-summary view leaves
   real operator blind spots;
-- fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,

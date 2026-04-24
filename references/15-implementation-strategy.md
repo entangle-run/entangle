@@ -218,9 +218,14 @@ Completed in the current repository state:
 - the next bounded Studio mutation slice through host-owned package-source
   admission flows, with canonical `local_path` / `local_archive` request
   assembly and partial-failure-aware package-source inventory loading.
+- the next bounded Studio completion slice through host-event-driven refresh,
+  where overview and selected-runtime reads are now coalesced off the existing
+  host event stream without reconnecting the subscription on runtime
+  selection changes.
 
-The next best current move is now Phase 4 Studio completion on top of the
-broader host-owned trace surface.
+The next best current move is now Phase 5 CLI completion, while keeping
+narrower Studio session drilldown available only where it adds real operator
+value beyond the current event-driven runtime surface.
 
 ## Phase 4: Studio completion
 
@@ -229,9 +234,7 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. live event-driven updates via the host event stream where additional
-   operator value still exists;
-2. deeper session drilldown only where the existing host session read model
+1. deeper session drilldown only where the existing host session read model
    creates real operator leverage.
 
 Acceptance for the phase:
