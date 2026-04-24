@@ -1512,7 +1512,12 @@ function didReconciliationSnapshotChange(
     previous.managedRuntimeCount !== next.managedRuntimeCount ||
     previous.runningRuntimeCount !== next.runningRuntimeCount ||
     previous.stoppedRuntimeCount !== next.stoppedRuntimeCount ||
+    previous.transitioningRuntimeCount !== next.transitioningRuntimeCount ||
+    previous.degradedRuntimeCount !== next.degradedRuntimeCount ||
+    previous.blockedRuntimeCount !== next.blockedRuntimeCount ||
     previous.failedRuntimeCount !== next.failedRuntimeCount ||
+    previous.issueCount !== next.issueCount ||
+    JSON.stringify(previous.findingCodes) !== JSON.stringify(next.findingCodes) ||
     JSON.stringify(previous.nodes) !== JSON.stringify(next.nodes)
   );
 }
@@ -1547,6 +1552,66 @@ function buildRuntimeInspectionFromState(input: {
     restartGeneration: input.restartGeneration,
     runtimeHandle: input.runtimeHandle,
     statusMessage: input.statusMessage
+  });
+}
+
+function buildReconciliationSnapshot(input: {
+  backendKind: ReconciliationSnapshot["backendKind"];
+  graphId: string | undefined;
+  graphRevisionId: string | undefined;
+  lastReconciledAt: string;
+  runtimes: RuntimeInspectionResponse[];
+}): ReconciliationSnapshot {
+  const findingCodes = new Set<
+    ReconciliationSnapshot["findingCodes"][number]
+  >();
+  const nodes = input.runtimes.map((runtime) => {
+    for (const findingCode of runtime.reconciliation.findingCodes) {
+      findingCodes.add(findingCode);
+    }
+
+    return {
+      desiredState: runtime.desiredState,
+      nodeId: runtime.nodeId,
+      observedState: runtime.observedState,
+      reconciliation: runtime.reconciliation,
+      statusMessage: runtime.statusMessage
+    };
+  });
+
+  return reconciliationSnapshotSchema.parse({
+    backendKind: input.backendKind,
+    blockedRuntimeCount: input.runtimes.filter((runtime) =>
+      runtime.reconciliation.findingCodes.includes("context_unavailable")
+    ).length,
+    degradedRuntimeCount: input.runtimes.filter(
+      (runtime) => runtime.reconciliation.state === "degraded"
+    ).length,
+    failedRuntimeCount: input.runtimes.filter(
+      (runtime) => runtime.observedState === "failed"
+    ).length,
+    findingCodes: Array.from(findingCodes).sort(),
+    graphId: input.graphId,
+    graphRevisionId: input.graphRevisionId,
+    issueCount: input.runtimes.reduce(
+      (total, runtime) => total + runtime.reconciliation.findingCodes.length,
+      0
+    ),
+    lastReconciledAt: input.lastReconciledAt,
+    managedRuntimeCount: input.runtimes.length,
+    nodes,
+    runningRuntimeCount: input.runtimes.filter(
+      (runtime) => runtime.observedState === "running"
+    ).length,
+    schemaVersion: "1",
+    stoppedRuntimeCount: input.runtimes.filter(
+      (runtime) =>
+        runtime.observedState === "stopped" ||
+        runtime.observedState === "missing"
+    ).length,
+    transitioningRuntimeCount: input.runtimes.filter(
+      (runtime) => runtime.reconciliation.state === "transitioning"
+    ).length
   });
 }
 
@@ -2417,29 +2482,39 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   if (!graph || !activeRevisionId) {
     const emptySnapshot = reconciliationSnapshotSchema.parse({
       backendKind: runtimeBackend.kind,
+      blockedRuntimeCount: 0,
+      degradedRuntimeCount: 0,
       failedRuntimeCount: 0,
+      findingCodes: [],
       graphId: undefined,
       graphRevisionId: undefined,
+      issueCount: 0,
       lastReconciledAt: nowIsoString(),
       managedRuntimeCount: 0,
       nodes: [],
       runningRuntimeCount: 0,
       schemaVersion: "1",
-      stoppedRuntimeCount: 0
+      stoppedRuntimeCount: 0,
+      transitioningRuntimeCount: 0
     });
     await writeJsonFileIfChanged(latestReconciliationPath, emptySnapshot);
     await removeJsonFilesExcept(gitRepositoryTargetsRoot, new Set());
     if (didReconciliationSnapshotChange(previousSnapshot, emptySnapshot)) {
       await appendHostEvent({
         backendKind: emptySnapshot.backendKind,
+        blockedRuntimeCount: emptySnapshot.blockedRuntimeCount,
         category: "reconciliation",
+        degradedRuntimeCount: emptySnapshot.degradedRuntimeCount,
         failedRuntimeCount: emptySnapshot.failedRuntimeCount,
+        findingCodes: emptySnapshot.findingCodes,
         graphId: emptySnapshot.graphId,
         graphRevisionId: emptySnapshot.graphRevisionId,
+        issueCount: emptySnapshot.issueCount,
         managedRuntimeCount: emptySnapshot.managedRuntimeCount,
         message: "Host reconciliation completed with no active graph.",
         runningRuntimeCount: emptySnapshot.runningRuntimeCount,
         stoppedRuntimeCount: emptySnapshot.stoppedRuntimeCount,
+        transitioningRuntimeCount: emptySnapshot.transitioningRuntimeCount,
         type: "host.reconciliation.completed"
       } satisfies HostReconciliationCompletedEventInput);
     }
@@ -2499,42 +2574,31 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
   nodeInspections.sort((left, right) =>
     left.binding.node.nodeId.localeCompare(right.binding.node.nodeId)
   );
-  const snapshot = reconciliationSnapshotSchema.parse({
+  const snapshot = buildReconciliationSnapshot({
     backendKind: runtimeBackend.kind,
-    failedRuntimeCount: inspections.filter(
-      (runtime) => runtime.observedState === "failed"
-    ).length,
     graphId: graph.graphId,
     graphRevisionId: activeRevisionId,
     lastReconciledAt: nowIsoString(),
-    managedRuntimeCount: inspections.length,
-    nodes: inspections.map((runtime) => ({
-      desiredState: runtime.desiredState,
-      nodeId: runtime.nodeId,
-      observedState: runtime.observedState,
-      statusMessage: runtime.statusMessage
-    })),
-    runningRuntimeCount: inspections.filter(
-      (runtime) => runtime.observedState === "running"
-    ).length,
-    schemaVersion: "1",
-    stoppedRuntimeCount: inspections.filter((runtime) =>
-      runtime.observedState === "stopped" || runtime.observedState === "missing"
-    ).length
+    runtimes: inspections
   });
 
   await writeJsonFileIfChanged(latestReconciliationPath, snapshot);
   if (didReconciliationSnapshotChange(previousSnapshot, snapshot)) {
     await appendHostEvent({
       backendKind: snapshot.backendKind,
+      blockedRuntimeCount: snapshot.blockedRuntimeCount,
       category: "reconciliation",
+      degradedRuntimeCount: snapshot.degradedRuntimeCount,
       failedRuntimeCount: snapshot.failedRuntimeCount,
+      findingCodes: snapshot.findingCodes,
       graphId: snapshot.graphId,
       graphRevisionId: snapshot.graphRevisionId,
+      issueCount: snapshot.issueCount,
       managedRuntimeCount: snapshot.managedRuntimeCount,
       message: `Host reconciliation completed for graph '${snapshot.graphId}'.`,
       runningRuntimeCount: snapshot.runningRuntimeCount,
       stoppedRuntimeCount: snapshot.stoppedRuntimeCount,
+      transitioningRuntimeCount: snapshot.transitioningRuntimeCount,
       type: "host.reconciliation.completed"
     } satisfies HostReconciliationCompletedEventInput);
   }
@@ -3232,18 +3296,27 @@ export async function buildHostStatus() {
     (await readLatestReconciliationSnapshot()) ??
     reconciliationSnapshotSchema.parse({
       backendKind: runtimeBackend.kind,
+      blockedRuntimeCount: 0,
+      degradedRuntimeCount: 0,
       failedRuntimeCount: 0,
+      findingCodes: [],
       graphId: graphInspection.graph?.graphId,
       graphRevisionId: graphInspection.activeRevisionId,
+      issueCount: 0,
       lastReconciledAt: nowIsoString(),
       managedRuntimeCount: 0,
       nodes: [],
       runningRuntimeCount: 0,
       schemaVersion: "1",
-      stoppedRuntimeCount: 0
+      stoppedRuntimeCount: 0,
+      transitioningRuntimeCount: 0
     });
   const hostStatus =
-    reconciliationSnapshot.failedRuntimeCount > 0 ? "degraded" : "healthy";
+    reconciliationSnapshot.degradedRuntimeCount > 0
+      ? "degraded"
+      : reconciliationSnapshot.transitioningRuntimeCount > 0
+        ? "starting"
+        : "healthy";
 
   return {
     service: "entangle-host" as const,
@@ -3251,11 +3324,17 @@ export async function buildHostStatus() {
     graphRevisionId: graphInspection.activeRevisionId,
     reconciliation: {
       backendKind: reconciliationSnapshot.backendKind,
+      blockedRuntimeCount: reconciliationSnapshot.blockedRuntimeCount,
+      degradedRuntimeCount: reconciliationSnapshot.degradedRuntimeCount,
       failedRuntimeCount: reconciliationSnapshot.failedRuntimeCount,
+      findingCodes: reconciliationSnapshot.findingCodes,
+      issueCount: reconciliationSnapshot.issueCount,
       lastReconciledAt: reconciliationSnapshot.lastReconciledAt,
       managedRuntimeCount: reconciliationSnapshot.managedRuntimeCount,
       runningRuntimeCount: reconciliationSnapshot.runningRuntimeCount,
-      stoppedRuntimeCount: reconciliationSnapshot.stoppedRuntimeCount
+      stoppedRuntimeCount: reconciliationSnapshot.stoppedRuntimeCount,
+      transitioningRuntimeCount:
+        reconciliationSnapshot.transitioningRuntimeCount
     },
     runtimeCounts: {
       desired: runtimeInspections.runtimes.filter(

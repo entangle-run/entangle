@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 
 export const hostStatusResponseSchema = z.object({
@@ -8,11 +9,16 @@ export const hostStatusResponseSchema = z.object({
   graphRevisionId: identifierSchema.optional(),
   reconciliation: z.object({
     backendKind: runtimeBackendKindSchema,
+    blockedRuntimeCount: z.number().int().nonnegative(),
+    degradedRuntimeCount: z.number().int().nonnegative(),
     failedRuntimeCount: z.number().int().nonnegative(),
+    findingCodes: z.array(runtimeReconciliationFindingCodeSchema),
+    issueCount: z.number().int().nonnegative(),
     lastReconciledAt: nonEmptyStringSchema.optional(),
     managedRuntimeCount: z.number().int().nonnegative(),
     runningRuntimeCount: z.number().int().nonnegative(),
-    stoppedRuntimeCount: z.number().int().nonnegative()
+    stoppedRuntimeCount: z.number().int().nonnegative(),
+    transitioningRuntimeCount: z.number().int().nonnegative()
   }),
   runtimeCounts: z.object({
     desired: z.number().int().nonnegative(),

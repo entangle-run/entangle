@@ -4,28 +4,45 @@ import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-reposito
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
 import {
+  classifyRuntimeReconciliation,
+  runtimeReconciliationSummarySchema
+} from "../runtime/reconciliation.js";
+import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
   runtimeObservedStateSchema,
   runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
 
-export const runtimeInspectionResponseSchema = z.object({
-  backendKind: runtimeBackendKindSchema,
-  contextAvailable: z.boolean(),
-  contextPath: filesystemPathSchema.optional(),
-  desiredState: runtimeDesiredStateSchema,
-  graphId: identifierSchema,
-  graphRevisionId: identifierSchema,
-  nodeId: identifierSchema,
-  observedState: runtimeObservedStateSchema,
-  packageSourceId: identifierSchema.optional(),
-  primaryGitRepositoryProvisioning: gitRepositoryProvisioningRecordSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  restartGeneration: runtimeRestartGenerationSchema,
-  runtimeHandle: nonEmptyStringSchema.optional(),
-  statusMessage: nonEmptyStringSchema.optional()
-});
+export const runtimeInspectionResponseSchema = z
+  .object({
+    backendKind: runtimeBackendKindSchema,
+    contextAvailable: z.boolean(),
+    contextPath: filesystemPathSchema.optional(),
+    desiredState: runtimeDesiredStateSchema,
+    graphId: identifierSchema,
+    graphRevisionId: identifierSchema,
+    nodeId: identifierSchema,
+    observedState: runtimeObservedStateSchema,
+    packageSourceId: identifierSchema.optional(),
+    primaryGitRepositoryProvisioning:
+      gitRepositoryProvisioningRecordSchema.optional(),
+    reason: nonEmptyStringSchema.optional(),
+    reconciliation: runtimeReconciliationSummarySchema.optional(),
+    restartGeneration: runtimeRestartGenerationSchema,
+    runtimeHandle: nonEmptyStringSchema.optional(),
+    statusMessage: nonEmptyStringSchema.optional()
+  })
+  .transform((value) => ({
+    ...value,
+    reconciliation:
+      value.reconciliation ??
+      classifyRuntimeReconciliation({
+        contextAvailable: value.contextAvailable,
+        desiredState: value.desiredState,
+        observedState: value.observedState
+      })
+  }));
 
 export const runtimeListResponseSchema = z.object({
   runtimes: z.array(runtimeInspectionResponseSchema)

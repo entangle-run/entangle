@@ -47,7 +47,8 @@ The repository does **not** yet include:
 
 - a broad builtin tool surface and richer model-guided memory maintenance
   inside the internal runtime execution path;
-- full resource-oriented host mutation coverage for nodes and edges;
+- deeper session-level and runner-originated host event coverage plus richer
+  recovery diagnostics on top of the now-implemented degraded-state model;
 - Studio as a complete operator surface;
 - CLI parity with all core host workflows;
 - end-to-end deployment hardening for the full local product profile.
@@ -128,6 +129,9 @@ This layer is strong and directionally correct. It is not a blocker.
   and artifact inspection;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
+- richer reconciliation semantics with per-runtime derived reconciliation
+  summaries, persisted blocked/degraded/transitioning counts, and host status
+  derived from those findings instead of from raw failure counts alone;
 - host-managed runtime identity persistence;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
@@ -139,8 +143,9 @@ This layer is strong and directionally correct. It is not a blocker.
 
 - session-level and richer runner-originated event classes on top of the new
   host event surface;
-- richer reconciliation diagnostics and restart policies;
-- stronger degraded-state and recovery inspection surfaces.
+- richer recovery diagnostics and restart or retry policy above the current
+  degraded-state model;
+- broader recovery-history and inspection surfaces.
 
 ### Assessment
 

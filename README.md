@@ -192,6 +192,11 @@ This repository currently contains:
   generations in runtime intents, emits typed `runtime.restart.requested`
   host events, and forces deterministic Docker runtime recreation when the
   restart generation changes even if the runtime context is otherwise stable;
+- richer reconciliation and degraded-state semantics where runtime inspection
+  now carries derived reconciliation state and finding codes, persisted host
+  reconciliation snapshots distinguish blocked, transitioning, and degraded
+  runtimes, and `GET /v1/host/status` no longer reduces runtime health to raw
+  failure counts alone;
 
 The highest-value remaining gaps are:
 
@@ -200,7 +205,7 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper session-level and runner-originated host event coverage plus richer
-  reconciliation and degraded-state host surfaces;
+  recovery diagnostics on top of the new degraded-state host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

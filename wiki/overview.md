@@ -137,6 +137,11 @@ The repository now also contains the first real implementation baseline:
   generations in runtime intents, emits typed `runtime.restart.requested`
   host events, and forces deterministic Docker runtime recreation when the
   restart generation changes;
+- richer reconciliation and degraded-state semantics where runtime inspection
+  now carries derived reconciliation state plus finding codes, persisted host
+  reconciliation snapshots distinguish blocked, transitioning, and degraded
+  runtimes, and `GET /v1/host/status` now derives health from explicit
+  reconciliation findings instead of raw failure counts alone;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -255,6 +260,7 @@ The current implementation-truth audit now lives in
   memory maintenance;
 - complete the remaining core host resource surfaces and widen the now
   implemented host event surface into deeper session and runner activity,
-  especially degraded-state and reconciliation surfaces;
+  especially recovery diagnostics and richer runner-originated event classes
+  on top of the now-implemented degraded-state and reconciliation surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

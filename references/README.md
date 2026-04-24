@@ -81,6 +81,7 @@ This directory is the canonical design corpus for Entangle.
 75. [74-managed-node-mutation-slice.md](74-managed-node-mutation-slice.md)
 76. [75-edge-resource-mutation-slice.md](75-edge-resource-mutation-slice.md)
 77. [76-runtime-restart-slice.md](76-runtime-restart-slice.md)
+78. [77-reconciliation-and-degraded-state-slice.md](77-reconciliation-and-degraded-state-slice.md)
 
 ## Role of this corpus
 

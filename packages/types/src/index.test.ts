@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   artifactRecordSchema,
+  classifyRuntimeReconciliation,
   edgeCreateRequestSchema,
   entangleA2AMessageSchema,
   entangleNostrGiftWrapKind,
@@ -12,6 +13,7 @@ import {
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
   hostEventRecordSchema,
+  hostStatusResponseSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
@@ -20,6 +22,7 @@ import {
   nodeCreateRequestSchema,
   nodeInspectionResponseSchema,
   packageToolCatalogSchema,
+  reconciliationSnapshotSchema,
   resolvedSecretBindingSchema,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
@@ -292,6 +295,83 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("edge.updated");
     expect(result.mutationKind).toBe("created");
+  });
+});
+
+describe("reconciliation contracts", () => {
+  it("classifies missing context as a degraded reconciliation finding", () => {
+    expect(
+      classifyRuntimeReconciliation({
+        contextAvailable: false,
+        desiredState: "running",
+        observedState: "stopped"
+      })
+    ).toEqual({
+      findingCodes: ["context_unavailable", "runtime_stopped"],
+      state: "degraded"
+    });
+  });
+
+  it("accepts legacy reconciliation snapshots and derives richer counts", () => {
+    const result = reconciliationSnapshotSchema.parse({
+      backendKind: "memory",
+      failedRuntimeCount: 0,
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-rev-001",
+      lastReconciledAt: "2026-04-24T00:00:00.000Z",
+      managedRuntimeCount: 1,
+      nodes: [
+        {
+          desiredState: "running",
+          nodeId: "worker-it",
+          observedState: "missing",
+          statusMessage: "Runtime is missing."
+        }
+      ],
+      runningRuntimeCount: 0,
+      schemaVersion: "1",
+      stoppedRuntimeCount: 1
+    });
+
+    expect(result.degradedRuntimeCount).toBe(1);
+    expect(result.blockedRuntimeCount).toBe(0);
+    expect(result.issueCount).toBe(1);
+    expect(result.transitioningRuntimeCount).toBe(0);
+    expect(result.findingCodes).toEqual(["runtime_missing"]);
+    expect(result.nodes[0]?.reconciliation).toEqual({
+      findingCodes: ["runtime_missing"],
+      state: "degraded"
+    });
+  });
+
+  it("accepts host status summaries with richer reconciliation counts", () => {
+    const result = hostStatusResponseSchema.parse({
+      graphRevisionId: "graph-alpha-rev-001",
+      reconciliation: {
+        backendKind: "docker",
+        blockedRuntimeCount: 1,
+        degradedRuntimeCount: 1,
+        failedRuntimeCount: 0,
+        findingCodes: ["context_unavailable"],
+        issueCount: 1,
+        lastReconciledAt: "2026-04-24T00:00:00.000Z",
+        managedRuntimeCount: 2,
+        runningRuntimeCount: 1,
+        stoppedRuntimeCount: 1,
+        transitioningRuntimeCount: 0
+      },
+      runtimeCounts: {
+        desired: 2,
+        observed: 1,
+        running: 1
+      },
+      service: "entangle-host",
+      status: "degraded",
+      timestamp: "2026-04-24T00:00:00.000Z"
+    });
+
+    expect(result.reconciliation.blockedRuntimeCount).toBe(1);
+    expect(result.reconciliation.findingCodes).toEqual(["context_unavailable"]);
   });
 });
 

@@ -361,11 +361,16 @@ The current implementation also exposes:
 - per-runtime backend kind;
 - runtime handles when the backend reports them;
 - runtime status messages suitable for Studio and CLI;
+- per-runtime reconciliation state and finding codes derived from canonical
+  runtime inspection state rather than from a separate host-only heuristic
+  model;
 - restart-generation-backed lifecycle inspection and typed
   `runtime.restart.requested` events;
 - read-only persisted artifact inspection for active runtimes;
 - host-managed external principal inspection and mutation;
 - host-level reconciliation status via `GET /v1/host/status`;
+- richer host-level reconciliation counters for blocked, degraded,
+  transitioning, and total issue counts;
 - typed host-event inspection through `GET /v1/events`;
 - live host-event streaming over WebSocket upgrade on `GET /v1/events`.
 - typed control-plane `edge.updated` events for graph-backed edge mutations.
@@ -405,9 +410,15 @@ The implemented event classes currently include:
 - `external_principal.updated`
 - `graph.revision.applied`
 - `node.binding.updated`
+- `edge.updated`
 - `runtime.desired_state.changed`
+- `runtime.restart.requested`
 - `runtime.observed_state.changed`
 - `host.reconciliation.completed`
+
+The current `host.reconciliation.completed` event now carries richer aggregate
+reconciliation metadata, including blocked, degraded, transitioning, and
+issue-count summaries.
 
 The broader target surface should continue to widen from there.
 

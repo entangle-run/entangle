@@ -2527,10 +2527,102 @@ describe("buildHostServer", () => {
         status: "healthy",
         reconciliation: {
           backendKind: "memory",
+          blockedRuntimeCount: 0,
+          degradedRuntimeCount: 0,
           failedRuntimeCount: 0,
+          findingCodes: [],
+          issueCount: 0,
           managedRuntimeCount: 1,
           runningRuntimeCount: 1,
-          stoppedRuntimeCount: 0
+          stoppedRuntimeCount: 0,
+          transitioningRuntimeCount: 0
+        }
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("reports degraded host status when a runtime has no realizable context", async () => {
+    const server = await createTestServer({ includeModelEndpoint: false });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const statusResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      expect(statusResponse.json()).toMatchObject({
+        service: "entangle-host",
+        status: "degraded",
+        reconciliation: {
+          backendKind: "memory",
+          blockedRuntimeCount: 1,
+          degradedRuntimeCount: 1,
+          failedRuntimeCount: 0,
+          findingCodes: ["context_unavailable"],
+          issueCount: 1,
+          managedRuntimeCount: 1,
+          runningRuntimeCount: 0,
+          stoppedRuntimeCount: 1,
+          transitioningRuntimeCount: 0
+        }
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("does not report degradation for an intentionally stopped runtime", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const stopResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/stop"
+      });
+
+      expect(stopResponse.statusCode).toBe(200);
+      expect(runtimeInspectionResponseSchema.parse(stopResponse.json())).toMatchObject({
+        desiredState: "stopped",
+        observedState: "stopped",
+        reconciliation: {
+          findingCodes: [],
+          state: "aligned"
+        }
+      });
+
+      const statusResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      expect(statusResponse.json()).toMatchObject({
+        service: "entangle-host",
+        status: "healthy",
+        reconciliation: {
+          blockedRuntimeCount: 0,
+          degradedRuntimeCount: 0,
+          failedRuntimeCount: 0,
+          findingCodes: [],
+          issueCount: 0,
+          transitioningRuntimeCount: 0
         }
       });
     } finally {

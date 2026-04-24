@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added richer reconciliation and degraded-state semantics to entangle-host
+
+Closed the next host control-plane slice by making reconciliation explicit and
+machine-readable instead of inferring host health from raw runtime failure
+counts alone. Runtime inspection now carries derived reconciliation state plus
+finding codes, persisted reconciliation snapshots distinguish blocked,
+transitioning, and degraded runtimes, `GET /v1/host/status` derives status
+from those findings, and host reconciliation-completed events now persist the
+same richer aggregate metadata. The slice also kept backward compatibility for
+older persisted reconciliation snapshots while adding tests for degraded
+runtime context, intentionally stopped runtimes, and contract-level fallback
+parsing.
+
 ## [2026-04-24] implementation | Added graph-backed edge mutation surfaces through entangle-host
 
 Completed the next host control-plane resource slice by adding `GET /v1/edges`,

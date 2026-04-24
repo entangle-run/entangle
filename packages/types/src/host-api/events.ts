@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
@@ -96,13 +97,18 @@ export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend
 
 export const hostReconciliationCompletedEventSchema = hostEventBaseSchema.extend({
   backendKind: runtimeBackendKindSchema,
+  blockedRuntimeCount: z.number().int().nonnegative().optional(),
   category: z.literal("reconciliation"),
+  degradedRuntimeCount: z.number().int().nonnegative().optional(),
   failedRuntimeCount: z.number().int().nonnegative(),
+  findingCodes: z.array(runtimeReconciliationFindingCodeSchema).optional(),
   graphId: identifierSchema.optional(),
   graphRevisionId: identifierSchema.optional(),
+  issueCount: z.number().int().nonnegative().optional(),
   managedRuntimeCount: z.number().int().nonnegative(),
   runningRuntimeCount: z.number().int().nonnegative(),
   stoppedRuntimeCount: z.number().int().nonnegative(),
+  transitioningRuntimeCount: z.number().int().nonnegative().optional(),
   type: z.literal("host.reconciliation.completed")
 });
 
