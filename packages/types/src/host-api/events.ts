@@ -17,6 +17,7 @@ import {
 import {
   approvalLifecycleStateSchema,
   conversationLifecycleStateSchema,
+  memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema
@@ -194,6 +195,7 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   conversationId: identifierSchema.optional(),
   engineOutcome: engineTurnOutcomeSchema.optional(),
   graphId: identifierSchema,
+  memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   nodeId: identifierSchema,
   phase: runnerPhaseSchema,
   producedArtifactIds: z.array(identifierSchema),

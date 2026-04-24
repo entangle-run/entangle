@@ -152,6 +152,10 @@ The repository now also contains the first real implementation baseline:
   conversation/session state and the durable `working-context.md` page now
   preserves bounded session-context signals instead of leaving session
   awareness trapped in prompt-time context alone;
+- a memory-synthesis observability refinement where optional synthesis now
+  persists a canonical bounded outcome on `RunnerTurnRecord` and that same
+  outcome now surfaces through host-owned runner activity and runtime-trace
+  inspection instead of remaining trapped in wiki logs alone;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

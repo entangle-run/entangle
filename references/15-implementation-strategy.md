@@ -204,6 +204,10 @@ Completed in the current repository state:
     conversation/session state and the durable `working-context.md` page now
     preserves bounded session-context signals instead of leaving session
     awareness trapped in prompt-time context alone.
+18. a memory-synthesis observability refinement where optional synthesis now
+    persists a canonical bounded outcome on `RunnerTurnRecord` and that same
+    outcome now surfaces through host-owned runner activity and runtime-trace
+    inspection instead of remaining trapped in wiki logs alone.
 
 Remaining work in this phase:
 

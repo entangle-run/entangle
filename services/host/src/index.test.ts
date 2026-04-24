@@ -2453,6 +2453,12 @@ describe("buildHostServer", () => {
               outputTokens: 12
             }
           },
+          memorySynthesisOutcome: {
+            status: "succeeded",
+            updatedAt: "2026-04-24T10:05:30.000Z",
+            workingContextPagePath:
+              "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
+          },
           graphId: "team-alpha",
           nodeId: "worker-it",
           phase: "persisting",
@@ -2538,6 +2544,12 @@ describe("buildHostServer", () => {
             nodeId: "worker-it",
             phase: "persisting",
             sessionId: "session-alpha",
+            memorySynthesisOutcome: {
+              status: "succeeded",
+              updatedAt: "2026-04-24T10:05:30.000Z",
+              workingContextPagePath:
+                "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
+            },
             turnId: "turn-alpha",
             type: "runner.turn.updated"
           })

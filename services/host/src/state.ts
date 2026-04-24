@@ -3850,6 +3850,9 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     consumedArtifactIds: turnRecord.consumedArtifactIds,
     conversationId: turnRecord.conversationId,
     ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
+    ...(turnRecord.memorySynthesisOutcome
+      ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
+      : {}),
     fingerprint,
     graphId: turnRecord.graphId,
     nodeId: runtime.nodeId,
@@ -3879,6 +3882,9 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     consumedArtifactIds: turnRecord.consumedArtifactIds,
     conversationId: turnRecord.conversationId,
     ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
+    ...(turnRecord.memorySynthesisOutcome
+      ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
+      : {}),
     graphId: turnRecord.graphId,
     message:
       `Runner turn '${turnRecord.turnId}' on node '${runtime.nodeId}' is now in phase ` +

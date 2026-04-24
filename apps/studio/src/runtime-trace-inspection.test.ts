@@ -133,6 +133,12 @@ describe("studio runtime trace inspection helpers", () => {
           outputTokens: 12
         }
       },
+      memorySynthesisOutcome: {
+        status: "succeeded",
+        updatedAt: "2026-04-24T11:00:03.500Z",
+        workingContextPagePath:
+          "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
+      },
       eventId: "evt-runner-turn-observed",
       graphId: "team-alpha",
       message: "Runner turn 'turn-alpha' observed a completed engine outcome.",
@@ -154,7 +160,8 @@ describe("studio runtime trace inspection helpers", () => {
       "Outcome: completed (provider: end_turn)",
       "Usage: 42 input / 12 output tokens",
       "Tool executions: 2 total (1 success, 1 error)",
-      "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_execution_failed)"
+      "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_execution_failed)",
+      "Memory synthesis: updated working-context summary"
     ]);
   });
 });

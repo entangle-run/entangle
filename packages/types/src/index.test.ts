@@ -386,6 +386,12 @@ describe("host event contracts", () => {
           outputTokens: 12
         }
       },
+      memorySynthesisOutcome: {
+        status: "succeeded",
+        updatedAt: "2026-04-24T00:00:01.000Z",
+        workingContextPagePath:
+          "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
+      },
       eventId: "turn-worker-it-001",
       graphId: "graph-alpha",
       message: "Runner turn 'turn-alpha' on node 'worker-it' is now in phase 'persisting'.",
@@ -410,6 +416,7 @@ describe("host event contracts", () => {
       throw new Error("Expected runner.turn.updated event");
     }
     expect(runnerTurnEvent.engineOutcome?.toolExecutions).toHaveLength(1);
+    expect(runnerTurnEvent.memorySynthesisOutcome?.status).toBe("succeeded");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

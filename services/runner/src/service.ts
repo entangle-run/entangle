@@ -12,6 +12,7 @@ import type {
   EngineTurnOutcome,
   EffectiveRuntimeContext,
   EntangleA2AMessage,
+  MemorySynthesisOutcome,
   RunnerPhase,
   RunnerTurnRecord,
   SessionLifecycleState,
@@ -520,15 +521,19 @@ export class RunnerService {
     producedArtifactIds: string[];
     recentWorkSummaryPath: string;
     result: AgentEngineTurnResult;
+    statePaths: RunnerStatePaths;
     taskPagePath: string;
+    turnRecord: RunnerTurnRecord;
     turnId: string;
-  }): Promise<void> {
+  }): Promise<RunnerTurnRecord> {
     if (!this.memorySynthesizer) {
-      return;
+      return input.turnRecord;
     }
 
+    let memorySynthesisOutcome: MemorySynthesisOutcome;
+
     try {
-      await this.memorySynthesizer.synthesize({
+      const synthesisResult = await this.memorySynthesizer.synthesize({
         artifactInputs: input.artifactInputs,
         artifactRefs: input.artifactRefs,
         consumedArtifactIds: input.consumedArtifactIds,
@@ -540,9 +545,36 @@ export class RunnerService {
         taskPagePath: input.taskPagePath,
         turnId: input.turnId
       });
-    } catch {
-      /* Best-effort only. Memory synthesis must not invalidate the completed turn. */
+
+      memorySynthesisOutcome = synthesisResult.ok
+        ? {
+            status: "succeeded",
+            updatedAt: nowIsoString(),
+            workingContextPagePath: synthesisResult.workingContextPagePath
+          }
+        : {
+            errorMessage: truncateBoundedText(synthesisResult.errorMessage),
+            status: "failed",
+            updatedAt: nowIsoString()
+          };
+    } catch (error: unknown) {
+      memorySynthesisOutcome = {
+        errorMessage:
+          error instanceof Error
+            ? truncateBoundedText(error.message)
+            : "Optional memory synthesis failed unexpectedly.",
+        status: "failed",
+        updatedAt: nowIsoString()
+      };
     }
+
+    const nextTurnRecord: RunnerTurnRecord = {
+      ...input.turnRecord,
+      memorySynthesisOutcome,
+      updatedAt: nowIsoString()
+    };
+    await writeRunnerTurnRecord(input.statePaths, nextTurnRecord);
+    return nextTurnRecord;
   }
 
   async handleInboundEnvelope(
@@ -749,7 +781,9 @@ export class RunnerService {
         producedArtifactIds,
         recentWorkSummaryPath: memoryUpdate.summaryPagePath,
         result,
+        statePaths,
         taskPagePath: memoryUpdate.taskPagePath,
+        turnRecord,
         turnId: turnRecord.turnId
       };
 
@@ -779,7 +813,7 @@ export class RunnerService {
           );
         }
 
-        await this.runOptionalMemorySynthesis(memorySynthesisInput);
+        turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
 
         return {
           handled: true,
@@ -815,7 +849,7 @@ export class RunnerService {
           lastMessageType: responseMessage.messageType
         }
       );
-      await this.runOptionalMemorySynthesis(memorySynthesisInput);
+      turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
 
       return {
         handled: true,

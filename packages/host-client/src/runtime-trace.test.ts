@@ -79,6 +79,12 @@ describe("runtime trace helpers", () => {
           outputTokens: 7
         }
       },
+      memorySynthesisOutcome: {
+        status: "succeeded",
+        updatedAt: "2026-04-24T11:00:04.000Z",
+        workingContextPagePath:
+          "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
+      },
       eventId: "evt-turn-observed",
       graphId: "team-alpha",
       message: "Runner turn 'turn-alpha' completed with engine outcome.",
@@ -101,7 +107,8 @@ describe("runtime trace helpers", () => {
         "Outcome: completed (provider: end_turn)",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
-        "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error)"
+        "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error)",
+        "Memory synthesis: updated working-context summary"
       ],
       label: "Turn turn-alpha is emitting"
     });
@@ -124,6 +131,11 @@ describe("runtime trace helpers", () => {
         stopReason: "error",
         toolExecutions: []
       },
+      memorySynthesisOutcome: {
+        errorMessage: "provider unavailable",
+        status: "failed",
+        updatedAt: "2026-04-24T11:00:04.000Z"
+      },
       eventId: "evt-turn-error",
       graphId: "team-alpha",
       message: "Runner turn 'turn-beta' failed.",
@@ -143,7 +155,8 @@ describe("runtime trace helpers", () => {
       detailLines: [
         "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
         "Outcome: error",
-        "Failure: auth_error — Authentication failed at the provider boundary."
+        "Failure: auth_error — Authentication failed at the provider boundary.",
+        "Memory synthesis: failed — provider unavailable"
       ],
       label: "Turn turn-beta is errored"
     });

@@ -61,6 +61,23 @@ export const runnerTriggerKindSchema = z.enum([
   "timer"
 ]);
 
+export const memorySynthesisSuccessOutcomeSchema = z.object({
+  status: z.literal("succeeded"),
+  updatedAt: nonEmptyStringSchema,
+  workingContextPagePath: nonEmptyStringSchema
+});
+
+export const memorySynthesisFailureOutcomeSchema = z.object({
+  errorMessage: nonEmptyStringSchema,
+  status: z.literal("failed"),
+  updatedAt: nonEmptyStringSchema
+});
+
+export const memorySynthesisOutcomeSchema = z.discriminatedUnion("status", [
+  memorySynthesisSuccessOutcomeSchema,
+  memorySynthesisFailureOutcomeSchema
+]);
+
 export const sessionRecordSchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
   entrypointNodeId: identifierSchema.optional(),
@@ -117,6 +134,7 @@ export const runnerTurnRecordSchema = z.object({
   consumedArtifactIds: z.array(identifierSchema).default([]),
   engineOutcome: engineTurnOutcomeSchema.optional(),
   graphId: identifierSchema,
+  memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   messageId: nostrEventIdSchema.optional(),
   nodeId: identifierSchema,
   phase: runnerPhaseSchema,
@@ -213,6 +231,9 @@ export type ConversationLifecycleState = z.infer<
 export type ApprovalLifecycleState = z.infer<typeof approvalLifecycleStateSchema>;
 export type RunnerPhase = z.infer<typeof runnerPhaseSchema>;
 export type RunnerTriggerKind = z.infer<typeof runnerTriggerKindSchema>;
+export type MemorySynthesisOutcome = z.infer<
+  typeof memorySynthesisOutcomeSchema
+>;
 export type SessionRecord = z.infer<typeof sessionRecordSchema>;
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ApprovalRecord = z.infer<typeof approvalRecordSchema>;

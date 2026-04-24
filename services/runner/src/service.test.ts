@@ -396,16 +396,28 @@ describe("RunnerService", () => {
 
     const result = await service.handleInboundEnvelope(buildInboundTaskRequest());
     const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
-    const [sessionRecord, conversationRecord, logPage] = await Promise.all([
+    const [sessionRecord, conversationRecord, logPage, turnFiles] = await Promise.all([
       readSessionRecord(statePaths, "session-alpha"),
       readConversationRecord(statePaths, "conv-alpha"),
-      readFile(path.join(runtimeContext.workspace.memoryRoot, "wiki", "log.md"), "utf8")
+      readFile(path.join(runtimeContext.workspace.memoryRoot, "wiki", "log.md"), "utf8"),
+      readdir(statePaths.turnsRoot)
     ]);
+    const turnRecord = turnFiles[0]
+      ? await readRunnerTurnRecord(statePaths, turnFiles[0].replace(/\.json$/, ""))
+      : undefined;
 
     expect(result.handled).toBe(true);
     expect(sessionRecord?.status).toBe("completed");
     expect(conversationRecord?.status).toBe("closed");
     expect(logPage).toContain("runner turn | session-alpha /");
+    expect(turnRecord?.memorySynthesisOutcome?.status).toBe("failed");
+    if (turnRecord?.memorySynthesisOutcome?.status !== "failed") {
+      throw new Error("Expected a failed memory synthesis outcome.");
+    }
+    expect(turnRecord.memorySynthesisOutcome.errorMessage).toBe(
+      "synthetic memory synthesis failure"
+    );
+    expect(turnRecord.memorySynthesisOutcome.updatedAt).toEqual(expect.any(String));
   });
 
   it("passes retrieved and produced artifact context into optional memory synthesis", async () => {
@@ -473,6 +485,11 @@ describe("RunnerService", () => {
         artifactRefs: [inboundArtifact]
       })
     );
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const turnFiles = await readdir(statePaths.turnsRoot);
+    const turnRecord = turnFiles[0]
+      ? await readRunnerTurnRecord(statePaths, turnFiles[0].replace(/\.json$/, ""))
+      : undefined;
 
     expect(result.handled).toBe(true);
     expect(capturedSynthesisInput?.artifactInputs).toHaveLength(2);
@@ -490,6 +507,19 @@ describe("RunnerService", () => {
     );
     expect(synthesisConversationStatus).toBe("closed");
     expect(synthesisSessionStatus).toBe("completed");
+    expect(turnRecord?.memorySynthesisOutcome?.status).toBe("succeeded");
+    if (turnRecord?.memorySynthesisOutcome?.status !== "succeeded") {
+      throw new Error("Expected a successful memory synthesis outcome.");
+    }
+    expect(turnRecord.memorySynthesisOutcome.updatedAt).toEqual(expect.any(String));
+    expect(turnRecord.memorySynthesisOutcome.workingContextPagePath).toBe(
+      path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "working-context.md"
+      )
+    );
   });
 
   it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {

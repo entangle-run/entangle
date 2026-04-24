@@ -795,3 +795,15 @@ Closed the slice only after widening runner-memory assertions over durable
 session-context output, proving via service tests that synthesis now sees the
 final `closed` / `completed` lifecycle state, and then re-running targeted
 runner gates plus the full `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added memory-synthesis observability
+
+Made optional memory synthesis observable through the canonical turn/trace path
+by persisting a bounded synthesis outcome on `RunnerTurnRecord` and surfacing
+that same outcome through host-owned runner activity plus CLI/Studio runtime
+trace helpers. This removes the old blind spot where synthesis success or
+failure only lived in wiki files and log entries.
+
+Closed the slice only after widening contract, runner, host, host-client, and
+Studio trace assertions, then re-running targeted package tests plus the full
+`pnpm verify` and `git diff --check` gates.
