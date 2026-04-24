@@ -33,6 +33,8 @@ import {
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeRecoveryInspectionResponseSchema,
+  runtimeRecoveryListQuerySchema,
   runtimeListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema
@@ -50,6 +52,7 @@ import {
   getNodeInspection,
   getRuntimeContext,
   getRuntimeInspection,
+  getRuntimeRecoveryInspection,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
   listHostEvents,
@@ -668,6 +671,28 @@ export async function buildHostServer() {
     }
 
     return runtimeArtifactListResponseSchema.parse(artifacts);
+  });
+
+  server.get("/v1/runtimes/:nodeId/recovery", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const query = parseRequestInput(runtimeRecoveryListQuerySchema, request.query, {
+      detailsKey: "queryIssues",
+      message: "Request query did not match the expected schema."
+    });
+    const inspection = await getRuntimeRecoveryInspection({
+      limit: query.limit ?? 50,
+      nodeId: params.nodeId
+    });
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime recovery history for '${params.nodeId}' was not found in current host state.`
+      });
+    }
+
+    return runtimeRecoveryInspectionResponseSchema.parse(inspection);
   });
 
   server.get("/v1/sessions", async () =>

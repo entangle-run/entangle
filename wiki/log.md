@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added host-owned runtime recovery-history inspection
+
+Closed the next host control-plane diagnostics slice by adding
+`GET /v1/runtimes/{nodeId}/recovery` through `entangle-host`,
+`packages/host-client`, and the CLI, backed by persisted per-node recovery
+records under observed host state. The slice only closed after the audit loop
+found and corrected a real deduplication defect: recovery fingerprinting now
+canonicalizes recursively sorted JSON instead of relying on raw object key
+order, and host reconciliation reads are serialized through a single-flight
+guard so rapid successive inspections do not create duplicate recovery
+history entries.
+
 ## [2026-04-24] implementation | Added richer reconciliation and degraded-state semantics to entangle-host
 
 Closed the next host control-plane slice by making reconciliation explicit and

@@ -31,6 +31,7 @@ import {
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema
@@ -2400,6 +2401,72 @@ describe("buildHostServer", () => {
       expect(
         secondEvents.filter((event) => event.type === "runner.turn.updated").length
       ).toBe(firstRunnerTurnEventCount);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("persists runtime recovery history without duplicating unchanged runtime state", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const firstRecoveryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/recovery?limit=10"
+      });
+
+      expect(firstRecoveryResponse.statusCode).toBe(200);
+      const firstRecovery = runtimeRecoveryInspectionResponseSchema.parse(
+        firstRecoveryResponse.json()
+      );
+
+      expect(firstRecovery.currentRuntime).toMatchObject({
+        nodeId: "worker-it",
+        observedState: "running"
+      });
+      expect(firstRecovery.entries).toHaveLength(1);
+      expect(firstRecovery.entries[0]?.runtime.observedState).toBe("running");
+
+      const secondRecoveryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/recovery?limit=10"
+      });
+      const secondRecovery = runtimeRecoveryInspectionResponseSchema.parse(
+        secondRecoveryResponse.json()
+      );
+
+      expect(secondRecovery.entries).toHaveLength(1);
+
+      const stopResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/stop"
+      });
+
+      expect(stopResponse.statusCode).toBe(200);
+
+      const thirdRecoveryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/recovery?limit=10"
+      });
+      const thirdRecovery = runtimeRecoveryInspectionResponseSchema.parse(
+        thirdRecoveryResponse.json()
+      );
+
+      expect(thirdRecovery.currentRuntime).toMatchObject({
+        desiredState: "stopped",
+        nodeId: "worker-it",
+        observedState: "stopped"
+      });
+      expect(thirdRecovery.entries).toHaveLength(2);
+      expect(thirdRecovery.entries[0]?.runtime.observedState).toBe("stopped");
+      expect(thirdRecovery.entries[1]?.runtime.observedState).toBe("running");
     } finally {
       await server.close();
     }

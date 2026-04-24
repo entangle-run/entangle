@@ -24,6 +24,7 @@ import {
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
   resolvedSecretBindingSchema,
+  runtimeRecoveryInspectionResponseSchema,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
   resolvePrimaryGitRepositoryTarget,
@@ -337,6 +338,45 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("edge.updated");
     expect(result.mutationKind).toBe("created");
+  });
+});
+
+describe("runtime recovery contracts", () => {
+  it("accepts a runtime recovery inspection response", () => {
+    const result = runtimeRecoveryInspectionResponseSchema.parse({
+      currentRuntime: {
+        backendKind: "docker",
+        contextAvailable: true,
+        contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+        desiredState: "running",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260424-000001",
+        nodeId: "worker-it",
+        observedState: "running",
+        restartGeneration: 0
+      },
+      entries: [
+        {
+          recordedAt: "2026-04-24T10:05:00.000Z",
+          recoveryId: "worker-it-20260424t100500-running",
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260424-000001",
+            nodeId: "worker-it",
+            observedState: "running",
+            restartGeneration: 0
+          }
+        }
+      ],
+      nodeId: "worker-it"
+    });
+
+    expect(result.nodeId).toBe("worker-it");
+    expect(result.entries).toHaveLength(1);
   });
 });
 

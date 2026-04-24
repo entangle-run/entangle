@@ -205,6 +205,12 @@ This repository currently contains:
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` no longer reduces runtime health to raw
   failure counts alone;
+- a host-owned runtime recovery-history surface where `entangle-host` now
+  exposes `GET /v1/runtimes/{nodeId}/recovery`, persists per-node recovery
+  records under observed host state, deduplicates unchanged states with
+  canonicalized recovery fingerprints, and serializes reconciliation reads so
+  recovery inspection does not create duplicate history under rapid successive
+  calls;
 
 The highest-value remaining gaps are:
 
@@ -213,8 +219,9 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper conversation, approval, artifact, and recovery-oriented host event
-  coverage plus richer recovery diagnostics on top of the new degraded-state,
-  session-inspection, and session/runner-activity host surfaces;
+  coverage plus explicit retry-policy and recovery-automation semantics on top
+  of the new degraded-state, recovery-history, session-inspection, and
+  session/runner-activity host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

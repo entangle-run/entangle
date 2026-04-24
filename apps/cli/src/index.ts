@@ -386,6 +386,24 @@ hostRuntimesCommand
   });
 
 hostRuntimesCommand
+  .command("recovery")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--limit <n>", "Maximum number of recovery records to return.", "50")
+  .description("Inspect persisted runtime recovery history for one runtime.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        limit: string;
+      },
+      command: Command
+    ) => {
+      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      printJson(await client.getRuntimeRecovery(nodeId, Number.parseInt(options.limit, 10)));
+    }
+  );
+
+hostRuntimesCommand
   .command("start")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .description("Set one runtime's desired state to running.")

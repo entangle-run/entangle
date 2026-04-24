@@ -142,6 +142,11 @@ The repository now also contains the first real implementation baseline:
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` now derives health from explicit
   reconciliation findings instead of raw failure counts alone;
+- a host-owned runtime recovery-history surface where `entangle-host` now
+  exposes `GET /v1/runtimes/{nodeId}/recovery`, persists per-node recovery
+  records under observed host state, deduplicates unchanged runtime states
+  with canonicalized fingerprints, and serializes host reconciliation reads so
+  identical successive inspections do not create duplicate history entries;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -271,7 +276,8 @@ The current implementation-truth audit now lives in
   memory maintenance;
 - complete the remaining core host resource surfaces and widen the now
   implemented host event surface into deeper session and runner activity,
-  especially recovery diagnostics and richer runner-originated event classes
-  on top of the now-implemented degraded-state and reconciliation surfaces;
+  especially richer recovery-oriented and runner-originated event classes on
+  top of the now-implemented degraded-state, reconciliation, and runtime
+  recovery-history surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

@@ -135,6 +135,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - richer reconciliation semantics with per-runtime derived reconciliation
   summaries, persisted blocked/degraded/transitioning counts, and host status
   derived from those findings instead of from raw failure counts alone;
+- host-owned runtime recovery-history inspection with durable per-node
+  recovery records, canonicalized fingerprint-based deduplication, and a
+  stable `GET /v1/runtimes/{nodeId}/recovery` read boundary;
 - host-managed runtime identity persistence;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
@@ -146,9 +149,8 @@ This layer is strong and directionally correct. It is not a blocker.
 
 - broader conversation, approval, artifact, and recovery-oriented event
   classes on top of the now-implemented session and runner activity events;
-- richer recovery diagnostics and restart or retry policy above the current
-  degraded-state model;
-- broader recovery-history and inspection surfaces.
+- explicit retry policy and recovery automation above the current
+  degraded-state, restart, and recovery-history model.
 
 ### Assessment
 

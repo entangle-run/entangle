@@ -358,6 +358,7 @@ The current repository implementation now concretely includes:
 - `GET /v1/runtimes/{nodeId}`
 - `GET /v1/runtimes/{nodeId}/context`
 - `GET /v1/runtimes/{nodeId}/artifacts`
+- `GET /v1/runtimes/{nodeId}/recovery`
 - `GET /v1/events`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
@@ -366,8 +367,8 @@ The current repository implementation now concretely includes:
 The currently missing runtime lifecycle elements are:
 
 - `DELETE /v1/runtimes/{nodeId}`
-- richer degraded and retry semantics;
-- stronger runtime recovery diagnostics and history surfaces.
+- richer retry and recovery automation semantics;
+- broader recovery-oriented event classes.
 
 Purpose:
 
@@ -384,6 +385,9 @@ The current implementation also exposes:
 - restart-generation-backed lifecycle inspection and typed
   `runtime.restart.requested` events;
 - read-only persisted artifact inspection for active runtimes;
+- read-only persisted runtime recovery-history inspection through
+  `GET /v1/runtimes/{nodeId}/recovery`, with durable per-node records and
+  canonicalized fingerprint-based deduplication;
 - host-managed external principal inspection and mutation;
 - host-level reconciliation status via `GET /v1/host/status`;
 - richer host-level reconciliation counters for blocked, degraded,

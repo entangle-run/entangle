@@ -98,6 +98,8 @@ import {
   runtimeIdentityRecordSchema,
   runtimeArtifactListResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeRecoveryInspectionResponseSchema,
+  runtimeRecoveryRecordSchema,
   type RuntimeInspectionResponse,
   runtimeIntentRecordSchema,
   type RuntimeArtifactListResponse,
@@ -108,6 +110,8 @@ import {
   type SessionRecord,
   type RunnerTurnRecord,
   type RuntimeListResponse,
+  type RuntimeRecoveryInspectionResponse,
+  type RuntimeRecoveryRecord,
   type RuntimeObservedState,
   type RuntimeIntentRecord,
   type ObservedRunnerTurnActivityRecord,
@@ -153,6 +157,7 @@ const graphRevisionsRoot = path.join(graphRoot, "revisions");
 const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const observedRuntimesRoot = path.join(observedRoot, "runtimes");
+const runtimeRecoveryHistoryRoot = path.join(observedRoot, "runtime-recovery");
 const gitRepositoryTargetsRoot = path.join(observedRoot, "git-repository-targets");
 const observedRunnerTurnActivityRoot = path.join(
   observedRoot,
@@ -182,6 +187,16 @@ type RuntimeResolution = {
 
 const runtimeBackend = createRuntimeBackend(hostStateRoot, secretStateRoot);
 const hostEventSubscribers = new Set<(event: HostEventRecord) => void>();
+
+type CurrentGraphRuntimeSynchronizationResult = {
+  nodes: NodeInspectionResponse[];
+  runtimes: RuntimeInspectionResponse[];
+  snapshot: ReturnType<typeof reconciliationSnapshotSchema.parse>;
+};
+
+let currentGraphRuntimeSynchronizationPromise:
+  | Promise<CurrentGraphRuntimeSynchronizationResult>
+  | undefined;
 
 type CatalogUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "catalog.updated" }>,
@@ -1447,6 +1462,50 @@ async function readObservedRuntimeRecord(
   return observedRuntimeRecordSchema.parse(await readJsonFile(filePath));
 }
 
+async function listRuntimeRecoveryRecords(input: {
+  limit?: number;
+  nodeId: string;
+}): Promise<RuntimeRecoveryRecord[]> {
+  const directoryPath = runtimeRecoveryHistoryNodeRoot(input.nodeId);
+
+  if (!(await pathExists(directoryPath))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(directoryPath))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        runtimeRecoveryRecordSchema.parse(
+          await readJsonFile(path.join(directoryPath, entry))
+        )
+      )
+  );
+
+  records.sort((left, right) => {
+    const recordedAtOrdering = right.recordedAt.localeCompare(left.recordedAt);
+
+    if (recordedAtOrdering !== 0) {
+      return recordedAtOrdering;
+    }
+
+    return right.recoveryId.localeCompare(left.recoveryId);
+  });
+
+  return records.slice(0, input.limit ?? records.length);
+}
+
+async function readLatestRuntimeRecoveryRecord(
+  nodeId: string
+): Promise<RuntimeRecoveryRecord | undefined> {
+  const [latestRecord] = await listRuntimeRecoveryRecords({
+    limit: 1,
+    nodeId
+  });
+
+  return latestRecord;
+}
+
 async function readObservedSessionActivityRecord(
   nodeId: string,
   sessionId: string
@@ -1556,10 +1615,70 @@ function didObservedRuntimeChange(
   );
 }
 
-function buildObservedActivityFingerprint(value: unknown): string {
+function normalizeFingerprintValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeFingerprintValue(entry));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, entryValue]) => entryValue !== undefined)
+        .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+        .map(([entryKey, entryValue]) => [
+          entryKey,
+          normalizeFingerprintValue(entryValue)
+        ])
+    );
+  }
+
+  return value;
+}
+
+function buildObservationFingerprint(value: unknown): string {
   return createHash("sha1")
-    .update(JSON.stringify(value))
+    .update(JSON.stringify(normalizeFingerprintValue(value)))
     .digest("hex");
+}
+
+function runtimeRecoveryHistoryNodeRoot(nodeId: string): string {
+  return path.join(runtimeRecoveryHistoryRoot, nodeId);
+}
+
+function buildRuntimeRecoveryRecordId(input: {
+  fingerprint: string;
+  nodeId: string;
+  recordedAt: string;
+}): string {
+  return sanitizeIdentifier(
+    `${input.nodeId}-${input.recordedAt}-${input.fingerprint.slice(0, 12)}`
+  );
+}
+
+function buildRuntimeRecoveryComparable(input: {
+  inspection: RuntimeInspectionResponse;
+  lastError: string | undefined;
+}) {
+  const provisioning = input.inspection.primaryGitRepositoryProvisioning;
+
+  return {
+    ...(input.lastError ? { lastError: input.lastError } : {}),
+    runtime: {
+      ...input.inspection,
+      primaryGitRepositoryProvisioning: provisioning
+        ? {
+            ...(provisioning.created === undefined
+              ? {}
+              : { created: provisioning.created }),
+            ...(provisioning.lastError === undefined
+              ? {}
+              : { lastError: provisioning.lastError }),
+            state: provisioning.state,
+            target: provisioning.target
+          }
+        : undefined
+    }
+  };
 }
 
 function didReconciliationSnapshotChange(
@@ -1690,6 +1809,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
+    ensureDirectory(runtimeRecoveryHistoryRoot),
     ensureDirectory(gitRepositoryTargetsRoot),
     ensureDirectory(observedRunnerTurnActivityRoot),
     ensureDirectory(observedSessionActivityRoot),
@@ -2512,33 +2632,35 @@ async function buildRuntimeResolution(input: {
     } satisfies RuntimeObservedStateChangedEventInput);
   }
 
+  const inspection = buildRuntimeInspectionFromState({
+    context,
+    desiredState: intentRecord.desiredState,
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    nodeId: node.nodeId,
+    observedState: observedRecord.observedState,
+    packageSourceId: packageSource?.packageSourceId,
+    primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
+    reason: intentRecord.reason,
+    restartGeneration: intentRecord.restartGeneration,
+    runtimeHandle: observedRecord.runtimeHandle,
+    statusMessage: observedRecord.statusMessage,
+    backendKind: observedRecord.backendKind
+  });
+  await synchronizeRuntimeRecoveryHistory({
+    inspection,
+    lastError: observedRecord.lastError
+  });
+
   return {
     binding: effectiveBinding,
     context,
     primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
-    inspection: buildRuntimeInspectionFromState({
-      context,
-      desiredState: intentRecord.desiredState,
-      graphId: graph.graphId,
-      graphRevisionId: activeRevisionId,
-      nodeId: node.nodeId,
-      observedState: observedRecord.observedState,
-      packageSourceId: packageSource?.packageSourceId,
-      primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
-      reason: intentRecord.reason,
-      restartGeneration: intentRecord.restartGeneration,
-      runtimeHandle: observedRecord.runtimeHandle,
-      statusMessage: observedRecord.statusMessage,
-      backendKind: observedRecord.backendKind
-    })
+    inspection
   };
 }
 
-async function synchronizeCurrentGraphRuntimeState(): Promise<{
-  nodes: NodeInspectionResponse[];
-  runtimes: RuntimeInspectionResponse[];
-  snapshot: ReturnType<typeof reconciliationSnapshotSchema.parse>;
-}> {
+async function performCurrentGraphRuntimeStateSynchronization(): Promise<CurrentGraphRuntimeSynchronizationResult> {
   const { graph, activeRevisionId } = await readActiveGraphState();
   const previousSnapshot = await readLatestReconciliationSnapshot();
 
@@ -2676,6 +2798,23 @@ async function synchronizeCurrentGraphRuntimeState(): Promise<{
     runtimes: inspections,
     snapshot
   };
+}
+
+async function synchronizeCurrentGraphRuntimeState(): Promise<CurrentGraphRuntimeSynchronizationResult> {
+  if (currentGraphRuntimeSynchronizationPromise) {
+    return currentGraphRuntimeSynchronizationPromise;
+  }
+
+  const synchronizationPromise = performCurrentGraphRuntimeStateSynchronization().finally(
+    () => {
+      if (currentGraphRuntimeSynchronizationPromise === synchronizationPromise) {
+        currentGraphRuntimeSynchronizationPromise = undefined;
+      }
+    }
+  );
+
+  currentGraphRuntimeSynchronizationPromise = synchronizationPromise;
+  return synchronizationPromise;
 }
 
 export async function listRuntimeInspections(): Promise<RuntimeListResponse> {
@@ -3021,6 +3160,27 @@ export async function listRuntimeArtifacts(
   });
 }
 
+export async function getRuntimeRecoveryInspection(input: {
+  limit?: number;
+  nodeId: string;
+}): Promise<RuntimeRecoveryInspectionResponse | null> {
+  const inspection = await getRuntimeInspection(input.nodeId);
+  const entries = await listRuntimeRecoveryRecords({
+    limit: input.limit ?? 50,
+    nodeId: input.nodeId
+  });
+
+  if (!inspection && entries.length === 0) {
+    return null;
+  }
+
+  return runtimeRecoveryInspectionResponseSchema.parse({
+    ...(inspection ? { currentRuntime: inspection } : {}),
+    entries,
+    nodeId: input.nodeId
+  });
+}
+
 async function listRuntimeSessionRecords(
   runtimeRoot: string
 ): Promise<SessionRecord[]> {
@@ -3070,7 +3230,7 @@ async function synchronizeSessionActivityObservation(input: {
   sessionRecord: SessionRecord;
 }): Promise<void> {
   const { runtime, sessionRecord } = input;
-  const fingerprint = buildObservedActivityFingerprint(sessionRecord);
+  const fingerprint = buildObservationFingerprint(sessionRecord);
   const existingRecord = await readObservedSessionActivityRecord(
     runtime.nodeId,
     sessionRecord.sessionId
@@ -3119,7 +3279,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
   turnRecord: RunnerTurnRecord;
 }): Promise<void> {
   const { runtime, turnRecord } = input;
-  const fingerprint = buildObservedActivityFingerprint(turnRecord);
+  const fingerprint = buildObservationFingerprint(turnRecord);
   const existingRecord = await readObservedRunnerTurnActivityRecord(
     runtime.nodeId,
     turnRecord.turnId
@@ -3209,6 +3369,70 @@ async function synchronizeRuntimeActivityEvents(input: {
 
   await removeJsonFilesExcept(observedSessionActivityRoot, activeSessionActivityIds);
   await removeJsonFilesExcept(observedRunnerTurnActivityRoot, activeTurnActivityIds);
+}
+
+async function pruneRuntimeRecoveryHistory(
+  nodeId: string,
+  maxEntries = 50
+): Promise<void> {
+  const records = await listRuntimeRecoveryRecords({
+    nodeId
+  });
+
+  if (records.length <= maxEntries) {
+    return;
+  }
+
+  await Promise.all(
+    records.slice(maxEntries).map((record) =>
+      rm(
+        path.join(runtimeRecoveryHistoryNodeRoot(nodeId), `${record.recoveryId}.json`),
+        { force: true }
+      )
+    )
+  );
+}
+
+async function synchronizeRuntimeRecoveryHistory(input: {
+  inspection: RuntimeInspectionResponse;
+  lastError: string | undefined;
+}): Promise<void> {
+  const comparable = buildRuntimeRecoveryComparable(input);
+  const fingerprint = buildObservationFingerprint(comparable);
+  const latestRecord = await readLatestRuntimeRecoveryRecord(input.inspection.nodeId);
+  const latestFingerprint = latestRecord
+    ? buildObservationFingerprint(
+        buildRuntimeRecoveryComparable({
+          inspection: latestRecord.runtime,
+          lastError: latestRecord.lastError
+        })
+      )
+    : undefined;
+
+  if (latestFingerprint === fingerprint) {
+    return;
+  }
+
+  const recordedAt = nowIsoString();
+  const record = runtimeRecoveryRecordSchema.parse({
+    ...(input.lastError ? { lastError: input.lastError } : {}),
+    recordedAt,
+    recoveryId: buildRuntimeRecoveryRecordId({
+      fingerprint,
+      nodeId: input.inspection.nodeId,
+      recordedAt
+    }),
+    runtime: input.inspection
+  });
+
+  await writeJsonFile(
+    path.join(
+      runtimeRecoveryHistoryNodeRoot(input.inspection.nodeId),
+      `${record.recoveryId}.json`
+    ),
+    record
+  );
+  await pruneRuntimeRecoveryHistory(input.inspection.nodeId);
 }
 
 async function collectSessionInspectionNodes(): Promise<

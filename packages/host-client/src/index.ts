@@ -28,6 +28,7 @@ import {
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
@@ -59,6 +60,7 @@ import {
   type RuntimeArtifactListResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
+  type RuntimeRecoveryInspectionResponse,
   type RuntimeListResponse,
   type SessionInspectionResponse,
   type SessionListResponse,
@@ -536,6 +538,19 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/runtimes/${nodeId}/artifacts`),
         runtimeArtifactListResponseSchema
+      );
+    },
+
+    async getRuntimeRecovery(
+      nodeId: string,
+      limit = 50
+    ): Promise<RuntimeRecoveryInspectionResponse> {
+      const url = new URL(`${baseUrl}/v1/runtimes/${nodeId}/recovery`);
+      url.searchParams.set("limit", String(limit));
+
+      return parseResponse(
+        await fetchImpl(url.toString()),
+        runtimeRecoveryInspectionResponseSchema
       );
     },
 

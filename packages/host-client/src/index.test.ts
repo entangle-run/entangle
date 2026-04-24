@@ -462,6 +462,62 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses runtime recovery inspection responses from the host surface", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              currentRuntime: {
+                backendKind: "docker",
+                contextAvailable: true,
+                contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
+                desiredState: "running",
+                graphId: "team-alpha",
+                graphRevisionId: "team-alpha-20260424-000001",
+                nodeId: "worker-it",
+                observedState: "running",
+                restartGeneration: 0
+              },
+              entries: [
+                {
+                  recordedAt: "2026-04-24T10:05:00.000Z",
+                  recoveryId: "worker-it-20260424t100500-running",
+                  runtime: {
+                    backendKind: "docker",
+                    contextAvailable: true,
+                    contextPath:
+                      "/tmp/runtime/worker-it/effective-runtime-context.json",
+                    desiredState: "running",
+                    graphId: "team-alpha",
+                    graphRevisionId: "team-alpha-20260424-000001",
+                    nodeId: "worker-it",
+                    observedState: "running",
+                    restartGeneration: 0
+                  }
+                }
+              ],
+              nodeId: "worker-it"
+            }),
+            ok: true,
+            status: 200
+          })
+        )
+    });
+
+    await expect(client.getRuntimeRecovery("worker-it", 20)).resolves.toMatchObject({
+      nodeId: "worker-it",
+      entries: [
+        {
+          runtime: {
+            observedState: "running"
+          }
+        }
+      ]
+    });
+  });
+
   it("parses session list and inspection responses from the host surface", async () => {
     const responses = [
       createMockResponse({
