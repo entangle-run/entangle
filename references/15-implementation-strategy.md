@@ -245,6 +245,10 @@ Completed in the current repository state:
     candidates from the focused-register baseline may no longer disappear
     silently: the runner now requires explicit retention or explicit
     retirement semantics for those entries.
+27. an explicit stale-item replacement refinement where stale open questions
+    and next actions may now be replaced deterministically by narrower active
+    items through runner-validated `from -> to` mappings instead of being
+    forced to stay active or pretend to be resolved.
 
 Remaining work in this phase:
 
@@ -263,7 +267,8 @@ Remaining work in this phase:
    stable-facts, open-questions, next-actions, and resolutions summary layers,
    into broader model-guided memory maintenance with stronger semantic aging
    and retirement discipline beyond the newly implemented carry-count,
-   stale-review, explicit-closure-reference, and no-silent-drop baseline;
+   stale-review, explicit-closure-reference, no-silent-drop, and
+   explicit-replacement baseline;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

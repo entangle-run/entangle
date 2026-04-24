@@ -182,7 +182,9 @@ That implemented slice currently includes:
   runner-validated explicit closure references that can retire active baseline
   questions and actions even when the new resolutions wording is different
   from the original active entry text, plus a runner-owned rule that stale
-  active baseline items may not disappear silently from focused memory;
+  active baseline items may not disappear silently from focused memory, plus
+  runner-validated explicit stale-item replacement refs that can map a stale
+  active question or action to exact narrower successor items;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

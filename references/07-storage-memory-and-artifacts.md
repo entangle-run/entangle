@@ -121,5 +121,9 @@ On top of that, stale active baseline items may no longer disappear silently:
 the runner now rejects focused-register synthesis that drops a stale review
 candidate without either keeping it active, retiring it explicitly, or
 carrying the same exact text into `resolutions.md`.
+The focused memory layer also now supports explicit runner-validated
+replacement refs for stale active open questions and next actions, so a turn
+can retire a stale baseline item by mapping it to exact resulting active items
+instead of forcing that stale item to remain active or be recorded as closed.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

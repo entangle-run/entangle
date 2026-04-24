@@ -905,3 +905,17 @@ Closed the slice only after widening runner tests to prove stale baseline
 items are rejected when they disappear without explicit retention or
 retirement, then re-running targeted runner quality gates plus the full
 `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added explicit stale-item replacement
+
+Closed the next lifecycle gap in the bounded memory layer by letting stale
+review candidates retire through explicit replacement instead of only through
+continued carry-forward or closure. The runner now validates exact `from -> to`
+replacement mappings for stale open questions and next actions, so a stale
+baseline item can be replaced by narrower active successors without being
+dropped silently or mislabeled as resolved.
+
+Closed the slice only after widening runner tests to prove valid replacement
+flows succeed and invalid replacement refs fail deterministically, then
+re-running targeted runner quality gates plus the full `pnpm verify` and
+`git diff --check` gates.

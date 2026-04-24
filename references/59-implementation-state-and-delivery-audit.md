@@ -346,6 +346,10 @@ not modeling.
   candidates from the focused-register baseline may no longer disappear
   silently: the runner now requires explicit retention or explicit retirement
   semantics for those entries;
+- an explicit stale-item replacement refinement where stale open questions and
+  next actions may now be replaced deterministically by narrower active items
+  through runner-validated `from -> to` mappings instead of being forced to
+  stay active or pretend to be resolved;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
