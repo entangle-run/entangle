@@ -132,6 +132,7 @@ This directory is the canonical design corpus for Entangle.
 126. [125-bootstrap-operator-request-audit-slice.md](125-bootstrap-operator-request-audit-slice.md)
 127. [126-runtime-artifact-detail-inspection-slice.md](126-runtime-artifact-detail-inspection-slice.md)
 128. [127-studio-runtime-artifact-detail-slice.md](127-studio-runtime-artifact-detail-slice.md)
+129. [128-local-archive-package-source-admission-slice.md](128-local-archive-package-source-admission-slice.md)
 
 ## Role of this corpus
 

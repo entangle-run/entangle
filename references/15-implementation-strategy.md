@@ -355,6 +355,10 @@ Completed in the current repository state:
 - the next bounded Studio mutation slice through host-owned package-source
   admission flows, with canonical `local_path` / `local_archive` request
   assembly and partial-failure-aware package-source inventory loading.
+- host-side `local_archive` package-source admission, where tar/tar.gz
+  archives are safely extracted, validated as AgentPackage directories,
+  imported under `.entangle/host/imports/packages/<package_source_id>/package/`,
+  and recorded through immutable package-store materialization.
 - the next bounded Studio completion slice through host-event-driven refresh,
   where overview and selected-runtime reads are now coalesced off the existing
   host event stream without reconnecting the subscription on runtime

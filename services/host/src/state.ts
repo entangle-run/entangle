@@ -12,6 +12,8 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
+import { gunzip } from "node:zlib";
+import { promisify } from "node:util";
 import {
   activeGraphRevisionRecordSchema,
   artifactRecordSchema,
@@ -138,6 +140,7 @@ import {
   observedRuntimeRecordSchema,
   reconciliationSnapshotSchema,
   type ReconciliationSnapshot,
+  type ValidationReport,
 } from "@entangle/types";
 import {
   validateDeploymentResourceCatalogDocument,
@@ -207,6 +210,7 @@ const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
 const packageStoreMetadataFileName = ".package-store.json";
+const gunzipAsync = promisify(gunzip);
 
 type LocalPathPackageSourceRecord = Extract<
   PackageSourceRecord,
@@ -822,6 +826,242 @@ async function materializePackageStore(
   });
 
   return materialization;
+}
+
+function stripSupportedPackageArchiveExtension(archivePath: string): string {
+  return path
+    .basename(archivePath)
+    .replace(/\.tar\.gz$/iu, "")
+    .replace(/\.tgz$/iu, "")
+    .replace(/\.tar$/iu, "");
+}
+
+function parseTarHeaderString(input: Buffer): string {
+  const nulIndex = input.indexOf(0);
+  const bytes = nulIndex === -1 ? input : input.subarray(0, nulIndex);
+  return bytes.toString("utf8").trim();
+}
+
+function parseTarHeaderOctal(input: Buffer, fieldName: string): number {
+  const value = parseTarHeaderString(input).replace(/\s+/gu, "");
+
+  if (value.length === 0) {
+    return 0;
+  }
+
+  if (!/^[0-7]+$/u.test(value)) {
+    throw new Error(`Archive entry has an invalid ${fieldName} field.`);
+  }
+
+  return Number.parseInt(value, 8);
+}
+
+function isTarZeroBlock(input: Buffer, offset: number): boolean {
+  for (let index = offset; index < offset + 512; index += 1) {
+    if (input[index] !== 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function computeTarHeaderChecksum(header: Buffer): number {
+  let checksum = 0;
+
+  for (let index = 0; index < 512; index += 1) {
+    checksum += index >= 148 && index < 156 ? 0x20 : header[index] ?? 0;
+  }
+
+  return checksum;
+}
+
+function resolveArchiveOutputPath(input: {
+  extractionRoot: string;
+  relativePath: string;
+}): string {
+  if (input.relativePath.includes("\0")) {
+    throw new Error("Archive entry paths may not contain NUL bytes.");
+  }
+
+  const normalizedRelativePath = path.posix.normalize(
+    input.relativePath.replace(/\\/gu, "/")
+  );
+
+  if (
+    normalizedRelativePath.length === 0 ||
+    normalizedRelativePath === "." ||
+    normalizedRelativePath === ".." ||
+    normalizedRelativePath.startsWith("../") ||
+    path.posix.isAbsolute(normalizedRelativePath)
+  ) {
+    throw new Error(
+      `Archive entry path '${input.relativePath}' is not a safe relative path.`
+    );
+  }
+
+  const extractionRoot = path.resolve(input.extractionRoot);
+  const outputPath = path.resolve(
+    extractionRoot,
+    ...normalizedRelativePath.split("/")
+  );
+
+  if (
+    outputPath !== extractionRoot &&
+    !outputPath.startsWith(`${extractionRoot}${path.sep}`)
+  ) {
+    throw new Error(
+      `Archive entry path '${input.relativePath}' would escape the extraction root.`
+    );
+  }
+
+  return outputPath;
+}
+
+async function readTarArchivePayload(archivePath: string): Promise<Buffer> {
+  const archive = await readFile(archivePath);
+  const isGzipArchive =
+    (archive[0] === 0x1f && archive[1] === 0x8b) ||
+    /\.t(?:ar\.)?gz$/iu.test(archivePath);
+
+  return isGzipArchive ? await gunzipAsync(archive) : archive;
+}
+
+async function extractPackageTarArchive(input: {
+  archivePath: string;
+  extractionRoot: string;
+}): Promise<void> {
+  const archiveStats = await stat(input.archivePath);
+
+  if (!archiveStats.isFile()) {
+    throw new Error(`Archive path '${input.archivePath}' is not a regular file.`);
+  }
+
+  const archive = await readTarArchivePayload(input.archivePath);
+  let offset = 0;
+  let extractedEntryCount = 0;
+
+  while (offset + 512 <= archive.length) {
+    if (isTarZeroBlock(archive, offset)) {
+      break;
+    }
+
+    const header = archive.subarray(offset, offset + 512);
+    const storedChecksum = parseTarHeaderOctal(
+      header.subarray(148, 156),
+      "checksum"
+    );
+
+    if (
+      storedChecksum > 0 &&
+      storedChecksum !== computeTarHeaderChecksum(header)
+    ) {
+      throw new Error("Archive entry checksum validation failed.");
+    }
+
+    const name = parseTarHeaderString(header.subarray(0, 100));
+    const prefix = parseTarHeaderString(header.subarray(345, 500));
+    const relativePath = prefix.length > 0 ? `${prefix}/${name}` : name;
+
+    if (relativePath.length === 0) {
+      throw new Error("Archive entry is missing a path.");
+    }
+
+    const typeFlagByte = header[156] ?? 0;
+    const typeFlag =
+      typeFlagByte === 0 ? "0" : String.fromCharCode(typeFlagByte);
+    const size = parseTarHeaderOctal(header.subarray(124, 136), "size");
+    const dataOffset = offset + 512;
+    const nextOffset = dataOffset + Math.ceil(size / 512) * 512;
+
+    if (nextOffset > archive.length) {
+      throw new Error("Archive entry is truncated.");
+    }
+
+    if (typeFlag === "x" || typeFlag === "g") {
+      offset = nextOffset;
+      continue;
+    }
+
+    const outputPath = resolveArchiveOutputPath({
+      extractionRoot: input.extractionRoot,
+      relativePath
+    });
+
+    if (typeFlag === "5") {
+      await ensureDirectory(outputPath);
+      extractedEntryCount += 1;
+      offset = nextOffset;
+      continue;
+    }
+
+    if (typeFlag === "0") {
+      await ensureDirectory(path.dirname(outputPath));
+      await writeFile(outputPath, archive.subarray(dataOffset, dataOffset + size));
+      extractedEntryCount += 1;
+      offset = nextOffset;
+      continue;
+    }
+
+    if (typeFlag === "1" || typeFlag === "2") {
+      throw new Error("Package archives may not contain hard links or symlinks.");
+    }
+
+    throw new Error(`Package archive entry type '${typeFlag}' is not supported.`);
+  }
+
+  if (extractedEntryCount === 0) {
+    throw new Error("Package archive did not contain any extractable entries.");
+  }
+}
+
+async function resolveExtractedPackageRoot(
+  extractionRoot: string
+): Promise<string> {
+  if (await pathExists(path.join(extractionRoot, "manifest.json"))) {
+    return extractionRoot;
+  }
+
+  const topLevelDirectories = (await readdir(extractionRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  if (topLevelDirectories.length === 1) {
+    const nestedPackageRoot = path.join(extractionRoot, topLevelDirectories[0]!);
+
+    if (await pathExists(path.join(nestedPackageRoot, "manifest.json"))) {
+      return nestedPackageRoot;
+    }
+  }
+
+  return extractionRoot;
+}
+
+async function readPackageManifestFromRoot(
+  packageRoot: string
+): Promise<AgentPackageManifest | undefined> {
+  const manifestPath = path.join(packageRoot, "manifest.json");
+
+  if (!(await pathExists(manifestPath))) {
+    return undefined;
+  }
+
+  try {
+    const manifestDocument = await readJsonFile(manifestPath);
+    const manifestParse = agentPackageManifestSchema.safeParse(manifestDocument);
+    return manifestParse.success ? manifestParse.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function validatePersistedPackageSource(
+  record: PackageSourceRecord
+): Promise<ValidationReport> {
+  return record.sourceKind === "local_path"
+    ? await validatePackageDirectory(record.absolutePath)
+    : await validatePackageDirectory(packageSourcePackageRoot(record));
 }
 
 async function reconcileMaterializedPackageSourceRecord(
@@ -2256,18 +2496,7 @@ export async function listPackageSources(): Promise<PackageSourceListResponse> {
     packageSources.push({
       packageSource: record,
       manifest: await resolveManifestForPackageSource(record),
-      validation:
-        record.sourceKind === "local_path"
-          ? await validatePackageDirectory(record.absolutePath)
-          : buildValidationReport([
-              {
-                code: "archive_admission_not_implemented",
-                severity: "warning",
-                message:
-                  "Archive-backed package materialization is not implemented in the first host scaffold.",
-                path: ["archivePath"]
-              }
-            ])
+      validation: await validatePersistedPackageSource(record)
     });
   }
 
@@ -2297,18 +2526,7 @@ export async function getPackageSourceInspection(
   return {
     packageSource: record,
     manifest: await resolveManifestForPackageSource(record),
-    validation:
-      record.sourceKind === "local_path"
-        ? await validatePackageDirectory(record.absolutePath)
-        : buildValidationReport([
-            {
-              code: "archive_admission_not_implemented",
-              severity: "warning",
-              message:
-                "Archive-backed package materialization is not implemented in the first host scaffold.",
-              path: ["archivePath"]
-            }
-          ])
+    validation: await validatePersistedPackageSource(record)
   };
 }
 
@@ -2318,67 +2536,167 @@ export async function admitPackageSource(
   await initializeHostState();
 
   if (request.sourceKind === "local_archive") {
-    return {
-      packageSource: packageSourceRecordSchema.parse({
+    const existing = await listPackageSources();
+    const fallbackPackageSourceId = buildPackageSourceId(
+      request.packageSourceId,
+      stripSupportedPackageArchiveExtension(request.archivePath),
+      existing.packageSources.map(
+        (entry: PackageSourceInspectionResponse) =>
+          entry.packageSource.packageSourceId
+      )
+    );
+    const extractionRoot = path.join(
+      cacheRoot,
+      "temp",
+      sanitizeIdentifier(`package-archive-${randomUUID()}`)
+    );
+    let packageSourceId = fallbackPackageSourceId;
+    let manifest: AgentPackageManifest | undefined;
+
+    try {
+      await ensureDirectory(extractionRoot);
+      await extractPackageTarArchive({
+        archivePath: request.archivePath,
+        extractionRoot
+      });
+
+      const extractedPackageRoot = await resolveExtractedPackageRoot(extractionRoot);
+      manifest = await readPackageManifestFromRoot(extractedPackageRoot);
+      packageSourceId = buildPackageSourceId(
+        request.packageSourceId,
+        manifest?.packageId ?? stripSupportedPackageArchiveExtension(request.archivePath),
+        existing.packageSources.map(
+          (entry: PackageSourceInspectionResponse) =>
+            entry.packageSource.packageSourceId
+        )
+      );
+
+      const validation = await validatePackageDirectory(extractedPackageRoot);
+      const importedPackageRoot = path.join(
+        importsRoot,
+        "packages",
+        packageSourceId,
+        "package"
+      );
+      const recordBase = {
         sourceKind: request.sourceKind,
-        packageSourceId: sanitizeIdentifier(
-          request.packageSourceId ?? "archive-admission"
-        ),
+        packageSourceId,
         archivePath: request.archivePath,
         admittedAt: nowIsoString()
-      }),
-      validation: buildValidationReport([
-        {
-          code: "archive_admission_not_implemented",
-          severity: "error",
-          message:
-            "Archive-backed package admission is not implemented in the first host scaffold.",
-          path: ["archivePath"]
-        }
-      ])
+      } as const;
+
+      if (!validation.ok) {
+        return {
+          packageSource: packageSourceRecordSchema.parse(recordBase),
+          manifest,
+          validation
+        };
+      }
+
+      await rm(path.dirname(importedPackageRoot), {
+        force: true,
+        recursive: true
+      });
+      await syncDirectoryContents(extractedPackageRoot, importedPackageRoot);
+
+      const record = packageSourceRecordSchema.parse({
+        ...recordBase,
+        materialization: await materializePackageStore(
+          packageSourceId,
+          importedPackageRoot
+        )
+      });
+
+      await writeJsonFile(
+        path.join(packageSourcesRoot, `${packageSourceId}.json`),
+        record
+      );
+      await appendHostEvent({
+        category: "control_plane",
+        message: `Admitted package source '${packageSourceId}'.`,
+        packageSourceId,
+        type: "package_source.admitted"
+      } satisfies PackageSourceAdmittedEventInput);
+
+      return {
+        packageSource: record,
+        manifest,
+        validation
+      };
+    } catch (error) {
+      return {
+        packageSource: packageSourceRecordSchema.parse({
+          sourceKind: request.sourceKind,
+          packageSourceId,
+          archivePath: request.archivePath,
+          admittedAt: nowIsoString()
+        }),
+        manifest,
+        validation: buildValidationReport([
+          {
+            code: "archive_package_extract_failed",
+            severity: "error",
+            message:
+              error instanceof Error
+                ? `Could not extract package archive: ${error.message}`
+                : "Could not extract package archive.",
+            path: ["archivePath"]
+          }
+        ])
+      };
+    } finally {
+      await rm(extractionRoot, {
+        force: true,
+        recursive: true
+      });
+    }
+  }
+
+  if (request.sourceKind === "local_path") {
+    const validation = await validatePackageDirectory(request.absolutePath);
+    const manifest = await resolveManifestForPackageSource({
+      sourceKind: "local_path",
+      packageSourceId: sanitizeIdentifier(request.packageSourceId ?? "candidate"),
+      absolutePath: request.absolutePath
+    });
+    const existing = await listPackageSources();
+    const packageSourceId = buildPackageSourceId(
+      request.packageSourceId,
+      manifest?.packageId ?? path.basename(request.absolutePath),
+      existing.packageSources.map(
+        (entry: PackageSourceInspectionResponse) =>
+          entry.packageSource.packageSourceId
+      )
+    );
+
+    const record = packageSourceRecordSchema.parse({
+      sourceKind: "local_path",
+      packageSourceId,
+      absolutePath: request.absolutePath,
+      materialization: validation.ok
+        ? await materializePackageStore(packageSourceId, request.absolutePath)
+        : undefined,
+      admittedAt: nowIsoString()
+    });
+
+    if (validation.ok) {
+      await writeJsonFile(path.join(packageSourcesRoot, `${packageSourceId}.json`), record);
+      await appendHostEvent({
+        category: "control_plane",
+        message: `Admitted package source '${packageSourceId}'.`,
+        packageSourceId,
+        type: "package_source.admitted"
+      } satisfies PackageSourceAdmittedEventInput);
+    }
+
+    return {
+      packageSource: record,
+      manifest,
+      validation
     };
   }
 
-  const validation = await validatePackageDirectory(request.absolutePath);
-  const manifest = await resolveManifestForPackageSource({
-    sourceKind: "local_path",
-    packageSourceId: sanitizeIdentifier(request.packageSourceId ?? "candidate"),
-    absolutePath: request.absolutePath
-  });
-  const existing = await listPackageSources();
-  const packageSourceId = buildPackageSourceId(
-    request.packageSourceId,
-    manifest?.packageId ?? path.basename(request.absolutePath),
-    existing.packageSources.map(
-      (entry: PackageSourceInspectionResponse) => entry.packageSource.packageSourceId
-    )
-  );
-
-  const record = packageSourceRecordSchema.parse({
-    sourceKind: "local_path",
-    packageSourceId,
-    absolutePath: request.absolutePath,
-    materialization: validation.ok
-      ? await materializePackageStore(packageSourceId, request.absolutePath)
-      : undefined,
-    admittedAt: nowIsoString()
-  });
-
-  if (validation.ok) {
-    await writeJsonFile(path.join(packageSourcesRoot, `${packageSourceId}.json`), record);
-    await appendHostEvent({
-      category: "control_plane",
-      message: `Admitted package source '${packageSourceId}'.`,
-      packageSourceId,
-      type: "package_source.admitted"
-    } satisfies PackageSourceAdmittedEventInput);
-  }
-
-  return {
-    packageSource: record,
-    manifest,
-    validation
-  };
+  throw new Error("Unsupported package source admission request.");
 }
 
 async function readExternalPrincipalRecords(): Promise<ExternalPrincipalRecord[]> {

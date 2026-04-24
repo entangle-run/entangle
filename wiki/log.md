@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added local archive package-source admission
+
+Closed the host-side `local_archive` package-source gap. Archive admission now
+extracts tar/tar.gz packages inside `entangle-host`, rejects unsafe archive
+entries, validates the extracted AgentPackage with the existing package
+validator, imports valid packages under host-managed package storage, and
+records immutable package-store materialization instead of returning the old
+not-implemented validation error.
+
 ## [2026-04-24] implementation | Added Studio runtime artifact detail
 
 Extended Studio's runtime artifact panel over the new host item boundary.

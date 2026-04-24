@@ -307,6 +307,11 @@ The repository now also contains the first real implementation baseline:
   package sources directly through host-owned `local_path` /
   `local_archive` flows and inspect the admitted inventory without leaving the
   graph editor surface;
+- the host-side completion of `local_archive` package-source admission, where
+  tar/tar.gz archives are extracted safely, validated as AgentPackage
+  directories, imported under host-managed package storage, and recorded
+  through the immutable package store rather than remaining a client-only
+  request contract;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and
   selected-runtime refresh instead of depending only on explicit post-mutation

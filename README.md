@@ -375,6 +375,11 @@ This repository currently contains:
   sources directly through host-owned `local_path` / `local_archive` package
   admission flows and inspect the current admitted inventory without leaving
   the graph editor surface;
+- a completed host `local_archive` admission path where tar/tar.gz package
+  archives are safely extracted by `entangle-host`, validated with the same
+  package-directory rules as `local_path`, imported under host-managed package
+  storage, and recorded through the immutable package store instead of
+  remaining a client-only request shape;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and selected-runtime
   refresh instead of depending only on explicit reload loops after mutations;
@@ -388,6 +393,7 @@ This repository currently contains:
   publication, and retrieval state;
 - the next artifact-governance slice where headless operators can inspect one
   runtime artifact by id through the shared host boundary instead of reading
+  runner-local artifact files directly;
   runner-local artifact files directly;
 - the matching Studio artifact-detail slice where visual operators can select
   one runtime artifact and inspect its host-backed item record without

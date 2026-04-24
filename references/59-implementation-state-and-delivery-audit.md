@@ -115,7 +115,9 @@ This layer is strong and directionally correct. It is not a blocker.
 
 - persistent host desired and observed state under `.entangle/host`;
 - catalog apply and validation;
-- package-source admission and inspection;
+- package-source admission and inspection, including real `local_archive`
+  materialization for tar/tar.gz archives through host-managed import storage
+  and immutable package-store records;
 - external-principal persistence and inspection;
 - graph apply, inspection, and validation;
 - graph revision-history listing and revision-detail inspection;
@@ -443,6 +445,11 @@ delivery.
   package-source surface, including canonical `local_path` /
   `local_archive` request assembly plus partial-failure-aware package-source
   inventory loading;
+- host-side completion of the `local_archive` admission path that those
+  Studio and CLI requests target, replacing the previous
+  `archive_admission_not_implemented` validation response with safe archive
+  extraction, package validation, import storage, and package-store
+  materialization;
 - coalesced live Studio refresh on top of the existing host event stream, so
   overview and selected-runtime reads now react to host-owned control-plane,
   runtime, recovery, session, and artifact events without relying on polling

@@ -2,13 +2,17 @@ import {
   lstat,
   mkdtemp,
   mkdir,
+  readdir,
   readFile,
   readlink,
   rm,
+  stat,
   writeFile
 } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { gzip } from "node:zlib";
+import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Fastify from "fastify";
 import type { RuntimeBackend } from "./runtime-backend.js";
@@ -29,6 +33,7 @@ import {
   nodeListResponseSchema,
   nodeMutationResponseSchema,
   packageSourceInspectionResponseSchema,
+  packageSourceListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -40,6 +45,7 @@ import {
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
+const gzipAsync = promisify(gzip);
 
 type TestSocketPayload = ArrayBuffer | Buffer | Buffer[];
 
@@ -165,6 +171,128 @@ async function createAdmittedPackageDirectory(rootPath: string): Promise<string>
   ]);
 
   return packageRoot;
+}
+
+function writeTarString(input: {
+  buffer: Buffer;
+  length: number;
+  offset: number;
+  value: string;
+}): void {
+  input.buffer.write(input.value, input.offset, input.length, "utf8");
+}
+
+function writeTarOctal(input: {
+  buffer: Buffer;
+  length: number;
+  offset: number;
+  value: number;
+}): void {
+  const encoded = input.value.toString(8).padStart(input.length - 1, "0");
+  input.buffer.write(
+    encoded.slice(-(input.length - 1)),
+    input.offset,
+    input.length - 1,
+    "ascii"
+  );
+  input.buffer[input.offset + input.length - 1] = 0;
+}
+
+function buildTarEntry(input: {
+  data: Buffer;
+  relativePath: string;
+}): Buffer {
+  if (Buffer.byteLength(input.relativePath, "utf8") > 100) {
+    throw new Error("Test tar writer only supports short relative paths.");
+  }
+
+  const header = Buffer.alloc(512);
+  writeTarString({
+    buffer: header,
+    length: 100,
+    offset: 0,
+    value: input.relativePath
+  });
+  writeTarOctal({ buffer: header, length: 8, offset: 100, value: 0o644 });
+  writeTarOctal({ buffer: header, length: 8, offset: 108, value: 0 });
+  writeTarOctal({ buffer: header, length: 8, offset: 116, value: 0 });
+  writeTarOctal({
+    buffer: header,
+    length: 12,
+    offset: 124,
+    value: input.data.length
+  });
+  writeTarOctal({ buffer: header, length: 12, offset: 136, value: 0 });
+  header.fill(0x20, 148, 156);
+  header[156] = "0".charCodeAt(0);
+  writeTarString({ buffer: header, length: 6, offset: 257, value: "ustar" });
+  writeTarString({ buffer: header, length: 2, offset: 263, value: "00" });
+
+  let checksum = 0;
+
+  for (const byte of header) {
+    checksum += byte;
+  }
+
+  const encodedChecksum = checksum.toString(8).padStart(6, "0");
+  header.write(encodedChecksum, 148, 6, "ascii");
+  header[154] = 0;
+  header[155] = 0x20;
+
+  const padding = Buffer.alloc(
+    Math.ceil(input.data.length / 512) * 512 - input.data.length
+  );
+  return Buffer.concat([header, input.data, padding]);
+}
+
+async function listRelativeFiles(rootPath: string): Promise<string[]> {
+  const relativeFiles: string[] = [];
+
+  async function visit(directoryPath: string, relativeRoot: string): Promise<void> {
+    const entries = (await readdir(directoryPath, { withFileTypes: true })).sort(
+      (left, right) => left.name.localeCompare(right.name)
+    );
+
+    for (const entry of entries) {
+      const absolutePath = path.join(directoryPath, entry.name);
+      const relativePath =
+        relativeRoot.length > 0 ? `${relativeRoot}/${entry.name}` : entry.name;
+
+      if (entry.isDirectory()) {
+        await visit(absolutePath, relativePath);
+        continue;
+      }
+
+      if ((await stat(absolutePath)).isFile()) {
+        relativeFiles.push(relativePath);
+      }
+    }
+  }
+
+  await visit(rootPath, "");
+  return relativeFiles;
+}
+
+async function createPackageTarGzArchive(input: {
+  archivePath: string;
+  packageDirectory: string;
+  rootDirectoryName?: string;
+}): Promise<void> {
+  const entries = await Promise.all(
+    (
+      await listRelativeFiles(input.packageDirectory)
+    ).map(async (relativePath) =>
+      buildTarEntry({
+        data: await readFile(path.join(input.packageDirectory, relativePath)),
+        relativePath: input.rootDirectoryName
+          ? `${input.rootDirectoryName}/${relativePath}`
+          : relativePath
+      })
+    )
+  );
+  const archive = Buffer.concat([...entries, Buffer.alloc(1024)]);
+
+  await writeFile(input.archivePath, await gzipAsync(archive));
 }
 
 function buildGitPrincipalRecord(
@@ -778,6 +906,110 @@ describe("buildHostServer", () => {
           path: ["runtime/tools.json"]
         })
       );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("admits local_archive package sources through host-managed package storage", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+    const archivePath = path.join(createdDirectories[0]!, "worker-it.tar.gz");
+
+    await createPackageTarGzArchive({
+      archivePath,
+      packageDirectory,
+      rootDirectoryName: "worker-it"
+    });
+
+    try {
+      const admitResponse = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_archive",
+          archivePath
+        },
+        url: "/v1/package-sources/admit"
+      });
+
+      expect(admitResponse.statusCode).toBe(200);
+      const inspection = packageSourceInspectionResponseSchema.parse(
+        admitResponse.json()
+      );
+
+      expect(inspection.validation.ok).toBe(true);
+      expect(inspection.manifest?.packageId).toBe("worker-it");
+      expect(inspection.packageSource).toMatchObject({
+        sourceKind: "local_archive",
+        archivePath,
+        materialization: {
+          materializationKind: "immutable_store"
+        }
+      });
+
+      const packageRoot = inspection.packageSource.materialization?.packageRoot;
+      expect(packageRoot).toBeDefined();
+      await expect(
+        readFile(path.join(packageRoot!, "manifest.json"), "utf8")
+      ).resolves.toContain('"packageId": "worker-it"');
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/package-sources"
+      });
+      expect(listResponse.statusCode).toBe(200);
+      const listedInspection = packageSourceListResponseSchema
+        .parse(listResponse.json())
+        .packageSources.find(
+          (candidate) =>
+            candidate.packageSource.packageSourceId ===
+            inspection.packageSource.packageSourceId
+        );
+
+      expect(listedInspection?.validation.ok).toBe(true);
+      expect(listedInspection?.manifest?.packageId).toBe("worker-it");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects invalid local_archive package admission without persisting it", async () => {
+    const server = await createTestServer();
+    const archivePath = path.join(createdDirectories[0]!, "invalid.tar.gz");
+
+    await writeFile(archivePath, "not a tar archive", "utf8");
+
+    try {
+      const response = await server.inject({
+        method: "POST",
+        payload: {
+          sourceKind: "local_archive",
+          archivePath
+        },
+        url: "/v1/package-sources/admit"
+      });
+
+      expect(response.statusCode).toBe(400);
+      const inspection = packageSourceInspectionResponseSchema.parse(
+        response.json()
+      );
+      expect(inspection.packageSource.sourceKind).toBe("local_archive");
+      expect(inspection.validation.ok).toBe(false);
+      expect(inspection.validation.findings).toContainEqual(
+        expect.objectContaining({
+          code: "archive_package_extract_failed",
+          path: ["archivePath"]
+        })
+      );
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/package-sources"
+      });
+      expect(listResponse.statusCode).toBe(200);
+      expect(
+        packageSourceListResponseSchema.parse(listResponse.json()).packageSources
+      ).toHaveLength(0);
     } finally {
       await server.close();
     }
