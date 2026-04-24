@@ -84,7 +84,8 @@ The repository now also contains the first real implementation baseline:
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
   shared host client, CLI, and Studio while the default local profile remains
-  tokenless for low-friction development;
+  tokenless for low-friction development, plus typed `security` audit events
+  for protected mutation requests through `host.operator_request.completed`;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime
@@ -450,9 +451,9 @@ The current implementation-truth audit now lives in
   provisioning record model, and the publication/retrieval-state record
   model;
 - complete CLI parity where it adds real headless operational value;
-- deepen the new bootstrap host operator-token boundary into real production
-  identity and authorization only through explicit contracts, tests, and
-  operator-visible audit attribution;
+- deepen the new bootstrap host operator-token and request-audit boundary into
+  real production identity and authorization only through explicit contracts,
+  tests, policy decisions, and operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

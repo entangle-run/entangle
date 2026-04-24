@@ -36,6 +36,29 @@ const hostEventBaseSchema = z.object({
   timestamp: nonEmptyStringSchema
 });
 
+export const hostOperatorRequestMethodSchema = z.enum([
+  "DELETE",
+  "PATCH",
+  "POST",
+  "PUT"
+]);
+
+export const hostOperatorRequestAuthModeSchema = z.enum([
+  "bootstrap_operator_token"
+]);
+
+export const hostOperatorRequestCompletedEventSchema =
+  hostEventBaseSchema.extend({
+    authMode: hostOperatorRequestAuthModeSchema,
+    category: z.literal("security"),
+    method: hostOperatorRequestMethodSchema,
+    operatorId: identifierSchema,
+    path: nonEmptyStringSchema,
+    requestId: nonEmptyStringSchema,
+    statusCode: z.number().int().positive(),
+    type: z.literal("host.operator_request.completed")
+  });
+
 export const catalogUpdatedEventSchema = hostEventBaseSchema.extend({
   catalogId: identifierSchema,
   category: z.literal("control_plane"),
@@ -273,6 +296,7 @@ export const hostReconciliationCompletedEventSchema = hostEventBaseSchema.extend
 });
 
 export const hostEventRecordSchema = z.discriminatedUnion("type", [
+  hostOperatorRequestCompletedEventSchema,
   catalogUpdatedEventSchema,
   packageSourceAdmittedEventSchema,
   externalPrincipalUpdatedEventSchema,
@@ -352,6 +376,15 @@ export type ApprovalTraceEvent = z.infer<typeof approvalTraceEventSchema>;
 export type ArtifactTraceEvent = z.infer<typeof artifactTraceEventSchema>;
 export type HostReconciliationCompletedEvent = z.infer<
   typeof hostReconciliationCompletedEventSchema
+>;
+export type HostOperatorRequestMethod = z.infer<
+  typeof hostOperatorRequestMethodSchema
+>;
+export type HostOperatorRequestAuthMode = z.infer<
+  typeof hostOperatorRequestAuthModeSchema
+>;
+export type HostOperatorRequestCompletedEvent = z.infer<
+  typeof hostOperatorRequestCompletedEventSchema
 >;
 export type HostEventRecord = z.infer<typeof hostEventRecordSchema>;
 export type HostEventListQuery = z.infer<typeof hostEventListQuerySchema>;

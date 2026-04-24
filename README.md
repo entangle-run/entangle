@@ -76,7 +76,8 @@ This repository currently contains:
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
   shared host client, CLI, and Studio for local profiles that should not expose
-  an open mutation surface;
+  an open mutation surface, plus typed `security` audit events for protected
+  mutation requests through `host.operator_request.completed`;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary and resolved into
   effective runtime context rather than hardcoded into packages;
@@ -406,7 +407,8 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
-  boundary, including user attribution, roles, and policy-backed permissions;
+  boundary, including real principals, roles, policy-backed permissions, and
+  stronger audit retention than the current bootstrap request trace;
 - stronger end-to-end deployment and integration hardening.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:

@@ -261,6 +261,10 @@ Completed in the current repository state:
     `ENTANGLE_HOST_OPERATOR_TOKEN` enables bearer-token enforcement on host
     HTTP routes, and the shared host client, CLI, and Studio can propagate the
     same token for local profiles that require a closed control-plane surface.
+31. a typed bootstrap operator request audit primitive where token-protected
+    host mutation requests now emit `host.operator_request.completed`
+    `security` events with non-secret request metadata, response status, auth
+    mode, and bootstrap operator id.
 
 Remaining work in this phase:
 
@@ -285,10 +289,10 @@ Remaining work in this phase:
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.
-4. deepen the bootstrap host operator token into production-grade identity and
-   authorization only after the next contracts can preserve user attribution,
-   policy decisions, and host auditability without collapsing the local
-   operator profile.
+4. deepen the bootstrap host operator token and request-audit primitive into
+   production-grade identity and authorization only after the next contracts can
+   preserve real principals, policy decisions, tenant/workspace scope, and
+   stronger host auditability without collapsing the local operator profile.
 
 Acceptance for the phase:
 

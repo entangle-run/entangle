@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added bootstrap operator request audit events
+
+Deepened the new host operator-token boundary with a typed security event for
+protected mutation requests. When `ENTANGLE_HOST_OPERATOR_TOKEN` is configured,
+`entangle-host` now persists `host.operator_request.completed` events for
+authorized and unauthorized mutation attempts, carrying non-secret request
+metadata, response status, auth mode, and a bootstrap operator id.
+
 ## [2026-04-24] implementation | Added bootstrap host operator-token auth
 
 Started the accepted production redesign program with a bounded control-plane

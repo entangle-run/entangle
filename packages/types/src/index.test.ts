@@ -302,6 +302,28 @@ describe("external principal contracts", () => {
 });
 
 describe("host event contracts", () => {
+  it("accepts a typed bootstrap operator request audit event", () => {
+    const result = hostEventRecordSchema.parse({
+      authMode: "bootstrap_operator_token",
+      category: "security",
+      eventId: "host-operator-request-001",
+      message:
+        "Host operator request 'PUT /v1/external-principals/worker-it-git' completed with status 200.",
+      method: "PUT",
+      operatorId: "ops-lead",
+      path: "/v1/external-principals/worker-it-git",
+      requestId: "req-1",
+      schemaVersion: "1",
+      statusCode: 200,
+      timestamp: "2026-04-24T00:00:00.000Z",
+      type: "host.operator_request.completed"
+    });
+
+    expect(result.type).toBe("host.operator_request.completed");
+    expect(result.category).toBe("security");
+    expect(result.operatorId).toBe("ops-lead");
+  });
+
   it("accepts a typed runtime observed-state event", () => {
     const result = hostEventRecordSchema.parse({
       eventId: "runtime-worker-it-evt-001",

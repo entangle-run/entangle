@@ -133,7 +133,9 @@ This layer is strong and directionally correct. It is not a blocker.
   streaming through the same host boundary;
 - optional bootstrap operator-token enforcement through
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token support in the shared host
-  client and local operator surfaces;
+  client and local operator surfaces, plus typed
+  `host.operator_request.completed` security audit events for protected
+  mutation requests;
 - richer reconciliation semantics with per-runtime derived reconciliation
   summaries, persisted blocked/degraded/transitioning counts, and host status
   derived from those findings instead of from raw failure counts alone;
@@ -159,8 +161,9 @@ This layer is strong and directionally correct. It is not a blocker.
 
 - narrower diagnostics-oriented event classes beyond the now-implemented trace
   surface, especially where later operator workflows justify them.
-- production-grade identity remains future work: the current operator token is
-  not workspace-aware authentication, RBAC, ABAC, or audited user attribution.
+- production-grade identity remains future work: the current operator token and
+  bootstrap request audit trail are not workspace-aware authentication, RBAC,
+  ABAC, or compliance-grade user attribution.
 
 ### Assessment
 
@@ -484,6 +487,8 @@ workflow completeness, not missing mutation or liveness foundations.
 - `--host-token`, `ENTANGLE_HOST_TOKEN`, and local
   `ENTANGLE_HOST_OPERATOR_TOKEN` fallback support for hosts running with the
   bootstrap operator-token boundary enabled.
+- host-event list/watch can consume the new typed bootstrap operator request
+  audit events through the existing shared event contract.
 
 ### Still missing or incomplete
 

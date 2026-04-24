@@ -16,6 +16,8 @@ import {
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
   type HostEventRecord,
+  type HostOperatorRequestMethod,
+  identifierSchema,
   hostEventListQuerySchema,
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
@@ -75,6 +77,7 @@ import {
   replaceManagedNode,
   setRuntimeDesiredState,
   setRuntimeRecoveryPolicy,
+  recordHostOperatorRequestCompleted,
   subscribeToHostEvents,
   upsertExternalPrincipal,
   validateCatalogCandidate,
@@ -165,6 +168,41 @@ function requestHasValidOperatorToken(input: {
     isWebSocketUpgrade(input.upgrade) &&
     extractWebSocketAccessToken(input.query) === input.operatorToken
   );
+}
+
+function normalizeOperatorId(operatorId: string | undefined): string {
+  const normalizedOperatorId = operatorId?.trim();
+  const parsedOperatorId = identifierSchema.safeParse(normalizedOperatorId);
+
+  if (parsedOperatorId.success) {
+    return parsedOperatorId.data;
+  }
+
+  return "bootstrap-operator";
+}
+
+function asHostOperatorRequestMethod(
+  method: string
+): HostOperatorRequestMethod | undefined {
+  switch (method.toUpperCase()) {
+    case "DELETE":
+      return "DELETE";
+    case "PATCH":
+      return "PATCH";
+    case "POST":
+      return "POST";
+    case "PUT":
+      return "PUT";
+    default:
+      return undefined;
+  }
+}
+
+function stripRequestQuery(rawUrl: string): string {
+  const queryIndex = rawUrl.indexOf("?");
+  const path = queryIndex === -1 ? rawUrl : rawUrl.slice(0, queryIndex);
+
+  return path.length > 0 ? path : "/";
 }
 
 function parseRequestInput<T>(
@@ -279,6 +317,8 @@ export async function buildHostServer() {
   await server.register(websocket);
 
   if (operatorToken) {
+    const operatorId = normalizeOperatorId(process.env.ENTANGLE_HOST_OPERATOR_ID);
+
     server.addHook("preHandler", (request, reply, done) => {
       if (
         requestHasValidOperatorToken({
@@ -299,6 +339,35 @@ export async function buildHostServer() {
           message: "Entangle host operator token is required."
         })
       );
+    });
+
+    server.addHook("onResponse", async (request, reply) => {
+      const method = asHostOperatorRequestMethod(request.method);
+
+      if (!method) {
+        return;
+      }
+
+      const path = stripRequestQuery(request.url);
+
+      try {
+        await recordHostOperatorRequestCompleted({
+          authMode: "bootstrap_operator_token",
+          category: "security",
+          message: `Host operator request '${method} ${path}' completed with status ${reply.statusCode}.`,
+          method,
+          operatorId,
+          path,
+          requestId: String(request.id),
+          statusCode: reply.statusCode,
+          type: "host.operator_request.completed"
+        });
+      } catch (error) {
+        request.log.error(
+          { err: error },
+          "failed to record host operator request audit event"
+        );
+      }
     });
   }
 

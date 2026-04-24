@@ -38,8 +38,10 @@ model.
 The current implementation now includes an optional bootstrap operator-token
 guard. When `ENTANGLE_HOST_OPERATOR_TOKEN` is set, host HTTP routes require
 `Authorization: Bearer <token>`, and the event stream validates the same token
-before starting. This is a local hardening step, not the final enterprise
-identity or authorization model.
+before starting. Protected mutation requests emit typed
+`host.operator_request.completed` security events that record only non-secret
+request metadata and final response status. This is a local hardening and
+auditability step, not the final enterprise identity or authorization model.
 
 Canonical request and response DTO schemas for this API should live in
 `packages/types`, while semantic checks and reconciler behavior remain owned by
@@ -448,6 +450,7 @@ boundary:
 
 The implemented event classes currently include:
 
+- `host.operator_request.completed`
 - `catalog.updated`
 - `package_source.admitted`
 - `external_principal.updated`

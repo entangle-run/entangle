@@ -586,6 +586,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
+  delete process.env.ENTANGLE_HOST_OPERATOR_ID;
   vi.unstubAllGlobals();
   vi.resetModules();
 
@@ -637,6 +638,71 @@ describe("buildHostServer", () => {
       expect(authorizedResponse.statusCode).toBe(200);
       expect(hostStatusResponseSchema.parse(authorizedResponse.json()).service).toBe(
         "entangle-host"
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("records audit events for token-protected operator mutation requests", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    process.env.ENTANGLE_HOST_OPERATOR_ID = "ops-lead";
+    const server = await createTestServer();
+
+    try {
+      const principal = buildGitPrincipalRecord({
+        principalId: "worker-it-git-audit"
+      });
+
+      const unauthorizedResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: "/v1/external-principals/worker-it-git-audit"
+      });
+
+      expect(unauthorizedResponse.statusCode).toBe(401);
+
+      const authorizedResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "PUT",
+        payload: principal,
+        url: "/v1/external-principals/worker-it-git-audit"
+      });
+
+      expect(authorizedResponse.statusCode).toBe(200);
+
+      const eventsResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            authMode: "bootstrap_operator_token",
+            category: "security",
+            method: "PUT",
+            operatorId: "ops-lead",
+            path: "/v1/external-principals/worker-it-git-audit",
+            statusCode: 401,
+            type: "host.operator_request.completed"
+          }),
+          expect.objectContaining({
+            authMode: "bootstrap_operator_token",
+            category: "security",
+            method: "PUT",
+            operatorId: "ops-lead",
+            path: "/v1/external-principals/worker-it-git-audit",
+            statusCode: 200,
+            type: "host.operator_request.completed"
+          })
+        ])
       );
     } finally {
       await server.close();

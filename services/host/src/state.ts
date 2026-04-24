@@ -331,6 +331,10 @@ type HostReconciliationCompletedEventInput = Omit<
   Extract<HostEventRecord, { type: "host.reconciliation.completed" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type HostOperatorRequestCompletedEventInput = Omit<
+  Extract<HostEventRecord, { type: "host.operator_request.completed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 
 type ManagedNodeMutationConflict =
   | {
@@ -899,6 +903,12 @@ async function appendHostEvent(
   await writeFile(logPath, encoded, { encoding: "utf8", flag: "a" });
   emitHostEvent(record);
   return record;
+}
+
+export async function recordHostOperatorRequestCompleted(
+  event: HostOperatorRequestCompletedEventInput
+): Promise<HostEventRecord> {
+  return appendHostEvent(event);
 }
 
 function parsePersistedHostEvent(input: unknown): HostEventRecord {

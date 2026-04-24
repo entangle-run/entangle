@@ -68,9 +68,12 @@ The host should:
 The host also now has an optional bootstrap operator-token boundary. When
 `ENTANGLE_HOST_OPERATOR_TOKEN` is configured, HTTP control-plane calls require
 `Authorization: Bearer <token>`, and the event stream validates the same token
-before exposing live host events. This does not replace future user, workspace,
-or role-aware authorization, but it prevents the local host from remaining an
-unconditionally open mutation surface.
+before exposing live host events. Protected mutation requests also produce
+typed `host.operator_request.completed` security events with method, path,
+request id, response status, auth mode, and bootstrap operator id. This does
+not replace future user, workspace, or role-aware authorization, but it
+prevents the local host from remaining an unconditionally open mutation surface
+and gives the bootstrap profile a first durable audit primitive.
 
 ## 3. Canonical local control-plane objects
 
