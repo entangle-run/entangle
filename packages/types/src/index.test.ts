@@ -1237,20 +1237,20 @@ describe("package tool catalog contracts", () => {
       schemaVersion: "1",
       tools: [
         {
-          id: "write_report_file",
-          description: "Persist a markdown report artifact for the current turn.",
+          id: "inspect_artifact_input",
+          description: "Inspect a retrieved inbound artifact by artifact id.",
           inputSchema: {
             type: "object",
             properties: {
-              body: {
+              artifactId: {
                 type: "string"
               }
             },
-            required: ["body"]
+            required: ["artifactId"]
           },
           execution: {
             kind: "builtin",
-            builtinToolId: "write_report_file"
+            builtinToolId: "inspect_artifact_input"
           }
         }
       ]
@@ -1259,27 +1259,46 @@ describe("package tool catalog contracts", () => {
     expect(result.tools).toHaveLength(1);
   });
 
-  it("rejects duplicate tool ids in the catalog", () => {
+  it("rejects builtin tool ids outside the canonical Entangle surface", () => {
     expect(
       packageToolCatalogSchema.safeParse({
         schemaVersion: "1",
         tools: [
           {
             id: "write_report_file",
-            description: "first",
+            description: "Unsupported custom tool id.",
             inputSchema: {},
             execution: {
               kind: "builtin",
               builtinToolId: "write_report_file"
             }
+          }
+        ]
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects duplicate tool ids in the catalog", () => {
+    expect(
+      packageToolCatalogSchema.safeParse({
+        schemaVersion: "1",
+        tools: [
+          {
+            id: "inspect_artifact_input",
+            description: "first",
+            inputSchema: {},
+            execution: {
+              kind: "builtin",
+              builtinToolId: "inspect_artifact_input"
+            }
           },
           {
-            id: "write_report_file",
+            id: "inspect_artifact_input",
             description: "second",
             inputSchema: {},
             execution: {
               kind: "builtin",
-              builtinToolId: "write_report_file_v2"
+              builtinToolId: "inspect_memory_ref"
             }
           }
         ]

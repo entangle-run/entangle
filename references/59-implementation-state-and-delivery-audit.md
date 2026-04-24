@@ -264,7 +264,8 @@ not modeling.
   Entangle-owned tool-executor boundary;
 - a first builtin runner-side tool executor with deterministic artifact-input
   inspection behavior, now widened to include bounded memory-ref inspection
-  over the current turn's `memoryRefs`;
+  over the current turn's `memoryRefs` plus bounded current-session state
+  inspection over runner-local session records;
 - a first deterministic post-turn memory maintenance slice in the runner,
   including task-page creation plus wiki log/index maintenance;
 - a richer deterministic summary layer where runner-owned memory maintenance
@@ -292,11 +293,9 @@ not modeling.
 
 ### Still missing or incomplete
 
-- a broader builtin tool surface beyond the now-implemented artifact and
-  bounded memory-ref inspection paths;
 - richer model-guided memory maintenance beyond the current deterministic task
-  page, log/index, and derived recent-work plus working-context summary
-  baseline;
+  page, log/index, derived recent-work summary, derived working-context
+  summary, and bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 
@@ -446,7 +445,8 @@ The current best delivery order is:
 1. deepen the internal `agent-engine`, especially around richer
    operator-facing consumption of the now-implemented tool-execution and
    engine-outcome surface, broader provider/runtime metadata, and any later
-   bounded builtin-tool widening that still adds real runtime value;
+   model-guided runtime/memory deepening that builds on the now stronger
+   bounded builtin tool surface;
 2. harden end-to-end deployment, restart, and integration coverage;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;

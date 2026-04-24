@@ -153,8 +153,8 @@ Completed in the current repository state:
 3. host-resolved model credential delivery into the effective runtime context;
 4. live runner entrypoints wired to the real engine path instead of the stub;
 5. a bounded builtin tool surface that now includes deterministic
-   artifact-input inspection plus bounded memory-ref inspection through the
-   runner-owned tool executor;
+   artifact-input inspection, bounded memory-ref inspection, and bounded
+   current-session state inspection through the runner-owned tool executor;
 6. a richer deterministic memory-maintenance layer where the runner now
    rebuilds a recent-work summary page from canonical task pages and feeds that
    summary back into future turn assembly;
@@ -177,8 +177,10 @@ Completed in the current repository state:
 
 Remaining work in this phase:
 
-1. continue widening the builtin tool surface beyond the now-implemented
-   artifact-inspection and bounded memory-ref inspection paths;
+1. deepen model-guided memory maintenance and runtime reasoning on top of the
+   now-implemented artifact-inspection, bounded memory-ref inspection, and
+   bounded current-session state inspection paths before adding more builtin
+   tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;
@@ -251,9 +253,9 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is to return to bounded builtin-tool widening and
-richer model-guided memory maintenance now that the engine failure and provider
-metadata path is operator-visible and durable.
+The next best current move is to return to richer model-guided memory
+maintenance and working-context synthesis on top of the now stronger bounded
+runtime inspection surface, not to widen the builtin tool catalog casually.
 
 ## Phase 4: Studio completion
 

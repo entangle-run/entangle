@@ -168,8 +168,10 @@ This repository currently contains:
   Anthropic adapter now completes `tool_use` / `tool_result` loops without
   leaking provider protocol logic into the runner;
 - a bounded builtin-tool widening slice where the runner can now inspect
-  bounded memory refs from the current turn through `inspect_memory_ref`
-  without widening host surfaces or granting arbitrary filesystem access;
+  bounded memory refs from the current turn through `inspect_memory_ref`, and
+  a further bounded runtime-local inspection slice where the runner can now
+  inspect current session state through `inspect_session_state`, both without
+  widening host surfaces or granting arbitrary filesystem access;
 - a first deterministic post-turn memory-maintenance slice where the runner
   now writes task-specific wiki pages, appends structured entries to
   `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
@@ -299,16 +301,17 @@ This repository currently contains:
   commands now support `--dry-run`, printing canonical mutation payloads or
   intents without mutating the host;
 - the next bounded runtime-deepening slice where the builtin tool surface now
-  includes deterministic bounded memory-ref inspection over the current turn's
-  resolved `memoryRefs`, without widening the host or filesystem boundary;
+  includes deterministic bounded current-session inspection over runner-local
+  session, conversation, turn, and related artifact state through
+  `inspect_session_state`, without widening the host or filesystem boundary;
 - the next bounded runtime-deepening slice where runner-owned memory
   maintenance now rebuilds a derived recent-work summary page from canonical
   task pages and feeds it back into future turn assembly;
 
 The highest-value remaining gaps are:
 
-- bounded builtin-tool or model-guided memory widening that still adds real
-  runtime value;
+- richer model-guided memory maintenance and working-context synthesis on top
+  of the now stronger bounded runtime inspection surface;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.

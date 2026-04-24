@@ -698,3 +698,16 @@ outcome into runner turn records; and propagated the same canonical outcome
 through observed runner activity plus durable `runner.turn.updated` host
 events. Closed the slice only after targeted `types`, `agent-engine`,
 `runner`, and `host` tests, plus a final full `pnpm verify`.
+
+## [2026-04-24] implementation | Added bounded builtin session-state inspection
+
+Closed a real asymmetry in the runner tool surface. Builtin tool ids are now a
+frozen shared contract instead of arbitrary strings accepted by package tool
+catalogs, and the runner now supports `inspect_session_state` for bounded
+inspection of the current session's local session, conversation, turn, and
+related artifact state. The tool is intentionally narrow: it cannot widen to
+other sessions, it only accepts bounded numeric limits, and it reads
+runner-owned persisted state through shared state-store helpers instead of ad
+hoc filesystem traversal. Closed the slice only after widening `types` and
+runner tests, re-running targeted lint/test loops, and then confirming the full
+`pnpm verify` plus `git diff --check` gates.

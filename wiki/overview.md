@@ -107,8 +107,10 @@ The repository now also contains the first real implementation baseline:
   complete internal `tool_use` / `tool_result` loops without leaking provider
   protocol logic into the runner surface;
 - a bounded builtin-tool widening slice where the runner can now inspect
-  bounded memory refs from the current turn through `inspect_memory_ref`
-  without widening host surfaces or granting arbitrary filesystem access;
+  bounded memory refs from the current turn through `inspect_memory_ref`, and
+  a further bounded runtime-local inspection slice where the runner can now
+  inspect current session state through `inspect_session_state`, both without
+  widening host surfaces or granting arbitrary filesystem access;
 - a first deterministic post-turn memory-maintenance slice where completed
   turns now write task pages into the node wiki, append structured entries to
   `memory/wiki/log.md`, keep `memory/wiki/index.md` aligned, and feed the
@@ -361,8 +363,8 @@ The current implementation-truth audit now lives in
 - complete CLI parity where it adds real headless operational value;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
-  and otherwise return to builtin-tool or model-guided memory widening only
-  where they add real runtime value;
+  and otherwise deepen model-guided memory maintenance and working-context
+  synthesis on top of the now stronger bounded runtime inspection surface;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

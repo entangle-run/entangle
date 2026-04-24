@@ -149,6 +149,28 @@ export async function writeConversationRecord(
   );
 }
 
+export async function listConversationRecords(
+  statePaths: RunnerStatePaths
+): Promise<ConversationRecord[]> {
+  if (!(await pathExists(statePaths.conversationsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.conversationsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      conversationRecordSchema.parse(
+        await readJsonFile<unknown>(
+          path.join(statePaths.conversationsRoot, fileName)
+        )
+      )
+    )
+  );
+}
+
 export async function writeApprovalRecord(
   statePaths: RunnerStatePaths,
   record: ApprovalRecord
@@ -222,5 +244,25 @@ export async function writeRunnerTurnRecord(
   await writeJsonFile(
     runnerTurnRecordPath(statePaths, record.turnId),
     runnerTurnRecordSchema.parse(record)
+  );
+}
+
+export async function listRunnerTurnRecords(
+  statePaths: RunnerStatePaths
+): Promise<RunnerTurnRecord[]> {
+  if (!(await pathExists(statePaths.turnsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.turnsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      runnerTurnRecordSchema.parse(
+        await readJsonFile<unknown>(path.join(statePaths.turnsRoot, fileName))
+      )
+    )
   );
 }

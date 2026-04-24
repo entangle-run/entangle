@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { engineToolDefinitionSchema } from "../engine/turn-contract.js";
-import { identifierSchema } from "../common/primitives.js";
+import { builtinToolIdSchema } from "../runtime/builtin-tools.js";
 
 export const packageToolExecutionBindingSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("builtin"),
-    builtinToolId: identifierSchema
+    builtinToolId: builtinToolIdSchema
   })
 ]);
 
