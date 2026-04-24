@@ -203,6 +203,10 @@ The repository now also contains the first real implementation baseline:
   one admitted package source and admit canonical `local_path` or
   `local_archive` sources with optional explicit package-source ids instead of
   relying on a directory-only shortcut;
+- the next bounded CLI parity slice where headless operators can now inspect
+  persisted runtime artifacts through the existing host artifact surface and
+  apply deterministic local filters over backend, kind, lifecycle,
+  publication, and retrieval state;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -326,10 +330,10 @@ The current implementation-truth audit now lives in
   provisioning record model, and the publication/retrieval-state record
   model;
 - complete CLI parity where it adds real headless operational value;
-- start that parity work from runtime artifact inspection on top of the already
-  implemented host artifact read surface;
 - deepen session drilldown only where the current host session read model
   still leaves real operator blind spots;
+- keep CLI widening focused on real operational leverage, especially
+  automation-oriented JSON and dry-run flows;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided
   memory maintenance;

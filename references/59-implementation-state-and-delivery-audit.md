@@ -341,14 +341,17 @@ workflow completeness, not missing mutation or liveness foundations.
 - package-source detail inspection plus canonical package admission for both
   `local_path` and `local_archive`, including optional explicit
   package-source ids in the CLI layer;
+- runtime artifact inspection parity through the existing host artifact read
+  surface, including deterministic local filtering over artifact backend,
+  kind, lifecycle, publication, and retrieval state;
 - typed host-event listing and live watch commands, including recovery-focused
   filtering over the shared host event boundary and the new trace-oriented
   conversation, approval, and artifact event classes.
 
 ### Still missing or incomplete
 
-- runtime artifact inspection parity through the existing host artifact read
-  surface;
+- stronger automation-oriented JSON and dry-run flows where they add real
+  headless operational leverage;
 - fuller coverage of the remaining high-value resource workflows;
 - stronger automation-oriented ergonomics around live operations.
 
@@ -400,15 +403,13 @@ surface:
 
 The current best delivery order is:
 
-1. complete CLI runtime artifact inspection parity for the core host
-   workflows;
-2. deepen session drilldown only where the existing host session read model
+1. deepen session drilldown only where the existing host session read model
    creates real operator leverage;
-3. widen the internal `agent-engine` beyond the first bounded tool loop,
+2. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
-4. harden end-to-end deployment, restart, and integration coverage;
-5. widen git collaboration only where later delivery needs justify going beyond
+3. harden end-to-end deployment, restart, and integration coverage;
+4. widen git collaboration only where later delivery needs justify going beyond
    the current locator-specific retrieval and primary-target provisioning model.
 
 This ordering preserves the best current properties of the repository:

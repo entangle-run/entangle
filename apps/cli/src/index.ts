@@ -23,6 +23,10 @@ import {
 } from "@entangle/validator";
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
+import {
+  filterRuntimeArtifactsForCli,
+  sortRuntimeArtifactsForCli
+} from "./runtime-artifact-command.js";
 
 async function readJsonDocument(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
@@ -586,6 +590,61 @@ hostRuntimesCommand
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
     printJson(await client.getRuntimeContext(nodeId));
   });
+
+hostRuntimesCommand
+  .command("artifacts")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--backend <backend>", "Filter artifacts by backend.")
+  .option("--kind <kind>", "Filter artifacts by artifact kind.")
+  .option(
+    "--lifecycle-state <lifecycleState>",
+    "Filter artifacts by lifecycle state."
+  )
+  .option(
+    "--publication-state <publicationState>",
+    "Filter artifacts by publication state, including not_requested."
+  )
+  .option(
+    "--retrieval-state <retrievalState>",
+    "Filter artifacts by retrieval state, including not_retrieved."
+  )
+  .description("Inspect persisted runtime artifacts for one runtime.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        backend?: "git" | "local_file" | "wiki";
+        kind?:
+          | "branch"
+          | "commit"
+          | "knowledge_summary"
+          | "local_output"
+          | "patch"
+          | "report_file"
+          | "wiki_page";
+        lifecycleState?:
+          | "declared"
+          | "failed"
+          | "materialized"
+          | "published"
+          | "rejected"
+          | "superseded";
+        publicationState?: "failed" | "not_requested" | "published";
+        retrievalState?: "failed" | "not_retrieved" | "retrieved";
+      },
+      command: Command
+    ) => {
+      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const response = await client.listRuntimeArtifacts(nodeId);
+
+      printJson({
+        artifacts: filterRuntimeArtifactsForCli(
+          sortRuntimeArtifactsForCli(response.artifacts),
+          options
+        )
+      });
+    }
+  );
 
 hostRuntimesCommand
   .command("recovery")

@@ -265,12 +265,17 @@ This repository currently contains:
   one admitted package source and admit canonical `local_path` or
   `local_archive` sources with optional explicit package-source ids instead of
   relying on a directory-only shortcut;
+- the next bounded CLI parity slice where headless operators can now inspect
+  persisted runtime artifacts through the existing host artifact surface and
+  apply deterministic local filters over backend, kind, lifecycle,
+  publication, and retrieval state;
 
 The highest-value remaining gaps are:
 
-- fuller CLI parity for the core host workflows;
 - deeper session drilldown only where the current session-summary view leaves
   real operator blind spots;
+- stronger automation-oriented JSON and dry-run flows where they add real
+  headless operational leverage;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,

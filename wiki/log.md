@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added CLI runtime artifact inspection parity
+
+Closed the next bounded CLI parity slice by exposing runtime artifact
+inspection on top of the existing host artifact read surface. The CLI can now
+inspect persisted runtime artifacts and apply deterministic local filters over
+artifact backend, kind, lifecycle, publication state, and retrieval state
+without widening the host API.
+
 ## [2026-04-24] implementation | Added CLI package-source parity
 
 Closed the next bounded CLI parity slice by widening the package-source command

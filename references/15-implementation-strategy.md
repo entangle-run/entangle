@@ -249,10 +249,8 @@ Keep CLI thinner than Studio but operationally serious.
 
 Implement in small slices:
 
-1. runtime artifact inspection and adjacent read parity where the host surface
-   is already implemented;
-2. stronger automation-oriented JSON flows;
-3. live watch or event-stream consumption where valuable.
+1. stronger automation-oriented JSON flows;
+2. live watch or event-stream consumption where valuable.
 
 Acceptance for the phase:
 
@@ -265,6 +263,8 @@ Completed in the current repository state:
   surface;
 - canonical package-source admission for both `local_path` and `local_archive`
   sources, including optional explicit package-source ids through the CLI.
+- runtime artifact inspection through the existing host artifact read surface,
+  including deterministic local filtering over host-owned artifact records.
 
 ## Phase 6: Deployment and integration hardening
 
