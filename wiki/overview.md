@@ -106,6 +106,9 @@ The repository now also contains the first real implementation baseline:
   Entangle builtin tool executor boundary, and the Anthropic adapter can
   complete internal `tool_use` / `tool_result` loops without leaking provider
   protocol logic into the runner surface;
+- a bounded builtin-tool widening slice where the runner can now inspect
+  bounded memory refs from the current turn through `inspect_memory_ref`
+  without widening host surfaces or granting arbitrary filesystem access;
 - a first deterministic post-turn memory-maintenance slice where completed
   turns now write task pages into the node wiki, append structured entries to
   `memory/wiki/log.md`, keep `memory/wiki/index.md` aligned, and feed the
@@ -338,8 +341,8 @@ The current implementation-truth audit now lives in
   model;
 - complete CLI parity where it adds real headless operational value;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
-  loop, especially around builtin tool surface depth and richer model-guided
-  memory maintenance;
+  loop, especially around richer model-guided memory maintenance and any later
+  builtin-tool widening that still adds real bounded runtime value;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

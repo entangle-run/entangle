@@ -151,12 +151,15 @@ Completed in the current repository state:
 1. a first real `anthropic` adapter behind the internal engine boundary;
 2. provider-agnostic turn execution through the internal engine package;
 3. host-resolved model credential delivery into the effective runtime context;
-4. live runner entrypoints wired to the real engine path instead of the stub.
+4. live runner entrypoints wired to the real engine path instead of the stub;
+5. a bounded builtin tool surface that now includes deterministic
+   artifact-input inspection plus bounded memory-ref inspection through the
+   runner-owned tool executor.
 
 Remaining work in this phase:
 
-1. widen the builtin tool surface beyond the first bounded internal
-   artifact-inspection path;
+1. continue widening the builtin tool surface beyond the now-implemented
+   artifact-inspection and bounded memory-ref inspection paths;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase
    into richer model-guided memory maintenance;
 3. deepen normalized provider metadata, error reporting, and runtime
@@ -227,7 +230,8 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is now Phase 2 agent-engine deepening.
+The next best current move is still Phase 2 agent-engine deepening, with
+model-guided memory maintenance now the highest-value narrow follow-on.
 
 ## Phase 4: Studio completion
 
@@ -272,7 +276,8 @@ Completed in the current repository state:
   principal upsert, runtime recovery-policy mutation, and runtime lifecycle
   intents.
 
-The next best current move is now Phase 2 agent-engine deepening.
+The next best current move is still Phase 2 agent-engine deepening, with
+model-guided memory maintenance now the highest-value narrow follow-on.
 
 ## Phase 6: Deployment and integration hardening
 

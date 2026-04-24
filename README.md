@@ -167,6 +167,9 @@ This repository currently contains:
   tool executor is wired behind the internal engine boundary, and the
   Anthropic adapter now completes `tool_use` / `tool_result` loops without
   leaking provider protocol logic into the runner;
+- a bounded builtin-tool widening slice where the runner can now inspect
+  bounded memory refs from the current turn through `inspect_memory_ref`
+  without widening host surfaces or granting arbitrary filesystem access;
 - a first deterministic post-turn memory-maintenance slice where the runner
   now writes task-specific wiki pages, appends structured entries to
   `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
@@ -276,11 +279,15 @@ This repository currently contains:
 - the next bounded CLI completion slice where the main host-facing mutation
   commands now support `--dry-run`, printing canonical mutation payloads or
   intents without mutating the host;
+- the next bounded runtime-deepening slice where the builtin tool surface now
+  includes deterministic bounded memory-ref inspection over the current turn's
+  resolved `memoryRefs`, without widening the host or filesystem boundary;
 
 The highest-value remaining gaps are:
 
-- a broader builtin tool surface and richer model-guided memory/wiki
-  maintenance inside the internal runtime execution path;
+- richer model-guided memory/wiki maintenance inside the internal runtime
+  execution path, plus any later builtin-tool widening that still adds real
+  bounded runtime value;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.

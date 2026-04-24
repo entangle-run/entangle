@@ -263,7 +263,8 @@ not modeling.
   Anthropic tool loop driven by `tool_use` / `tool_result` exchanges through an
   Entangle-owned tool-executor boundary;
 - a first builtin runner-side tool executor with deterministic artifact-input
-  inspection behavior;
+  inspection behavior, now widened to include bounded memory-ref inspection
+  over the current turn's `memoryRefs`;
 - a first deterministic post-turn memory maintenance slice in the runner,
   including task-page creation plus wiki log/index maintenance;
 - typed provider-error normalization and isolated engine tests that do not
@@ -271,7 +272,8 @@ not modeling.
 
 ### Still missing or incomplete
 
-- a broader builtin tool surface beyond the first artifact-inspection path;
+- a broader builtin tool surface beyond the now-implemented artifact and
+  bounded memory-ref inspection paths;
 - richer model-guided memory maintenance beyond the current deterministic task
   page and log/index baseline;
 - richer provider metadata and broader error surfacing through the runner.
@@ -412,9 +414,9 @@ surface:
 
 The current best delivery order is:
 
-1. widen the internal `agent-engine` beyond the first bounded tool loop,
-   especially around builtin tool surface depth and richer model-guided memory
-   updates;
+1. deepen the internal `agent-engine`, especially around richer
+   model-guided memory updates and any later builtin-tool widening that still
+   adds real runtime value;
 2. harden end-to-end deployment, restart, and integration coverage;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;

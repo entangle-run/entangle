@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
 import type {
   AgentEngineToolExecutor
 } from "@entangle/agent-engine";
@@ -44,6 +45,110 @@ async function readTextFilePreview(
     `${trimmedContent.slice(0, maxCharacters)}\n\n` +
     `[Truncated ${trimmedContent.length - maxCharacters} additional characters.]`
   );
+}
+
+function coerceNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+}
+
+function resolveRequestedMemoryRef(
+  request: EngineToolExecutionRequest
+):
+  | {
+      ok: true;
+      resolvedMemoryRef: string;
+    }
+  | {
+      ok: false;
+      errorResult: EngineToolExecutionResult;
+    } {
+  const requestedMemoryRef = coerceNonEmptyString(request.input.memoryRef);
+  const requestedBasename = coerceNonEmptyString(request.input.basename);
+
+  if (
+    (requestedMemoryRef && requestedBasename) ||
+    (!requestedMemoryRef && !requestedBasename)
+  ) {
+    return {
+      ok: false,
+      errorResult: engineToolExecutionResultSchema.parse({
+        content: {
+          availableMemoryRefs: request.memoryRefs,
+          error: "invalid_input",
+          message:
+            "The inspect_memory_ref builtin requires exactly one non-empty string input: 'memoryRef' or 'basename'."
+        },
+        isError: true
+      })
+    };
+  }
+
+  if (requestedMemoryRef) {
+    const matchedMemoryRef = request.memoryRefs.find(
+      (candidate) => candidate === requestedMemoryRef
+    );
+
+    if (!matchedMemoryRef) {
+      return {
+        ok: false,
+        errorResult: engineToolExecutionResultSchema.parse({
+          content: {
+            availableMemoryRefs: request.memoryRefs,
+            error: "memory_ref_not_found",
+            requestedMemoryRef
+          },
+          isError: true
+        })
+      };
+    }
+
+    return {
+      ok: true,
+      resolvedMemoryRef: matchedMemoryRef
+    };
+  }
+
+  const matchingMemoryRefs = request.memoryRefs.filter(
+    (candidate) => path.basename(candidate) === requestedBasename
+  );
+
+  if (matchingMemoryRefs.length === 0) {
+    return {
+      ok: false,
+      errorResult: engineToolExecutionResultSchema.parse({
+        content: {
+          availableMemoryRefs: request.memoryRefs,
+          error: "memory_ref_not_found",
+          requestedBasename
+        },
+        isError: true
+      })
+    };
+  }
+
+  if (matchingMemoryRefs.length > 1) {
+    return {
+      ok: false,
+      errorResult: engineToolExecutionResultSchema.parse({
+        content: {
+          error: "memory_ref_ambiguous",
+          matchingMemoryRefs,
+          requestedBasename
+        },
+        isError: true
+      })
+    };
+  }
+
+  return {
+    ok: true,
+    resolvedMemoryRef: matchingMemoryRefs[0]!
+  };
 }
 
 const builtinToolHandlers: Record<string, RunnerBuiltinToolHandler> = {
@@ -93,6 +198,33 @@ const builtinToolHandlers: Record<string, RunnerBuiltinToolHandler> = {
         ...(artifactInput.repoPath ? { repoPath: artifactInput.repoPath } : {}),
         preview,
         status: artifactInput.sourceRef.status
+      }
+    });
+  },
+  async inspect_memory_ref({ request }) {
+    const resolvedMemoryRef = resolveRequestedMemoryRef(request);
+
+    if (!resolvedMemoryRef.ok) {
+      return resolvedMemoryRef.errorResult;
+    }
+
+    const preview = await readTextFilePreview(resolvedMemoryRef.resolvedMemoryRef);
+
+    if (!preview) {
+      return engineToolExecutionResultSchema.parse({
+        content: {
+          error: "memory_ref_not_readable",
+          memoryRef: resolvedMemoryRef.resolvedMemoryRef
+        },
+        isError: true
+      });
+    }
+
+    return engineToolExecutionResultSchema.parse({
+      content: {
+        basename: path.basename(resolvedMemoryRef.resolvedMemoryRef),
+        memoryRef: resolvedMemoryRef.resolvedMemoryRef,
+        preview
       }
     });
   }

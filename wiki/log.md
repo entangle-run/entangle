@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added bounded builtin memory-ref inspection
+
+Closed the next runtime-deepening slice by widening the runner-owned builtin
+tool executor with `inspect_memory_ref`. The internal tool surface can now
+inspect only the current turn's resolved `memoryRefs`, with deterministic
+exact-path or unique-basename matching, explicit ambiguity failures, and no
+arbitrary filesystem widening.
+
 ## [2026-04-24] implementation | Added CLI mutation dry-run support
 
 Closed the next bounded CLI completion slice by adding `--dry-run` across the
