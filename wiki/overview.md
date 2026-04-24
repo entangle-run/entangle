@@ -126,6 +126,10 @@ The repository now also contains the first real implementation baseline:
   model-guided summary now also consumes the same bounded current-session
   snapshot exposed through `inspect_session_state`, instead of leaving session
   reasoning trapped in the builtin tool path alone;
+- an artifact-aware refinement of that same synthesis path where the runner now
+  passes explicit retrieved and produced artifact context into working-context
+  synthesis, instead of leaving work-product visibility trapped in the main
+  task-execution path alone;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -368,7 +372,7 @@ The current implementation-truth audit now lives in
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now
-  stronger session-aware bounded runtime inspection surface;
+  stronger session-aware and artifact-aware bounded runtime inspection surface;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

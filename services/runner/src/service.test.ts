@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import { sessionRecordSchema, type AgentEngineTurnRequest } from "@entangle/types";
 import { loadRuntimeContext } from "./runtime-context.js";
+import type { RunnerMemorySynthesisInput } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
 import {
   buildRunnerStatePaths,
@@ -405,6 +406,79 @@ describe("RunnerService", () => {
     expect(sessionRecord?.status).toBe("completed");
     expect(conversationRecord?.status).toBe("closed");
     expect(logPage).toContain("runner turn | session-alpha /");
+  });
+
+  it("passes retrieved and produced artifact context into optional memory synthesis", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!fixture.remoteRepositoryPath) {
+      throw new Error("Expected a bare remote repository path for artifact-aware synthesis.");
+    }
+
+    const inboundArtifact = await createPublishedGitArtifact({
+      remoteRepositoryPath: fixture.remoteRepositoryPath,
+      summary: "Remote review notes.\n"
+    });
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    let capturedSynthesisInput: RunnerMemorySynthesisInput | undefined;
+    const service = new RunnerService({
+      context: runtimeContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Handled the task successfully."],
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: [],
+            usage: {
+              inputTokens: 0,
+              outputTokens: 0
+            }
+          });
+        }
+      },
+      memorySynthesizer: {
+        synthesize(input) {
+          capturedSynthesisInput = input;
+
+          return Promise.resolve({
+            ok: true,
+            workingContextPagePath: path.join(
+              runtimeContext.workspace.memoryRoot,
+              "wiki",
+              "summaries",
+              "working-context.md"
+            )
+          });
+        }
+      },
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        artifactRefs: [inboundArtifact]
+      })
+    );
+
+    expect(result.handled).toBe(true);
+    expect(capturedSynthesisInput?.artifactInputs).toHaveLength(2);
+    expect(capturedSynthesisInput?.artifactInputs.map((artifactInput) => artifactInput.artifactId))
+      .toEqual([inboundArtifact.artifactId, expect.stringMatching(/^report-/)]);
+    expect(capturedSynthesisInput?.artifactRefs).toHaveLength(2);
+    expect(capturedSynthesisInput?.artifactRefs[0]?.artifactId).toBe(
+      inboundArtifact.artifactId
+    );
+    expect(capturedSynthesisInput?.artifactInputs[0]?.localPath).toContain(
+      path.join("reports", "session-alpha", "input.md")
+    );
+    expect(capturedSynthesisInput?.artifactInputs[1]?.localPath).toContain(
+      path.join("reports", "session-alpha")
+    );
   });
 
   it("publishes git-backed artifacts to a configured preexisting remote repository", async () => {

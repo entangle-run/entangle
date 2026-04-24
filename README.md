@@ -188,6 +188,10 @@ This repository currently contains:
   snapshot exposed through `inspect_session_state`, giving synthesis a stronger
   view of live session progress without widening the tool catalog or the wiki
   write contract;
+- an artifact-aware refinement of that same synthesis path where the runner now
+  passes explicit retrieved and produced artifact context into working-context
+  synthesis, so durable memory maintenance can see the turn's real work
+  products without widening filesystem authority;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -316,7 +320,7 @@ This repository currently contains:
 The highest-value remaining gaps are:
 
 - richer model-guided memory maintenance on top of the now stronger
-  session-aware bounded runtime inspection surface;
+  session-aware and artifact-aware bounded runtime inspection surface;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.

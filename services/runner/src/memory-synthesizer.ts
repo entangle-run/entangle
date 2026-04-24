@@ -8,6 +8,9 @@ import {
   engineToolExecutionResultSchema,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
+  type ArtifactRecord,
+  type ArtifactRef,
+  type EngineArtifactInput,
   type EffectiveRuntimeContext,
   type EngineToolDefinition
 } from "@entangle/types";
@@ -35,6 +38,8 @@ const workingContextSummaryBullet =
   "- [Working Context Summary](summaries/working-context.md)";
 
 export type RunnerMemorySynthesisInput = {
+  artifactInputs: EngineArtifactInput[];
+  artifactRefs: ArtifactRef[];
   consumedArtifactIds: string[];
   context: EffectiveRuntimeContext;
   envelope: RunnerInboundEnvelope;
@@ -91,6 +96,52 @@ function normalizeListEntries(entries: string[]): string[] {
     0,
     maxWorkingContextListEntries
   );
+}
+
+function dedupeArtifactRefs(artifactRefs: ArtifactRef[]): ArtifactRef[] {
+  const refsById = new Map<string, ArtifactRef>();
+
+  for (const artifactRef of artifactRefs) {
+    refsById.set(artifactRef.artifactId, artifactRef);
+  }
+
+  return [...refsById.values()];
+}
+
+function dedupeArtifactInputs(
+  artifactInputs: EngineArtifactInput[]
+): EngineArtifactInput[] {
+  const inputsById = new Map<string, EngineArtifactInput>();
+
+  for (const artifactInput of artifactInputs) {
+    inputsById.set(artifactInput.artifactId, artifactInput);
+  }
+
+  return [...inputsById.values()];
+}
+
+export function buildArtifactInputsFromMaterializedRecords(
+  artifactRecords: ArtifactRecord[]
+): EngineArtifactInput[] {
+  return artifactRecords.flatMap((artifactRecord) => {
+    if (!artifactRecord.materialization?.localPath) {
+      return [];
+    }
+
+    return [
+      {
+        artifactId: artifactRecord.ref.artifactId,
+        backend: artifactRecord.ref.backend,
+        localPath: artifactRecord.materialization.localPath,
+        ...(artifactRecord.materialization.repoPath
+          ? {
+              repoPath: artifactRecord.materialization.repoPath
+            }
+          : {}),
+        sourceRef: artifactRecord.ref
+      }
+    ];
+  });
 }
 
 function coerceStringArray(value: unknown): string[] | undefined {
@@ -332,8 +383,8 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       toolId: workingContextSummaryToolId
     },
     toolDefinitions: [buildWorkingContextSummaryToolDefinition()],
-    artifactInputs: [],
-    artifactRefs: [],
+    artifactInputs: dedupeArtifactInputs(input.artifactInputs),
+    artifactRefs: dedupeArtifactRefs(input.artifactRefs),
     memoryRefs: await collectMemoryRefs(input.context),
     executionLimits: {
       maxOutputTokens: 1_024,

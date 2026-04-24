@@ -48,7 +48,10 @@ import {
   type RunnerArtifactBackend
 } from "./artifact-backend.js";
 import { performPostTurnMemoryUpdate } from "./memory-maintenance.js";
-import type { RunnerMemorySynthesizer } from "./memory-synthesizer.js";
+import {
+  buildArtifactInputsFromMaterializedRecords,
+  type RunnerMemorySynthesizer
+} from "./memory-synthesizer.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -698,6 +701,16 @@ export class RunnerService {
       if (this.memorySynthesizer) {
         try {
           await this.memorySynthesizer.synthesize({
+            artifactInputs: [
+              ...retrievedArtifacts.artifactInputs,
+              ...buildArtifactInputsFromMaterializedRecords(
+                materializedArtifacts.artifacts
+              )
+            ],
+            artifactRefs: [
+              ...envelope.message.work.artifactRefs,
+              ...materializedArtifacts.artifacts.map((artifactRecord) => artifactRecord.ref)
+            ],
             consumedArtifactIds,
             context: this.context,
             envelope,

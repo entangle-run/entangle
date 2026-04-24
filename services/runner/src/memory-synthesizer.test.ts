@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { AgentEngine } from "@entangle/agent-engine";
@@ -156,11 +156,34 @@ describe("model-guided memory synthesis", () => {
       publicKey: context.identityContext.publicKey,
       runtimeRoot: context.workspace.runtimeRoot
     });
+    const artifactInputPath = path.join(
+      context.workspace.runtimeRoot,
+      "memory-synthesis-artifacts",
+      "input-report.md"
+    );
+    const producedArtifactPath = path.join(
+      context.workspace.runtimeRoot,
+      "memory-synthesis-artifacts",
+      "output-report.md"
+    );
+    await mkdir(path.dirname(artifactInputPath), { recursive: true });
+    await Promise.all([
+      writeFile(
+        artifactInputPath,
+        "# Input Artifact\n\nRelay recovery checkpoint summary.\n",
+        "utf8"
+      ),
+      writeFile(
+        producedArtifactPath,
+        "# Output Artifact\n\nProposed next recovery checkpoint.\n",
+        "utf8"
+      )
+    ]);
     const envelope = buildInboundTaskRequest({
       summary: "Review the relay recovery follow-up."
     });
     const memoryUpdate = await performPostTurnMemoryUpdate({
-      consumedArtifactIds: ["input-report"],
+      consumedArtifactIds: ["artifact-input"],
       context,
       envelope,
       producedArtifactIds: ["report-turn-005"],
@@ -239,7 +262,84 @@ describe("model-guided memory synthesis", () => {
     });
 
     const synthesisResult = await synthesizer.synthesize({
-      consumedArtifactIds: ["input-report"],
+      artifactInputs: [
+        {
+          artifactId: "artifact-input",
+          backend: "git",
+          localPath: artifactInputPath,
+          repoPath: "reports/session-alpha/input.md",
+          sourceRef: {
+            artifactId: "artifact-input",
+            artifactKind: "report_file",
+            backend: "git",
+            locator: {
+              branch: "reviewer-it/session-alpha/input",
+              commit: "abc123",
+              gitServiceRef: "local-gitea",
+              namespace: "team-alpha",
+              repositoryName: "graph-alpha",
+              path: "reports/session-alpha/input.md"
+            },
+            preferred: true,
+            status: "published"
+          }
+        },
+        {
+          artifactId: "report-turn-005",
+          backend: "git",
+          localPath: producedArtifactPath,
+          repoPath: "reports/session-alpha/output.md",
+          sourceRef: {
+            artifactId: "report-turn-005",
+            artifactKind: "report_file",
+            backend: "git",
+            locator: {
+              branch: "worker-it/session-alpha/report",
+              commit: "def456",
+              gitServiceRef: "local-gitea",
+              namespace: "team-alpha",
+              repositoryName: "graph-alpha",
+              path: "reports/session-alpha/output.md"
+            },
+            preferred: true,
+            status: "materialized"
+          }
+        }
+      ],
+      artifactRefs: [
+        {
+          artifactId: "artifact-input",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "reviewer-it/session-alpha/input",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            repositoryName: "graph-alpha",
+            path: "reports/session-alpha/input.md"
+          },
+          preferred: true,
+          status: "published"
+        },
+        {
+          artifactId: "report-turn-005",
+          artifactKind: "report_file",
+          backend: "git",
+          createdByNodeId: "worker-it",
+          locator: {
+            branch: "worker-it/session-alpha/report",
+            commit: "def456",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            repositoryName: "graph-alpha",
+            path: "reports/session-alpha/output.md"
+          },
+          preferred: true,
+          status: "materialized"
+        }
+      ],
+      consumedArtifactIds: ["artifact-input"],
       context,
       envelope,
       producedArtifactIds: ["report-turn-005"],
@@ -291,6 +391,11 @@ describe("model-guided memory synthesis", () => {
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "artifact-output [git/report_file/published]"
+    );
+    expect(capturedRequest?.artifactInputs.map((artifactInput) => artifactInput.artifactId))
+      .toEqual(["artifact-input", "report-turn-005"]);
+    expect(capturedRequest?.artifactRefs.map((artifactRef) => artifactRef.artifactId)).toEqual(
+      ["artifact-input", "report-turn-005"]
     );
 
     if (!workingContextPagePath) {
@@ -352,6 +457,8 @@ describe("model-guided memory synthesis", () => {
     });
 
     const synthesisResult = await synthesizer.synthesize({
+      artifactInputs: [],
+      artifactRefs: [],
       consumedArtifactIds: [],
       context,
       envelope,

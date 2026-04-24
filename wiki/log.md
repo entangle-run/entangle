@@ -723,3 +723,14 @@ instead of duplicating or omitting it across tool execution and memory
 synthesis. Closed the slice only after widening runner tests, re-running
 targeted runner lint/test loops, and then confirming the full `pnpm verify`
 plus `git diff --check` gates.
+
+## [2026-04-24] implementation | Added artifact-aware working-context synthesis
+
+Deepened the same model-guided memory synthesis path again, this time by
+passing explicit retrieved and produced artifact context into the
+working-context synthesis request. Kept the boundary clean by avoiding any
+filesystem rediscovery pass inside the synthesizer: the runner now hands over
+canonical `artifactRefs` plus bounded `artifactInputs` it already owns from the
+completed turn. Closed the slice only after adding direct runner-memory tests,
+a service-level handoff test, re-running targeted runner gates, and then
+confirming the full `pnpm verify` plus `git diff --check` gates.

@@ -178,13 +178,18 @@ Completed in the current repository state:
     memory pass now consumes the same bounded current-session snapshot used by
     `inspect_session_state`, instead of keeping session reasoning trapped in
     the builtin tool path alone.
+12. an artifact-aware refinement of that same working-context synthesis path
+    where the runner now passes explicit retrieved and produced artifact
+    context into memory synthesis instead of leaving work-product visibility
+    trapped in the main task-execution path.
 
 Remaining work in this phase:
 
 1. deepen model-guided memory maintenance and runtime reasoning on top of the
    now-implemented artifact inspection, bounded memory-ref inspection, bounded
    current-session state inspection, and session-aware working-context
-   synthesis paths before adding more builtin tool kinds;
+   synthesis paths, now including artifact-aware working-context synthesis,
+   before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;
@@ -258,8 +263,8 @@ Completed in the current repository state:
   `GET /v1/sessions/{sessionId}` surface.
 
 The next best current move is to keep deepening model-guided memory maintenance
-on top of the now stronger session-aware bounded runtime inspection surface,
-not to widen the builtin tool catalog casually.
+on top of the now stronger session-aware and artifact-aware bounded runtime
+inspection surface, not to widen the builtin tool catalog casually.
 
 ## Phase 4: Studio completion
 
