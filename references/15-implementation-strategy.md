@@ -227,7 +227,7 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move remains Phase 5 CLI completion.
+The next best current move is now Phase 2 agent-engine deepening.
 
 ## Phase 4: Studio completion
 
@@ -267,10 +267,12 @@ Completed in the current repository state:
   sources, including optional explicit package-source ids through the CLI.
 - runtime artifact inspection through the existing host artifact read surface,
   including deterministic local filtering over host-owned artifact records.
+- dry-run previews across the main host-facing mutation commands, including
+  package-source admission, graph apply, node and edge mutation, external
+  principal upsert, runtime recovery-policy mutation, and runtime lifecycle
+  intents.
 
-The next best current move is now stronger automation-oriented CLI JSON and
-dry-run flows where the existing host surface already creates real headless
-operator leverage.
+The next best current move is now Phase 2 agent-engine deepening.
 
 ## Phase 6: Deployment and integration hardening
 

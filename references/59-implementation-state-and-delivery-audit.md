@@ -349,21 +349,25 @@ workflow completeness, not missing mutation or liveness foundations.
 - runtime artifact inspection parity through the existing host artifact read
   surface, including deterministic local filtering over artifact backend,
   kind, lifecycle, publication, and retrieval state;
+- dry-run previews for the main host-facing mutation commands, including
+  package-source admission, graph apply, node and edge mutation, external
+  principal upsert, runtime recovery-policy mutation, and runtime lifecycle
+  intents;
 - typed host-event listing and live watch commands, including recovery-focused
   filtering over the shared host event boundary and the new trace-oriented
   conversation, approval, and artifact event classes.
 
 ### Still missing or incomplete
 
-- stronger automation-oriented JSON and dry-run flows where they add real
-  headless operational leverage;
-- fuller coverage of the remaining high-value resource workflows;
-- stronger automation-oriented ergonomics around live operations.
+- fuller coverage of the remaining high-value resource workflows only where
+  later headless needs justify them;
+- stronger automation-oriented ergonomics around live operations where they
+  add real operator leverage.
 
 ### Assessment
 
-CLI is already useful and correctly thin. It needs completeness, not a
-different philosophy.
+CLI is already useful and correctly thin. It no longer needs immediate
+priority widening.
 
 ### 9. Deployment, quality, and operations
 
@@ -408,12 +412,12 @@ surface:
 
 The current best delivery order is:
 
-1. strengthen automation-oriented CLI JSON and dry-run flows where the
-   existing host surface already creates real headless operator leverage;
-2. widen the internal `agent-engine` beyond the first bounded tool loop,
+1. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
-3. harden end-to-end deployment, restart, and integration coverage;
+2. harden end-to-end deployment, restart, and integration coverage;
+3. widen headless operational ergonomics only where later delivery justifies
+   more CLI depth;
 4. widen git collaboration only where later delivery needs justify going beyond
    the current locator-specific retrieval and primary-target provisioning model.
 

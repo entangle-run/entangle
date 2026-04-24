@@ -22,6 +22,7 @@ import {
   validatePackageDirectory
 } from "@entangle/validator";
 import { buildHostEventFilter } from "./host-event-inspection.js";
+import { buildCliMutationDryRun } from "./mutation-dry-run.js";
 import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
 import {
   filterRuntimeArtifactsForCli,
@@ -290,10 +291,26 @@ hostCatalogCommand
 hostCatalogCommand
   .command("apply")
   .argument("<file>", "Path to a catalog JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical catalog-apply payload without mutating the host."
+  )
   .description("Apply a catalog document through entangle-host.")
-  .action(async (file: string, _options, command: Command) => {
+  .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(await client.applyCatalog(await readJsonDocument(path.resolve(file))));
+    const request = await readJsonDocument(path.resolve(file));
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.catalog.apply",
+          request
+        })
+      );
+      return;
+    }
+
+    printJson(await client.applyCatalog(request));
   });
 
 const hostPackageSourcesCommand = hostCommand
@@ -332,6 +349,10 @@ hostPackageSourcesCommand
     "--package-source-id <packageSourceId>",
     "Optional explicit package source identifier."
   )
+  .option(
+    "--dry-run",
+    "Print the canonical package-admission request without mutating the host."
+  )
   .description(
     "Admit a canonical local package path or archive into entangle-host desired state."
   )
@@ -339,23 +360,32 @@ hostPackageSourcesCommand
     async (
       inputPath: string,
       options: {
+        dryRun?: boolean;
         packageSourceId?: string;
         sourceKind: string;
       },
       command: Command
     ) => {
-    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.admitPackageSource(
-        buildPackageSourceAdmissionRequestFromCli({
-          inputPath,
-          ...(options.packageSourceId
-            ? { packageSourceId: options.packageSourceId }
-            : {}),
-          sourceKind: options.sourceKind
-        })
-      )
-    );
+      const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+      const request = buildPackageSourceAdmissionRequestFromCli({
+        inputPath,
+        ...(options.packageSourceId
+          ? { packageSourceId: options.packageSourceId }
+          : {}),
+        sourceKind: options.sourceKind
+      });
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.package_sources.admit",
+            request
+          })
+        );
+        return;
+      }
+
+      printJson(await client.admitPackageSource(request));
     }
   );
 
@@ -383,16 +413,28 @@ hostExternalPrincipalsCommand
 hostExternalPrincipalsCommand
   .command("apply")
   .argument("<file>", "Path to an external principal JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical external-principal mutation without mutating the host."
+  )
   .description("Create or update one external principal through entangle-host.")
-  .action(async (file: string, _options, command: Command) => {
+  .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.upsertExternalPrincipal(
-        externalPrincipalMutationRequestSchema.parse(
-          await readJsonDocument(path.resolve(file))
-        )
-      )
+    const request = externalPrincipalMutationRequestSchema.parse(
+      await readJsonDocument(path.resolve(file))
     );
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.external_principals.upsert",
+          request
+        })
+      );
+      return;
+    }
+
+    printJson(await client.upsertExternalPrincipal(request));
   });
 
 const hostGraphCommand = hostCommand
@@ -440,10 +482,26 @@ hostGraphCommand
 hostGraphCommand
   .command("apply")
   .argument("<file>", "Path to a graph JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical graph-apply payload without mutating the host."
+  )
   .description("Apply a graph candidate through entangle-host.")
-  .action(async (file: string, _options, command: Command) => {
+  .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(await client.applyGraph(await readJsonDocument(path.resolve(file))));
+    const request = await readJsonDocument(path.resolve(file));
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.graph.apply",
+          request
+        })
+      );
+      return;
+    }
+
+    printJson(await client.applyGraph(request));
   });
 
 const hostNodesCommand = hostCommand
@@ -470,43 +528,94 @@ hostNodesCommand
 hostNodesCommand
   .command("add")
   .argument("<file>", "Path to a managed node JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical node-create request without mutating the host."
+  )
   .description("Create one managed non-user node in the active graph.")
-  .action(async (file: string, _options, command: Command) => {
+  .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.createNode(
-        nodeCreateRequestSchema.parse(await readJsonDocument(path.resolve(file)))
-      )
+    const request = nodeCreateRequestSchema.parse(
+      await readJsonDocument(path.resolve(file))
     );
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.nodes.create",
+          request
+        })
+      );
+      return;
+    }
+
+    printJson(await client.createNode(request));
   });
 
 hostNodesCommand
   .command("replace")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<file>", "Path to a managed-node replacement JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical node-replacement request without mutating the host."
+  )
   .description(
     "Replace one managed non-user node binding in the active graph without renaming the node id."
   )
-  .action(async (nodeId: string, file: string, _options, command: Command) => {
+  .action(
+    async (
+      nodeId: string,
+      file: string,
+      options: { dryRun?: boolean },
+      command: Command
+    ) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.replaceNode(
-        nodeId,
-        nodeReplacementRequestSchema.parse(
-          await readJsonDocument(path.resolve(file))
-        )
-      )
-    );
+      const request = nodeReplacementRequestSchema.parse(
+        await readJsonDocument(path.resolve(file))
+      );
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.nodes.replace",
+            request,
+            target: {
+              nodeId
+            }
+          })
+        );
+        return;
+      }
+
+      printJson(await client.replaceNode(nodeId, request));
   });
 
 hostNodesCommand
   .command("delete")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--dry-run",
+    "Print the canonical node-delete intent without mutating the host."
+  )
   .description(
     "Delete one managed non-user node from the active graph. This fails if graph edges still reference the node."
   )
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.nodes.delete",
+          target: {
+            nodeId
+          }
+        })
+      );
+      return;
+    }
+
     printJson(await client.deleteNode(nodeId));
   });
 
@@ -525,39 +634,90 @@ hostEdgesCommand
 hostEdgesCommand
   .command("add")
   .argument("<file>", "Path to an edge JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical edge-create request without mutating the host."
+  )
   .description("Create one edge in the active graph.")
-  .action(async (file: string, _options, command: Command) => {
+  .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.createEdge(
-        edgeCreateRequestSchema.parse(await readJsonDocument(path.resolve(file)))
-      )
+    const request = edgeCreateRequestSchema.parse(
+      await readJsonDocument(path.resolve(file))
     );
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.edges.create",
+          request
+        })
+      );
+      return;
+    }
+
+    printJson(await client.createEdge(request));
   });
 
 hostEdgesCommand
   .command("replace")
   .argument("<edgeId>", "Edge identifier in the active graph.")
   .argument("<file>", "Path to an edge replacement JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical edge-replacement request without mutating the host."
+  )
   .description("Replace one edge in the active graph without renaming the edge id.")
-  .action(async (edgeId: string, file: string, _options, command: Command) => {
+  .action(
+    async (
+      edgeId: string,
+      file: string,
+      options: { dryRun?: boolean },
+      command: Command
+    ) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.replaceEdge(
-        edgeId,
-        edgeReplacementRequestSchema.parse(
-          await readJsonDocument(path.resolve(file))
-        )
-      )
-    );
+      const request = edgeReplacementRequestSchema.parse(
+        await readJsonDocument(path.resolve(file))
+      );
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.edges.replace",
+            request,
+            target: {
+              edgeId
+            }
+          })
+        );
+        return;
+      }
+
+      printJson(await client.replaceEdge(edgeId, request));
   });
 
 hostEdgesCommand
   .command("delete")
   .argument("<edgeId>", "Edge identifier in the active graph.")
+  .option(
+    "--dry-run",
+    "Print the canonical edge-delete intent without mutating the host."
+  )
   .description("Delete one edge from the active graph.")
-  .action(async (edgeId: string, _options, command: Command) => {
+  .action(async (edgeId: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.edges.delete",
+          target: {
+            edgeId
+          }
+        })
+      );
+      return;
+    }
+
     printJson(await client.deleteEdge(edgeId));
   });
 
@@ -668,43 +828,114 @@ hostRuntimesCommand
   .command("recovery-policy")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<file>", "Path to a runtime recovery policy JSON file.")
+  .option(
+    "--dry-run",
+    "Print the canonical recovery-policy mutation without mutating the host."
+  )
   .description("Apply one runtime recovery policy through entangle-host.")
-  .action(async (nodeId: string, file: string, _options, command: Command) => {
+  .action(
+    async (
+      nodeId: string,
+      file: string,
+      options: { dryRun?: boolean },
+      command: Command
+    ) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
-    printJson(
-      await client.setRuntimeRecoveryPolicy(
-        nodeId,
-        runtimeRecoveryPolicyMutationRequestSchema.parse(
-          await readJsonDocument(path.resolve(file))
-        )
-      )
-    );
+      const request = runtimeRecoveryPolicyMutationRequestSchema.parse(
+        await readJsonDocument(path.resolve(file))
+      );
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.runtimes.recovery_policy.set",
+            request,
+            target: {
+              nodeId
+            }
+          })
+        );
+        return;
+      }
+
+      printJson(await client.setRuntimeRecoveryPolicy(nodeId, request));
   });
 
 hostRuntimesCommand
   .command("start")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--dry-run",
+    "Print the canonical runtime-start intent without mutating the host."
+  )
   .description("Set one runtime's desired state to running.")
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.runtimes.start",
+          target: {
+            nodeId
+          }
+        })
+      );
+      return;
+    }
+
     printJson(await client.startRuntime(nodeId));
   });
 
 hostRuntimesCommand
   .command("stop")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--dry-run",
+    "Print the canonical runtime-stop intent without mutating the host."
+  )
   .description("Set one runtime's desired state to stopped.")
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.runtimes.stop",
+          target: {
+            nodeId
+          }
+        })
+      );
+      return;
+    }
+
     printJson(await client.stopRuntime(nodeId));
   });
 
 hostRuntimesCommand
   .command("restart")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--dry-run",
+    "Print the canonical runtime-restart intent without mutating the host."
+  )
   .description("Request deterministic runtime recreation while keeping the desired state running.")
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (nodeId: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+
+    if (options.dryRun) {
+      printJson(
+        buildCliMutationDryRun({
+          mutation: "host.runtimes.restart",
+          target: {
+            nodeId
+          }
+        })
+      );
+      return;
+    }
+
     printJson(await client.restartRuntime(nodeId));
   });
 

@@ -211,6 +211,9 @@ The repository now also contains the first real implementation baseline:
   one runtime-scoped session summary and inspect host-backed per-node session
   detail through the existing session read surface, without introducing
   client-owned session state;
+- the next bounded CLI completion slice where the main host-facing mutation
+  commands now support `--dry-run`, printing canonical mutation payloads or
+  intents without mutating the host;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -334,12 +337,10 @@ The current implementation-truth audit now lives in
   provisioning record model, and the publication/retrieval-state record
   model;
 - complete CLI parity where it adds real headless operational value;
-- deepen session drilldown only where the current host session read model
-  still leaves real operator blind spots;
-- keep CLI widening focused on real operational leverage, especially
-  automation-oriented JSON and dry-run flows;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided
   memory maintenance;
+- keep later CLI widening focused only on real operational leverage, not
+  surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to
   consume host-owned truth instead of inventing client-side control logic.

@@ -100,6 +100,7 @@ This directory is the canonical design corpus for Entangle.
 94. [93-cli-package-source-parity-slice.md](93-cli-package-source-parity-slice.md)
 95. [94-cli-runtime-artifact-inspection-slice.md](94-cli-runtime-artifact-inspection-slice.md)
 96. [95-studio-session-drilldown-slice.md](95-studio-session-drilldown-slice.md)
+97. [96-cli-mutation-dry-run-slice.md](96-cli-mutation-dry-run-slice.md)
 
 ## Role of this corpus
 

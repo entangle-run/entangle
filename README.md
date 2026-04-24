@@ -273,11 +273,12 @@ This repository currently contains:
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
   state;
+- the next bounded CLI completion slice where the main host-facing mutation
+  commands now support `--dry-run`, printing canonical mutation payloads or
+  intents without mutating the host;
 
 The highest-value remaining gaps are:
 
-- stronger automation-oriented JSON and dry-run flows where they add real
-  headless operational leverage;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;
 - advanced git widening beyond the current locator-specific handoff model,

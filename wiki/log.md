@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added CLI mutation dry-run support
+
+Closed the next bounded CLI completion slice by adding `--dry-run` across the
+main host-facing mutation commands. The CLI can now print canonical mutation
+payloads or intents for package-source admission, graph apply, node and edge
+mutation, external-principal upsert, runtime recovery-policy mutation, and
+runtime lifecycle operations without mutating the host.
+
 ## [2026-04-24] implementation | Added Studio session drilldown
 
 Closed the next bounded Studio slice by adding selected-session drilldown on
