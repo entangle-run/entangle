@@ -133,7 +133,9 @@ This repository currently contains:
   primary `gitea_api` repository targets with persisted provisioning-state
   records and runtime realizability gated on provisioning success, and now
   supports HTTPS-token git transport through a non-persistent `GIT_ASKPASS`
-  environment in addition to the existing SSH-key path;
+  environment in addition to the existing SSH-key path, with runner-level
+  coverage proving that one node can publish a git artifact and a downstream
+  node can retrieve it into local engine context from the same remote;
 - host read surfaces for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus matching
@@ -491,7 +493,9 @@ The highest-value remaining gaps are:
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;
-- stronger end-to-end deployment and integration hardening.
+- stronger end-to-end deployment and integration hardening, especially the
+  Docker/Gitea-backed version of the now-proven runner-level multi-node git
+  handoff.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

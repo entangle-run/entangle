@@ -126,7 +126,10 @@ The first two preparation slices are now implemented:
 The artifact-record publication-state contract, remote publication, downstream
 retrieval, locator-specific handoff widening, host-owned `gitea_api`
 provisioning, and runner HTTPS-token git transport are now also implemented,
-so the remaining work in this phase can land on a clean lifecycle model.
+and runner-level integration coverage now proves the complete
+publish-then-retrieve handoff between two node contexts over a shared remote
+git repository. The remaining work in this phase can therefore land on a clean
+lifecycle model instead of re-proving the artifact substrate at every layer.
 
 The remaining work in this phase is:
 
@@ -505,6 +508,9 @@ Completed in the current repository state:
 - host and runner image builds now clean stale TypeScript incremental metadata,
   assert deploy payload presence for service and workspace-package outputs,
   and package the runtime git toolchain required by the runner artifact backend;
+- runner-level integration coverage now proves a multi-node git handoff where
+  one node publishes a git-backed report to a shared remote and a downstream
+  node retrieves that published `ArtifactRef` into its local engine request;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
   profile while preserving future Compose-level integration work as a separate
   hardening track.

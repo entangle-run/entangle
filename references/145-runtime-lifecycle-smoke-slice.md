@@ -70,9 +70,11 @@ prefer `pnpm ops:smoke-local:disposable:runtime` for routine verification
 because the disposable wrapper tears down the host state volume afterward.
 
 This slice proves lifecycle/restart behavior plus a same-node provider-backed
-message turn and local git-backed artifact materialization. It still does not
-prove a multi-node artifact handoff where one runtime publishes and another
-runtime retrieves the produced artifact.
+message turn and local git-backed artifact materialization. Runner-level
+integration coverage now separately proves the multi-node git handoff where
+one node publishes and another node retrieves the produced artifact. The
+remaining deployment-grade gap is proving that same handoff through
+Docker-managed runners and a bootstrapped local Gitea service.
 
 ## Verification
 

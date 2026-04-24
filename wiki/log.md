@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-24] runtime | Proved runner-level multi-node git handoff
+
+Added runner integration coverage for a real two-node artifact handoff. One
+`RunnerService` now publishes a git-backed report artifact to a shared remote,
+and a downstream `RunnerService` retrieves the published `ArtifactRef` into
+its own local engine request while persisting consumed and produced artifact
+linkage.
+
+This deliberately stays below the Docker/Gitea smoke layer because the current
+local Gitea profile is only readiness-checked as a web surface, not yet
+bootstrapped with an authenticated git collaboration account. The next
+deployment-grade gap is proving the same handoff through two host-managed
+runners and local Gitea.
+
 ## [2026-04-24] operations | Added provider-backed runtime message smoke
 
 `pnpm ops:smoke-local:runtime` now goes beyond lifecycle probing: after

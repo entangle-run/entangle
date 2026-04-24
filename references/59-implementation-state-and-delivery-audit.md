@@ -223,6 +223,9 @@ artifact-collaboration depth, not the runner boundary itself.
   locator-specific repository-target resolution, deterministic service-scoped
   transport-principal selection, repository-partitioned retrieval caches, and
   local engine artifact inputs;
+- runner-level multi-node handoff coverage where one node publishes a
+  git-backed report artifact to a shared remote repository and a downstream
+  node retrieves the published `ArtifactRef` into its own local engine request;
 - host-owned provisioning of primary repository targets whose selected git
   service declares `gitea_api`, with persisted provisioning-state records and
   runtime realizability gated on provisioning success;
@@ -240,8 +243,9 @@ artifact-collaboration depth, not the runner boundary itself.
 
 ### Assessment
 
-This is one of the most important remaining capability gaps. The current local
-artifact model is strong enough to extend without redesign.
+This layer is now strong enough to extend without redesign. The remaining
+artifact-collaboration risk is deployment-grade proof over the full local
+service topology, not the runner artifact contract itself.
 
 ### 5. Identity, secrets, and external principals
 
@@ -600,9 +604,11 @@ priority widening.
 ### Still missing or incomplete
 
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
-- richer Docker-backed runtime smoke coverage around artifact-aware multi-node
-  flows, now specifically beyond the implemented same-node provider-backed
-  turn and local git artifact materialization path.
+- richer Docker-backed runtime smoke coverage around the now-proven
+  runner-level artifact-aware multi-node flow, specifically through
+  Docker-managed runtimes and a bootstrapped local Gitea service rather than
+  only the current same-node provider-backed turn and local git artifact
+  materialization path.
 
 ### Assessment
 
@@ -633,7 +639,8 @@ The current best delivery order is:
    engine-outcome surface, broader provider/runtime metadata, and any later
    model-guided runtime/memory deepening that builds on the now stronger
    bounded builtin tool surface;
-2. harden end-to-end deployment and artifact-aware multi-node integration coverage;
+2. harden end-to-end deployment coverage for the now-proven runner-level
+   artifact-aware multi-node integration path;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;
 4. widen git collaboration only where later delivery needs justify going beyond

@@ -416,6 +416,9 @@ The repository now also contains the first real implementation baseline:
   runtime-realizability error instead of deferring it to the runner; URL-based
   runner git operations now support both SSH-key and HTTPS-token transport
   principals without writing token material into runtime files or remote URLs;
+  runner-level integration coverage now proves a real two-node handoff where
+  one node publishes a git artifact to a remote and a downstream node retrieves
+  that artifact into local engine context by `ArtifactRef`;
 - a real Nostr runner transport using NIP-59 gift wrapping plus a dedicated
   Entangle rumor kind, with relay-readiness preconnect semantics at startup;
 - a corrected local `strfry` deployment profile with an explicit mounted relay
@@ -530,7 +533,8 @@ The current implementation-truth audit now lives in
   locator-specific retrieval path, the resolved git principal secret-delivery
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
-  model;
+  model; the next deployment-grade gap is proving the same multi-node handoff
+  through Docker-managed runtimes and a bootstrapped local Gitea service;
 - complete CLI parity where it adds real headless operational value;
 - deepen the new bootstrap host operator-token and request-audit boundary into
   real production identity and authorization only through explicit contracts,

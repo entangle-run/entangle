@@ -150,6 +150,7 @@ This directory is the canonical design corpus for Entangle.
 144. [143-shared-runtime-turn-presentation-slice.md](143-shared-runtime-turn-presentation-slice.md)
 145. [144-disposable-local-profile-smoke-slice.md](144-disposable-local-profile-smoke-slice.md)
 146. [145-runtime-lifecycle-smoke-slice.md](145-runtime-lifecycle-smoke-slice.md)
+147. [146-runner-multi-node-git-handoff-slice.md](146-runner-multi-node-git-handoff-slice.md)
 
 ## Role of this corpus
 

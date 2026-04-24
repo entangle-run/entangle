@@ -25,6 +25,7 @@ import {
   createPublishedGitArtifact,
   createRuntimeFixture,
   remotePublicKey,
+  runnerPublicKey,
   runnerSecretHex
 } from "./test-fixtures.js";
 import { InMemoryRunnerTransport } from "./transport.js";
@@ -105,6 +106,208 @@ function buildHttpsRuntimeContext(input: {
 }
 
 describe("RunnerService", () => {
+  it("hands off a published git artifact from one node to a downstream node", async () => {
+    const upstreamFixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    const downstreamFixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!upstreamFixture.remoteRepositoryPath) {
+      throw new Error("Expected an upstream bare remote repository path.");
+    }
+
+    const upstreamContext = await loadRuntimeContext(upstreamFixture.contextPath);
+    const downstreamBaseContext = await loadRuntimeContext(
+      downstreamFixture.contextPath
+    );
+    const downstreamContext: EffectiveRuntimeContext = {
+      ...downstreamBaseContext,
+      artifactContext: {
+        ...downstreamBaseContext.artifactContext,
+        primaryGitRepositoryTarget:
+          upstreamContext.artifactContext.primaryGitRepositoryTarget
+      },
+      binding: {
+        ...downstreamBaseContext.binding,
+        bindingId: "graph-revision-alpha.worker-qa",
+        node: {
+          ...downstreamBaseContext.binding.node,
+          displayName: "Worker QA",
+          nodeId: "worker-qa"
+        }
+      },
+      identityContext: {
+        ...downstreamBaseContext.identityContext,
+        publicKey: remotePublicKey
+      }
+    };
+    const transport = new InMemoryRunnerTransport();
+    const upstreamService = new RunnerService({
+      context: upstreamContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Upstream node produced handoff artifact."],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [],
+            usage: {
+              inputTokens: 11,
+              outputTokens: 5
+            }
+          });
+        }
+      },
+      transport
+    });
+    let downstreamRequest: AgentEngineTurnRequest | undefined;
+    const downstreamService = new RunnerService({
+      context: downstreamContext,
+      engine: {
+        executeTurn(request) {
+          downstreamRequest = request;
+          return Promise.resolve({
+            assistantMessages: ["Downstream node consumed handoff artifact."],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [
+              {
+                outcome: "success",
+                sequence: 1,
+                toolCallId: "toolu_handoff",
+                toolId: "inspect_artifact_input"
+              }
+            ]
+          });
+        }
+      },
+      transport
+    });
+
+    const upstreamResult = await upstreamService.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        conversationId: "handoff-upstream-conv",
+        intent: "produce_handoff_artifact",
+        sessionId: "handoff-session",
+        summary: "Produce a published artifact for the downstream worker.",
+        turnId: "handoff-turn-001"
+      })
+    );
+
+    if (!upstreamResult.handled || !upstreamResult.response) {
+      throw new Error("Expected the upstream node to publish a task result.");
+    }
+
+    const handoffArtifactRef =
+      upstreamResult.response.message.work.artifactRefs.find(
+        (artifactRef) =>
+          artifactRef.createdByNodeId === upstreamContext.binding.node.nodeId
+      );
+
+    if (!handoffArtifactRef || handoffArtifactRef.backend !== "git") {
+      throw new Error("Expected an upstream git artifact ref in the response.");
+    }
+
+    expect(handoffArtifactRef.status).toBe("published");
+
+    const upstreamStatePaths = buildRunnerStatePaths(
+      upstreamContext.workspace.runtimeRoot
+    );
+    const upstreamArtifactRecords = await listArtifactRecords(upstreamStatePaths);
+    expect(upstreamArtifactRecords).toHaveLength(1);
+    expect(upstreamArtifactRecords[0]?.publication?.state).toBe("published");
+
+    const downstreamResult = await downstreamService.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        artifactRefs: [handoffArtifactRef],
+        conversationId: "handoff-downstream-conv",
+        fromNodeId: upstreamContext.binding.node.nodeId,
+        fromPubkey: runnerPublicKey,
+        intent: "consume_handoff_artifact",
+        sessionId: "handoff-session",
+        summary: "Consume the upstream artifact and produce a downstream report.",
+        toNodeId: "worker-qa",
+        toPubkey: downstreamContext.identityContext.publicKey,
+        turnId: "handoff-turn-002"
+      })
+    );
+
+    if (!downstreamResult.handled) {
+      throw new Error("Expected the downstream node to handle the handoff task.");
+    }
+
+    if (!downstreamRequest) {
+      throw new Error("Expected the downstream engine to receive a turn request.");
+    }
+
+    expect(downstreamRequest.artifactInputs).toHaveLength(1);
+    expect(downstreamRequest.artifactInputs[0]).toMatchObject({
+      artifactId: handoffArtifactRef.artifactId,
+      backend: "git"
+    });
+
+    const handoffReportPath = downstreamRequest.artifactInputs[0]?.localPath;
+    if (!handoffReportPath) {
+      throw new Error(
+        "Expected the downstream engine request to include a local artifact path."
+      );
+    }
+
+    await expect(readFile(handoffReportPath, "utf8")).resolves.toContain(
+      "Upstream node produced handoff artifact."
+    );
+
+    const downstreamStatePaths = buildRunnerStatePaths(
+      downstreamContext.workspace.runtimeRoot
+    );
+    const downstreamArtifactRecords = await listArtifactRecords(
+      downstreamStatePaths
+    );
+    const retrievedArtifactRecord = downstreamArtifactRecords.find(
+      (artifactRecord) =>
+        artifactRecord.ref.artifactId === handoffArtifactRef.artifactId
+    );
+    const producedArtifactRecord = downstreamArtifactRecords.find(
+      (artifactRecord) =>
+        artifactRecord.ref.createdByNodeId === downstreamContext.binding.node.nodeId
+    );
+
+    expect(retrievedArtifactRecord?.retrieval).toMatchObject({
+      remoteName: "entangle-local-gitea",
+      remoteUrl: upstreamFixture.remoteRepositoryPath,
+      state: "retrieved"
+    });
+    if (!producedArtifactRecord) {
+      throw new Error("Expected the downstream node to produce an artifact.");
+    }
+
+    expect(producedArtifactRecord.publication?.state).toBe("published");
+
+    const [downstreamTurnFile] = await readdir(downstreamStatePaths.turnsRoot);
+    const downstreamTurn = downstreamTurnFile
+      ? await readRunnerTurnRecord(
+          downstreamStatePaths,
+          downstreamTurnFile.replace(/\.json$/, "")
+        )
+      : undefined;
+
+    expect(downstreamTurn?.consumedArtifactIds).toContain(
+      handoffArtifactRef.artifactId
+    );
+    expect(downstreamTurn?.producedArtifactIds).toContain(
+      producedArtifactRecord.ref.artifactId
+    );
+    expect(downstreamTurn?.engineOutcome?.toolExecutions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          outcome: "success",
+          toolId: "inspect_artifact_input"
+        })
+      ])
+    );
+  });
+
   it("retrieves published inbound git artifacts from the primary remote and passes them to the engine", async () => {
     const fixture = await createRuntimeFixture({
       remotePublication: "bare_repo"
