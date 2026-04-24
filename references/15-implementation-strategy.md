@@ -357,6 +357,9 @@ Completed in the current repository state:
 - deeper Studio runtime session inspection on top of the already implemented
   host session read model, again preserving partial-failure-tolerant
   selected-runtime refresh semantics.
+- Studio runtime turn drilldown on top of the already implemented host
+  runtime-turn read model, preserving the same stale-selection and
+  partial-failure isolation pattern as artifact and session drilldowns.
 - the first bounded Studio graph-mutation slice through host-owned edge
   mutation flows, with edge selection, create/replace/delete, and canonical
   post-mutation refresh.

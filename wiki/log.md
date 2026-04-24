@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio runtime turn detail
+
+Studio now consumes the host-owned runtime-turn inspection surface. Visual
+operators can list persisted turns for the selected runtime, select one turn,
+and inspect host-backed detail including phase, trigger, artifact linkage,
+engine outcome, tool-execution summary, and memory-synthesis status without
+reading runner-local state files.
+
 ## [2026-04-24] implementation | Added runtime turn inspection
 
 `entangle-host` now exposes persisted runner turns through

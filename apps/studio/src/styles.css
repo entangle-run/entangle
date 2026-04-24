@@ -382,7 +382,8 @@ code {
 }
 
 .session-detail-card,
-.artifact-detail-card {
+.artifact-detail-card,
+.turn-detail-card {
   display: grid;
   gap: 14px;
   border-radius: 18px;

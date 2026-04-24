@@ -28,7 +28,9 @@ import type {
   PackageSourceInspectionResponse,
   RuntimeArtifactInspectionResponse,
   RuntimeInspectionResponse,
-  RuntimeRecoveryInspectionResponse
+  RuntimeRecoveryInspectionResponse,
+  RuntimeTurnInspectionResponse,
+  RunnerTurnRecord
 } from "@entangle/types";
 import {
   buildEdgeCreateRequest,
@@ -97,6 +99,13 @@ import {
   formatRuntimeArtifactStatus,
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
+import {
+  formatRuntimeTurnArtifactSummary,
+  formatRuntimeTurnDetailLines,
+  formatRuntimeTurnLabel,
+  formatRuntimeTurnStatus,
+  sortRuntimeTurns
+} from "./runtime-turn-inspection.js";
 import {
   collectSessionInspectionTraceIds,
   filterRuntimeSessions,
@@ -348,6 +357,12 @@ export function App() {
     useState<RuntimeArtifactInspectionResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
+  const [selectedTurns, setSelectedTurns] = useState<RunnerTurnRecord[]>([]);
+  const [turnError, setTurnError] = useState<string | null>(null);
+  const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
+  const [selectedTurnInspection, setSelectedTurnInspection] =
+    useState<RuntimeTurnInspectionResponse | null>(null);
+  const [turnDetailError, setTurnDetailError] = useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -365,10 +380,12 @@ export function App() {
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
   const selectedRuntimeIdRef = useRef<string | null>(null);
   const selectedArtifactIdRef = useRef<string | null>(null);
+  const selectedTurnIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
 
   selectedRuntimeIdRef.current = selectedRuntimeId;
   selectedArtifactIdRef.current = selectedArtifactId;
+  selectedTurnIdRef.current = selectedTurnId;
   selectedSessionIdRef.current = selectedSessionId;
 
   const loadOverview = useCallback(async () => {
@@ -524,12 +541,48 @@ export function App() {
     [client]
   );
 
+  const loadSelectedTurnInspection = useCallback(
+    async (nodeId: string, turnId: string) => {
+      try {
+        const inspection = await client.getRuntimeTurn(nodeId, turnId);
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedTurnIdRef.current !== turnId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedTurnInspection(inspection);
+          setTurnDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedTurnIdRef.current !== turnId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedTurnInspection(null);
+          setTurnDetailError(
+            normalizeError(caught, "Unknown error while loading turn detail.")
+          );
+        });
+      }
+    },
+    [client]
+  );
+
   const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
     const [
       statusResult,
       runtimeListResult,
       recoveryResult,
       artifactResult,
+      turnResult,
       sessionResult
     ] =
       await Promise.allSettled([
@@ -537,6 +590,7 @@ export function App() {
         client.listRuntimes(),
         client.getRuntimeRecovery(nodeId, 20),
         client.listRuntimeArtifacts(nodeId),
+        client.listRuntimeTurns(nodeId),
         client.listSessions()
       ]);
     const nextSelectedSessions =
@@ -546,6 +600,10 @@ export function App() {
     const nextSelectedArtifacts =
       artifactResult.status === "fulfilled"
         ? sortRuntimeArtifacts(artifactResult.value.artifacts)
+        : [];
+    const nextSelectedTurns =
+      turnResult.status === "fulfilled"
+        ? sortRuntimeTurns(turnResult.value.turns)
         : [];
     const currentSelectedArtifactId = selectedArtifactId;
     const shouldRefreshSelectedArtifact =
@@ -557,6 +615,17 @@ export function App() {
       ? (
           await Promise.allSettled([
             client.getRuntimeArtifact(nodeId, currentSelectedArtifactId)
+          ])
+        )[0]
+      : null;
+    const currentSelectedTurnId = selectedTurnId;
+    const shouldRefreshSelectedTurn =
+      currentSelectedTurnId !== null &&
+      nextSelectedTurns.some((turn) => turn.turnId === currentSelectedTurnId);
+    const selectedTurnResult = shouldRefreshSelectedTurn
+      ? (
+          await Promise.allSettled([
+            client.getRuntimeTurn(nodeId, currentSelectedTurnId)
           ])
         )[0]
       : null;
@@ -647,6 +716,42 @@ export function App() {
         setArtifactDetailError(null);
       }
 
+      if (turnResult.status === "fulfilled") {
+        setSelectedTurns(nextSelectedTurns);
+        setTurnError(null);
+
+        if (!selectedTurnId) {
+          setSelectedTurnInspection(null);
+          setTurnDetailError(null);
+        } else if (!shouldRefreshSelectedTurn) {
+          setSelectedTurnId(null);
+          setSelectedTurnInspection(null);
+          setTurnDetailError(null);
+        } else if (selectedTurnResult?.status === "fulfilled") {
+          setSelectedTurnInspection(selectedTurnResult.value);
+          setTurnDetailError(null);
+        } else if (selectedTurnResult?.status === "rejected") {
+          setSelectedTurnInspection(null);
+          setTurnDetailError(
+            normalizeError(
+              selectedTurnResult.reason,
+              "Unknown error while loading turn detail."
+            )
+          );
+        }
+      } else {
+        setSelectedTurns([]);
+        setTurnError(
+          normalizeError(
+            turnResult.reason,
+            "Unknown error while loading runtime turns."
+          )
+        );
+        setSelectedTurnId(null);
+        setSelectedTurnInspection(null);
+        setTurnDetailError(null);
+      }
+
       if (sessionResult.status === "fulfilled") {
         setSelectedSessions(nextSelectedSessions);
         setSessionError(null);
@@ -688,7 +793,7 @@ export function App() {
         setSessionDetailError(null);
       }
     });
-  }, [client, selectedArtifactId, selectedSessionId]);
+  }, [client, selectedArtifactId, selectedSessionId, selectedTurnId]);
 
   const mutateSelectedRuntime = useCallback(
     async (action: RuntimeLifecycleAction) => {
@@ -755,6 +860,20 @@ export function App() {
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
     [loadSelectedArtifactInspection, selectedRuntimeId]
+  );
+
+  const selectRuntimeTurn = useCallback(
+    async (turnId: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedTurnId(turnId);
+      setSelectedTurnInspection(null);
+      setTurnDetailError(null);
+      await loadSelectedTurnInspection(selectedRuntimeId, turnId);
+    },
+    [loadSelectedTurnInspection, selectedRuntimeId]
   );
 
   const graphNodeIds = useMemo(
@@ -1113,6 +1232,11 @@ export function App() {
       setSelectedArtifactId(null);
       setSelectedArtifactInspection(null);
       setArtifactDetailError(null);
+      setTurnError(null);
+      setSelectedTurns([]);
+      setSelectedTurnId(null);
+      setSelectedTurnInspection(null);
+      setTurnDetailError(null);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -1129,6 +1253,11 @@ export function App() {
     setSelectedArtifactId(null);
     setSelectedArtifactInspection(null);
     setArtifactDetailError(null);
+    setTurnError(null);
+    setSelectedTurns([]);
+    setSelectedTurnId(null);
+    setSelectedTurnInspection(null);
+    setTurnDetailError(null);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -1290,7 +1419,7 @@ export function App() {
           state from the host instead of stopping at topology. Select a managed
           runtime to inspect policy, controller state, durable recovery history,
           reconciliation findings, and the broader session, conversation,
-          approval, artifact, and runner activity that the host is actually
+          approval, artifact, runner turn, and trace activity that the host is actually
           emitting.
         </p>
       </section>
@@ -2121,6 +2250,7 @@ export function App() {
 
                 {recoveryError ? <p className="error-box">{recoveryError}</p> : null}
                 {artifactError ? <p className="error-box">{artifactError}</p> : null}
+                {turnError ? <p className="error-box">{turnError}</p> : null}
                 {sessionError ? <p className="error-box">{sessionError}</p> : null}
                 {mutationError ? <p className="error-box">{mutationError}</p> : null}
 
@@ -2300,6 +2430,110 @@ export function App() {
 
                   <div className="subpanel">
                     <div className="section-header">
+                      <h3>Runtime Turns</h3>
+                      <span className="panel-caption">
+                        {selectedTurns.length} records
+                      </span>
+                    </div>
+
+                    {selectedTurns.length > 0 ? (
+                      <ul className="timeline-list">
+                        {selectedTurns.slice(0, 8).map((turn) => (
+                          <li key={turn.turnId} className="timeline-item">
+                            <button
+                              className={`timeline-button ${selectedTurnId === turn.turnId ? "is-selected" : ""}`}
+                              onClick={() => {
+                                void selectRuntimeTurn(turn.turnId);
+                              }}
+                              type="button"
+                            >
+                              <div className="timeline-row">
+                                <strong>{formatRuntimeTurnLabel(turn)}</strong>
+                                <span>{turn.updatedAt}</span>
+                              </div>
+                              <p>{formatRuntimeTurnStatus(turn)}</p>
+                              <p className="artifact-meta">
+                                {formatRuntimeTurnArtifactSummary(turn)}
+                              </p>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No persisted runner turns are visible for this runtime yet.</p>
+                      </div>
+                    )}
+
+                    {turnDetailError ? (
+                      <p className="error-box">{turnDetailError}</p>
+                    ) : null}
+
+                    {selectedTurnInspection ? (
+                      <div className="turn-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Turn Detail</h3>
+                          <span className="panel-caption">
+                            {selectedTurnInspection.turn.turnId}
+                          </span>
+                        </div>
+
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Turn</dt>
+                            <dd>{selectedTurnInspection.turn.turnId}</dd>
+                          </div>
+                          <div>
+                            <dt>Phase</dt>
+                            <dd>{selectedTurnInspection.turn.phase}</dd>
+                          </div>
+                          <div>
+                            <dt>Trigger</dt>
+                            <dd>{selectedTurnInspection.turn.triggerKind}</dd>
+                          </div>
+                          <div>
+                            <dt>Session</dt>
+                            <dd>
+                              {selectedTurnInspection.turn.sessionId ?? "none"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Engine</dt>
+                            <dd>
+                              {selectedTurnInspection.turn.engineOutcome?.stopReason ??
+                                "pending"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Memory synthesis</dt>
+                            <dd>
+                              {selectedTurnInspection.turn.memorySynthesisOutcome
+                                ?.status ?? "not_run"}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <ul className="detail-list">
+                          {formatRuntimeTurnDetailLines(
+                            selectedTurnInspection.turn
+                          ).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : selectedTurnId ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected turn detail...</p>
+                      </div>
+                    ) : selectedTurns.length > 0 ? (
+                      <div className="inline-empty-state">
+                        <p>Select one turn to inspect its host-backed detail.</p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
                       <h3>Runtime Artifacts</h3>
                       <span className="panel-caption">
                         {selectedArtifacts.length} records
@@ -2447,6 +2681,7 @@ export function App() {
               <li>Studio consumes real host contracts instead of faking topology</li>
               <li>Runtime recovery policy, controller, history, and events all come from host-owned state</li>
               <li>Selected-runtime trace comes from host-derived session, conversation, approval, artifact, and turn events</li>
+              <li>Persisted runner turns can be listed and inspected through the same host-client boundary</li>
               <li>CLI and Studio share the same host-client and typed event contracts</li>
               <li>Live recovery visibility does not bypass the host control-plane boundary</li>
             </ul>

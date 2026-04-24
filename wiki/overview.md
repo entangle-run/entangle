@@ -304,6 +304,10 @@ The repository now also contains the first real implementation baseline:
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status and trace ids;
+- a deeper Studio runtime-turn inspection slice where the selected-runtime
+  surface now lists persisted runner turns and expands one selected turn into
+  host-backed detail, including engine outcome, artifact linkage, trigger,
+  phase, and memory-synthesis status;
 - the first bounded Studio graph-mutation slice where the operator can now
   select, create, replace, and delete graph edges through host-owned mutation
   routes instead of keeping Studio fully read-only on topology;

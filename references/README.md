@@ -141,6 +141,7 @@ This directory is the canonical design corpus for Entangle.
 135. [134-studio-external-principal-lifecycle-slice.md](134-studio-external-principal-lifecycle-slice.md)
 136. [135-package-scaffold-safety-and-cli-options-slice.md](135-package-scaffold-safety-and-cli-options-slice.md)
 137. [136-runtime-turn-inspection-slice.md](136-runtime-turn-inspection-slice.md)
+138. [137-studio-runtime-turn-detail-slice.md](137-studio-runtime-turn-detail-slice.md)
 
 ## Role of this corpus
 

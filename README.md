@@ -379,6 +379,10 @@ This repository currently contains:
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status and trace ids;
+- a deeper Studio runtime-turn inspection slice where visual operators can
+  select persisted runner turns, inspect host-backed turn detail, and see
+  engine outcome, artifact linkage, trigger, phase, and memory-synthesis
+  status without reading runner-local state files;
 - the first bounded Studio graph-mutation slice where operators can now select,
   create, replace, and delete graph edges through host-owned edge resource
   routes instead of keeping Studio read-only on topology;
@@ -423,7 +427,6 @@ This repository currently contains:
   publication, and retrieval state;
 - the next artifact-governance slice where headless operators can inspect one
   runtime artifact by id through the shared host boundary instead of reading
-  runner-local artifact files directly;
   runner-local artifact files directly;
 - the matching Studio artifact-detail slice where visual operators can select
   one runtime artifact and inspect its host-backed item record without

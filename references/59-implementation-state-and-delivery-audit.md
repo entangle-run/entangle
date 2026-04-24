@@ -451,6 +451,10 @@ delivery.
   model, where one runtime-scoped session summary can now be selected and
   expanded into host-backed per-node session/runtime detail without widening
   the host API;
+- Studio runtime-turn drilldown on top of the existing host runtime-turn read
+  model, where one persisted runner turn can now be selected and expanded into
+  host-backed detail without reading runner-local state files or reconstructing
+  turn state from events;
 - bounded Studio graph edge mutation on top of the host-owned edge resource
   surface, including live edge selection plus create/replace/delete flows;
 - bounded Studio managed-node mutation on top of the host-owned managed-node
