@@ -1,0 +1,67 @@
+flowchart TB
+  User[Human users and admins]
+  Web[Web Console]
+  CLI[CLI and SDKs]
+  APIGW[API Gateway]
+  Auth[Identity and Auth]
+  CP[Control Plane API]
+  Graph[Graph Service]
+  Package[Package Registry]
+  Session[Session Service]
+  Runtime[Runtime Orchestrator]
+  Executor[Sandboxed Executors]
+  Model[Model Gateway]
+  Tool[Tool Gateway]
+  Artifact[Artifact Service]
+  Policy[Policy Service]
+  Notify[Notification Service]
+  Integrations[Integration Service]
+  Analytics[Analytics Service]
+  DB[(PostgreSQL)]
+  Obj[(Object Storage)]
+  Redis[(Redis)]
+  Bus[(NATS JetStream)]
+  Temporal[(Workflow Engine)]
+  Search[(OpenSearch)]
+  OTel[OpenTelemetry Pipeline]
+  Providers[Model Providers]
+  External[External SaaS and Git Systems]
+
+  User --> Web
+  User --> CLI
+  Web --> APIGW
+  CLI --> APIGW
+  APIGW --> Auth
+  APIGW --> CP
+  CP --> Graph
+  CP --> Package
+  CP --> Session
+  CP --> Artifact
+  CP --> Policy
+  CP --> Analytics
+  Session --> Temporal
+  Session --> Bus
+  Runtime --> Temporal
+  Runtime --> Executor
+  Executor --> Model
+  Executor --> Tool
+  Executor --> Artifact
+  Model --> Providers
+  Tool --> Integrations
+  Integrations --> External
+  Artifact --> Obj
+  Graph --> DB
+  Package --> DB
+  Session --> DB
+  Runtime --> DB
+  Artifact --> DB
+  Policy --> DB
+  Notify --> Bus
+  Analytics --> DB
+  Analytics --> Search
+  Bus --> Search
+  Bus --> OTel
+  CP --> Redis
+  Executor --> OTel
+  Model --> OTel
+  Tool --> OTel

@@ -1,0 +1,24 @@
+erDiagram
+  TENANT ||--o{ WORKSPACE : owns
+  WORKSPACE ||--o{ ENVIRONMENT : has
+  WORKSPACE ||--o{ MEMBERSHIP : has
+  USER ||--o{ MEMBERSHIP : belongs
+  WORKSPACE ||--o{ PACKAGE_VERSION : stores
+  WORKSPACE ||--o{ GRAPH : owns
+  GRAPH ||--o{ GRAPH_REVISION : versions
+  GRAPH_REVISION ||--o{ NODE : contains
+  GRAPH_REVISION ||--o{ EDGE : contains
+  NODE ||--o{ RESOURCE_BINDING : uses
+  GRAPH_REVISION ||--o{ SESSION : executes
+  SESSION ||--o{ TURN : records
+  SESSION ||--o{ ARTIFACT : produces
+  ARTIFACT ||--o{ ARTIFACT_VERSION : versions
+  SESSION ||--o{ APPROVAL_REQUEST : gates
+  SESSION ||--o{ RUNTIME_INSTANCE : runs
+  SESSION ||--o{ MODEL_CALL : invokes
+  SESSION ||--o{ TOOL_CALL : invokes
+  SESSION ||--o{ MEMORY_ENTRY : updates
+  WORKSPACE ||--o{ POLICY : governs
+  WORKSPACE ||--o{ INTEGRATION : connects
+  WORKSPACE ||--o{ AUDIT_LOG : audits
+  WORKSPACE ||--o{ USAGE_RECORD : meters

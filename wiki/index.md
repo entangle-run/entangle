@@ -16,6 +16,7 @@
 - [decisions/identity-and-transport.md](decisions/identity-and-transport.md) — Use Nostr keys for global identity and signed communication while keeping git credentials and signing surfaces separate.
 - [decisions/git-as-first-artifact-backend.md](decisions/git-as-first-artifact-backend.md) — Git is the first implemented work substrate, not the only conceptual backend.
 - [decisions/repository-audit-loop.md](decisions/repository-audit-loop.md) — Every substantial interaction starts with an audit pass and leaves the repo in a more coherent state.
+- [decisions/production-redesign-program.md](decisions/production-redesign-program.md) — Active production redesign program that turns the imported LatticeOps corpus into Entangle's next major execution baseline.
 
 ## Sources
 
@@ -27,3 +28,7 @@
 ## Sessions
 
 - [sessions/2026-04-22-bootstrap.md](sessions/2026-04-22-bootstrap.md) — Initial imported synthesis of the Entangle brainstorming corpus and project bootstrap.
+
+## Redesign Programs
+
+- [redesign/latticeops/README.md](redesign/latticeops/README.md) — Imported end-to-end repository analysis and unconstrained LatticeOps redesign proposal, kept separate from the current Entangle implementation baseline.

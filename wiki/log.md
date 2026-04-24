@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-04-24] decision | Accepted production redesign program
+
+Accepted `wiki/decisions/production-redesign-program.md` as the active
+strategic program for the next major Entangle phase. The decision keeps
+Entangle's graph-native, artifact-first control-plane identity while allowing
+breaking changes when they improve production clarity, safety, scalability, or
+maintainability.
+
+## [2026-04-24] documentation | Imported LatticeOps redesign program
+
+Imported the generated end-to-end repository analysis and unconstrained
+redesign proposal into `wiki/redesign/latticeops/`. The imported corpus is
+kept as a strategic redesign program separate from the current Entangle
+implementation baseline, with `wiki/index.md` now linking the new entry point.
+
 ## [2026-04-24] implementation | Added explicit closure references for focused memory
 
 Closed the next runner-memory quality slice by letting the bounded

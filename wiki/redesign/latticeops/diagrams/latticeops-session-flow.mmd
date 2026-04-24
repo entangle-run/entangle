@@ -1,0 +1,30 @@
+sequenceDiagram
+  participant U as User
+  participant API as Control Plane API
+  participant P as Policy Service
+  participant S as Session Service
+  participant W as Workflow Engine
+  participant R as Runtime Orchestrator
+  participant E as Sandboxed Executor
+  participant M as Model Gateway
+  participant T as Tool Gateway
+  participant A as Artifact Service
+  participant O as Observability
+
+  U->>API: POST /v1/sessions
+  API->>P: Authorize launch and classify input
+  P-->>API: Allow with policy context
+  API->>S: Create session
+  S->>W: Start durable workflow
+  W->>R: Schedule runtime
+  R->>E: Start executor with scoped context
+  E->>M: Invoke model through gateway
+  M-->>E: Model response and usage
+  E->>T: Invoke approved tools
+  T-->>E: Tool result
+  E->>A: Write artifact version
+  A-->>E: Artifact reference
+  E->>S: Report turn and output
+  S->>O: Emit events, logs, traces, cost
+  S-->>API: Session updated
+  API-->>U: Live event stream and final artifact
