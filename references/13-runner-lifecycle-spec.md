@@ -178,7 +178,10 @@ That implemented slice currently includes:
   removed from active registers through runner-owned reconciliation, plus a
   runner-owned focused-register carry-state file that tracks repeated
   carry-forward across synthesis passes and injects stale-review hints for
-  active items without polluting the durable wiki pages themselves;
+  active items without polluting the durable wiki pages themselves, plus
+  runner-validated explicit closure references that can retire active baseline
+  questions and actions even when the new resolutions wording is different
+  from the original active entry text;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

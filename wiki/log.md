@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added explicit closure references for focused memory
+
+Closed the next runner-memory quality slice by letting the bounded
+memory-synthesis path retire active open questions and next actions through
+runner-validated references to the current focused-register baseline. Closure
+no longer depends only on wording overlap inside `resolutions.md`, while the
+runner still owns validation, reconciliation, and all filesystem writes.
+
 ## [2026-04-24] implementation | Added focused-register aging signals
 
 Closed the next runner-memory quality slice by adding a separate

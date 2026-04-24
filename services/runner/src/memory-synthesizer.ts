@@ -184,6 +184,11 @@ type FocusedRegisterContext = {
   state: FocusedRegisterState | undefined;
 };
 
+type FocusedRegisterClosureRefs = {
+  closedOpenQuestions: string[];
+  completedNextActions: string[];
+};
+
 function normalizeRegisterEntryKey(entry: string): string {
   return entry.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -325,17 +330,31 @@ function buildNextFocusedRegisterState(input: {
   };
 }
 
-function reconcileFocusedRegisterLifecycle(input: FocusedRegisterBaseline): FocusedRegisterBaseline {
+function buildNormalizedEntryKeySet(entries: string[]): Set<string> {
+  return new Set(entries.map((entry) => normalizeRegisterEntryKey(entry)));
+}
+
+function reconcileFocusedRegisterLifecycle(input: FocusedRegisterBaseline & FocusedRegisterClosureRefs): FocusedRegisterBaseline {
   const resolutionKeys = new Set(
     input.resolutions.map((resolution) => normalizeRegisterEntryKey(resolution))
+  );
+  const closedOpenQuestionKeys = buildNormalizedEntryKeySet(
+    input.closedOpenQuestions
+  );
+  const completedNextActionKeys = buildNormalizedEntryKeySet(
+    input.completedNextActions
   );
 
   return {
     nextActions: input.nextActions.filter(
-      (nextAction) => !resolutionKeys.has(normalizeRegisterEntryKey(nextAction))
+      (nextAction) =>
+        !resolutionKeys.has(normalizeRegisterEntryKey(nextAction)) &&
+        !completedNextActionKeys.has(normalizeRegisterEntryKey(nextAction))
     ),
     openQuestions: input.openQuestions.filter(
-      (openQuestion) => !resolutionKeys.has(normalizeRegisterEntryKey(openQuestion))
+      (openQuestion) =>
+        !resolutionKeys.has(normalizeRegisterEntryKey(openQuestion)) &&
+        !closedOpenQuestionKeys.has(normalizeRegisterEntryKey(openQuestion))
     ),
     resolutions: input.resolutions
   };
@@ -504,11 +523,65 @@ function renderFocusedRegisterBaselineForPrompt(
   ].join("\n");
 }
 
+function validateExplicitClosureRefs(input: {
+  baseline: FocusedRegisterBaseline;
+  closedOpenQuestions: string[];
+  completedNextActions: string[];
+  resolutions: string[];
+}):
+  | {
+      ok: true;
+    }
+  | {
+      issues: string[];
+      ok: false;
+    } {
+  const issues: string[] = [];
+  const openQuestionKeys = buildNormalizedEntryKeySet(input.baseline.openQuestions);
+  const nextActionKeys = buildNormalizedEntryKeySet(input.baseline.nextActions);
+
+  for (const closedOpenQuestion of input.closedOpenQuestions) {
+    if (!openQuestionKeys.has(normalizeRegisterEntryKey(closedOpenQuestion))) {
+      issues.push(
+        `The 'closedOpenQuestions' entry '${closedOpenQuestion}' does not match any current focused-register open question.`
+      );
+    }
+  }
+
+  for (const completedNextAction of input.completedNextActions) {
+    if (!nextActionKeys.has(normalizeRegisterEntryKey(completedNextAction))) {
+      issues.push(
+        `The 'completedNextActions' entry '${completedNextAction}' does not match any current focused-register next action.`
+      );
+    }
+  }
+
+  if (
+    (input.closedOpenQuestions.length > 0 || input.completedNextActions.length > 0) &&
+    input.resolutions.length === 0
+  ) {
+    issues.push(
+      "Explicit closure references require at least one bounded resolutions entry describing what closed."
+    );
+  }
+
+  return issues.length > 0
+    ? {
+        issues,
+        ok: false
+      }
+    : {
+        ok: true
+      };
+}
+
 function parseWorkingContextSummaryInput(input: unknown):
   | {
       ok: true;
       value: {
         artifactInsights: string[];
+        closedOpenQuestions: string[];
+        completedNextActions: string[];
         decisions: string[];
         executionInsights: string[];
         focus: string;
@@ -535,6 +608,8 @@ function parseWorkingContextSummaryInput(input: unknown):
 
   const allowedKeys = new Set([
     "artifactInsights",
+    "closedOpenQuestions",
+    "completedNextActions",
     "decisions",
     "executionInsights",
     "focus",
@@ -548,6 +623,8 @@ function parseWorkingContextSummaryInput(input: unknown):
   const inputRecord = input as Record<string, unknown>;
   const extraKeys = Object.keys(inputRecord).filter((key) => !allowedKeys.has(key));
   const artifactInsights = coerceStringArray(inputRecord.artifactInsights);
+  const closedOpenQuestions = coerceStringArray(inputRecord.closedOpenQuestions);
+  const completedNextActions = coerceStringArray(inputRecord.completedNextActions);
   const decisions = coerceStringArray(inputRecord.decisions);
   const executionInsights = coerceStringArray(inputRecord.executionInsights);
   const focus = coerceNonEmptyString(inputRecord.focus);
@@ -577,6 +654,18 @@ function parseWorkingContextSummaryInput(input: unknown):
 
   if (!decisions) {
     issues.push("The 'decisions' field must be an array of non-empty strings.");
+  }
+
+  if (!closedOpenQuestions) {
+    issues.push(
+      "The 'closedOpenQuestions' field must be an array of non-empty strings."
+    );
+  }
+
+  if (!completedNextActions) {
+    issues.push(
+      "The 'completedNextActions' field must be an array of non-empty strings."
+    );
   }
 
   if (!sessionInsights) {
@@ -626,6 +715,24 @@ function parseWorkingContextSummaryInput(input: unknown):
   ) {
     issues.push(
       `The 'executionInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    closedOpenQuestions &&
+    closedOpenQuestions.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'closedOpenQuestions' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    completedNextActions &&
+    completedNextActions.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'completedNextActions' field may contain at most ${maxWorkingContextListEntries} entries.`
     );
   }
 
@@ -694,6 +801,8 @@ function parseWorkingContextSummaryInput(input: unknown):
     ok: true,
     value: {
       artifactInsights: artifactInsights!,
+      closedOpenQuestions: closedOpenQuestions!,
+      completedNextActions: completedNextActions!,
       decisions: decisions!,
       executionInsights: executionInsights!,
       focus: focus!,
@@ -726,6 +835,22 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         artifactInsights: {
           description:
             "A bounded list of durable artifact-backed observations worth carrying forward.",
+          items: {
+            type: "string"
+          },
+          type: "array"
+        },
+        closedOpenQuestions: {
+          description:
+            "A bounded list of exact current open-question entries from the focused-register baseline that should now be considered closed, even if the resolutions wording is different.",
+          items: {
+            type: "string"
+          },
+          type: "array"
+        },
+        completedNextActions: {
+          description:
+            "A bounded list of exact current next-action entries from the focused-register baseline that are now complete or otherwise no longer active, even if the resolutions wording is different.",
           items: {
             type: "string"
           },
@@ -796,6 +921,8 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
       required: [
         "focus",
         "artifactInsights",
+        "closedOpenQuestions",
+        "completedNextActions",
         "decisions",
         "executionInsights",
         "summary",
@@ -844,6 +971,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
       "Review the current focused register baseline before deciding what remains open, what remains pending, and what is now resolved.",
       "Treat repeatedly carried open questions and next actions as explicit review candidates: keep them only when they remain concretely active, otherwise narrow them, replace them, or close them through bounded resolutions.",
+      "When you close a current open question or complete a current next action using wording that differs from the original baseline entry, populate the explicit closure-reference fields with the exact original baseline text so the runner can retire it deterministically.",
       "Preserve still-active open questions and next actions when they remain relevant after the completed turn; move closed items into bounded resolutions instead of dropping them silently.",
       "When a question is no longer open or an action is complete, record that closure in bounded resolutions instead of letting it disappear silently.",
       "Do not repeat the same item across open questions, next actions, and resolutions. Resolved items belong only in resolutions.",
@@ -1290,6 +1418,28 @@ function createWorkingContextSummaryToolExecutor(input: {
         });
       }
 
+      const explicitClosureValidation = validateExplicitClosureRefs({
+        baseline: input.focusedRegisterContext.baseline,
+        closedOpenQuestions: normalizeListEntries(
+          parsedInput.value.closedOpenQuestions
+        ),
+        completedNextActions: normalizeListEntries(
+          parsedInput.value.completedNextActions
+        ),
+        resolutions: normalizeListEntries(parsedInput.value.resolutions)
+      });
+
+      if (!explicitClosureValidation.ok) {
+        return engineToolExecutionResultSchema.parse({
+          content: {
+            error: "invalid_input",
+            issues: explicitClosureValidation.issues,
+            toolId: request.tool.id
+          },
+          isError: true
+        });
+      }
+
       const wikiRoot = path.join(input.synthesis.context.workspace.memoryRoot, "wiki");
       const workingContextPagePath = resolveWorkingContextSummaryPath(wikiRoot);
       const decisionsPagePath = resolveDecisionsSummaryPath(wikiRoot);
@@ -1306,6 +1456,12 @@ function createWorkingContextSummaryToolExecutor(input: {
         stableFacts: normalizeListEntries(parsedInput.value.stableFacts)
       };
       const reconciledLifecycleRegisters = reconcileFocusedRegisterLifecycle({
+        closedOpenQuestions: normalizeListEntries(
+          parsedInput.value.closedOpenQuestions
+        ),
+        completedNextActions: normalizeListEntries(
+          parsedInput.value.completedNextActions
+        ),
         nextActions: normalizeListEntries(parsedInput.value.nextActions),
         openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
         resolutions: normalizeListEntries(parsedInput.value.resolutions)

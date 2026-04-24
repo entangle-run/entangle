@@ -314,11 +314,6 @@ describe("model-guided memory synthesis", () => {
       updatedAt: "2026-04-24T11:04:50.000Z",
       updatedTurnId: "turn-memory-004"
     });
-    const resolvedQuestion =
-      "Does the current recovery trace expose enough detail for operators?";
-    const resolvedAction =
-      "Validate the recovery checkpoint against the latest runner behavior.";
-
     let capturedRequest: AgentEngineTurnRequest | undefined;
     const synthesizer = createModelGuidedMemorySynthesizer({
       context,
@@ -341,6 +336,8 @@ describe("model-guided memory synthesis", () => {
                   "The inbound recovery notes remain the canonical reference for relay-failure checkpoints.",
                   "The newly produced report captures the next recovery checkpoint to validate with operators."
                 ],
+                closedOpenQuestions: [previousOpenQuestion],
+                completedNextActions: [previousNextAction],
                 decisions: [
                   "Treat the inbound recovery notes as the canonical baseline for the next checkpoint review.",
                   "Carry the produced report forward as the current proposal for the next operator validation step."
@@ -351,18 +348,16 @@ describe("model-guided memory synthesis", () => {
                 ],
                 focus: "Keep the recovery follow-up aligned with the relay-runtime work.",
                 nextActions: [
-                  resolvedAction,
                   "Confirm the relay failure path in the next session."
                 ],
                 openQuestions: [
-                  resolvedQuestion,
                   "Which operator should validate the next checkpoint once the review closes?"
                 ],
                 resolutions: [
-                  resolvedQuestion,
-                  resolvedAction,
+                  "The current checkpoint review no longer needs extra operator-detail validation.",
                   "The earlier relay-capacity concern is considered resolved for the current checkpoint review.",
-                  "The previous draft action item to gather raw relay logs is complete."
+                  "The previous draft action item to gather raw relay logs is complete.",
+                  "Checkpoint validation has moved into the follow-up queue."
                 ],
                 sessionInsights: [
                   "The session is still active and centered on the relay recovery follow-up.",
@@ -591,6 +586,9 @@ describe("model-guided memory synthesis", () => {
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "Current focused register baseline:"
     );
+    expect(capturedRequest?.systemPromptParts.join("\n")).toContain(
+      "populate the explicit closure-reference fields with the exact original baseline text"
+    );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       previousOpenQuestion
     );
@@ -713,7 +711,7 @@ describe("model-guided memory synthesis", () => {
     );
     expect(openQuestionsPage).toContain("# Open Questions Summary");
     expect(openQuestionsPage).toContain("## Open Questions");
-    expect(openQuestionsPage).not.toContain(resolvedQuestion);
+    expect(openQuestionsPage).not.toContain(previousOpenQuestion);
     expect(openQuestionsPage).toContain(
       "Which operator should validate the next checkpoint once the review closes?"
     );
@@ -721,14 +719,17 @@ describe("model-guided memory synthesis", () => {
     expect(openQuestionsPage).toContain("[Next Actions Summary](summaries/next-actions.md)");
     expect(nextActionsPage).toContain("# Next Actions Summary");
     expect(nextActionsPage).toContain("## Next Actions");
-    expect(nextActionsPage).not.toContain(resolvedAction);
+    expect(nextActionsPage).not.toContain(previousNextAction);
     expect(nextActionsPage).toContain(
       "Confirm the relay failure path in the next session."
     );
     expect(resolutionsPage).toContain("# Resolutions Summary");
     expect(resolutionsPage).toContain("## Resolutions");
-    expect(resolutionsPage).toContain(resolvedQuestion);
-    expect(resolutionsPage).toContain(resolvedAction);
+    expect(resolutionsPage).not.toContain(previousOpenQuestion);
+    expect(resolutionsPage).not.toContain(previousNextAction);
+    expect(resolutionsPage).toContain(
+      "The current checkpoint review no longer needs extra operator-detail validation."
+    );
     expect(resolutionsPage).toContain(
       "The previous draft action item to gather raw relay logs is complete."
     );
@@ -747,7 +748,9 @@ describe("model-guided memory synthesis", () => {
     ).toBe(1);
     expect(
       focusedRegisterState?.registers.resolutions.find(
-        (entry) => entry.text === resolvedQuestion
+        (entry) =>
+          entry.text ===
+          "The current checkpoint review no longer needs extra operator-detail validation."
       )?.carryCount
     ).toBe(1);
     expect(
@@ -882,6 +885,8 @@ describe("model-guided memory synthesis", () => {
               artifactInputs: [],
               input: {
                 artifactInsights: [],
+                closedOpenQuestions: [],
+                completedNextActions: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Keep the relay operator follow-up active.",
@@ -951,6 +956,135 @@ describe("model-guided memory synthesis", () => {
         (entry) => entry.text === carriedNextAction
       )?.carryCount
     ).toBe(3);
+  });
+
+  it("rejects explicit closure refs that do not match the current focused-register baseline", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const envelope = buildInboundTaskRequest({
+      summary: "Review a mismatched closure reference."
+    });
+    const memoryUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      result: {
+        assistantMessages: ["Reviewed the closure reference mismatch."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      turnId: "turn-memory-008"
+    });
+    const activeOpenQuestion =
+      "Which operator should validate the next relay checkpoint?";
+    await writeFile(
+      path.join(
+        context.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "open-questions.md"
+      ),
+      [
+        "# Open Questions Summary",
+        "",
+        "## Open Questions",
+        "",
+        `- ${activeOpenQuestion}`,
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+
+    const synthesizer = createModelGuidedMemorySynthesizer({
+      context,
+      engineFactory(toolExecutor): AgentEngine {
+        return {
+          async executeTurn(request) {
+            const summaryTool = request.toolDefinitions.find(
+              (toolDefinition) => toolDefinition.id === "write_memory_summary"
+            );
+
+            if (!summaryTool) {
+              throw new Error("Expected the working-context synthesis tool.");
+            }
+
+            const toolResult = await toolExecutor.executeToolCall({
+              artifactInputs: [],
+              input: {
+                artifactInsights: [],
+                closedOpenQuestions: ["A missing baseline question."],
+                completedNextActions: [],
+                decisions: [],
+                executionInsights: [],
+                focus: "Review a mismatched closure reference.",
+                nextActions: [],
+                openQuestions: [activeOpenQuestion],
+                resolutions: ["The question is no longer relevant."],
+                sessionInsights: [],
+                stableFacts: [],
+                summary: "The closure ref should be rejected."
+              },
+              memoryRefs: request.memoryRefs,
+              nodeId: request.nodeId,
+              sessionId: request.sessionId,
+              tool: summaryTool,
+              toolCallId: "toolu_working_context"
+            });
+
+            expect(toolResult.isError).toBe(true);
+            expect(JSON.stringify(toolResult.content)).toContain("invalid_input");
+            expect(JSON.stringify(toolResult.content)).toContain(
+              "does not match any current focused-register open question"
+            );
+
+            return {
+              assistantMessages: ["The invalid closure ref was rejected."],
+              stopReason: "completed",
+              toolExecutions: [],
+              toolRequests: [],
+              usage: {
+                inputTokens: 1,
+                outputTokens: 1
+              }
+            };
+          }
+        };
+      }
+    });
+
+    const synthesisResult = await synthesizer.synthesize({
+      artifactInputs: [],
+      artifactRefs: [],
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+      result: {
+        assistantMessages: ["Reviewed the closure reference mismatch."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      taskPagePath: memoryUpdate.taskPagePath,
+      turnId: "turn-memory-008"
+    });
+
+    expect(synthesisResult).toEqual({
+      errorMessage:
+        "Model-guided memory synthesis completed without updating the working-context summary.",
+      ok: false
+    });
   });
 
   it("records synthesis failure in the wiki log without throwing", async () => {

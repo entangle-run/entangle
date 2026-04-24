@@ -237,6 +237,10 @@ Completed in the current repository state:
     a separate carry-state file for the focused registers and feeds bounded
     stale-review hints back into synthesis for repeatedly carried active
     items, without adding noisy lifecycle metadata to the durable wiki pages.
+25. an explicit closure-reference refinement where the bounded synthesis pass
+    can now retire active open questions and next actions through
+    runner-validated references to the current baseline, even when the new
+    resolutions wording differs from the original active entry text.
 
 Remaining work in this phase:
 
@@ -254,8 +258,8 @@ Remaining work in this phase:
    now including the derived recent-work, working-context, decisions,
    stable-facts, open-questions, next-actions, and resolutions summary layers,
    into broader model-guided memory maintenance with stronger semantic aging
-   and retirement discipline beyond the newly implemented carry-count and
-   stale-review baseline;
+   and retirement discipline beyond the newly implemented carry-count,
+   stale-review, and explicit-closure-reference baseline;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

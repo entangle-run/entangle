@@ -185,6 +185,10 @@ The repository now also contains the first real implementation baseline:
   separate carry-state file for the focused registers and feeds bounded
   stale-review hints back into synthesis for repeatedly carried active items,
   without adding noisy lifecycle metadata to the durable wiki pages;
+- an explicit closure-reference refinement where the bounded synthesis path can
+  now retire active open questions and next actions through runner-validated
+  references to the current baseline, even when the new resolutions wording
+  differs from the original active entry text;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

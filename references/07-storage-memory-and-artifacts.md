@@ -113,5 +113,9 @@ The runner now also persists a separate focused-register aging state under
 runtime-local state, tracking carry counts for the focused registers and
 feeding stale-review hints back into synthesis for repeatedly carried active
 items without adding noisy metadata to the wiki pages themselves.
+The focused memory layer now also supports explicit runner-validated closure
+references for active open questions and next actions, so a turn can retire a
+baseline item deterministically even when the new resolution wording differs
+from the original active register text.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).
