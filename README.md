@@ -176,6 +176,11 @@ This repository currently contains:
   applied non-user node bindings through `GET /v1/nodes` and
   `GET /v1/nodes/{nodeId}`, with shared client and CLI support grounded in the
   host's effective binding model rather than a duplicated UI projection;
+- a first resource-oriented managed-node mutation surface where
+  `entangle-host` now supports `POST /v1/nodes`, `PATCH /v1/nodes/{nodeId}`,
+  and `DELETE /v1/nodes/{nodeId}` on top of graph-as-source-of-truth
+  semantics, with explicit `409` conflicts for edge-connected deletes, typed
+  `node.binding.updated` host events, and shared host-client plus CLI support;
 
 The highest-value remaining gaps are:
 
@@ -184,7 +189,7 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - deeper session-level and runner-originated host event coverage plus fuller
-  node/edge mutation and runtime-restart host surfaces;
+  edge mutation and runtime-restart host surfaces;
 - deeper Studio runtime and operator workflows;
 - stronger end-to-end deployment and integration hardening.
 

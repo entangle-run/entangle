@@ -1,5 +1,9 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added managed-node mutation surfaces through entangle-host
+
+Completed the first resource-oriented managed-node mutation slice on top of the existing applied-node inspection boundary. `entangle-host` now supports `POST /v1/nodes`, `PATCH /v1/nodes/{nodeId}`, and `DELETE /v1/nodes/{nodeId}` for non-user managed nodes, keeps the graph as the single source of truth by applying validated graph revisions for every mutation, rejects deletion while edges still reference the node, and emits typed `node.binding.updated` events. Closed the slice only after tightening host-client error semantics so only validation-backed `400` responses are parsed as node-mutation DTOs, while `404` and `409` continue to surface as structured host errors.
+
 ## [2026-04-23] implementation | Added the first deterministic post-turn memory update phase
 
 Closed the first runner-owned memory-maintenance gap by making completed turns

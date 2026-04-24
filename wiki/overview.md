@@ -123,6 +123,11 @@ The repository now also contains the first real implementation baseline:
   applied non-user node bindings through `GET /v1/nodes` and
   `GET /v1/nodes/{nodeId}`, and shares that inspection boundary through
   `packages/host-client` and the CLI;
+- a first resource-oriented managed-node mutation surface where
+  `entangle-host` now supports `POST /v1/nodes`, `PATCH /v1/nodes/{nodeId}`,
+  and `DELETE /v1/nodes/{nodeId}`, keeps the graph as the only source of
+  truth, rejects deletion while edges still reference the node, and emits
+  typed `node.binding.updated` control-plane events;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
@@ -241,6 +246,6 @@ The current implementation-truth audit now lives in
   memory maintenance;
 - complete the remaining core host resource surfaces and widen the now
   implemented host event surface into deeper session and runner activity,
-  especially node/edge mutation and runtime-restart surfaces;
+  especially edge mutation and runtime-restart surfaces;
 - deepen Studio only after those host capabilities exist, so the client stays
   clean and host-first.

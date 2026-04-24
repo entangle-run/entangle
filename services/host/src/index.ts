@@ -15,8 +15,12 @@ import {
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
   hostErrorResponseSchema,
+  nodeCreateRequestSchema,
+  nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
+  nodeMutationResponseSchema,
+  nodeReplacementRequestSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
@@ -32,6 +36,8 @@ import {
   applyCatalog,
   applyGraph,
   buildHostStatus,
+  createManagedNode,
+  deleteManagedNode,
   getNodeInspection,
   getRuntimeContext,
   getRuntimeInspection,
@@ -48,6 +54,7 @@ import {
   initializeHostState,
   listRuntimeInspections,
   listPackageSources,
+  replaceManagedNode,
   setRuntimeDesiredState,
   subscribeToHostEvents,
   upsertExternalPrincipal,
@@ -111,6 +118,44 @@ function buildErrorPayload(error: HostHttpError) {
     ...(error.details ? { details: error.details } : {}),
     message: error.message
   });
+}
+
+function throwForManagedNodeMutationConflict(conflict: {
+  kind: "graph_missing" | "node_exists" | "node_has_edges" | "node_not_found";
+  message?: string;
+  nodeId?: string;
+  edgeIds?: string[];
+}): never {
+  switch (conflict.kind) {
+    case "graph_missing":
+      throw new HostHttpError({
+        code: "conflict",
+        message: conflict.message ?? "Managed node mutation requires an active graph revision.",
+        statusCode: 409
+      });
+    case "node_exists":
+      throw new HostHttpError({
+        code: "conflict",
+        message: `Managed node '${conflict.nodeId}' already exists in the active graph.`,
+        statusCode: 409
+      });
+    case "node_has_edges":
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          edgeIds: conflict.edgeIds ?? []
+        },
+        message:
+          `Managed node '${conflict.nodeId}' cannot be deleted while graph edges still reference it.`,
+        statusCode: 409
+      });
+    case "node_not_found":
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Managed node '${conflict.nodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+  }
 }
 
 function isDirectExecution(): boolean {
@@ -341,6 +386,24 @@ export async function buildHostServer() {
     nodeListResponseSchema.parse(await listNodeInspections())
   );
 
+  server.post("/v1/nodes", async (request, reply) => {
+    const mutation = parseRequestInput(nodeCreateRequestSchema, request.body, {
+      detailsKey: "bodyIssues",
+      message: "Request body did not match the expected managed-node create schema."
+    });
+    const result = await createManagedNode(mutation);
+
+    if (!result.ok) {
+      throwForManagedNodeMutationConflict(result.conflict);
+    }
+
+    if (!result.response.validation.ok) {
+      reply.status(400);
+    }
+
+    return nodeMutationResponseSchema.parse(result.response);
+  });
+
   server.get("/v1/nodes/:nodeId", async (request, reply) => {
     const params = request.params as { nodeId: string };
     const inspection = await getNodeInspection(params.nodeId);
@@ -349,11 +412,46 @@ export async function buildHostServer() {
       reply.status(404);
       return hostErrorResponseSchema.parse({
         code: "not_found",
-        message: `Node '${params.nodeId}' was not found in the active graph.`
+        message: `Managed node '${params.nodeId}' was not found in the active graph.`
       });
     }
 
     return nodeInspectionResponseSchema.parse(inspection);
+  });
+
+  server.patch("/v1/nodes/:nodeId", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const replacement = parseRequestInput(
+      nodeReplacementRequestSchema,
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message:
+          "Request body did not match the expected managed-node replacement schema."
+      }
+    );
+    const result = await replaceManagedNode(params.nodeId, replacement);
+
+    if (!result.ok) {
+      throwForManagedNodeMutationConflict(result.conflict);
+    }
+
+    if (!result.response.validation.ok) {
+      reply.status(400);
+    }
+
+    return nodeMutationResponseSchema.parse(result.response);
+  });
+
+  server.delete("/v1/nodes/:nodeId", async (request) => {
+    const params = request.params as { nodeId: string };
+    const result = await deleteManagedNode(params.nodeId);
+
+    if (!result.ok) {
+      throwForManagedNodeMutationConflict(result.conflict);
+    }
+
+    return nodeDeletionResponseSchema.parse(result.response);
   });
 
   server.post("/v1/graph/validate", async (request) =>

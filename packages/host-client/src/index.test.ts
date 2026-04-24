@@ -291,6 +291,175 @@ describe("createHostClient", () => {
     });
   });
 
+  it("parses managed node mutation responses from the host surface", async () => {
+    const responses = [
+      createMockResponse({
+        body: JSON.stringify({
+          activeRevisionId: "team-alpha-20260423-000001",
+          node: {
+            binding: {
+              bindingId: "team-alpha-reviewer-it",
+              externalPrincipals: [],
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-20260423-000001",
+              node: {
+                displayName: "Reviewer IT",
+                nodeId: "reviewer-it",
+                nodeKind: "reviewer"
+              },
+              resolvedResourceBindings: {
+                externalPrincipalRefs: [],
+                gitServiceRefs: ["local-gitea"],
+                relayProfileRefs: ["local-relay"]
+              },
+              runtimeProfile: "hackathon_local",
+              schemaVersion: "1"
+            },
+            runtime: {
+              backendKind: "docker",
+              contextAvailable: true,
+              contextPath: "/tmp/runtime/reviewer-it/effective-runtime-context.json",
+              desiredState: "running",
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-20260423-000001",
+              nodeId: "reviewer-it",
+              observedState: "running"
+            }
+          },
+          validation: {
+            ok: true,
+            findings: []
+          }
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          activeRevisionId: "team-alpha-20260423-000002",
+          node: {
+            binding: {
+              bindingId: "team-alpha-reviewer-it",
+              externalPrincipals: [],
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-20260423-000002",
+              node: {
+                displayName: "Reviewer IT Updated",
+                nodeId: "reviewer-it",
+                nodeKind: "reviewer"
+              },
+              resolvedResourceBindings: {
+                externalPrincipalRefs: [],
+                gitServiceRefs: ["local-gitea"],
+                relayProfileRefs: ["local-relay"]
+              },
+              runtimeProfile: "hackathon_local",
+              schemaVersion: "1"
+            },
+            runtime: {
+              backendKind: "docker",
+              contextAvailable: true,
+              contextPath: "/tmp/runtime/reviewer-it/effective-runtime-context.json",
+              desiredState: "running",
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-20260423-000002",
+              nodeId: "reviewer-it",
+              observedState: "running"
+            }
+          },
+          validation: {
+            ok: true,
+            findings: []
+          }
+        }),
+        ok: true,
+        status: 200
+      }),
+      createMockResponse({
+        body: JSON.stringify({
+          activeRevisionId: "team-alpha-20260423-000003",
+          deletedNodeId: "reviewer-it",
+          validation: {
+            ok: true,
+            findings: []
+          }
+        }),
+        ok: true,
+        status: 200
+      })
+    ];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () => Promise.resolve(responses.shift()!)
+    });
+
+    await expect(
+      client.createNode({
+        displayName: "Reviewer IT",
+        nodeId: "reviewer-it",
+        nodeKind: "reviewer"
+      })
+    ).resolves.toMatchObject({
+      node: {
+        binding: {
+          node: {
+            nodeId: "reviewer-it"
+          }
+        }
+      }
+    });
+
+    await expect(
+      client.replaceNode("reviewer-it", {
+        displayName: "Reviewer IT Updated",
+        nodeKind: "reviewer"
+      })
+    ).resolves.toMatchObject({
+      node: {
+        binding: {
+          node: {
+            displayName: "Reviewer IT Updated"
+          }
+        }
+      }
+    });
+
+    await expect(client.deleteNode("reviewer-it")).resolves.toMatchObject({
+      deletedNodeId: "reviewer-it",
+      validation: {
+        ok: true
+      }
+    });
+  });
+
+  it("formats structured host conflict errors for managed node creation", async () => {
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: () =>
+        Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              code: "conflict",
+              message:
+                "Managed node 'reviewer-it' already exists in the active graph."
+            }),
+            ok: false,
+            status: 409
+          })
+        )
+    });
+
+    await expect(
+      client.createNode({
+        displayName: "Reviewer IT",
+        nodeId: "reviewer-it",
+        nodeKind: "reviewer"
+      })
+    ).rejects.toThrow(
+      "Host request failed with 409 [conflict]: Managed node 'reviewer-it' already exists in the active graph."
+    );
+  });
+
   it("formats structured host conflict errors for runtime context requests", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

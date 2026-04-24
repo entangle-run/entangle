@@ -20,8 +20,10 @@ import {
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
+  nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
+  nodeMutationResponseSchema,
   packageSourceInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -839,6 +841,229 @@ describe("buildHostServer", () => {
       const missingNodeError = hostErrorResponseSchema.parse(missingNodeBody);
       expect(missingNodeError).toMatchObject({
         code: "not_found"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("creates and deletes managed non-user nodes through resource-oriented host routes", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const createResponse = await server.inject({
+        method: "POST",
+        payload: {
+          nodeId: "reviewer-it",
+          displayName: "Reviewer IT",
+          nodeKind: "reviewer",
+          packageSourceRef: packageSourceId,
+          resourceBindings: {
+            relayProfileRefs: [],
+            gitServiceRefs: ["local-gitea"],
+            primaryGitServiceRef: "local-gitea"
+          },
+          autonomy: {
+            canInitiateSessions: false,
+            canMutateGraph: false
+          }
+        },
+        url: "/v1/nodes"
+      });
+
+      expect(createResponse.statusCode).toBe(200);
+      const createdNode = nodeMutationResponseSchema.parse(createResponse.json());
+      expect(createdNode.validation.ok).toBe(true);
+      expect(createdNode).toMatchObject({
+        node: {
+          binding: {
+            node: {
+              displayName: "Reviewer IT",
+              nodeId: "reviewer-it"
+            }
+          }
+        }
+      });
+
+      const createdListResponse = await server.inject({
+        method: "GET",
+        url: "/v1/nodes"
+      });
+
+      expect(createdListResponse.statusCode).toBe(200);
+      expect(nodeListResponseSchema.parse(createdListResponse.json()).nodes).toHaveLength(2);
+
+      const deleteResponse = await server.inject({
+        method: "DELETE",
+        url: "/v1/nodes/reviewer-it"
+      });
+
+      expect(deleteResponse.statusCode).toBe(200);
+      const deletedNode = nodeDeletionResponseSchema.parse(deleteResponse.json());
+      expect(deletedNode.validation.ok).toBe(true);
+      expect(deletedNode.deletedNodeId).toBe("reviewer-it");
+
+      const deletedInspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/nodes/reviewer-it"
+      });
+
+      expect(deletedInspectionResponse.statusCode).toBe(404);
+      const deletedError = hostErrorResponseSchema.parse(
+        deletedInspectionResponse.json()
+      );
+      expect(deletedError).toMatchObject({
+        code: "not_found",
+        message: "Managed node 'reviewer-it' was not found in the active graph."
+      });
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            mutationKind: "created",
+            nodeId: "reviewer-it",
+            type: "node.binding.updated"
+          }),
+          expect.objectContaining({
+            mutationKind: "deleted",
+            nodeId: "reviewer-it",
+            type: "node.binding.updated"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("replaces managed non-user node bindings through the host boundary", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const replaceResponse = await server.inject({
+        method: "PATCH",
+        payload: {
+          displayName: "Worker IT Updated",
+          nodeKind: "worker",
+          packageSourceRef: packageSourceId,
+          resourceBindings: {
+            relayProfileRefs: [],
+            gitServiceRefs: ["local-gitea"],
+            primaryGitServiceRef: "local-gitea"
+          },
+          autonomy: {
+            canInitiateSessions: true,
+            canMutateGraph: false
+          }
+        },
+        url: "/v1/nodes/worker-it"
+      });
+
+      expect(replaceResponse.statusCode).toBe(200);
+      const replacedNode = nodeMutationResponseSchema.parse(replaceResponse.json());
+      expect(replacedNode.validation.ok).toBe(true);
+      expect(replacedNode).toMatchObject({
+        node: {
+          binding: {
+            node: {
+              displayName: "Worker IT Updated",
+              nodeId: "worker-it"
+            }
+          }
+        }
+      });
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/nodes/worker-it"
+      });
+      const inspection = nodeInspectionResponseSchema.parse(inspectionResponse.json());
+      expect(inspection.binding.node.autonomy.canInitiateSessions).toBe(true);
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            mutationKind: "replaced",
+            nodeId: "worker-it",
+            type: "node.binding.updated"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects managed node deletion while graph edges still reference the node", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const deleteResponse = await server.inject({
+        method: "DELETE",
+        url: "/v1/nodes/worker-it"
+      });
+
+      expect(deleteResponse.statusCode).toBe(409);
+      const conflict = hostErrorResponseSchema.parse(deleteResponse.json());
+      expect(conflict).toMatchObject({
+        code: "conflict",
+        details: {
+          edgeIds: ["user-to-worker"]
+        }
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects managed node mutations when no active graph exists", async () => {
+    const server = await createTestServer();
+
+    try {
+      const createResponse = await server.inject({
+        method: "POST",
+        payload: {
+          nodeId: "worker-new",
+          displayName: "Worker New",
+          nodeKind: "worker"
+        },
+        url: "/v1/nodes"
+      });
+
+      expect(createResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(createResponse.json())).toMatchObject({
+        code: "conflict"
       });
     } finally {
       await server.close();

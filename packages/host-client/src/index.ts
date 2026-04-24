@@ -11,8 +11,12 @@ import {
   hostEventRecordSchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
+  nodeCreateRequestSchema,
+  nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
+  nodeMutationResponseSchema,
+  nodeReplacementRequestSchema,
   packageSourceAdmissionRequestSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
@@ -31,8 +35,12 @@ import {
   type HostEventListResponse,
   type HostEventRecord,
   type HostStatusResponse,
+  type NodeCreateRequest,
+  type NodeDeletionResponse,
   type NodeInspectionResponse,
   type NodeListResponse,
+  type NodeMutationResponse,
+  type NodeReplacementRequest,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
@@ -177,13 +185,16 @@ async function parseResponse<T>(
   response: FetchResponse,
   parser: { parse(input: unknown): T },
   options: {
-    acceptErrorStatus?: boolean;
+    acceptedErrorStatuses?: number[];
   } = {}
 ): Promise<T> {
   const rawBody = await response.text();
   const body = parseResponseBody(rawBody);
+  const acceptsCurrentErrorStatus =
+    !response.ok &&
+    options.acceptedErrorStatuses?.includes(response.status) === true;
 
-  if (!response.ok && !options.acceptErrorStatus) {
+  if (!response.ok && !acceptsCurrentErrorStatus) {
     throw new Error(formatErrorBody(response.status, body));
   }
 
@@ -257,7 +268,7 @@ export function createHostClient(options: HostClientOptions) {
           body: JSON.stringify(catalog)
         }),
         catalogInspectionResponseSchema,
-        { acceptErrorStatus: true }
+        { acceptedErrorStatuses: [400] }
       );
     },
 
@@ -327,7 +338,7 @@ export function createHostClient(options: HostClientOptions) {
           body: JSON.stringify(canonicalRequest)
         }),
         packageSourceInspectionResponseSchema,
-        { acceptErrorStatus: true }
+        { acceptedErrorStatuses: [400] }
       );
     },
 
@@ -365,6 +376,50 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async createNode(request: NodeCreateRequest): Promise<NodeMutationResponse> {
+      const canonicalRequest = nodeCreateRequestSchema.parse(request);
+
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/nodes`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        nodeMutationResponseSchema,
+        { acceptedErrorStatuses: [400] }
+      );
+    },
+
+    async replaceNode(
+      nodeId: string,
+      request: NodeReplacementRequest
+    ): Promise<NodeMutationResponse> {
+      const canonicalRequest = nodeReplacementRequestSchema.parse(request);
+
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/nodes/${nodeId}`, {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        nodeMutationResponseSchema,
+        { acceptedErrorStatuses: [400] }
+      );
+    },
+
+    async deleteNode(nodeId: string): Promise<NodeDeletionResponse> {
+      return parseResponse(
+        await fetchImpl(`${baseUrl}/v1/nodes/${nodeId}`, {
+          method: "DELETE"
+        }),
+        nodeDeletionResponseSchema
+      );
+    },
+
     async validateGraph(graph: unknown): Promise<GraphMutationResponse> {
       return parseResponse(
         await fetchImpl(`${baseUrl}/v1/graph/validate`, {
@@ -388,7 +443,7 @@ export function createHostClient(options: HostClientOptions) {
           body: JSON.stringify(graph)
         }),
         graphMutationResponseSchema,
-        { acceptErrorStatus: true }
+        { acceptedErrorStatuses: [400] }
       );
     },
 

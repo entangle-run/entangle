@@ -179,11 +179,10 @@ Implement in small slices:
 1. widen the newly implemented host event surface beyond the first
    control-plane/runtime/reconciliation classes into deeper session and runner
    activity;
-2. resource-oriented node mutation surfaces on top of the now-implemented node
-   inspection boundary;
-3. edge resource mutation surfaces;
-4. restart, degraded, and richer reconciliation semantics;
-5. deeper host-event widening into session and runner activity after the
+2. edge resource mutation surfaces on top of the now-implemented node mutation
+   and inspection boundaries;
+3. restart, degraded, and richer reconciliation semantics;
+4. deeper host-event widening into session and runner activity after the
    current first event, revision-history, and node-inspection surfaces.
 
 Acceptance for the phase:

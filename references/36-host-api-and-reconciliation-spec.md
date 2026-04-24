@@ -266,9 +266,17 @@ Purpose:
 The current implementation now covers:
 
 - `GET /v1/nodes`
+- `POST /v1/nodes`
 - `GET /v1/nodes/{nodeId}`
+- `PATCH /v1/nodes/{nodeId}`
+- `DELETE /v1/nodes/{nodeId}`
 
-The mutation routes in this subsection remain pending.
+The current node-mutation semantics are:
+
+- `POST` creates a new managed non-user node in the active graph;
+- `PATCH` performs full normalized replacement of a managed node binding
+  without renaming `nodeId`;
+- `DELETE` rejects removal while graph edges still reference the node.
 
 ### 8.5 Edges
 
@@ -368,6 +376,7 @@ The implemented event classes currently include:
 - `package_source.admitted`
 - `external_principal.updated`
 - `graph.revision.applied`
+- `node.binding.updated`
 - `runtime.desired_state.changed`
 - `runtime.observed_state.changed`
 - `host.reconciliation.completed`

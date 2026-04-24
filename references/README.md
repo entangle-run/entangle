@@ -78,6 +78,7 @@ This directory is the canonical design corpus for Entangle.
 72. [71-host-event-surface-slice.md](71-host-event-surface-slice.md)
 73. [72-graph-revision-history-inspection-slice.md](72-graph-revision-history-inspection-slice.md)
 74. [73-applied-node-inspection-slice.md](73-applied-node-inspection-slice.md)
+75. [74-managed-node-mutation-slice.md](74-managed-node-mutation-slice.md)
 
 ## Role of this corpus
 

@@ -16,6 +16,7 @@ import {
   isAllowedSessionLifecycleTransition,
   modelEndpointProfileSchema,
   modelRuntimeContextSchema,
+  nodeCreateRequestSchema,
   nodeInspectionResponseSchema,
   packageToolCatalogSchema,
   resolvedSecretBindingSchema,
@@ -236,6 +237,24 @@ describe("host event contracts", () => {
     expect(result.type).toBe("runtime.observed_state.changed");
     expect(result.category).toBe("runtime");
   });
+
+  it("accepts a typed node-binding mutation event", () => {
+    const result = hostEventRecordSchema.parse({
+      activeRevisionId: "graph-alpha-20260423-000001",
+      category: "control_plane",
+      eventId: "evt-node-binding-001",
+      graphId: "graph-alpha",
+      message: "Created managed node 'reviewer-it' in graph 'graph-alpha'.",
+      mutationKind: "created",
+      nodeId: "reviewer-it",
+      schemaVersion: "1",
+      timestamp: "2026-04-23T00:00:00.000Z",
+      type: "node.binding.updated"
+    });
+
+    expect(result.type).toBe("node.binding.updated");
+    expect(result.mutationKind).toBe("created");
+  });
 });
 
 describe("graph revision contracts", () => {
@@ -272,6 +291,16 @@ describe("graph revision contracts", () => {
 });
 
 describe("node inspection contracts", () => {
+  it("rejects user nodes from managed-node create requests", () => {
+    expect(() =>
+      nodeCreateRequestSchema.parse({
+        displayName: "User",
+        nodeId: "user-main",
+        nodeKind: "user"
+      })
+    ).toThrow();
+  });
+
   it("accepts a typed node inspection response", () => {
     const result = nodeInspectionResponseSchema.parse({
       binding: {

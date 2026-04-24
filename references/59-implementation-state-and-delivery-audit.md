@@ -118,6 +118,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - graph apply, inspection, and validation;
 - graph revision-history listing and revision-detail inspection;
 - applied non-user node binding listing and node-detail inspection;
+- resource-oriented managed-node creation, full replacement, and deletion
+  through the host API, including typed `node.binding.updated` control-plane
+  events;
 - runtime inspection, start, stop, context inspection, and artifact inspection;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
   streaming through the same host boundary;
@@ -130,8 +133,6 @@ This layer is strong and directionally correct. It is not a blocker.
 
 ### Still missing or incomplete
 
-- resource-oriented node mutation surfaces on top of the new inspection
-  boundary;
 - resource-oriented edge mutation surfaces;
 - runtime restart surface;
 - session-level and richer runner-originated event classes on top of the new

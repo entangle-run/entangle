@@ -20,8 +20,10 @@ import {
   graphRevisionRecordSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
+  nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
+  nodeMutationResponseSchema,
   type ActiveGraphRevisionRecord,
   type EffectiveNodeBinding,
   type HostEventListResponse,
@@ -50,8 +52,12 @@ import {
   graphSpecSchema,
   intersectIdentifiers,
   type NodeBinding,
+  type NodeCreateRequest,
+  type NodeDeletionResponse,
   type NodeInspectionResponse,
   type NodeListResponse,
+  type NodeMutationResponse,
+  type NodeReplacementRequest,
   packageSourceRecordSchema,
   type PackageSourceAdmissionRequest,
   type PackageSourceInspectionResponse,
@@ -166,6 +172,10 @@ type GraphRevisionAppliedEventInput = Omit<
   Extract<HostEventRecord, { type: "graph.revision.applied" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type NodeBindingUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "node.binding.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 type RuntimeDesiredStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.desired_state.changed" }>,
   "eventId" | "schemaVersion" | "timestamp"
@@ -178,6 +188,35 @@ type HostReconciliationCompletedEventInput = Omit<
   Extract<HostEventRecord, { type: "host.reconciliation.completed" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+
+type ManagedNodeMutationConflict =
+  | {
+      kind: "graph_missing";
+      message: string;
+    }
+  | {
+      kind: "node_exists";
+      nodeId: string;
+    }
+  | {
+      kind: "node_has_edges";
+      edgeIds: string[];
+      nodeId: string;
+    }
+  | {
+      kind: "node_not_found";
+      nodeId: string;
+    };
+
+type ManagedNodeMutationResult<T> =
+  | {
+      ok: true;
+      response: T;
+    }
+  | {
+      conflict: ManagedNodeMutationConflict;
+      ok: false;
+    };
 
 function nowIsoString(): string {
   return new Date().toISOString();
@@ -2456,6 +2495,145 @@ export async function getNodeInspection(
   return nodes.find((node) => node.binding.node.nodeId === nodeId) ?? null;
 }
 
+export async function createManagedNode(
+  input: NodeCreateRequest
+): Promise<ManagedNodeMutationResult<NodeMutationResponse>> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return {
+      conflict: buildManagedNodeMissingGraphConflict(),
+      ok: false
+    };
+  }
+
+  if (graph.nodes.some((node) => node.nodeId === input.nodeId)) {
+    return {
+      conflict: {
+        kind: "node_exists",
+        nodeId: input.nodeId
+      },
+      ok: false
+    };
+  }
+
+  const applied = await applyNodeGraphCandidate({
+    candidateGraph: graphSpecSchema.parse({
+      ...graph,
+      nodes: [...graph.nodes, input]
+    }),
+    mutationKind: "created",
+    nodeId: input.nodeId
+  });
+
+  return {
+    ok: true,
+    response: buildManagedNodeMutationSuccessResponse({
+      applied
+    })
+  };
+}
+
+export async function replaceManagedNode(
+  nodeId: string,
+  replacement: NodeReplacementRequest
+): Promise<ManagedNodeMutationResult<NodeMutationResponse>> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return {
+      conflict: buildManagedNodeMissingGraphConflict(),
+      ok: false
+    };
+  }
+
+  if (!findManagedNode(graph, nodeId)) {
+    return {
+      conflict: {
+        kind: "node_not_found",
+        nodeId
+      },
+      ok: false
+    };
+  }
+
+  const nextNode: NodeBinding = {
+    ...replacement,
+    nodeId
+  };
+  const applied = await applyNodeGraphCandidate({
+    candidateGraph: graphSpecSchema.parse({
+      ...graph,
+      nodes: graph.nodes.map((node) => (node.nodeId === nodeId ? nextNode : node))
+    }),
+    mutationKind: "replaced",
+    nodeId
+  });
+
+  return {
+    ok: true,
+    response: buildManagedNodeMutationSuccessResponse({
+      applied
+    })
+  };
+}
+
+export async function deleteManagedNode(
+  nodeId: string
+): Promise<ManagedNodeMutationResult<NodeDeletionResponse>> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return {
+      conflict: buildManagedNodeMissingGraphConflict(),
+      ok: false
+    };
+  }
+
+  if (!findManagedNode(graph, nodeId)) {
+    return {
+      conflict: {
+        kind: "node_not_found",
+        nodeId
+      },
+      ok: false
+    };
+  }
+
+  const connectedEdgeIds = graph.edges
+    .filter((edge) => edge.fromNodeId === nodeId || edge.toNodeId === nodeId)
+    .map((edge) => edge.edgeId)
+    .sort();
+
+  if (connectedEdgeIds.length > 0) {
+    return {
+      conflict: {
+        edgeIds: connectedEdgeIds,
+        kind: "node_has_edges",
+        nodeId
+      },
+      ok: false
+    };
+  }
+
+  const applied = await applyNodeGraphCandidate({
+    candidateGraph: graphSpecSchema.parse({
+      ...graph,
+      nodes: graph.nodes.filter((node) => node.nodeId !== nodeId)
+    }),
+    mutationKind: "deleted",
+    nodeId
+  });
+
+  return {
+    ok: true,
+    response: buildManagedNodeDeletionSuccessResponse({
+      applied,
+      nodeId
+    })
+  };
+}
+
 export async function getRuntimeInspection(
   nodeId: string
 ): Promise<RuntimeInspectionResponse | null> {
@@ -2510,6 +2688,154 @@ export async function listRuntimeArtifacts(
   });
 }
 
+async function applyValidatedGraphDocument(graph: GraphSpec): Promise<{
+  activeRevisionId: string;
+  graph: GraphSpec;
+  nodes: NodeInspectionResponse[];
+  runtimes: RuntimeInspectionResponse[];
+}> {
+  const activeRevisionId = buildGraphRevisionId(graph.graphId);
+  const revisionRecord = activeGraphRevisionRecordSchema.parse({
+    activeRevisionId,
+    appliedAt: nowIsoString()
+  });
+
+  await writeJsonFile(currentGraphPath, graph);
+  await writeJsonFile(
+    path.join(graphRevisionsRoot, `${activeRevisionId}.json`),
+    graphRevisionRecordSchema.parse({
+      appliedAt: revisionRecord.appliedAt,
+      graph,
+      revisionId: activeRevisionId
+    })
+  );
+  await writeJsonFile(activeGraphRevisionPath, revisionRecord);
+  const synchronizedState = await synchronizeCurrentGraphRuntimeState();
+  await appendHostEvent({
+    activeRevisionId,
+    category: "control_plane",
+    graphId: graph.graphId,
+    message: `Applied graph '${graph.graphId}' as revision '${activeRevisionId}'.`,
+    type: "graph.revision.applied"
+  } satisfies GraphRevisionAppliedEventInput);
+
+  return {
+    activeRevisionId,
+    graph,
+    nodes: synchronizedState.nodes,
+    runtimes: synchronizedState.runtimes
+  };
+}
+
+function buildManagedNodeMissingGraphConflict(): ManagedNodeMutationConflict {
+  return {
+    kind: "graph_missing",
+    message: "Managed node mutation requires an active graph revision."
+  };
+}
+
+function findManagedNode(graph: GraphSpec, nodeId: string): NodeBinding | undefined {
+  return graph.nodes.find(
+    (candidate) => candidate.nodeId === nodeId && candidate.nodeKind !== "user"
+  );
+}
+
+async function applyNodeGraphCandidate(input: {
+  candidateGraph: GraphSpec;
+  nodeId: string;
+  mutationKind: "created" | "deleted" | "replaced";
+}): Promise<
+  | {
+      activeRevisionId: string;
+      graph: GraphSpec;
+      node: NodeInspectionResponse | undefined;
+      validation: GraphMutationResponse["validation"];
+    }
+  | {
+      validation: GraphMutationResponse["validation"];
+    }
+> {
+  const candidate = await validateGraphCandidate(input.candidateGraph);
+
+  if (!candidate.validation.ok || !candidate.graph) {
+    return {
+      validation: candidate.validation
+    };
+  }
+
+  const applied = await applyValidatedGraphDocument(candidate.graph);
+  const node = applied.nodes.find(
+    (inspection) => inspection.binding.node.nodeId === input.nodeId
+  );
+
+  if (input.mutationKind !== "deleted" && !node) {
+    throw new Error(
+      `Managed node '${input.nodeId}' was not materialized after a successful '${input.mutationKind}' mutation.`
+    );
+  }
+
+  await appendHostEvent({
+    activeRevisionId: applied.activeRevisionId,
+    category: "control_plane",
+    graphId: applied.graph.graphId,
+    message:
+      input.mutationKind === "deleted"
+        ? `Deleted managed node '${input.nodeId}' in graph '${applied.graph.graphId}'.`
+        : `${input.mutationKind === "created" ? "Created" : "Replaced"} managed node '${input.nodeId}' in graph '${applied.graph.graphId}'.`,
+    mutationKind: input.mutationKind,
+    nodeId: input.nodeId,
+    type: "node.binding.updated"
+  } satisfies NodeBindingUpdatedEventInput);
+
+  return {
+    activeRevisionId: applied.activeRevisionId,
+    graph: applied.graph,
+    node,
+    validation: candidate.validation
+  };
+}
+
+function buildManagedNodeMutationSuccessResponse(input: {
+  applied:
+    | {
+        activeRevisionId: string;
+        graph: GraphSpec;
+        node: NodeInspectionResponse | undefined;
+        validation: GraphMutationResponse["validation"];
+      }
+    | {
+        validation: GraphMutationResponse["validation"];
+      };
+}): NodeMutationResponse {
+  return nodeMutationResponseSchema.parse({
+    activeRevisionId:
+      "activeRevisionId" in input.applied ? input.applied.activeRevisionId : undefined,
+    node: "node" in input.applied ? input.applied.node : undefined,
+    validation: input.applied.validation
+  });
+}
+
+function buildManagedNodeDeletionSuccessResponse(input: {
+  applied:
+    | {
+        activeRevisionId: string;
+        graph: GraphSpec;
+        node: NodeInspectionResponse | undefined;
+        validation: GraphMutationResponse["validation"];
+      }
+    | {
+        validation: GraphMutationResponse["validation"];
+      };
+  nodeId: string;
+}): NodeDeletionResponse {
+  return nodeDeletionResponseSchema.parse({
+    activeRevisionId:
+      "activeRevisionId" in input.applied ? input.applied.activeRevisionId : undefined,
+    deletedNodeId: "activeRevisionId" in input.applied ? input.nodeId : undefined,
+    validation: input.applied.validation
+  });
+}
+
 export async function setRuntimeDesiredState(
   nodeId: string,
   desiredState: RuntimeDesiredState
@@ -2541,35 +2867,11 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
   if (!candidate.validation.ok || !candidate.graph) {
     return candidate;
   }
-
-  const activeRevisionId = buildGraphRevisionId(candidate.graph.graphId);
-  const revisionRecord = activeGraphRevisionRecordSchema.parse({
-    activeRevisionId,
-    appliedAt: nowIsoString()
-  });
-
-  await writeJsonFile(currentGraphPath, candidate.graph);
-  await writeJsonFile(
-    path.join(graphRevisionsRoot, `${activeRevisionId}.json`),
-    graphRevisionRecordSchema.parse({
-      appliedAt: revisionRecord.appliedAt,
-      graph: candidate.graph,
-      revisionId: activeRevisionId
-    })
-  );
-  await writeJsonFile(activeGraphRevisionPath, revisionRecord);
-  await synchronizeCurrentGraphRuntimeState();
-  await appendHostEvent({
-    activeRevisionId,
-    category: "control_plane",
-    graphId: candidate.graph.graphId,
-    message: `Applied graph '${candidate.graph.graphId}' as revision '${activeRevisionId}'.`,
-    type: "graph.revision.applied"
-  } satisfies GraphRevisionAppliedEventInput);
+  const applied = await applyValidatedGraphDocument(candidate.graph);
 
   return {
     ...candidate,
-    activeRevisionId
+    activeRevisionId: applied.activeRevisionId
   };
 }
 

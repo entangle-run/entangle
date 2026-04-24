@@ -3,7 +3,11 @@ import path from "node:path";
 import { Command } from "commander";
 import { createHostClient } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
-import { externalPrincipalMutationRequestSchema } from "@entangle/types";
+import {
+  externalPrincipalMutationRequestSchema,
+  nodeCreateRequestSchema,
+  nodeReplacementRequestSchema
+} from "@entangle/types";
 import {
   formatValidationReport,
   validateGraphFile,
@@ -236,7 +240,7 @@ hostGraphCommand
 
 const hostNodesCommand = hostCommand
   .command("nodes")
-  .description("Inspect applied node bindings through entangle-host.");
+  .description("Inspect and mutate applied managed node bindings through entangle-host.");
 
 hostNodesCommand
   .command("list")
@@ -253,6 +257,49 @@ hostNodesCommand
   .action(async (nodeId: string, _options, command: Command) => {
     const client = createHostClient({ baseUrl: resolveHostUrl(command) });
     printJson(await client.getNode(nodeId));
+  });
+
+hostNodesCommand
+  .command("add")
+  .argument("<file>", "Path to a managed node JSON file.")
+  .description("Create one managed non-user node in the active graph.")
+  .action(async (file: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(
+      await client.createNode(
+        nodeCreateRequestSchema.parse(await readJsonDocument(path.resolve(file)))
+      )
+    );
+  });
+
+hostNodesCommand
+  .command("replace")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<file>", "Path to a managed-node replacement JSON file.")
+  .description(
+    "Replace one managed non-user node binding in the active graph without renaming the node id."
+  )
+  .action(async (nodeId: string, file: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(
+      await client.replaceNode(
+        nodeId,
+        nodeReplacementRequestSchema.parse(
+          await readJsonDocument(path.resolve(file))
+        )
+      )
+    );
+  });
+
+hostNodesCommand
+  .command("delete")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description(
+    "Delete one managed non-user node from the active graph. This fails if graph edges still reference the node."
+  )
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createHostClient({ baseUrl: resolveHostUrl(command) });
+    printJson(await client.deleteNode(nodeId));
   });
 
 const hostRuntimesCommand = hostCommand
