@@ -243,6 +243,10 @@ This repository currently contains:
   baseline explicitly and runner-owned reconciliation removes exact resolved
   overlaps from active registers instead of letting closure drift survive as
   silent duplication;
+- a focused-register aging-signals refinement where the runner now persists a
+  separate carry-state file for the focused registers and feeds bounded
+  stale-review hints back into synthesis for repeatedly carried active items,
+  without adding noisy lifecycle metadata to the durable wiki pages;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

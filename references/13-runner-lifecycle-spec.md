@@ -175,7 +175,10 @@ That implemented slice currently includes:
   arbitrary filesystem authority, now grounded in final post-turn lifecycle
   state rather than pre-completion session state, with the current focused
   register baseline made explicit to synthesis and exact resolved overlaps
-  removed from active registers through runner-owned reconciliation;
+  removed from active registers through runner-owned reconciliation, plus a
+  runner-owned focused-register carry-state file that tracks repeated
+  carry-forward across synthesis passes and injects stale-review hints for
+  active items without polluting the durable wiki pages themselves;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

@@ -46,8 +46,9 @@ That means the current system already includes:
 The repository does **not** yet include:
 
 - a broad builtin tool surface inside the internal runtime execution path;
-- broader model-guided memory maintenance beyond the current deterministic and
-  bounded derived-summary baseline;
+- broader semantic memory maintenance beyond the current bounded focused
+  register set, explicit lifecycle reconciliation, and carry/staleness
+  signaling baseline;
 - fuller Studio and CLI depth only where later operator workflows expose real
   blind spots rather than surface-area vanity;
 - end-to-end deployment hardening for the full local product profile.
@@ -333,6 +334,10 @@ not modeling.
   open-questions/next-actions/resolutions baseline explicitly and
   runner-owned reconciliation removes exact resolved overlaps from active
   registers instead of letting closure drift survive as silent duplication;
+- a focused-register aging-signals refinement where the runner now persists a
+  separate carry-state file for the focused registers and feeds bounded
+  stale-review hints back into synthesis for repeatedly carried active items,
+  without polluting the durable wiki pages with noisy lifecycle metadata;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,

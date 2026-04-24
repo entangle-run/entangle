@@ -109,5 +109,9 @@ They are now also continuity-aware at synthesis time through an explicit
 focused-register baseline, with runner-owned exact closure reconciliation that
 removes entries from active open-question and next-action registers when the
 same normalized item is explicitly carried in `resolutions.md`.
+The runner now also persists a separate focused-register aging state under
+runtime-local state, tracking carry counts for the focused registers and
+feeding stale-review hints back into synthesis for repeatedly carried active
+items without adding noisy metadata to the wiki pages themselves.
 
 The backend contract for `git`, `wiki`, and `local_file` artifacts is specified in [24-artifact-backend-specification.md](24-artifact-backend-specification.md).

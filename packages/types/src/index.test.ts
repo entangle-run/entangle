@@ -10,6 +10,7 @@ import {
   engineToolExecutionResultSchema,
   engineTurnOutcomeSchema,
   externalPrincipalRecordSchema,
+  focusedRegisterStateSchema,
   graphRevisionInspectionResponseSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
@@ -194,6 +195,40 @@ describe("artifact contracts", () => {
     });
 
     expect(result.retrieval?.state).toBe("retrieved");
+  });
+});
+
+describe("focused register state contracts", () => {
+  it("accepts persisted focused-register carry state", () => {
+    const result = focusedRegisterStateSchema.parse({
+      registers: {
+        nextActions: [
+          {
+            carryCount: 2,
+            firstObservedTurnId: "turn-001",
+            lastObservedTurnId: "turn-002",
+            normalizedKey: "confirm the next relay checkpoint",
+            text: "Confirm the next relay checkpoint."
+          }
+        ],
+        openQuestions: [],
+        resolutions: [
+          {
+            carryCount: 1,
+            firstObservedTurnId: "turn-002",
+            lastObservedTurnId: "turn-002",
+            normalizedKey: "the prior alert-routing concern is closed",
+            text: "The prior alert-routing concern is closed."
+          }
+        ]
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T00:00:00.000Z",
+      updatedTurnId: "turn-002"
+    });
+
+    expect(result.registers.nextActions[0]?.carryCount).toBe(2);
+    expect(result.registers.resolutions).toHaveLength(1);
   });
 });
 

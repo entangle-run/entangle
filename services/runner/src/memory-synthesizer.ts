@@ -12,7 +12,9 @@ import {
   type ArtifactRef,
   type EngineArtifactInput,
   type EffectiveRuntimeContext,
-  type EngineToolDefinition
+  type EngineToolDefinition,
+  type FocusedRegisterEntryState,
+  type FocusedRegisterState
 } from "@entangle/types";
 import {
   appendSectionBullet,
@@ -28,6 +30,10 @@ import {
 } from "./memory-maintenance.js";
 import { buildRunnerStatePaths } from "./state-store.js";
 import {
+  readFocusedRegisterState,
+  writeFocusedRegisterState
+} from "./state-store.js";
+import {
   buildRunnerSessionStateSnapshot,
   type RunnerSessionStateSnapshot,
   renderRunnerSessionStateSnapshotForPrompt
@@ -39,6 +45,7 @@ const maxWorkingContextListEntries = 6;
 const maxSynthesisArtifacts = 6;
 const maxSynthesisRecentTurns = 4;
 const maxSynthesisToolObservations = 4;
+const staleFocusedRegisterCarryThreshold = 3;
 
 const workingContextSummaryToolId = "write_memory_summary";
 const workingContextSummaryBullet =
@@ -157,8 +164,165 @@ type FocusedRegisterBaseline = {
   resolutions: string[];
 };
 
+type FocusedRegisterKind = keyof FocusedRegisterBaseline;
+
+type FocusedRegisterPromptEntry = {
+  carryCount: number;
+  entry: string;
+  stale: boolean;
+};
+
+type FocusedRegisterPromptBaseline = {
+  nextActions: FocusedRegisterPromptEntry[];
+  openQuestions: FocusedRegisterPromptEntry[];
+  resolutions: FocusedRegisterPromptEntry[];
+};
+
+type FocusedRegisterContext = {
+  baseline: FocusedRegisterBaseline;
+  promptBaseline: FocusedRegisterPromptBaseline;
+  state: FocusedRegisterState | undefined;
+};
+
 function normalizeRegisterEntryKey(entry: string): string {
   return entry.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function buildEmptyFocusedRegisterState(input: {
+  updatedAt: string;
+  updatedTurnId: string;
+}): FocusedRegisterState {
+  return {
+    registers: {
+      nextActions: [],
+      openQuestions: [],
+      resolutions: []
+    },
+    schemaVersion: "1",
+    updatedAt: input.updatedAt,
+    updatedTurnId: input.updatedTurnId
+  };
+}
+
+function isStaleFocusedRegisterEntry(entry: Pick<FocusedRegisterEntryState, "carryCount">): boolean {
+  return entry.carryCount >= staleFocusedRegisterCarryThreshold;
+}
+
+function buildFocusedRegisterStateMap(
+  entries: FocusedRegisterEntryState[]
+): Map<string, FocusedRegisterEntryState> {
+  return new Map(
+    entries.map((entry) => [entry.normalizedKey, entry] as const)
+  );
+}
+
+function buildPromptRegisterEntries(input: {
+  entries: string[];
+  markStaleReviewCandidates: boolean;
+  registerState: FocusedRegisterEntryState[];
+}): FocusedRegisterPromptEntry[] {
+  const stateByKey = buildFocusedRegisterStateMap(input.registerState);
+
+  return input.entries.map((entry) => {
+    const priorState = stateByKey.get(normalizeRegisterEntryKey(entry));
+    const carryCount = priorState?.carryCount ?? 1;
+
+    return {
+      carryCount,
+      entry,
+      stale:
+        input.markStaleReviewCandidates && priorState
+          ? isStaleFocusedRegisterEntry(priorState)
+          : false
+    };
+  });
+}
+
+async function readFocusedRegisterContext(input: {
+  statePaths: ReturnType<typeof buildRunnerStatePaths>;
+  wikiRoot: string;
+}): Promise<FocusedRegisterContext> {
+  const [baseline, state] = await Promise.all([
+    readFocusedRegisterBaseline(input.wikiRoot),
+    readFocusedRegisterState(input.statePaths)
+  ]);
+
+  const resolvedState =
+    state ??
+    buildEmptyFocusedRegisterState({
+      updatedAt: nowIsoString(),
+      updatedTurnId: "bootstrap"
+    });
+
+  return {
+    baseline,
+    promptBaseline: {
+      nextActions: buildPromptRegisterEntries({
+        entries: baseline.nextActions,
+        markStaleReviewCandidates: true,
+        registerState: resolvedState.registers.nextActions
+      }),
+      openQuestions: buildPromptRegisterEntries({
+        entries: baseline.openQuestions,
+        markStaleReviewCandidates: true,
+        registerState: resolvedState.registers.openQuestions
+      }),
+      resolutions: buildPromptRegisterEntries({
+        entries: baseline.resolutions,
+        markStaleReviewCandidates: false,
+        registerState: resolvedState.registers.resolutions
+      })
+    },
+    state
+  };
+}
+
+function buildNextFocusedRegisterState(input: {
+  previousState: FocusedRegisterState | undefined;
+  registers: FocusedRegisterBaseline;
+  turnId: string;
+  updatedAt: string;
+}): FocusedRegisterState {
+  const previousRegisters = input.previousState?.registers ??
+    buildEmptyFocusedRegisterState({
+      updatedAt: input.updatedAt,
+      updatedTurnId: input.turnId
+    }).registers;
+  const nextRegisters = {
+    nextActions: [] as FocusedRegisterEntryState[],
+    openQuestions: [] as FocusedRegisterEntryState[],
+    resolutions: [] as FocusedRegisterEntryState[]
+  };
+
+  for (const registerName of [
+    "nextActions",
+    "openQuestions",
+    "resolutions"
+  ] as const satisfies FocusedRegisterKind[]) {
+    const previousRegisterState = buildFocusedRegisterStateMap(
+      previousRegisters[registerName]
+    );
+
+    nextRegisters[registerName] = input.registers[registerName].map((entry) => {
+      const normalizedKey = normalizeRegisterEntryKey(entry);
+      const priorEntry = previousRegisterState.get(normalizedKey);
+
+      return {
+        carryCount: priorEntry ? priorEntry.carryCount + 1 : 1,
+        firstObservedTurnId: priorEntry?.firstObservedTurnId ?? input.turnId,
+        lastObservedTurnId: input.turnId,
+        normalizedKey,
+        text: entry
+      };
+    });
+  }
+
+  return {
+    registers: nextRegisters,
+    schemaVersion: "1",
+    updatedAt: input.updatedAt,
+    updatedTurnId: input.turnId
+  };
 }
 
 function reconcileFocusedRegisterLifecycle(input: FocusedRegisterBaseline): FocusedRegisterBaseline {
@@ -314,10 +478,20 @@ async function readFocusedRegisterBaseline(
 }
 
 function renderFocusedRegisterBaselineForPrompt(
-  baseline: FocusedRegisterBaseline
+  baseline: FocusedRegisterPromptBaseline
 ): string {
-  const renderRegisterEntries = (entries: string[]): string[] =>
-    entries.length > 0 ? entries.map((entry) => `  - ${entry}`) : ["  - none"];
+  const renderRegisterEntries = (entries: FocusedRegisterPromptEntry[]): string[] =>
+    entries.length > 0
+      ? entries.map((entry) =>
+          `  - ${entry.entry}${
+            entry.carryCount > 1
+              ? ` [carried ${entry.carryCount} synthesis passes${
+                  entry.stale ? "; stale review candidate" : ""
+                }]`
+              : ""
+          }`
+        )
+      : ["  - none"];
 
   return [
     "Current focused register baseline:",
@@ -639,6 +813,7 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
 
 export async function buildModelGuidedMemorySynthesisTurnRequest(
   input: RunnerMemorySynthesisInput & {
+    focusedRegisterContext?: FocusedRegisterContext;
     sessionSnapshot?: RunnerSessionStateSnapshot;
   }
 ): Promise<AgentEngineTurnRequest> {
@@ -651,7 +826,12 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
     wikiRoot,
     input.recentWorkSummaryPath
   );
-  const focusedRegisterBaseline = await readFocusedRegisterBaseline(wikiRoot);
+  const focusedRegisterContext =
+    input.focusedRegisterContext ??
+    (await readFocusedRegisterContext({
+      statePaths: buildRunnerStatePaths(input.context.workspace.runtimeRoot),
+      wikiRoot
+    }));
   return {
     sessionId: input.envelope.message.sessionId,
     nodeId: input.context.binding.node.nodeId,
@@ -663,6 +843,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
       "Review the current focused register baseline before deciding what remains open, what remains pending, and what is now resolved.",
+      "Treat repeatedly carried open questions and next actions as explicit review candidates: keep them only when they remain concretely active, otherwise narrow them, replace them, or close them through bounded resolutions.",
       "Preserve still-active open questions and next actions when they remain relevant after the completed turn; move closed items into bounded resolutions instead of dropping them silently.",
       "When a question is no longer open or an action is complete, record that closure in bounded resolutions instead of letting it disappear silently.",
       "Do not repeat the same item across open questions, next actions, and resolutions. Resolved items belong only in resolutions.",
@@ -685,7 +866,9 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
           ? input.producedArtifactIds.join(", ")
           : "none"
       }`,
-      renderFocusedRegisterBaselineForPrompt(focusedRegisterBaseline),
+      renderFocusedRegisterBaselineForPrompt(
+        focusedRegisterContext.promptBaseline
+      ),
       renderCurrentTurnOutcomeForPrompt(input.result),
       `Current assistant outcome:\n${assistantSummary}`,
       ...(input.sessionSnapshot
@@ -1069,8 +1252,10 @@ function buildMemorySynthesisLogEntry(input: {
 }
 
 function createWorkingContextSummaryToolExecutor(input: {
+  focusedRegisterContext: FocusedRegisterContext;
   sessionSnapshot: RunnerSessionStateSnapshot | undefined;
   synthesis: RunnerMemorySynthesisInput;
+  statePaths: ReturnType<typeof buildRunnerStatePaths>;
   writePathCapture: {
     decisionsPagePath: string | undefined;
     nextActionsPagePath: string | undefined;
@@ -1124,6 +1309,13 @@ function createWorkingContextSummaryToolExecutor(input: {
         nextActions: normalizeListEntries(parsedInput.value.nextActions),
         openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
         resolutions: normalizeListEntries(parsedInput.value.resolutions)
+      });
+      const updatedAt = nowIsoString();
+      const nextFocusedRegisterState = buildNextFocusedRegisterState({
+        previousState: input.focusedRegisterContext.state,
+        registers: reconciledLifecycleRegisters,
+        turnId: input.synthesis.turnId,
+        updatedAt
       });
       const content = buildWorkingContextSummaryContent({
         artifactInsights: normalizedInput.artifactInsights,
@@ -1198,7 +1390,8 @@ function createWorkingContextSummaryToolExecutor(input: {
         writeTextFile(stableFactsPagePath, `${stableFactsContent.trimEnd()}\n`),
         writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`),
         writeTextFile(nextActionsPagePath, `${nextActionsContent.trimEnd()}\n`),
-        writeTextFile(resolutionsPagePath, `${resolutionsContent.trimEnd()}\n`)
+        writeTextFile(resolutionsPagePath, `${resolutionsContent.trimEnd()}\n`),
+        writeFocusedRegisterState(input.statePaths, nextFocusedRegisterState)
       ]);
       input.writePathCapture.decisionsPagePath = decisionsPagePath;
       input.writePathCapture.nextActionsPagePath = nextActionsPagePath;
@@ -1267,12 +1460,20 @@ export function createModelGuidedMemorySynthesizer(input: {
     async synthesize(
       synthesis: RunnerMemorySynthesisInput
     ): Promise<RunnerMemorySynthesisResult> {
-      const sessionSnapshot = await buildRunnerSessionStateSnapshot({
-        maxArtifacts: maxSynthesisArtifacts,
-        maxRecentTurns: maxSynthesisRecentTurns,
-        sessionId: synthesis.envelope.message.sessionId,
-        statePaths: buildRunnerStatePaths(synthesis.context.workspace.runtimeRoot)
-      });
+      const statePaths = buildRunnerStatePaths(synthesis.context.workspace.runtimeRoot);
+      const wikiRoot = path.join(synthesis.context.workspace.memoryRoot, "wiki");
+      const [sessionSnapshot, focusedRegisterContext] = await Promise.all([
+        buildRunnerSessionStateSnapshot({
+          maxArtifacts: maxSynthesisArtifacts,
+          maxRecentTurns: maxSynthesisRecentTurns,
+          sessionId: synthesis.envelope.message.sessionId,
+          statePaths
+        }),
+        readFocusedRegisterContext({
+          statePaths,
+          wikiRoot
+        })
+      ]);
       const writePathCapture: {
         decisionsPagePath: string | undefined;
         nextActionsPagePath: string | undefined;
@@ -1289,8 +1490,10 @@ export function createModelGuidedMemorySynthesizer(input: {
         workingContextPagePath: undefined
       };
       const toolExecutor = createWorkingContextSummaryToolExecutor({
+        focusedRegisterContext,
         sessionSnapshot,
         synthesis,
+        statePaths,
         writePathCapture
       });
       const engine =
@@ -1305,9 +1508,13 @@ export function createModelGuidedMemorySynthesizer(input: {
           sessionSnapshot
             ? {
                 ...synthesis,
+                focusedRegisterContext,
                 sessionSnapshot
               }
-            : synthesis
+            : {
+                ...synthesis,
+                focusedRegisterContext
+              }
         );
         await engine.executeTurn(request);
 

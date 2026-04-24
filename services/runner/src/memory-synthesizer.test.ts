@@ -8,8 +8,10 @@ import { performPostTurnMemoryUpdate } from "./memory-maintenance.js";
 import { createModelGuidedMemorySynthesizer } from "./memory-synthesizer.js";
 import {
   ensureRunnerStatePaths,
+  readFocusedRegisterState,
   writeArtifactRecord,
   writeConversationRecord,
+  writeFocusedRegisterState,
   writeRunnerTurnRecord,
   writeSessionRecord
 } from "./state-store.js";
@@ -274,6 +276,44 @@ describe("model-guided memory synthesis", () => {
         "utf8"
       )
     ]);
+    const statePaths = await ensureRunnerStatePaths(context.workspace.runtimeRoot);
+    await writeFocusedRegisterState(statePaths, {
+      registers: {
+        nextActions: [
+          {
+            carryCount: 2,
+            firstObservedTurnId: "turn-memory-003",
+            lastObservedTurnId: "turn-memory-004",
+            normalizedKey:
+              "confirm the operator checkpoint once the next relay run finishes.",
+            text: previousNextAction
+          }
+        ],
+        openQuestions: [
+          {
+            carryCount: 3,
+            firstObservedTurnId: "turn-memory-002",
+            lastObservedTurnId: "turn-memory-004",
+            normalizedKey:
+              "will the relay recovery trace stay readable for operators after the next deploy?",
+            text: previousOpenQuestion
+          }
+        ],
+        resolutions: [
+          {
+            carryCount: 2,
+            firstObservedTurnId: "turn-memory-003",
+            lastObservedTurnId: "turn-memory-004",
+            normalizedKey:
+              "the earlier alert-routing concern is closed for the current review.",
+            text: previousResolution
+          }
+        ]
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T11:04:50.000Z",
+      updatedTurnId: "turn-memory-004"
+    });
     const resolvedQuestion =
       "Does the current recovery trace expose enough detail for operators?";
     const resolvedAction =
@@ -555,7 +595,13 @@ describe("model-guided memory synthesis", () => {
       previousOpenQuestion
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "[carried 3 synthesis passes; stale review candidate]"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       previousNextAction
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "[carried 2 synthesis passes]"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       previousResolution
@@ -597,6 +643,7 @@ describe("model-guided memory synthesis", () => {
       openQuestionsPage,
       nextActionsPage,
       resolutionsPage,
+      focusedRegisterState,
       indexPage,
       logPage,
       followupTurnRequest
@@ -608,6 +655,7 @@ describe("model-guided memory synthesis", () => {
         readFile(openQuestionsPagePath, "utf8"),
         readFile(nextActionsPagePath, "utf8"),
         readFile(resolutionsPagePath, "utf8"),
+        readFocusedRegisterState(statePaths),
         readFile(memoryUpdate.indexPath, "utf8"),
         readFile(memoryUpdate.logPath, "utf8"),
         buildAgentEngineTurnRequest(context)
@@ -684,6 +732,29 @@ describe("model-guided memory synthesis", () => {
     expect(resolutionsPage).toContain(
       "The previous draft action item to gather raw relay logs is complete."
     );
+    expect(focusedRegisterState).toBeDefined();
+    expect(
+      focusedRegisterState?.registers.openQuestions.find(
+        (entry) =>
+          entry.text ===
+          "Which operator should validate the next checkpoint once the review closes?"
+      )?.carryCount
+    ).toBe(1);
+    expect(
+      focusedRegisterState?.registers.nextActions.find(
+        (entry) => entry.text === "Confirm the relay failure path in the next session."
+      )?.carryCount
+    ).toBe(1);
+    expect(
+      focusedRegisterState?.registers.resolutions.find(
+        (entry) => entry.text === resolvedQuestion
+      )?.carryCount
+    ).toBe(1);
+    expect(
+      focusedRegisterState?.registers.resolutions.find(
+        (entry) => entry.text === previousResolution
+      )
+    ).toBeUndefined();
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
     expect(indexPage).toContain("[Decisions Summary](summaries/decisions.md)");
     expect(indexPage).toContain("[Stable Facts Summary](summaries/stable-facts.md)");
@@ -699,6 +770,187 @@ describe("model-guided memory synthesis", () => {
     expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(nextActionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(resolutionsPagePath);
+  });
+
+  it("increments carry counts when focused register entries remain active", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const envelope = buildInboundTaskRequest({
+      summary: "Keep the relay operator follow-up active."
+    });
+    const memoryUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      result: {
+        assistantMessages: ["Kept the operator follow-up active."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 8,
+          outputTokens: 4
+        }
+      },
+      turnId: "turn-memory-007"
+    });
+    const carriedOpenQuestion =
+      "Which operator should validate the next relay checkpoint?";
+    const carriedNextAction =
+      "Confirm the next relay checkpoint with the operator lead.";
+    await Promise.all([
+      writeFile(
+        path.join(
+          context.workspace.memoryRoot,
+          "wiki",
+          "summaries",
+          "open-questions.md"
+        ),
+        [
+          "# Open Questions Summary",
+          "",
+          "## Open Questions",
+          "",
+          `- ${carriedOpenQuestion}`,
+          ""
+        ].join("\n"),
+        "utf8"
+      ),
+      writeFile(
+        path.join(
+          context.workspace.memoryRoot,
+          "wiki",
+          "summaries",
+          "next-actions.md"
+        ),
+        [
+          "# Next Actions Summary",
+          "",
+          "## Next Actions",
+          "",
+          `- ${carriedNextAction}`,
+          ""
+        ].join("\n"),
+        "utf8"
+      )
+    ]);
+    const statePaths = await ensureRunnerStatePaths(context.workspace.runtimeRoot);
+    await writeFocusedRegisterState(statePaths, {
+      registers: {
+        nextActions: [
+          {
+            carryCount: 2,
+            firstObservedTurnId: "turn-memory-005",
+            lastObservedTurnId: "turn-memory-006",
+            normalizedKey:
+              "confirm the next relay checkpoint with the operator lead.",
+            text: carriedNextAction
+          }
+        ],
+        openQuestions: [
+          {
+            carryCount: 3,
+            firstObservedTurnId: "turn-memory-004",
+            lastObservedTurnId: "turn-memory-006",
+            normalizedKey:
+              "which operator should validate the next relay checkpoint?",
+            text: carriedOpenQuestion
+          }
+        ],
+        resolutions: []
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T12:00:00.000Z",
+      updatedTurnId: "turn-memory-006"
+    });
+
+    const synthesizer = createModelGuidedMemorySynthesizer({
+      context,
+      engineFactory(toolExecutor): AgentEngine {
+        return {
+          async executeTurn(request) {
+            const summaryTool = request.toolDefinitions.find(
+              (toolDefinition) => toolDefinition.id === "write_memory_summary"
+            );
+
+            if (!summaryTool) {
+              throw new Error("Expected the working-context synthesis tool.");
+            }
+
+            await toolExecutor.executeToolCall({
+              artifactInputs: [],
+              input: {
+                artifactInsights: [],
+                decisions: [],
+                executionInsights: [],
+                focus: "Keep the relay operator follow-up active.",
+                nextActions: [carriedNextAction],
+                openQuestions: [carriedOpenQuestion],
+                resolutions: [],
+                sessionInsights: [],
+                stableFacts: [],
+                summary:
+                  "The operator follow-up remains active and needs another pass."
+              },
+              memoryRefs: request.memoryRefs,
+              nodeId: request.nodeId,
+              sessionId: request.sessionId,
+              tool: summaryTool,
+              toolCallId: "toolu_working_context"
+            });
+
+            return {
+              assistantMessages: ["Working context summary updated."],
+              stopReason: "completed",
+              toolExecutions: [],
+              toolRequests: [],
+              usage: {
+                inputTokens: 2,
+                outputTokens: 1
+              }
+            };
+          }
+        };
+      }
+    });
+
+    const synthesisResult = await synthesizer.synthesize({
+      artifactInputs: [],
+      artifactRefs: [],
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+      result: {
+        assistantMessages: ["Kept the operator follow-up active."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 8,
+          outputTokens: 4
+        }
+      },
+      taskPagePath: memoryUpdate.taskPagePath,
+      turnId: "turn-memory-007"
+    });
+
+    expect(synthesisResult.ok).toBe(true);
+
+    const focusedRegisterState = await readFocusedRegisterState(statePaths);
+
+    expect(
+      focusedRegisterState?.registers.openQuestions.find(
+        (entry) => entry.text === carriedOpenQuestion
+      )?.carryCount
+    ).toBe(4);
+    expect(
+      focusedRegisterState?.registers.nextActions.find(
+        (entry) => entry.text === carriedNextAction
+      )?.carryCount
+    ).toBe(3);
   });
 
   it("records synthesis failure in the wiki log without throwing", async () => {

@@ -233,6 +233,10 @@ Completed in the current repository state:
     open-questions/next-actions/resolutions baseline explicitly and
     runner-owned reconciliation removes exact resolved overlaps from active
     registers instead of letting closure drift survive as silent duplication.
+24. a focused-register aging-signals refinement where the runner now persists
+    a separate carry-state file for the focused registers and feeds bounded
+    stale-review hints back into synthesis for repeatedly carried active
+    items, without adding noisy lifecycle metadata to the durable wiki pages.
 
 Remaining work in this phase:
 
@@ -249,8 +253,9 @@ Remaining work in this phase:
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work, working-context, decisions,
    stable-facts, open-questions, next-actions, and resolutions summary layers,
-   into broader model-guided memory maintenance with stronger aging and
-   stale-item discipline;
+   into broader model-guided memory maintenance with stronger semantic aging
+   and retirement discipline beyond the newly implemented carry-count and
+   stale-review baseline;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added focused-register aging signals
+
+Closed the next runner-memory quality slice by adding a separate
+runner-owned focused-register carry-state file for
+`open-questions.md`, `next-actions.md`, and `resolutions.md`. The bounded
+model-guided synthesis prompt now sees carry-forward and stale-review hints for
+repeatedly carried active items, while the durable wiki pages remain clean and
+human-readable instead of absorbing noisy lifecycle metadata.
+
 ## [2026-04-24] implementation | Added engine provider metadata and failure reporting
 
 Closed the next engine-hardening slice by widening the canonical engine outcome

@@ -4,6 +4,7 @@ import type {
   ArtifactRecord,
   ApprovalRecord,
   ConversationRecord,
+  FocusedRegisterState,
   RunnerTurnRecord,
   SessionRecord
 } from "@entangle/types";
@@ -11,6 +12,7 @@ import {
   artifactRecordSchema,
   approvalRecordSchema,
   conversationRecordSchema,
+  focusedRegisterStateSchema,
   runnerTurnRecordSchema,
   sessionRecordSchema
 } from "@entangle/types";
@@ -19,6 +21,7 @@ export type RunnerStatePaths = {
   approvalsRoot: string;
   artifactsRoot: string;
   conversationsRoot: string;
+  memoryStateRoot: string;
   sessionsRoot: string;
   turnsRoot: string;
 };
@@ -50,6 +53,7 @@ export function buildRunnerStatePaths(runtimeRoot: string): RunnerStatePaths {
     approvalsRoot: path.join(runtimeRoot, "approvals"),
     artifactsRoot: path.join(runtimeRoot, "artifacts"),
     conversationsRoot: path.join(runtimeRoot, "conversations"),
+    memoryStateRoot: path.join(runtimeRoot, "memory-state"),
     sessionsRoot: path.join(runtimeRoot, "sessions"),
     turnsRoot: path.join(runtimeRoot, "turns")
   };
@@ -64,6 +68,7 @@ export async function ensureRunnerStatePaths(
     ensureDirectory(statePaths.approvalsRoot),
     ensureDirectory(statePaths.artifactsRoot),
     ensureDirectory(statePaths.conversationsRoot),
+    ensureDirectory(statePaths.memoryStateRoot),
     ensureDirectory(statePaths.sessionsRoot),
     ensureDirectory(statePaths.turnsRoot)
   ]);
@@ -101,6 +106,10 @@ function runnerTurnRecordPath(
   turnId: string
 ): string {
   return path.join(statePaths.turnsRoot, `${turnId}.json`);
+}
+
+function focusedRegisterStatePath(statePaths: RunnerStatePaths): string {
+  return path.join(statePaths.memoryStateRoot, "focused-register-state.json");
 }
 
 export async function readSessionRecord(
@@ -235,6 +244,28 @@ export async function readRunnerTurnRecord(
   }
 
   return runnerTurnRecordSchema.parse(await readJsonFile(filePath));
+}
+
+export async function readFocusedRegisterState(
+  statePaths: RunnerStatePaths
+): Promise<FocusedRegisterState | undefined> {
+  const filePath = focusedRegisterStatePath(statePaths);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return focusedRegisterStateSchema.parse(await readJsonFile(filePath));
+}
+
+export async function writeFocusedRegisterState(
+  statePaths: RunnerStatePaths,
+  record: FocusedRegisterState
+): Promise<void> {
+  await writeJsonFile(
+    focusedRegisterStatePath(statePaths),
+    focusedRegisterStateSchema.parse(record)
+  );
 }
 
 export async function writeRunnerTurnRecord(

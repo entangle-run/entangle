@@ -28,6 +28,7 @@ export * from "./runtime/runtime-context.js";
 export * from "./runtime/git-resolution.js";
 export * from "./runtime/runtime-identity.js";
 export * from "./runtime/activity-observation.js";
+export * from "./runtime/focused-register-state.js";
 export * from "./runtime/reconciliation.js";
 export * from "./runtime/recovery-policy.js";
 export * from "./runtime/secret-delivery.js";
