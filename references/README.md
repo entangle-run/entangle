@@ -123,6 +123,7 @@ This directory is the canonical design corpus for Entangle.
 117. [116-focused-register-lifecycle-discipline-slice.md](116-focused-register-lifecycle-discipline-slice.md)
 118. [117-focused-register-aging-signals-slice.md](117-focused-register-aging-signals-slice.md)
 119. [118-explicit-closure-reference-memory-slice.md](118-explicit-closure-reference-memory-slice.md)
+120. [119-stale-item-disappearance-discipline-slice.md](119-stale-item-disappearance-discipline-slice.md)
 
 ## Role of this corpus
 

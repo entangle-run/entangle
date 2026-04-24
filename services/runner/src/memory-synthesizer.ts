@@ -575,6 +575,82 @@ function validateExplicitClosureRefs(input: {
       };
 }
 
+function validateStaleBaselineRetention(input: {
+  closedOpenQuestions: string[];
+  completedNextActions: string[];
+  nextActions: string[];
+  openQuestions: string[];
+  promptBaseline: FocusedRegisterPromptBaseline;
+  resolutions: string[];
+}):
+  | {
+      ok: true;
+    }
+  | {
+      issues: string[];
+      ok: false;
+    } {
+  const issues: string[] = [];
+  const resolutionKeys = buildNormalizedEntryKeySet(input.resolutions);
+  const closedOpenQuestionKeys = buildNormalizedEntryKeySet(
+    input.closedOpenQuestions
+  );
+  const completedNextActionKeys = buildNormalizedEntryKeySet(
+    input.completedNextActions
+  );
+  const nextOpenQuestionKeys = buildNormalizedEntryKeySet(input.openQuestions);
+  const nextActionKeys = buildNormalizedEntryKeySet(input.nextActions);
+
+  for (const openQuestion of input.promptBaseline.openQuestions) {
+    if (!openQuestion.stale) {
+      continue;
+    }
+
+    const normalizedKey = normalizeRegisterEntryKey(openQuestion.entry);
+
+    if (
+      nextOpenQuestionKeys.has(normalizedKey) ||
+      closedOpenQuestionKeys.has(normalizedKey) ||
+      resolutionKeys.has(normalizedKey)
+    ) {
+      continue;
+    }
+
+    issues.push(
+      `The stale open-question baseline entry '${openQuestion.entry}' cannot disappear silently. Keep it active, reference it in 'closedOpenQuestions', or carry the same exact text into 'resolutions'.`
+    );
+  }
+
+  for (const nextAction of input.promptBaseline.nextActions) {
+    if (!nextAction.stale) {
+      continue;
+    }
+
+    const normalizedKey = normalizeRegisterEntryKey(nextAction.entry);
+
+    if (
+      nextActionKeys.has(normalizedKey) ||
+      completedNextActionKeys.has(normalizedKey) ||
+      resolutionKeys.has(normalizedKey)
+    ) {
+      continue;
+    }
+
+    issues.push(
+      `The stale next-action baseline entry '${nextAction.entry}' cannot disappear silently. Keep it active, reference it in 'completedNextActions', or carry the same exact text into 'resolutions'.`
+    );
+  }
+
+  return issues.length > 0
+    ? {
+        issues,
+        ok: false
+      }
+    : {
+        ok: true
+      };
+}
+
 function parseWorkingContextSummaryInput(input: unknown):
   | {
       ok: true;
@@ -972,6 +1048,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Review the current focused register baseline before deciding what remains open, what remains pending, and what is now resolved.",
       "Treat repeatedly carried open questions and next actions as explicit review candidates: keep them only when they remain concretely active, otherwise narrow them, replace them, or close them through bounded resolutions.",
       "When you close a current open question or complete a current next action using wording that differs from the original baseline entry, populate the explicit closure-reference fields with the exact original baseline text so the runner can retire it deterministically.",
+      "A stale-review candidate from the current baseline may not disappear silently. Keep it active, reference it explicitly as closed/completed, or carry the same exact text into resolutions.",
       "Preserve still-active open questions and next actions when they remain relevant after the completed turn; move closed items into bounded resolutions instead of dropping them silently.",
       "When a question is no longer open or an action is complete, record that closure in bounded resolutions instead of letting it disappear silently.",
       "Do not repeat the same item across open questions, next actions, and resolutions. Resolved items belong only in resolutions.",
@@ -1434,6 +1511,30 @@ function createWorkingContextSummaryToolExecutor(input: {
           content: {
             error: "invalid_input",
             issues: explicitClosureValidation.issues,
+            toolId: request.tool.id
+          },
+          isError: true
+        });
+      }
+
+      const staleBaselineRetentionValidation = validateStaleBaselineRetention({
+        closedOpenQuestions: normalizeListEntries(
+          parsedInput.value.closedOpenQuestions
+        ),
+        completedNextActions: normalizeListEntries(
+          parsedInput.value.completedNextActions
+        ),
+        nextActions: normalizeListEntries(parsedInput.value.nextActions),
+        openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
+        promptBaseline: input.focusedRegisterContext.promptBaseline,
+        resolutions: normalizeListEntries(parsedInput.value.resolutions)
+      });
+
+      if (!staleBaselineRetentionValidation.ok) {
+        return engineToolExecutionResultSchema.parse({
+          content: {
+            error: "invalid_input",
+            issues: staleBaselineRetentionValidation.issues,
             toolId: request.tool.id
           },
           isError: true

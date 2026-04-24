@@ -189,6 +189,10 @@ The repository now also contains the first real implementation baseline:
   now retire active open questions and next actions through runner-validated
   references to the current baseline, even when the new resolutions wording
   differs from the original active entry text;
+- a stale-item disappearance-discipline refinement where stale review
+  candidates from the focused-register baseline may no longer disappear
+  silently: the runner now requires explicit retention or explicit retirement
+  semantics for those entries;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

@@ -892,3 +892,16 @@ Closed the slice only after widening runner tests to prove prompt-time
 register continuity and exact closure reconciliation, then re-running targeted
 runner quality gates plus the full `pnpm verify` and `git diff --check`
 gates.
+
+## [2026-04-24] implementation | Added stale-item disappearance discipline
+
+Strengthened long-horizon focused-memory quality by forbidding stale review
+candidates from disappearing silently. Once an open question or next action is
+already marked stale in the runner-owned baseline, the bounded synthesis pass
+must now either keep that exact item active, retire it explicitly through
+closure references, or carry the same exact text into `resolutions.md`.
+
+Closed the slice only after widening runner tests to prove stale baseline
+items are rejected when they disappear without explicit retention or
+retirement, then re-running targeted runner quality gates plus the full
+`pnpm verify` and `git diff --check` gates.

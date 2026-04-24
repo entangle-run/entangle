@@ -1087,6 +1087,157 @@ describe("model-guided memory synthesis", () => {
     });
   });
 
+  it("rejects silently dropping a stale baseline open question without explicit closure", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const envelope = buildInboundTaskRequest({
+      summary: "Review stale baseline retirement discipline."
+    });
+    const memoryUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      result: {
+        assistantMessages: ["Reviewed stale baseline retirement discipline."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      turnId: "turn-memory-009"
+    });
+    const staleOpenQuestion =
+      "Will the relay recovery trace stay readable for operators after the next deploy?";
+    await writeFile(
+      path.join(
+        context.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "open-questions.md"
+      ),
+      [
+        "# Open Questions Summary",
+        "",
+        "## Open Questions",
+        "",
+        `- ${staleOpenQuestion}`,
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+    const statePaths = await ensureRunnerStatePaths(context.workspace.runtimeRoot);
+    await writeFocusedRegisterState(statePaths, {
+      registers: {
+        nextActions: [],
+        openQuestions: [
+          {
+            carryCount: 3,
+            firstObservedTurnId: "turn-memory-006",
+            lastObservedTurnId: "turn-memory-008",
+            normalizedKey:
+              "will the relay recovery trace stay readable for operators after the next deploy?",
+            text: staleOpenQuestion
+          }
+        ],
+        resolutions: []
+      },
+      schemaVersion: "1",
+      updatedAt: "2026-04-24T13:00:00.000Z",
+      updatedTurnId: "turn-memory-008"
+    });
+
+    const synthesizer = createModelGuidedMemorySynthesizer({
+      context,
+      engineFactory(toolExecutor): AgentEngine {
+        return {
+          async executeTurn(request) {
+            const summaryTool = request.toolDefinitions.find(
+              (toolDefinition) => toolDefinition.id === "write_memory_summary"
+            );
+
+            if (!summaryTool) {
+              throw new Error("Expected the working-context synthesis tool.");
+            }
+
+            const toolResult = await toolExecutor.executeToolCall({
+              artifactInputs: [],
+              input: {
+                artifactInsights: [],
+                closedOpenQuestions: [],
+                completedNextActions: [],
+                decisions: [],
+                executionInsights: [],
+                focus: "Review stale baseline retirement discipline.",
+                nextActions: [],
+                openQuestions: [],
+                resolutions: [
+                  "Operator-facing readability still needs a follow-up review."
+                ],
+                sessionInsights: [],
+                stableFacts: [],
+                summary: "The stale item was dropped without explicit closure."
+              },
+              memoryRefs: request.memoryRefs,
+              nodeId: request.nodeId,
+              sessionId: request.sessionId,
+              tool: summaryTool,
+              toolCallId: "toolu_working_context"
+            });
+
+            expect(toolResult.isError).toBe(true);
+            expect(JSON.stringify(toolResult.content)).toContain("invalid_input");
+            expect(JSON.stringify(toolResult.content)).toContain(
+              "cannot disappear silently"
+            );
+
+            return {
+              assistantMessages: ["The stale baseline drop was rejected."],
+              stopReason: "completed",
+              toolExecutions: [],
+              toolRequests: [],
+              usage: {
+                inputTokens: 1,
+                outputTokens: 1
+              }
+            };
+          }
+        };
+      }
+    });
+
+    const synthesisResult = await synthesizer.synthesize({
+      artifactInputs: [],
+      artifactRefs: [],
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: [],
+      recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+      result: {
+        assistantMessages: ["Reviewed stale baseline retirement discipline."],
+        stopReason: "completed",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 5,
+          outputTokens: 3
+        }
+      },
+      taskPagePath: memoryUpdate.taskPagePath,
+      turnId: "turn-memory-009"
+    });
+
+    expect(synthesisResult).toEqual({
+      errorMessage:
+        "Model-guided memory synthesis completed without updating the working-context summary.",
+      ok: false
+    });
+  });
+
   it("records synthesis failure in the wiki log without throwing", async () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);

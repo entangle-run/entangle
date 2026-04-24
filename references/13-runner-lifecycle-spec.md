@@ -181,7 +181,8 @@ That implemented slice currently includes:
   active items without polluting the durable wiki pages themselves, plus
   runner-validated explicit closure references that can retire active baseline
   questions and actions even when the new resolutions wording is different
-  from the original active entry text;
+  from the original active entry text, plus a runner-owned rule that stale
+  active baseline items may not disappear silently from focused memory;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact
