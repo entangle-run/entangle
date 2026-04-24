@@ -326,6 +326,27 @@ function printPass(name, detail) {
   console.log(`PASS ${name}: ${detail}`);
 }
 
+async function assertRestartEvent(restartGeneration) {
+  const response = await hostRequest("GET", "/v1/events?limit=100");
+  const matchingEvent = response.events?.find(
+    (event) =>
+      event.type === "runtime.restart.requested" &&
+      event.nodeId === workerNodeId &&
+      event.restartGeneration === restartGeneration
+  );
+
+  if (!matchingEvent) {
+    throw new Error(
+      `No runtime.restart.requested host event was found for '${workerNodeId}' generation '${restartGeneration}'.`
+    );
+  }
+
+  printPass(
+    "runtime-smoke:restart-event",
+    `event=${matchingEvent.eventId}; generation=${restartGeneration}`
+  );
+}
+
 async function main() {
   let tempRoot;
 
@@ -436,6 +457,7 @@ async function main() {
       "runtime-smoke:restart",
       `observed=${restartedInspection.observedState}; generation=${restartedInspection.restartGeneration}`
     );
+    await assertRestartEvent(expectedRestartGeneration);
 
     await hostRequest("POST", `/v1/runtimes/${workerNodeId}/stop`);
     const stoppedInspection = await waitForRuntime(

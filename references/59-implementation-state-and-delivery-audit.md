@@ -581,7 +581,8 @@ priority widening.
   `pnpm ops:smoke-local:runtime` and
   `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
   admission, smoke graph application, local model-secret binding, managed
-  runner start, restart-generation recreation, and stop;
+  runner start, restart-generation recreation, restart event persistence, and
+  stop;
 - deterministic host and runner Docker builds that clean TypeScript incremental
   state and assert service/workspace-package deploy payloads before creating
   runtime images;

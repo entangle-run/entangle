@@ -126,8 +126,8 @@ pnpm ops:smoke-local:disposable:runtime
 This variant performs the disposable profile smoke and then admits a temporary
 package into the host container, applies a temporary graph with a local
 model-secret binding, starts the managed runner container, verifies restart
-generation recreation, stops the runtime, and tears the profile down with
-volumes.
+generation recreation and the durable restart host event, stops the runtime,
+and tears the profile down with volumes.
 
 For an already-running local profile, the runtime lifecycle smoke can be run
 directly:

@@ -5,8 +5,9 @@
 `pnpm ops:smoke-local:runtime` now exercises a running local profile by
 admitting a disposable package, applying a temporary graph with a local
 model-secret binding, starting a real Docker-backed runner, verifying restart
-generation recreation, and stopping the runtime. The disposable profile can run
-the same check through `pnpm ops:smoke-local:disposable:runtime`.
+generation recreation plus the durable restart host event, and stopping the
+runtime. The disposable profile can run the same check through
+`pnpm ops:smoke-local:disposable:runtime`.
 
 ## [2026-04-24] operations | Added disposable local profile smoke
 

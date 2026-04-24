@@ -30,6 +30,8 @@ runtime backend lifecycle against an actual node.
   - restarts the runtime through `POST /v1/runtimes/{nodeId}/restart`;
   - verifies restart generation advancement while the runtime returns to
     `observedState=running`;
+  - verifies the durable `runtime.restart.requested` host event for that
+    restart generation;
   - stops the runtime through `POST /v1/runtimes/{nodeId}/stop`;
   - removes the temporary copied package from the host container.
 
