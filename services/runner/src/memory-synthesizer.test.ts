@@ -7,6 +7,13 @@ import { buildAgentEngineTurnRequest, loadRuntimeContext } from "./runtime-conte
 import { performPostTurnMemoryUpdate } from "./memory-maintenance.js";
 import { createModelGuidedMemorySynthesizer } from "./memory-synthesizer.js";
 import {
+  ensureRunnerStatePaths,
+  writeArtifactRecord,
+  writeConversationRecord,
+  writeRunnerTurnRecord,
+  writeSessionRecord
+} from "./state-store.js";
+import {
   buildInboundTaskRequest,
   cleanupRuntimeFixtures,
   createRuntimeFixture
@@ -16,10 +23,139 @@ afterEach(async () => {
   await cleanupRuntimeFixtures();
 });
 
+async function seedCurrentSessionState(input: {
+  publicKey: string;
+  runtimeRoot: string;
+}): Promise<void> {
+  const statePaths = await ensureRunnerStatePaths(input.runtimeRoot);
+
+  await writeSessionRecord(statePaths, {
+    activeConversationIds: ["conv-alpha"],
+    entrypointNodeId: "lead-it",
+    graphId: "graph-alpha",
+    intent: "Review the relay recovery follow-up.",
+    openedAt: "2026-04-24T11:00:00.000Z",
+    ownerNodeId: "worker-it",
+    rootArtifactIds: ["artifact-output"],
+    sessionId: "session-alpha",
+    status: "active",
+    traceId: "trace-alpha",
+    updatedAt: "2026-04-24T11:05:00.000Z",
+    waitingApprovalIds: []
+  });
+  await writeConversationRecord(statePaths, {
+    artifactIds: ["artifact-input"],
+    conversationId: "conv-alpha",
+    followupCount: 1,
+    graphId: "graph-alpha",
+    initiator: "local",
+    localNodeId: "worker-it",
+    localPubkey: input.publicKey,
+    openedAt: "2026-04-24T11:00:00.000Z",
+    peerNodeId: "reviewer-it",
+    peerPubkey: input.publicKey,
+    responsePolicy: {
+      closeOnResult: true,
+      maxFollowups: 1,
+      responseRequired: true
+    },
+    sessionId: "session-alpha",
+    status: "working",
+    updatedAt: "2026-04-24T11:04:00.000Z"
+  });
+  await writeRunnerTurnRecord(statePaths, {
+    consumedArtifactIds: ["artifact-input"],
+    engineOutcome: {
+      providerMetadata: {
+        adapterKind: "anthropic",
+        modelId: "claude-opus",
+        profileId: "shared-model"
+      },
+      stopReason: "completed",
+      toolExecutions: [
+        {
+          outcome: "success",
+          sequence: 1,
+          toolCallId: "toolu_previous",
+          toolId: "inspect_session_state"
+        }
+      ],
+      usage: {
+        inputTokens: 10,
+        outputTokens: 6
+      }
+    },
+    graphId: "graph-alpha",
+    nodeId: "worker-it",
+    phase: "persisting",
+    producedArtifactIds: ["artifact-output"],
+    sessionId: "session-alpha",
+    startedAt: "2026-04-24T11:01:00.000Z",
+    triggerKind: "message",
+    turnId: "turn-prev",
+    updatedAt: "2026-04-24T11:04:30.000Z"
+  });
+  await Promise.all([
+    writeArtifactRecord(statePaths, {
+      createdAt: "2026-04-24T11:01:30.000Z",
+      ref: {
+        artifactId: "artifact-input",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "reviewer-it/session-alpha/input",
+          commit: "abc123",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          repositoryName: "graph-alpha",
+          path: "reports/session-alpha/input.md"
+        },
+        preferred: true,
+        status: "published"
+      },
+      retrieval: {
+        retrievedAt: "2026-04-24T11:01:45.000Z",
+        state: "retrieved"
+      },
+      updatedAt: "2026-04-24T11:01:45.000Z"
+    }),
+    writeArtifactRecord(statePaths, {
+      createdAt: "2026-04-24T11:04:15.000Z",
+      publication: {
+        publishedAt: "2026-04-24T11:04:40.000Z",
+        remoteName: "origin",
+        remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      ref: {
+        artifactId: "artifact-output",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "worker-it/session-alpha/report",
+          commit: "def456",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          repositoryName: "graph-alpha",
+          path: "reports/session-alpha/output.md"
+        },
+        preferred: true,
+        status: "published"
+      },
+      turnId: "turn-prev",
+      updatedAt: "2026-04-24T11:04:40.000Z"
+    })
+  ]);
+}
+
 describe("model-guided memory synthesis", () => {
   it("writes and indexes a bounded working-context summary via a forced strict tool call", async () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);
+    await seedCurrentSessionState({
+      publicKey: context.identityContext.publicKey,
+      runtimeRoot: context.workspace.runtimeRoot
+    });
     const envelope = buildInboundTaskRequest({
       summary: "Review the relay recovery follow-up."
     });
@@ -143,6 +279,18 @@ describe("model-guided memory synthesis", () => {
         memoryUpdate.summaryPagePath,
         memoryUpdate.taskPagePath
       ])
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Current session snapshot:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Session status: `active`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "turn-prev [persisting/message] outcome=completed produced=1 consumed=1"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "artifact-output [git/report_file/published]"
     );
 
     if (!workingContextPagePath) {

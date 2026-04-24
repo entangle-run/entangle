@@ -108,6 +108,7 @@ This directory is the canonical design corpus for Entangle.
 102. [101-runtime-trace-client-consumption-slice.md](101-runtime-trace-client-consumption-slice.md)
 103. [102-engine-provider-metadata-and-failure-reporting-slice.md](102-engine-provider-metadata-and-failure-reporting-slice.md)
 104. [103-builtin-session-state-tool-slice.md](103-builtin-session-state-tool-slice.md)
+105. [104-session-aware-working-context-synthesis-slice.md](104-session-aware-working-context-synthesis-slice.md)
 
 ## Role of this corpus
 

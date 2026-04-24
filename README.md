@@ -183,6 +183,11 @@ This repository currently contains:
   maintains `memory/wiki/summaries/working-context.md` through a strict
   forced tool call while preserving runner ownership of the actual wiki
   write path and keeping synthesis failure additive rather than turn-fatal;
+- a session-aware refinement of that working-context synthesis path where the
+  model-guided summary now also consumes the same bounded current-session
+  snapshot exposed through `inspect_session_state`, giving synthesis a stronger
+  view of live session progress without widening the tool catalog or the wiki
+  write contract;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -310,8 +315,8 @@ This repository currently contains:
 
 The highest-value remaining gaps are:
 
-- richer model-guided memory maintenance and working-context synthesis on top
-  of the now stronger bounded runtime inspection surface;
+- richer model-guided memory maintenance on top of the now stronger
+  session-aware bounded runtime inspection surface;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.

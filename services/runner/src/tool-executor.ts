@@ -10,16 +10,10 @@ import {
   type EngineToolExecutionRequest,
   type EngineToolExecutionResult,
   type PackageToolCatalog,
-  type PackageToolDefinition,
-  type RunnerTurnRecord
+  type PackageToolDefinition
 } from "@entangle/types";
-import {
-  buildRunnerStatePaths,
-  listArtifactRecords,
-  listConversationRecords,
-  listRunnerTurnRecords,
-  readSessionRecord
-} from "./state-store.js";
+import { buildRunnerStatePaths } from "./state-store.js";
+import { buildRunnerSessionStateSnapshot } from "./session-state-snapshot.js";
 
 const maxArtifactPreviewCharacters = 12_000;
 
@@ -216,39 +210,6 @@ function resolveRequestedMemoryRef(
   };
 }
 
-function summarizeTurnOutcome(
-  record: RunnerTurnRecord
-): Record<string, unknown> | undefined {
-  if (!record.engineOutcome) {
-    return undefined;
-  }
-
-  return {
-    ...(record.engineOutcome.failure
-      ? {
-          failure: record.engineOutcome.failure
-        }
-      : {}),
-    ...(record.engineOutcome.providerMetadata
-      ? {
-          providerMetadata: record.engineOutcome.providerMetadata
-        }
-      : {}),
-    ...(record.engineOutcome.providerStopReason
-      ? {
-          providerStopReason: record.engineOutcome.providerStopReason
-        }
-      : {}),
-    ...(record.engineOutcome.usage
-      ? {
-          usage: record.engineOutcome.usage
-        }
-      : {}),
-    stopReason: record.engineOutcome.stopReason,
-    toolExecutionCount: record.engineOutcome.toolExecutions.length
-  };
-}
-
 function resolveRequestedSessionStateInput(
   request: EngineToolExecutionRequest
 ):
@@ -397,12 +358,14 @@ const builtinToolHandlers: Record<BuiltinToolId, RunnerBuiltinToolHandler> = {
     }
 
     const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
-    const sessionRecord = await readSessionRecord(
-      statePaths,
-      resolvedInput.resolvedSessionId
-    );
+    const snapshot = await buildRunnerSessionStateSnapshot({
+      maxArtifacts: resolvedInput.maxArtifacts,
+      maxRecentTurns: resolvedInput.maxRecentTurns,
+      sessionId: resolvedInput.resolvedSessionId,
+      statePaths
+    });
 
-    if (!sessionRecord) {
+    if (!snapshot) {
       return engineToolExecutionResultSchema.parse({
         content: {
           error: "session_not_found",
@@ -412,121 +375,8 @@ const builtinToolHandlers: Record<BuiltinToolId, RunnerBuiltinToolHandler> = {
       });
     }
 
-    const [conversationRecords, turnRecords, artifactRecords] = await Promise.all([
-      listConversationRecords(statePaths),
-      listRunnerTurnRecords(statePaths),
-      listArtifactRecords(statePaths)
-    ]);
-
-    const sessionConversations = conversationRecords
-      .filter((candidate) => candidate.sessionId === sessionRecord.sessionId)
-      .sort((left, right) =>
-        right.updatedAt.localeCompare(left.updatedAt) ||
-        left.conversationId.localeCompare(right.conversationId)
-      );
-    const sessionTurns = turnRecords
-      .filter((candidate) => candidate.sessionId === sessionRecord.sessionId)
-      .sort((left, right) =>
-        right.updatedAt.localeCompare(left.updatedAt) ||
-        left.turnId.localeCompare(right.turnId)
-      );
-
-    const relatedArtifactIds = new Set<string>(sessionRecord.rootArtifactIds);
-
-    for (const conversationRecord of sessionConversations) {
-      for (const artifactId of conversationRecord.artifactIds) {
-        relatedArtifactIds.add(artifactId);
-      }
-    }
-
-    for (const turnRecord of sessionTurns) {
-      for (const artifactId of turnRecord.consumedArtifactIds) {
-        relatedArtifactIds.add(artifactId);
-      }
-
-      for (const artifactId of turnRecord.producedArtifactIds) {
-        relatedArtifactIds.add(artifactId);
-      }
-    }
-
-    const relatedArtifacts = artifactRecords
-      .filter((candidate) => relatedArtifactIds.has(candidate.ref.artifactId))
-      .sort((left, right) =>
-        right.updatedAt.localeCompare(left.updatedAt) ||
-        left.ref.artifactId.localeCompare(right.ref.artifactId)
-      )
-      .slice(0, resolvedInput.maxArtifacts);
-
     return engineToolExecutionResultSchema.parse({
-      content: {
-        artifacts: relatedArtifacts.map((artifactRecord) => ({
-          artifactId: artifactRecord.ref.artifactId,
-          artifactKind: artifactRecord.ref.artifactKind,
-          backend: artifactRecord.ref.backend,
-          publicationState: artifactRecord.publication?.state,
-          retrievalState: artifactRecord.retrieval?.state,
-          status: artifactRecord.ref.status,
-          turnId: artifactRecord.turnId,
-          updatedAt: artifactRecord.updatedAt
-        })),
-        conversations: sessionConversations.map((conversationRecord) => ({
-          artifactIds: conversationRecord.artifactIds,
-          conversationId: conversationRecord.conversationId,
-          followupCount: conversationRecord.followupCount,
-          initiator: conversationRecord.initiator,
-          lastMessageType: conversationRecord.lastMessageType,
-          peerNodeId: conversationRecord.peerNodeId,
-          responsePolicy: conversationRecord.responsePolicy,
-          status: conversationRecord.status,
-          updatedAt: conversationRecord.updatedAt
-        })),
-        counts: {
-          artifactCount: relatedArtifactIds.size,
-          conversationCount: sessionConversations.length,
-          recentTurnCount: Math.min(
-            sessionTurns.length,
-            resolvedInput.maxRecentTurns
-          )
-        },
-        recentTurns: sessionTurns
-          .slice(0, resolvedInput.maxRecentTurns)
-          .map((turnRecord) => ({
-            ...(turnRecord.conversationId
-              ? {
-                  conversationId: turnRecord.conversationId
-                }
-              : {}),
-            ...(turnRecord.messageId
-              ? {
-                  messageId: turnRecord.messageId
-                }
-              : {}),
-            ...(turnRecord.sessionId
-              ? {
-                  sessionId: turnRecord.sessionId
-                }
-              : {}),
-            consumedArtifactIds: turnRecord.consumedArtifactIds,
-            engineOutcome: summarizeTurnOutcome(turnRecord),
-            phase: turnRecord.phase,
-            producedArtifactIds: turnRecord.producedArtifactIds,
-            triggerKind: turnRecord.triggerKind,
-            turnId: turnRecord.turnId,
-            updatedAt: turnRecord.updatedAt
-          })),
-        session: {
-          activeConversationIds: sessionRecord.activeConversationIds,
-          entrypointNodeId: sessionRecord.entrypointNodeId,
-          intent: sessionRecord.intent,
-          lastMessageType: sessionRecord.lastMessageType,
-          ownerNodeId: sessionRecord.ownerNodeId,
-          rootArtifactIds: sessionRecord.rootArtifactIds,
-          sessionId: sessionRecord.sessionId,
-          status: sessionRecord.status,
-          updatedAt: sessionRecord.updatedAt,
-          waitingApprovalIds: sessionRecord.waitingApprovalIds
-        }
-      }
+      content: snapshot
     });
   }
 };

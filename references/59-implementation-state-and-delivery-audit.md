@@ -275,6 +275,10 @@ not modeling.
   maintains `memory/wiki/summaries/working-context.md` through a strict
   structured tool call while preserving runner ownership of the actual wiki
   write path and keeping synthesis failure additive rather than turn-fatal;
+- a session-aware refinement of that working-context synthesis path where the
+  model-guided summary now also consumes the same bounded current-session
+  snapshot exposed through `inspect_session_state`, rather than duplicating or
+  omitting runner-local session progress;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -294,7 +298,7 @@ not modeling.
 ### Still missing or incomplete
 
 - richer model-guided memory maintenance beyond the current deterministic task
-  page, log/index, derived recent-work summary, derived working-context
+  page, log/index, derived recent-work summary, session-aware working-context
   summary, and bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.

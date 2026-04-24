@@ -18,10 +18,17 @@ import {
   workingContextSummaryRelativePath,
   writeTextFile
 } from "./memory-maintenance.js";
+import { buildRunnerStatePaths } from "./state-store.js";
+import {
+  buildRunnerSessionStateSnapshot,
+  renderRunnerSessionStateSnapshotForPrompt
+} from "./session-state-snapshot.js";
 import { collectMemoryRefs } from "./runtime-context.js";
 import type { RunnerInboundEnvelope } from "./transport.js";
 
 const maxWorkingContextListEntries = 6;
+const maxSynthesisArtifacts = 6;
+const maxSynthesisRecentTurns = 4;
 
 const workingContextSummaryToolId = "write_memory_summary";
 const workingContextSummaryBullet =
@@ -279,6 +286,12 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
     wikiRoot,
     input.recentWorkSummaryPath
   );
+  const sessionSnapshot = await buildRunnerSessionStateSnapshot({
+    maxArtifacts: maxSynthesisArtifacts,
+    maxRecentTurns: maxSynthesisRecentTurns,
+    sessionId: input.envelope.message.sessionId,
+    statePaths: buildRunnerStatePaths(input.context.workspace.runtimeRoot)
+  });
 
   return {
     sessionId: input.envelope.message.sessionId,
@@ -307,7 +320,12 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
           ? input.producedArtifactIds.join(", ")
           : "none"
       }`,
-      `Current assistant outcome:\n${assistantSummary}`
+      `Current assistant outcome:\n${assistantSummary}`,
+      ...(sessionSnapshot
+        ? [
+            renderRunnerSessionStateSnapshotForPrompt(sessionSnapshot)
+          ]
+        : [])
     ],
     toolChoice: {
       type: "tool",

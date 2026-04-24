@@ -174,13 +174,17 @@ Completed in the current repository state:
     successful turns now preserve normalized provider identity, failed turns now
     persist bounded failure payloads, and successful engine outcomes survive
     later artifact-materialization failures.
+11. a session-aware working-context synthesis slice where the model-guided
+    memory pass now consumes the same bounded current-session snapshot used by
+    `inspect_session_state`, instead of keeping session reasoning trapped in
+    the builtin tool path alone.
 
 Remaining work in this phase:
 
 1. deepen model-guided memory maintenance and runtime reasoning on top of the
-   now-implemented artifact-inspection, bounded memory-ref inspection, and
-   bounded current-session state inspection paths before adding more builtin
-   tool kinds;
+   now-implemented artifact inspection, bounded memory-ref inspection, bounded
+   current-session state inspection, and session-aware working-context
+   synthesis paths before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;
@@ -253,9 +257,9 @@ Completed in the current repository state:
   expanded into per-node session/runtime detail through the existing
   `GET /v1/sessions/{sessionId}` surface.
 
-The next best current move is to return to richer model-guided memory
-maintenance and working-context synthesis on top of the now stronger bounded
-runtime inspection surface, not to widen the builtin tool catalog casually.
+The next best current move is to keep deepening model-guided memory maintenance
+on top of the now stronger session-aware bounded runtime inspection surface,
+not to widen the builtin tool catalog casually.
 
 ## Phase 4: Studio completion
 

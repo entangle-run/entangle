@@ -122,6 +122,10 @@ The repository now also contains the first real implementation baseline:
   maintains `memory/wiki/summaries/working-context.md` through a strict
   forced tool call while preserving runner ownership of the actual wiki
   write path and keeping synthesis failure additive rather than turn-fatal;
+- a session-aware refinement of that working-context synthesis path where the
+  model-guided summary now also consumes the same bounded current-session
+  snapshot exposed through `inspect_session_state`, instead of leaving session
+  reasoning trapped in the builtin tool path alone;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -363,8 +367,8 @@ The current implementation-truth audit now lives in
 - complete CLI parity where it adds real headless operational value;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
-  and otherwise deepen model-guided memory maintenance and working-context
-  synthesis on top of the now stronger bounded runtime inspection surface;
+  and otherwise deepen model-guided memory maintenance on top of the now
+  stronger session-aware bounded runtime inspection surface;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

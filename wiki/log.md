@@ -711,3 +711,15 @@ runner-owned persisted state through shared state-store helpers instead of ad
 hoc filesystem traversal. Closed the slice only after widening `types` and
 runner tests, re-running targeted lint/test loops, and then confirming the full
 `pnpm verify` plus `git diff --check` gates.
+
+## [2026-04-24] implementation | Added session-aware working-context synthesis
+
+Deepened model-guided memory synthesis without widening the builtin tool
+catalog. Extracted a shared bounded runner-local session snapshot builder,
+rewired `inspect_session_state` to delegate to it, and then fed the same
+bounded current-session snapshot into the `working-context.md` synthesis prompt.
+This keeps session reasoning grounded in one canonical runner-local summary
+instead of duplicating or omitting it across tool execution and memory
+synthesis. Closed the slice only after widening runner tests, re-running
+targeted runner lint/test loops, and then confirming the full `pnpm verify`
+plus `git diff --check` gates.
