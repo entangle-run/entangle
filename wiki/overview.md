@@ -185,6 +185,9 @@ The repository now also contains the first real implementation baseline:
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status and trace ids;
+- the first bounded Studio graph-mutation slice where the operator can now
+  select, create, replace, and delete graph edges through host-owned mutation
+  routes instead of keeping Studio fully read-only on topology;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -307,8 +310,8 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- finish bounded Studio package/graph mutation flows on top of the now broader
-  host-owned trace surface;
+- finish bounded Studio managed-node mutation and package admission flows on
+  top of the now broader host-owned trace surface;
 - complete CLI parity where it adds real headless operational value;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided

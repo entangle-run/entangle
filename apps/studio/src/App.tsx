@@ -26,6 +26,20 @@ import type {
   RuntimeRecoveryInspectionResponse
 } from "@entangle/types";
 import {
+  buildEdgeCreateRequest,
+  buildEdgeEditorDraft,
+  buildEdgeReplacementRequest,
+  createDefaultEdgeEditorDraft,
+  createEmptyEdgeEditorDraft,
+  edgeRelationOptions,
+  formatGraphEdgeDetail,
+  formatGraphEdgeLabel,
+  isEdgeEditorDraftUninitialized,
+  sortGraphEdges,
+  summarizeValidationReport,
+  type EdgeEditorDraft
+} from "./graph-edge-mutation.js";
+import {
   collectRuntimeRecoveryEvents,
   deriveSelectedRuntimeId,
   describeRuntimeRecoveryController,
@@ -61,6 +75,7 @@ type FlowProjection = {
 };
 
 type EventStreamState = "connecting" | "live" | "closed" | "error";
+type EdgeMutationAction = "create" | "delete" | "replace";
 
 function normalizeError(
   caught: unknown,
@@ -125,7 +140,8 @@ function computeNodeDepths(graph: GraphSpec): Map<string, number> {
 
 function projectGraphToFlow(
   graph: GraphSpec | undefined,
-  selectedRuntimeId: string | null
+  selectedRuntimeId: string | null,
+  selectedEdgeId: string | null
 ): FlowProjection {
   if (!graph) {
     return {
@@ -169,6 +185,7 @@ function projectGraphToFlow(
     animated: edge.relation === "peer_collaborates_with",
     id: edge.edgeId,
     label: edge.relation,
+    selected: edge.edgeId === selectedEdgeId,
     source: edge.fromNodeId,
     target: edge.toNodeId
   }));
@@ -226,6 +243,13 @@ export function App() {
     useState<GraphInspectionResponse | null>(null);
   const [runtimes, setRuntimes] = useState<RuntimeInspectionResponse[]>([]);
   const [selectedRuntimeId, setSelectedRuntimeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [edgeDraft, setEdgeDraft] = useState<EdgeEditorDraft>(
+    createEmptyEdgeEditorDraft
+  );
+  const [edgeMutationError, setEdgeMutationError] = useState<string | null>(null);
+  const [pendingEdgeMutation, setPendingEdgeMutation] =
+    useState<EdgeMutationAction | null>(null);
   const [selectedRecovery, setSelectedRecovery] =
     useState<RuntimeRecoveryInspectionResponse | null>(null);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
@@ -385,6 +409,96 @@ export function App() {
     [client, refreshSelectedRuntimeDetails, selectedRuntimeId]
   );
 
+  const graphNodeIds = useMemo(
+    () => graphInspection?.graph?.nodes.map((node) => node.nodeId) ?? [],
+    [graphInspection]
+  );
+  const graphEdges = useMemo(
+    () => sortGraphEdges(graphInspection?.graph?.edges ?? []),
+    [graphInspection]
+  );
+
+  const resetEdgeDraft = useCallback(() => {
+    setSelectedEdgeId(null);
+    setEdgeDraft(createDefaultEdgeEditorDraft(graphInspection?.graph));
+    setEdgeMutationError(null);
+  }, [graphInspection]);
+
+  const selectEdge = useCallback(
+    (edgeId: string) => {
+      const edge = graphEdges.find((candidate) => candidate.edgeId === edgeId);
+
+      if (!edge) {
+        return;
+      }
+
+      setSelectedEdgeId(edgeId);
+      setEdgeDraft(buildEdgeEditorDraft(edge));
+      setEdgeMutationError(null);
+    },
+    [graphEdges]
+  );
+
+  const mutateSelectedEdge = useCallback(
+    async (action: EdgeMutationAction) => {
+      if (!graphInspection?.graph) {
+        return;
+      }
+
+      try {
+        setPendingEdgeMutation(action);
+
+        if (action === "delete") {
+          if (!selectedEdgeId) {
+            return;
+          }
+
+          await client.deleteEdge(selectedEdgeId);
+          await loadOverview();
+          setSelectedEdgeId(null);
+          setEdgeDraft(createEmptyEdgeEditorDraft());
+          setEdgeMutationError(null);
+          return;
+        }
+
+        const response =
+          action === "create"
+            ? await client.createEdge(buildEdgeCreateRequest(edgeDraft))
+            : selectedEdgeId
+              ? await client.replaceEdge(
+                  selectedEdgeId,
+                  buildEdgeReplacementRequest(edgeDraft)
+                )
+              : null;
+
+        if (!response) {
+          return;
+        }
+
+        const validationMessage = summarizeValidationReport(response.validation);
+
+        if (validationMessage) {
+          setEdgeMutationError(validationMessage);
+          return;
+        }
+
+        await loadOverview();
+        setSelectedEdgeId(response.edge?.edgeId ?? edgeDraft.edgeId);
+        setEdgeMutationError(null);
+      } catch (caught: unknown) {
+        setEdgeMutationError(
+          normalizeError(
+            caught,
+            `Unknown error while trying to ${action} the edge.`
+          )
+        );
+      } finally {
+        setPendingEdgeMutation(null);
+      }
+    },
+    [client, edgeDraft, graphInspection, loadOverview, selectedEdgeId]
+  );
+
   const handleHostEvent = useEffectEvent((event: HostEventRecord) => {
     startTransition(() => {
       setHostEvents((current) => [event, ...current].slice(0, 40));
@@ -438,6 +552,34 @@ export function App() {
   }, [refreshSelectedRuntimeDetails, selectedRuntimeId]);
 
   useEffect(() => {
+    if (!graphInspection?.graph) {
+      setSelectedEdgeId(null);
+      setEdgeDraft(createEmptyEdgeEditorDraft());
+      setEdgeMutationError(null);
+      return;
+    }
+
+    if (selectedEdgeId) {
+      const selectedEdge = graphEdges.find((edge) => edge.edgeId === selectedEdgeId);
+
+      if (selectedEdge) {
+        setEdgeDraft(buildEdgeEditorDraft(selectedEdge));
+        return;
+      }
+
+      setSelectedEdgeId(null);
+      setEdgeDraft(createDefaultEdgeEditorDraft(graphInspection.graph));
+      return;
+    }
+
+    setEdgeDraft((current) =>
+      isEdgeEditorDraftUninitialized(current)
+        ? createDefaultEdgeEditorDraft(graphInspection.graph)
+        : current
+    );
+  }, [graphEdges, graphInspection, selectedEdgeId]);
+
+  useEffect(() => {
     setEventStreamState("connecting");
     setEventStreamError(null);
 
@@ -472,8 +614,8 @@ export function App() {
   );
   const statusTone = useMemo(() => status?.status ?? "pending", [status]);
   const flowProjection = useMemo(
-    () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId),
-    [graphInspection, selectedRuntimeId]
+    () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
+    [graphInspection, selectedEdgeId, selectedRuntimeId]
   );
   const recoveryEvents = useMemo(
     () =>
@@ -523,6 +665,9 @@ export function App() {
                 edges={flowProjection.edges}
                 fitView
                 nodes={flowProjection.nodes}
+                onEdgeClick={(_event, edge) => {
+                  selectEdge(edge.id);
+                }}
                 onNodeClick={(_event, node) => {
                   if (runtimes.some((runtime) => runtime.nodeId === node.id)) {
                     setSelectedRuntimeId(node.id);
@@ -542,6 +687,196 @@ export function App() {
                 </span>
               </div>
             )}
+          </div>
+
+          <div className="graph-editor-grid">
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Graph Edges</h3>
+                <span className="panel-caption">{graphEdges.length} edges</span>
+              </div>
+
+              {graphEdges.length > 0 ? (
+                <div className="edge-list">
+                  {graphEdges.map((edge) => (
+                    <button
+                      key={edge.edgeId}
+                      className={`edge-chip ${edge.edgeId === selectedEdgeId ? "is-selected" : ""}`}
+                      onClick={() => {
+                        selectEdge(edge.edgeId);
+                      }}
+                      type="button"
+                    >
+                      <strong>{formatGraphEdgeLabel(edge)}</strong>
+                      <span>{formatGraphEdgeDetail(edge)}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>No edges are currently defined in the applied graph.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Edge Editor</h3>
+                <span className="panel-caption">
+                  {selectedEdgeId ? "Replace or delete" : "Create a new edge"}
+                </span>
+              </div>
+
+              {edgeMutationError ? <p className="error-box">{edgeMutationError}</p> : null}
+
+              {graphInspection?.graph ? (
+                <>
+                  <div className="field-grid">
+                    <label className="field">
+                      <span>Edge id</span>
+                      <input
+                        disabled={selectedEdgeId !== null || pendingEdgeMutation !== null}
+                        onChange={(event) => {
+                          setEdgeDraft((current) => ({
+                            ...current,
+                            edgeId: event.target.value
+                          }));
+                        }}
+                        type="text"
+                        value={edgeDraft.edgeId}
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Relation</span>
+                      <select
+                        disabled={pendingEdgeMutation !== null}
+                        onChange={(event) => {
+                          setEdgeDraft((current) => ({
+                            ...current,
+                            relation: event.target.value as EdgeEditorDraft["relation"]
+                          }));
+                        }}
+                        value={edgeDraft.relation}
+                      >
+                        {edgeRelationOptions.map((relation) => (
+                          <option key={relation} value={relation}>
+                            {relation}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>From node</span>
+                      <select
+                        disabled={pendingEdgeMutation !== null}
+                        onChange={(event) => {
+                          setEdgeDraft((current) => ({
+                            ...current,
+                            fromNodeId: event.target.value
+                          }));
+                        }}
+                        value={edgeDraft.fromNodeId}
+                      >
+                        {graphInspection.graph.nodes.map((node) => (
+                          <option key={node.nodeId} value={node.nodeId}>
+                            {node.displayName} ({node.nodeId})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>To node</span>
+                      <select
+                        disabled={pendingEdgeMutation !== null}
+                        onChange={(event) => {
+                          setEdgeDraft((current) => ({
+                            ...current,
+                            toNodeId: event.target.value
+                          }));
+                        }}
+                        value={edgeDraft.toNodeId}
+                      >
+                        {graphInspection.graph.nodes.map((node) => (
+                          <option key={node.nodeId} value={node.nodeId}>
+                            {node.displayName} ({node.nodeId})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="toggle-field">
+                    <input
+                      checked={edgeDraft.enabled}
+                      disabled={pendingEdgeMutation !== null}
+                      onChange={(event) => {
+                        setEdgeDraft((current) => ({
+                          ...current,
+                          enabled: event.target.checked
+                        }));
+                      }}
+                      type="checkbox"
+                    />
+                    <span>Edge enabled</span>
+                  </label>
+
+                  <p className="editor-meta">
+                    Transport policy remains host-owned in this bounded slice.
+                    Channel <code>{edgeDraft.channel}</code> and{" "}
+                    <code>{edgeDraft.relayProfileRefs.length}</code> relay profile refs
+                    are preserved on replace and defaulted on create.
+                  </p>
+
+                  <div className="action-row">
+                    <button
+                      className="action-button"
+                      disabled={pendingEdgeMutation !== null}
+                      onClick={resetEdgeDraft}
+                      type="button"
+                    >
+                      New Edge
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={
+                        pendingEdgeMutation !== null ||
+                        edgeDraft.fromNodeId === "" ||
+                        edgeDraft.toNodeId === "" ||
+                        (!selectedEdgeId && edgeDraft.edgeId.trim() === "") ||
+                        graphNodeIds.length < 2
+                      }
+                      onClick={() => {
+                        void mutateSelectedEdge(selectedEdgeId ? "replace" : "create");
+                      }}
+                      type="button"
+                    >
+                      {pendingEdgeMutation === "create" || pendingEdgeMutation === "replace"
+                        ? "Saving..."
+                        : selectedEdgeId
+                          ? "Save Edge"
+                          : "Create Edge"}
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={pendingEdgeMutation !== null || selectedEdgeId === null}
+                      onClick={() => {
+                        void mutateSelectedEdge("delete");
+                      }}
+                      type="button"
+                    >
+                      {pendingEdgeMutation === "delete" ? "Deleting..." : "Delete Edge"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>Apply a graph before editing edges from Studio.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

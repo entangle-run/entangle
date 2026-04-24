@@ -248,10 +248,13 @@ This repository currently contains:
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status and trace ids;
+- the first bounded Studio graph-mutation slice where operators can now select,
+  create, replace, and delete graph edges through host-owned edge resource
+  routes instead of keeping Studio read-only on topology;
 
 The highest-value remaining gaps are:
 
-- bounded Studio package/graph mutation flows;
+- bounded Studio managed-node mutation and package admission flows;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;

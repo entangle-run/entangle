@@ -209,6 +209,9 @@ Completed in the current repository state:
 - deeper Studio runtime session inspection on top of the already implemented
   host session read model, again preserving partial-failure-tolerant
   selected-runtime refresh semantics.
+- the first bounded Studio graph-mutation slice through host-owned edge
+  mutation flows, with edge selection, create/replace/delete, and canonical
+  post-mutation refresh.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -220,11 +223,13 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. bounded package and graph mutation flows on top of the now-richer runtime
-   inspection, lifecycle, artifact, and session surface;
-2. deeper session drilldown only where the existing host session read model
+1. bounded managed-node mutation on top of the now-richer runtime and graph
+   inspection surface;
+2. bounded package-source admission on top of the existing host package-source
+   surface;
+3. deeper session drilldown only where the existing host session read model
    creates real operator leverage;
-3. live event-driven updates via the host event stream where additional
+4. live event-driven updates via the host event stream where additional
    operator value still exists.
 
 Acceptance for the phase:

@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio graph edge mutation
+
+Closed the first bounded graph-mutation slice in Studio by exposing host-owned
+edge create/replace/delete flows on top of the already implemented edge
+resource surface. Studio now supports live edge selection from topology or the
+edge list and keeps graph refresh canonical after successful mutation.
+
 ## [2026-04-24] implementation | Added Studio runtime session inspection
 
 Closed the next Studio read slice by exposing host-backed session summaries for

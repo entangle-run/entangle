@@ -305,12 +305,14 @@ delivery.
 - runtime session inspection on top of the existing host session read model,
   with selected-runtime refresh now also carrying filtered host session
   summaries for the selected runtime;
+- bounded Studio graph edge mutation on top of the host-owned edge resource
+  surface, including live edge selection plus create/replace/delete flows;
 - access to a broader typed trace surface that now includes conversations,
   approvals, artifacts, sessions, runner turns, and runtime recovery events.
 
 ### Still missing or incomplete
 
-- bounded mutation flows for package admission and graph editing;
+- bounded managed-node mutation and package admission flows in Studio;
 - deeper session drilldown beyond the current session-summary view.
 
 ### Assessment
@@ -383,8 +385,9 @@ surface:
 
 The current best delivery order is:
 
-1. finish Studio as a real operator surface with bounded package and graph
-   mutation flows on top of the now broader host-owned trace surface;
+1. finish Studio as a real operator surface with bounded managed-node mutation
+   and package admission flows on top of the now broader host-owned trace
+   surface;
 2. complete CLI parity for the core host workflows;
 3. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
