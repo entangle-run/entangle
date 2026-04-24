@@ -30,6 +30,7 @@ import {
   nodeReplacementRequestSchema,
   hostStatusResponseSchema,
   packageSourceAdmissionRequestSchema,
+  packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
@@ -53,6 +54,7 @@ import {
   createManagedNode,
   deleteEdge,
   deleteManagedNode,
+  deletePackageSource,
   getNodeInspection,
   getRuntimeContext,
   getRuntimeInspection,
@@ -299,6 +301,31 @@ function throwForEdgeMutationConflict(conflict: {
       throw new HostHttpError({
         code: "not_found",
         message: `Edge '${conflict.edgeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+  }
+}
+
+function throwForPackageSourceDeletionConflict(conflict: {
+  kind: "package_source_in_use" | "package_source_not_found";
+  nodeIds?: string[];
+  packageSourceId: string;
+}): never {
+  switch (conflict.kind) {
+    case "package_source_in_use":
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeIds: conflict.nodeIds ?? []
+        },
+        message:
+          `Package source '${conflict.packageSourceId}' cannot be deleted while active graph nodes still reference it.`,
+        statusCode: 409
+      });
+    case "package_source_not_found":
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Package source '${conflict.packageSourceId}' was not found.`,
         statusCode: 404
       });
   }
@@ -557,6 +584,17 @@ export async function buildHostServer() {
     }
 
     return packageSourceInspectionResponseSchema.parse(inspection);
+  });
+
+  server.delete("/v1/package-sources/:packageSourceId", async (request) => {
+    const params = request.params as { packageSourceId: string };
+    const result = await deletePackageSource(params.packageSourceId);
+
+    if (!result.ok) {
+      throwForPackageSourceDeletionConflict(result.conflict);
+    }
+
+    return packageSourceDeletionResponseSchema.parse(result.response);
   });
 
   server.post("/v1/package-sources/admit", async (request, reply) => {

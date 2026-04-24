@@ -167,6 +167,41 @@ describe("createHostClient", () => {
     });
   });
 
+  it("deletes package sources through the host package-source surface", async () => {
+    const requests: Array<{ method?: string; url: string }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              deletedPackageSourceId: "worker-it-source"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.deletePackageSource("worker-it-source")
+    ).resolves.toEqual({
+      deletedPackageSourceId: "worker-it-source"
+    });
+    expect(requests).toEqual([
+      {
+        method: "DELETE",
+        url: "http://entangle-host.test/v1/package-sources/worker-it-source"
+      }
+    ]);
+  });
+
   it("surfaces plain-text upstream failures without masking them behind JSON parsing", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

@@ -359,6 +359,10 @@ Completed in the current repository state:
   archives are safely extracted, validated as AgentPackage directories,
   imported under `.entangle/host/imports/packages/<package_source_id>/package/`,
   and recorded through immutable package-store materialization.
+- host-side package-source deletion, where unused package sources can be
+  removed through `DELETE /v1/package-sources/{packageSourceId}`, active graph
+  references produce typed conflicts, and `package_source.deleted` events drive
+  downstream refresh.
 - the next bounded Studio completion slice through host-event-driven refresh,
   where overview and selected-runtime reads are now coalesced off the existing
   host event stream without reconnecting the subscription on runtime
@@ -408,6 +412,8 @@ Completed in the current repository state:
   surface;
 - canonical package-source admission for both `local_path` and `local_archive`
   sources, including optional explicit package-source ids through the CLI.
+- package-source deletion through the shared host boundary, including a dry-run
+  intent for headless operator automation.
 - runtime artifact inspection through the existing host artifact read surface,
   including deterministic local filtering over host-owned artifact records.
 - single-runtime-artifact inspection by id through the same host boundary.

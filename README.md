@@ -380,6 +380,10 @@ This repository currently contains:
   package-directory rules as `local_path`, imported under host-managed package
   storage, and recorded through the immutable package store instead of
   remaining a client-only request shape;
+- a package-source deletion boundary where `entangle-host` can remove unused
+  package sources, reject deletion while active graph nodes still reference
+  them, emit typed `package_source.deleted` events, and expose the same
+  operation through the shared host client and CLI dry-run flow;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and selected-runtime
   refresh instead of depending only on explicit reload loops after mutations;

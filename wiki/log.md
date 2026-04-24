@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added package-source deletion
+
+Added a host-owned package-source deletion boundary through
+`DELETE /v1/package-sources/{packageSourceId}`. The host now removes unused
+package-source records, rejects deletion while active graph nodes still
+reference the source, cleans up host-managed imported archive storage, emits
+typed `package_source.deleted` events, and exposes the operation through the
+shared host client plus CLI dry-run flow.
+
 ## [2026-04-24] implementation | Added local archive package-source admission
 
 Closed the host-side `local_archive` package-source gap. Archive admission now

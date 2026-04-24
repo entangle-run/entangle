@@ -312,6 +312,10 @@ The repository now also contains the first real implementation baseline:
   directories, imported under host-managed package storage, and recorded
   through the immutable package store rather than remaining a client-only
   request contract;
+- the host-side package-source deletion boundary, where unused sources can be
+  removed safely, active graph references block deletion with a typed conflict,
+  `package_source.deleted` events refresh Studio overview state, and the CLI
+  can perform or dry-run the mutation through the shared host client;
 - the next bounded Studio completion slice where the operator surface now uses
   the existing host event stream to coalesce live overview and
   selected-runtime refresh instead of depending only on explicit post-mutation

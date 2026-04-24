@@ -118,6 +118,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - package-source admission and inspection, including real `local_archive`
   materialization for tar/tar.gz archives through host-managed import storage
   and immutable package-store records;
+- package-source deletion with active-graph reference protection,
+  host-managed archive import cleanup, and typed `package_source.deleted`
+  control-plane events;
 - external-principal persistence and inspection;
 - graph apply, inspection, and validation;
 - graph revision-history listing and revision-detail inspection;
@@ -450,6 +453,9 @@ delivery.
   `archive_admission_not_implemented` validation response with safe archive
   extraction, package validation, import storage, and package-store
   materialization;
+- Studio overview refresh over the new `package_source.deleted` event, keeping
+  admitted package-source inventory reactive when another host client deletes
+  an unused source;
 - coalesced live Studio refresh on top of the existing host event stream, so
   overview and selected-runtime reads now react to host-owned control-plane,
   runtime, recovery, session, and artifact events without relying on polling
@@ -485,6 +491,8 @@ workflow completeness, not missing mutation or liveness foundations.
 - package-source detail inspection plus canonical package admission for both
   `local_path` and `local_archive`, including optional explicit
   package-source ids in the CLI layer;
+- package-source deletion through the shared host client, including a dry-run
+  mutation intent for automation flows;
 - runtime artifact inspection parity through the existing host artifact read
   surface, including deterministic local filtering over artifact backend,
   kind, lifecycle, publication, and retrieval state;

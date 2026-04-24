@@ -23,6 +23,7 @@ import {
   nodeMutationResponseSchema,
   nodeReplacementRequestSchema,
   packageSourceAdmissionRequestSchema,
+  packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
@@ -57,6 +58,7 @@ import {
   type NodeMutationResponse,
   type NodeReplacementRequest,
   type PackageSourceAdmissionRequest,
+  type PackageSourceDeletionResponse,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
   type RuntimeArtifactInspectionResponse,
@@ -397,6 +399,17 @@ export function createHostClient(options: HostClientOptions) {
         }),
         packageSourceInspectionResponseSchema,
         { acceptedErrorStatuses: [400] }
+      );
+    },
+
+    async deletePackageSource(
+      packageSourceId: string
+    ): Promise<PackageSourceDeletionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/package-sources/${packageSourceId}`, {
+          method: "DELETE"
+        }),
+        packageSourceDeletionResponseSchema
       );
     },
 

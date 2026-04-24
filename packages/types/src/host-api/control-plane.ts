@@ -51,6 +51,10 @@ export const packageSourceListResponseSchema = z.object({
   packageSources: z.array(packageSourceInspectionResponseSchema)
 });
 
+export const packageSourceDeletionResponseSchema = z.object({
+  deletedPackageSourceId: identifierSchema
+});
+
 export const graphInspectionResponseSchema = z.object({
   graph: graphSpecSchema.optional(),
   activeRevisionId: identifierSchema.optional()
@@ -109,6 +113,9 @@ export type PackageSourceInspectionResponse = z.infer<
 >;
 export type PackageSourceListResponse = z.infer<
   typeof packageSourceListResponseSchema
+>;
+export type PackageSourceDeletionResponse = z.infer<
+  typeof packageSourceDeletionResponseSchema
 >;
 export type GraphInspectionResponse = z.infer<
   typeof graphInspectionResponseSchema

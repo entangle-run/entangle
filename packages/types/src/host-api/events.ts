@@ -72,6 +72,12 @@ export const packageSourceAdmittedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("package_source.admitted")
 });
 
+export const packageSourceDeletedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("control_plane"),
+  packageSourceId: identifierSchema,
+  type: z.literal("package_source.deleted")
+});
+
 export const externalPrincipalUpdatedEventSchema = hostEventBaseSchema.extend({
   category: z.literal("control_plane"),
   principalId: identifierSchema,
@@ -299,6 +305,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   hostOperatorRequestCompletedEventSchema,
   catalogUpdatedEventSchema,
   packageSourceAdmittedEventSchema,
+  packageSourceDeletedEventSchema,
   externalPrincipalUpdatedEventSchema,
   graphRevisionAppliedEventSchema,
   nodeBindingUpdatedEventSchema,
@@ -334,6 +341,9 @@ export const hostEventListResponseSchema = z.object({
 export type CatalogUpdatedEvent = z.infer<typeof catalogUpdatedEventSchema>;
 export type PackageSourceAdmittedEvent = z.infer<
   typeof packageSourceAdmittedEventSchema
+>;
+export type PackageSourceDeletedEvent = z.infer<
+  typeof packageSourceDeletedEventSchema
 >;
 export type ExternalPrincipalUpdatedEvent = z.infer<
   typeof externalPrincipalUpdatedEventSchema

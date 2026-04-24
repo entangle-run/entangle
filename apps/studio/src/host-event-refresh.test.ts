@@ -22,6 +22,13 @@ describe("host-event-refresh", () => {
       packageSourceId: "worker-it",
       type: "package_source.admitted"
     };
+    const packageSourceDeletedEvent: HostEventRecord = {
+      ...baseEvent,
+      category: "control_plane",
+      message: "Deleted package source 'worker-it'.",
+      packageSourceId: "worker-it",
+      type: "package_source.deleted"
+    };
     const graphEvent: HostEventRecord = {
       ...baseEvent,
       activeRevisionId: "team-alpha-20260424t100000z",
@@ -45,6 +52,9 @@ describe("host-event-refresh", () => {
     };
 
     expect(shouldRefreshOverviewFromHostEvent(packageSourceEvent)).toBe(true);
+    expect(shouldRefreshOverviewFromHostEvent(packageSourceDeletedEvent)).toBe(
+      true
+    );
     expect(shouldRefreshOverviewFromHostEvent(graphEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(runtimeEvent)).toBe(true);
   });

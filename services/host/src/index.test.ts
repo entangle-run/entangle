@@ -32,6 +32,7 @@ import {
   nodeInspectionResponseSchema,
   nodeListResponseSchema,
   nodeMutationResponseSchema,
+  packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
@@ -1029,6 +1030,82 @@ describe("buildHostServer", () => {
         code: "not_found",
         message: "Package source 'missing-source' was not found."
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("deletes unused package sources through the host surface", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      const deleteResponse = await server.inject({
+        method: "DELETE",
+        url: `/v1/package-sources/${packageSourceId}`
+      });
+
+      expect(deleteResponse.statusCode).toBe(200);
+      expect(
+        packageSourceDeletionResponseSchema.parse(deleteResponse.json())
+      ).toEqual({
+        deletedPackageSourceId: packageSourceId
+      });
+
+      const deletedInspectionResponse = await server.inject({
+        method: "GET",
+        url: `/v1/package-sources/${packageSourceId}`
+      });
+      expect(deletedInspectionResponse.statusCode).toBe(404);
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=10"
+      });
+      expect(
+        hostEventListResponseSchema
+          .parse(eventsResponse.json())
+          .events.some(
+            (event) =>
+              event.type === "package_source.deleted" &&
+              event.packageSourceId === packageSourceId
+          )
+      ).toBe(true);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects package-source deletion while active graph nodes reference it", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const deleteResponse = await server.inject({
+        method: "DELETE",
+        url: `/v1/package-sources/${packageSourceId}`
+      });
+
+      expect(deleteResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(deleteResponse.json())).toMatchObject({
+        code: "conflict",
+        details: {
+          nodeIds: ["worker-it"]
+        }
+      });
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: `/v1/package-sources/${packageSourceId}`
+      });
+      expect(inspectionResponse.statusCode).toBe(200);
     } finally {
       await server.close();
     }

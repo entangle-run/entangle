@@ -2,6 +2,7 @@ import type { HostEventRecord } from "@entangle/types";
 
 const overviewRefreshEventTypes = new Set<HostEventRecord["type"]>([
   "package_source.admitted",
+  "package_source.deleted",
   "graph.revision.applied",
   "node.binding.updated",
   "edge.updated",

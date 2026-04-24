@@ -79,6 +79,7 @@ import {
   type NodeReplacementRequest,
   packageSourceRecordSchema,
   type PackageSourceAdmissionRequest,
+  type PackageSourceDeletionResponse,
   type PackageSourceInspectionResponse,
   type PackageSourceRecord,
   type PackageSourceListResponse,
@@ -170,6 +171,7 @@ const importsRoot = path.join(hostStateRoot, "imports");
 const workspacesRoot = path.join(hostStateRoot, "workspaces");
 const cacheRoot = path.join(hostStateRoot, "cache");
 const packageStoreRoot = path.join(importsRoot, "packages", "store");
+const reservedPackageSourceIds = new Set(["store"]);
 
 const catalogPath = path.join(desiredRoot, "catalog.json");
 const externalPrincipalsRoot = path.join(desiredRoot, "external-principals");
@@ -263,6 +265,10 @@ type CatalogUpdatedEventInput = Omit<
 >;
 type PackageSourceAdmittedEventInput = Omit<
   Extract<HostEventRecord, { type: "package_source.admitted" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type PackageSourceDeletedEventInput = Omit<
+  Extract<HostEventRecord, { type: "package_source.deleted" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type ExternalPrincipalUpdatedEventInput = Omit<
@@ -392,6 +398,27 @@ type EdgeMutationResult<T> =
     }
   | {
       conflict: EdgeMutationConflict;
+      ok: false;
+    };
+
+type PackageSourceDeletionConflict =
+  | {
+      kind: "package_source_in_use";
+      nodeIds: string[];
+      packageSourceId: string;
+    }
+  | {
+      kind: "package_source_not_found";
+      packageSourceId: string;
+    };
+
+type PackageSourceDeletionResult =
+  | {
+      ok: true;
+      response: PackageSourceDeletionResponse;
+    }
+  | {
+      conflict: PackageSourceDeletionConflict;
       ok: false;
     };
 
@@ -572,21 +599,33 @@ function buildPackageSourceId(
   manifestPackageId: string,
   existingIds: string[]
 ): string {
+  const unavailableIds = new Set([
+    ...existingIds,
+    ...reservedPackageSourceIds
+  ]);
   const preferredId = sanitizeIdentifier(
     requestedId ?? `${manifestPackageId}-source`
   );
 
-  if (!existingIds.includes(preferredId)) {
+  if (!unavailableIds.has(preferredId)) {
     return preferredId;
   }
 
   let suffix = 2;
 
-  while (existingIds.includes(`${preferredId}-${suffix}`)) {
+  while (unavailableIds.has(`${preferredId}-${suffix}`)) {
     suffix += 1;
   }
 
   return `${preferredId}-${suffix}`;
+}
+
+function packageSourceRecordPath(packageSourceId: string): string {
+  return path.join(packageSourcesRoot, `${packageSourceId}.json`);
+}
+
+function packageSourceImportRoot(packageSourceId: string): string {
+  return path.join(importsRoot, "packages", packageSourceId);
 }
 
 function buildGraphRevisionId(graphId: string): string {
@@ -1086,7 +1125,7 @@ async function reconcileMaterializedPackageSourceRecord(
 
   if (JSON.stringify(nextRecord) !== JSON.stringify(record)) {
     await writeJsonFile(
-      path.join(packageSourcesRoot, `${record.packageSourceId}.json`),
+      packageSourceRecordPath(record.packageSourceId),
       nextRecord
     );
   }
@@ -2513,7 +2552,7 @@ export async function getPackageSourceInspection(
   packageSourceId: string
 ): Promise<PackageSourceInspectionResponse | null> {
   await initializeHostState();
-  const packageSourcePath = path.join(packageSourcesRoot, `${packageSourceId}.json`);
+  const packageSourcePath = packageSourceRecordPath(packageSourceId);
 
   if (!(await pathExists(packageSourcePath))) {
     return null;
@@ -2593,7 +2632,7 @@ export async function admitPackageSource(
         };
       }
 
-      await rm(path.dirname(importedPackageRoot), {
+      await rm(packageSourceImportRoot(packageSourceId), {
         force: true,
         recursive: true
       });
@@ -2608,7 +2647,7 @@ export async function admitPackageSource(
       });
 
       await writeJsonFile(
-        path.join(packageSourcesRoot, `${packageSourceId}.json`),
+        packageSourceRecordPath(packageSourceId),
         record
       );
       await appendHostEvent({
@@ -2680,7 +2719,7 @@ export async function admitPackageSource(
     });
 
     if (validation.ok) {
-      await writeJsonFile(path.join(packageSourcesRoot, `${packageSourceId}.json`), record);
+      await writeJsonFile(packageSourceRecordPath(packageSourceId), record);
       await appendHostEvent({
         category: "control_plane",
         message: `Admitted package source '${packageSourceId}'.`,
@@ -2697,6 +2736,67 @@ export async function admitPackageSource(
   }
 
   throw new Error("Unsupported package source admission request.");
+}
+
+export async function deletePackageSource(
+  packageSourceId: string
+): Promise<PackageSourceDeletionResult> {
+  await initializeHostState();
+
+  const recordPath = packageSourceRecordPath(packageSourceId);
+
+  if (!(await pathExists(recordPath))) {
+    return {
+      conflict: {
+        kind: "package_source_not_found",
+        packageSourceId
+      },
+      ok: false
+    };
+  }
+
+  const { graph } = await readActiveGraphState();
+  const referencingNodeIds =
+    graph?.nodes
+      .filter((node) => node.packageSourceRef === packageSourceId)
+      .map((node) => node.nodeId)
+      .sort() ?? [];
+
+  if (referencingNodeIds.length > 0) {
+    return {
+      conflict: {
+        kind: "package_source_in_use",
+        nodeIds: referencingNodeIds,
+        packageSourceId
+      },
+      ok: false
+    };
+  }
+
+  const record = packageSourceRecordSchema.parse(await readJsonFile(recordPath));
+
+  await rm(recordPath, { force: true });
+
+  if (record.sourceKind === "local_archive") {
+    await rm(packageSourceImportRoot(packageSourceId), {
+      force: true,
+      recursive: true
+    });
+  }
+
+  await appendHostEvent({
+    category: "control_plane",
+    message: `Deleted package source '${packageSourceId}'.`,
+    packageSourceId,
+    type: "package_source.deleted"
+  } satisfies PackageSourceDeletedEventInput);
+
+  return {
+    ok: true,
+    response: {
+      deletedPackageSourceId: packageSourceId
+    }
+  };
 }
 
 async function readExternalPrincipalRecords(): Promise<ExternalPrincipalRecord[]> {

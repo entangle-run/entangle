@@ -382,7 +382,7 @@ hostCatalogCommand
 
 const hostPackageSourcesCommand = hostCommand
   .command("package-sources")
-  .description("Inspect and admit package sources through entangle-host.");
+  .description("Inspect and mutate package sources through entangle-host.");
 
 hostPackageSourcesCommand
   .command("list")
@@ -453,6 +453,40 @@ hostPackageSourcesCommand
       }
 
       printJson(await client.admitPackageSource(request));
+    }
+  );
+
+hostPackageSourcesCommand
+  .command("delete")
+  .argument("<packageSourceId>", "Package source identifier.")
+  .option(
+    "--dry-run",
+    "Print the canonical package-source deletion intent without mutating the host."
+  )
+  .description("Delete an unused package source from entangle-host desired state.")
+  .action(
+    async (
+      packageSourceId: string,
+      options: {
+        dryRun?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.package_sources.delete",
+            request: {
+              packageSourceId
+            }
+          })
+        );
+        return;
+      }
+
+      printJson(await client.deletePackageSource(packageSourceId));
     }
   );
 
