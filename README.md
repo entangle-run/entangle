@@ -227,13 +227,14 @@ This repository currently contains:
   recovery-oriented filtering, and Studio consumes the live host event stream
   to inspect runtime recovery policy, controller state, recovery history, and
   live recovery events without introducing a client-owned recovery model;
+- a broader host-owned trace-event slice where `entangle-host` now derives
+  and persists `conversation.trace.event`, `approval.trace.event`, and
+  `artifact.trace.event` from persisted runner state using the same
+  deduplicated observed-state model already used for session and runner-turn
+  activity;
 
 The highest-value remaining gaps are:
 
-- deeper conversation, approval, and artifact-oriented host event coverage on
-  top of the new degraded-state, recovery-policy, recovery-history,
-  session-inspection, session/runner-activity, and runtime-recovery event
-  surfaces;
 - deeper Studio runtime and operator workflows;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki

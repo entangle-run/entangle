@@ -386,6 +386,70 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.category).toBe("runner");
   });
 
+  it("accepts typed conversation, approval, and artifact trace events", () => {
+    const conversationEvent = hostEventRecordSchema.parse({
+      artifactIds: ["report-turn-001"],
+      category: "session",
+      conversationId: "conv-alpha",
+      eventId: "conversation-worker-it-001",
+      followupCount: 1,
+      graphId: "graph-alpha",
+      initiator: "remote",
+      lastMessageType: "task.request",
+      message: "Conversation 'conv-alpha' on node 'worker-it' is now 'working'.",
+      nodeId: "worker-it",
+      peerNodeId: "supervisor-it",
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      status: "working",
+      timestamp: "2026-04-24T00:00:02.000Z",
+      type: "conversation.trace.event",
+      updatedAt: "2026-04-24T00:00:02.000Z"
+    });
+    const approvalEvent = hostEventRecordSchema.parse({
+      approvalId: "approval-alpha",
+      approverNodeIds: ["supervisor-it"],
+      category: "session",
+      conversationId: "conv-alpha",
+      eventId: "approval-worker-it-001",
+      graphId: "graph-alpha",
+      message: "Approval 'approval-alpha' on node 'worker-it' is now 'pending'.",
+      nodeId: "worker-it",
+      requestedAt: "2026-04-24T00:00:03.000Z",
+      requestedByNodeId: "worker-it",
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      status: "pending",
+      timestamp: "2026-04-24T00:00:03.000Z",
+      type: "approval.trace.event",
+      updatedAt: "2026-04-24T00:00:03.000Z"
+    });
+    const artifactEvent = hostEventRecordSchema.parse({
+      artifactId: "report-turn-001",
+      artifactKind: "report_file",
+      backend: "git",
+      category: "session",
+      conversationId: "conv-alpha",
+      eventId: "artifact-worker-it-001",
+      graphId: "graph-alpha",
+      lifecycleState: "published",
+      message:
+        "Artifact 'report-turn-001' on node 'worker-it' changed trace state.",
+      nodeId: "worker-it",
+      publicationState: "published",
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      timestamp: "2026-04-24T00:00:04.000Z",
+      turnId: "turn-alpha",
+      type: "artifact.trace.event",
+      updatedAt: "2026-04-24T00:00:04.000Z"
+    });
+
+    expect(conversationEvent.type).toBe("conversation.trace.event");
+    expect(approvalEvent.type).toBe("approval.trace.event");
+    expect(artifactEvent.type).toBe("artifact.trace.event");
+  });
+
   it("accepts a typed node-binding mutation event", () => {
     const result = hostEventRecordSchema.parse({
       activeRevisionId: "graph-alpha-20260423-000001",

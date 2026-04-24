@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
+  artifactBackendSchema,
+  artifactKindSchema,
+  artifactLifecycleStateSchema,
+  artifactPublicationStateSchema,
+  artifactRetrievalStateSchema
+} from "../artifacts/artifact-ref.js";
+import {
+  approvalLifecycleStateSchema,
+  conversationLifecycleStateSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema
@@ -34,9 +43,66 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   updatedAt: nonEmptyStringSchema
 });
 
+export const observedConversationActivityRecordSchema = z.object({
+  artifactIds: z.array(identifierSchema).default([]),
+  conversationId: identifierSchema,
+  fingerprint: nonEmptyStringSchema,
+  followupCount: z.number().int().nonnegative(),
+  graphId: identifierSchema,
+  initiator: z.enum(["local", "remote"]),
+  lastMessageType: nonEmptyStringSchema.optional(),
+  nodeId: identifierSchema,
+  peerNodeId: identifierSchema,
+  schemaVersion: z.literal("1"),
+  sessionId: identifierSchema,
+  status: conversationLifecycleStateSchema,
+  updatedAt: nonEmptyStringSchema
+});
+
+export const observedApprovalActivityRecordSchema = z.object({
+  approvalId: identifierSchema,
+  approverNodeIds: z.array(identifierSchema).default([]),
+  conversationId: identifierSchema.optional(),
+  fingerprint: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  requestedAt: nonEmptyStringSchema,
+  requestedByNodeId: identifierSchema,
+  schemaVersion: z.literal("1"),
+  sessionId: identifierSchema,
+  status: approvalLifecycleStateSchema,
+  updatedAt: nonEmptyStringSchema
+});
+
+export const observedArtifactActivityRecordSchema = z.object({
+  artifactId: identifierSchema,
+  backend: artifactBackendSchema,
+  conversationId: identifierSchema.optional(),
+  fingerprint: nonEmptyStringSchema,
+  graphId: identifierSchema.optional(),
+  artifactKind: artifactKindSchema.optional(),
+  lifecycleState: artifactLifecycleStateSchema.optional(),
+  nodeId: identifierSchema,
+  publicationState: artifactPublicationStateSchema.optional(),
+  retrievalState: artifactRetrievalStateSchema.optional(),
+  schemaVersion: z.literal("1"),
+  sessionId: identifierSchema.optional(),
+  turnId: identifierSchema.optional(),
+  updatedAt: nonEmptyStringSchema
+});
+
 export type ObservedSessionActivityRecord = z.infer<
   typeof observedSessionActivityRecordSchema
 >;
 export type ObservedRunnerTurnActivityRecord = z.infer<
   typeof observedRunnerTurnActivityRecordSchema
+>;
+export type ObservedConversationActivityRecord = z.infer<
+  typeof observedConversationActivityRecordSchema
+>;
+export type ObservedApprovalActivityRecord = z.infer<
+  typeof observedApprovalActivityRecordSchema
+>;
+export type ObservedArtifactActivityRecord = z.infer<
+  typeof observedArtifactActivityRecordSchema
 >;

@@ -15,6 +15,8 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   activeGraphRevisionRecordSchema,
   artifactRecordSchema,
+  approvalRecordSchema,
+  conversationRecordSchema,
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
   edgeMutationResponseSchema,
@@ -24,6 +26,9 @@ import {
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostSessionSummarySchema,
+  observedApprovalActivityRecordSchema,
+  observedArtifactActivityRecordSchema,
+  observedConversationActivityRecordSchema,
   observedRunnerTurnActivityRecordSchema,
   observedSessionActivityRecordSchema,
   nodeDeletionResponseSchema,
@@ -110,6 +115,9 @@ import {
   type RuntimeArtifactListResponse,
   runtimeListResponseSchema,
   runnerTurnRecordSchema,
+  type ApprovalRecord,
+  type ArtifactRecord,
+  type ConversationRecord,
   type SessionInspectionResponse,
   type SessionListResponse,
   type SessionRecord,
@@ -120,6 +128,9 @@ import {
   type RuntimeObservedState,
   type RuntimeIntentRecord,
   type ObservedRunnerTurnActivityRecord,
+  type ObservedApprovalActivityRecord,
+  type ObservedArtifactActivityRecord,
+  type ObservedConversationActivityRecord,
   type ObservedSessionActivityRecord,
   type ObservedRuntimeRecord,
   observedRuntimeRecordSchema,
@@ -175,6 +186,12 @@ const runtimeRecoveryControllersRoot = path.join(
   "runtime-recovery-controllers"
 );
 const gitRepositoryTargetsRoot = path.join(observedRoot, "git-repository-targets");
+const observedApprovalActivityRoot = path.join(observedRoot, "approval-activity");
+const observedArtifactActivityRoot = path.join(observedRoot, "artifact-activity");
+const observedConversationActivityRoot = path.join(
+  observedRoot,
+  "conversation-activity"
+);
 const observedRunnerTurnActivityRoot = path.join(
   observedRoot,
   "runner-turn-activity"
@@ -296,6 +313,18 @@ type SessionUpdatedEventInput = Omit<
 >;
 type RunnerTurnUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "runner.turn.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type ConversationTraceEventInput = Omit<
+  Extract<HostEventRecord, { type: "conversation.trace.event" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type ApprovalTraceEventInput = Omit<
+  Extract<HostEventRecord, { type: "approval.trace.event" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type ArtifactTraceEventInput = Omit<
+  Extract<HostEventRecord, { type: "artifact.trace.event" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type HostReconciliationCompletedEventInput = Omit<
@@ -1627,6 +1656,56 @@ async function readObservedRunnerTurnActivityRecord(
   }
 
   return observedRunnerTurnActivityRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function readObservedConversationActivityRecord(
+  nodeId: string,
+  conversationId: string
+): Promise<ObservedConversationActivityRecord | undefined> {
+  const filePath = path.join(
+    observedConversationActivityRoot,
+    `${nodeId}--${conversationId}.json`
+  );
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedConversationActivityRecordSchema.parse(
+    await readJsonFile(filePath)
+  );
+}
+
+async function readObservedApprovalActivityRecord(
+  nodeId: string,
+  approvalId: string
+): Promise<ObservedApprovalActivityRecord | undefined> {
+  const filePath = path.join(
+    observedApprovalActivityRoot,
+    `${nodeId}--${approvalId}.json`
+  );
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedApprovalActivityRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function readObservedArtifactActivityRecord(
+  nodeId: string,
+  artifactId: string
+): Promise<ObservedArtifactActivityRecord | undefined> {
+  const filePath = path.join(
+    observedArtifactActivityRoot,
+    `${nodeId}--${artifactId}.json`
+  );
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return observedArtifactActivityRecordSchema.parse(await readJsonFile(filePath));
 }
 
 async function listObservedRuntimeNodeIds(): Promise<string[]> {
@@ -3556,27 +3635,8 @@ export async function listRuntimeArtifacts(
     return null;
   }
 
-  const artifactsRoot = path.join(context.workspace.runtimeRoot, "artifacts");
-
-  if (!(await pathExists(artifactsRoot))) {
-    return runtimeArtifactListResponseSchema.parse({
-      artifacts: []
-    });
-  }
-
-  const artifacts = await Promise.all(
-    (await readdir(artifactsRoot))
-      .filter((fileName) => fileName.endsWith(".json"))
-      .sort()
-      .map(async (fileName) =>
-        artifactRecordSchema.parse(
-          await readJsonFile(path.join(artifactsRoot, fileName))
-        )
-      )
-  );
-
   return runtimeArtifactListResponseSchema.parse({
-    artifacts
+    artifacts: await listRuntimeArtifactRecords(context.workspace.runtimeRoot)
   });
 }
 
@@ -3639,6 +3699,50 @@ async function listRuntimeSessionRecords(
   );
 }
 
+async function listRuntimeConversationRecords(
+  runtimeRoot: string
+): Promise<ConversationRecord[]> {
+  const conversationsRoot = path.join(runtimeRoot, "conversations");
+
+  if (!(await pathExists(conversationsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(conversationsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      conversationRecordSchema.parse(
+        await readJsonFile(path.join(conversationsRoot, fileName))
+      )
+    )
+  );
+}
+
+async function listRuntimeApprovalRecords(
+  runtimeRoot: string
+): Promise<ApprovalRecord[]> {
+  const approvalsRoot = path.join(runtimeRoot, "approvals");
+
+  if (!(await pathExists(approvalsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(approvalsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      approvalRecordSchema.parse(
+        await readJsonFile(path.join(approvalsRoot, fileName))
+      )
+    )
+  );
+}
+
 async function listRuntimeTurnRecords(
   runtimeRoot: string
 ): Promise<RunnerTurnRecord[]> {
@@ -3656,6 +3760,28 @@ async function listRuntimeTurnRecords(
     fileNames.map(async (fileName) =>
       runnerTurnRecordSchema.parse(
         await readJsonFile(path.join(turnsRoot, fileName))
+      )
+    )
+  );
+}
+
+async function listRuntimeArtifactRecords(
+  runtimeRoot: string
+): Promise<ArtifactRecord[]> {
+  const artifactsRoot = path.join(runtimeRoot, "artifacts");
+
+  if (!(await pathExists(artifactsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(artifactsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      artifactRecordSchema.parse(
+        await readJsonFile(path.join(artifactsRoot, fileName))
       )
     )
   );
@@ -3767,9 +3893,238 @@ async function synchronizeRunnerTurnActivityObservation(input: {
   } satisfies RunnerTurnUpdatedEventInput);
 }
 
+async function synchronizeConversationActivityObservation(input: {
+  conversationRecord: ConversationRecord;
+  runtime: RuntimeInspectionResponse;
+}): Promise<void> {
+  const { conversationRecord, runtime } = input;
+  const fingerprint = buildObservationFingerprint(conversationRecord);
+  const existingRecord = await readObservedConversationActivityRecord(
+    runtime.nodeId,
+    conversationRecord.conversationId
+  );
+  const nextRecord = observedConversationActivityRecordSchema.parse({
+    artifactIds: conversationRecord.artifactIds,
+    conversationId: conversationRecord.conversationId,
+    fingerprint,
+    followupCount: conversationRecord.followupCount,
+    graphId: conversationRecord.graphId,
+    initiator: conversationRecord.initiator,
+    lastMessageType: conversationRecord.lastMessageType,
+    nodeId: runtime.nodeId,
+    peerNodeId: conversationRecord.peerNodeId,
+    schemaVersion: "1",
+    sessionId: conversationRecord.sessionId,
+    status: conversationRecord.status,
+    updatedAt: conversationRecord.updatedAt
+  });
+  await writeJsonFileIfChanged(
+    path.join(
+      observedConversationActivityRoot,
+      `${runtime.nodeId}--${conversationRecord.conversationId}.json`
+    ),
+    nextRecord
+  );
+
+  if (existingRecord?.fingerprint === nextRecord.fingerprint) {
+    return;
+  }
+
+  await appendHostEvent({
+    artifactIds: conversationRecord.artifactIds,
+    category: "session",
+    conversationId: conversationRecord.conversationId,
+    followupCount: conversationRecord.followupCount,
+    graphId: conversationRecord.graphId,
+    initiator: conversationRecord.initiator,
+    lastMessageType: conversationRecord.lastMessageType,
+    message:
+      `Conversation '${conversationRecord.conversationId}' on node '${runtime.nodeId}' ` +
+      `is now '${conversationRecord.status}'.`,
+    nodeId: runtime.nodeId,
+    peerNodeId: conversationRecord.peerNodeId,
+    sessionId: conversationRecord.sessionId,
+    status: conversationRecord.status,
+    type: "conversation.trace.event",
+    updatedAt: conversationRecord.updatedAt
+  } satisfies ConversationTraceEventInput);
+}
+
+async function synchronizeApprovalActivityObservation(input: {
+  approvalRecord: ApprovalRecord;
+  runtime: RuntimeInspectionResponse;
+}): Promise<void> {
+  const { approvalRecord, runtime } = input;
+  const fingerprint = buildObservationFingerprint(approvalRecord);
+  const existingRecord = await readObservedApprovalActivityRecord(
+    runtime.nodeId,
+    approvalRecord.approvalId
+  );
+  const nextRecord = observedApprovalActivityRecordSchema.parse({
+    approvalId: approvalRecord.approvalId,
+    approverNodeIds: approvalRecord.approverNodeIds,
+    conversationId: approvalRecord.conversationId,
+    fingerprint,
+    graphId: approvalRecord.graphId,
+    nodeId: runtime.nodeId,
+    requestedAt: approvalRecord.requestedAt,
+    requestedByNodeId: approvalRecord.requestedByNodeId,
+    schemaVersion: "1",
+    sessionId: approvalRecord.sessionId,
+    status: approvalRecord.status,
+    updatedAt: approvalRecord.updatedAt
+  });
+  await writeJsonFileIfChanged(
+    path.join(
+      observedApprovalActivityRoot,
+      `${runtime.nodeId}--${approvalRecord.approvalId}.json`
+    ),
+    nextRecord
+  );
+
+  if (existingRecord?.fingerprint === nextRecord.fingerprint) {
+    return;
+  }
+
+  await appendHostEvent({
+    approvalId: approvalRecord.approvalId,
+    approverNodeIds: approvalRecord.approverNodeIds,
+    category: "session",
+    conversationId: approvalRecord.conversationId,
+    graphId: approvalRecord.graphId,
+    message:
+      `Approval '${approvalRecord.approvalId}' on node '${runtime.nodeId}' ` +
+      `is now '${approvalRecord.status}'.`,
+    nodeId: runtime.nodeId,
+    requestedAt: approvalRecord.requestedAt,
+    requestedByNodeId: approvalRecord.requestedByNodeId,
+    sessionId: approvalRecord.sessionId,
+    status: approvalRecord.status,
+    type: "approval.trace.event",
+    updatedAt: approvalRecord.updatedAt
+  } satisfies ApprovalTraceEventInput);
+}
+
+function resolveArtifactObservationGraphId(input: {
+  artifactRecord: ArtifactRecord;
+  conversationsById: Map<string, ConversationRecord>;
+  sessionsById: Map<string, SessionRecord>;
+  turnsById: Map<string, RunnerTurnRecord>;
+}): string | undefined {
+  const artifactSessionId = input.artifactRecord.ref.sessionId;
+  const artifactConversationId = input.artifactRecord.ref.conversationId;
+  const turnRecord = input.artifactRecord.turnId
+    ? input.turnsById.get(input.artifactRecord.turnId)
+    : undefined;
+  const conversationRecord = artifactConversationId
+    ? input.conversationsById.get(artifactConversationId)
+    : undefined;
+  const sessionRecord = artifactSessionId
+    ? input.sessionsById.get(artifactSessionId)
+    : undefined;
+
+  return (
+    turnRecord?.graphId ??
+    conversationRecord?.graphId ??
+    sessionRecord?.graphId
+  );
+}
+
+function buildArtifactTraceMessage(input: {
+  artifactRecord: ArtifactRecord;
+  runtime: RuntimeInspectionResponse;
+}): string {
+  const summary = [
+    `lifecycle '${input.artifactRecord.ref.status ?? "unknown"}'`,
+    `publication '${input.artifactRecord.publication?.state ?? "not_requested"}'`,
+    ...(input.artifactRecord.retrieval
+      ? [`retrieval '${input.artifactRecord.retrieval.state}'`]
+      : [])
+  ].join(", ");
+
+  return (
+    `Artifact '${input.artifactRecord.ref.artifactId}' on node '${input.runtime.nodeId}' ` +
+    `changed trace state (${summary}).`
+  );
+}
+
+async function synchronizeArtifactActivityObservation(input: {
+  artifactRecord: ArtifactRecord;
+  conversationsById: Map<string, ConversationRecord>;
+  runtime: RuntimeInspectionResponse;
+  sessionsById: Map<string, SessionRecord>;
+  turnsById: Map<string, RunnerTurnRecord>;
+}): Promise<void> {
+  const { artifactRecord, runtime } = input;
+  const fingerprint = buildObservationFingerprint({
+    artifactRecord,
+    graphId: resolveArtifactObservationGraphId(input)
+  });
+  const existingRecord = await readObservedArtifactActivityRecord(
+    runtime.nodeId,
+    artifactRecord.ref.artifactId
+  );
+  const turnRecord = artifactRecord.turnId
+    ? input.turnsById.get(artifactRecord.turnId)
+    : undefined;
+  const nextRecord = observedArtifactActivityRecordSchema.parse({
+    artifactId: artifactRecord.ref.artifactId,
+    artifactKind: artifactRecord.ref.artifactKind,
+    backend: artifactRecord.ref.backend,
+    conversationId:
+      artifactRecord.ref.conversationId ?? turnRecord?.conversationId,
+    fingerprint,
+    graphId: resolveArtifactObservationGraphId(input),
+    lifecycleState: artifactRecord.ref.status,
+    nodeId: runtime.nodeId,
+    publicationState: artifactRecord.publication?.state,
+    retrievalState: artifactRecord.retrieval?.state,
+    schemaVersion: "1",
+    sessionId: artifactRecord.ref.sessionId ?? turnRecord?.sessionId,
+    turnId: artifactRecord.turnId,
+    updatedAt: artifactRecord.updatedAt
+  });
+  await writeJsonFileIfChanged(
+    path.join(
+      observedArtifactActivityRoot,
+      `${runtime.nodeId}--${artifactRecord.ref.artifactId}.json`
+    ),
+    nextRecord
+  );
+
+  if (existingRecord?.fingerprint === nextRecord.fingerprint) {
+    return;
+  }
+
+  await appendHostEvent({
+    artifactId: artifactRecord.ref.artifactId,
+    artifactKind: artifactRecord.ref.artifactKind,
+    backend: artifactRecord.ref.backend,
+    category: "session",
+    conversationId:
+      artifactRecord.ref.conversationId ?? turnRecord?.conversationId,
+    graphId: nextRecord.graphId,
+    lifecycleState: artifactRecord.ref.status,
+    message: buildArtifactTraceMessage({
+      artifactRecord,
+      runtime
+    }),
+    nodeId: runtime.nodeId,
+    publicationState: artifactRecord.publication?.state,
+    retrievalState: artifactRecord.retrieval?.state,
+    sessionId: artifactRecord.ref.sessionId ?? turnRecord?.sessionId,
+    turnId: artifactRecord.turnId,
+    type: "artifact.trace.event",
+    updatedAt: artifactRecord.updatedAt
+  } satisfies ArtifactTraceEventInput);
+}
+
 async function synchronizeRuntimeActivityEvents(input: {
   runtimes: RuntimeInspectionResponse[];
 }): Promise<void> {
+  const activeApprovalActivityIds = new Set<string>();
+  const activeArtifactActivityIds = new Set<string>();
+  const activeConversationActivityIds = new Set<string>();
   const activeSessionActivityIds = new Set<string>();
   const activeTurnActivityIds = new Set<string>();
 
@@ -3781,16 +4136,58 @@ async function synchronizeRuntimeActivityEvents(input: {
     const context = effectiveRuntimeContextSchema.parse(
       await readJsonFile(runtime.contextPath)
     );
-    const [sessionRecords, turnRecords] = await Promise.all([
+    const [
+      approvalRecords,
+      artifactRecords,
+      conversationRecords,
+      sessionRecords,
+      turnRecords
+    ] = await Promise.all([
+      listRuntimeApprovalRecords(context.workspace.runtimeRoot),
+      listRuntimeArtifactRecords(context.workspace.runtimeRoot),
+      listRuntimeConversationRecords(context.workspace.runtimeRoot),
       listRuntimeSessionRecords(context.workspace.runtimeRoot),
       listRuntimeTurnRecords(context.workspace.runtimeRoot)
     ]);
+    const sessionsById = new Map(
+      sessionRecords.map((sessionRecord) => [
+        sessionRecord.sessionId,
+        sessionRecord
+      ])
+    );
+    const conversationsById = new Map(
+      conversationRecords.map((conversationRecord) => [
+        conversationRecord.conversationId,
+        conversationRecord
+      ])
+    );
+    const turnsById = new Map(
+      turnRecords.map((turnRecord) => [turnRecord.turnId, turnRecord])
+    );
 
     for (const sessionRecord of sessionRecords) {
       activeSessionActivityIds.add(`${runtime.nodeId}--${sessionRecord.sessionId}`);
       await synchronizeSessionActivityObservation({
         runtime,
         sessionRecord
+      });
+    }
+
+    for (const conversationRecord of conversationRecords) {
+      activeConversationActivityIds.add(
+        `${runtime.nodeId}--${conversationRecord.conversationId}`
+      );
+      await synchronizeConversationActivityObservation({
+        conversationRecord,
+        runtime
+      });
+    }
+
+    for (const approvalRecord of approvalRecords) {
+      activeApprovalActivityIds.add(`${runtime.nodeId}--${approvalRecord.approvalId}`);
+      await synchronizeApprovalActivityObservation({
+        approvalRecord,
+        runtime
       });
     }
 
@@ -3801,8 +4198,27 @@ async function synchronizeRuntimeActivityEvents(input: {
         turnRecord
       });
     }
+
+    for (const artifactRecord of artifactRecords) {
+      activeArtifactActivityIds.add(
+        `${runtime.nodeId}--${artifactRecord.ref.artifactId}`
+      );
+      await synchronizeArtifactActivityObservation({
+        artifactRecord,
+        conversationsById,
+        runtime,
+        sessionsById,
+        turnsById
+      });
+    }
   }
 
+  await removeJsonFilesExcept(observedApprovalActivityRoot, activeApprovalActivityIds);
+  await removeJsonFilesExcept(observedArtifactActivityRoot, activeArtifactActivityIds);
+  await removeJsonFilesExcept(
+    observedConversationActivityRoot,
+    activeConversationActivityIds
+  );
   await removeJsonFilesExcept(observedSessionActivityRoot, activeSessionActivityIds);
   await removeJsonFilesExcept(observedRunnerTurnActivityRoot, activeTurnActivityIds);
 }

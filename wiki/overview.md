@@ -164,6 +164,11 @@ The repository now also contains the first real implementation baseline:
   event stream to inspect runtime recovery policy, controller state, recovery
   history, and live recovery events without introducing a client-owned
   recovery model;
+- a broader host-owned trace-event slice where `entangle-host` now derives and
+  persists `conversation.trace.event`, `approval.trace.event`, and
+  `artifact.trace.event` from persisted runner state using the same
+  deduplicated observed-state model already used for session and runner-turn
+  activity;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -286,9 +291,6 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- widen the host event surface further into conversation-, approval-, and
-  artifact-oriented event classes on top of the now-implemented runtime,
-  recovery, session, and runner activity surfaces;
 - deepen Studio into broader runtime and operator workflows only after those
   richer host event classes exist;
 - complete CLI parity where it adds real headless operational value;

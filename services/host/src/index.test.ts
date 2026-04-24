@@ -2301,7 +2301,7 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("emits typed session and runner-turn activity events without duplicating unchanged records", async () => {
+  it("emits typed session-trace and runner activity events without duplicating unchanged records", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
@@ -2342,6 +2342,97 @@ describe("buildHostServer", () => {
         }
       );
       await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "conversations",
+          "conv-alpha.json"
+        ),
+        {
+          artifactIds: ["report-turn-001"],
+          conversationId: "conv-alpha",
+          followupCount: 1,
+          graphId: "team-alpha",
+          initiator: "remote",
+          lastInboundMessageId:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          lastMessageType: "task.request",
+          localNodeId: "worker-it",
+          localPubkey: runtimeContext.identityContext.publicKey,
+          openedAt: "2026-04-24T10:00:00.000Z",
+          peerNodeId: "supervisor-it",
+          peerPubkey:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          responsePolicy: {
+            closeOnResult: true,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: "session-alpha",
+          status: "working",
+          updatedAt: "2026-04-24T10:05:00.000Z"
+        }
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-alpha.json"
+        ),
+        {
+          approvalId: "approval-alpha",
+          approverNodeIds: ["supervisor-it"],
+          conversationId: "conv-alpha",
+          graphId: "team-alpha",
+          requestedAt: "2026-04-24T10:01:00.000Z",
+          requestedByNodeId: "worker-it",
+          sessionId: "session-alpha",
+          status: "pending",
+          updatedAt: "2026-04-24T10:05:00.000Z"
+        }
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "artifacts",
+          "report-turn-001.json"
+        ),
+        artifactRecordSchema.parse({
+          createdAt: "2026-04-24T10:04:00.000Z",
+          materialization: {
+            localPath: path.join(
+              runtimeContext.workspace.artifactWorkspaceRoot,
+              "reports",
+              "turn-alpha.md"
+            ),
+            repoPath: runtimeContext.workspace.artifactWorkspaceRoot
+          },
+          publication: {
+            publishedAt: "2026-04-24T10:05:00.000Z",
+            remoteName: "entangle-local-gitea",
+            remoteUrl: "file:///tmp/entangle-local-gitea.git",
+            state: "published"
+          },
+          ref: {
+            artifactId: "report-turn-001",
+            artifactKind: "report_file",
+            backend: "git",
+            contentSummary: "Turn report",
+            conversationId: "conv-alpha",
+            createdByNodeId: "worker-it",
+            locator: {
+              branch: "entangle/session-alpha/turn-alpha",
+              commit: "abcdef1234567890",
+              path: "reports/turn-alpha.md"
+            },
+            preferred: true,
+            sessionId: "session-alpha",
+            status: "published"
+          },
+          turnId: "turn-alpha",
+          updatedAt: "2026-04-24T10:05:00.000Z"
+        })
+      );
+      await writeJsonFile(
         path.join(runtimeContext.workspace.runtimeRoot, "turns", "turn-alpha.json"),
         {
           consumedArtifactIds: ["artifact-inbound-001"],
@@ -2376,6 +2467,34 @@ describe("buildHostServer", () => {
       expect(firstEvents).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
+            artifactIds: ["report-turn-001"],
+            category: "session",
+            conversationId: "conv-alpha",
+            nodeId: "worker-it",
+            sessionId: "session-alpha",
+            status: "working",
+            type: "conversation.trace.event"
+          }),
+          expect.objectContaining({
+            approvalId: "approval-alpha",
+            category: "session",
+            conversationId: "conv-alpha",
+            nodeId: "worker-it",
+            sessionId: "session-alpha",
+            status: "pending",
+            type: "approval.trace.event"
+          }),
+          expect.objectContaining({
+            artifactId: "report-turn-001",
+            category: "session",
+            lifecycleState: "published",
+            nodeId: "worker-it",
+            publicationState: "published",
+            sessionId: "session-alpha",
+            turnId: "turn-alpha",
+            type: "artifact.trace.event"
+          }),
+          expect.objectContaining({
             category: "session",
             nodeId: "worker-it",
             sessionId: "session-alpha",
@@ -2395,6 +2514,15 @@ describe("buildHostServer", () => {
 
       const firstSessionEventCount = firstEvents.filter(
         (event) => event.type === "session.updated"
+      ).length;
+      const firstConversationEventCount = firstEvents.filter(
+        (event) => event.type === "conversation.trace.event"
+      ).length;
+      const firstApprovalEventCount = firstEvents.filter(
+        (event) => event.type === "approval.trace.event"
+      ).length;
+      const firstArtifactEventCount = firstEvents.filter(
+        (event) => event.type === "artifact.trace.event"
       ).length;
       const firstRunnerTurnEventCount = firstEvents.filter(
         (event) => event.type === "runner.turn.updated"
@@ -2416,6 +2544,15 @@ describe("buildHostServer", () => {
       expect(
         secondEvents.filter((event) => event.type === "session.updated").length
       ).toBe(firstSessionEventCount);
+      expect(
+        secondEvents.filter((event) => event.type === "conversation.trace.event").length
+      ).toBe(firstConversationEventCount);
+      expect(
+        secondEvents.filter((event) => event.type === "approval.trace.event").length
+      ).toBe(firstApprovalEventCount);
+      expect(
+        secondEvents.filter((event) => event.type === "artifact.trace.event").length
+      ).toBe(firstArtifactEventCount);
       expect(
         secondEvents.filter((event) => event.type === "runner.turn.updated").length
       ).toBe(firstRunnerTurnEventCount);

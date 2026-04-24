@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added conversation, approval, and artifact host trace events
+
+Closed the next host-owned trace-widening slice by deriving
+`conversation.trace.event`, `approval.trace.event`, and
+`artifact.trace.event` from persisted runner state under the same
+deduplicated observed-state model already used for session and runner-turn
+activity. The slice added observed conversation, approval, and artifact
+activity records under observed host state, kept artifact trace events linked
+to the best available graph/session/conversation context, and widened host
+tests so successive host reads do not duplicate the new trace events.
+
 ## [2026-04-24] implementation | Added Studio and CLI runtime-recovery inspection
 
 Closed the first serious client-consumption slice on top of the already

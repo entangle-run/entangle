@@ -177,8 +177,8 @@ place.
 
 Implement in small slices:
 
-1. broader conversation, approval, artifact, and diagnostics-oriented event
-   widening on top of the now-implemented host event and recovery model.
+1. broader diagnostics-oriented event widening only where the now-implemented
+   trace surface still leaves real operator blind spots.
 
 Acceptance for the phase:
 
@@ -194,9 +194,12 @@ Completed in the current repository state:
 
 - richer Studio and CLI inspection over the now-implemented runtime recovery
   policy, controller, history, and event surfaces.
+- broader conversation-, approval-, and artifact-oriented host event widening
+  on top of the now-implemented runtime, recovery, session, and runner
+  activity surfaces.
 
-This remaining host-event widening slice is now the best current next move
-before deepening Studio further on top of richer host signals.
+The next best current move is now Phase 4 Studio completion on top of the
+broader host-owned trace surface.
 
 ## Phase 4: Studio completion
 

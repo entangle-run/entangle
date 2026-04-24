@@ -1,5 +1,12 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import {
+  artifactBackendSchema,
+  artifactKindSchema,
+  artifactLifecycleStateSchema,
+  artifactPublicationStateSchema,
+  artifactRetrievalStateSchema
+} from "../artifacts/artifact-ref.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import {
   runtimeRecoveryControllerRecordSchema,
@@ -7,6 +14,8 @@ import {
   runtimeRecoveryPolicySchema
 } from "../runtime/recovery-policy.js";
 import {
+  approvalLifecycleStateSchema,
+  conversationLifecycleStateSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema
@@ -194,6 +203,54 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("runner.turn.updated")
 });
 
+export const conversationTraceEventSchema = hostEventBaseSchema.extend({
+  artifactIds: z.array(identifierSchema),
+  category: z.literal("session"),
+  conversationId: identifierSchema,
+  followupCount: z.number().int().nonnegative(),
+  graphId: identifierSchema,
+  initiator: z.enum(["local", "remote"]),
+  lastMessageType: nonEmptyStringSchema.optional(),
+  nodeId: identifierSchema,
+  peerNodeId: identifierSchema,
+  sessionId: identifierSchema,
+  status: conversationLifecycleStateSchema,
+  type: z.literal("conversation.trace.event"),
+  updatedAt: nonEmptyStringSchema
+});
+
+export const approvalTraceEventSchema = hostEventBaseSchema.extend({
+  approvalId: identifierSchema,
+  approverNodeIds: z.array(identifierSchema),
+  category: z.literal("session"),
+  conversationId: identifierSchema.optional(),
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  requestedAt: nonEmptyStringSchema,
+  requestedByNodeId: identifierSchema,
+  sessionId: identifierSchema,
+  status: approvalLifecycleStateSchema,
+  type: z.literal("approval.trace.event"),
+  updatedAt: nonEmptyStringSchema
+});
+
+export const artifactTraceEventSchema = hostEventBaseSchema.extend({
+  artifactId: identifierSchema,
+  artifactKind: artifactKindSchema.optional(),
+  backend: artifactBackendSchema,
+  category: z.literal("session"),
+  conversationId: identifierSchema.optional(),
+  graphId: identifierSchema.optional(),
+  lifecycleState: artifactLifecycleStateSchema.optional(),
+  nodeId: identifierSchema,
+  publicationState: artifactPublicationStateSchema.optional(),
+  retrievalState: artifactRetrievalStateSchema.optional(),
+  sessionId: identifierSchema.optional(),
+  turnId: identifierSchema.optional(),
+  type: z.literal("artifact.trace.event"),
+  updatedAt: nonEmptyStringSchema
+});
+
 export const hostReconciliationCompletedEventSchema = hostEventBaseSchema.extend({
   backendKind: runtimeBackendKindSchema,
   blockedRuntimeCount: z.number().int().nonnegative().optional(),
@@ -228,6 +285,9 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeObservedStateChangedEventSchema,
   sessionUpdatedEventSchema,
   runnerTurnUpdatedEventSchema,
+  conversationTraceEventSchema,
+  approvalTraceEventSchema,
+  artifactTraceEventSchema,
   hostReconciliationCompletedEventSchema
 ]);
 
@@ -283,6 +343,9 @@ export type RuntimeObservedStateChangedEvent = z.infer<
 >;
 export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
 export type RunnerTurnUpdatedEvent = z.infer<typeof runnerTurnUpdatedEventSchema>;
+export type ConversationTraceEvent = z.infer<typeof conversationTraceEventSchema>;
+export type ApprovalTraceEvent = z.infer<typeof approvalTraceEventSchema>;
+export type ArtifactTraceEvent = z.infer<typeof artifactTraceEventSchema>;
 export type HostReconciliationCompletedEvent = z.infer<
   typeof hostReconciliationCompletedEventSchema
 >;

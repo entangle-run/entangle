@@ -458,6 +458,9 @@ The implemented event classes currently include:
 - `runtime.observed_state.changed`
 - `session.updated`
 - `runner.turn.updated`
+- `conversation.trace.event`
+- `approval.trace.event`
+- `artifact.trace.event`
 - `host.reconciliation.completed`
 
 The current `host.reconciliation.completed` event now carries richer aggregate
@@ -476,9 +479,6 @@ Event classes should include at least:
 - `runtime.state.changed`
 - `runtime.health.changed`
 - `session.trace.event`
-- `conversation.trace.event`
-- `approval.trace.event`
-- `artifact.trace.event`
 - `host.reconciliation.started`
 - `host.reconciliation.completed`
 - `host.reconciliation.failed`
