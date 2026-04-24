@@ -833,3 +833,16 @@ focused decision register directly through canonical `memoryRefs`.
 Closed the slice only after widening runner, host, host-client, Studio, and
 shared-contract assertions, then re-running targeted package tests plus the
 full `pnpm verify` and `git diff --check` gates.
+
+## [2026-04-24] implementation | Added next-actions register to model-guided memory
+
+Closed the next structural gap in the bounded memory layer by adding
+`memory/wiki/summaries/next-actions.md` to the same strict model-guided
+synthesis pass that already maintained working-context, decisions,
+stable-facts, and open-questions summaries. Open questions now remain focused
+on unresolved uncertainty, while future turns can consume durable pending work
+directly through the dedicated next-actions register in canonical `memoryRefs`.
+
+Closed the slice only after widening runner, host, host-client, Studio, and
+shared-contract assertions, then re-running targeted package tests plus the
+full `pnpm verify` and `git diff --check` gates.

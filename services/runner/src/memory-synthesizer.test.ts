@@ -425,6 +425,12 @@ describe("model-guided memory synthesis", () => {
             summaryPagePath.endsWith(path.join("summaries", "open-questions.md"))
           )
         : undefined;
+    const nextActionsPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(path.join("summaries", "next-actions.md"))
+          )
+        : undefined;
 
     expect(capturedRequest?.toolChoice).toEqual({
       type: "tool",
@@ -488,11 +494,16 @@ describe("model-guided memory synthesis", () => {
       throw new Error("Expected an open questions summary path.");
     }
 
+    if (!nextActionsPagePath) {
+      throw new Error("Expected a next actions summary path.");
+    }
+
     const [
       workingContextPage,
       decisionsPage,
       stableFactsPage,
       openQuestionsPage,
+      nextActionsPage,
       indexPage,
       logPage,
       followupTurnRequest
@@ -502,6 +513,7 @@ describe("model-guided memory synthesis", () => {
         readFile(decisionsPagePath, "utf8"),
         readFile(stableFactsPagePath, "utf8"),
         readFile(openQuestionsPagePath, "utf8"),
+        readFile(nextActionsPagePath, "utf8"),
         readFile(memoryUpdate.indexPath, "utf8"),
         readFile(memoryUpdate.logPath, "utf8"),
         buildAgentEngineTurnRequest(context)
@@ -558,8 +570,11 @@ describe("model-guided memory synthesis", () => {
     expect(openQuestionsPage).toContain(
       "Does the current recovery trace expose enough detail for operators?"
     );
-    expect(openQuestionsPage).toContain("## Suggested Next Actions");
-    expect(openQuestionsPage).toContain(
+    expect(openQuestionsPage).toContain("## Coordination");
+    expect(openQuestionsPage).toContain("[Next Actions Summary](summaries/next-actions.md)");
+    expect(nextActionsPage).toContain("# Next Actions Summary");
+    expect(nextActionsPage).toContain("## Next Actions");
+    expect(nextActionsPage).toContain(
       "Validate the recovery checkpoint against the latest runner behavior."
     );
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
@@ -568,11 +583,13 @@ describe("model-guided memory synthesis", () => {
     expect(indexPage).toContain(
       "[Open Questions Summary](summaries/open-questions.md)"
     );
+    expect(indexPage).toContain("[Next Actions Summary](summaries/next-actions.md)");
     expect(logPage).toContain("memory synthesis | turn-memory-005");
     expect(followupTurnRequest.memoryRefs).toContain(workingContextPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(decisionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(stableFactsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(nextActionsPagePath);
   });
 
   it("records synthesis failure in the wiki log without throwing", async () => {

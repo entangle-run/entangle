@@ -169,9 +169,10 @@ That implemented slice currently includes:
   `memory/wiki/summaries/working-context.md`,
   `memory/wiki/summaries/decisions.md`,
   `memory/wiki/summaries/stable-facts.md`, and
-  `memory/wiki/summaries/open-questions.md` without giving the model arbitrary
-  filesystem authority, now grounded in final post-turn lifecycle state rather
-  than pre-completion session state;
+  `memory/wiki/summaries/open-questions.md`, plus the focused pending-work
+  register `memory/wiki/summaries/next-actions.md`, without giving the model
+  arbitrary filesystem authority, now grounded in final post-turn lifecycle
+  state rather than pre-completion session state;
 - persisted `ArtifactRecord` state linked from session, conversation, and turn
   records;
 - outbound `task.result` payloads that now include newly produced artifact

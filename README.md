@@ -228,6 +228,11 @@ This repository currently contains:
   bounded decision carry-forward, and future turns can consume prior
   decisions directly instead of inferring them only from broader summary
   prose;
+- a next-actions register refinement where that same bounded synthesis pass
+  now updates `next-actions.md`, open questions no longer act as the only
+  focused pending-work surface, and future turns can consume durable next
+  actions directly instead of inferring them only from `working-context.md`
+  or the mixed open-questions page;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

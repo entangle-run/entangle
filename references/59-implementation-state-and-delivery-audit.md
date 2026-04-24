@@ -318,6 +318,11 @@ not modeling.
   updates `decisions.md`, the durable `working-context.md` page now preserves
   bounded decision carry-forward, and future turns can consume prior decisions
   directly instead of inferring them only from broader summary prose;
+- a next-actions register refinement where that same bounded synthesis pass
+  now updates `next-actions.md`, open questions no longer act as the only
+  focused pending-work surface, and future turns can consume durable next
+  actions directly instead of inferring them only from `working-context.md`
+  or the mixed open-questions page;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -339,8 +344,9 @@ not modeling.
 - richer model-guided memory maintenance beyond the current deterministic task
   page, log/index, derived recent-work summary, session-aware plus
   artifact-aware/artifact-carrying/engine-outcome-aware/execution-insight-carrying
-  working-context summary, focused decisions/stable-facts/open-questions summary
-  registers, and bounded current-session inspection baseline;
+  working-context summary, focused
+  decisions/stable-facts/open-questions/next-actions summary registers, and
+  bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 

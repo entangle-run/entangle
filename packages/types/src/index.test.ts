@@ -393,7 +393,8 @@ describe("host event contracts", () => {
           "/tmp/entangle-runner/memory/wiki/summaries/working-context.md",
           "/tmp/entangle-runner/memory/wiki/summaries/decisions.md",
           "/tmp/entangle-runner/memory/wiki/summaries/stable-facts.md",
-          "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md"
+          "/tmp/entangle-runner/memory/wiki/summaries/open-questions.md",
+          "/tmp/entangle-runner/memory/wiki/summaries/next-actions.md"
         ],
         workingContextPagePath:
           "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
@@ -424,7 +425,7 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.engineOutcome?.toolExecutions).toHaveLength(1);
     expect(runnerTurnEvent.memorySynthesisOutcome?.status).toBe("succeeded");
     expect(runnerTurnEvent.memorySynthesisOutcome?.updatedSummaryPagePaths).toHaveLength(
-      4
+      5
     );
   });
 

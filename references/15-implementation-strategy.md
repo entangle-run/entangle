@@ -212,12 +212,17 @@ Completed in the current repository state:
     model-guided synthesis pass now updates `working-context.md`,
     `stable-facts.md`, and `open-questions.md`, and future turns now consume
     those focused summaries directly through canonical `memoryRefs` instead of
-    collapsing all durable synthesis into one omnibus page.
+    collapsing all durable synthesis into one omnibus page;
 20. a decision-register refinement where the same bounded synthesis pass now
     updates `decisions.md`, the durable `working-context.md` page now carries
     bounded decision carry-forward, and future turns can consume prior
     decisions directly instead of inferring them only from broader summary
-    prose.
+    prose;
+21. a next-actions register refinement where the same bounded synthesis pass
+    now updates `next-actions.md`, open questions no longer double as the only
+    focused pending-work surface, and future turns can consume durable next
+    actions directly instead of inferring them only from `working-context.md`
+    or the mixed open-questions page.
 
 Remaining work in this phase:
 
@@ -226,12 +231,13 @@ Remaining work in this phase:
    current-session state inspection, and session-aware working-context
    synthesis paths, now including artifact-aware and artifact-carrying
    working-context synthesis plus current-turn engine-outcome grounding and
-   execution-insight carry-forward plus focused decisions/stable-facts/open-questions
-   summary registers, before adding more builtin tool kinds;
+   execution-insight carry-forward plus focused
+   decisions/stable-facts/open-questions/next-actions summary registers,
+   before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work, working-context, decisions,
-   stable-facts, and open-questions summary layers, into broader model-guided memory
-   maintenance;
+   stable-facts, open-questions, and next-actions summary layers, into broader
+   model-guided memory maintenance;
 3. widen provider metadata only where later provider adapters or delivery modes
    justify new canonical fields instead of adding provider-shaped churn
    prematurely.

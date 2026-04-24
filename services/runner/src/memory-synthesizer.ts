@@ -17,6 +17,7 @@ import {
 import {
   appendSectionBullet,
   resolveDecisionsSummaryPath,
+  resolveNextActionsSummaryPath,
   readTextFileOrDefault,
   resolveOpenQuestionsSummaryPath,
   resolveStableFactsSummaryPath,
@@ -45,6 +46,7 @@ const stableFactsSummaryBullet = "- [Stable Facts Summary](summaries/stable-fact
 const openQuestionsSummaryBullet =
   "- [Open Questions Summary](summaries/open-questions.md)";
 const decisionsSummaryBullet = "- [Decisions Summary](summaries/decisions.md)";
+const nextActionsSummaryBullet = "- [Next Actions Summary](summaries/next-actions.md)";
 
 export type RunnerMemorySynthesisInput = {
   artifactInputs: EngineArtifactInput[];
@@ -752,8 +754,56 @@ function buildStableFactsSummaryContent(input: {
 }
 
 function buildOpenQuestionsSummaryContent(input: {
-  nextActions: string[];
   openQuestions: string[];
+  nextActionsPagePath: string;
+  recentWorkSummaryPath: string;
+  sessionId: string;
+  taskPagePath: string;
+  turnId: string;
+  wikiRoot: string;
+  workingContextPagePath: string;
+}): string {
+  const taskPageRelativePath = toPosixRelativePath(input.wikiRoot, input.taskPagePath);
+  const recentWorkRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.recentWorkSummaryPath
+  );
+  const workingContextRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.workingContextPagePath
+  );
+  const nextActionsRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.nextActionsPagePath
+  );
+
+  return [
+    "# Open Questions Summary",
+    "",
+    `- Updated at: \`${nowIsoString()}\``,
+    `- Session: \`${input.sessionId}\``,
+    `- Turn: \`${input.turnId}\``,
+    `- Task page: [Current Task Memory](${taskPageRelativePath})`,
+    `- Working context: [Working Context Summary](${workingContextRelativePath})`,
+    `- Next actions: [Next Actions Summary](${nextActionsRelativePath})`,
+    `- Recent work: [Recent Work Summary](${recentWorkRelativePath})`,
+    "",
+    "## Open Questions",
+    "",
+    ...renderBulletList(
+      input.openQuestions,
+      "- No durable open questions were synthesized."
+    ),
+    "",
+    "## Coordination",
+    "",
+    "See [Next Actions Summary](summaries/next-actions.md) for the focused pending-work register.",
+    ""
+  ].join("\n");
+}
+
+function buildNextActionsSummaryContent(input: {
+  nextActions: string[];
   recentWorkSummaryPath: string;
   sessionId: string;
   taskPagePath: string;
@@ -772,7 +822,7 @@ function buildOpenQuestionsSummaryContent(input: {
   );
 
   return [
-    "# Open Questions Summary",
+    "# Next Actions Summary",
     "",
     `- Updated at: \`${nowIsoString()}\``,
     `- Session: \`${input.sessionId}\``,
@@ -781,14 +831,7 @@ function buildOpenQuestionsSummaryContent(input: {
     `- Working context: [Working Context Summary](${workingContextRelativePath})`,
     `- Recent work: [Recent Work Summary](${recentWorkRelativePath})`,
     "",
-    "## Open Questions",
-    "",
-    ...renderBulletList(
-      input.openQuestions,
-      "- No durable open questions were synthesized."
-    ),
-    "",
-    "## Suggested Next Actions",
+    "## Next Actions",
     "",
     ...renderBulletList(
       input.nextActions,
@@ -832,6 +875,7 @@ function createWorkingContextSummaryToolExecutor(input: {
   synthesis: RunnerMemorySynthesisInput;
   writePathCapture: {
     decisionsPagePath: string | undefined;
+    nextActionsPagePath: string | undefined;
     openQuestionsPagePath: string | undefined;
     stableFactsPagePath: string | undefined;
     workingContextPagePath: string | undefined;
@@ -867,6 +911,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       const decisionsPagePath = resolveDecisionsSummaryPath(wikiRoot);
       const stableFactsPagePath = resolveStableFactsSummaryPath(wikiRoot);
       const openQuestionsPagePath = resolveOpenQuestionsSummaryPath(wikiRoot);
+      const nextActionsPagePath = resolveNextActionsSummaryPath(wikiRoot);
       const normalizedInput = {
         ...parsedInput.value,
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
@@ -915,8 +960,17 @@ function createWorkingContextSummaryToolExecutor(input: {
         workingContextPagePath
       });
       const openQuestionsContent = buildOpenQuestionsSummaryContent({
-        nextActions: normalizedInput.nextActions,
         openQuestions: normalizedInput.openQuestions,
+        nextActionsPagePath,
+        recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
+        sessionId: input.synthesis.envelope.message.sessionId,
+        taskPagePath: input.synthesis.taskPagePath,
+        turnId: input.synthesis.turnId,
+        wikiRoot,
+        workingContextPagePath
+      });
+      const nextActionsContent = buildNextActionsSummaryContent({
+        nextActions: normalizedInput.nextActions,
         recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
         sessionId: input.synthesis.envelope.message.sessionId,
         taskPagePath: input.synthesis.taskPagePath,
@@ -929,9 +983,11 @@ function createWorkingContextSummaryToolExecutor(input: {
         writeTextFile(workingContextPagePath, `${content.trimEnd()}\n`),
         writeTextFile(decisionsPagePath, `${decisionsContent.trimEnd()}\n`),
         writeTextFile(stableFactsPagePath, `${stableFactsContent.trimEnd()}\n`),
-        writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`)
+        writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`),
+        writeTextFile(nextActionsPagePath, `${nextActionsContent.trimEnd()}\n`)
       ]);
       input.writePathCapture.decisionsPagePath = decisionsPagePath;
+      input.writePathCapture.nextActionsPagePath = nextActionsPagePath;
       input.writePathCapture.openQuestionsPagePath = openQuestionsPagePath;
       input.writePathCapture.stableFactsPagePath = stableFactsPagePath;
       input.writePathCapture.workingContextPagePath = workingContextPagePath;
@@ -982,6 +1038,7 @@ async function ensureWorkingContextIndexed(
   nextIndex = appendSectionBullet(nextIndex, "Summaries", decisionsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", stableFactsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", openQuestionsSummaryBullet);
+  nextIndex = appendSectionBullet(nextIndex, "Summaries", nextActionsSummaryBullet);
 
   await writeTextFile(indexPath, nextIndex);
 }
@@ -1002,11 +1059,13 @@ export function createModelGuidedMemorySynthesizer(input: {
       });
       const writePathCapture: {
         decisionsPagePath: string | undefined;
+        nextActionsPagePath: string | undefined;
         openQuestionsPagePath: string | undefined;
         stableFactsPagePath: string | undefined;
         workingContextPagePath: string | undefined;
       } = {
         decisionsPagePath: undefined,
+        nextActionsPagePath: undefined,
         openQuestionsPagePath: undefined,
         stableFactsPagePath: undefined,
         workingContextPagePath: undefined
@@ -1054,12 +1113,18 @@ export function createModelGuidedMemorySynthesizer(input: {
             "Model-guided memory synthesis completed without updating the open questions summary."
           );
         }
+        if (!writePathCapture.nextActionsPagePath) {
+          throw new Error(
+            "Model-guided memory synthesis completed without updating the next actions summary."
+          );
+        }
 
         const updatedSummaryPagePaths = [
           writePathCapture.workingContextPagePath,
           writePathCapture.decisionsPagePath,
           writePathCapture.stableFactsPagePath,
-          writePathCapture.openQuestionsPagePath
+          writePathCapture.openQuestionsPagePath,
+          writePathCapture.nextActionsPagePath
         ];
 
         await Promise.all([

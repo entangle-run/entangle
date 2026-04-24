@@ -492,6 +492,12 @@ describe("RunnerService", () => {
                 "wiki",
                 "summaries",
                 "open-questions.md"
+              ),
+              path.join(
+                runtimeContext.workspace.memoryRoot,
+                "wiki",
+                "summaries",
+                "next-actions.md"
               )
             ],
             workingContextPagePath: path.join(
@@ -570,6 +576,12 @@ describe("RunnerService", () => {
         "wiki",
         "summaries",
         "open-questions.md"
+      ),
+      path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "next-actions.md"
       )
     ]);
   });
