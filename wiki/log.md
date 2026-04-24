@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio runtime session inspection
+
+Closed the next Studio read slice by exposing host-backed session summaries for
+the selected runtime, including the selected node's session status, the wider
+node-status summary, and trace ids. The selected-runtime refresh path now also
+includes session summaries while preserving partial-failure behavior.
+
 ## [2026-04-24] implementation | Added Studio runtime artifact inspection
 
 Closed the next Studio inspection slice by exposing persisted runtime artifact

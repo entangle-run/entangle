@@ -206,6 +206,9 @@ Completed in the current repository state:
 - deeper Studio runtime artifact inspection on top of the already implemented
   host runtime-artifact read surface, with partial-failure-tolerant selected
   runtime refresh instead of all-or-nothing panel failure.
+- deeper Studio runtime session inspection on top of the already implemented
+  host session read model, again preserving partial-failure-tolerant
+  selected-runtime refresh semantics.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -217,10 +220,10 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. deeper session inspection where the existing host session read model creates
-   real operator leverage;
-2. bounded package and graph mutation flows on top of the now-richer runtime
-   inspection, lifecycle, and artifact surface;
+1. bounded package and graph mutation flows on top of the now-richer runtime
+   inspection, lifecycle, artifact, and session surface;
+2. deeper session drilldown only where the existing host session read model
+   creates real operator leverage;
 3. live event-driven updates via the host event stream where additional
    operator value still exists.
 

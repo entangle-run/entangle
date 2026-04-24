@@ -20,6 +20,7 @@ import type {
   GraphInspectionResponse,
   GraphSpec,
   HostEventRecord,
+  HostSessionSummary,
   HostStatusResponse,
   RuntimeInspectionResponse,
   RuntimeRecoveryInspectionResponse
@@ -41,6 +42,11 @@ import {
   formatRuntimeArtifactStatus,
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
+import {
+  filterRuntimeSessions,
+  formatRuntimeSessionDetail,
+  formatRuntimeSessionLabel
+} from "./runtime-session-inspection.js";
 import {
   canRestartRuntime,
   canStartRuntime,
@@ -224,6 +230,8 @@ export function App() {
     useState<RuntimeRecoveryInspectionResponse | null>(null);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [artifactError, setArtifactError] = useState<string | null>(null);
+  const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [hostEvents, setHostEvents] = useState<HostEventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -258,12 +266,19 @@ export function App() {
   }, [client]);
 
   const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
-    const [statusResult, runtimeListResult, recoveryResult, artifactResult] =
+    const [
+      statusResult,
+      runtimeListResult,
+      recoveryResult,
+      artifactResult,
+      sessionResult
+    ] =
       await Promise.allSettled([
         client.getHostStatus(),
         client.listRuntimes(),
         client.getRuntimeRecovery(nodeId, 20),
-        client.listRuntimeArtifacts(nodeId)
+        client.listRuntimeArtifacts(nodeId),
+        client.listSessions()
       ]);
 
     if (statusResult.status === "rejected" || runtimeListResult.status === "rejected") {
@@ -312,6 +327,19 @@ export function App() {
           normalizeError(
             artifactResult.reason,
             "Unknown error while loading runtime artifacts."
+          )
+        );
+      }
+
+      if (sessionResult.status === "fulfilled") {
+        setSelectedSessions(filterRuntimeSessions(sessionResult.value.sessions, nodeId));
+        setSessionError(null);
+      } else {
+        setSelectedSessions([]);
+        setSessionError(
+          normalizeError(
+            sessionResult.reason,
+            "Unknown error while loading runtime sessions."
           )
         );
       }
@@ -372,6 +400,11 @@ export function App() {
 
     if (event.type === "artifact.trace.event" && event.nodeId === selectedRuntimeId) {
       void refreshSelectedRuntimeDetails(selectedRuntimeId);
+      return;
+    }
+
+    if (event.type === "session.updated" && event.nodeId === selectedRuntimeId) {
+      void refreshSelectedRuntimeDetails(selectedRuntimeId);
     }
   });
 
@@ -387,6 +420,8 @@ export function App() {
     if (!selectedRuntimeId) {
       setArtifactError(null);
       setSelectedArtifacts([]);
+      setSessionError(null);
+      setSelectedSessions([]);
       setSelectedRecovery(null);
       setMutationError(null);
       setRecoveryError(null);
@@ -395,6 +430,8 @@ export function App() {
 
     setArtifactError(null);
     setSelectedArtifacts([]);
+    setSessionError(null);
+    setSelectedSessions([]);
     setMutationError(null);
     setSelectedRecovery(null);
     void refreshSelectedRuntimeDetails(selectedRuntimeId);
@@ -686,6 +723,7 @@ export function App() {
 
                 {recoveryError ? <p className="error-box">{recoveryError}</p> : null}
                 {artifactError ? <p className="error-box">{artifactError}</p> : null}
+                {sessionError ? <p className="error-box">{sessionError}</p> : null}
                 {mutationError ? <p className="error-box">{mutationError}</p> : null}
 
                 <div className="recovery-column">
@@ -750,6 +788,35 @@ export function App() {
                     ) : (
                       <div className="inline-empty-state">
                         <p>No live recovery events captured for this runtime yet.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Runtime Sessions</h3>
+                      <span className="panel-caption">
+                        {selectedSessions.length} summaries
+                      </span>
+                    </div>
+
+                    {selectedSessions.length > 0 ? (
+                      <ul className="timeline-list">
+                        {selectedSessions.slice(0, 8).map((session) => (
+                          <li key={session.sessionId} className="timeline-item">
+                            <div className="timeline-row">
+                              <strong>
+                                {formatRuntimeSessionLabel(session, selectedRuntimeId)}
+                              </strong>
+                              <span>{session.updatedAt}</span>
+                            </div>
+                            <p>{formatRuntimeSessionDetail(session)}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No persisted sessions currently reference this runtime.</p>
                       </div>
                     )}
                   </div>
