@@ -283,6 +283,11 @@ not modeling.
   now passes explicit retrieved and produced artifact context into memory
   synthesis instead of leaving work-product visibility trapped in the main
   task-execution path;
+- an artifact-context carry-forward refinement of that same synthesis path
+  where the durable `working-context.md` page now preserves deterministic
+  consumed/produced artifact context plus bounded model-guided artifact
+  insights instead of leaving artifact awareness trapped in request-time
+  context alone;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -302,9 +307,9 @@ not modeling.
 ### Still missing or incomplete
 
 - richer model-guided memory maintenance beyond the current deterministic task
-  page, log/index, derived recent-work summary, session-aware and
-  artifact-aware working-context summary, and bounded current-session
-  inspection baseline;
+  page, log/index, derived recent-work summary, session-aware plus
+  artifact-aware/artifact-carrying working-context summary, and bounded
+  current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 

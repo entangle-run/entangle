@@ -110,6 +110,7 @@ This directory is the canonical design corpus for Entangle.
 104. [103-builtin-session-state-tool-slice.md](103-builtin-session-state-tool-slice.md)
 105. [104-session-aware-working-context-synthesis-slice.md](104-session-aware-working-context-synthesis-slice.md)
 106. [105-artifact-aware-working-context-synthesis-slice.md](105-artifact-aware-working-context-synthesis-slice.md)
+107. [106-artifact-context-carry-forward-slice.md](106-artifact-context-carry-forward-slice.md)
 
 ## Role of this corpus
 

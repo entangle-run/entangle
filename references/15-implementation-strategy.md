@@ -182,14 +182,19 @@ Completed in the current repository state:
     where the runner now passes explicit retrieved and produced artifact
     context into memory synthesis instead of leaving work-product visibility
     trapped in the main task-execution path.
+13. an artifact-context carry-forward refinement of that same synthesis path
+    where the durable `working-context.md` page now preserves deterministic
+    consumed/produced artifact context plus bounded model-guided artifact
+    insights instead of leaving artifact awareness trapped in request-time
+    context alone.
 
 Remaining work in this phase:
 
 1. deepen model-guided memory maintenance and runtime reasoning on top of the
    now-implemented artifact inspection, bounded memory-ref inspection, bounded
    current-session state inspection, and session-aware working-context
-   synthesis paths, now including artifact-aware working-context synthesis,
-   before adding more builtin tool kinds;
+   synthesis paths, now including artifact-aware and artifact-carrying
+   working-context synthesis, before adding more builtin tool kinds;
 2. deepen the now-implemented deterministic post-turn memory/wiki update phase,
    now including the derived recent-work and working-context summary layers,
    into broader model-guided memory maintenance;

@@ -220,6 +220,10 @@ describe("model-guided memory synthesis", () => {
             const toolResult = await toolExecutor.executeToolCall({
               artifactInputs: [],
               input: {
+                artifactInsights: [
+                  "The inbound recovery notes remain the canonical reference for relay-failure checkpoints.",
+                  "The newly produced report captures the next recovery checkpoint to validate with operators."
+                ],
                 focus: "Keep the recovery follow-up aligned with the relay-runtime work.",
                 nextActions: [
                   "Validate the recovery checkpoint against the latest runner behavior.",
@@ -414,6 +418,14 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain("## Current Focus");
     expect(workingContextPage).toContain(
       "Keep the recovery follow-up aligned with the relay-runtime work."
+    );
+    expect(workingContextPage).toContain("### Consumed Artifacts");
+    expect(workingContextPage).toContain("Consumed artifact: `artifact-input`");
+    expect(workingContextPage).toContain("### Produced Artifacts");
+    expect(workingContextPage).toContain("Produced artifact: `report-turn-005`");
+    expect(workingContextPage).toContain("### Durable Artifact Insights");
+    expect(workingContextPage).toContain(
+      "The inbound recovery notes remain the canonical reference for relay-failure checkpoints."
     );
     expect(workingContextPage).toContain("## Stable Facts");
     expect(workingContextPage).toContain(

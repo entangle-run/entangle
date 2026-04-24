@@ -734,3 +734,15 @@ canonical `artifactRefs` plus bounded `artifactInputs` it already owns from the
 completed turn. Closed the slice only after adding direct runner-memory tests,
 a service-level handoff test, re-running targeted runner gates, and then
 confirming the full `pnpm verify` plus `git diff --check` gates.
+
+## [2026-04-24] implementation | Added artifact-context carry-forward in working-context synthesis
+
+Deepened the same bounded memory path once more by making the durable
+`working-context.md` page preserve artifact context explicitly. The strict
+`write_memory_summary` tool now requires bounded `artifactInsights`, while the
+runner-owned page shape now carries deterministic consumed/produced artifact
+lists plus those synthesized durable artifact observations.
+
+Closed the slice only after widening runner-memory assertions over the final
+page content, re-running targeted runner lint/test/typecheck gates, and then
+confirming the full `pnpm verify` plus `git diff --check` gates.
