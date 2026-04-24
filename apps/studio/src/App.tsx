@@ -48,13 +48,19 @@ import {
   createEmptyManagedNodeEditorDraft,
   formatManagedNodeDetail,
   formatManagedNodeLabel,
-  formatPackageSourceOptionLabel,
   isManagedNodeEditorDraftUninitialized,
   managedNodeKindOptions,
   sortManagedGraphNodes,
-  sortPackageSourceInspections,
   type ManagedNodeEditorDraft
 } from "./graph-node-mutation.js";
+import {
+  buildPackageSourceAdmissionRequest,
+  createEmptyPackageSourceAdmissionDraft,
+  formatPackageSourceDetail,
+  formatPackageSourceOptionLabel,
+  sortPackageSourceInspections,
+  type PackageSourceAdmissionDraft
+} from "./package-source-admission.js";
 import {
   collectRuntimeRecoveryEvents,
   deriveSelectedRuntimeId,
@@ -262,6 +268,10 @@ export function App() {
     PackageSourceInspectionResponse[]
   >([]);
   const [packageSourceError, setPackageSourceError] = useState<string | null>(null);
+  const [packageAdmissionDraft, setPackageAdmissionDraft] =
+    useState<PackageSourceAdmissionDraft>(createEmptyPackageSourceAdmissionDraft);
+  const [packageAdmissionError, setPackageAdmissionError] = useState<string | null>(null);
+  const [pendingPackageAdmission, setPendingPackageAdmission] = useState(false);
   const [runtimes, setRuntimes] = useState<RuntimeInspectionResponse[]>([]);
   const [selectedRuntimeId, setSelectedRuntimeId] = useState<string | null>(null);
   const [selectedManagedNodeId, setSelectedManagedNodeId] = useState<string | null>(null);
@@ -574,6 +584,35 @@ export function App() {
     ]
   );
 
+  const admitPackageSource = useCallback(async () => {
+    try {
+      setPendingPackageAdmission(true);
+
+      const response = await client.admitPackageSource(
+        buildPackageSourceAdmissionRequest(packageAdmissionDraft)
+      );
+      const validationMessage = summarizeValidationReport(response.validation);
+
+      if (validationMessage) {
+        setPackageAdmissionError(validationMessage);
+        return;
+      }
+
+      await loadOverview();
+      setPackageAdmissionError(null);
+      setPackageAdmissionDraft(createEmptyPackageSourceAdmissionDraft());
+    } catch (caught: unknown) {
+      setPackageAdmissionError(
+        normalizeError(
+          caught,
+          "Unknown error while admitting the package source."
+        )
+      );
+    } finally {
+      setPendingPackageAdmission(false);
+    }
+  }, [client, loadOverview, packageAdmissionDraft]);
+
   const resetEdgeDraft = useCallback(() => {
     setSelectedEdgeId(null);
     setEdgeDraft(createDefaultEdgeEditorDraft(graphInspection?.graph));
@@ -875,6 +914,150 @@ export function App() {
           </div>
 
           <div className="graph-editor-grid">
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Package Sources</h3>
+                <span className="panel-caption">
+                  {packageSources.length} admitted sources
+                </span>
+              </div>
+
+              {packageSourceError ? <p className="error-box">{packageSourceError}</p> : null}
+              {packageAdmissionError ? <p className="error-box">{packageAdmissionError}</p> : null}
+
+              {packageSources.length > 0 ? (
+                <div className="package-source-list">
+                  {packageSources.map((inspection) => (
+                    <div
+                      key={inspection.packageSource.packageSourceId}
+                      className="package-source-card"
+                    >
+                      <strong>{formatPackageSourceOptionLabel(inspection)}</strong>
+                      <span>{formatPackageSourceDetail(inspection)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>No package sources are admitted yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Package Admission</h3>
+                <span className="panel-caption">
+                  Host-owned local source admission
+                </span>
+              </div>
+
+              <div className="field-grid">
+                <label className="field">
+                  <span>Source kind</span>
+                  <select
+                    disabled={pendingPackageAdmission}
+                    onChange={(event) => {
+                      const nextSourceKind =
+                        event.target.value as PackageSourceAdmissionDraft["sourceKind"];
+
+                      setPackageAdmissionDraft((current) => ({
+                        ...current,
+                        sourceKind: nextSourceKind
+                      }));
+                    }}
+                    value={packageAdmissionDraft.sourceKind}
+                  >
+                    <option value="local_path">local_path</option>
+                    <option value="local_archive">local_archive</option>
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Package source id (optional)</span>
+                  <input
+                    disabled={pendingPackageAdmission}
+                    onChange={(event) => {
+                      setPackageAdmissionDraft((current) => ({
+                        ...current,
+                        packageSourceId: event.target.value
+                      }));
+                    }}
+                    type="text"
+                    value={packageAdmissionDraft.packageSourceId}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>
+                    {packageAdmissionDraft.sourceKind === "local_path"
+                      ? "Absolute package path"
+                      : "Archive path"}
+                  </span>
+                  <input
+                    disabled={pendingPackageAdmission}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+
+                      setPackageAdmissionDraft((current) =>
+                        current.sourceKind === "local_path"
+                          ? {
+                              ...current,
+                              absolutePath: nextValue
+                            }
+                          : {
+                              ...current,
+                              archivePath: nextValue
+                            }
+                      );
+                    }}
+                    type="text"
+                    value={
+                      packageAdmissionDraft.sourceKind === "local_path"
+                        ? packageAdmissionDraft.absolutePath
+                        : packageAdmissionDraft.archivePath
+                    }
+                  />
+                </label>
+              </div>
+
+              <p className="editor-meta">
+                This slice intentionally keeps package admission explicit and
+                host-visible. Studio sends a canonical `local_path` or
+                `local_archive` request to the host instead of relying on
+                browser-owned directory handles.
+              </p>
+
+              <div className="action-row">
+                <button
+                  className="action-button"
+                  disabled={pendingPackageAdmission}
+                  onClick={() => {
+                    setPackageAdmissionDraft(createEmptyPackageSourceAdmissionDraft());
+                    setPackageAdmissionError(null);
+                  }}
+                  type="button"
+                >
+                  Reset
+                </button>
+                <button
+                  className="action-button"
+                  disabled={
+                    pendingPackageAdmission ||
+                    (packageAdmissionDraft.sourceKind === "local_path"
+                      ? packageAdmissionDraft.absolutePath.trim() === ""
+                      : packageAdmissionDraft.archivePath.trim() === "")
+                  }
+                  onClick={() => {
+                    void admitPackageSource();
+                  }}
+                  type="button"
+                >
+                  {pendingPackageAdmission ? "Admitting..." : "Admit Package Source"}
+                </button>
+              </div>
+            </div>
+
             <div className="subpanel">
               <div className="section-header">
                 <h3>Managed Nodes</h3>

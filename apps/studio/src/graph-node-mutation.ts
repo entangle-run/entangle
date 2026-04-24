@@ -108,16 +108,6 @@ export function sortManagedGraphNodes(
     .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
 }
 
-export function sortPackageSourceInspections(
-  packageSources: PackageSourceInspectionResponse[]
-): PackageSourceInspectionResponse[] {
-  return [...packageSources].sort((left, right) =>
-    left.packageSource.packageSourceId.localeCompare(
-      right.packageSource.packageSourceId
-    )
-  );
-}
-
 export function formatManagedNodeLabel(node: NodeBinding): string {
   return `${node.displayName} · ${node.nodeKind}`;
 }
@@ -129,12 +119,4 @@ export function formatManagedNodeDetail(node: NodeBinding): string {
       : "graph relay defaults";
 
   return `package ${node.packageSourceRef ?? "unbound"} · ${relaySummary} · initiate ${node.autonomy.canInitiateSessions ? "yes" : "no"}`;
-}
-
-export function formatPackageSourceOptionLabel(
-  inspection: PackageSourceInspectionResponse
-): string {
-  const manifestName = inspection.manifest?.name ?? inspection.packageSource.packageSourceId;
-
-  return `${manifestName} (${inspection.packageSource.packageSourceId})`;
 }

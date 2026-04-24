@@ -215,6 +215,9 @@ Completed in the current repository state:
 - the next bounded Studio mutation slice through host-owned managed-node
   mutation flows, with package-source-backed node binding selection and
   preservation of hidden bindings on replace.
+- the next bounded Studio mutation slice through host-owned package-source
+  admission flows, with canonical `local_path` / `local_archive` request
+  assembly and partial-failure-aware package-source inventory loading.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -226,12 +229,10 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. bounded package-source admission on top of the existing host package-source
-   surface;
+1. live event-driven updates via the host event stream where additional
+   operator value still exists;
 2. deeper session drilldown only where the existing host session read model
-   creates real operator leverage;
-3. live event-driven updates via the host event stream where additional
-   operator value still exists.
+   creates real operator leverage.
 
 Acceptance for the phase:
 

@@ -11,10 +11,12 @@ import {
   createDefaultManagedNodeEditorDraft,
   formatManagedNodeDetail,
   formatManagedNodeLabel,
-  formatPackageSourceOptionLabel,
-  sortManagedGraphNodes,
-  sortPackageSourceInspections
+  sortManagedGraphNodes
 } from "./graph-node-mutation.js";
+import {
+  formatPackageSourceOptionLabel,
+  sortPackageSourceInspections
+} from "./package-source-admission.js";
 
 function createManagedNode(nodeId: string, displayName: string): NodeBinding {
   return {

@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio package-source admission
+
+Closed the next bounded Studio mutation slice by exposing host-owned package
+admission through canonical `local_path` and `local_archive` requests.
+Studio now shows the admitted package-source inventory, keeps package-source
+read failures partial instead of collapsing the wider overview, and lets the
+operator admit package sources without introducing browser-owned filesystem
+semantics into the canonical UI model.
+
 ## [2026-04-24] implementation | Added Studio managed-node mutation
 
 Closed the next bounded Studio mutation slice by exposing host-owned managed

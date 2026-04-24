@@ -254,10 +254,17 @@ This repository currently contains:
 - the next bounded Studio mutation slice where operators can now create,
   replace, and delete managed nodes through host-owned node resource routes
   while binding them to admitted package sources from Studio itself;
+- the next bounded Studio mutation slice where operators can now admit package
+  sources directly through host-owned `local_path` / `local_archive` package
+  admission flows and inspect the current admitted inventory without leaving
+  the graph editor surface;
 
 The highest-value remaining gaps are:
 
-- bounded Studio package admission flows;
+- live event-driven Studio refresh where the existing host event stream can
+  replace manual reload loops for operator-visible state;
+- deeper session drilldown only where the current session-summary view leaves
+  real operator blind spots;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;
