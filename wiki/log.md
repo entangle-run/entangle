@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio runtime lifecycle mutation
+
+Closed the first bounded Studio mutation slice by wiring `start`, `stop`, and
+`restart` for the selected runtime strictly through the existing host lifecycle
+surfaces. Studio now exposes explicit pending-action and mutation-error state,
+but still refreshes real runtime truth from the host instead of inventing a
+client-owned runtime state machine.
+
 ## [2026-04-24] implementation | Added Studio runtime trace inspection
 
 Closed the next Studio slice by deepening selected-runtime inspection on top of

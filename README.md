@@ -237,11 +237,14 @@ This repository currently contains:
   restart generation, and a live runtime-trace panel over host-owned session,
   conversation, approval, artifact, and runner-turn events without widening
   the host API or inventing client-side trace logic;
+- a first bounded Studio runtime-lifecycle mutation slice where the selected
+  runtime can now be started, stopped, and restarted strictly through the
+  existing host lifecycle surfaces instead of through client-owned state;
 
 The highest-value remaining gaps are:
 
-- bounded Studio mutation flows plus deeper artifact/session operator
-  inspection;
+- bounded Studio package/graph mutation flows plus deeper artifact/session
+  operator inspection;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;

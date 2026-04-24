@@ -200,6 +200,9 @@ Completed in the current repository state:
 - richer Studio runtime, reconciliation, and live trace inspection on top of
   the now-broader host-owned trace surface, without widening the host API or
   introducing client-owned event logic.
+- the first bounded Studio runtime lifecycle mutation flow, where the visual
+  operator surface now starts, stops, and restarts selected runtimes strictly
+  through existing host lifecycle surfaces.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -211,8 +214,8 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. bounded package, node, edge, and runtime mutation flows on top of the
-   now-richer inspection surface;
+1. bounded package and graph mutation flows on top of the now-richer runtime
+   inspection and lifecycle surface;
 2. deeper artifact and session inspection where existing host truth creates
    real operator leverage;
 3. live event-driven updates via the host event stream where additional

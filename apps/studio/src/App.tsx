@@ -34,6 +34,13 @@ import {
   collectRuntimeTraceEvents,
   formatRuntimeTraceEventLabel
 } from "./runtime-trace-inspection.js";
+import {
+  canRestartRuntime,
+  canStartRuntime,
+  canStopRuntime,
+  formatRuntimeLifecycleActionLabel,
+  type RuntimeLifecycleAction
+} from "./runtime-lifecycle-actions.js";
 
 type FlowProjection = {
   edges: Edge[];
@@ -210,6 +217,9 @@ export function App() {
     useState<RuntimeRecoveryInspectionResponse | null>(null);
   const [hostEvents, setHostEvents] = useState<HostEventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [pendingRuntimeAction, setPendingRuntimeAction] =
+    useState<RuntimeLifecycleAction | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [eventStreamState, setEventStreamState] =
     useState<EventStreamState>("connecting");
@@ -261,6 +271,45 @@ export function App() {
     }
   }, [client]);
 
+  const mutateSelectedRuntime = useCallback(
+    async (action: RuntimeLifecycleAction) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      try {
+        setPendingRuntimeAction(action);
+
+        switch (action) {
+          case "start":
+            await client.startRuntime(selectedRuntimeId);
+            break;
+          case "stop":
+            await client.stopRuntime(selectedRuntimeId);
+            break;
+          case "restart":
+            await client.restartRuntime(selectedRuntimeId);
+            break;
+        }
+
+        await refreshSelectedRecovery(selectedRuntimeId);
+
+        startTransition(() => {
+          setMutationError(null);
+        });
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setMutationError(
+            normalizeError(caught, `Unknown error while trying to ${action} the runtime.`)
+          );
+        });
+      } finally {
+        setPendingRuntimeAction(null);
+      }
+    },
+    [client, refreshSelectedRecovery, selectedRuntimeId]
+  );
+
   const handleHostEvent = useEffectEvent((event: HostEventRecord) => {
     startTransition(() => {
       setHostEvents((current) => [event, ...current].slice(0, 40));
@@ -285,10 +334,12 @@ export function App() {
   useEffect(() => {
     if (!selectedRuntimeId) {
       setSelectedRecovery(null);
+      setMutationError(null);
       setRecoveryError(null);
       return;
     }
 
+    setMutationError(null);
     setSelectedRecovery(null);
     void refreshSelectedRecovery(selectedRuntimeId);
   }, [refreshSelectedRecovery, selectedRuntimeId]);
@@ -476,15 +527,48 @@ export function App() {
               <>
                 <div className="section-header">
                   <h3>Selected Runtime</h3>
-                  <button
-                    className="action-button"
-                    onClick={() => {
-                      void refreshSelectedRecovery(selectedRuntimeId);
-                    }}
-                    type="button"
-                  >
-                    Refresh
-                  </button>
+                  <div className="action-row">
+                    <button
+                      className="action-button"
+                      disabled={pendingRuntimeAction !== null}
+                      onClick={() => {
+                        void refreshSelectedRecovery(selectedRuntimeId);
+                      }}
+                      type="button"
+                    >
+                      Refresh
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={!canStartRuntime(selectedRuntime) || pendingRuntimeAction !== null}
+                      onClick={() => {
+                        void mutateSelectedRuntime("start");
+                      }}
+                      type="button"
+                    >
+                      {formatRuntimeLifecycleActionLabel("start", pendingRuntimeAction)}
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={!canRestartRuntime(selectedRuntime) || pendingRuntimeAction !== null}
+                      onClick={() => {
+                        void mutateSelectedRuntime("restart");
+                      }}
+                      type="button"
+                    >
+                      {formatRuntimeLifecycleActionLabel("restart", pendingRuntimeAction)}
+                    </button>
+                    <button
+                      className="action-button"
+                      disabled={!canStopRuntime(selectedRuntime) || pendingRuntimeAction !== null}
+                      onClick={() => {
+                        void mutateSelectedRuntime("stop");
+                      }}
+                      type="button"
+                    >
+                      {formatRuntimeLifecycleActionLabel("stop", pendingRuntimeAction)}
+                    </button>
+                  </div>
                 </div>
 
                 <dl className="status-list compact-list">
@@ -545,6 +629,7 @@ export function App() {
                 </dl>
 
                 {recoveryError ? <p className="error-box">{recoveryError}</p> : null}
+                {mutationError ? <p className="error-box">{mutationError}</p> : null}
 
                 <div className="recovery-column">
                   <div className="subpanel">
