@@ -292,14 +292,18 @@ delivery.
 - recovery-focused runtime selection, policy/controller inspection, recovery
   history inspection, and live recovery-event inspection on top of host-owned
   runtime recovery reads and events;
+- richer selected-runtime inspection over reconciliation state, finding codes,
+  backend/context readiness, restart generation, and a live runtime-trace view
+  on top of host-owned session, conversation, approval, artifact, and
+  runner-turn events;
 - access to a broader typed trace surface that now includes conversations,
   approvals, artifacts, sessions, runner turns, and runtime recovery events.
 
 ### Still missing or incomplete
 
-- richer runtime, reconciliation, and artifact visibility;
 - bounded mutation flows for package admission, node and edge editing, and
-  runtime lifecycle operations.
+  runtime lifecycle operations;
+- deeper artifact and session inspection beyond the current live trace view.
 
 ### Assessment
 
@@ -371,8 +375,8 @@ surface:
 
 The current best delivery order is:
 
-1. deepen Studio into a real operator surface on top of the now broader
-   host-owned trace surface;
+1. finish Studio as a real operator surface with bounded mutation flows on top
+   of the now broader host-owned trace surface;
 2. complete CLI parity for the core host workflows;
 3. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory

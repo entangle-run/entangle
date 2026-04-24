@@ -169,6 +169,11 @@ The repository now also contains the first real implementation baseline:
   `artifact.trace.event` from persisted runner state using the same
   deduplicated observed-state model already used for session and runner-turn
   activity;
+- a deeper Studio runtime-inspection slice where the selected-runtime view now
+  surfaces reconciliation state, finding codes, backend/context readiness,
+  restart generation, and a live runtime-trace panel over host-owned session,
+  conversation, approval, artifact, and runner-turn events without widening
+  the host API or inventing client-side trace logic;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -291,8 +296,9 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- deepen Studio into broader runtime and operator workflows only after those
-  richer host event classes exist;
+- finish Studio as a real operator surface with bounded mutation flows and
+  deeper artifact/session inspection on top of the now broader host-owned
+  trace surface;
 - complete CLI parity where it adds real headless operational value;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided

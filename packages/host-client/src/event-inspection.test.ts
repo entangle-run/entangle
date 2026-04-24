@@ -3,7 +3,8 @@ import type { HostEventRecord } from "@entangle/types";
 import {
   filterHostEvents,
   hostEventMatchesFilter,
-  runtimeRecoveryEventTypePrefixes
+  runtimeRecoveryEventTypePrefixes,
+  runtimeTraceEventTypePrefixes
 } from "./event-inspection.js";
 
 function createRuntimeRecoveryRecordedEvent(): HostEventRecord {
@@ -74,5 +75,21 @@ describe("host event inspection helpers", () => {
         typePrefixes: ["runtime.recovery."]
       })
     ).toEqual([createRuntimeRecoveryRecordedEvent()]);
+  });
+
+  it("exposes a runtime trace prefix set that matches session activity and excludes recovery-only events", () => {
+    expect(
+      hostEventMatchesFilter(createSessionEvent(), {
+        nodeId: "worker-it",
+        typePrefixes: [...runtimeTraceEventTypePrefixes]
+      })
+    ).toBe(true);
+
+    expect(
+      hostEventMatchesFilter(createRuntimeRecoveryRecordedEvent(), {
+        nodeId: "worker-it",
+        typePrefixes: [...runtimeTraceEventTypePrefixes]
+      })
+    ).toBe(false);
   });
 });

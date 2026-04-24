@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio runtime trace inspection
+
+Closed the next Studio slice by deepening selected-runtime inspection on top of
+the now broader host-owned trace surface. Studio now shows reconciliation
+state, finding codes, backend/context readiness, restart generation, and a
+live runtime-trace panel built from host-derived session, conversation,
+approval, artifact, and runner-turn events without widening the host API or
+introducing client-owned trace logic.
+
 ## [2026-04-24] implementation | Added conversation, approval, and artifact host trace events
 
 Closed the next host-owned trace-widening slice by deriving

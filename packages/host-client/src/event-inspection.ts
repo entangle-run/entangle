@@ -12,6 +12,14 @@ export const runtimeRecoveryEventTypePrefixes = [
   "runtime.observed_state.changed"
 ] as const;
 
+export const runtimeTraceEventTypePrefixes = [
+  "session.updated",
+  "conversation.trace.event",
+  "approval.trace.event",
+  "artifact.trace.event",
+  "runner.turn.updated"
+] as const;
+
 function eventHasNodeId(
   event: HostEventRecord
 ): event is HostEventRecord & { nodeId: string } {

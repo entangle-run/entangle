@@ -30,6 +30,10 @@ import {
   describeRuntimeRecoveryPolicy,
   formatRuntimeRecoveryEventLabel
 } from "./recovery-inspection.js";
+import {
+  collectRuntimeTraceEvents,
+  formatRuntimeTraceEventLabel
+} from "./runtime-trace-inspection.js";
 
 type FlowProjection = {
   edges: Edge[];
@@ -334,6 +338,13 @@ export function App() {
         : [],
     [hostEvents, selectedRuntimeId]
   );
+  const runtimeTraceEvents = useMemo(
+    () =>
+      selectedRuntimeId
+        ? collectRuntimeTraceEvents(hostEvents, selectedRuntimeId, 12)
+        : [],
+    [hostEvents, selectedRuntimeId]
+  );
   const runtimeStateTone = useMemo(
     () => formatRuntimeStateTone(selectedRuntime),
     [selectedRuntime]
@@ -345,10 +356,12 @@ export function App() {
         <p className="eyebrow">Entangle Studio</p>
         <h1>Graph-native control surface for an AI organization</h1>
         <p className="lede">
-          Studio now inspects live runtime recovery state from the host instead
-          of stopping at topology. Select a managed runtime to inspect policy,
-          controller state, durable recovery history, and the live recovery
-          event stream that the host is actually emitting.
+          Studio now inspects live runtime recovery, reconciliation, and trace
+          state from the host instead of stopping at topology. Select a managed
+          runtime to inspect policy, controller state, durable recovery history,
+          reconciliation findings, and the broader session, conversation,
+          approval, artifact, and runner activity that the host is actually
+          emitting.
         </p>
       </section>
 
@@ -503,6 +516,32 @@ export function App() {
                         : "loading"}
                     </dd>
                   </div>
+                  <div>
+                    <dt>Reconciliation</dt>
+                    <dd>{selectedRuntime?.reconciliation.state ?? "loading"}</dd>
+                  </div>
+                  <div>
+                    <dt>Finding codes</dt>
+                    <dd>
+                      {selectedRuntime
+                        ? selectedRuntime.reconciliation.findingCodes.length > 0
+                          ? selectedRuntime.reconciliation.findingCodes.join(", ")
+                          : "none"
+                        : "loading"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Backend / context</dt>
+                    <dd>
+                      {selectedRuntime
+                        ? `${selectedRuntime.backendKind} / ${selectedRuntime.contextAvailable ? "ready" : "missing"}`
+                        : "loading"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Restart generation</dt>
+                    <dd>{selectedRuntime?.restartGeneration ?? "loading"}</dd>
+                  </div>
                 </dl>
 
                 {recoveryError ? <p className="error-box">{recoveryError}</p> : null}
@@ -572,6 +611,37 @@ export function App() {
                       </div>
                     )}
                   </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Live Runtime Trace</h3>
+                      <span
+                        className={`status-pill status-${formatEventStreamStateTone(
+                          eventStreamState
+                        )}`}
+                      >
+                        {eventStreamState}
+                      </span>
+                    </div>
+
+                    {runtimeTraceEvents.length > 0 ? (
+                      <ul className="timeline-list">
+                        {runtimeTraceEvents.map((event) => (
+                          <li key={event.eventId} className="timeline-item">
+                            <div className="timeline-row">
+                              <strong>{formatRuntimeTraceEventLabel(event)}</strong>
+                              <span>{event.timestamp}</span>
+                            </div>
+                            <p>{event.message}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No live runtime trace captured for this runtime yet.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             ) : null}
@@ -582,6 +652,7 @@ export function App() {
             <ul>
               <li>Studio consumes real host contracts instead of faking topology</li>
               <li>Runtime recovery policy, controller, history, and events all come from host-owned state</li>
+              <li>Selected-runtime trace comes from host-derived session, conversation, approval, artifact, and turn events</li>
               <li>CLI and Studio share the same host-client and typed event contracts</li>
               <li>Live recovery visibility does not bypass the host control-plane boundary</li>
             </ul>

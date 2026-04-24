@@ -232,10 +232,16 @@ This repository currently contains:
   `artifact.trace.event` from persisted runner state using the same
   deduplicated observed-state model already used for session and runner-turn
   activity;
+- a deeper Studio runtime-inspection slice where the selected-runtime panel now
+  surfaces reconciliation state, finding codes, backend/context readiness,
+  restart generation, and a live runtime-trace panel over host-owned session,
+  conversation, approval, artifact, and runner-turn events without widening
+  the host API or inventing client-side trace logic;
 
 The highest-value remaining gaps are:
 
-- deeper Studio runtime and operator workflows;
+- bounded Studio mutation flows plus deeper artifact/session operator
+  inspection;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;

@@ -660,5 +660,6 @@ export {
   filterHostEvents,
   hostEventMatchesFilter,
   runtimeRecoveryEventTypePrefixes,
+  runtimeTraceEventTypePrefixes,
   type HostEventFilter
 } from "./event-inspection.js";

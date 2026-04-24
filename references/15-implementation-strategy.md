@@ -197,6 +197,9 @@ Completed in the current repository state:
 - broader conversation-, approval-, and artifact-oriented host event widening
   on top of the now-implemented runtime, recovery, session, and runner
   activity surfaces.
+- richer Studio runtime, reconciliation, and live trace inspection on top of
+  the now-broader host-owned trace surface, without widening the host API or
+  introducing client-owned event logic.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -208,10 +211,12 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. richer runtime and reconciliation views;
-2. artifact and session inspection;
-3. bounded package, node, edge, and runtime mutation flows;
-4. live event-driven updates via the host event stream.
+1. bounded package, node, edge, and runtime mutation flows on top of the
+   now-richer inspection surface;
+2. deeper artifact and session inspection where existing host truth creates
+   real operator leverage;
+3. live event-driven updates via the host event stream where additional
+   operator value still exists.
 
 Acceptance for the phase:
 
