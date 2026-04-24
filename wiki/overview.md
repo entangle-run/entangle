@@ -177,6 +177,11 @@ The repository now also contains the first real implementation baseline:
 - a first bounded Studio runtime-lifecycle mutation slice where the selected
   runtime can now be started, stopped, and restarted strictly through the
   existing host lifecycle surfaces instead of through client-owned state;
+- a deeper Studio runtime-artifact inspection slice where the selected-runtime
+  surface now exposes persisted artifact records from the host read model,
+  including deterministic sorting, lifecycle/publication/retrieval summaries,
+  and backend-aware locator summaries, while selected-runtime refresh now
+  degrades partially under sub-read failures instead of failing wholesale;
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
@@ -299,9 +304,9 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, and the publication/retrieval-state record
   model;
-- finish Studio as a real operator surface with bounded package/graph mutation
-  flows and deeper artifact/session inspection on top of the now broader
-  host-owned trace surface;
+- deepen Studio session inspection on top of the already implemented host
+  session read model, then finish bounded package/graph mutation flows on top
+  of the now broader host-owned trace surface;
 - complete CLI parity where it adds real headless operational value;
 - widen the now-real internal `agent-engine` beyond the first bounded tool
   loop, especially around builtin tool surface depth and richer model-guided

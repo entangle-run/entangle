@@ -299,13 +299,16 @@ delivery.
 - a first bounded runtime lifecycle mutation flow where Studio now starts,
   stops, and restarts the selected runtime strictly through existing host
   lifecycle surfaces;
+- runtime artifact inspection on top of the existing host runtime-artifact read
+  model, with selected-runtime refresh now degrading partially instead of
+  failing wholesale when one selected-runtime sub-read fails;
 - access to a broader typed trace surface that now includes conversations,
   approvals, artifacts, sessions, runner turns, and runtime recovery events.
 
 ### Still missing or incomplete
 
 - bounded mutation flows for package admission and graph editing;
-- deeper artifact and session inspection beyond the current live trace view.
+- deeper session inspection beyond the current live trace and artifact view.
 
 ### Assessment
 
@@ -377,14 +380,16 @@ surface:
 
 The current best delivery order is:
 
-1. finish Studio as a real operator surface with bounded package and graph
-   mutation flows on top of the now broader host-owned trace surface;
+1. deepen Studio session inspection on top of the already implemented
+   host-owned session read model;
 2. complete CLI parity for the core host workflows;
-3. widen the internal `agent-engine` beyond the first bounded tool loop,
+3. finish Studio as a real operator surface with bounded package and graph
+   mutation flows on top of the now broader host-owned trace surface;
+4. widen the internal `agent-engine` beyond the first bounded tool loop,
    especially around builtin tool surface depth and richer model-guided memory
    updates;
-4. harden end-to-end deployment, restart, and integration coverage;
-5. widen git collaboration only where later delivery needs justify going beyond
+5. harden end-to-end deployment, restart, and integration coverage;
+6. widen git collaboration only where later delivery needs justify going beyond
    the current locator-specific retrieval and primary-target provisioning model.
 
 This ordering preserves the best current properties of the repository:

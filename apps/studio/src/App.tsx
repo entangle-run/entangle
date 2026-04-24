@@ -16,6 +16,7 @@ import {
 } from "@xyflow/react";
 import { createHostClient } from "@entangle/host-client";
 import type {
+  ArtifactRecord,
   GraphInspectionResponse,
   GraphSpec,
   HostEventRecord,
@@ -34,6 +35,12 @@ import {
   collectRuntimeTraceEvents,
   formatRuntimeTraceEventLabel
 } from "./runtime-trace-inspection.js";
+import {
+  formatRuntimeArtifactLabel,
+  formatRuntimeArtifactLocator,
+  formatRuntimeArtifactStatus,
+  sortRuntimeArtifacts
+} from "./runtime-artifact-inspection.js";
 import {
   canRestartRuntime,
   canStartRuntime,
@@ -215,6 +222,8 @@ export function App() {
   const [selectedRuntimeId, setSelectedRuntimeId] = useState<string | null>(null);
   const [selectedRecovery, setSelectedRecovery] =
     useState<RuntimeRecoveryInspectionResponse | null>(null);
+  const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
+  const [artifactError, setArtifactError] = useState<string | null>(null);
   const [hostEvents, setHostEvents] = useState<HostEventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -248,27 +257,65 @@ export function App() {
     }
   }, [client]);
 
-  const refreshSelectedRecovery = useCallback(async (nodeId: string) => {
-    try {
-      const [nextStatus, nextRuntimeList, nextRecovery] = await Promise.all([
+  const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
+    const [statusResult, runtimeListResult, recoveryResult, artifactResult] =
+      await Promise.allSettled([
         client.getHostStatus(),
         client.listRuntimes(),
-        client.getRuntimeRecovery(nodeId, 20)
+        client.getRuntimeRecovery(nodeId, 20),
+        client.listRuntimeArtifacts(nodeId)
       ]);
 
+    if (statusResult.status === "rejected" || runtimeListResult.status === "rejected") {
+      const runtimeStateError: unknown =
+        statusResult.status === "rejected"
+          ? statusResult.reason
+          : runtimeListResult.status === "rejected"
+            ? runtimeListResult.reason
+            : new Error("Selected runtime state refresh failed unexpectedly.");
+
       startTransition(() => {
-        setStatus(nextStatus);
-        setRuntimes(nextRuntimeList.runtimes);
-        setSelectedRecovery(nextRecovery);
-        setRecoveryError(null);
-      });
-    } catch (caught: unknown) {
-      startTransition(() => {
-        setRecoveryError(
-          normalizeError(caught, "Unknown error while loading runtime recovery.")
+        setError(
+          normalizeError(
+            runtimeStateError,
+            "Unknown error while loading selected runtime state."
+          )
         );
       });
+      return;
     }
+
+    startTransition(() => {
+      setStatus(statusResult.value);
+      setRuntimes(runtimeListResult.value.runtimes);
+      setError(null);
+
+      if (recoveryResult.status === "fulfilled") {
+        setSelectedRecovery(recoveryResult.value);
+        setRecoveryError(null);
+      } else {
+        setSelectedRecovery(null);
+        setRecoveryError(
+          normalizeError(
+            recoveryResult.reason,
+            "Unknown error while loading runtime recovery."
+          )
+        );
+      }
+
+      if (artifactResult.status === "fulfilled") {
+        setSelectedArtifacts(sortRuntimeArtifacts(artifactResult.value.artifacts));
+        setArtifactError(null);
+      } else {
+        setSelectedArtifacts([]);
+        setArtifactError(
+          normalizeError(
+            artifactResult.reason,
+            "Unknown error while loading runtime artifacts."
+          )
+        );
+      }
+    });
   }, [client]);
 
   const mutateSelectedRuntime = useCallback(
@@ -292,7 +339,7 @@ export function App() {
             break;
         }
 
-        await refreshSelectedRecovery(selectedRuntimeId);
+        await refreshSelectedRuntimeDetails(selectedRuntimeId);
 
         startTransition(() => {
           setMutationError(null);
@@ -307,7 +354,7 @@ export function App() {
         setPendingRuntimeAction(null);
       }
     },
-    [client, refreshSelectedRecovery, selectedRuntimeId]
+    [client, refreshSelectedRuntimeDetails, selectedRuntimeId]
   );
 
   const handleHostEvent = useEffectEvent((event: HostEventRecord) => {
@@ -319,7 +366,12 @@ export function App() {
       selectedRuntimeId &&
       collectRuntimeRecoveryEvents([event], selectedRuntimeId, 1).length > 0
     ) {
-      void refreshSelectedRecovery(selectedRuntimeId);
+      void refreshSelectedRuntimeDetails(selectedRuntimeId);
+      return;
+    }
+
+    if (event.type === "artifact.trace.event" && event.nodeId === selectedRuntimeId) {
+      void refreshSelectedRuntimeDetails(selectedRuntimeId);
     }
   });
 
@@ -333,16 +385,20 @@ export function App() {
 
   useEffect(() => {
     if (!selectedRuntimeId) {
+      setArtifactError(null);
+      setSelectedArtifacts([]);
       setSelectedRecovery(null);
       setMutationError(null);
       setRecoveryError(null);
       return;
     }
 
+    setArtifactError(null);
+    setSelectedArtifacts([]);
     setMutationError(null);
     setSelectedRecovery(null);
-    void refreshSelectedRecovery(selectedRuntimeId);
-  }, [refreshSelectedRecovery, selectedRuntimeId]);
+    void refreshSelectedRuntimeDetails(selectedRuntimeId);
+  }, [refreshSelectedRuntimeDetails, selectedRuntimeId]);
 
   useEffect(() => {
     setEventStreamState("connecting");
@@ -532,7 +588,7 @@ export function App() {
                       className="action-button"
                       disabled={pendingRuntimeAction !== null}
                       onClick={() => {
-                        void refreshSelectedRecovery(selectedRuntimeId);
+                        void refreshSelectedRuntimeDetails(selectedRuntimeId);
                       }}
                       type="button"
                     >
@@ -629,6 +685,7 @@ export function App() {
                 </dl>
 
                 {recoveryError ? <p className="error-box">{recoveryError}</p> : null}
+                {artifactError ? <p className="error-box">{artifactError}</p> : null}
                 {mutationError ? <p className="error-box">{mutationError}</p> : null}
 
                 <div className="recovery-column">
@@ -693,6 +750,36 @@ export function App() {
                     ) : (
                       <div className="inline-empty-state">
                         <p>No live recovery events captured for this runtime yet.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Runtime Artifacts</h3>
+                      <span className="panel-caption">
+                        {selectedArtifacts.length} records
+                      </span>
+                    </div>
+
+                    {selectedArtifacts.length > 0 ? (
+                      <ul className="timeline-list">
+                        {selectedArtifacts.slice(0, 8).map((artifact) => (
+                          <li key={artifact.ref.artifactId} className="timeline-item">
+                            <div className="timeline-row">
+                              <strong>{formatRuntimeArtifactLabel(artifact)}</strong>
+                              <span>{artifact.updatedAt}</span>
+                            </div>
+                            <p>{formatRuntimeArtifactStatus(artifact)}</p>
+                            <p className="artifact-meta">
+                              {formatRuntimeArtifactLocator(artifact)}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No persisted runtime artifacts are visible for this runtime yet.</p>
                       </div>
                     )}
                   </div>

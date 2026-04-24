@@ -91,6 +91,7 @@ This directory is the canonical design corpus for Entangle.
 85. [84-conversation-approval-artifact-host-event-slice.md](84-conversation-approval-artifact-host-event-slice.md)
 86. [85-studio-runtime-trace-inspection-slice.md](85-studio-runtime-trace-inspection-slice.md)
 87. [86-studio-runtime-lifecycle-mutation-slice.md](86-studio-runtime-lifecycle-mutation-slice.md)
+88. [87-studio-runtime-artifact-inspection-slice.md](87-studio-runtime-artifact-inspection-slice.md)
 
 ## Role of this corpus
 

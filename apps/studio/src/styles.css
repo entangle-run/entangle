@@ -301,6 +301,14 @@ code {
   line-height: 1.45;
 }
 
+.artifact-meta {
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    monospace;
+  font-size: 0.8rem;
+}
+
 .timeline-row {
   display: flex;
   align-items: baseline;

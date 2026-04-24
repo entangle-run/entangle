@@ -203,6 +203,9 @@ Completed in the current repository state:
 - the first bounded Studio runtime lifecycle mutation flow, where the visual
   operator surface now starts, stops, and restarts selected runtimes strictly
   through existing host lifecycle surfaces.
+- deeper Studio runtime artifact inspection on top of the already implemented
+  host runtime-artifact read surface, with partial-failure-tolerant selected
+  runtime refresh instead of all-or-nothing panel failure.
 
 The next best current move is now Phase 4 Studio completion on top of the
 broader host-owned trace surface.
@@ -214,10 +217,10 @@ client-owned control logic.
 
 Implement in small slices:
 
-1. bounded package and graph mutation flows on top of the now-richer runtime
-   inspection and lifecycle surface;
-2. deeper artifact and session inspection where existing host truth creates
+1. deeper session inspection where the existing host session read model creates
    real operator leverage;
+2. bounded package and graph mutation flows on top of the now-richer runtime
+   inspection, lifecycle, and artifact surface;
 3. live event-driven updates via the host event stream where additional
    operator value still exists.
 

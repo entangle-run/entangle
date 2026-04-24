@@ -240,11 +240,15 @@ This repository currently contains:
 - a first bounded Studio runtime-lifecycle mutation slice where the selected
   runtime can now be started, stopped, and restarted strictly through the
   existing host lifecycle surfaces instead of through client-owned state;
+- a deeper Studio runtime-artifact inspection slice where the selected-runtime
+  surface now exposes persisted artifact records from the host read model,
+  including deterministic sorting, lifecycle/publication/retrieval summaries,
+  and backend-aware locator summaries, while selected-runtime refresh now
+  degrades partially under sub-read failures instead of failing wholesale;
 
 The highest-value remaining gaps are:
 
-- bounded Studio package/graph mutation flows plus deeper artifact/session
-  operator inspection;
+- deeper Studio session inspection plus bounded package/graph mutation flows;
 - fuller CLI parity for the core host workflows;
 - a broader builtin tool surface and richer model-guided memory/wiki
   maintenance inside the internal runtime execution path;

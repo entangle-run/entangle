@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added Studio runtime artifact inspection
+
+Closed the next Studio inspection slice by exposing persisted runtime artifact
+records from the host read model directly in the selected-runtime panel.
+Studio now shows deterministic artifact ordering plus lifecycle/publication/
+retrieval summaries and locator metadata, and its selected-runtime refresh path
+now degrades partially when one sub-read fails instead of collapsing the whole
+panel.
+
 ## [2026-04-24] implementation | Added Studio runtime lifecycle mutation
 
 Closed the first bounded Studio mutation slice by wiring `start`, `stop`, and
