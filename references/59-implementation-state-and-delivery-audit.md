@@ -296,6 +296,10 @@ not modeling.
   where the durable `working-context.md` page now preserves bounded execution
   insights instead of leaving current-turn execution awareness trapped in
   prompt-time context alone;
+- an execution-aware deterministic memory-baseline refinement where
+  runner-owned task pages and the derived recent-work summary now preserve
+  richer normalized execution detail before any model-guided synthesis
+  widening is applied;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,

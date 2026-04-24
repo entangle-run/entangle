@@ -26,8 +26,22 @@ describe("post-turn memory maintenance", () => {
       producedArtifactIds: ["report-turn-001"],
       result: {
         assistantMessages: ["Reviewed the parser patch and found no blockers."],
+        providerStopReason: "end_turn",
         stopReason: "completed",
-        toolExecutions: [],
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "toolu_session",
+            toolId: "inspect_session_state"
+          },
+          {
+            outcome: "success",
+            sequence: 2,
+            toolCallId: "toolu_artifact",
+            toolId: "inspect_artifact_input"
+          }
+        ],
         toolRequests: [],
         usage: {
           inputTokens: 10,
@@ -48,6 +62,11 @@ describe("post-turn memory maintenance", () => {
     expect(taskPage).toContain("Reviewed the parser patch and found no blockers.");
     expect(taskPage).toContain("`input-report`");
     expect(taskPage).toContain("`report-turn-001`");
+    expect(taskPage).toContain("- Provider stop reason: `end_turn`");
+    expect(taskPage).toContain("- Token usage: input=10 output=5");
+    expect(taskPage).toContain("- Tool executions:");
+    expect(taskPage).toContain("#1 inspect_session_state [success]");
+    expect(taskPage).toContain("#2 inspect_artifact_input [success]");
     expect(logPage).toContain("runner turn | session-alpha / turn-memory-001");
     expect(indexPage).toContain(
       "[session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
@@ -147,8 +166,16 @@ describe("post-turn memory maintenance", () => {
       producedArtifactIds: ["report-turn-004"],
       result: {
         assistantMessages: ["Drafted the recovery plan and captured the next action."],
+        providerStopReason: "end_turn",
         stopReason: "completed",
-        toolExecutions: [],
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "toolu_session",
+            toolId: "inspect_session_state"
+          }
+        ],
         toolRequests: [],
         usage: {
           inputTokens: 9,
@@ -165,6 +192,9 @@ describe("post-turn memory maintenance", () => {
     expect(summaryPage).toContain("### session-alpha / turn-memory-003");
     expect(summaryPage).toContain("Drafted the recovery plan and captured the next action.");
     expect(summaryPage).toContain("Completed the first review pass and noted one follow-up.");
+    expect(summaryPage).toContain("- Provider stop reason: `end_turn`");
+    expect(summaryPage).toContain("- Token usage: input=9 output=5");
+    expect(summaryPage).toContain("- Tool executions: 1");
     expect(summaryPage.indexOf("turn-memory-004")).toBeLessThan(
       summaryPage.indexOf("turn-memory-003")
     );

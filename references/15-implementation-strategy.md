@@ -195,6 +195,10 @@ Completed in the current repository state:
     where the durable `working-context.md` page now preserves bounded
     execution insights instead of leaving current-turn execution awareness
     trapped in prompt-time context alone.
+16. an execution-aware deterministic memory-baseline refinement where
+    runner-owned task pages and the derived recent-work summary now preserve
+    richer normalized execution detail before any model-guided synthesis
+    widening is applied.
 
 Remaining work in this phase:
 

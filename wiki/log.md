@@ -770,3 +770,16 @@ Signals` section.
 Closed the slice only after widening runner-memory assertions over the final
 page content, re-running targeted runner lint/test/typecheck gates, and then
 confirming the full `pnpm verify` plus `git diff --check` gates.
+
+## [2026-04-24] implementation | Added execution-aware deterministic memory baseline
+
+Strengthened the runner-owned deterministic memory layer by preserving richer
+normalized execution detail in canonical task pages and in the derived
+`recent-work.md` page rebuilt from those task pages. This keeps the source of
+truth relationship clean while giving later model-guided memory passes a
+stronger deterministic base.
+
+Closed the slice only after widening runner-memory assertions over both task
+pages and recent-work output, re-running targeted runner lint/test/typecheck
+gates, and then confirming the full `pnpm verify` plus `git diff --check`
+gates.

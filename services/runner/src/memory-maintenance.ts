@@ -73,6 +73,27 @@ function renderArtifactIdLines(
     : [fallback];
 }
 
+function renderToolExecutionLines(
+  result: AgentEngineTurnResult
+): string[] {
+  if (result.toolExecutions.length === 0) {
+    return ["- Tool executions: none"];
+  }
+
+  return [
+    "- Tool executions:",
+    ...result.toolExecutions.map((toolExecution) =>
+      [
+        `  - #${toolExecution.sequence} ${toolExecution.toolId}`,
+        `[${toolExecution.outcome}]`,
+        ...(toolExecution.errorCode
+          ? [`error=${toolExecution.errorCode}`]
+          : [])
+      ].join(" ")
+    )
+  ];
+}
+
 export function appendSectionBullet(
   currentContent: string,
   heading: string,
@@ -161,6 +182,20 @@ function buildTaskPageContent(input: {
     "## Outcome",
     "",
     `- Stop reason: \`${input.result.stopReason}\``,
+    ...(input.result.providerStopReason
+      ? [`- Provider stop reason: \`${input.result.providerStopReason}\``]
+      : []),
+    ...(input.result.usage
+      ? [
+          `- Token usage: input=${input.result.usage.inputTokens} output=${input.result.usage.outputTokens}`
+        ]
+      : []),
+    ...(input.result.failure
+      ? [
+          `- Failure: \`${input.result.failure.classification}\` ${input.result.failure.message}`
+        ]
+      : []),
+    ...renderToolExecutionLines(input.result),
     "",
     assistantSummary,
     "",
@@ -235,7 +270,11 @@ function extractTaskPageTitle(content: string, fallbackTitle: string): string {
 
 function extractTaskPageOutcome(content: string): {
   assistantSummary: string;
+  failureSummary?: string;
+  providerStopReason?: string;
   stopReason: string;
+  tokenUsage?: string;
+  toolExecutionCount: number;
 } {
   const lines = content.split("\n");
   const outcomeHeadingIndex = lines.findIndex((line) => line.trim() === "## Outcome");
@@ -243,7 +282,8 @@ function extractTaskPageOutcome(content: string): {
   if (outcomeHeadingIndex === -1) {
     return {
       assistantSummary: "No assistant summary was recorded for this task page.",
-      stopReason: "unknown"
+      stopReason: "unknown",
+      toolExecutionCount: 0
     };
   }
 
@@ -258,6 +298,10 @@ function extractTaskPageOutcome(content: string): {
   }
 
   let stopReason = "unknown";
+  let providerStopReason: string | undefined;
+  let tokenUsage: string | undefined;
+  let failureSummary: string | undefined;
+  let toolExecutionCount = 0;
   const assistantSummaryLines: string[] = [];
 
   for (const line of outcomeLines) {
@@ -278,6 +322,38 @@ function extractTaskPageOutcome(content: string): {
       continue;
     }
 
+    if (trimmedLine.startsWith("- Provider stop reason: ")) {
+      providerStopReason = trimmedLine
+        .replace("- Provider stop reason: ", "")
+        .replaceAll("`", "")
+        .trim();
+      continue;
+    }
+
+    if (trimmedLine.startsWith("- Token usage: ")) {
+      tokenUsage = trimmedLine.replace("- Token usage: ", "").trim();
+      continue;
+    }
+
+    if (trimmedLine.startsWith("- Failure: ")) {
+      failureSummary = trimmedLine.replace("- Failure: ", "").trim();
+      continue;
+    }
+
+    if (trimmedLine === "- Tool executions:") {
+      continue;
+    }
+
+    if (trimmedLine === "- Tool executions: none") {
+      toolExecutionCount = 0;
+      continue;
+    }
+
+    if (line.startsWith("  - #")) {
+      toolExecutionCount += 1;
+      continue;
+    }
+
     assistantSummaryLines.push(trimmedLine);
   }
 
@@ -285,7 +361,11 @@ function extractTaskPageOutcome(content: string): {
     assistantSummary:
       assistantSummaryLines.join("\n").trim() ||
       "No assistant summary was recorded for this task page.",
-    stopReason
+    ...(failureSummary ? { failureSummary } : {}),
+    ...(providerStopReason ? { providerStopReason } : {}),
+    stopReason,
+    ...(tokenUsage ? { tokenUsage } : {}),
+    toolExecutionCount
   };
 }
 
@@ -327,6 +407,18 @@ async function buildRecentWorkSummaryContent(input: {
       `### ${title}`,
       "",
       `- Stop reason: \`${outcome.stopReason}\``,
+      ...(outcome.providerStopReason
+        ? [`- Provider stop reason: \`${outcome.providerStopReason}\``]
+        : []),
+      ...(outcome.tokenUsage
+        ? [`- Token usage: ${outcome.tokenUsage}`]
+        : []),
+      ...(outcome.failureSummary
+        ? [`- Failure: ${outcome.failureSummary}`]
+        : []),
+      `- Tool executions: ${
+        outcome.toolExecutionCount > 0 ? outcome.toolExecutionCount : "none"
+      }`,
       `- Task page: [${title}](${entry.relativePath})`,
       "",
       outcome.assistantSummary,
