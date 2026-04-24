@@ -60,6 +60,37 @@ Default local URLs:
 - Gitea HTTP: `http://localhost:3001`
 - Strfry relay: `ws://localhost:7777`
 
+## Smoke Test
+
+After the runner image has been built and the stable services are running, run
+the active local smoke:
+
+```sh
+pnpm ops:smoke-local
+```
+
+The smoke checks:
+
+- the required Compose services are running;
+- the `entangle-runner:local` image exists;
+- host status and host event list endpoints respond with expected JSON shapes;
+- Studio serves the application shell;
+- Gitea exposes its version endpoint;
+- the local `strfry` relay accepts a Nostr WebSocket subscription.
+
+Environment overrides:
+
+- `ENTANGLE_HOST_URL` or `ENTANGLE_LOCAL_HOST_URL`
+- `ENTANGLE_STUDIO_URL` or `ENTANGLE_LOCAL_STUDIO_URL`
+- `ENTANGLE_GITEA_URL` or `ENTANGLE_LOCAL_GITEA_URL`
+- `ENTANGLE_STRFRY_URL` or `ENTANGLE_LOCAL_RELAY_URL`
+- `ENTANGLE_HOST_TOKEN` or `ENTANGLE_HOST_OPERATOR_TOKEN`
+- `ENTANGLE_LOCAL_SMOKE_TIMEOUT_MS`
+
+Use `--skip-compose` only when validating endpoint reachability outside the
+repository's Compose project. Use `--skip-runner-image` only when the smoke is
+not intended to prove runtime materialization readiness.
+
 ## Operator Token
 
 The local profile defaults to a tokenless host for development ergonomics.

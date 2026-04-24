@@ -566,6 +566,9 @@ priority widening.
 - documented local operator bootstrap under `deploy/README.md`;
 - local profile preflight commands through `pnpm ops:check-local` and
   `pnpm ops:check-local:strict`;
+- active local profile smoke through `pnpm ops:smoke-local` for service
+  presence, runner image presence, host APIs, Studio, Gitea, and relay
+  WebSocket reachability;
 - ESLint, Vitest, GitHub Actions CI, repository-wide `pnpm verify`, and
   socketless host service tests for ordinary sandbox/CI verification;
 - package-local Vitest source aliasing to avoid stale sibling build artifacts.
@@ -575,7 +578,8 @@ priority widening.
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
 - richer Docker-backed runtime smoke coverage around restart and artifact-aware
   multi-node flows;
-- richer active smoke automation after the local profile is already running.
+- a scripted smoke mode that can start and tear down an isolated disposable
+  Compose profile in CI.
 
 ### Assessment
 

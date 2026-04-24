@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-24] operations | Added active local profile smoke
+
+The local operator profile now has `pnpm ops:smoke-local` for validating a
+running Compose profile. The smoke checks service presence, runner image
+presence, host status/events, Studio HTTP, Gitea version reachability, and the
+local `strfry` Nostr WebSocket subscription path.
+
 ## [2026-04-24] operations | Added local operator profile preflight
 
 The local Compose profile now has `deploy/README.md` plus

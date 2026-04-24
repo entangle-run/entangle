@@ -169,6 +169,9 @@ This repository currently contains:
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for toolchain, Docker, Docker Compose, daemon access, and Compose config
   validity;
+- an active local profile smoke through `pnpm ops:smoke-local` that checks the
+  running Compose services, runner image presence, host JSON APIs, Studio HTTP,
+  Gitea version reachability, and the local `strfry` Nostr WebSocket path;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

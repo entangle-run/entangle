@@ -480,6 +480,9 @@ Completed in the current repository state:
 - local operator bootstrap is now documented under `deploy/README.md`, with
   non-strict and strict preflight commands for validating the complete local
   profile before starting the Compose topology;
+- active local smoke coverage is available through `pnpm ops:smoke-local` for
+  running Compose services, the local runner image, host status/events, Studio,
+  Gitea, and the local Nostr relay WebSocket path;
 - repository-wide `pnpm verify` can pass in the current constrained sandbox
   profile while preserving future Compose-level integration work as a separate
   hardening track.

@@ -422,6 +422,10 @@ The repository now also contains the first real implementation baseline:
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for local profile files, Node/pnpm, Docker, Docker Compose, daemon access,
   and Compose config validity;
+- an active local profile smoke through `pnpm ops:smoke-local`, covering
+  running Compose services, the local runner image, host status/events, Studio
+  HTTP, Gitea version reachability, and the local `strfry` Nostr WebSocket
+  subscription path;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;
