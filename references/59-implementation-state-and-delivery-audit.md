@@ -292,6 +292,10 @@ not modeling.
   bounded synthesis prompt now carries the just-completed turn's normalized
   engine outcome instead of relying on assistant text and coarse stop reason
   alone;
+- an execution-insight carry-forward refinement of that same synthesis path
+  where the durable `working-context.md` page now preserves bounded execution
+  insights instead of leaving current-turn execution awareness trapped in
+  prompt-time context alone;
 - a first bounded engine-turn observability layer where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state,
@@ -312,8 +316,8 @@ not modeling.
 
 - richer model-guided memory maintenance beyond the current deterministic task
   page, log/index, derived recent-work summary, session-aware plus
-  artifact-aware/artifact-carrying/engine-outcome-aware working-context
-  summary, and bounded current-session inspection baseline;
+  artifact-aware/artifact-carrying/engine-outcome-aware/execution-insight-carrying
+  working-context summary, and bounded current-session inspection baseline;
 - later provider widening only where new adapters or delivery modes introduce a
   real canonical contract need.
 

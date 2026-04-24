@@ -205,6 +205,7 @@ function parseWorkingContextSummaryInput(input: unknown):
       ok: true;
       value: {
         artifactInsights: string[];
+        executionInsights: string[];
         focus: string;
         nextActions: string[];
         openQuestions: string[];
@@ -227,6 +228,7 @@ function parseWorkingContextSummaryInput(input: unknown):
 
   const allowedKeys = new Set([
     "artifactInsights",
+    "executionInsights",
     "focus",
     "summary",
     "stableFacts",
@@ -236,6 +238,7 @@ function parseWorkingContextSummaryInput(input: unknown):
   const inputRecord = input as Record<string, unknown>;
   const extraKeys = Object.keys(inputRecord).filter((key) => !allowedKeys.has(key));
   const artifactInsights = coerceStringArray(inputRecord.artifactInsights);
+  const executionInsights = coerceStringArray(inputRecord.executionInsights);
   const focus = coerceNonEmptyString(inputRecord.focus);
   const summary = coerceNonEmptyString(inputRecord.summary);
   const stableFacts = coerceStringArray(inputRecord.stableFacts);
@@ -250,6 +253,12 @@ function parseWorkingContextSummaryInput(input: unknown):
   if (!artifactInsights) {
     issues.push(
       "The 'artifactInsights' field must be an array of non-empty strings."
+    );
+  }
+
+  if (!executionInsights) {
+    issues.push(
+      "The 'executionInsights' field must be an array of non-empty strings."
     );
   }
 
@@ -281,6 +290,15 @@ function parseWorkingContextSummaryInput(input: unknown):
   ) {
     issues.push(
       `The 'artifactInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
+    executionInsights &&
+    executionInsights.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'executionInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
     );
   }
 
@@ -322,6 +340,7 @@ function parseWorkingContextSummaryInput(input: unknown):
     ok: true,
     value: {
       artifactInsights: artifactInsights!,
+      executionInsights: executionInsights!,
       focus: focus!,
       nextActions: nextActions!,
       openQuestions: openQuestions!,
@@ -350,6 +369,14 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         artifactInsights: {
           description:
             "A bounded list of durable artifact-backed observations worth carrying forward.",
+          items: {
+            type: "string"
+          },
+          type: "array"
+        },
+        executionInsights: {
+          description:
+            "A bounded list of durable execution signals worth carrying forward from the current turn.",
           items: {
             type: "string"
           },
@@ -388,6 +415,7 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
       required: [
         "focus",
         "artifactInsights",
+        "executionInsights",
         "summary",
         "stableFacts",
         "openQuestions",
@@ -426,6 +454,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "You do not write files directly. Use the provided tool exactly once to update the canonical working-context summary.",
       "Keep the summary concise, durable, and grounded in the current turn plus the injected memory references.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
+      "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
       "Do not include secrets, speculative claims, or verbose restatement of logs."
     ],
     interactionPromptParts: [
@@ -471,6 +500,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
+  executionInsights: string[];
   focus: string;
   producedArtifactIds: string[];
   recentWorkSummaryPath: string;
@@ -540,6 +570,13 @@ function buildWorkingContextSummaryContent(input: {
       input.artifactInsights,
       "- No durable artifact-backed observations were synthesized."
     ),
+    "",
+    "## Execution Signals",
+    "",
+    ...renderBulletList(
+      input.executionInsights,
+      "- No durable execution signals were synthesized."
+    ),
     ""
   ].join("\n");
 }
@@ -606,6 +643,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       const normalizedInput = {
         ...parsedInput.value,
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
+        executionInsights: normalizeListEntries(parsedInput.value.executionInsights),
         nextActions: normalizeListEntries(parsedInput.value.nextActions),
         openQuestions: normalizeListEntries(parsedInput.value.openQuestions),
         stableFacts: normalizeListEntries(parsedInput.value.stableFacts)
@@ -613,6 +651,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       const content = buildWorkingContextSummaryContent({
         artifactInsights: normalizedInput.artifactInsights,
         consumedArtifactIds: input.synthesis.consumedArtifactIds,
+        executionInsights: normalizedInput.executionInsights,
         focus: normalizedInput.focus,
         nextActions: normalizedInput.nextActions,
         openQuestions: normalizedInput.openQuestions,

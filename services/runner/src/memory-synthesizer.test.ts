@@ -238,6 +238,10 @@ describe("model-guided memory synthesis", () => {
                   "The inbound recovery notes remain the canonical reference for relay-failure checkpoints.",
                   "The newly produced report captures the next recovery checkpoint to validate with operators."
                 ],
+                executionInsights: [
+                  "The current turn needed both session-state and artifact inspection before finalizing the checkpoint.",
+                  "The provider reached a normal end_turn stop after the bounded tool work completed."
+                ],
                 focus: "Keep the recovery follow-up aligned with the relay-runtime work.",
                 nextActions: [
                   "Validate the recovery checkpoint against the latest runner behavior.",
@@ -466,6 +470,13 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain("### Durable Artifact Insights");
     expect(workingContextPage).toContain(
       "The inbound recovery notes remain the canonical reference for relay-failure checkpoints."
+    );
+    expect(workingContextPage).toContain("## Execution Signals");
+    expect(workingContextPage).toContain(
+      "The current turn needed both session-state and artifact inspection before finalizing the checkpoint."
+    );
+    expect(workingContextPage).toContain(
+      "The provider reached a normal end_turn stop after the bounded tool work completed."
     );
     expect(workingContextPage).toContain("## Stable Facts");
     expect(workingContextPage).toContain(

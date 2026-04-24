@@ -201,6 +201,10 @@ This repository currently contains:
   bounded synthesis prompt now carries the just-completed turn's normalized
   engine outcome instead of relying on assistant text and coarse stop reason
   alone;
+- an execution-insight carry-forward refinement of that same synthesis path
+  where the durable `working-context.md` page now preserves bounded execution
+  insights instead of leaving current-turn execution awareness trapped in
+  prompt-time context alone;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into
@@ -329,8 +333,8 @@ This repository currently contains:
 The highest-value remaining gaps are:
 
 - richer model-guided memory maintenance on top of the now stronger
-  session-aware and artifact-aware/artifact-carrying/engine-outcome-aware
-  bounded runtime inspection surface;
+  session-aware and artifact-aware/artifact-carrying/engine-outcome-aware/
+  execution-insight-carrying bounded runtime inspection surface;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - stronger end-to-end deployment and integration hardening.
