@@ -25,7 +25,9 @@ The canonical machine-readable event contracts now include:
 
 - `catalog.updated`
 - `package_source.admitted`
+- `package_source.deleted`
 - `external_principal.updated`
+- `external_principal.deleted`
 - `graph.revision.applied`
 - `runtime.desired_state.changed`
 - `runtime.observed_state.changed`
@@ -52,7 +54,9 @@ The host now emits typed events at real mutation and reconciliation boundaries:
 
 - catalog bootstrap and apply
 - package-source admission
+- package-source deletion
 - external-principal upsert
+- external-principal deletion
 - graph apply
 - runtime desired-state transitions
 - runtime observed-state transitions

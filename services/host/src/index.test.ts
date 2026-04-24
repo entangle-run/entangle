@@ -21,6 +21,7 @@ import {
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
   edgeMutationResponseSchema,
+  externalPrincipalDeletionResponseSchema,
   externalPrincipalInspectionResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
@@ -663,6 +664,7 @@ async function injectTestSocket(
 }
 
 async function applySingleWorkerGraph(input: {
+  externalPrincipalRefs?: string[];
   packageSourceId: string;
   server: Awaited<ReturnType<typeof createTestServer>>;
 }) {
@@ -684,6 +686,7 @@ async function applySingleWorkerGraph(input: {
           nodeKind: "worker",
           packageSourceRef: input.packageSourceId,
           resourceBindings: {
+            externalPrincipalRefs: input.externalPrincipalRefs ?? [],
             relayProfileRefs: [],
             gitServiceRefs: ["local-gitea"],
             primaryGitServiceRef: "local-gitea"
@@ -1147,6 +1150,97 @@ describe("buildHostServer", () => {
           }
         ]
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("deletes unused external principals through the host surface", async () => {
+    const server = await createTestServer();
+
+    try {
+      const principal = buildGitPrincipalRecord();
+      const upsertResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+      expect(upsertResponse.statusCode).toBe(200);
+
+      const deleteResponse = await server.inject({
+        method: "DELETE",
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+
+      expect(deleteResponse.statusCode).toBe(200);
+      expect(
+        externalPrincipalDeletionResponseSchema.parse(deleteResponse.json())
+      ).toEqual({
+        deletedPrincipalId: principal.principalId
+      });
+
+      const deletedInspectionResponse = await server.inject({
+        method: "GET",
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+      expect(deletedInspectionResponse.statusCode).toBe(404);
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=10"
+      });
+      expect(
+        hostEventListResponseSchema
+          .parse(eventsResponse.json())
+          .events.some(
+            (event) =>
+              event.type === "external_principal.deleted" &&
+              event.principalId === principal.principalId
+          )
+      ).toBe(true);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects external-principal deletion while active graph nodes reference it", async () => {
+    const server = await createTestServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const principal = buildGitPrincipalRecord();
+      const upsertResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+      expect(upsertResponse.statusCode).toBe(200);
+
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        externalPrincipalRefs: [principal.principalId],
+        packageSourceId,
+        server
+      });
+
+      const deleteResponse = await server.inject({
+        method: "DELETE",
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+
+      expect(deleteResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(deleteResponse.json())).toMatchObject({
+        code: "conflict",
+        details: {
+          nodeIds: ["worker-it"]
+        }
+      });
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: `/v1/external-principals/${principal.principalId}`
+      });
+      expect(inspectionResponse.statusCode).toBe(200);
     } finally {
       await server.close();
     }

@@ -5,6 +5,7 @@ import {
   edgeListResponseSchema,
   edgeMutationResponseSchema,
   edgeReplacementRequestSchema,
+  externalPrincipalDeletionResponseSchema,
   externalPrincipalInspectionResponseSchema,
   externalPrincipalListResponseSchema,
   externalPrincipalMutationRequestSchema,
@@ -41,6 +42,7 @@ import {
   type EdgeListResponse,
   type EdgeMutationResponse,
   type EdgeReplacementRequest,
+  type ExternalPrincipalDeletionResponse,
   type ExternalPrincipalInspectionResponse,
   type ExternalPrincipalListResponse,
   type ExternalPrincipalMutationRequest,
@@ -372,6 +374,17 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         externalPrincipalInspectionResponseSchema
+      );
+    },
+
+    async deleteExternalPrincipal(
+      principalId: string
+    ): Promise<ExternalPrincipalDeletionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/external-principals/${principalId}`, {
+          method: "DELETE"
+        }),
+        externalPrincipalDeletionResponseSchema
       );
     },
 

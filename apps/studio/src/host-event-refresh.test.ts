@@ -29,6 +29,13 @@ describe("host-event-refresh", () => {
       packageSourceId: "worker-it",
       type: "package_source.deleted"
     };
+    const externalPrincipalDeletedEvent: HostEventRecord = {
+      ...baseEvent,
+      category: "control_plane",
+      message: "Deleted external principal 'worker-it-git'.",
+      principalId: "worker-it-git",
+      type: "external_principal.deleted"
+    };
     const graphEvent: HostEventRecord = {
       ...baseEvent,
       activeRevisionId: "team-alpha-20260424t100000z",
@@ -53,6 +60,9 @@ describe("host-event-refresh", () => {
 
     expect(shouldRefreshOverviewFromHostEvent(packageSourceEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(packageSourceDeletedEvent)).toBe(
+      true
+    );
+    expect(shouldRefreshOverviewFromHostEvent(externalPrincipalDeletedEvent)).toBe(
       true
     );
     expect(shouldRefreshOverviewFromHostEvent(graphEvent)).toBe(true);

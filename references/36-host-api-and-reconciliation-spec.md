@@ -234,6 +234,7 @@ or host-managed imported archive storage.
 - `GET /v1/external-principals`
 - `GET /v1/external-principals/{principalId}`
 - `PUT /v1/external-principals/{principalId}`
+- `DELETE /v1/external-principals/{principalId}`
 
 Purpose:
 
@@ -241,6 +242,9 @@ Purpose:
 - expose those bindings to Studio, CLI, and tests through the host boundary;
 - keep credential references and attribution profiles out of package sources and
   out of ad hoc runtime-only configuration.
+- remove unused principal bindings while rejecting deletion when the active
+  graph still resolves the principal through node-local or graph-default
+  bindings.
 
 ### 8.3 Graph and revision state
 
@@ -347,6 +351,7 @@ The current repository implementation now concretely includes:
 - `GET /v1/external-principals`
 - `GET /v1/external-principals/{principalId}`
 - `PUT /v1/external-principals/{principalId}`
+- `DELETE /v1/external-principals/{principalId}`
 - `GET /v1/graph`
 - `PUT /v1/graph`
 - `GET /v1/graph/revisions`
@@ -456,7 +461,9 @@ The implemented event classes currently include:
 - `host.operator_request.completed`
 - `catalog.updated`
 - `package_source.admitted`
+- `package_source.deleted`
 - `external_principal.updated`
+- `external_principal.deleted`
 - `graph.revision.applied`
 - `node.binding.updated`
 - `edge.updated`

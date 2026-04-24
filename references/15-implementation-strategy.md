@@ -367,6 +367,10 @@ Completed in the current repository state:
   removed through `DELETE /v1/package-sources/{packageSourceId}`, active graph
   references produce typed conflicts, and `package_source.deleted` events drive
   downstream refresh.
+- host-side external-principal deletion, where unused principal records can be
+  removed through `DELETE /v1/external-principals/{principalId}`, active graph
+  references produce typed conflicts, and `external_principal.deleted` events
+  drive downstream refresh.
 - the matching Studio package-source deletion flow, where the operator can
   inspect graph references per admitted source, delete unreferenced sources
   through the shared host client, and avoid browser-owned deletion state.

@@ -52,7 +52,9 @@ import {
   effectiveRuntimeContextSchema,
   effectiveNodeBindingSchema,
   externalPrincipalInspectionResponseSchema,
+  externalPrincipalDeletionResponseSchema,
   externalPrincipalListResponseSchema,
+  type ExternalPrincipalDeletionResponse,
   type ExternalPrincipalInspectionResponse,
   type ExternalPrincipalListResponse,
   type ExternalPrincipalRecord,
@@ -275,6 +277,10 @@ type ExternalPrincipalUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "external_principal.updated" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type ExternalPrincipalDeletedEventInput = Omit<
+  Extract<HostEventRecord, { type: "external_principal.deleted" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 type GraphRevisionAppliedEventInput = Omit<
   Extract<HostEventRecord, { type: "graph.revision.applied" }>,
   "eventId" | "schemaVersion" | "timestamp"
@@ -419,6 +425,27 @@ type PackageSourceDeletionResult =
     }
   | {
       conflict: PackageSourceDeletionConflict;
+      ok: false;
+    };
+
+type ExternalPrincipalDeletionConflict =
+  | {
+      kind: "external_principal_in_use";
+      nodeIds: string[];
+      principalId: string;
+    }
+  | {
+      kind: "external_principal_not_found";
+      principalId: string;
+    };
+
+type ExternalPrincipalDeletionResult =
+  | {
+      ok: true;
+      response: ExternalPrincipalDeletionResponse;
+    }
+  | {
+      conflict: ExternalPrincipalDeletionConflict;
       ok: false;
     };
 
@@ -2874,6 +2901,59 @@ export async function upsertExternalPrincipal(
     principal: canonicalPrincipal,
     validation: buildValidationReport([])
   });
+}
+
+export async function deleteExternalPrincipal(
+  principalId: string
+): Promise<ExternalPrincipalDeletionResult> {
+  await initializeHostState();
+
+  const recordPath = externalPrincipalRecordPath(principalId);
+
+  if (!(await pathExists(recordPath))) {
+    return {
+      conflict: {
+        kind: "external_principal_not_found",
+        principalId
+      },
+      ok: false
+    };
+  }
+
+  const { graph } = await readActiveGraphState();
+  const referencingNodeIds =
+    graph?.nodes
+      .filter((node) =>
+        resolveEffectiveExternalPrincipalRefs(node, graph).includes(principalId)
+      )
+      .map((node) => node.nodeId)
+      .sort() ?? [];
+
+  if (referencingNodeIds.length > 0) {
+    return {
+      conflict: {
+        kind: "external_principal_in_use",
+        nodeIds: referencingNodeIds,
+        principalId
+      },
+      ok: false
+    };
+  }
+
+  await rm(recordPath, { force: true });
+  await appendHostEvent({
+    category: "control_plane",
+    message: `Deleted external principal '${principalId}'.`,
+    principalId,
+    type: "external_principal.deleted"
+  } satisfies ExternalPrincipalDeletedEventInput);
+
+  return {
+    ok: true,
+    response: externalPrincipalDeletionResponseSchema.parse({
+      deletedPrincipalId: principalId
+    })
+  };
 }
 
 export async function getGraphInspection(): Promise<GraphInspectionResponse> {

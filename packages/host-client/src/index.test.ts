@@ -202,6 +202,41 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("deletes external principals through the host external-principal surface", async () => {
+    const requests: Array<{ method?: string; url: string }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              deletedPrincipalId: "worker-it-git"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.deleteExternalPrincipal("worker-it-git")
+    ).resolves.toEqual({
+      deletedPrincipalId: "worker-it-git"
+    });
+    expect(requests).toEqual([
+      {
+        method: "DELETE",
+        url: "http://entangle-host.test/v1/external-principals/worker-it-git"
+      }
+    ]);
+  });
+
   it("surfaces plain-text upstream failures without masking them behind JSON parsing", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

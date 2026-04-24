@@ -84,6 +84,12 @@ export const externalPrincipalUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("external_principal.updated")
 });
 
+export const externalPrincipalDeletedEventSchema = hostEventBaseSchema.extend({
+  category: z.literal("control_plane"),
+  principalId: identifierSchema,
+  type: z.literal("external_principal.deleted")
+});
+
 export const graphRevisionAppliedEventSchema = hostEventBaseSchema.extend({
   activeRevisionId: identifierSchema,
   category: z.literal("control_plane"),
@@ -307,6 +313,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   packageSourceAdmittedEventSchema,
   packageSourceDeletedEventSchema,
   externalPrincipalUpdatedEventSchema,
+  externalPrincipalDeletedEventSchema,
   graphRevisionAppliedEventSchema,
   nodeBindingUpdatedEventSchema,
   edgeUpdatedEventSchema,
@@ -347,6 +354,9 @@ export type PackageSourceDeletedEvent = z.infer<
 >;
 export type ExternalPrincipalUpdatedEvent = z.infer<
   typeof externalPrincipalUpdatedEventSchema
+>;
+export type ExternalPrincipalDeletedEvent = z.infer<
+  typeof externalPrincipalDeletedEventSchema
 >;
 export type GraphRevisionAppliedEvent = z.infer<
   typeof graphRevisionAppliedEventSchema

@@ -47,6 +47,10 @@ export const externalPrincipalListResponseSchema = z.object({
   principals: z.array(externalPrincipalInspectionResponseSchema)
 });
 
+export const externalPrincipalDeletionResponseSchema = z.object({
+  deletedPrincipalId: identifierSchema
+});
+
 export const packageSourceListResponseSchema = z.object({
   packageSources: z.array(packageSourceInspectionResponseSchema)
 });
@@ -104,6 +108,9 @@ export type ExternalPrincipalInspectionResponse = z.infer<
 >;
 export type ExternalPrincipalListResponse = z.infer<
   typeof externalPrincipalListResponseSchema
+>;
+export type ExternalPrincipalDeletionResponse = z.infer<
+  typeof externalPrincipalDeletionResponseSchema
 >;
 export type CatalogInspectionResponse = z.infer<
   typeof catalogInspectionResponseSchema

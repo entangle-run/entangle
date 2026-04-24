@@ -24,8 +24,8 @@ The repository now includes:
 - resolved git principals and deterministic-only `primaryGitPrincipalRef` in
   runtime `artifactContext`;
 - host-managed persistence for external principals under desired state;
-- host routes, host-client methods, and CLI commands for listing, fetching, and
-  upserting external principal bindings;
+- host routes, host-client methods, and CLI commands for listing, fetching,
+  upserting, and safely deleting unused external principal bindings;
 - validator checks for:
   - missing external principal refs;
   - git principals that fall outside the node's effective git service set;

@@ -79,8 +79,9 @@ This repository currently contains:
   an open mutation surface, plus typed `security` audit events for protected
   mutation requests through `host.operator_request.completed`;
 - host-managed external principal records for backend-facing identities such as
-  git principals, exposed through the same host boundary and resolved into
-  effective runtime context rather than hardcoded into packages;
+  git principals, exposed through the same host boundary, safely removable
+  when unused, and resolved into effective runtime context rather than
+  hardcoded into packages;
 - runtime materialization under `.entangle/host` for desired bindings,
   runtime intents, observed runtime records, an immutable package store,
   workspaces, and injected runtime context;
@@ -390,6 +391,11 @@ This repository currently contains:
   package sources, reject deletion while active graph nodes still reference
   them, emit typed `package_source.deleted` events, and expose the same
   operation through the shared host client and CLI dry-run flow;
+- an external-principal deletion boundary where `entangle-host` can remove
+  unused backend-facing principal bindings, reject deletion while active graph
+  nodes still resolve the principal, emit typed `external_principal.deleted`
+  events, and expose the mutation through the shared host client and CLI
+  dry-run flow;
 - a Studio package-source deletion flow where visual operators can see active
   graph references for each admitted source, delete unreferenced sources
   through the shared host client, and keep draft state coherent after host

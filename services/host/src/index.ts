@@ -8,6 +8,7 @@ import {
   edgeListResponseSchema,
   edgeMutationResponseSchema,
   edgeReplacementRequestSchema,
+  externalPrincipalDeletionResponseSchema,
   externalPrincipalInspectionResponseSchema,
   externalPrincipalListResponseSchema,
   externalPrincipalMutationRequestSchema,
@@ -53,6 +54,7 @@ import {
   createEdge,
   createManagedNode,
   deleteEdge,
+  deleteExternalPrincipal,
   deleteManagedNode,
   deletePackageSource,
   getNodeInspection,
@@ -331,6 +333,31 @@ function throwForPackageSourceDeletionConflict(conflict: {
   }
 }
 
+function throwForExternalPrincipalDeletionConflict(conflict: {
+  kind: "external_principal_in_use" | "external_principal_not_found";
+  nodeIds?: string[];
+  principalId: string;
+}): never {
+  switch (conflict.kind) {
+    case "external_principal_in_use":
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeIds: conflict.nodeIds ?? []
+        },
+        message:
+          `External principal '${conflict.principalId}' cannot be deleted while active graph nodes still reference it.`,
+        statusCode: 409
+      });
+    case "external_principal_not_found":
+      throw new HostHttpError({
+        code: "not_found",
+        message: `External principal '${conflict.principalId}' was not found.`,
+        statusCode: 404
+      });
+  }
+}
+
 function isDirectExecution(): boolean {
   const entrypoint = process.argv[1];
   return typeof entrypoint === "string" && import.meta.url === pathToFileURL(entrypoint).href;
@@ -569,6 +596,17 @@ export async function buildHostServer() {
     return externalPrincipalInspectionResponseSchema.parse(
       await upsertExternalPrincipal(mutation)
     );
+  });
+
+  server.delete("/v1/external-principals/:principalId", async (request) => {
+    const params = request.params as { principalId: string };
+    const result = await deleteExternalPrincipal(params.principalId);
+
+    if (!result.ok) {
+      throwForExternalPrincipalDeletionConflict(result.conflict);
+    }
+
+    return externalPrincipalDeletionResponseSchema.parse(result.response);
   });
 
   server.get("/v1/package-sources/:packageSourceId", async (request, reply) => {

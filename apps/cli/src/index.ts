@@ -538,6 +538,40 @@ hostExternalPrincipalsCommand
     printJson(await client.upsertExternalPrincipal(request));
   });
 
+hostExternalPrincipalsCommand
+  .command("delete")
+  .argument("<principalId>", "External principal identifier.")
+  .option(
+    "--dry-run",
+    "Print the canonical external-principal deletion intent without mutating the host."
+  )
+  .description("Delete an unused external principal from entangle-host desired state.")
+  .action(
+    async (
+      principalId: string,
+      options: {
+        dryRun?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.external_principals.delete",
+            request: {
+              principalId
+            }
+          })
+        );
+        return;
+      }
+
+      printJson(await client.deleteExternalPrincipal(principalId));
+    }
+  );
+
 const hostGraphCommand = hostCommand
   .command("graph")
   .description("Inspect and mutate the active graph through entangle-host.");

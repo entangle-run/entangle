@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-24] implementation | Added external-principal deletion
+
+Closed the host-managed external-principal lifecycle gap. `entangle-host` now
+exposes `DELETE /v1/external-principals/{principalId}`, rejects deletion while
+the active graph still resolves the principal, emits typed
+`external_principal.deleted` events, and exposes the operation through the
+shared host client and CLI dry-run surface.
+
 ## [2026-04-24] implementation | Added OpenAI-compatible agent-engine adapter
 
 Closed the provider-matrix gap where `openai_compatible` was already a

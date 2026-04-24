@@ -9,6 +9,7 @@ import {
   engineToolExecutionRequestSchema,
   engineToolExecutionResultSchema,
   engineTurnOutcomeSchema,
+  externalPrincipalDeletionResponseSchema,
   externalPrincipalRecordSchema,
   focusedRegisterStateSchema,
   graphRevisionInspectionResponseSchema,
@@ -336,6 +337,14 @@ describe("external principal contracts", () => {
     expect(result.systemKind).toBe("git");
     expect(result.gitServiceRef).toBe("local-gitea");
   });
+
+  it("accepts an external principal deletion response", () => {
+    const result = externalPrincipalDeletionResponseSchema.parse({
+      deletedPrincipalId: "worker-it-git"
+    });
+
+    expect(result.deletedPrincipalId).toBe("worker-it-git");
+  });
 });
 
 describe("host event contracts", () => {
@@ -400,6 +409,22 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("runtime.restart.requested");
     expect(result.restartGeneration).toBe(1);
+  });
+
+  it("accepts a typed external-principal deleted event", () => {
+    const result = hostEventRecordSchema.parse({
+      category: "control_plane",
+      eventId: "external-principal-worker-it-deleted-001",
+      message: "Deleted external principal 'worker-it-git'.",
+      principalId: "worker-it-git",
+      schemaVersion: "1",
+      timestamp: "2026-04-24T00:00:00.000Z",
+      type: "external_principal.deleted"
+    });
+
+    expect(result.type).toBe("external_principal.deleted");
+    expect(result.category).toBe("control_plane");
+    expect(result.principalId).toBe("worker-it-git");
   });
 
   it("accepts a typed runtime recovery-policy-updated event", () => {

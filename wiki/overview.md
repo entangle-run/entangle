@@ -67,9 +67,9 @@ The repository now also contains the first real implementation baseline:
 - a persistent local host-state model under `.entangle/host`;
 - a separate local secret root for host-owned runtime identities;
 - host-managed external principal bindings for git-facing identities, exposed
-  through host routes, the shared host client, and the CLI, and now resolved
-  into effective runtime context instead of remaining only in the written
-  specification;
+  through host routes, the shared host client, and the CLI, safely removable
+  when unused, and now resolved into effective runtime context instead of
+  remaining only in the written specification;
 - host-resolved model-secret delivery in the effective runtime context, so live
   node execution now depends on actual credential availability rather than only
   on model endpoint selection;
@@ -320,6 +320,11 @@ The repository now also contains the first real implementation baseline:
   removed safely, active graph references block deletion with a typed conflict,
   `package_source.deleted` events refresh Studio overview state, and the CLI
   can perform or dry-run the mutation through the shared host client;
+- the host-side external-principal deletion boundary, where unused git-facing
+  principal records can be removed safely, active graph references block
+  deletion with a typed conflict, `external_principal.deleted` events refresh
+  Studio overview state, and the CLI can perform or dry-run the mutation
+  through the shared host client;
 - the matching Studio package-source deletion flow, where the graph editor
   lists active source references, disables known-conflicting deletes, calls the
   host-owned deletion route for unreferenced sources, and clears stale local
