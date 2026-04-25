@@ -45,6 +45,7 @@ export const agentEngineFailureClassificationSchema = z.enum([
   "quota_error",
   "rate_limit",
   "bad_request",
+  "policy_denied",
   "provider_unavailable",
   "tool_protocol_error",
   "context_limit_error",
@@ -84,6 +85,39 @@ export const engineToolExecutionObservationSchema = z.object({
   toolId: nonEmptyStringSchema
 });
 
+export const enginePolicyOperationSchema = z.enum([
+  "filesystem_read",
+  "filesystem_write",
+  "filesystem_access",
+  "command_execution",
+  "git_commit",
+  "git_push",
+  "artifact_publication",
+  "wiki_update",
+  "peer_message",
+  "graph_mutation",
+  "approval_request",
+  "network_access",
+  "subagent_execution",
+  "tool_execution",
+  "unknown"
+]);
+
+export const enginePermissionDecisionSchema = z.enum([
+  "allowed",
+  "denied",
+  "pending",
+  "rejected"
+]);
+
+export const enginePermissionObservationSchema = z.object({
+  decision: enginePermissionDecisionSchema,
+  operation: enginePolicyOperationSchema,
+  patterns: z.array(nonEmptyStringSchema).default([]),
+  permission: nonEmptyStringSchema,
+  reason: nonEmptyStringSchema.optional()
+});
+
 function refineEngineFailureConsistency(
   value: {
     failure?: unknown;
@@ -113,6 +147,7 @@ export const engineTurnOutcomeSchema = z
     engineSessionId: nonEmptyStringSchema.optional(),
     engineVersion: nonEmptyStringSchema.optional(),
     failure: engineTurnFailureSchema.optional(),
+    permissionObservations: z.array(enginePermissionObservationSchema).optional(),
     providerMetadata: engineProviderMetadataSchema.optional(),
     providerStopReason: nonEmptyStringSchema.optional(),
     stopReason: agentEngineStopReasonSchema,
@@ -205,6 +240,7 @@ export const agentEngineTurnResultSchema = z
     engineVersion: nonEmptyStringSchema.optional(),
     failure: engineTurnFailureSchema.optional(),
     handoffDirectives: z.array(engineHandoffDirectiveSchema).default([]),
+    permissionObservations: z.array(enginePermissionObservationSchema).optional(),
     providerMetadata: engineProviderMetadataSchema.optional(),
     providerStopReason: nonEmptyStringSchema.optional(),
     toolRequests: z.array(engineToolRequestSchema).default([]),
@@ -226,6 +262,13 @@ export type EngineProviderMetadata = z.infer<typeof engineProviderMetadataSchema
 export type EngineTurnFailure = z.infer<typeof engineTurnFailureSchema>;
 export type EngineToolExecutionObservation = z.infer<
   typeof engineToolExecutionObservationSchema
+>;
+export type EnginePolicyOperation = z.infer<typeof enginePolicyOperationSchema>;
+export type EnginePermissionDecision = z.infer<
+  typeof enginePermissionDecisionSchema
+>;
+export type EnginePermissionObservation = z.infer<
+  typeof enginePermissionObservationSchema
 >;
 export type EngineTurnOutcome = z.infer<typeof engineTurnOutcomeSchema>;
 export type EngineToolExecutionRequest = z.infer<

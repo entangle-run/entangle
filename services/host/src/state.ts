@@ -2383,6 +2383,7 @@ async function buildRuntimeAgentRuntimeInspection(
     .filter((turn) => Boolean(turn.engineOutcome))
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
   const outcome = latestEngineTurn?.engineOutcome;
+  const lastPermissionObservation = outcome?.permissionObservations?.at(-1);
   const defaultAgent =
     context.agentRuntimeContext.defaultAgent ??
     context.agentRuntimeContext.engineProfile.defaultAgent;
@@ -2407,6 +2408,15 @@ async function buildRuntimeAgentRuntimeInspection(
       : {}),
     ...(outcome?.engineVersion
       ? { lastEngineVersion: outcome.engineVersion }
+      : {}),
+    ...(lastPermissionObservation
+      ? {
+          lastPermissionDecision: lastPermissionObservation.decision,
+          lastPermissionOperation: lastPermissionObservation.operation,
+          ...(lastPermissionObservation.reason
+            ? { lastPermissionReason: lastPermissionObservation.reason }
+            : {})
+        }
       : {}),
     ...(latestEngineTurn
       ? {

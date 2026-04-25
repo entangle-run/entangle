@@ -908,6 +908,9 @@ function buildEngineTurnOutcome(
       : {}),
     ...(result.engineVersion ? { engineVersion: result.engineVersion } : {}),
     ...(result.failure ? { failure: result.failure } : {}),
+    ...(result.permissionObservations
+      ? { permissionObservations: result.permissionObservations }
+      : {}),
     ...(result.providerMetadata
       ? { providerMetadata: result.providerMetadata }
       : buildEngineProviderMetadataFromContext(context)

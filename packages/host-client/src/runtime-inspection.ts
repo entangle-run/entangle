@@ -79,6 +79,16 @@ export function formatRuntimeInspectionDetailLines(
       );
     }
 
+    if (runtime.agentRuntime.lastPermissionDecision) {
+      const operation = runtime.agentRuntime.lastPermissionOperation ?? "unknown";
+      const reason = runtime.agentRuntime.lastPermissionReason
+        ? `: ${runtime.agentRuntime.lastPermissionReason}`
+        : "";
+      detailLines.push(
+        `last permission ${runtime.agentRuntime.lastPermissionDecision} ${operation}${reason}`
+      );
+    }
+
     if (runtime.agentRuntime.lastTurnId) {
       detailLines.push(
         `last engine turn ${runtime.agentRuntime.lastTurnId} updated ${runtime.agentRuntime.lastTurnUpdatedAt ?? "unknown"}`

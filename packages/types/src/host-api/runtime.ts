@@ -4,7 +4,9 @@ import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-reposito
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   agentEngineFailureClassificationSchema,
-  agentEngineStopReasonSchema
+  agentEngineStopReasonSchema,
+  enginePermissionDecisionSchema,
+  enginePolicyOperationSchema
 } from "../engine/turn-contract.js";
 import { nodeAgentRuntimeModeSchema } from "../graph/graph-spec.js";
 import { agentEngineProfileKindSchema } from "../resources/catalog.js";
@@ -35,6 +37,9 @@ export const runtimeAgentRuntimeInspectionSchema = z.object({
   lastEngineSessionId: nonEmptyStringSchema.optional(),
   lastEngineStopReason: agentEngineStopReasonSchema.optional(),
   lastEngineVersion: nonEmptyStringSchema.optional(),
+  lastPermissionDecision: enginePermissionDecisionSchema.optional(),
+  lastPermissionOperation: enginePolicyOperationSchema.optional(),
+  lastPermissionReason: nonEmptyStringSchema.optional(),
   lastTurnId: identifierSchema.optional(),
   lastTurnUpdatedAt: nonEmptyStringSchema.optional(),
   mode: nodeAgentRuntimeModeSchema,

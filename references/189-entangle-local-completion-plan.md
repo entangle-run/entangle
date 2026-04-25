@@ -41,19 +41,23 @@ The latest implementation state includes:
 - OpenCode executable version probing before node turns, generic engine-version
   observability on turn outcomes, and bounded process timeout handling for the
   OpenCode version probe and one-shot run process;
+- generic engine permission observations, `policy_denied` failure
+  classification, and host/CLI/Studio visibility when OpenCode one-shot CLI
+  auto-rejects a permission request;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
-  engine turn, and bounded engine failure evidence.
+  permission decision, last engine turn, and bounded engine failure evidence.
 
 The current OpenCode adapter is intentionally not yet enough for L3 acceptance.
 It can execute a primary node turn, persist the engine session id and probed
-engine version, fail early when its workspace/state roots are unavailable, and
+engine version, fail early when its workspace/state roots are unavailable,
 terminate overlong OpenCode probe/run processes with classified failure
-evidence. Host, CLI, and Studio can now see a generic agent-runtime status
-summary, but Entangle Local still lacks the complete policy bridge, permission
-mapping, artifact/diff harvesting, git/wiki workflow, external cancellation
-bridge, and full CLI/Studio configuration and observability surface required
-for L3 acceptance.
+evidence, and report OpenCode one-shot permission auto-rejections as generic
+`policy_denied` outcomes. Host, CLI, and Studio can now see a generic
+agent-runtime status summary, but Entangle Local still lacks the complete
+policy bridge, resumable permission approval mapping, artifact/diff harvesting,
+git/wiki workflow, external cancellation bridge, and full CLI/Studio
+configuration and observability surface required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -432,6 +436,25 @@ Constraints:
 - OpenCode permission semantics are adapter input, not product policy.
 - Default behavior must be conservative.
 - User-visible approvals must not require reading raw engine logs.
+
+Current partial implementation:
+
+- the generic engine result/outcome contract now includes permission
+  observations with an Entangle-facing operation vocabulary and bounded
+  decision/reason evidence;
+- `policy_denied` is now a first-class engine failure classification;
+- the OpenCode adapter recognizes one-shot CLI permission auto-rejection lines,
+  maps OpenCode permission names such as `bash`, `edit`, `read`, `task`,
+  `webfetch`, and `external_directory` to generic policy operations, and
+  returns a `policy_denied` result instead of silently treating the turn as
+  completed;
+- host runtime inspection now exposes the latest permission decision,
+  operation, and reason through the generic `agentRuntime` status consumed by
+  shared host-client detail helpers, CLI, and Studio;
+- this does not yet create durable approval records from live OpenCode
+  permission requests or feed approval decisions back into OpenCode because the
+  current one-shot `opencode run` lifecycle auto-rejects unless unsafe bypass
+  is enabled.
 
 Acceptance:
 

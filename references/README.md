@@ -198,6 +198,7 @@ This directory is the canonical design corpus for Entangle.
 192. [191-opencode-runtime-state-isolation-slice.md](191-opencode-runtime-state-isolation-slice.md)
 193. [192-agent-runtime-inspection-status-slice.md](192-agent-runtime-inspection-status-slice.md)
 194. [193-opencode-version-probe-timeout-slice.md](193-opencode-version-probe-timeout-slice.md)
+195. [194-opencode-permission-observability-slice.md](194-opencode-permission-observability-slice.md)
 
 ## Role of this corpus
 

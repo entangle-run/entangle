@@ -62,6 +62,17 @@ function buildRunnerTurnDetailLines(
       );
     }
 
+    const permissionObservations = engineOutcome.permissionObservations ?? [];
+
+    if (permissionObservations.length > 0) {
+      const latestPermission =
+        permissionObservations[permissionObservations.length - 1]!;
+      const reason = latestPermission.reason ? `: ${latestPermission.reason}` : "";
+      detailLines.push(
+        `Permission: ${latestPermission.decision} ${latestPermission.operation}${reason}`
+      );
+    }
+
     if (engineOutcome.usage) {
       detailLines.push(
         `Usage: ${engineOutcome.usage.inputTokens} input / ${engineOutcome.usage.outputTokens} output tokens`

@@ -326,6 +326,47 @@ describe("OpenCode runner engine adapter", () => {
     expect(mock.calls[1]!.killSignals).toEqual(["SIGTERM"]);
   });
 
+  it("returns a policy-denied result when OpenCode auto-rejects a permission request", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            "! permission requested: bash (git push origin main); auto-rejecting"
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest());
+
+    expect(result).toMatchObject({
+      engineVersion: "0.10.0",
+      failure: {
+        classification: "policy_denied",
+        message:
+          "OpenCode requested permission and the one-shot CLI auto-rejected it: bash (git push origin main)."
+      },
+      permissionObservations: [
+        {
+          decision: "rejected",
+          operation: "git_push",
+          patterns: ["git push origin main"],
+          permission: "bash"
+        }
+      ],
+      providerStopReason: "opencode_permission_auto_rejected",
+      stopReason: "error"
+    });
+  });
+
   it("returns a bounded error result when OpenCode emits an error event", async () => {
     const fixture = await createRuntimeFixture();
     const mock = createMockOpenCodeSpawn({

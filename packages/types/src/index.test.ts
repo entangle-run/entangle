@@ -79,6 +79,10 @@ describe("runtime inspection host API contracts", () => {
         lastEngineSessionId: "opencode-session-alpha",
         lastEngineStopReason: "completed",
         lastEngineVersion: "0.10.0",
+        lastPermissionDecision: "rejected",
+        lastPermissionOperation: "command_execution",
+        lastPermissionReason:
+          "OpenCode one-shot CLI auto-rejected the permission request.",
         lastTurnId: "turn-alpha",
         lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
         mode: "coding_agent",
@@ -99,6 +103,7 @@ describe("runtime inspection host API contracts", () => {
       "opencode-session-alpha"
     );
     expect(result.agentRuntime?.lastEngineVersion).toBe("0.10.0");
+    expect(result.agentRuntime?.lastPermissionDecision).toBe("rejected");
   });
 });
 
@@ -987,10 +992,19 @@ describe("host event contracts", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts generic engine session identifiers and versions on engine outcomes", () => {
+  it("accepts generic engine session identifiers, versions, and permission observations on engine outcomes", () => {
     const result = engineTurnOutcomeSchema.parse({
       engineSessionId: "engine-session-alpha",
       engineVersion: "0.10.0",
+      permissionObservations: [
+        {
+          decision: "rejected",
+          operation: "command_execution",
+          patterns: ["git push origin main"],
+          permission: "bash",
+          reason: "OpenCode one-shot CLI auto-rejected the permission request."
+        }
+      ],
       providerStopReason: "opencode_process_exit_0",
       stopReason: "completed",
       toolExecutions: []
@@ -998,6 +1012,9 @@ describe("host event contracts", () => {
 
     expect(result.engineSessionId).toBe("engine-session-alpha");
     expect(result.engineVersion).toBe("0.10.0");
+    expect(result.permissionObservations[0]?.operation).toBe(
+      "command_execution"
+    );
   });
 
   it("accepts typed conversation, approval, and artifact trace events", () => {

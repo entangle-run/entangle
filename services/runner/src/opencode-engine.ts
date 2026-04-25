@@ -18,6 +18,7 @@ import {
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
   type EffectiveRuntimeContext,
+  type EnginePermissionObservation,
   type EngineToolExecutionObservation
 } from "@entangle/types";
 
@@ -55,6 +56,12 @@ const maxCapturedStdoutCharacters = 12_000;
 const maxEngineVersionCharacters = 200;
 const maxFailureMessageCharacters = 1_000;
 const defaultOpenCodeProcessTimeoutMs = 120_000;
+const opencodeAutoRejectedPermissionPattern =
+  /permission requested:\s*([^(;]+?)\s*\((.*?)\);\s*auto-rejecting/i;
+const ansiEscapePattern = new RegExp(
+  `${String.fromCharCode(27)}\\[[0-9;?]*[ -/]*[@-~]`,
+  "g"
+);
 
 const defaultOpenCodeSpawn: OpenCodeSpawn = (command, args, options) =>
   spawnChildProcess(command, args, {
@@ -235,6 +242,97 @@ function parseOpenCodeRunEvent(line: string): OpenCodeRunEvent | undefined {
   }
 }
 
+function stripAnsiCodes(value: string): string {
+  return value.replace(ansiEscapePattern, "");
+}
+
+function mapOpenCodePermissionToEngineOperation(
+  permission: string,
+  patterns: readonly string[]
+): EnginePermissionObservation["operation"] {
+  const normalizedPermission = permission.trim().toLowerCase();
+
+  if (["glob", "grep", "read"].includes(normalizedPermission)) {
+    return "filesystem_read";
+  }
+
+  if (["apply_patch", "edit", "write"].includes(normalizedPermission)) {
+    return "filesystem_write";
+  }
+
+  if (normalizedPermission === "external_directory") {
+    return "filesystem_access";
+  }
+
+  if (normalizedPermission === "bash") {
+    if (patterns.some((pattern) => isGitCommandPattern(pattern, "push"))) {
+      return "git_push";
+    }
+
+    if (patterns.some((pattern) => isGitCommandPattern(pattern, "commit"))) {
+      return "git_commit";
+    }
+
+    return "command_execution";
+  }
+
+  if (normalizedPermission === "task") {
+    return "subagent_execution";
+  }
+
+  if (["webfetch", "websearch"].includes(normalizedPermission)) {
+    return "network_access";
+  }
+
+  if (normalizedPermission === "workflow_tool_approval") {
+    return "approval_request";
+  }
+
+  return "unknown";
+}
+
+function isGitCommandPattern(pattern: string, subcommand: string): boolean {
+  const normalizedPattern = pattern.trim().toLowerCase();
+  const expectedCommand = `git ${subcommand}`;
+
+  return (
+    normalizedPattern === expectedCommand ||
+    normalizedPattern.startsWith(`${expectedCommand} `)
+  );
+}
+
+function collectPermissionObservation(
+  line: string,
+  permissionObservations: EnginePermissionObservation[]
+): void {
+  const sanitizedLine = stripAnsiCodes(line);
+  const match = sanitizedLine.match(opencodeAutoRejectedPermissionPattern);
+
+  if (!match) {
+    return;
+  }
+
+  const permission = match[1]?.trim();
+
+  if (!permission) {
+    return;
+  }
+
+  const patterns = (match[2] ?? "")
+    .split(",")
+    .map((pattern) => pattern.trim())
+    .filter((pattern) => pattern.length > 0);
+
+  permissionObservations.push({
+    decision: "rejected",
+    operation: mapOpenCodePermissionToEngineOperation(permission, patterns),
+    patterns,
+    permission,
+    reason:
+      "OpenCode one-shot CLI auto-rejected the permission request because Entangle has not enabled unsafe bypass or attached approval resumption."
+  });
+}
+
 function collectTextMessage(
   event: OpenCodeRunEvent,
   assistantMessages: string[]
@@ -298,9 +396,12 @@ function processOpenCodeStdoutLine(
     assistantMessages: string[];
     engineSessionId: string | undefined;
     errors: string[];
+    permissionObservations: EnginePermissionObservation[];
     toolExecutions: EngineToolExecutionObservation[];
   }
 ): void {
+  collectPermissionObservation(line, output.permissionObservations);
+
   const event = parseOpenCodeRunEvent(line);
 
   if (!event) {
@@ -577,6 +678,7 @@ export function createOpenCodeAgentEngine(input: {
         assistantMessages: [] as string[],
         engineSessionId: undefined as string | undefined,
         errors: [] as string[],
+        permissionObservations: [] as EnginePermissionObservation[],
         toolExecutions: [] as EngineToolExecutionObservation[]
       };
       const flushStdout = attachLineReader(child.stdout, (line) =>
@@ -598,6 +700,45 @@ export function createOpenCodeAgentEngine(input: {
         timeoutMs: processTimeoutMs
       });
 
+      const rejectedPermissions = output.permissionObservations.filter(
+        (permissionObservation) =>
+          permissionObservation.decision === "denied" ||
+          permissionObservation.decision === "rejected"
+      );
+
+      if (rejectedPermissions.length > 0) {
+        const permissionSummary = rejectedPermissions
+          .map((permissionObservation) => {
+            const patterns =
+              permissionObservation.patterns.length > 0
+                ? ` (${permissionObservation.patterns.join(", ")})`
+                : "";
+
+            return `${permissionObservation.permission}${patterns}`;
+          })
+          .join("; ");
+
+        return agentEngineTurnResultSchema.parse({
+          assistantMessages: output.assistantMessages,
+          ...(engineVersion ? { engineVersion } : {}),
+          ...(output.engineSessionId
+            ? { engineSessionId: output.engineSessionId }
+            : {}),
+          failure: {
+            classification: "policy_denied",
+            message: truncate(
+              `OpenCode requested permission and the one-shot CLI auto-rejected it: ${permissionSummary}.`,
+              maxFailureMessageCharacters
+            )
+          },
+          permissionObservations: output.permissionObservations,
+          providerStopReason: "opencode_permission_auto_rejected",
+          stopReason: "error",
+          toolExecutions: output.toolExecutions,
+          toolRequests: []
+        });
+      }
+
       if (output.errors.length > 0) {
         return agentEngineTurnResultSchema.parse({
           assistantMessages: output.assistantMessages,
@@ -612,6 +753,7 @@ export function createOpenCodeAgentEngine(input: {
               maxFailureMessageCharacters
             )
           },
+          permissionObservations: output.permissionObservations,
           providerStopReason: "opencode_error_event",
           stopReason: "error",
           toolExecutions: output.toolExecutions,
@@ -625,6 +767,7 @@ export function createOpenCodeAgentEngine(input: {
         ...(output.engineSessionId
           ? { engineSessionId: output.engineSessionId }
           : {}),
+        permissionObservations: output.permissionObservations,
         providerStopReason: "opencode_process_exit_0",
         stopReason: "completed",
         toolExecutions: output.toolExecutions,

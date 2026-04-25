@@ -95,6 +95,18 @@ export function formatRuntimeTurnDetailLines(
       );
     }
 
+    const permissionObservations =
+      turn.engineOutcome.permissionObservations ?? [];
+
+    if (permissionObservations.length > 0) {
+      const latestPermission =
+        permissionObservations[permissionObservations.length - 1]!;
+      const reason = latestPermission.reason ? `: ${latestPermission.reason}` : "";
+      lines.push(
+        `permission ${latestPermission.decision} ${latestPermission.operation}${reason}`
+      );
+    }
+
     if (turn.engineOutcome.usage) {
       lines.push(
         `usage ${turn.engineOutcome.usage.inputTokens} input / ${turn.engineOutcome.usage.outputTokens} output tokens`

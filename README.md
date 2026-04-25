@@ -128,11 +128,13 @@ This repository currently contains:
   adapter for primary node turns while isolating OpenCode DB/config/XDG state
   under the node engine-state workspace, probing OpenCode version before turns,
   applying bounded probe/run process timeouts, and carrying generic
-  engine-session ids and engine versions on persisted turn outcomes, with host
-  runtime inspection now exposing a generic agent-runtime summary for effective
-  mode, engine profile, state scope, last engine version/session, last turn,
-  and bounded failure evidence through the shared host-client, CLI, and Studio
-  surfaces;
+  engine-session ids, engine versions, and permission-block observations on
+  persisted turn outcomes, including `policy_denied` results when OpenCode
+  one-shot CLI auto-rejects a permission request, with host runtime inspection
+  now exposing a generic agent-runtime summary for effective mode, engine
+  profile, state scope, last engine version/session, last permission decision,
+  last turn, and bounded failure evidence through the shared host-client, CLI,
+  and Studio surfaces;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

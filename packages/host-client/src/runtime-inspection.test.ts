@@ -20,6 +20,10 @@ function createRuntime(
       lastEngineSessionId: "opencode-session-alpha",
       lastEngineStopReason: "completed",
       lastEngineVersion: "0.10.0",
+      lastPermissionDecision: "rejected",
+      lastPermissionOperation: "command_execution",
+      lastPermissionReason:
+        "OpenCode one-shot CLI auto-rejected the permission request.",
       lastTurnId: "turn-alpha",
       lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
       mode: "coding_agent",
@@ -93,6 +97,9 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last engine version 0.10.0"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "last permission rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request."
     );
   });
 });

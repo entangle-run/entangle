@@ -111,6 +111,15 @@ describe("runtime trace helpers", () => {
       engineOutcome: {
         engineSessionId: "engine-session-alpha",
         engineVersion: "0.10.0",
+        permissionObservations: [
+          {
+            decision: "rejected",
+            operation: "command_execution",
+            patterns: ["git push origin main"],
+            permission: "bash",
+            reason: "OpenCode one-shot CLI auto-rejected the permission request."
+          }
+        ],
         providerMetadata: {
           adapterKind: "anthropic",
           modelId: "claude-opus-4-7",
@@ -175,6 +184,7 @@ describe("runtime trace helpers", () => {
         "Engine session: engine-session-alpha",
         "Engine version: 0.10.0",
         "Outcome: completed (provider: end_turn)",
+        "Permission: rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request.",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
         "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error) - Tool 'inspect_memory_ref' returned an error result.",

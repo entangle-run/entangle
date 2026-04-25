@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added OpenCode permission-block observability
+
+Advanced Entangle Local L3 workstream B3. Engine turn contracts now include a
+generic permission-observation model, an Entangle-facing policy operation
+vocabulary, and a `policy_denied` failure classification. The OpenCode runner
+adapter now recognizes the one-shot CLI permission auto-rejection line, maps the
+OpenCode permission name to a generic operation, and records bounded policy
+evidence instead of treating the turn as completed.
+
+Host runtime inspection now exposes the latest permission decision, operation,
+and reason through the generic `agentRuntime` status consumed by shared
+host-client presentation, CLI, and Studio details. Added
+`references/194-opencode-permission-observability-slice.md` to record the
+OpenCode source audit and the key limitation: the current one-shot lifecycle
+can observe auto-rejected permissions, but cannot yet create resumable Entangle
+approval records or feed decisions back into OpenCode.
+
 ## [2026-04-25] implementation | Hardened OpenCode adapter lifecycle checks
 
 Advanced Entangle Local L3 workstream B2. The OpenCode runner adapter now runs
