@@ -20,6 +20,28 @@ export const nodeAutonomyProfileSchema = z.object({
   canMutateGraph: z.boolean().default(false)
 });
 
+export const nodeSourceMutationPolicySchema = z.object({
+  applyRequiresApproval: z.boolean().default(false),
+  nonPrimaryPublishRequiresApproval: z.boolean().default(true),
+  publishRequiresApproval: z.boolean().default(false)
+});
+
+export const defaultNodeSourceMutationPolicy = {
+  applyRequiresApproval: false,
+  nonPrimaryPublishRequiresApproval: true,
+  publishRequiresApproval: false
+} as const;
+
+export const nodePolicyProfileSchema = z.object({
+  sourceMutation: nodeSourceMutationPolicySchema.default(
+    defaultNodeSourceMutationPolicy
+  )
+});
+
+export const defaultNodePolicyProfile = {
+  sourceMutation: defaultNodeSourceMutationPolicy
+} as const;
+
 export const nodeAgentRuntimeModeSchema = z.enum([
   "disabled",
   "coding_agent"
@@ -50,6 +72,7 @@ export const nodeBindingSchema = z.object({
     canInitiateSessions: false,
     canMutateGraph: false
   }),
+  policy: nodePolicyProfileSchema.optional(),
   agentRuntime: nodeAgentRuntimeSchema.default(defaultNodeAgentRuntime)
 });
 
@@ -100,6 +123,10 @@ export const graphSpecSchema = z.object({
 });
 
 export type NodeResourceBindings = z.infer<typeof nodeResourceBindingsSchema>;
+export type NodeSourceMutationPolicy = z.infer<
+  typeof nodeSourceMutationPolicySchema
+>;
+export type NodePolicyProfile = z.infer<typeof nodePolicyProfileSchema>;
 export type NodeAgentRuntimeMode = z.infer<typeof nodeAgentRuntimeModeSchema>;
 export type NodeAgentRuntime = z.infer<typeof nodeAgentRuntimeSchema>;
 export type NodeBinding = z.infer<typeof nodeBindingSchema>;

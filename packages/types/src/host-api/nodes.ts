@@ -46,8 +46,8 @@ export const nodeDeletionResponseSchema = z.object({
 });
 
 export type ManagedNodeKind = z.infer<typeof managedNodeKindSchema>;
-export type NodeCreateRequest = z.infer<typeof nodeCreateRequestSchema>;
-export type NodeReplacementRequest = z.infer<typeof nodeReplacementRequestSchema>;
+export type NodeCreateRequest = z.input<typeof nodeCreateRequestSchema>;
+export type NodeReplacementRequest = z.input<typeof nodeReplacementRequestSchema>;
 export type NodeInspectionResponse = z.infer<typeof nodeInspectionResponseSchema>;
 export type NodeListResponse = z.infer<typeof nodeListResponseSchema>;
 export type NodeMutationResponse = z.infer<typeof nodeMutationResponseSchema>;

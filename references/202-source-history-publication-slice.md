@@ -108,8 +108,8 @@ operation without changing the public host contract.
 
 The remaining B5 implementation should add:
 
-- policy checks and approval gates before source application or publication;
-- richer policy-gated remote publication controls and non-primary provisioning;
+- operation-scoped approval evidence for source application and publication;
+- non-primary git repository provisioning and fallback/replication behavior;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;
 - artifact restore/replay semantics only after rollback and policy behavior are

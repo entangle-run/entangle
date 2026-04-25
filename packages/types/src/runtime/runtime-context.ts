@@ -15,7 +15,9 @@ import {
   nodeAgentRuntimeModeSchema,
   nodeAutonomyProfileSchema,
   nodeBindingSchema,
-  nodeResourceBindingsSchema
+  nodeResourceBindingsSchema,
+  defaultNodeSourceMutationPolicy,
+  nodeSourceMutationPolicySchema
 } from "../graph/graph-spec.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
 import { runtimeIdentityContextSchema } from "./runtime-identity.js";
@@ -136,7 +138,10 @@ export const agentRuntimeContextSchema = z.object({
 export const policyRuntimeContextSchema = z.object({
   autonomy: nodeAutonomyProfileSchema,
   notes: z.array(nonEmptyStringSchema).default([]),
-  runtimeProfile: runtimeProfileSchema
+  runtimeProfile: runtimeProfileSchema,
+  sourceMutation: nodeSourceMutationPolicySchema.default(
+    defaultNodeSourceMutationPolicy
+  )
 });
 
 export const effectiveRuntimeContextSchema = z.object({

@@ -97,7 +97,7 @@ This slice intentionally does not:
 
 - auto-provision arbitrary non-primary repositories;
 - add fallback replication to multiple repositories;
-- add policy approval gates for publish target changes;
+- add operation-scoped approval evidence for publish target changes;
 - make already published source-history entries mutable;
 - add remote branch browsing beyond artifact history/diff inspection;
 - change runner ownership of source-change harvesting.
@@ -110,8 +110,7 @@ B5/L4 work.
 
 The remaining B5 implementation should add:
 
-- policy checks and approval gates before source application or publication,
-  especially when the requested target differs from the primary target;
+- operation-scoped approval evidence for source application and publication;
 - non-primary git repository provisioning and fallback/replication behavior;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;

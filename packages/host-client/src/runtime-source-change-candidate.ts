@@ -100,6 +100,10 @@ export function formatRuntimeSourceChangeCandidateDetailLines(
     lines.push(`source history ${candidate.application.sourceHistoryId}`);
     lines.push(`source commit ${candidate.application.commit}`);
 
+    if (candidate.application.approvalId) {
+      lines.push(`application approval ${candidate.application.approvalId}`);
+    }
+
     if (candidate.application.appliedBy) {
       lines.push(`applied by ${candidate.application.appliedBy}`);
     }

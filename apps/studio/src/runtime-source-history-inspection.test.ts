@@ -33,6 +33,7 @@ const entries: SourceHistoryRecord[] = [
   },
   {
     appliedAt: "2026-04-24T00:03:00.000Z",
+    applicationApprovalId: "approval-source-apply-new",
     baseTree: "base-tree-new",
     branch: "entangle-source-history",
     candidateId: "source-change-turn-new",
@@ -43,6 +44,7 @@ const entries: SourceHistoryRecord[] = [
     mode: "already_in_workspace",
     nodeId: "worker-it",
     publication: {
+      approvalId: "approval-source-publish-new",
       artifactId: "source-source-history-source-change-turn-new",
       branch: "worker-it/source-history/source-history-source-change-turn-new",
       publication: {
@@ -87,6 +89,9 @@ describe("runtime source history Studio helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
       "publication target local-gitea/team-alpha/graph-alpha"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
+      "publication approval approval-source-publish-new"
     );
   });
 });

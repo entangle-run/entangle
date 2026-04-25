@@ -293,6 +293,7 @@ export const runtimeSourceHistoryInspectionResponseSchema = z.object({
 });
 
 export const runtimeSourceHistoryPublishMutationRequestSchema = z.object({
+  approvalId: identifierSchema.optional(),
   publishedBy: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
   retry: z.boolean().default(false),
@@ -334,6 +335,7 @@ export const runtimeSourceChangeCandidateReviewMutationRequestSchema = z
   });
 
 export const runtimeSourceChangeCandidateApplyMutationRequestSchema = z.object({
+  approvalId: identifierSchema.optional(),
   appliedBy: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional()
 });

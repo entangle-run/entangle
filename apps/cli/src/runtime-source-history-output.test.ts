@@ -5,6 +5,7 @@ import { projectRuntimeSourceHistorySummary } from "./runtime-source-history-out
 const entry: SourceHistoryRecord = {
   appliedAt: "2026-04-24T00:03:00.000Z",
   appliedBy: "operator-alpha",
+  applicationApprovalId: "approval-source-apply-alpha",
   baseTree: "base-tree-alpha",
   branch: "entangle-source-history",
   candidateId: "source-change-turn-alpha",
@@ -15,6 +16,7 @@ const entry: SourceHistoryRecord = {
   mode: "already_in_workspace",
   nodeId: "worker-it",
   publication: {
+    approvalId: "approval-source-publish-alpha",
     artifactId: "source-source-history-source-change-turn-alpha",
     branch: "worker-it/source-history/source-history-source-change-turn-alpha",
     publication: {
@@ -48,7 +50,9 @@ describe("runtime source history CLI output", () => {
     expect(projectRuntimeSourceHistorySummary(entry)).toMatchObject({
       candidateId: "source-change-turn-alpha",
       label: "source-history-source-change-turn-alpha · already_in_workspace",
+      applicationApprovalId: "approval-source-apply-alpha",
       mode: "already_in_workspace",
+      publicationApprovalId: "approval-source-publish-alpha",
       publicationTarget: "local-gitea/team-alpha/graph-alpha",
       publicationState: "published",
       publishedArtifactId: "source-source-history-source-change-turn-alpha",

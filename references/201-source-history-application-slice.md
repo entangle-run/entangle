@@ -100,11 +100,12 @@ executor behind a runner command without changing the host API contract.
 
 ## Remaining B5 Work
 
-After the publication follow-up, the remaining B5 implementation should add:
+After later publication and policy-gate follow-ups, the remaining B5
+implementation should add:
 
-- policy checks and approval gates before source application or publication;
-- richer publication retry semantics and target selection;
+- operation-scoped approval evidence for source application and publication;
 - richer CLI and Studio source publication history views;
+- non-primary git repository provisioning and fallback/replication behavior;
 - artifact restore/replay semantics only after rollback and policy behavior are
   specified;
 - end-to-end OpenCode-backed smoke coverage proving source modification,

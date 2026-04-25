@@ -80,10 +80,12 @@ import {
   type GraphSpec,
   type GraphMutationResponse,
   graphSpecSchema,
+  defaultNodeSourceMutationPolicy,
   buildGitRepositoryTarget,
   type GitRepositoryTarget,
   intersectIdentifiers,
   type NodeBinding,
+  nodeBindingSchema,
   type NodeCreateRequest,
   type NodeDeletionResponse,
   type NodeInspectionResponse,
@@ -3783,7 +3785,8 @@ async function buildRuntimeResolution(input: {
       policyContext: {
         autonomy: node.autonomy,
         notes: [],
-        runtimeProfile: graph.defaults.runtimeProfile
+        runtimeProfile: graph.defaults.runtimeProfile,
+        sourceMutation: node.policy?.sourceMutation ?? defaultNodeSourceMutationPolicy
       },
       relayContext: {
         edgeRoutes,
@@ -4336,10 +4339,11 @@ export async function createManagedNode(
     };
   }
 
+  const nextNode = nodeBindingSchema.parse(input);
   const applied = await applyNodeGraphCandidate({
     candidateGraph: graphSpecSchema.parse({
       ...graph,
-      nodes: [...graph.nodes, input]
+      nodes: [...graph.nodes, nextNode]
     }),
     mutationKind: "created",
     nodeId: input.nodeId
@@ -4415,10 +4419,10 @@ export async function replaceManagedNode(
     };
   }
 
-  const nextNode: NodeBinding = {
+  const nextNode = nodeBindingSchema.parse({
     ...replacement,
     nodeId
-  };
+  });
   const applied = await applyNodeGraphCandidate({
     candidateGraph: graphSpecSchema.parse({
       ...graph,
@@ -6425,6 +6429,107 @@ type SourceHistoryPublicationTargetResolution =
       ok: false;
     };
 
+type SourceMutationApprovalResolution =
+  | {
+      approval?: ApprovalRecord;
+      ok: true;
+    }
+  | {
+      message: string;
+      ok: false;
+    };
+
+async function resolveApprovedSourceMutationApproval(input: {
+  approvalId?: string | undefined;
+  context: EffectiveRuntimeContext;
+  operation: "source application" | "source publication";
+  required: boolean;
+  sessionId?: string | undefined;
+}): Promise<SourceMutationApprovalResolution> {
+  if (!input.approvalId) {
+    if (!input.required) {
+      return { ok: true };
+    }
+
+    return {
+      message:
+        `Runtime '${input.context.binding.node.nodeId}' requires an approved ` +
+        `approvalId before ${input.operation}.`,
+      ok: false
+    };
+  }
+
+  const approvals = await listRuntimeApprovalRecords(input.context.workspace.runtimeRoot);
+  const approval = approvals.find(
+    (candidate) => candidate.approvalId === input.approvalId
+  );
+
+  if (!approval) {
+    return {
+      message:
+        `Approval '${input.approvalId}' was not found for runtime ` +
+        `'${input.context.binding.node.nodeId}'.`,
+      ok: false
+    };
+  }
+
+  if (approval.graphId !== input.context.binding.graphId) {
+    return {
+      message:
+        `Approval '${input.approvalId}' belongs to graph '${approval.graphId}', ` +
+        `not graph '${input.context.binding.graphId}'.`,
+      ok: false
+    };
+  }
+
+  if (approval.requestedByNodeId !== input.context.binding.node.nodeId) {
+    return {
+      message:
+        `Approval '${input.approvalId}' was requested by node ` +
+        `'${approval.requestedByNodeId}', not runtime ` +
+        `'${input.context.binding.node.nodeId}'.`,
+      ok: false
+    };
+  }
+
+  if (input.sessionId && approval.sessionId !== input.sessionId) {
+    return {
+      message:
+        `Approval '${input.approvalId}' belongs to session ` +
+        `'${approval.sessionId}', not session '${input.sessionId}'.`,
+      ok: false
+    };
+  }
+
+  if (approval.status !== "approved") {
+    return {
+      message:
+        `Approval '${input.approvalId}' is '${approval.status}', but ` +
+        `${input.operation} requires an approved approval.`,
+      ok: false
+    };
+  }
+
+  return {
+    approval,
+    ok: true
+  };
+}
+
+function isPrimarySourceHistoryPublicationTarget(input: {
+  context: EffectiveRuntimeContext;
+  target: GitRepositoryTarget;
+}): boolean {
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  return (
+    primaryTarget !== undefined &&
+    primaryTarget.gitServiceRef === input.target.gitServiceRef &&
+    primaryTarget.namespace === input.target.namespace &&
+    primaryTarget.repositoryName === input.target.repositoryName
+  );
+}
+
 function resolveSourceHistoryPublicationTarget(input: {
   context: EffectiveRuntimeContext;
   publish: RuntimeSourceHistoryPublishMutationRequest;
@@ -6558,6 +6663,22 @@ export async function applyRuntimeSourceChangeCandidate(input: {
     };
   }
 
+  const approvalResolution = await resolveApprovedSourceMutationApproval({
+    approvalId: apply.approvalId,
+    context,
+    operation: "source application",
+    required: context.policyContext.sourceMutation.applyRequiresApproval,
+    sessionId: candidate.sessionId
+  });
+
+  if (!approvalResolution.ok) {
+    return {
+      code: "conflict",
+      message: approvalResolution.message,
+      ok: false
+    };
+  }
+
   const sourceWorkspaceRoot = context.workspace.sourceWorkspaceRoot;
 
   if (!sourceWorkspaceRoot) {
@@ -6677,6 +6798,7 @@ export async function applyRuntimeSourceChangeCandidate(input: {
     const historyRecord = sourceHistoryRecordSchema.parse({
       appliedAt,
       ...(apply.appliedBy ? { appliedBy: apply.appliedBy } : {}),
+      ...(apply.approvalId ? { applicationApprovalId: apply.approvalId } : {}),
       baseTree: candidate.snapshot.baseTree,
       branch: sourceHistoryBranchName,
       candidateId: candidate.candidateId,
@@ -6699,6 +6821,7 @@ export async function applyRuntimeSourceChangeCandidate(input: {
     const nextCandidate = sourceChangeCandidateRecordSchema.parse({
       ...candidate,
       application: {
+        ...(apply.approvalId ? { approvalId: apply.approvalId } : {}),
         appliedAt,
         ...(apply.appliedBy ? { appliedBy: apply.appliedBy } : {}),
         commit,
@@ -6735,6 +6858,7 @@ export async function applyRuntimeSourceChangeCandidate(input: {
         `recorded candidate '${candidate.candidateId}' at commit '${commit}'.`,
       mode,
       nodeId: input.nodeId,
+      ...(apply.approvalId ? { approvalId: apply.approvalId } : {}),
       sourceHistoryRef,
       turnId: candidate.turnId,
       type: "source_history.updated"
@@ -6819,6 +6943,30 @@ export async function publishRuntimeSourceHistory(input: {
   }
 
   const { target } = targetResolution;
+  const targetIsPrimary = isPrimarySourceHistoryPublicationTarget({
+    context,
+    target
+  });
+  const publicationRequiresApproval =
+    context.policyContext.sourceMutation.publishRequiresApproval ||
+    (context.policyContext.sourceMutation.nonPrimaryPublishRequiresApproval &&
+      !targetIsPrimary);
+  const approvalResolution = await resolveApprovedSourceMutationApproval({
+    approvalId: publish.approvalId,
+    context,
+    operation: "source publication",
+    required: publicationRequiresApproval,
+    sessionId: history.sessionId
+  });
+
+  if (!approvalResolution.ok) {
+    return {
+      code: "conflict",
+      message: approvalResolution.message,
+      ok: false
+    };
+  }
+
   const sourceGitDir = path.join(context.workspace.runtimeRoot, "source-snapshot.git");
 
   try {
@@ -6868,6 +7016,7 @@ export async function publishRuntimeSourceHistory(input: {
     const nextHistory = sourceHistoryRecordSchema.parse({
       ...history,
       publication: {
+        ...(publish.approvalId ? { approvalId: publish.approvalId } : {}),
         artifactId: artifactRef.artifactId,
         branch: branchName,
         publication: artifact.publication ?? {
@@ -6898,6 +7047,7 @@ export async function publishRuntimeSourceHistory(input: {
       nextHistory
     );
     await appendHostEvent({
+      ...(publish.approvalId ? { approvalId: publish.approvalId } : {}),
       artifactId: artifactRef.artifactId,
       candidateId: history.candidateId,
       category: "runtime",

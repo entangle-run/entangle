@@ -1,5 +1,28 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source mutation policy gates
+
+Advanced Entangle Local L3 workstreams B3 and B5. Graph node bindings now carry
+optional `policy.sourceMutation` controls, and effective runtime context exposes
+the resolved source mutation policy. Source-candidate apply and source-history
+publish mutations now accept `approvalId`; the host requires an approved
+runtime approval record when the node policy demands it, and non-primary
+source-history publication targets are approval-gated by default.
+
+Accepted approval ids are persisted on source-change candidate application
+records, source-history application/publication records, and
+`source_history.updated` / `source_history.published` events. CLI, Studio, and
+shared host-client presentation now surface source approval evidence. Added
+`references/205-source-mutation-policy-gates-slice.md`. Live OpenCode
+permission-to-approval mapping, operation-scoped approval evidence, non-primary
+git provisioning/fallback, artifact restore/replay, and end-to-end
+OpenCode-backed smoke coverage remain open.
+
+Focused package lint/typecheck/test checks, `git diff --check`, and `pnpm build`
+passed. The aggregate `pnpm verify` and recursive workspace test attempts were
+stopped after local no-output hangs inside spawned Vitest child processes; the
+same package tests passed when run directly.
+
 ## [2026-04-25] implementation | Added source history publication controls
 
 Advanced Entangle Local L3 workstream B5. Source-history publication now has
@@ -14,10 +37,10 @@ The shared host client, CLI, and Studio now consume the widened contract. CLI
 publish commands accept `--retry` and target-selection options, Studio sends a
 retry when republishing a failed selected source-history entry, and shared
 presentation helpers show publication targets. Added
-`references/204-source-history-publication-controls-slice.md`. Policy-gated
-publication approval, non-primary provisioning/fallback behavior, artifact
-restore/replay semantics, and end-to-end OpenCode-backed source-publication
-smoke coverage remain open.
+`references/204-source-history-publication-controls-slice.md`. Source mutation
+approval gates were added in a follow-up slice; non-primary
+provisioning/fallback behavior, artifact restore/replay semantics, and
+end-to-end OpenCode-backed source-publication smoke coverage remain open.
 
 ## [2026-04-25] implementation | Added runtime artifact history and diff inspection
 

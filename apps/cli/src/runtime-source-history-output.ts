@@ -20,11 +20,13 @@ export function projectRuntimeSourceHistorySummary(entry: SourceHistoryRecord) {
     candidateId: entry.candidateId,
     commit: entry.commit,
     detailLines: formatRuntimeSourceHistoryDetailLines(entry),
+    applicationApprovalId: entry.applicationApprovalId,
     label: formatRuntimeSourceHistoryLabel(entry),
     mode: entry.mode,
     nodeId: entry.nodeId,
     publicationState: entry.publication?.publication.state ?? "not_requested",
     ...(publicationTarget ? { publicationTarget } : {}),
+    publicationApprovalId: entry.publication?.approvalId,
     publishedArtifactId: entry.publication?.artifactId,
     sourceHistoryId: entry.sourceHistoryId,
     turnId: entry.turnId

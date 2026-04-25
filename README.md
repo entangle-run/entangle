@@ -148,7 +148,11 @@ This repository currently contains:
   records the resolved git target, requires explicit retry after failed
   attempts, emits `source_history.published`, and can push to the runtime's
   primary or selected git target, including local `file://` git remotes for
-  Entangle Local tests;
+  Entangle Local tests, with node-configured source mutation policy now able
+  to require approved runtime approval ids before source application, before
+  any source-history publication, or before non-primary publication targets by
+  default, and with accepted approval ids persisted on source records and
+  source history events;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
@@ -601,6 +605,11 @@ This repository currently contains:
   list, filter, and inspect runner-local approval records through the shared
   host boundary instead of inferring blocking gates from session counters
   alone;
+- the source mutation policy slice where graph node bindings can configure
+  source application and publication approval requirements, source apply and
+  publish mutations accept `approvalId`, non-primary publication targets are
+  approval-gated by default, and CLI/Studio/shared presentation surfaces expose
+  the persisted source approval evidence;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
@@ -664,9 +673,9 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff and
-  source-history publication model, especially policy-gated publication
-  controls, artifact restore/replay semantics, non-primary target
-  provisioning, and replicated fallback paths;
+  source-history publication model, especially operation-scoped approval
+  evidence, artifact restore/replay semantics, non-primary target provisioning,
+  and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

@@ -1597,6 +1597,7 @@ hostRuntimesCommand
   .option("--reason <reason>", "Attach a review or application reason.")
   .option("--reviewed-by <operatorId>", "Attach the reviewing operator id.")
   .option("--applied-by <operatorId>", "Attach the applying operator id.")
+  .option("--approval-id <approvalId>", "Attach an approved source application approval id.")
   .option(
     "--superseded-by <candidateId>",
     "Candidate id that supersedes this candidate when --review superseded is used."
@@ -1609,6 +1610,7 @@ hostRuntimesCommand
       candidateId: string,
       options: {
         appliedBy?: string;
+        approvalId?: string;
         apply?: boolean;
         diff?: boolean;
         file?: string;
@@ -1642,13 +1644,14 @@ hostRuntimesCommand
         throw new Error("Use --reviewed-by or --superseded-by only with --review.");
       }
 
-      if (options.appliedBy && !options.apply) {
-        throw new Error("Use --applied-by only with --apply.");
+      if ((options.appliedBy || options.approvalId) && !options.apply) {
+        throw new Error("Use --applied-by or --approval-id only with --apply.");
       }
 
       if (options.apply) {
         const apply =
           runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
+            ...(options.approvalId ? { approvalId: options.approvalId } : {}),
             ...(options.appliedBy ? { appliedBy: options.appliedBy } : {}),
             ...(options.reason ? { reason: options.reason } : {})
           });
@@ -1815,6 +1818,7 @@ hostRuntimesCommand
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<sourceHistoryId>", "Source history entry identifier to inspect.")
   .option("--publish", "Publish the source history entry as a git artifact.")
+  .option("--approval-id <approvalId>", "Attach an approved source publication approval id.")
   .option("--published-by <operatorId>", "Attach the publishing operator id.")
   .option("--reason <reason>", "Attach a publication reason.")
   .option("--retry", "Retry after a failed source history publication attempt.")
@@ -1834,6 +1838,7 @@ hostRuntimesCommand
       nodeId: string,
       sourceHistoryId: string,
       options: {
+        approvalId?: string;
         publish?: boolean;
         publishedBy?: string;
         reason?: string;
@@ -1847,7 +1852,8 @@ hostRuntimesCommand
     ) => {
       const client = createCliHostClient(command);
       if (
-        (options.publishedBy ||
+        (options.approvalId ||
+          options.publishedBy ||
           options.reason ||
           options.retry ||
           options.targetGitService ||
@@ -1856,13 +1862,14 @@ hostRuntimesCommand
         !options.publish
       ) {
         throw new Error(
-          "Use --published-by, --reason, --retry, or target options only with --publish."
+          "Use --approval-id, --published-by, --reason, --retry, or target options only with --publish."
         );
       }
 
       if (options.publish) {
         const publish =
           runtimeSourceHistoryPublishMutationRequestSchema.parse({
+            ...(options.approvalId ? { approvalId: options.approvalId } : {}),
             ...(options.publishedBy ? { publishedBy: options.publishedBy } : {}),
             ...(options.reason ? { reason: options.reason } : {}),
             retry: options.retry ?? false,

@@ -156,6 +156,7 @@ export const sourceHistoryApplicationModeSchema = z.enum([
 ]);
 
 export const sourceChangeCandidateApplicationRecordSchema = z.object({
+  approvalId: identifierSchema.optional(),
   appliedAt: nonEmptyStringSchema,
   appliedBy: identifierSchema.optional(),
   commit: nonEmptyStringSchema,
@@ -171,6 +172,7 @@ export const sourceChangeSnapshotRefSchema = z.object({
 });
 
 export const sourceHistoryPublicationRecordSchema = z.object({
+  approvalId: identifierSchema.optional(),
   artifactId: identifierSchema,
   branch: nonEmptyStringSchema,
   publication: artifactPublicationSchema,
@@ -201,6 +203,7 @@ export const sourceChangeCandidateRecordSchema = z.object({
 export const sourceHistoryRecordSchema = z.object({
   appliedAt: nonEmptyStringSchema,
   appliedBy: identifierSchema.optional(),
+  applicationApprovalId: identifierSchema.optional(),
   baseTree: nonEmptyStringSchema,
   branch: nonEmptyStringSchema,
   candidateId: identifierSchema,

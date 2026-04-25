@@ -34,6 +34,7 @@ const history: SourceHistoryRecord[] = [
   {
     appliedAt: "2026-04-24T00:03:00.000Z",
     appliedBy: "operator-alpha",
+    applicationApprovalId: "approval-source-apply-new",
     baseTree: "base-tree-new",
     branch: "entangle-source-history",
     candidateId: "source-change-turn-new",
@@ -44,6 +45,7 @@ const history: SourceHistoryRecord[] = [
     mode: "already_in_workspace",
     nodeId: "worker-it",
     publication: {
+      approvalId: "approval-source-publish-new",
       artifactId: "source-source-history-source-change-turn-new",
       branch: "worker-it/source-history/source-history-source-change-turn-new",
       publication: {
@@ -95,6 +97,12 @@ describe("runtime source history presentation helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
       "publication target local-gitea/team-alpha/graph-alpha"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
+      "application approval approval-source-apply-new"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
+      "publication approval approval-source-publish-new"
     );
   });
 });

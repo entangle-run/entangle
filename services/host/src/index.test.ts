@@ -19,6 +19,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import Fastify from "fastify";
 import type { RuntimeBackend } from "./runtime-backend.js";
 import {
+  approvalRecordSchema,
   artifactRecordSchema,
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
@@ -725,6 +726,7 @@ async function applySingleWorkerGraph(input: {
   externalPrincipalRefs?: string[];
   packageSourceId: string;
   server: Awaited<ReturnType<typeof createTestServer>>;
+  workerPolicy?: unknown;
 }) {
   const response = await input.server.inject({
     method: "PUT",
@@ -743,6 +745,7 @@ async function applySingleWorkerGraph(input: {
           displayName: "Worker IT",
           nodeKind: "worker",
           packageSourceRef: input.packageSourceId,
+          ...(input.workerPolicy ? { policy: input.workerPolicy } : {}),
           resourceBindings: {
             externalPrincipalRefs: input.externalPrincipalRefs ?? [],
             relayProfileRefs: [],
@@ -3212,7 +3215,14 @@ describe("buildHostServer", () => {
       const packageSourceId = await admitPackageSource(server, packageDirectory);
       await applySingleWorkerGraph({
         packageSourceId,
-        server
+        server,
+        workerPolicy: {
+          sourceMutation: {
+            applyRequiresApproval: true,
+            nonPrimaryPublishRequiresApproval: true,
+            publishRequiresApproval: false
+          }
+        }
       });
 
       const runtimeContext = runtimeContextInspectionResponseSchema.parse(
@@ -3233,6 +3243,70 @@ describe("buildHostServer", () => {
       if (!sourceWorkspaceRoot) {
         throw new Error("Expected source workspace root in runtime context.");
       }
+
+      const sourceApplicationApproval = approvalRecordSchema.parse({
+        approvalId: "approval-source-application-alpha",
+        approverNodeIds: ["operator-alpha"],
+        graphId: runtimeContext.binding.graphId,
+        reason: "Approve accepted source application.",
+        requestedAt: "2026-04-24T00:00:00.000Z",
+        requestedByNodeId: "worker-it",
+        sessionId: "session-alpha",
+        status: "approved",
+        updatedAt: "2026-04-24T00:00:01.000Z"
+      });
+      const sourceApplicationWrongSessionApproval = approvalRecordSchema.parse({
+        approvalId: "approval-source-application-other-session",
+        approverNodeIds: ["operator-alpha"],
+        graphId: runtimeContext.binding.graphId,
+        reason: "Approve a different source application session.",
+        requestedAt: "2026-04-24T00:00:30.000Z",
+        requestedByNodeId: "worker-it",
+        sessionId: "session-other",
+        status: "approved",
+        updatedAt: "2026-04-24T00:00:31.000Z"
+      });
+      const sourcePublicationApproval = approvalRecordSchema.parse({
+        approvalId: "approval-source-publication-alpha",
+        approverNodeIds: ["operator-alpha"],
+        graphId: runtimeContext.binding.graphId,
+        reason: "Approve source publication to a non-primary target.",
+        requestedAt: "2026-04-24T00:01:00.000Z",
+        requestedByNodeId: "worker-it",
+        sessionId: "session-alpha",
+        status: "approved",
+        updatedAt: "2026-04-24T00:01:01.000Z"
+      });
+      await mkdir(path.join(runtimeContext.workspace.runtimeRoot, "approvals"), {
+        recursive: true
+      });
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          `${sourceApplicationApproval.approvalId}.json`
+        ),
+        JSON.stringify(sourceApplicationApproval, null, 2),
+        "utf8"
+      );
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          `${sourceApplicationWrongSessionApproval.approvalId}.json`
+        ),
+        JSON.stringify(sourceApplicationWrongSessionApproval, null, 2),
+        "utf8"
+      );
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          `${sourcePublicationApproval.approvalId}.json`
+        ),
+        JSON.stringify(sourcePublicationApproval, null, 2),
+        "utf8"
+      );
 
       const gitEnv = {
         GIT_DIR: gitDir,
@@ -3453,9 +3527,41 @@ describe("buildHostServer", () => {
         "utf8"
       );
 
+      const policyBlockedApplyResponse = await server.inject({
+        method: "POST",
+        payload: {
+          appliedBy: "operator-alpha",
+          reason: "Try applying without the node-required approval."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      });
+
+      expect(policyBlockedApplyResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(policyBlockedApplyResponse.json()).message
+      ).toContain("requires an approved approvalId");
+
+      const wrongSessionApplyResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-application-other-session",
+          appliedBy: "operator-alpha",
+          reason: "Try applying with an approval from another session."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      });
+
+      expect(wrongSessionApplyResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(wrongSessionApplyResponse.json()).message
+      ).toContain("not session 'session-alpha'");
+
       const applyResponse = await server.inject({
         method: "POST",
         payload: {
+          approvalId: "approval-source-application-alpha",
           appliedBy: "operator-alpha",
           reason: "Promote the accepted change into local source history."
         },
@@ -3470,6 +3576,7 @@ describe("buildHostServer", () => {
         ).entry;
       expect(sourceHistoryEntry).toMatchObject({
         appliedBy: "operator-alpha",
+        applicationApprovalId: "approval-source-application-alpha",
         candidateId: "source-change-turn-alpha",
         mode: "applied_to_workspace",
         nodeId: "worker-it",
@@ -3491,6 +3598,7 @@ describe("buildHostServer", () => {
         ) as unknown
       );
       expect(appliedCandidateFile.application).toMatchObject({
+        approvalId: "approval-source-application-alpha",
         mode: "applied_to_workspace",
         sourceHistoryId: "source-history-source-change-turn-alpha"
       });
@@ -3523,9 +3631,26 @@ describe("buildHostServer", () => {
         ).entry.commit
       ).toBe(sourceHistoryEntry.commit);
 
+      const policyBlockedPublishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          publishedBy: "operator-alpha",
+          reason: "Try a non-primary target without an approval.",
+          targetRepositoryName: "missing-target"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
+      });
+
+      expect(policyBlockedPublishResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(policyBlockedPublishResponse.json()).message
+      ).toContain("requires an approved approvalId");
+
       const failedPublishResponse = await server.inject({
         method: "POST",
         payload: {
+          approvalId: "approval-source-publication-alpha",
           publishedBy: "operator-alpha",
           reason: "Try a missing repository target before retrying.",
           targetRepositoryName: "missing-target"
@@ -3541,6 +3666,7 @@ describe("buildHostServer", () => {
         );
       expect(failedPublication.entry.publication).toMatchObject({
         artifactId: "source-source-history-source-change-turn-alpha",
+        approvalId: "approval-source-publication-alpha",
         publication: {
           state: "failed"
         },
@@ -3758,6 +3884,7 @@ describe("buildHostServer", () => {
         .events.filter((event) => event.type === "source_history.updated");
       expect(sourceHistoryEvents).toHaveLength(1);
       expect(sourceHistoryEvents[0]).toMatchObject({
+        approvalId: "approval-source-application-alpha",
         candidateId: "source-change-turn-alpha",
         historyId: "source-history-source-change-turn-alpha",
         mode: "applied_to_workspace"
@@ -3776,6 +3903,7 @@ describe("buildHostServer", () => {
       expect(sourceHistoryPublishedEvents).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
+            approvalId: "approval-source-publication-alpha",
             artifactId: "source-source-history-source-change-turn-alpha",
             historyId: "source-history-source-change-turn-alpha",
             publicationState: "failed",

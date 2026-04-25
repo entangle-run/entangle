@@ -33,6 +33,9 @@ export function formatRuntimeSourceHistoryDetailLines(
     `status ${history.mode}`,
     `applied at ${history.appliedAt}`,
     ...(history.appliedBy ? [`applied by ${history.appliedBy}`] : []),
+    ...(history.applicationApprovalId
+      ? [`application approval ${history.applicationApprovalId}`]
+      : []),
     `commit ${history.commit}`,
     `branch ${history.branch}`,
     ...(history.publication
@@ -40,6 +43,9 @@ export function formatRuntimeSourceHistoryDetailLines(
           `artifact ${history.publication.artifactId}`,
           `publication ${history.publication.publication.state}`,
           `publication branch ${history.publication.branch}`,
+          ...(history.publication.approvalId
+            ? [`publication approval ${history.publication.approvalId}`]
+            : []),
           ...(publicationTarget
             ? [`publication target ${publicationTarget}`]
             : []),

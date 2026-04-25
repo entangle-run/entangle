@@ -283,6 +283,7 @@ export const sourceChangeCandidateReviewedEventSchema =
   });
 
 export const sourceHistoryUpdatedEventSchema = hostEventBaseSchema.extend({
+  approvalId: identifierSchema.optional(),
   candidateId: identifierSchema,
   category: z.literal("runtime"),
   commit: nonEmptyStringSchema,
@@ -297,6 +298,7 @@ export const sourceHistoryUpdatedEventSchema = hostEventBaseSchema.extend({
 });
 
 export const sourceHistoryPublishedEventSchema = hostEventBaseSchema.extend({
+  approvalId: identifierSchema.optional(),
   artifactId: identifierSchema,
   candidateId: identifierSchema,
   category: z.literal("runtime"),

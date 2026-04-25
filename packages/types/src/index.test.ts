@@ -419,10 +419,14 @@ describe("source change candidate host API contracts", () => {
     ).toBe("accepted");
     expect(
       runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
+        approvalId: "approval-source-apply-alpha",
         appliedBy: "operator-alpha",
         reason: "Accepted for the local source history."
-      }).appliedBy
-    ).toBe("operator-alpha");
+      })
+    ).toMatchObject({
+      approvalId: "approval-source-apply-alpha",
+      appliedBy: "operator-alpha"
+    });
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
@@ -441,6 +445,7 @@ describe("source change candidate host API contracts", () => {
     const historyEntry = {
       appliedAt: "2026-04-24T00:03:00.000Z",
       appliedBy: "operator-alpha",
+      applicationApprovalId: "approval-source-apply-alpha",
       baseTree: "base-tree-alpha",
       branch: "entangle-source-history",
       candidateId: "source-change-turn-alpha",
@@ -451,6 +456,7 @@ describe("source change candidate host API contracts", () => {
       mode: "already_in_workspace",
       nodeId: "worker-it",
       publication: {
+        approvalId: "approval-source-publish-alpha",
         artifactId: "source-source-history-source-change-turn-alpha",
         branch: "worker-it/source-history/source-history-source-change-turn-alpha",
         publication: {
@@ -515,6 +521,7 @@ describe("source change candidate host API contracts", () => {
     });
     expect(
       runtimeSourceHistoryPublishMutationRequestSchema.parse({
+        approvalId: "approval-source-publish-alpha",
         publishedBy: "operator-alpha",
         reason: "Publish source for peer review.",
         retry: true,
@@ -523,6 +530,7 @@ describe("source change candidate host API contracts", () => {
         targetRepositoryName: "graph-alpha"
       })
     ).toMatchObject({
+      approvalId: "approval-source-publish-alpha",
       publishedBy: "operator-alpha",
       retry: true,
       targetRepositoryName: "graph-alpha"
@@ -538,6 +546,7 @@ describe("source change candidate host API contracts", () => {
         candidate: {
           ...candidate,
           application: {
+            approvalId: "approval-source-apply-alpha",
             appliedAt: "2026-04-24T00:03:00.000Z",
             appliedBy: "operator-alpha",
             commit: "commit-alpha",
@@ -1288,6 +1297,7 @@ describe("host event contracts", () => {
     });
     const reviewedCandidateEvent = hostEventRecordSchema.parse({
       candidateId: "source-change-turn-alpha",
+      approvalId: "approval-source-apply-alpha",
       category: "runtime",
       eventId: "evt-source-change-reviewed",
       graphId: "graph-alpha",
@@ -1306,6 +1316,7 @@ describe("host event contracts", () => {
       type: "source_change_candidate.reviewed"
     });
     const sourceHistoryEvent = hostEventRecordSchema.parse({
+      approvalId: "approval-source-apply-alpha",
       candidateId: "source-change-turn-alpha",
       category: "runtime",
       commit: "commit-alpha",
@@ -1325,6 +1336,7 @@ describe("host event contracts", () => {
     });
     const sourceHistoryPublishedEvent = hostEventRecordSchema.parse({
       artifactId: "source-source-history-source-change-turn-alpha",
+      approvalId: "approval-source-publish-alpha",
       candidateId: "source-change-turn-alpha",
       category: "runtime",
       commit: "artifact-commit-alpha",
@@ -1382,7 +1394,11 @@ describe("host event contracts", () => {
     expect(sourceHistoryEvent.type).toBe("source_history.updated");
     expect(sourceHistoryEvent.mode).toBe("already_in_workspace");
     expect(sourceHistoryPublishedEvent.type).toBe("source_history.published");
+    expect(sourceHistoryEvent.approvalId).toBe("approval-source-apply-alpha");
     expect(sourceHistoryPublishedEvent.publicationState).toBe("published");
+    expect(sourceHistoryPublishedEvent.approvalId).toBe(
+      "approval-source-publish-alpha"
+    );
     expect(sourceHistoryPublishedEvent.targetRepositoryName).toBe("graph-alpha");
   });
 
