@@ -248,7 +248,8 @@ This repository currently contains:
   inspect`, package tool-catalog validation, `entangle graph diff`,
   root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
   `entangle host sessions launch` through the host API over host-resolved
-  runtime context and the local NIP-59 relay, Studio selected-runtime session
+  runtime context and the local NIP-59 relay, optional CLI launch wait
+  polling through host session inspection, Studio selected-runtime session
   launch through the same host API, shared graph diffing for CLI and Studio,
   Studio graph revision diff against active graph state, host-backed Studio
   active-graph validation, host graph import/export through the CLI, runtime

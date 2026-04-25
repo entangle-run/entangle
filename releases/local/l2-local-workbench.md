@@ -25,6 +25,9 @@ Included in the current implementation slice:
 - headless local session launch through `POST /v1/sessions/launch` and
   `entangle host sessions launch`, using host-resolved runtime context and the
   local NIP-59 relay path;
+- optional `entangle host sessions launch --wait` polling that retries host
+  session inspection until completion, failure, cancellation, recorded session
+  timeout, waiting approval, or the CLI wait deadline;
 - Studio selected-runtime session launch through the same host launch API,
   with host-owned runtime context and relay publication;
 - shared graph diff implementation in `packages/host-client`, reused by the
@@ -48,6 +51,7 @@ Still required before the L2 release tag:
 - graph bundle import/export beyond single graph JSON and template export;
 - artifact history/diff workflow for report artifacts;
 - memory workbench inspection for focused registers and task pages;
+- relay-publish retry remains outside the launch wait wrapper;
 - full local verification gate, including Docker-backed smokes, on the final
   L2 release candidate.
 
@@ -67,7 +71,7 @@ pnpm --filter @entangle/cli dev package inspect examples/local-preview/agent-pac
 pnpm --filter @entangle/cli dev graph diff examples/local-preview/graph.json examples/local-preview/graph.json
 pnpm --filter @entangle/cli dev host graph import examples/local-preview/graph.json --dry-run
 pnpm --filter @entangle/cli dev host graph export /tmp/entangle-active-graph.json
-pnpm --filter @entangle/cli dev host sessions launch local-preview-planner "Prepare a local workbench report."
+pnpm --filter @entangle/cli dev host sessions launch local-preview-planner "Prepare a local workbench report." --wait
 pnpm --filter @entangle/cli dev host runtimes artifacts local-preview-planner --session-id <session-id> --summary
 pnpm --filter @entangle/cli dev host runtimes artifact local-preview-planner <artifact-id> --preview
 ```
@@ -75,7 +79,10 @@ pnpm --filter @entangle/cli dev host runtimes artifact local-preview-planner <ar
 `host sessions launch` requires a running local host, a realizable target
 runtime context, and a reachable configured relay. The CLI calls
 `POST /v1/sessions/launch`; the host publishes a local `task.request`; session
-completion still depends on the runner and model profile state.
+completion still depends on the runner and model profile state. With `--wait`,
+the CLI polls host session inspection and exits non-zero if the wait deadline
+expires or the inspected session reaches `failed`, `cancelled`, or
+`timed_out`.
 
 ## Verification Evidence
 
@@ -135,7 +142,8 @@ must pass the repository-level and Docker-backed gates before tagging.
 ## Known Limitations
 
 - Session launch is now available from CLI and Studio through the host launch
-  API, but it does not wait for completion or retry failed relay publication.
+  API. The CLI can wait by polling host session inspection, but it does not
+  retry failed relay publication.
 - Graph diff is available in CLI and Studio, Studio can validate the active
   graph through the host API, and the CLI has single-file host graph
   import/export. No host-owned graph diff API, graph bundle format, or

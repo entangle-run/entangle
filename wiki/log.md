@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added CLI session launch wait polling
+
+Improved the L2 headless session workflow by adding `--wait`,
+`--wait-timeout-ms`, and `--wait-interval-ms` to
+`entangle host sessions launch`. The command still launches through the host
+API, then polls `GET /v1/sessions/{sessionId}` until the session completes,
+fails, is cancelled, reaches a recorded session timeout, waits for approval, or
+the CLI wait deadline expires.
+
+This is not a relay-publish retry mechanism and does not add a new host-side
+session runner. It is an operator CLI wrapper over existing host inspection.
+
+Focused CLI test, typecheck, and lint passed for this slice.
+
 ## [2026-04-25] implementation | Added host graph import/export CLI flow
 
 Closed the single-file L2 graph import/export slice by adding

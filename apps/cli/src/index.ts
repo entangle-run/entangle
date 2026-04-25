@@ -25,6 +25,7 @@ import {
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
+  type SessionInspectionResponse,
   sessionLaunchRequestSchema
 } from "@entangle/types";
 import {
@@ -74,6 +75,13 @@ import {
   projectHostSessionInspectionSummary,
   projectHostSessionSummary
 } from "./runtime-session-output.js";
+import {
+  projectHostSessionLaunchSummary,
+  projectHostSessionWaitSummary,
+  resolveHostSessionWaitOutcome,
+  shouldHostSessionWaitExitNonZero,
+  type HostSessionWaitOutcome
+} from "./session-wait.js";
 import { projectRuntimeInspectionSummary } from "./runtime-inspection-output.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
@@ -174,6 +182,82 @@ function createCliHostClient(command: Command) {
   return createHostClient(
     authToken === undefined ? { baseUrl } : { authToken, baseUrl }
   );
+}
+
+function parsePositiveIntegerOption(value: string, optionName: string): number {
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new Error(`${optionName} must be a positive integer.`);
+  }
+
+  return Number.parseInt(value, 10);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isMissingSessionInspectionError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.startsWith("Host request failed with 404")
+  );
+}
+
+async function waitForHostSession(input: {
+  client: ReturnType<typeof createCliHostClient>;
+  intervalMs: number;
+  sessionId: string;
+  timeoutMs: number;
+}): Promise<{
+  elapsedMs: number;
+  inspection?: SessionInspectionResponse;
+  outcome: HostSessionWaitOutcome;
+  pollCount: number;
+  timedOut: boolean;
+}> {
+  const startedAt = Date.now();
+  const deadline = startedAt + input.timeoutMs;
+  let lastInspection: SessionInspectionResponse | undefined;
+  let pollCount = 0;
+
+  while (true) {
+    pollCount += 1;
+
+    try {
+      lastInspection = await input.client.getSession(input.sessionId);
+      const outcome = resolveHostSessionWaitOutcome(lastInspection);
+
+      if (outcome !== "observing") {
+        return {
+          elapsedMs: Date.now() - startedAt,
+          inspection: lastInspection,
+          outcome,
+          pollCount,
+          timedOut: false
+        };
+      }
+    } catch (error) {
+      if (!isMissingSessionInspectionError(error)) {
+        throw error;
+      }
+    }
+
+    const remainingMs = deadline - Date.now();
+
+    if (remainingMs <= 0) {
+      return {
+        elapsedMs: Date.now() - startedAt,
+        ...(lastInspection ? { inspection: lastInspection } : {}),
+        outcome: "observing",
+        pollCount,
+        timedOut: true
+      };
+    }
+
+    await sleep(Math.min(input.intervalMs, remainingMs));
+  }
 }
 
 async function watchHostEvents(input: {
@@ -1589,6 +1673,20 @@ hostSessionsCommand
   .option("--intent <intent>", "Intent text. Defaults to the summary.")
   .option("--session-id <sessionId>", "Explicit session id.")
   .option("--turn-id <turnId>", "Explicit turn id.")
+  .option(
+    "--wait",
+    "Poll the launched session until it completes, fails, waits for approval, or the wait deadline expires."
+  )
+  .option(
+    "--wait-interval-ms <ms>",
+    "Polling interval for --wait in milliseconds.",
+    "1000"
+  )
+  .option(
+    "--wait-timeout-ms <ms>",
+    "Maximum time to wait for --wait in milliseconds.",
+    "60000"
+  )
   .description(
     "Launch a local task session through entangle-host using host-resolved runtime context."
   )
@@ -1603,6 +1701,9 @@ hostSessionsCommand
         intent?: string;
         sessionId?: string;
         turnId?: string;
+        wait?: boolean;
+        waitIntervalMs: string;
+        waitTimeoutMs: string;
       },
       command: Command
     ) => {
@@ -1627,16 +1728,31 @@ hostSessionsCommand
         })
       );
 
-      printJson({
-        launch: {
-          ...launch,
-          nextCommands: [
-            `entangle host sessions get ${launch.sessionId} --summary`,
-            `entangle host runtimes turns ${launch.targetNodeId} --summary`,
-            `entangle host runtimes artifacts ${launch.targetNodeId} --session-id ${launch.sessionId} --summary`
-          ]
-        }
-      });
+      if (!options.wait) {
+        printJson(projectHostSessionLaunchSummary({ launch }));
+        return;
+      }
+
+      const wait = projectHostSessionWaitSummary(
+        await waitForHostSession({
+          client,
+          intervalMs: parsePositiveIntegerOption(
+            options.waitIntervalMs,
+            "--wait-interval-ms"
+          ),
+          sessionId: launch.sessionId,
+          timeoutMs: parsePositiveIntegerOption(
+            options.waitTimeoutMs,
+            "--wait-timeout-ms"
+          )
+        })
+      );
+
+      printJson(projectHostSessionLaunchSummary({ launch, wait }));
+
+      if (shouldHostSessionWaitExitNonZero(wait)) {
+        process.exitCode = 1;
+      }
     }
   );
 

@@ -130,7 +130,8 @@ The repository now also contains the first real implementation baseline:
 - an active L2 Local Workbench slice with CLI package inspection, package
   tool-catalog validation, offline graph diffing, root-relative path handling
   for `pnpm --filter @entangle/cli dev`, headless session launch through the
-  host API over host-resolved runtime context and the local relay, Studio
+  host API over host-resolved runtime context and the local relay, optional
+  CLI launch wait polling through host session inspection, Studio
   selected-runtime session launch through the same host API, shared graph
   diffing for CLI and Studio, Studio graph revision diff against active graph
   state, host-backed Studio active-graph validation, host graph import/export

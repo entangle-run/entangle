@@ -382,6 +382,7 @@ Incremental features:
 3. Session launching:
    - Studio local session launch flow;
    - CLI session launch command over the same host boundary;
+   - CLI launch wait polling through host session inspection;
    - attach prompt/input and optional artifact refs;
    - show launch result as a navigable session.
 4. Artifact workbench:
@@ -845,8 +846,8 @@ Remaining implementation sequence:
    proof path.
 2. Add package inspect/import depth and decide whether graph bundle ergonomics
    are needed beyond the single-file host graph import/export workflow.
-3. Deepen the new host-backed Studio and CLI session launch flow with clearer
-   wait/retry and navigation ergonomics where it can remain host-owned.
+3. Decide whether relay-publish retry belongs in L2, now that CLI launch wait
+   polling exists over host session inspection.
 4. Add artifact history/diff and memory workbench surfaces over existing
    host/runner truth.
 5. Run `pnpm verify`, strict preflight, preview demo, and disposable runtime
