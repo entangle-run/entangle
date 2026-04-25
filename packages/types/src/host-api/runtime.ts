@@ -24,6 +24,7 @@ import {
 import {
   approvalRecordSchema,
   runnerTurnRecordSchema,
+  sourceChangeCandidateRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 
@@ -41,6 +42,7 @@ export const runtimeAgentRuntimeInspectionSchema = z.object({
   lastPermissionDecision: enginePermissionDecisionSchema.optional(),
   lastPermissionOperation: enginePolicyOperationSchema.optional(),
   lastPermissionReason: nonEmptyStringSchema.optional(),
+  lastSourceChangeCandidateId: identifierSchema.optional(),
   lastSourceChangeSummary: sourceChangeSummarySchema.optional(),
   lastTurnId: identifierSchema.optional(),
   lastTurnUpdatedAt: nonEmptyStringSchema.optional(),
@@ -215,6 +217,14 @@ export const runtimeApprovalInspectionResponseSchema = z.object({
   approval: approvalRecordSchema
 });
 
+export const runtimeSourceChangeCandidateListResponseSchema = z.object({
+  candidates: z.array(sourceChangeCandidateRecordSchema)
+});
+
+export const runtimeSourceChangeCandidateInspectionResponseSchema = z.object({
+  candidate: sourceChangeCandidateRecordSchema
+});
+
 export const runtimeTurnListResponseSchema = z.object({
   turns: z.array(runnerTurnRecordSchema)
 });
@@ -261,6 +271,12 @@ export type RuntimeMemoryPageInspectionResponse = z.infer<
 >;
 export type RuntimeApprovalListResponse = z.infer<typeof runtimeApprovalListResponseSchema>;
 export type RuntimeApprovalInspectionResponse = z.infer<typeof runtimeApprovalInspectionResponseSchema>;
+export type RuntimeSourceChangeCandidateListResponse = z.infer<
+  typeof runtimeSourceChangeCandidateListResponseSchema
+>;
+export type RuntimeSourceChangeCandidateInspectionResponse = z.infer<
+  typeof runtimeSourceChangeCandidateInspectionResponseSchema
+>;
 export type RuntimeTurnListResponse = z.infer<typeof runtimeTurnListResponseSchema>;
 export type RuntimeTurnInspectionResponse = z.infer<
   typeof runtimeTurnInspectionResponseSchema

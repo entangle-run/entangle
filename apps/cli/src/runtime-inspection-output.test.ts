@@ -13,6 +13,7 @@ function createRuntime(): RuntimeInspectionResponse {
       lastPermissionOperation: "command_execution",
       lastPermissionReason:
         "OpenCode one-shot CLI auto-rejected the permission request.",
+      lastSourceChangeCandidateId: "source-change-turn-alpha",
       lastSourceChangeSummary: {
         additions: 4,
         checkedAt: "2026-04-25T08:05:00.000Z",
@@ -92,6 +93,9 @@ describe("runtime inspection CLI summary projection", () => {
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "last source changes 1 file (+4/-0)"
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "last source candidate source-change-turn-alpha"
     );
   });
 });

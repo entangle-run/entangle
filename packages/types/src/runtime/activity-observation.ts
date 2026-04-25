@@ -48,6 +48,7 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   producedArtifactIds: z.array(identifierSchema).default([]),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema.optional(),
+  sourceChangeCandidateIds: z.array(identifierSchema).default([]),
   sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,

@@ -47,6 +47,8 @@ import {
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
+  runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -3087,6 +3089,7 @@ describe("buildHostServer", () => {
         phase: "emitting",
         producedArtifactIds: ["report-turn-001"],
         sessionId: "session-alpha",
+        sourceChangeCandidateIds: [],
         startedAt: "2026-04-24T10:00:00.000Z",
         triggerKind: "message",
         turnId: "turn-alpha",
@@ -3126,6 +3129,111 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(missingTurnResponse.json())).toEqual({
         code: "not_found",
         message: "Turn 'missing-turn' was not found for runtime 'worker-it'."
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and inspects persisted source change candidates through the host surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      const candidateRecord = {
+        candidateId: "source-change-turn-alpha",
+        conversationId: "conv-alpha",
+        createdAt: "2026-04-24T10:05:00.000Z",
+        graphId: "team-alpha",
+        nodeId: "worker-it",
+        sessionId: "session-alpha",
+        snapshot: {
+          baseTree: "base-tree-alpha",
+          headTree: "head-tree-alpha",
+          kind: "shadow_git_tree"
+        },
+        sourceChangeSummary: {
+          additions: 9,
+          checkedAt: "2026-04-24T10:05:00.000Z",
+          deletions: 2,
+          fileCount: 1,
+          files: [
+            {
+              additions: 9,
+              deletions: 2,
+              path: "src/worker.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
+        status: "pending_review",
+        turnId: "turn-alpha",
+        updatedAt: "2026-04-24T10:05:00.000Z"
+      };
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "source-change-candidates",
+          "source-change-turn-alpha.json"
+        ),
+        candidateRecord
+      );
+
+      const candidatesResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-change-candidates"
+      });
+
+      expect(candidatesResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateListResponseSchema.parse(
+          candidatesResponse.json()
+        )
+      ).toEqual({
+        candidates: [candidateRecord]
+      });
+
+      const candidateResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha"
+      });
+
+      expect(candidateResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+          candidateResponse.json()
+        )
+      ).toEqual({
+        candidate: candidateRecord
+      });
+
+      const missingCandidateResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-change-candidates/missing-candidate"
+      });
+
+      expect(missingCandidateResponse.statusCode).toBe(404);
+      expect(hostErrorResponseSchema.parse(missingCandidateResponse.json())).toEqual({
+        code: "not_found",
+        message:
+          "Source change candidate 'missing-candidate' was not found for runtime 'worker-it'."
       });
     } finally {
       await server.close();

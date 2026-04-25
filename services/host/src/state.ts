@@ -114,6 +114,7 @@ import {
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sessionRecordSchema,
+  sourceChangeCandidateRecordSchema,
   runtimeAgentRuntimeInspectionSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
@@ -125,6 +126,8 @@ import {
   runtimeRecoveryRecordSchema,
   runtimeRecoveryControllerRecordSchema,
   runtimeRecoveryPolicyRecordSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
+  runtimeSourceChangeCandidateListResponseSchema,
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
@@ -145,6 +148,8 @@ import {
   type RuntimeMemoryPageInspectionResponse,
   type RuntimeMemoryPageKind,
   type RuntimeMemoryPageSummary,
+  type RuntimeSourceChangeCandidateInspectionResponse,
+  type RuntimeSourceChangeCandidateListResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   runtimeTurnInspectionResponseSchema,
@@ -162,6 +167,7 @@ import {
   type SessionListResponse,
   type SessionRecord,
   type RunnerTurnRecord,
+  type SourceChangeCandidateRecord,
   type RuntimeListResponse,
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryRecord,
@@ -2631,6 +2637,12 @@ async function buildRuntimeAgentRuntimeInspection(
     ...(latestEngineTurn?.sourceChangeSummary
       ? { lastSourceChangeSummary: latestEngineTurn.sourceChangeSummary }
       : {}),
+    ...(latestEngineTurn?.sourceChangeCandidateIds?.[0]
+      ? {
+          lastSourceChangeCandidateId:
+            latestEngineTurn.sourceChangeCandidateIds[0]
+        }
+      : {}),
     ...(latestEngineTurn
       ? {
           lastTurnId: latestEngineTurn.turnId,
@@ -5025,6 +5037,41 @@ export async function getRuntimeApprovalInspection(input: {
     : null;
 }
 
+export async function listRuntimeSourceChangeCandidates(
+  nodeId: string
+): Promise<RuntimeSourceChangeCandidateListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeSourceChangeCandidateListResponseSchema.parse({
+    candidates: await listRuntimeSourceChangeCandidateRecords(
+      context.workspace.runtimeRoot
+    )
+  });
+}
+
+export async function getRuntimeSourceChangeCandidateInspection(input: {
+  candidateId: string;
+  nodeId: string;
+}): Promise<RuntimeSourceChangeCandidateInspectionResponse | null> {
+  const candidates = await listRuntimeSourceChangeCandidates(input.nodeId);
+
+  if (!candidates) {
+    return null;
+  }
+
+  const candidate = candidates.candidates.find(
+    (candidateRecord) => candidateRecord.candidateId === input.candidateId
+  );
+
+  return candidate
+    ? runtimeSourceChangeCandidateInspectionResponseSchema.parse({ candidate })
+    : null;
+}
+
 export async function listRuntimeTurns(
   nodeId: string
 ): Promise<RuntimeTurnListResponse | null> {
@@ -5179,6 +5226,28 @@ async function listRuntimeTurnRecords(
   );
 }
 
+async function listRuntimeSourceChangeCandidateRecords(
+  runtimeRoot: string
+): Promise<SourceChangeCandidateRecord[]> {
+  const candidatesRoot = path.join(runtimeRoot, "source-change-candidates");
+
+  if (!(await pathExists(candidatesRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(candidatesRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sourceChangeCandidateRecordSchema.parse(
+        await readJsonFile(path.join(candidatesRoot, fileName))
+      )
+    )
+  );
+}
+
 async function listRuntimeArtifactRecords(
   runtimeRoot: string
 ): Promise<ArtifactRecord[]> {
@@ -5312,6 +5381,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     producedArtifactIds: turnRecord.producedArtifactIds,
     schemaVersion: "1",
     sessionId: turnRecord.sessionId,
+    sourceChangeCandidateIds: turnRecord.sourceChangeCandidateIds,
     ...(turnRecord.sourceChangeSummary
       ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
       : {}),
@@ -5349,6 +5419,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     phase: turnRecord.phase,
     producedArtifactIds: turnRecord.producedArtifactIds,
     sessionId: turnRecord.sessionId,
+    sourceChangeCandidateIds: turnRecord.sourceChangeCandidateIds,
     ...(turnRecord.sourceChangeSummary
       ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
       : {}),

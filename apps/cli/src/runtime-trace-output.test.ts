@@ -36,6 +36,7 @@ describe("projectRuntimeTraceSummary", () => {
       producedArtifactIds: ["artifact-report-001"],
       schemaVersion: "1",
       sessionId: "session-alpha",
+      sourceChangeCandidateIds: [],
       startedAt: "2026-04-24T11:00:02.000Z",
       timestamp: "2026-04-24T11:00:03.000Z",
       triggerKind: "message",

@@ -88,6 +88,11 @@ import {
   projectRuntimeMemorySummary
 } from "./runtime-memory-command.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
+import {
+  filterRuntimeSourceChangeCandidatesForCli,
+  projectRuntimeSourceChangeCandidateSummary,
+  sortRuntimeSourceChangeCandidatesForCli
+} from "./runtime-source-change-candidate-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
@@ -1514,6 +1519,74 @@ hostRuntimesCommand
         approvals: options.summary
           ? approvals.map(projectRuntimeApprovalSummary)
           : approvals
+      });
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-candidate")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<candidateId>", "Source change candidate identifier to inspect.")
+  .option("--summary", "Print a compact operator-oriented candidate summary.")
+  .description("Inspect one persisted source change candidate.")
+  .action(
+    async (
+      nodeId: string,
+      candidateId: string,
+      options: { summary?: boolean },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.getRuntimeSourceChangeCandidate(
+        nodeId,
+        candidateId
+      );
+      printJson(
+        options.summary
+          ? {
+              candidate: projectRuntimeSourceChangeCandidateSummary(
+                response.candidate
+              )
+            }
+          : response
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-candidates")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--status <status>", "Filter candidates by review status.")
+  .option("--session-id <sessionId>", "Filter candidates by session id.")
+  .option("--turn-id <turnId>", "Filter candidates by turn id.")
+  .option("--summary", "Print compact operator-oriented candidate summaries.")
+  .description("Inspect persisted source change candidates for one runtime.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        sessionId?: string;
+        status?: "accepted" | "pending_review" | "rejected" | "superseded";
+        summary?: boolean;
+        turnId?: string;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.listRuntimeSourceChangeCandidates(nodeId);
+      const candidates = filterRuntimeSourceChangeCandidatesForCli(
+        sortRuntimeSourceChangeCandidatesForCli(response.candidates),
+        {
+          ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+          ...(options.status ? { status: options.status } : {}),
+          ...(options.turnId ? { turnId: options.turnId } : {})
+        }
+      );
+
+      printJson({
+        candidates: options.summary
+          ? candidates.map(projectRuntimeSourceChangeCandidateSummary)
+          : candidates
       });
     }
   );

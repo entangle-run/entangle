@@ -59,6 +59,7 @@ function createTurn(
     phase: "emitting",
     producedArtifactIds: ["artifact-report"],
     sessionId: "session-alpha",
+    sourceChangeCandidateIds: ["source-change-turn-alpha"],
     sourceChangeSummary: {
       additions: 2,
       checkedAt: "2026-04-24T11:00:00.000Z",
@@ -108,6 +109,7 @@ describe("studio runtime turn inspection helpers", () => {
     expect(formatRuntimeTurnDetailLines(turn)).toEqual(
       expect.arrayContaining([
         "handoff messages none",
+        "source change candidates source-change-turn-alpha",
         "source changes 1 file (+2/-0)",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",

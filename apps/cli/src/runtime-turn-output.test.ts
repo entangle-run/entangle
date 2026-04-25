@@ -35,6 +35,7 @@ describe("runtime turn CLI output", () => {
       phase: "persisting",
       producedArtifactIds: ["artifact-report"],
       sessionId: "session-alpha",
+      sourceChangeCandidateIds: ["source-change-turn-alpha"],
       sourceChangeSummary: {
         additions: 3,
         checkedAt: "2026-04-24T10:01:00.000Z",
@@ -70,6 +71,7 @@ describe("runtime turn CLI output", () => {
     expect(summary.detailLines).toEqual(
       expect.arrayContaining([
         "handoff messages none",
+        "source change candidates source-change-turn-alpha",
         "source changes 1 file (+3/-1)",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "tool error #1 inspect_memory_ref: tool_result_error - Tool 'inspect_memory_ref' returned an error result."

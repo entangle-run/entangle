@@ -72,6 +72,7 @@ function createTurn(
     phase: "emitting",
     producedArtifactIds: ["artifact-report"],
     sessionId: "session-alpha",
+    sourceChangeCandidateIds: ["source-change-turn-alpha"],
     sourceChangeSummary: {
       additions: 8,
       checkedAt: "2026-04-24T11:00:00.000Z",
@@ -125,6 +126,7 @@ describe("runtime turn presentation helpers", () => {
     expect(formatRuntimeTurnDetailLines(turn)).toEqual(
       expect.arrayContaining([
         "handoff messages aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source change candidates source-change-turn-alpha",
         "source changes 2 files (+8/-2)",
         "source file modified src/worker.ts (+6/-1)",
         "source file added tests/worker.test.ts (+2/-1)",

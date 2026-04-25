@@ -35,7 +35,8 @@ describe("source change harvester", () => {
       "utf8"
     );
 
-    const summary = await harvestSourceChanges(fixture.context, baseline);
+    const result = await harvestSourceChanges(fixture.context, baseline);
+    const { summary } = result;
 
     expect(summary).toMatchObject({
       additions: 1,
@@ -52,6 +53,9 @@ describe("source change harvester", () => {
       }
     ]);
     expect(summary.diffExcerpt).toContain("export const generated = true;");
+    expect(result.snapshot).toMatchObject({
+      kind: "shadow_git_tree"
+    });
     await expect(pathExists(path.join(sourceRoot, ".git"))).resolves.toBe(false);
     await expect(
       pathExists(path.join(fixture.context.workspace.runtimeRoot, "source-snapshot.git"))
@@ -61,11 +65,12 @@ describe("source change harvester", () => {
   it("reports unchanged when the source tree is stable across the turn", async () => {
     const fixture = await createRuntimeFixture();
     const baseline = await prepareSourceChangeHarvest(fixture.context);
-    const summary = await harvestSourceChanges(fixture.context, baseline);
+    const result = await harvestSourceChanges(fixture.context, baseline);
 
-    expect(summary).toMatchObject({
+    expect(result.summary).toMatchObject({
       fileCount: 0,
       status: "unchanged"
     });
+    expect(result.snapshot).toBeUndefined();
   });
 });

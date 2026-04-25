@@ -50,6 +50,8 @@ The latest implementation state includes:
 - runner-owned source workspace change harvesting with bounded changed-file
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
+- durable pending source-change candidate records for changed node turns, with
+  read-only host, host-client, CLI, and Studio inspection surfaces;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -59,12 +61,13 @@ It can execute a primary node turn, persist the engine session id and probed
 engine version, fail early when its workspace/state roots are unavailable,
 terminate overlong OpenCode probe/run processes with classified failure
 evidence, and report OpenCode one-shot permission auto-rejections as generic
- `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
+`policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
-policy bridge, resumable permission approval mapping, commit-candidate and
-artifact history/diff workflow, git/wiki workflow, external cancellation
-bridge, doctor-backed workspace health checks, and full CLI/Studio
-configuration and observability surface required for L3 acceptance.
+policy bridge, resumable permission approval mapping, candidate
+acceptance/publication workflow, artifact history/diff workflow, git/wiki
+workflow, external cancellation bridge, doctor-backed workspace health checks,
+and full CLI/Studio configuration and observability surface required for L3
+acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -413,8 +416,8 @@ Current partial implementation:
   run process, sends `SIGTERM` on timeout, and records classified
   `provider_unavailable` evidence;
 - this does not yet complete external cancellation, permission mapping, full
-  degraded-runtime status DTOs, attached server lifecycle, or commit-candidate
-  and artifact publication/history workflow.
+  degraded-runtime status DTOs, attached server lifecycle, or source-change
+  candidate acceptance and artifact publication/history workflow.
 
 Acceptance:
 
@@ -515,7 +518,7 @@ Acceptance:
 Tasks:
 
 - Detect source workspace changes after engine turns.
-- Capture git diff summaries, changed files, and commit candidates.
+- Capture git diff summaries, changed files, and source-change candidates.
 - Decide when runner auto-commits versus creates an approval request.
 - Materialize report artifacts from engine output and workspace state.
 - Link produced artifacts to turns, sessions, messages, and git refs.
@@ -544,8 +547,16 @@ Current partial implementation:
   inspection now carry the latest source-change summary;
 - shared host-client helpers, CLI output, and Studio runtime details now expose
   the same source-change summary;
-- commit-candidate records, approval flow, source-history/diff APIs,
-  artifact publication, and remote git workflow remain open.
+- changed source turns now create durable pending source-change candidate
+  records with optional shadow-git tree snapshot references;
+- runner turn records, host observed activity, and `runner.turn.updated` events
+  carry `sourceChangeCandidateIds`;
+- host runtime inspection exposes the latest candidate id, and read-only
+  source-change candidate list/detail APIs are consumed by shared host-client
+  helpers, CLI commands, and Studio selected-runtime details;
+- candidate acceptance/rejection/supersession, approval flow,
+  source-history/diff APIs, artifact publication, and remote git workflow
+  remain open.
 
 Acceptance:
 
@@ -620,9 +631,11 @@ Current partial implementation:
   engine version/session when host runtime inspection reports them;
 - CLI and Studio now also show the latest runner-owned source workspace change
   summary when host runtime inspection or runtime-turn records report it;
+- CLI and Studio now inspect pending source-change candidates through the same
+  host-backed read model used by the host client;
 - graph/node editing support for agent-runtime selection, OpenCode availability
-  probing, approval blockers, produced artifacts, source diff/history views,
-  and recent engine-event panels remain open.
+  probing, approval blockers, candidate mutation, produced artifacts, source
+  diff/history views, and recent engine-event panels remain open.
 
 Acceptance:
 

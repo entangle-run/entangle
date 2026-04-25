@@ -54,6 +54,7 @@ describe("studio runtime trace inspection helpers", () => {
         phase: "emitting",
         producedArtifactIds: ["artifact-report"],
         schemaVersion: "1",
+        sourceChangeCandidateIds: [],
         startedAt: "2026-04-24T11:00:02.000Z",
         timestamp: "2026-04-24T11:00:03.000Z",
         triggerKind: "message",
@@ -159,6 +160,7 @@ describe("studio runtime trace inspection helpers", () => {
       producedArtifactIds: ["artifact-report"],
       schemaVersion: "1",
       sessionId: "session-alpha",
+      sourceChangeCandidateIds: ["source-change-turn-alpha"],
       startedAt: "2026-04-24T11:00:02.000Z",
       timestamp: "2026-04-24T11:00:03.000Z",
       triggerKind: "message",
@@ -173,7 +175,8 @@ describe("studio runtime trace inspection helpers", () => {
       "Usage: 42 input / 12 output tokens",
       "Tool executions: 2 total (1 success, 1 error)",
       "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_execution_failed)",
-      "Memory synthesis: updated 6 summary pages"
+      "Memory synthesis: updated 6 summary pages",
+      "Source change candidates: source-change-turn-alpha"
     ]);
   });
 

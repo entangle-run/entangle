@@ -54,6 +54,7 @@ import {
   writeArtifactRecord,
   writeConversationRecord,
   writeRunnerTurnRecord,
+  writeSourceChangeCandidateRecord,
   writeSessionRecord
 } from "./state-store.js";
 import {
@@ -70,6 +71,7 @@ import {
   harvestSourceChanges,
   prepareSourceChangeHarvest
 } from "./source-change-harvester.js";
+import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -1768,6 +1770,7 @@ export class RunnerService {
       phase: "receiving",
       producedArtifactIds: [],
       sessionId: envelope.message.sessionId,
+      sourceChangeCandidateIds: [],
       startedAt: envelope.receivedAt,
       triggerKind: "message",
       turnId: buildSyntheticTurnId("turn"),
@@ -1860,28 +1863,48 @@ export class RunnerService {
         result = parseEngineTurnResult(await this.engine.executeTurn(turnRequest));
         handoffPlans = resolveHandoffPlans(this.context, result.handoffDirectives);
       } catch (error) {
-        const sourceChangeSummary = await harvestSourceChanges(
+        const sourceChangeHarvestResult = await harvestSourceChanges(
           this.context,
           sourceChangeBaseline
         );
+        const sourceChangeCandidate = buildSourceChangeCandidateRecord({
+          harvestResult: sourceChangeHarvestResult,
+          turnRecord
+        });
+        if (sourceChangeCandidate) {
+          await writeSourceChangeCandidateRecord(statePaths, sourceChangeCandidate);
+        }
         turnRecord = {
           ...turnRecord,
           engineOutcome: buildFailedEngineTurnOutcome(this.context, error),
-          sourceChangeSummary,
+          ...(sourceChangeCandidate
+            ? { sourceChangeCandidateIds: [sourceChangeCandidate.candidateId] }
+            : {}),
+          sourceChangeSummary: sourceChangeHarvestResult.summary,
           updatedAt: nowIsoString()
         };
         await writeRunnerTurnRecord(statePaths, turnRecord);
         throw error;
       }
 
-      const sourceChangeSummary = await harvestSourceChanges(
+      const sourceChangeHarvestResult = await harvestSourceChanges(
         this.context,
         sourceChangeBaseline
       );
+      const sourceChangeCandidate = buildSourceChangeCandidateRecord({
+        harvestResult: sourceChangeHarvestResult,
+        turnRecord
+      });
+      if (sourceChangeCandidate) {
+        await writeSourceChangeCandidateRecord(statePaths, sourceChangeCandidate);
+      }
       turnRecord = {
         ...turnRecord,
         engineOutcome: buildEngineTurnOutcome(result, this.context),
-        sourceChangeSummary,
+        ...(sourceChangeCandidate
+          ? { sourceChangeCandidateIds: [sourceChangeCandidate.candidateId] }
+          : {}),
+        sourceChangeSummary: sourceChangeHarvestResult.summary,
         updatedAt: nowIsoString()
       };
       await writeRunnerTurnRecord(statePaths, turnRecord);

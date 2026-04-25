@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source change candidate inspection
+
+Advanced Entangle Local L3 workstream B5. Changed source workspace turns now
+create durable pending `SourceChangeCandidateRecord` entries with the harvested
+source-change summary and optional shadow-git tree snapshot references. Runner
+turns, observed activity, and `runner.turn.updated` events now carry
+`sourceChangeCandidateIds`, and runtime inspection exposes the latest candidate
+id through the generic `agentRuntime` status.
+
+The host now serves read-only source-change candidate list/detail routes, the
+shared host client owns sorting/filtering/formatting helpers, the CLI can list
+and inspect candidates, and Studio refreshes and displays candidate detail for
+the selected runtime. Added
+`references/197-source-change-candidates-slice.md`. Candidate
+acceptance/rejection, policy approval, source diff/history APIs, git commit
+publication, and artifact linkage remain open B5 work.
+
 ## [2026-04-25] implementation | Added source workspace change harvesting
 
 Advanced Entangle Local L3 workstream B5. Runner turns now record a generic
@@ -14,9 +31,10 @@ The implementation uses runner-owned shadow git state at
 `source/` workspace. Host observed turn activity, `runner.turn.updated` events,
 runtime inspection, shared host-client presentation, CLI output, and Studio
 details now expose the same source-change summary. Added
-`references/196-source-workspace-change-harvesting-slice.md`. Commit
-candidates, approval/policy flow, artifact history/diff APIs, and publication
-remain open B5 work.
+`references/196-source-workspace-change-harvesting-slice.md`. A later slice
+added pending source-change candidate records and read-only inspection;
+candidate acceptance/rejection, approval/policy flow, artifact history/diff
+APIs, and publication remain open B5 work.
 
 ## [2026-04-25] implementation | Added node workspace health inspection
 

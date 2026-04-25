@@ -39,6 +39,8 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
+  runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -84,6 +86,8 @@ import {
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
+  type RuntimeSourceChangeCandidateInspectionResponse,
+  type RuntimeSourceChangeCandidateListResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type SessionInspectionResponse,
@@ -705,6 +709,29 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async listRuntimeSourceChangeCandidates(
+      nodeId: string
+    ): Promise<RuntimeSourceChangeCandidateListResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates`
+        ),
+        runtimeSourceChangeCandidateListResponseSchema
+      );
+    },
+
+    async getRuntimeSourceChangeCandidate(
+      nodeId: string,
+      candidateId: string
+    ): Promise<RuntimeSourceChangeCandidateInspectionResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}`
+        ),
+        runtimeSourceChangeCandidateInspectionResponseSchema
+      );
+    },
+
     async getRuntimeRecovery(
       nodeId: string,
       limit = 50
@@ -953,3 +980,11 @@ export {
   formatRuntimeTurnStatus,
   sortRuntimeTurnsForPresentation
 } from "./runtime-turn.js";
+export {
+  filterRuntimeSourceChangeCandidatesForPresentation,
+  formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateLabel,
+  formatRuntimeSourceChangeCandidateStatus,
+  sortRuntimeSourceChangeCandidatesForPresentation,
+  type RuntimeSourceChangeCandidateFilter
+} from "./runtime-source-change-candidate.js";

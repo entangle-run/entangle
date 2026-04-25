@@ -253,6 +253,7 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   phase: runnerPhaseSchema,
   producedArtifactIds: z.array(identifierSchema),
   sessionId: identifierSchema.optional(),
+  sourceChangeCandidateIds: z.array(identifierSchema).default([]),
   sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,

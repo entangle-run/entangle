@@ -89,6 +89,7 @@ export function formatRuntimeTurnDetailLines(
     `consumed artifacts ${formatIdList(turn.consumedArtifactIds)}`,
     `produced artifacts ${formatIdList(turn.producedArtifactIds)}`,
     `handoff messages ${formatIdList(handoffMessageIds)}`,
+    `source change candidates ${formatIdList(turn.sourceChangeCandidateIds)}`,
     `source changes ${formatSourceChangeSummary(turn.sourceChangeSummary)}`
   );
 

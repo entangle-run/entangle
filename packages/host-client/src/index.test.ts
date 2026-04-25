@@ -1488,6 +1488,79 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses source change candidate list and inspection responses from the host surface", async () => {
+    const requests: string[] = [];
+    const candidate = {
+      candidateId: "source-change-turn-alpha",
+      createdAt: "2026-04-24T00:01:00.000Z",
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      sourceChangeSummary: {
+        additions: 2,
+        checkedAt: "2026-04-24T00:01:00.000Z",
+        deletions: 1,
+        fileCount: 1,
+        files: [
+          {
+            additions: 2,
+            deletions: 1,
+            path: "src/index.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed",
+        truncated: false
+      },
+      status: "pending_review",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(
+              url.endsWith("/source-change-turn-alpha")
+                ? { candidate }
+                : { candidates: [candidate] }
+            ),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.listRuntimeSourceChangeCandidates("worker-it")
+    ).resolves.toMatchObject({
+      candidates: [
+        {
+          candidateId: "source-change-turn-alpha",
+          status: "pending_review"
+        }
+      ]
+    });
+    await expect(
+      client.getRuntimeSourceChangeCandidate(
+        "worker-it",
+        "source-change-turn-alpha"
+      )
+    ).resolves.toMatchObject({
+      candidate: {
+        candidateId: "source-change-turn-alpha",
+        status: "pending_review"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates",
+      "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha"
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

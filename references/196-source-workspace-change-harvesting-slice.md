@@ -108,14 +108,15 @@ This slice intentionally does not:
 - expose raw workspace paths in protocol-facing locators;
 - rely on OpenCode private database, snapshot, or TUI state as Entangle truth.
 
-Source changes are evidence and future commit candidates. They are not yet
-published artifacts.
+Source changes are evidence and future source-change candidates. They are not
+yet accepted, committed, or published artifacts.
 
 ## Remaining B5 Work
 
 The remaining B5 implementation should add:
 
-- commit-candidate records and approval/policy flow;
+- source-change candidate acceptance/rejection/supersession and
+  approval/policy flow;
 - runner-owned acceptance of source changes into node git history;
 - source diff artifact records where appropriate;
 - artifact history/diff host APIs;
@@ -123,7 +124,8 @@ The remaining B5 implementation should add:
 - CLI and Studio diff/history views;
 - publication rules tied to the node git principal and policy;
 - end-to-end OpenCode-backed smoke coverage proving workspace modification,
-  commit candidate creation, artifact publication, and downstream inspection.
+  source-change candidate creation, artifact publication, and downstream
+  inspection.
 
 ## Verification
 

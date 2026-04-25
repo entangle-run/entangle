@@ -45,6 +45,8 @@ import {
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
+  runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   resolveEffectiveAgentRuntime,
@@ -83,6 +85,7 @@ describe("runtime inspection host API contracts", () => {
         lastPermissionOperation: "command_execution",
         lastPermissionReason:
           "OpenCode one-shot CLI auto-rejected the permission request.",
+        lastSourceChangeCandidateId: "source-change-turn-alpha",
         lastSourceChangeSummary: {
           additions: 4,
           checkedAt: "2026-04-25T08:05:00.000Z",
@@ -295,6 +298,46 @@ describe("runtime turn host API contracts", () => {
     expect(runtimeTurnInspectionResponseSchema.parse({ turn }).turn.turnId).toBe(
       "turn-alpha"
     );
+  });
+});
+
+describe("source change candidate host API contracts", () => {
+  it("accepts source change candidate list and inspection responses", () => {
+    const candidate = {
+      candidateId: "source-change-turn-alpha",
+      createdAt: "2026-04-24T00:01:00.000Z",
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      sourceChangeSummary: {
+        additions: 2,
+        checkedAt: "2026-04-24T00:01:00.000Z",
+        deletions: 1,
+        fileCount: 1,
+        files: [
+          {
+            additions: 2,
+            deletions: 1,
+            path: "src/index.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed"
+      },
+      status: "pending_review",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+
+    expect(
+      runtimeSourceChangeCandidateListResponseSchema.parse({
+        candidates: [candidate]
+      }).candidates
+    ).toHaveLength(1);
+    expect(
+      runtimeSourceChangeCandidateInspectionResponseSchema.parse({
+        candidate
+      }).candidate.status
+    ).toBe("pending_review");
   });
 });
 
@@ -975,6 +1018,7 @@ describe("host event contracts", () => {
       producedArtifactIds: ["artifact-report-001"],
       schemaVersion: "1",
       sessionId: "session-alpha",
+      sourceChangeCandidateIds: ["source-change-turn-alpha"],
       sourceChangeSummary: {
         additions: 9,
         checkedAt: "2026-04-24T00:00:01.000Z",
@@ -1023,6 +1067,9 @@ describe("host event contracts", () => {
       6
     );
     expect(runnerTurnEvent.sourceChangeSummary?.fileCount).toBe(1);
+    expect(runnerTurnEvent.sourceChangeCandidateIds).toEqual([
+      "source-change-turn-alpha"
+    ]);
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

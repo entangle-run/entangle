@@ -18,6 +18,7 @@ import {
   listArtifactRecords,
   listApprovalRecords,
   listRunnerTurnRecords,
+  listSourceChangeCandidateRecords,
   readApprovalRecord,
   readConversationRecord,
   readRunnerTurnRecord,
@@ -182,6 +183,27 @@ describe("RunnerService", () => {
     expect(turn?.sourceChangeSummary?.diffExcerpt).toContain(
       "export const generated = true;"
     );
+    const candidateId = turn ? `source-change-${turn.turnId}` : undefined;
+    expect(turn?.sourceChangeCandidateIds).toEqual([candidateId]);
+
+    const [candidate] = await listSourceChangeCandidateRecords(statePaths);
+    expect(candidate).toMatchObject({
+      candidateId,
+      conversationId: "source-change-conv",
+      graphId: "graph-alpha",
+      nodeId: "worker-it",
+      sessionId: "source-change-session",
+      status: "pending_review",
+      turnId: turn?.turnId
+    });
+    expect(candidate?.sourceChangeSummary).toMatchObject({
+      additions: 1,
+      fileCount: 1,
+      status: "changed"
+    });
+    expect(candidate?.snapshot).toMatchObject({
+      kind: "shadow_git_tree"
+    });
   });
 
   it("hands off a published git artifact from one node to a downstream node", async () => {

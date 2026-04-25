@@ -48,6 +48,8 @@ import {
   runtimeRecoveryListQuerySchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
+  runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -72,10 +74,12 @@ import {
   getRuntimeInspection,
   getRuntimeApprovalInspection,
   getRuntimeRecoveryInspection,
+  getRuntimeSourceChangeCandidateInspection,
   getRuntimeTurnInspection,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
   listRuntimeApprovals,
+  listRuntimeSourceChangeCandidates,
   listRuntimeTurns,
   listHostEvents,
   getCatalogInspection,
@@ -1285,6 +1289,99 @@ export async function buildHostServer() {
       }
 
       return runtimeApprovalInspectionResponseSchema.parse(approvalInspection);
+    }
+  );
+
+  server.get(
+    "/v1/runtimes/:nodeId/source-change-candidates",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const candidates = await listRuntimeSourceChangeCandidates(params.nodeId);
+
+      if (!candidates) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      return runtimeSourceChangeCandidateListResponseSchema.parse(candidates);
+    }
+  );
+
+  server.get(
+    "/v1/runtimes/:nodeId/source-change-candidates/:candidateId",
+    async (request, reply) => {
+      const params = request.params as { candidateId: string; nodeId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const candidateInspection =
+        await getRuntimeSourceChangeCandidateInspection({
+          candidateId: params.candidateId,
+          nodeId: params.nodeId
+        });
+
+      if (!candidateInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source change candidate '${params.candidateId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+        candidateInspection
+      );
     }
   );
 

@@ -5,6 +5,7 @@ import {
   sourceChangeSummarySchema,
   type EffectiveRuntimeContext,
   type SourceChangeFileStatus,
+  type SourceChangeSnapshotRef,
   type SourceChangeSummary
 } from "@entangle/types";
 
@@ -24,6 +25,11 @@ type GitCommandOptions = {
   env?: NodeJS.ProcessEnv | undefined;
   gitDir?: string | undefined;
   workTree?: string | undefined;
+};
+
+export type SourceChangeHarvestResult = {
+  snapshot?: SourceChangeSnapshotRef | undefined;
+  summary: SourceChangeSummary;
 };
 
 const maxSourceChangeFiles = 20;
@@ -329,9 +335,11 @@ export async function prepareSourceChangeHarvest(
 export async function harvestSourceChanges(
   context: EffectiveRuntimeContext,
   baseline: SourceChangeHarvestBaseline
-): Promise<SourceChangeSummary> {
+): Promise<SourceChangeHarvestResult> {
   if (baseline.kind === "unavailable") {
-    return baseline.summary;
+    return {
+      summary: baseline.summary
+    };
   }
 
   try {
@@ -341,12 +349,14 @@ export async function harvestSourceChanges(
     });
 
     if (baseline.baseTree === nextTree) {
-      return sourceChangeSummarySchema.parse({
-        checkedAt: nowIsoString(),
-        fileCount: 0,
-        files: [],
-        status: "unchanged"
-      });
+      return {
+        summary: sourceChangeSummarySchema.parse({
+          checkedAt: nowIsoString(),
+          fileCount: 0,
+          files: [],
+          status: "unchanged"
+        })
+      };
     }
 
     const [nameStatusOutput, numstatOutput, diffOutput] = await Promise.all([
@@ -405,20 +415,29 @@ export async function harvestSourceChanges(
     const truncated =
       allFiles.length > files.length || diffExcerpt.truncated;
 
-    return sourceChangeSummarySchema.parse({
-      additions: totals.additions,
-      checkedAt: nowIsoString(),
-      deletions: totals.deletions,
-      ...(diffExcerpt.text ? { diffExcerpt: diffExcerpt.text } : {}),
-      fileCount: allFiles.length,
-      files,
-      status: "changed",
-      truncated
-    });
+    return {
+      snapshot: {
+        baseTree: baseline.baseTree,
+        headTree: nextTree,
+        kind: "shadow_git_tree"
+      },
+      summary: sourceChangeSummarySchema.parse({
+        additions: totals.additions,
+        checkedAt: nowIsoString(),
+        deletions: totals.deletions,
+        ...(diffExcerpt.text ? { diffExcerpt: diffExcerpt.text } : {}),
+        fileCount: allFiles.length,
+        files,
+        status: "changed",
+        truncated
+      })
+    };
   } catch (error) {
-    return buildUnavailableSummary(
-      "failed",
-      sanitizeFailureReason(context, error, [baseline.gitDir])
-    );
+    return {
+      summary: buildUnavailableSummary(
+        "failed",
+        sanitizeFailureReason(context, error, [baseline.gitDir])
+      )
+    };
   }
 }

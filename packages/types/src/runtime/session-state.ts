@@ -108,6 +108,33 @@ export const sourceChangeSummarySchema = z.object({
   truncated: z.boolean().default(false)
 });
 
+export const sourceChangeCandidateStatusSchema = z.enum([
+  "pending_review",
+  "accepted",
+  "rejected",
+  "superseded"
+]);
+
+export const sourceChangeSnapshotRefSchema = z.object({
+  baseTree: nonEmptyStringSchema,
+  headTree: nonEmptyStringSchema,
+  kind: z.literal("shadow_git_tree")
+});
+
+export const sourceChangeCandidateRecordSchema = z.object({
+  candidateId: identifierSchema,
+  conversationId: identifierSchema.optional(),
+  createdAt: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  sessionId: identifierSchema.optional(),
+  snapshot: sourceChangeSnapshotRefSchema.optional(),
+  sourceChangeSummary: sourceChangeSummarySchema,
+  status: sourceChangeCandidateStatusSchema,
+  turnId: identifierSchema,
+  updatedAt: nonEmptyStringSchema
+});
+
 export const sessionRecordSchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
   entrypointNodeId: identifierSchema.optional(),
@@ -171,6 +198,7 @@ export const runnerTurnRecordSchema = z.object({
   phase: runnerPhaseSchema,
   producedArtifactIds: z.array(identifierSchema).default([]),
   sessionId: identifierSchema.optional(),
+  sourceChangeCandidateIds: z.array(identifierSchema).default([]),
   sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,
@@ -273,6 +301,15 @@ export type SourceChangeFileSummary = z.infer<
   typeof sourceChangeFileSummarySchema
 >;
 export type SourceChangeSummary = z.infer<typeof sourceChangeSummarySchema>;
+export type SourceChangeCandidateStatus = z.infer<
+  typeof sourceChangeCandidateStatusSchema
+>;
+export type SourceChangeSnapshotRef = z.infer<
+  typeof sourceChangeSnapshotRefSchema
+>;
+export type SourceChangeCandidateRecord = z.infer<
+  typeof sourceChangeCandidateRecordSchema
+>;
 export type SessionRecord = z.infer<typeof sessionRecordSchema>;
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ApprovalRecord = z.infer<typeof approvalRecordSchema>;

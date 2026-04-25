@@ -25,6 +25,7 @@ function createRuntime(
       lastPermissionOperation: "command_execution",
       lastPermissionReason:
         "OpenCode one-shot CLI auto-rejected the permission request.",
+      lastSourceChangeCandidateId: "source-change-turn-alpha",
       lastSourceChangeSummary: {
         additions: 5,
         checkedAt: "2026-04-25T08:05:00.000Z",
@@ -138,6 +139,9 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last source changes 1 file (+5/-1)"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "last source candidate source-change-turn-alpha"
     );
     expect(formatRuntimeWorkspaceHealthSummary(runtime)).toBe(
       "ready · 2 surfaces"

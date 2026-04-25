@@ -128,6 +128,12 @@ function buildRunnerTurnDetailLines(
     );
   }
 
+  if (event.sourceChangeCandidateIds.length > 0) {
+    detailLines.push(
+      `Source change candidates: ${event.sourceChangeCandidateIds.join(", ")}`
+    );
+  }
+
   return detailLines;
 }
 

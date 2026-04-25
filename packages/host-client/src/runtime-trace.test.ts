@@ -19,6 +19,7 @@ describe("runtime trace helpers", () => {
         phase: "persisting",
         producedArtifactIds: [],
         schemaVersion: "1",
+        sourceChangeCandidateIds: [],
         startedAt: "2026-04-24T11:00:03.000Z",
         timestamp: "2026-04-24T11:00:03.000Z",
         triggerKind: "message",
@@ -169,6 +170,7 @@ describe("runtime trace helpers", () => {
       phase: "emitting",
       producedArtifactIds: [],
       schemaVersion: "1",
+      sourceChangeCandidateIds: ["source-change-turn-alpha"],
       sourceChangeSummary: {
         additions: 7,
         checkedAt: "2026-04-24T11:00:04.000Z",
@@ -197,7 +199,8 @@ describe("runtime trace helpers", () => {
         "Tool executions: 2 total (1 success, 1 error)",
         "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error) - Tool 'inspect_memory_ref' returned an error result.",
         "Memory synthesis: updated 6 summary pages",
-        "Source changes: 2 files (+7/-3)"
+        "Source changes: 2 files (+7/-3)",
+        "Source change candidates: source-change-turn-alpha"
       ],
       label: "Turn turn-alpha is emitting"
     });
@@ -232,6 +235,7 @@ describe("runtime trace helpers", () => {
       phase: "errored",
       producedArtifactIds: [],
       schemaVersion: "1",
+      sourceChangeCandidateIds: [],
       startedAt: "2026-04-24T11:00:03.000Z",
       timestamp: "2026-04-24T11:00:04.000Z",
       triggerKind: "message",

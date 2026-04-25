@@ -44,9 +44,11 @@ import type {
   RuntimeMemoryInspectionResponse,
   RuntimeMemoryPageInspectionResponse,
   RuntimeRecoveryInspectionResponse,
+  RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
-  SessionLaunchResponse
+  SessionLaunchResponse,
+  SourceChangeCandidateRecord
 } from "@entangle/types";
 import {
   buildEdgeCreateRequest,
@@ -153,6 +155,12 @@ import {
   formatRuntimeTurnStatus,
   sortRuntimeTurns
 } from "./runtime-turn-inspection.js";
+import {
+  formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateLabel,
+  formatRuntimeSourceChangeCandidateStatus,
+  sortRuntimeSourceChangeCandidates
+} from "./runtime-source-change-candidate-inspection.js";
 import {
   buildSessionLaunchRequest,
   createDefaultSessionLaunchDraft,
@@ -453,6 +461,18 @@ export function App() {
   const [selectedTurnInspection, setSelectedTurnInspection] =
     useState<RuntimeTurnInspectionResponse | null>(null);
   const [turnDetailError, setTurnDetailError] = useState<string | null>(null);
+  const [selectedSourceChangeCandidates, setSelectedSourceChangeCandidates] =
+    useState<SourceChangeCandidateRecord[]>([]);
+  const [sourceChangeCandidateError, setSourceChangeCandidateError] =
+    useState<string | null>(null);
+  const [selectedSourceChangeCandidateId, setSelectedSourceChangeCandidateId] =
+    useState<string | null>(null);
+  const [
+    selectedSourceChangeCandidateInspection,
+    setSelectedSourceChangeCandidateInspection
+  ] = useState<RuntimeSourceChangeCandidateInspectionResponse | null>(null);
+  const [sourceChangeCandidateDetailError, setSourceChangeCandidateDetailError] =
+    useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -480,6 +500,7 @@ export function App() {
   const selectedArtifactIdRef = useRef<string | null>(null);
   const selectedMemoryPagePathRef = useRef<string | null>(null);
   const selectedTurnIdRef = useRef<string | null>(null);
+  const selectedSourceChangeCandidateIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
   const recoveryPolicySeedRef = useRef<string | null>(null);
   const sessionLaunchDraftSeedRef = useRef<string | null>(null);
@@ -490,6 +511,7 @@ export function App() {
   selectedArtifactIdRef.current = selectedArtifactId;
   selectedMemoryPagePathRef.current = selectedMemoryPagePath;
   selectedTurnIdRef.current = selectedTurnId;
+  selectedSourceChangeCandidateIdRef.current = selectedSourceChangeCandidateId;
   selectedSessionIdRef.current = selectedSessionId;
 
   const loadOverview = useCallback(async () => {
@@ -840,6 +862,47 @@ export function App() {
     [client]
   );
 
+  const loadSelectedSourceChangeCandidateInspection = useCallback(
+    async (nodeId: string, candidateId: string) => {
+      try {
+        const inspection = await client.getRuntimeSourceChangeCandidate(
+          nodeId,
+          candidateId
+        );
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedSourceChangeCandidateIdRef.current !== candidateId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedSourceChangeCandidateInspection(inspection);
+          setSourceChangeCandidateDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedSourceChangeCandidateIdRef.current !== candidateId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedSourceChangeCandidateInspection(null);
+          setSourceChangeCandidateDetailError(
+            normalizeError(
+              caught,
+              "Unknown error while loading source change candidate detail."
+            )
+          );
+        });
+      }
+    },
+    [client]
+  );
+
   const refreshSelectedRuntimeDetails = useCallback(async (nodeId: string) => {
     const [
       statusResult,
@@ -849,6 +912,7 @@ export function App() {
       artifactResult,
       memoryResult,
       turnResult,
+      sourceCandidateResult,
       sessionResult
     ] =
       await Promise.allSettled([
@@ -859,6 +923,7 @@ export function App() {
         client.listRuntimeArtifacts(nodeId),
         client.getRuntimeMemory(nodeId),
         client.listRuntimeTurns(nodeId),
+        client.listRuntimeSourceChangeCandidates(nodeId),
         client.listSessions()
       ]);
     const nextSelectedApprovals =
@@ -889,6 +954,10 @@ export function App() {
     const nextSelectedTurns =
       turnResult.status === "fulfilled"
         ? sortRuntimeTurns(turnResult.value.turns)
+        : [];
+    const nextSelectedSourceChangeCandidates =
+      sourceCandidateResult.status === "fulfilled"
+        ? sortRuntimeSourceChangeCandidates(sourceCandidateResult.value.candidates)
         : [];
     const nextSelectedMemoryPages =
       memoryResult.status === "fulfilled"
@@ -934,6 +1003,25 @@ export function App() {
           ])
         )[0]
       : null;
+    const currentSelectedSourceChangeCandidateId =
+      selectedSourceChangeCandidateId;
+    const shouldRefreshSelectedSourceChangeCandidate =
+      currentSelectedSourceChangeCandidateId !== null &&
+      nextSelectedSourceChangeCandidates.some(
+        (candidate) =>
+          candidate.candidateId === currentSelectedSourceChangeCandidateId
+      );
+    const selectedSourceChangeCandidateResult =
+      shouldRefreshSelectedSourceChangeCandidate
+        ? (
+            await Promise.allSettled([
+              client.getRuntimeSourceChangeCandidate(
+                nodeId,
+                currentSelectedSourceChangeCandidateId
+              )
+            ])
+          )[0]
+        : null;
     const currentSelectedSessionId = selectedSessionId;
     const shouldRefreshSelectedSession =
       currentSelectedSessionId !== null &&
@@ -1146,6 +1234,44 @@ export function App() {
         setTurnDetailError(null);
       }
 
+      if (sourceCandidateResult.status === "fulfilled") {
+        setSelectedSourceChangeCandidates(nextSelectedSourceChangeCandidates);
+        setSourceChangeCandidateError(null);
+
+        if (!selectedSourceChangeCandidateId) {
+          setSelectedSourceChangeCandidateInspection(null);
+          setSourceChangeCandidateDetailError(null);
+        } else if (!shouldRefreshSelectedSourceChangeCandidate) {
+          setSelectedSourceChangeCandidateId(null);
+          setSelectedSourceChangeCandidateInspection(null);
+          setSourceChangeCandidateDetailError(null);
+        } else if (selectedSourceChangeCandidateResult?.status === "fulfilled") {
+          setSelectedSourceChangeCandidateInspection(
+            selectedSourceChangeCandidateResult.value
+          );
+          setSourceChangeCandidateDetailError(null);
+        } else if (selectedSourceChangeCandidateResult?.status === "rejected") {
+          setSelectedSourceChangeCandidateInspection(null);
+          setSourceChangeCandidateDetailError(
+            normalizeError(
+              selectedSourceChangeCandidateResult.reason,
+              "Unknown error while loading source change candidate detail."
+            )
+          );
+        }
+      } else {
+        setSelectedSourceChangeCandidates([]);
+        setSourceChangeCandidateError(
+          normalizeError(
+            sourceCandidateResult.reason,
+            "Unknown error while loading source change candidates."
+          )
+        );
+        setSelectedSourceChangeCandidateId(null);
+        setSelectedSourceChangeCandidateInspection(null);
+        setSourceChangeCandidateDetailError(null);
+      }
+
       if (sessionResult.status === "fulfilled") {
         setSelectedSessions(nextSelectedSessions);
         setSessionError(null);
@@ -1192,6 +1318,7 @@ export function App() {
     selectedApprovalId,
     selectedArtifactId,
     selectedMemoryPagePath,
+    selectedSourceChangeCandidateId,
     selectedSessionId,
     selectedTurnId
   ]);
@@ -1344,6 +1471,23 @@ export function App() {
       await loadSelectedTurnInspection(selectedRuntimeId, turnId);
     },
     [loadSelectedTurnInspection, selectedRuntimeId]
+  );
+
+  const selectRuntimeSourceChangeCandidate = useCallback(
+    async (candidateId: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedSourceChangeCandidateId(candidateId);
+      setSelectedSourceChangeCandidateInspection(null);
+      setSourceChangeCandidateDetailError(null);
+      await loadSelectedSourceChangeCandidateInspection(
+        selectedRuntimeId,
+        candidateId
+      );
+    },
+    [loadSelectedSourceChangeCandidateInspection, selectedRuntimeId]
   );
 
   const selectGraphRevision = useCallback(
@@ -1728,6 +1872,11 @@ export function App() {
       setSelectedTurnId(null);
       setSelectedTurnInspection(null);
       setTurnDetailError(null);
+      setSourceChangeCandidateError(null);
+      setSelectedSourceChangeCandidates([]);
+      setSelectedSourceChangeCandidateId(null);
+      setSelectedSourceChangeCandidateInspection(null);
+      setSourceChangeCandidateDetailError(null);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -1760,6 +1909,11 @@ export function App() {
     setSelectedTurnId(null);
     setSelectedTurnInspection(null);
     setTurnDetailError(null);
+    setSourceChangeCandidateError(null);
+    setSelectedSourceChangeCandidates([]);
+    setSelectedSourceChangeCandidateId(null);
+    setSelectedSourceChangeCandidateInspection(null);
+    setSourceChangeCandidateDetailError(null);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -3178,6 +3332,13 @@ export function App() {
                     </dd>
                   </div>
                   <div>
+                    <dt>Source candidate</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime
+                        ?.lastSourceChangeCandidateId ?? "none"}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Source changes</dt>
                     <dd>
                       {selectedRuntime?.agentRuntime
@@ -3199,6 +3360,9 @@ export function App() {
                 {approvalError ? <p className="error-box">{approvalError}</p> : null}
                 {artifactError ? <p className="error-box">{artifactError}</p> : null}
                 {turnError ? <p className="error-box">{turnError}</p> : null}
+                {sourceChangeCandidateError ? (
+                  <p className="error-box">{sourceChangeCandidateError}</p>
+                ) : null}
                 {sessionError ? <p className="error-box">{sessionError}</p> : null}
                 {mutationError ? <p className="error-box">{mutationError}</p> : null}
 
@@ -3777,6 +3941,130 @@ export function App() {
                     ) : selectedTurns.length > 0 ? (
                       <div className="inline-empty-state">
                         <p>Select one turn to inspect its host-backed detail.</p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Source Change Candidates</h3>
+                      <span className="panel-caption">
+                        {selectedSourceChangeCandidates.length} records
+                      </span>
+                    </div>
+
+                    {selectedSourceChangeCandidates.length > 0 ? (
+                      <ul className="timeline-list">
+                        {selectedSourceChangeCandidates
+                          .slice(0, 8)
+                          .map((candidate) => (
+                            <li
+                              key={candidate.candidateId}
+                              className="timeline-item"
+                            >
+                              <button
+                                className={`timeline-button ${selectedSourceChangeCandidateId === candidate.candidateId ? "is-selected" : ""}`}
+                                onClick={() => {
+                                  void selectRuntimeSourceChangeCandidate(
+                                    candidate.candidateId
+                                  );
+                                }}
+                                type="button"
+                              >
+                                <div className="timeline-row">
+                                  <strong>
+                                    {formatRuntimeSourceChangeCandidateLabel(
+                                      candidate
+                                    )}
+                                  </strong>
+                                  <span>{candidate.updatedAt}</span>
+                                </div>
+                                <p>
+                                  {formatRuntimeSourceChangeCandidateStatus(
+                                    candidate
+                                  )}
+                                </p>
+                              </button>
+                            </li>
+                          ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No source change candidates are visible for this runtime yet.</p>
+                      </div>
+                    )}
+
+                    {sourceChangeCandidateDetailError ? (
+                      <p className="error-box">{sourceChangeCandidateDetailError}</p>
+                    ) : null}
+
+                    {selectedSourceChangeCandidateInspection ? (
+                      <div className="turn-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Source Candidate Detail</h3>
+                          <span className="panel-caption">
+                            {
+                              selectedSourceChangeCandidateInspection.candidate
+                                .candidateId
+                            }
+                          </span>
+                        </div>
+
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Candidate</dt>
+                            <dd>
+                              {
+                                selectedSourceChangeCandidateInspection.candidate
+                                  .candidateId
+                              }
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Status</dt>
+                            <dd>
+                              {
+                                selectedSourceChangeCandidateInspection.candidate
+                                  .status
+                              }
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Turn</dt>
+                            <dd>
+                              {
+                                selectedSourceChangeCandidateInspection.candidate
+                                  .turnId
+                              }
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Snapshot</dt>
+                            <dd>
+                              {selectedSourceChangeCandidateInspection.candidate
+                                .snapshot
+                                ? selectedSourceChangeCandidateInspection
+                                    .candidate.snapshot.kind
+                                : "none"}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <ul className="detail-list">
+                          {formatRuntimeSourceChangeCandidateDetailLines(
+                            selectedSourceChangeCandidateInspection.candidate
+                          ).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : selectedSourceChangeCandidateId ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected source change candidate detail...</p>
+                      </div>
+                    ) : selectedSourceChangeCandidates.length > 0 ? (
+                      <div className="inline-empty-state">
+                        <p>Select one source change candidate to inspect its host-backed detail.</p>
                       </div>
                     ) : null}
                   </div>

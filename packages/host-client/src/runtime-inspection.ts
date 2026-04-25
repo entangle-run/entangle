@@ -128,6 +128,12 @@ export function formatRuntimeInspectionDetailLines(
       );
     }
 
+    if (runtime.agentRuntime.lastSourceChangeCandidateId) {
+      detailLines.push(
+        `last source candidate ${runtime.agentRuntime.lastSourceChangeCandidateId}`
+      );
+    }
+
     if (runtime.agentRuntime.lastEngineFailureClassification) {
       detailLines.push(
         `last engine failure ${runtime.agentRuntime.lastEngineFailureClassification}: ${runtime.agentRuntime.lastEngineFailureMessage ?? "No failure message recorded."}`
