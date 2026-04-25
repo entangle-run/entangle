@@ -86,7 +86,7 @@ This directory is the canonical design corpus for Entangle.
 80. [79-session-and-runner-activity-event-slice.md](79-session-and-runner-activity-event-slice.md)
 81. [80-runtime-recovery-history-slice.md](80-runtime-recovery-history-slice.md)
 82. [81-runtime-recovery-policy-slice.md](81-runtime-recovery-policy-slice.md)
-83. [82-runtime-recovery-event-surface-slice.md](82-runtime-recovery-event-slice.md)
+83. [82-runtime-recovery-event-surface-slice.md](82-runtime-recovery-event-surface-slice.md)
 84. [83-studio-and-cli-runtime-recovery-inspection-slice.md](83-studio-and-cli-runtime-recovery-inspection-slice.md)
 85. [84-conversation-approval-artifact-host-event-slice.md](84-conversation-approval-artifact-host-event-slice.md)
 86. [85-studio-runtime-trace-inspection-slice.md](85-studio-runtime-trace-inspection-slice.md)
@@ -164,6 +164,7 @@ This directory is the canonical design corpus for Entangle.
 158. [157-shared-resource-inventory-presentation-slice.md](157-shared-resource-inventory-presentation-slice.md)
 159. [158-shared-runtime-inspection-presentation-slice.md](158-shared-runtime-inspection-presentation-slice.md)
 160. [159-shared-host-status-presentation-slice.md](159-shared-host-status-presentation-slice.md)
+161. [160-session-diagnostics-observability-slice.md](160-session-diagnostics-observability-slice.md)
 
 ## Role of this corpus
 

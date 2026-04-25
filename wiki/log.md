@@ -1416,3 +1416,12 @@ counts plus bounded session-consistency finding count and finding-code
 summaries. Host observation fingerprints now include those diagnostics, so a
 session trace event can change when drift appears or clears even if the raw
 session record did not otherwise change.
+
+## [2026-04-25] documentation | Added session diagnostics observability reference
+
+Closed a documentation drift gap by adding a canonical reference slice for the
+session diagnostics observability chain from session read models through host
+status, Studio refresh, and `session.updated` runtime-trace diagnostics.
+
+Also corrected the stale `references/README.md` link for the runtime recovery
+event-surface slice.
