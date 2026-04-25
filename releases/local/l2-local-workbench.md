@@ -32,6 +32,9 @@ Included in the current implementation slice:
 - Studio selected-revision `Diff Against Active` view for persisted graph
   revisions;
 - Studio active-graph validation through the existing host validation API;
+- host graph import/export through
+  `entangle host graph export <file>` and
+  `entangle host graph import <file>`, with import validating before apply;
 - graph template listing and export through `entangle graph templates list`
   and `entangle graph templates export local-preview <file>`;
 - artifact list filtering by `--session-id`;
@@ -42,8 +45,7 @@ Included in the current implementation slice:
 
 Still required before the L2 release tag:
 
-- graph import/export workflow beyond direct graph JSON apply/get and template
-  export, including richer validation ergonomics around imported candidates;
+- graph bundle import/export beyond single graph JSON and template export;
 - artifact history/diff workflow for report artifacts;
 - memory workbench inspection for focused registers and task pages;
 - full local verification gate, including Docker-backed smokes, on the final
@@ -63,6 +65,8 @@ From the repository root:
 ```bash
 pnpm --filter @entangle/cli dev package inspect examples/local-preview/agent-package
 pnpm --filter @entangle/cli dev graph diff examples/local-preview/graph.json examples/local-preview/graph.json
+pnpm --filter @entangle/cli dev host graph import examples/local-preview/graph.json --dry-run
+pnpm --filter @entangle/cli dev host graph export /tmp/entangle-active-graph.json
 pnpm --filter @entangle/cli dev host sessions launch local-preview-planner "Prepare a local workbench report."
 pnpm --filter @entangle/cli dev host runtimes artifacts local-preview-planner --session-id <session-id> --summary
 pnpm --filter @entangle/cli dev host runtimes artifact local-preview-planner <artifact-id> --preview
@@ -103,6 +107,8 @@ pnpm --filter @entangle/cli dev graph templates list
 pnpm --filter @entangle/cli dev graph templates export local-preview /tmp/entangle-local-preview-graph.json
 pnpm --filter @entangle/cli dev graph inspect /tmp/entangle-local-preview-graph.json
 pnpm --filter @entangle/cli dev validate package examples/local-preview/agent-package
+pnpm --filter @entangle/cli dev host graph import --help
+pnpm --filter @entangle/cli dev host graph export --help
 pnpm --filter @entangle/cli dev host sessions launch --help
 pnpm --filter @entangle/cli dev host runtimes artifact --help
 pnpm verify
@@ -130,9 +136,10 @@ must pass the repository-level and Docker-backed gates before tagging.
 
 - Session launch is now available from CLI and Studio through the host launch
   API, but it does not wait for completion or retry failed relay publication.
-- Graph diff is available in CLI and Studio, and Studio can validate the
-  active graph through the host API, but no host-owned graph diff API,
-  imported-candidate validation flow, or revision restore flow exists yet.
+- Graph diff is available in CLI and Studio, Studio can validate the active
+  graph through the host API, and the CLI has single-file host graph
+  import/export. No host-owned graph diff API, graph bundle format, or
+  revision restore flow exists yet.
 - Graph templates can be exported from the CLI, but there is no graph template
   editor, graph import/export bundle format, or host-owned template registry.
 - Package inspection validates the manifest and tool catalog, but package

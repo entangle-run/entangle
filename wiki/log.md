@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added host graph import/export CLI flow
+
+Closed the single-file L2 graph import/export slice by adding
+`entangle host graph export <file>` and `entangle host graph import <file>`.
+Export writes the active host graph as pretty JSON. Import validates the
+candidate through the host before applying it, supports `--dry-run`, and exits
+non-zero when host validation reports errors.
+
+This is intentionally not a graph bundle format, revision restore, rollback,
+or host-owned graph diff API. The existing direct `host graph apply` command
+remains available for lower-level mutation workflows.
+
+Verification passed for focused CLI test, typecheck, lint, and command help
+checks.
+
 ## [2026-04-25] implementation | Added Studio graph validation
 
 Closed the first L2 Studio graph-validation slice by adding a `Graph

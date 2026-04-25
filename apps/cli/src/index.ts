@@ -40,6 +40,8 @@ import {
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { projectHostStatusSummary } from "./host-status-output.js";
 import {
+  projectGraphExportSummary,
+  projectGraphImportSummary,
   projectGraphRevisionInspectionSummary,
   projectGraphRevisionSummary,
   projectGraphSummary,
@@ -731,6 +733,66 @@ hostGraphCommand
     const response = await client.getGraph();
     printJson(
       options.summary ? { graph: projectGraphSummary(response) } : response
+    );
+  });
+
+hostGraphCommand
+  .command("export")
+  .argument("<file>", "Destination graph JSON file.")
+  .description("Write the active host graph to a graph JSON file.")
+  .action(async (file: string, _options, command: Command) => {
+    const client = createCliHostClient(command);
+    const response = await client.getGraph();
+
+    if (!response.graph) {
+      throw new Error("No active graph is available to export.");
+    }
+
+    const outputPath = resolveCliPath(file);
+    await writeJsonDocument(outputPath, response.graph);
+    printJson(projectGraphExportSummary({ outputPath, response }));
+  });
+
+hostGraphCommand
+  .command("import")
+  .argument("<file>", "Path to a graph JSON file.")
+  .option(
+    "--dry-run",
+    "Validate the import candidate without applying it to the host."
+  )
+  .description("Validate and apply a graph JSON file through entangle-host.")
+  .action(async (
+    file: string,
+    options: { dryRun?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const request = await readJsonDocument(resolveCliPath(file));
+    const validation = await client.validateGraph(request);
+
+    if (options.dryRun || !validation.validation.ok) {
+      printJson(
+        projectGraphImportSummary({
+          applied: false,
+          dryRun: Boolean(options.dryRun),
+          response: validation
+        })
+      );
+
+      if (!validation.validation.ok) {
+        process.exitCode = 1;
+      }
+
+      return;
+    }
+
+    const applied = await client.applyGraph(request);
+    printJson(
+      projectGraphImportSummary({
+        applied: true,
+        dryRun: false,
+        response: applied
+      })
     );
   });
 

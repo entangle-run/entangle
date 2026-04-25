@@ -12,6 +12,7 @@ import {
 import type {
   Edge,
   GraphInspectionResponse,
+  GraphMutationResponse,
   GraphRevisionInspectionResponse,
   GraphRevisionMetadata,
   NodeInspectionResponse
@@ -46,6 +47,23 @@ export type GraphRevisionInspectionCliSummary = {
   nodeCount: number;
   revision: GraphRevisionCliSummary;
   summary: string;
+};
+
+export type GraphExportCliSummary = {
+  graph: GraphCliSummary;
+  outputPath: string;
+};
+
+export type GraphImportCliSummary = {
+  applied: boolean;
+  dryRun: boolean;
+  graph: GraphCliSummary;
+  validation: {
+    errorCount: number;
+    findingCodes: string[];
+    ok: boolean;
+    warningCount: number;
+  };
 };
 
 export type NodeInspectionCliSummary = {
@@ -98,6 +116,50 @@ export function projectGraphSummary(
     name: response.graph.name,
     nodeCount: response.graph.nodes.length,
     runtimeProfile: response.graph.defaults.runtimeProfile
+  };
+}
+
+function countValidationSeverity(
+  response: GraphMutationResponse,
+  severity: "error" | "warning"
+): number {
+  return response.validation.findings.filter(
+    (finding) => finding.severity === severity
+  ).length;
+}
+
+export function projectGraphExportSummary(input: {
+  outputPath: string;
+  response: GraphInspectionResponse;
+}): GraphExportCliSummary {
+  return {
+    graph: projectGraphSummary(input.response),
+    outputPath: input.outputPath
+  };
+}
+
+export function projectGraphImportSummary(input: {
+  applied: boolean;
+  dryRun: boolean;
+  response: GraphMutationResponse;
+}): GraphImportCliSummary {
+  return {
+    applied: input.applied,
+    dryRun: input.dryRun,
+    graph: projectGraphSummary({
+      ...(input.response.activeRevisionId
+        ? { activeRevisionId: input.response.activeRevisionId }
+        : {}),
+      graph: input.response.graph
+    }),
+    validation: {
+      errorCount: countValidationSeverity(input.response, "error"),
+      findingCodes: input.response.validation.findings.map(
+        (finding) => finding.code
+      ),
+      ok: input.response.validation.ok,
+      warningCount: countValidationSeverity(input.response, "warning")
+    }
   };
 }
 

@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import type {
   Edge,
   GraphInspectionResponse,
+  GraphMutationResponse,
   GraphRevisionInspectionResponse,
   GraphSpec,
   NodeInspectionResponse
 } from "@entangle/types";
 import {
+  projectGraphExportSummary,
   projectGraphEdgeSummary,
+  projectGraphImportSummary,
   projectGraphRevisionInspectionSummary,
   projectGraphRevisionSummary,
   projectGraphSummary,
@@ -124,6 +127,66 @@ describe("graph CLI summary projection", () => {
       label: "No active graph",
       managedNodeCount: 0,
       nodeCount: 0
+    });
+  });
+
+  it("projects graph import and export workflow summaries", () => {
+    const graph = createGraph();
+    const mutation: GraphMutationResponse = {
+      activeRevisionId: "team-alpha-20260425-080000",
+      graph,
+      validation: {
+        ok: false,
+        findings: [
+          {
+            code: "missing_package_source",
+            message: "Missing package source.",
+            path: ["nodes", "worker-it"],
+            severity: "error"
+          },
+          {
+            code: "unused_relay",
+            message: "Relay is not referenced.",
+            path: [],
+            severity: "warning"
+          }
+        ]
+      }
+    };
+
+    expect(
+      projectGraphExportSummary({
+        outputPath: "/tmp/team-alpha.graph.json",
+        response: {
+          activeRevisionId: "team-alpha-20260425-080000",
+          graph
+        }
+      })
+    ).toMatchObject({
+      graph: {
+        graphId: "team-alpha",
+        nodeCount: 2
+      },
+      outputPath: "/tmp/team-alpha.graph.json"
+    });
+    expect(
+      projectGraphImportSummary({
+        applied: false,
+        dryRun: true,
+        response: mutation
+      })
+    ).toMatchObject({
+      applied: false,
+      dryRun: true,
+      graph: {
+        graphId: "team-alpha"
+      },
+      validation: {
+        errorCount: 1,
+        findingCodes: ["missing_package_source", "unused_relay"],
+        ok: false,
+        warningCount: 1
+      }
     });
   });
 

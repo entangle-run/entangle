@@ -378,7 +378,7 @@ Incremental features:
    - graph templates;
    - host-backed active-graph validation in Studio;
    - graph revision diff for local revisions;
-   - import/export graph JSON with imported-candidate validation.
+   - host graph JSON import/export with validation before apply.
 3. Session launching:
    - Studio local session launch flow;
    - CLI session launch command over the same host boundary;
@@ -843,9 +843,8 @@ Remaining implementation sequence:
 
 1. Freeze L2 scope around a real Local workbench rather than another demo
    proof path.
-2. Add package inspect/import depth and graph import/export plus
-   imported-candidate validation workflows where they fit the current host
-   boundary.
+2. Add package inspect/import depth and decide whether graph bundle ergonomics
+   are needed beyond the single-file host graph import/export workflow.
 3. Deepen the new host-backed Studio and CLI session launch flow with clearer
    wait/retry and navigation ergonomics where it can remain host-owned.
 4. Add artifact history/diff and memory workbench surfaces over existing
