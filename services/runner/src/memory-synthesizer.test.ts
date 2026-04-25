@@ -9,6 +9,7 @@ import { createModelGuidedMemorySynthesizer } from "./memory-synthesizer.js";
 import {
   ensureRunnerStatePaths,
   readFocusedRegisterState,
+  writeApprovalRecord,
   writeArtifactRecord,
   writeConversationRecord,
   writeFocusedRegisterState,
@@ -43,7 +44,19 @@ async function seedCurrentSessionState(input: {
     status: "active",
     traceId: "trace-alpha",
     updatedAt: "2026-04-24T11:05:00.000Z",
-    waitingApprovalIds: []
+    waitingApprovalIds: ["approval-memory"]
+  });
+  await writeApprovalRecord(statePaths, {
+    approvalId: "approval-memory",
+    approverNodeIds: ["lead-it"],
+    conversationId: "conv-alpha",
+    graphId: "graph-alpha",
+    reason: "Approve the next recovery checkpoint before closure.",
+    requestedAt: "2026-04-24T11:03:30.000Z",
+    requestedByNodeId: "worker-it",
+    sessionId: "session-alpha",
+    status: "pending",
+    updatedAt: "2026-04-24T11:04:15.000Z"
   });
   await writeConversationRecord(statePaths, {
     artifactIds: ["artifact-input"],
@@ -583,6 +596,9 @@ describe("model-guided memory synthesis", () => {
       "Session status: `active`"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "approval-memory [pending] requestedBy=worker-it approvers=1 conversation=conv-alpha"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "turn-prev [persisting/message] outcome=completed produced=1 consumed=1"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
@@ -672,7 +688,17 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain("## Session Context");
     expect(workingContextPage).toContain("- Session status: `active`");
     expect(workingContextPage).toContain("- Active conversations: 1");
+    expect(workingContextPage).toContain("- Waiting approvals: 1");
+    expect(workingContextPage).toContain("- Recorded approvals: 1");
+    expect(workingContextPage).toContain("- Approval statuses in snapshot: pending:1");
     expect(workingContextPage).toContain("- Recent turns in snapshot: 1");
+    expect(workingContextPage).toContain("### Approval Gates");
+    expect(workingContextPage).toContain(
+      "- Waiting approval ids: `approval-memory`"
+    );
+    expect(workingContextPage).toContain(
+      "`approval-memory` status=`pending` requestedBy=`worker-it` approvers=1 conversation=`conv-alpha`"
+    );
     expect(workingContextPage).toContain("### Durable Session Insights");
     expect(workingContextPage).toContain(
       "The live conversation with the reviewer remains the coordination path for the next checkpoint."

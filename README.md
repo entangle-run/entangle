@@ -275,6 +275,10 @@ This repository currently contains:
   `inspect_session_state` and model-guided memory synthesis now see bounded
   runner-local approval summaries, waiting-gate counts, and recorded approval
   status context alongside conversations, turns, and artifacts;
+- an approval-gate carry-forward refinement where the durable
+  `working-context.md` page now preserves deterministic waiting approval ids
+  and bounded approval-record summaries instead of relying only on model prose
+  to remember approval blockers;
 - an artifact-aware refinement of that same synthesis path where the runner now
   passes explicit retrieved and produced artifact context into working-context
   synthesis, so durable memory maintenance can see the turn's real work

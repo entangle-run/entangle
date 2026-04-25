@@ -1977,6 +1977,43 @@ function renderSessionContextLines(
   ];
 }
 
+function renderInlineCodeList(values: string[]): string {
+  return values.length > 0
+    ? values.map((value) => `\`${value}\``).join(", ")
+    : "none";
+}
+
+function renderApprovalGateLines(
+  sessionSnapshot: RunnerSessionStateSnapshot | undefined
+): string[] {
+  if (!sessionSnapshot) {
+    return ["- No approval gate context was available during synthesis."];
+  }
+
+  const approvalLines =
+    sessionSnapshot.approvals.length > 0
+      ? sessionSnapshot.approvals.map((approval) => {
+          const conversation = approval.conversationId
+            ? ` conversation=\`${approval.conversationId}\``
+            : "";
+
+          return (
+            `- \`${approval.approvalId}\` status=\`${approval.status}\` ` +
+            `requestedBy=\`${approval.requestedByNodeId}\` ` +
+            `approvers=${approval.approverNodeIds.length}${conversation}`
+          );
+        })
+      : ["- No approval records were included in the bounded snapshot."];
+
+  return [
+    `- Waiting approval ids: ${renderInlineCodeList(
+      sessionSnapshot.session.waitingApprovalIds
+    )}`,
+    `- Recorded approvals in snapshot: ${sessionSnapshot.approvals.length} of ${sessionSnapshot.counts.approvalCount}`,
+    ...approvalLines
+  ];
+}
+
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
@@ -2023,6 +2060,10 @@ function buildWorkingContextSummaryContent(input: {
     "## Session Context",
     "",
     ...renderSessionContextLines(input.sessionSnapshot),
+    "",
+    "### Approval Gates",
+    "",
+    ...renderApprovalGateLines(input.sessionSnapshot),
     "",
     "### Durable Session Insights",
     "",

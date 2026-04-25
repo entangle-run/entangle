@@ -1550,3 +1550,16 @@ renders compact approval status context in its deterministic session lines. The
 change keeps approval mutation authority inside runner lifecycle paths while
 making approval evidence visible to runtime inspection and durable memory
 synthesis.
+
+## [2026-04-25] implementation | Carried approval gates into working context
+
+Made approval blockers deterministic in runner-owned memory. The
+model-guided memory synthesis path now writes an explicit approval-gates
+subsection inside `working-context.md`, including waiting approval ids and
+bounded approval-record summaries with status, requester, approver count, and
+conversation id when present.
+
+This keeps exact approval-gate state visible to future turns even when
+model-written session insights are compressed or focused elsewhere, while
+leaving approval mutation authority in runner lifecycle paths and full approval
+record inspection on the existing host read surface.
