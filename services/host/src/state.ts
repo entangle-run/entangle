@@ -3250,49 +3250,59 @@ async function buildRuntimeResolution(input: {
       }
     }
 
-    const edgeRoutes = graph.edges
-      .filter(
-        (edge) =>
-          edge.enabled &&
-          (edge.fromNodeId === node.nodeId || edge.toNodeId === node.nodeId)
-      )
-      .flatMap((edge) => {
-        const peerNodeId =
-          edge.fromNodeId === node.nodeId ? edge.toNodeId : edge.fromNodeId;
-        const peerNode = graph.nodes.find((candidate) => candidate.nodeId === peerNodeId);
+    const edgeRoutes: EffectiveRuntimeContext["relayContext"]["edgeRoutes"] = [];
 
-        if (!peerNode) {
-          return [];
-        }
+    for (const edge of graph.edges) {
+      if (
+        !edge.enabled ||
+        (edge.fromNodeId !== node.nodeId && edge.toNodeId !== node.nodeId)
+      ) {
+        continue;
+      }
 
-        const peerRelayRefs = resolveEffectiveRelayProfileRefs(
-          peerNode,
-          graph,
-          catalog
-        );
-        const transportRelayRefs =
-          edge.transportPolicy.relayProfileRefs.length > 0
-            ? edge.transportPolicy.relayProfileRefs
-            : intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs);
-        const realizableRelayRefs = intersectIdentifiers(
-          intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs),
-          transportRelayRefs
-        );
+      const peerNodeId =
+        edge.fromNodeId === node.nodeId ? edge.toNodeId : edge.fromNodeId;
+      const peerNode = graph.nodes.find((candidate) => candidate.nodeId === peerNodeId);
 
-        if (realizableRelayRefs.length === 0) {
-          return [];
-        }
+      if (!peerNode) {
+        continue;
+      }
 
-        return [
-          {
-            channel: edge.transportPolicy.channel,
-            edgeId: edge.edgeId,
-            peerNodeId,
-            relation: edge.relation,
-            relayProfileRefs: realizableRelayRefs
-          }
-        ];
+      const peerRelayRefs = resolveEffectiveRelayProfileRefs(
+        peerNode,
+        graph,
+        catalog
+      );
+      const transportRelayRefs =
+        edge.transportPolicy.relayProfileRefs.length > 0
+          ? edge.transportPolicy.relayProfileRefs
+          : intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs);
+      const realizableRelayRefs = intersectIdentifiers(
+        intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs),
+        transportRelayRefs
+      );
+
+      if (realizableRelayRefs.length === 0) {
+        continue;
+      }
+
+      const peerRuntimeIdentity =
+        peerNode.nodeKind === "user"
+          ? undefined
+          : await ensureRuntimeIdentity({
+              graphId: graph.graphId,
+              nodeId: peerNode.nodeId
+            });
+
+      edgeRoutes.push({
+        channel: edge.transportPolicy.channel,
+        edgeId: edge.edgeId,
+        peerNodeId,
+        ...(peerRuntimeIdentity ? { peerPubkey: peerRuntimeIdentity.publicKey } : {}),
+        relation: edge.relation,
+        relayProfileRefs: realizableRelayRefs
       });
+    }
 
     const contextDraft = {
       artifactContext: {

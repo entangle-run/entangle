@@ -2017,6 +2017,96 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("injects non-secret peer runtime identities into non-user edge routes", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      const graphResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: packageSourceId
+            },
+            {
+              nodeId: "reviewer-it",
+              displayName: "Reviewer IT",
+              nodeKind: "reviewer",
+              packageSourceRef: packageSourceId
+            }
+          ],
+          edges: [
+            {
+              edgeId: "user-to-worker",
+              fromNodeId: "user-main",
+              toNodeId: "worker-it",
+              relation: "delegates_to"
+            },
+            {
+              edgeId: "worker-to-reviewer",
+              fromNodeId: "worker-it",
+              toNodeId: "reviewer-it",
+              relation: "reviews"
+            }
+          ]
+        },
+        url: "/v1/graph"
+      });
+      expect(graphResponse.statusCode).toBe(200);
+
+      const workerContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      const reviewerContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/reviewer-it/context"
+          })
+        ).json()
+      );
+      const reviewerRoute = workerContext.relayContext.edgeRoutes.find(
+        (route) => route.peerNodeId === "reviewer-it"
+      );
+      const userRoute = workerContext.relayContext.edgeRoutes.find(
+        (route) => route.peerNodeId === "user-main"
+      );
+
+      expect(reviewerRoute).toMatchObject({
+        edgeId: "worker-to-reviewer",
+        peerNodeId: "reviewer-it",
+        peerPubkey: reviewerContext.identityContext.publicKey,
+        relation: "reviews"
+      });
+      expect(userRoute).toMatchObject({
+        edgeId: "user-to-worker",
+        peerNodeId: "user-main",
+        relation: "delegates_to"
+      });
+      expect(userRoute?.peerPubkey).toBeUndefined();
+    } finally {
+      await server.close();
+    }
+  });
+
   it("injects resolved git principals into runtime context when a node binds them", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);

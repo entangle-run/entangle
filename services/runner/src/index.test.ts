@@ -9,6 +9,7 @@ import { runRunnerOnce, runRunnerServiceUntilSignal } from "./index.js";
 import {
   cleanupRuntimeFixtures,
   createRuntimeFixture,
+  remotePublicKey,
   runnerPublicKey,
   runnerSecretHex
 } from "./test-fixtures.js";
@@ -93,6 +94,33 @@ describe("runner runtime context", () => {
     expect(request.memoryRefs).toContain(
       path.join(context.workspace.memoryRoot, "schema", "AGENTS.md")
     );
+  });
+
+  it("includes bounded peer route context in engine turn requests", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const request = await buildAgentEngineTurnRequest({
+      ...context,
+      relayContext: {
+        ...context.relayContext,
+        edgeRoutes: [
+          {
+            channel: "review",
+            edgeId: "worker-to-reviewer",
+            peerNodeId: "reviewer-it",
+            peerPubkey: remotePublicKey,
+            relation: "reviews",
+            relayProfileRefs: ["local-relay"]
+          }
+        ]
+      }
+    });
+    const interactionPrompt = request.interactionPromptParts.join("\n");
+
+    expect(interactionPrompt).toContain("Peer routes:");
+    expect(interactionPrompt).toContain("reviewer-it");
+    expect(interactionPrompt).toContain(`pubkey=${remotePublicKey}`);
+    expect(interactionPrompt).toContain("relation=reviews");
   });
 
   it("executes one stub-engine turn from an injected runtime context", async () => {

@@ -157,6 +157,42 @@ function resolvePackageToolCatalogPath(context: EffectiveRuntimeContext): string
   );
 }
 
+function buildPeerRoutePromptPart(
+  context: EffectiveRuntimeContext
+): string | undefined {
+  const maxRoutes = 8;
+
+  if (context.relayContext.edgeRoutes.length === 0) {
+    return undefined;
+  }
+
+  const routeSummaries = context.relayContext.edgeRoutes
+    .slice(0, maxRoutes)
+    .map((route) => {
+      const relaySummary =
+        route.relayProfileRefs.length > 0
+          ? route.relayProfileRefs.join(",")
+          : "none";
+      const peerIdentitySummary = route.peerPubkey
+        ? `pubkey=${route.peerPubkey}`
+        : "pubkey=unresolved";
+
+      return (
+        `${route.peerNodeId} ` +
+        `(edge=${route.edgeId}, relation=${route.relation}, ` +
+        `channel=${route.channel}, relays=${relaySummary}, ${peerIdentitySummary})`
+      );
+    });
+  const omittedRouteCount = context.relayContext.edgeRoutes.length - routeSummaries.length;
+
+  return [
+    `Peer routes: ${routeSummaries.join("; ")}`,
+    omittedRouteCount > 0 ? `Omitted peer routes: ${omittedRouteCount}` : undefined
+  ]
+    .filter((part): part is string => part !== undefined)
+    .join("\n");
+}
+
 export async function loadPackageToolCatalog(
   context: EffectiveRuntimeContext
 ): Promise<PackageToolCatalog> {
@@ -206,6 +242,7 @@ export async function buildAgentEngineTurnRequest(
       readRuntimeConfig(context),
       collectMemoryRefs(context)
     ]);
+  const peerRoutePromptPart = buildPeerRoutePromptPart(context);
 
   return agentEngineTurnRequestSchema.parse({
     sessionId:
@@ -229,6 +266,7 @@ export async function buildAgentEngineTurnRequest(
           ? `${context.artifactContext.primaryGitRepositoryTarget.namespace}/${context.artifactContext.primaryGitRepositoryTarget.repositoryName}`
           : "none"
       }`,
+      ...(peerRoutePromptPart ? [peerRoutePromptPart] : []),
       ...(input.inboundMessage
         ? [
             `Inbound intent: ${input.inboundMessage.intent}`,

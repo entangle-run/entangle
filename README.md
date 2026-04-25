@@ -90,6 +90,10 @@ This repository currently contains:
   reconciliation snapshots under observed host state;
 - host-owned stable per-node Nostr runtime identities with non-secret identity
   context injected into runners and a separate local secret storage profile;
+- peer-identity-aware runtime edge routes where host-resolved non-user peer
+  Nostr public keys are injected as non-secret route metadata, and runner turn
+  requests now receive a bounded peer-route summary for controlled
+  multi-node reasoning without inventing destinations;
 - host-resolved model credential delivery in the effective runtime context,
   so live runner execution now starts only when the bound model secret is
   actually available instead of assuming endpoint presence is sufficient, with
@@ -491,6 +495,9 @@ The highest-value remaining gaps are:
 - richer model-guided memory maintenance on top of the now stronger
   session-aware and artifact-aware/artifact-carrying/engine-outcome-aware/
   execution-insight-carrying bounded runtime inspection surface;
+- controlled autonomous `task.handoff` emission on top of the now
+  peer-identity-aware runtime edge routes, without allowing agents to invent
+  destinations or mutate graph topology;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

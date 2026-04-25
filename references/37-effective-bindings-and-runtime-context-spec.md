@@ -201,12 +201,16 @@ Recommended fields:
 Where `edge_routes` may contain peer-specific derived routes such as:
 
 - peer node id
+- peer Nostr public key when the peer is a host-managed non-user runtime node;
 - direction
 - channel
 - publish relay set
 - subscribe relay set
 
 This lets the runner avoid recomputing transport compatibility at send time.
+The runtime context must not synthesize public keys for user nodes until the
+product has a real user-identity binding; those routes may remain addressable
+by node id while `peerPubkey` is absent.
 
 ## 9. Artifact context semantics
 

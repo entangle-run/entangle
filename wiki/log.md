@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-24] runtime | Added peer-aware runtime edge routes
+
+Effective runtime edge routes now carry host-resolved non-secret Nostr public
+keys for adjacent non-user peers. User-node routes remain present without a
+synthetic host-generated user pubkey, preserving the current user-identity
+boundary.
+
+Runner turn assembly now includes a bounded peer-route summary in engine
+requests. This gives nodes real graph route and peer identity context for the
+next controlled autonomous handoff slice without allowing the runner or model
+to invent destinations.
+
 ## [2026-04-24] operations | Proved Docker/Gitea multi-node handoff smoke
 
 `pnpm ops:smoke-local:disposable:runtime` now bootstraps local Gitea in

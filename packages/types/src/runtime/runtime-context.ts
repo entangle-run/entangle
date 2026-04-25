@@ -2,6 +2,7 @@ import { z } from "zod";
 import { gitServiceProfileSchema, modelEndpointProfileSchema, relayProfileSchema } from "../resources/catalog.js";
 import { externalPrincipalRecordSchema } from "../resources/external-principal.js";
 import { edgeRelationSchema, runtimeProfileSchema } from "../common/topology.js";
+import { nostrPublicKeySchema } from "../common/crypto.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { gitRepositoryTargetSchema } from "../artifacts/git-repository-target.js";
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
@@ -14,6 +15,7 @@ export const effectiveEdgeRouteSchema = z.object({
   channel: identifierSchema,
   edgeId: identifierSchema,
   peerNodeId: identifierSchema,
+  peerPubkey: nostrPublicKeySchema.optional(),
   relation: edgeRelationSchema,
   relayProfileRefs: z.array(identifierSchema).default([])
 });

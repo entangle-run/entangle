@@ -283,6 +283,10 @@ Completed in the current repository state:
     now owns persisted runner-turn labels, status lines, artifact summaries,
     and bounded detail lines, Studio consumes that shared formatting, and the
     CLI can print compact turn summaries for headless audit workflows.
+35. a peer-runtime-route identity refinement where `entangle-host` injects
+    non-secret peer Nostr public keys for adjacent non-user runtime nodes into
+    effective edge routes, and runner turn assembly carries a bounded
+    peer-route summary for graph-aware multi-node reasoning.
 
 Remaining work in this phase:
 
@@ -311,6 +315,9 @@ Remaining work in this phase:
    production-grade identity and authorization only after the next contracts can
    preserve real principals, policy decisions, tenant/workspace scope, and
    stronger host auditability without collapsing the local operator profile.
+5. add controlled autonomous `task.handoff` emission only on top of resolved
+   edge routes and peer identities, with explicit runner policy and state
+   transitions instead of hidden provider-output conventions.
 
 Acceptance for the phase:
 

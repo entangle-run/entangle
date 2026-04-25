@@ -93,6 +93,9 @@ The repository now also contains the first real implementation baseline:
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime
   identity context;
+- peer-identity-aware runtime edge routes where adjacent non-user node public
+  keys are injected as non-secret route metadata and runner turn assembly now
+  includes a bounded peer-route summary for graph-aware multi-node reasoning;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,
@@ -539,6 +542,8 @@ The current implementation-truth audit now lives in
   model; the next deployment-grade gap is non-disposable local-profile
   upgrade and repair behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
+- controlled autonomous `task.handoff` emission on top of the now
+  peer-identity-aware edge-route substrate;
 - deepen the new bootstrap host operator-token and request-audit boundary into
   real production identity and authorization only through explicit contracts,
   tests, policy decisions, and operator-visible attribution;

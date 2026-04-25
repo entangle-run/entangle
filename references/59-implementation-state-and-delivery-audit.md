@@ -156,6 +156,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - typed conversation, approval, and artifact trace events derived from the
   persisted runner state through the same host-owned event boundary;
 - host-managed runtime identity persistence;
+- host-resolved non-secret peer runtime public keys on effective edge routes
+  for adjacent non-user nodes, while user-node routes do not receive synthetic
+  host-generated pubkeys;
 - runtime materialization and reconciliation snapshot persistence;
 - runtime backend abstraction with memory and Docker-backed implementations;
 - first-party Docker Engine API integration instead of `docker` CLI shell-outs;
@@ -187,6 +190,9 @@ and widening, not rethinking the boundary.
 - durable lifecycle transitions;
 - response-policy-aware reply behavior;
 - host-provided effective runtime context consumption;
+- bounded peer-route context in engine turn requests, giving the node real
+  graph route, relation, relay, and resolved peer identity metadata before any
+  autonomous handoff emission is introduced;
 - live runner entrypoints wired to the real internal engine boundary instead of
   the stub path;
 - deterministic post-turn wiki maintenance that writes task pages, appends to
@@ -195,8 +201,9 @@ and widening, not rethinking the boundary.
 
 ### Still missing or incomplete
 
-- broader autonomous node-to-node live-flow coverage beyond the current
-  user-mediated multi-node artifact handoff smoke;
+- controlled autonomous `task.handoff` emission on top of resolved peer route
+  and identity context, beyond the current user-mediated multi-node artifact
+  handoff smoke;
 - more explicit upward surfacing of runtime events.
 
 ### Assessment
