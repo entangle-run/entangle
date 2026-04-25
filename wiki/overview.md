@@ -430,7 +430,10 @@ The repository now also contains the first real implementation baseline:
 - shared host-status presentation helpers in `packages/host-client`, with
   Studio's Host Status panel and the CLI exposing compact output over service
   health, runtime counts, reconciliation counts, session diagnostics, finding
-  codes, graph revision, backend, and last reconciliation time;
+  codes, graph revision, backend, and last reconciliation time, and with
+  Studio overview refresh treating session and conversation activity as
+  status-relevant because those events can change top-level session
+  diagnostics;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving

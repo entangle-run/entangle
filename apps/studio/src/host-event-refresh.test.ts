@@ -57,6 +57,38 @@ describe("host-event-refresh", () => {
       runtimeHandle: "runtime-worker-it",
       type: "runtime.observed_state.changed"
     };
+    const sessionEvent: HostEventRecord = {
+      ...baseEvent,
+      activeConversationIds: ["conv-alpha"],
+      category: "session",
+      graphId: "team-alpha",
+      message: "Session 'session-alpha' on node 'worker-it' changed.",
+      nodeId: "worker-it",
+      ownerNodeId: "user",
+      rootArtifactIds: [],
+      sessionId: "session-alpha",
+      status: "active",
+      traceId: "trace-alpha",
+      type: "session.updated",
+      updatedAt: "2026-04-24T10:00:01.000Z"
+    };
+    const conversationEvent: HostEventRecord = {
+      ...baseEvent,
+      artifactIds: [],
+      category: "session",
+      conversationId: "conv-alpha",
+      followupCount: 1,
+      graphId: "team-alpha",
+      initiator: "local",
+      lastMessageType: "task.request",
+      message: "Conversation 'conv-alpha' on node 'worker-it' changed.",
+      nodeId: "worker-it",
+      peerNodeId: "worker-review",
+      sessionId: "session-alpha",
+      status: "working",
+      type: "conversation.trace.event",
+      updatedAt: "2026-04-24T10:00:02.000Z"
+    };
 
     expect(shouldRefreshOverviewFromHostEvent(packageSourceEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(packageSourceDeletedEvent)).toBe(
@@ -67,6 +99,8 @@ describe("host-event-refresh", () => {
     );
     expect(shouldRefreshOverviewFromHostEvent(graphEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(runtimeEvent)).toBe(true);
+    expect(shouldRefreshOverviewFromHostEvent(sessionEvent)).toBe(true);
+    expect(shouldRefreshOverviewFromHostEvent(conversationEvent)).toBe(true);
   });
 
   it("does not refresh the overview for trace-only events", () => {

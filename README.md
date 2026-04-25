@@ -538,7 +538,9 @@ This repository currently contains:
 - a shared host-status presentation slice where Studio's Host Status panel and
   the CLI now expose compact status output over service health, runtime
   counts, reconciliation counts, session diagnostics, finding codes, graph
-  revision, backend, and last reconciliation time;
+  revision, backend, and last reconciliation time, with Studio overview
+  refresh now treating session and conversation activity as status-relevant
+  because those events can change top-level session diagnostics;
 
 The highest-value remaining gaps are:
 

@@ -1399,3 +1399,11 @@ Studio's Host Status panel to the shared `host-client` session-diagnostics
 formatter. Visual operators now see inspected-session count, consistency
 finding count, and affected-session count at the same top-level point where
 the degraded host status appears, matching the CLI summary vocabulary.
+
+## [2026-04-25] implementation | Refreshed Studio overview from session diagnostics events
+
+Closed the refresh-path gap created by top-level session diagnostics. Studio
+now treats `session.updated` and `conversation.trace.event` records as
+overview-refresh triggers because those node-scoped events can change the
+host-wide inspected-session and consistency-finding counts shown in Host
+Status.
