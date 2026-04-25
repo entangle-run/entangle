@@ -25,6 +25,13 @@ export const hostStatusResponseSchema = z.object({
     observed: z.number().int().nonnegative(),
     running: z.number().int().nonnegative()
   }),
+  sessionDiagnostics: z
+    .object({
+      consistencyFindingCount: z.number().int().nonnegative(),
+      inspectedSessionCount: z.number().int().nonnegative(),
+      sessionsWithConsistencyFindings: z.number().int().nonnegative()
+    })
+    .optional(),
   timestamp: nonEmptyStringSchema
 });
 

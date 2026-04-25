@@ -12,6 +12,22 @@ export function formatHostStatusReconciliationSummary(
   return `${reconciliation.managedRuntimeCount} runtimes · ${reconciliation.issueCount} issues · ${reconciliation.degradedRuntimeCount} degraded · ${reconciliation.blockedRuntimeCount} blocked`;
 }
 
+export function formatHostStatusSessionDiagnosticsSummary(
+  status: HostStatusResponse
+): string {
+  const diagnostics = status.sessionDiagnostics;
+
+  if (!diagnostics) {
+    return "sessions not inspected";
+  }
+
+  return (
+    `${diagnostics.inspectedSessionCount} sessions · ` +
+    `${diagnostics.consistencyFindingCount} consistency findings · ` +
+    `${diagnostics.sessionsWithConsistencyFindings} affected`
+  );
+}
+
 export function formatHostStatusDetailLines(
   status: HostStatusResponse
 ): string[] {
@@ -20,6 +36,7 @@ export function formatHostStatusDetailLines(
     `timestamp ${status.timestamp}`,
     `runtime counts desired ${status.runtimeCounts.desired}, observed ${status.runtimeCounts.observed}, running ${status.runtimeCounts.running}`,
     `reconciliation ${formatHostStatusReconciliationSummary(status)}`,
+    `session diagnostics ${formatHostStatusSessionDiagnosticsSummary(status)}`,
     `backend ${reconciliation.backendKind}`,
     `running ${reconciliation.runningRuntimeCount}, stopped ${reconciliation.stoppedRuntimeCount}, failed ${reconciliation.failedRuntimeCount}, transitioning ${reconciliation.transitioningRuntimeCount}`
   ];

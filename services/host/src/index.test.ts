@@ -3228,6 +3228,26 @@ describe("buildHostServer", () => {
         sessionId: "session-alpha"
       });
 
+      const hostStatusWithSessionFindingsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(hostStatusWithSessionFindingsResponse.statusCode).toBe(200);
+      expect(
+        hostStatusResponseSchema.parse(
+          hostStatusWithSessionFindingsResponse.json()
+        )
+      ).toMatchObject({
+        service: "entangle-host",
+        sessionDiagnostics: {
+          consistencyFindingCount: 3,
+          inspectedSessionCount: 1,
+          sessionsWithConsistencyFindings: 1
+        },
+        status: "degraded"
+      });
+
       const missingSessionResponse = await server.inject({
         method: "GET",
         url: "/v1/sessions/missing-session"

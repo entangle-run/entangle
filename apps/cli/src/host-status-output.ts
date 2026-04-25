@@ -1,7 +1,8 @@
 import {
   formatHostStatusDetailLines,
   formatHostStatusLabel,
-  formatHostStatusReconciliationSummary
+  formatHostStatusReconciliationSummary,
+  formatHostStatusSessionDiagnosticsSummary
 } from "@entangle/host-client";
 import type { HostStatusResponse } from "@entangle/types";
 
@@ -25,6 +26,9 @@ export type HostStatusCliSummary = {
   };
   runtimeCounts: HostStatusResponse["runtimeCounts"];
   service: string;
+  sessionDiagnostics?: NonNullable<HostStatusResponse["sessionDiagnostics"]> & {
+    summary: string;
+  };
   status: string;
   timestamp: string;
 };
@@ -54,6 +58,14 @@ export function projectHostStatusSummary(
     },
     runtimeCounts: status.runtimeCounts,
     service: status.service,
+    ...(status.sessionDiagnostics
+      ? {
+          sessionDiagnostics: {
+            ...status.sessionDiagnostics,
+            summary: formatHostStatusSessionDiagnosticsSummary(status)
+          }
+        }
+      : {}),
     status: status.status,
     timestamp: status.timestamp
   };

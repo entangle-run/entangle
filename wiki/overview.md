@@ -429,8 +429,8 @@ The repository now also contains the first real implementation baseline:
   handle, and git provisioning signals;
 - shared host-status presentation helpers in `packages/host-client`, with the
   CLI exposing compact `host status --summary` output over service health,
-  runtime counts, reconciliation counts, finding codes, graph revision,
-  backend, and last reconciliation time;
+  runtime counts, reconciliation counts, session diagnostics, finding codes,
+  graph revision, backend, and last reconciliation time;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving

@@ -5744,6 +5744,18 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const runtimeInspections = await listRuntimeInspections();
+  const sessionList = await listSessions();
+  const sessionDiagnostics = {
+    consistencyFindingCount: sessionList.sessions.reduce(
+      (total, session) =>
+        total + (session.sessionConsistencyFindings?.length ?? 0),
+      0
+    ),
+    inspectedSessionCount: sessionList.sessions.length,
+    sessionsWithConsistencyFindings: sessionList.sessions.filter(
+      (session) => (session.sessionConsistencyFindings?.length ?? 0) > 0
+    ).length
+  };
   const runtimeBackend = getRuntimeBackend();
   const reconciliationSnapshot =
     (await readLatestReconciliationSnapshot()) ??
@@ -5765,7 +5777,8 @@ export async function buildHostStatus() {
       transitioningRuntimeCount: 0
     });
   const hostStatus =
-    reconciliationSnapshot.degradedRuntimeCount > 0
+    reconciliationSnapshot.degradedRuntimeCount > 0 ||
+    sessionDiagnostics.consistencyFindingCount > 0
       ? "degraded"
       : reconciliationSnapshot.transitioningRuntimeCount > 0
         ? "starting"
@@ -5800,6 +5813,7 @@ export async function buildHostStatus() {
         (runtime) => runtime.observedState === "running"
       ).length
     },
+    sessionDiagnostics,
     timestamp: nowIsoString()
   };
 }

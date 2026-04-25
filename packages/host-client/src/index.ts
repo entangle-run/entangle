@@ -763,7 +763,8 @@ export {
 export {
   formatHostStatusDetailLines,
   formatHostStatusLabel,
-  formatHostStatusReconciliationSummary
+  formatHostStatusReconciliationSummary,
+  formatHostStatusSessionDiagnosticsSummary
 } from "./host-status.js";
 export {
   formatGraphEdgeDetail,

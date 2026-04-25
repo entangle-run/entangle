@@ -1378,3 +1378,16 @@ and conversation truth, while host summaries, per-node session inspection,
 shared presentation helpers, Studio, and CLI summary output can now show drift
 that should be repaired by runtime reconciliation rather than hidden behind
 aggregate counts.
+
+## [2026-04-25] implementation | Added session diagnostics to host status
+
+Connected session consistency diagnostics to the top-level host health surface.
+`GET /v1/host/status` now includes inspected-session count, total session
+consistency finding count, and affected-session count. Any nonzero session
+consistency finding count degrades the host status even when runtime
+reconciliation itself is aligned, so operators do not have to inspect
+`/v1/sessions` first to discover delegated-session drift.
+
+Shared host-status presentation helpers and CLI summary projection now expose
+the session diagnostics line alongside runtime counts, reconciliation summary,
+backend, graph revision, finding codes, and last reconciliation time.

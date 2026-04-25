@@ -28,6 +28,11 @@ function createStatus(): HostStatusResponse {
       running: 1
     },
     service: "entangle-host",
+    sessionDiagnostics: {
+      consistencyFindingCount: 2,
+      inspectedSessionCount: 4,
+      sessionsWithConsistencyFindings: 1
+    },
     status: "degraded",
     timestamp: "2026-04-25T08:00:02.000Z"
   };
@@ -48,6 +53,9 @@ describe("host status presentation helpers", () => {
 
     expect(detailLines).toContain(
       "runtime counts desired 3, observed 3, running 1"
+    );
+    expect(detailLines).toContain(
+      "session diagnostics 4 sessions · 2 consistency findings · 1 affected"
     );
     expect(detailLines).toContain(
       "findings context_unavailable, runtime_failed"

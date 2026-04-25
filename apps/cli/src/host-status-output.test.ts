@@ -24,6 +24,11 @@ function createStatus(): HostStatusResponse {
       running: 1
     },
     service: "entangle-host",
+    sessionDiagnostics: {
+      consistencyFindingCount: 3,
+      inspectedSessionCount: 2,
+      sessionsWithConsistencyFindings: 1
+    },
     status: "degraded",
     timestamp: "2026-04-25T08:00:02.000Z"
   };
@@ -40,6 +45,10 @@ describe("host status CLI summary projection", () => {
       },
       runtimeCounts: {
         running: 1
+      },
+      sessionDiagnostics: {
+        consistencyFindingCount: 3,
+        summary: "2 sessions · 3 consistency findings · 1 affected"
       },
       status: "degraded"
     });

@@ -382,7 +382,8 @@ This repository currently contains:
   now carries derived reconciliation state and finding codes, persisted host
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` no longer reduces runtime health to raw
-  failure counts alone;
+  failure counts alone, with session consistency findings now contributing to
+  top-level degraded host status;
 - a host-owned runtime recovery-history surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/recovery`, persists per-node recovery
   records under observed host state, deduplicates unchanged states with
@@ -536,8 +537,8 @@ This repository currently contains:
   provisioning signals;
 - a shared host-status presentation slice where the CLI now exposes compact
   `host status --summary` output over service health, runtime counts,
-  reconciliation counts, finding codes, graph revision, backend, and last
-  reconciliation time;
+  reconciliation counts, session diagnostics, finding codes, graph revision,
+  backend, and last reconciliation time;
 
 The highest-value remaining gaps are:
 
