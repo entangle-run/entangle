@@ -22,13 +22,14 @@ export const conversationStatusCountsSchema = z.object({
 
 export const hostSessionConsistencyFindingCodeSchema = z.enum([
   "active_conversation_missing_record",
+  "active_session_without_open_conversations",
   "open_conversation_missing_active_reference",
   "terminal_conversation_still_active"
 ]);
 
 export const hostSessionConsistencyFindingSchema = z.object({
   code: hostSessionConsistencyFindingCodeSchema,
-  conversationId: identifierSchema,
+  conversationId: identifierSchema.optional(),
   message: nonEmptyStringSchema,
   nodeId: identifierSchema,
   severity: z.enum(["warning", "error"])

@@ -38,7 +38,8 @@ Session list and detail read models expose:
 - aggregate conversation lifecycle status counts;
 - bounded consistency findings;
 - finding codes for active ids without records, terminal conversations still
-  marked active, and open conversations missing active references.
+  marked active, open conversations missing active references, and active
+  sessions with no open work.
 
 `GET /v1/host/status` now exposes session diagnostics:
 

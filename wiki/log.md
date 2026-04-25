@@ -1436,3 +1436,15 @@ terminal sessions from being reactivated by stale open-work references.
 
 The repair is deliberately scoped to the derived active-work set: it does not
 synthesize session lifecycle transitions or mutate state from host diagnostics.
+
+## [2026-04-25] implementation | Added session-level consistency diagnostics
+
+Extended delegated-session diagnostics beyond conversation-id-specific drift.
+`HostSessionConsistencyFinding` now allows session-level findings without a
+`conversationId`, and the host reports
+`active_session_without_open_conversations` when a runner-owned session remains
+`active` with no active ids and no open conversation records.
+
+The finding contributes to session inspection, top-level host degradation, and
+shared CLI/Studio presentation without inventing a synthetic conversation id or
+mutating runner-owned session lifecycle state.

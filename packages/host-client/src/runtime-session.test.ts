@@ -6,6 +6,7 @@ import type {
 import {
   collectHostSessionInspectionTraceIds,
   filterHostSessionsForNode,
+  formatHostSessionConsistencyFinding,
   formatHostSessionDetail,
   formatHostSessionInspectionNodeDetail,
   formatHostSessionInspectionNodeLabel,
@@ -124,6 +125,20 @@ describe("host session presentation helpers", () => {
       "latest message task.result"
     );
     expect(formatHostSessionDetail(session)).toContain("trace-session-alpha");
+  });
+
+  it("formats session-level consistency findings without synthetic conversation ids", () => {
+    expect(
+      formatHostSessionConsistencyFinding({
+        code: "active_session_without_open_conversations",
+        message:
+          "Session 'session-alpha' on node 'worker-it' is active but has no active conversation ids and no open conversation records.",
+        nodeId: "worker-it",
+        severity: "warning"
+      })
+    ).toBe(
+      "warning active_session_without_open_conversations on worker-it/session"
+    );
   });
 
   it("formats selected session drilldown without inventing client state", () => {

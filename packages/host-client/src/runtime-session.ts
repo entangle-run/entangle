@@ -118,7 +118,11 @@ export function countHostSessionConsistencyFindings(
 export function formatHostSessionConsistencyFinding(
   finding: HostSessionConsistencyFinding
 ): string {
-  return `${finding.severity} ${finding.code} on ${finding.nodeId}/${finding.conversationId}`;
+  const target = finding.conversationId
+    ? `${finding.nodeId}/${finding.conversationId}`
+    : `${finding.nodeId}/session`;
+
+  return `${finding.severity} ${finding.code} on ${target}`;
 }
 
 export function formatHostSessionConsistencySummary(

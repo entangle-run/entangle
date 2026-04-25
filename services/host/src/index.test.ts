@@ -3248,6 +3248,73 @@ describe("buildHostServer", () => {
         status: "degraded"
       });
 
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "sessions",
+          "session-empty.json"
+        ),
+        {
+          activeConversationIds: [],
+          graphId: "team-alpha",
+          intent: "Inspect an active session with no open work.",
+          lastMessageType: "task.result",
+          openedAt: "2026-04-24T10:10:00.000Z",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: [],
+          sessionId: "session-empty",
+          status: "active",
+          traceId: "trace-empty",
+          updatedAt: "2026-04-24T10:11:00.000Z",
+          waitingApprovalIds: []
+        }
+      );
+
+      const emptySessionInspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/session-empty"
+      });
+
+      expect(emptySessionInspectionResponse.statusCode).toBe(200);
+      expect(
+        sessionInspectionResponseSchema.parse(
+          emptySessionInspectionResponse.json()
+        )
+      ).toMatchObject({
+        nodes: [
+          {
+            nodeId: "worker-it",
+            sessionConsistencyFindings: [
+              {
+                code: "active_session_without_open_conversations",
+                nodeId: "worker-it",
+                severity: "warning"
+              }
+            ]
+          }
+        ],
+        sessionId: "session-empty"
+      });
+
+      const hostStatusWithEmptyActiveSessionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(hostStatusWithEmptyActiveSessionResponse.statusCode).toBe(200);
+      expect(
+        hostStatusResponseSchema.parse(
+          hostStatusWithEmptyActiveSessionResponse.json()
+        )
+      ).toMatchObject({
+        sessionDiagnostics: {
+          consistencyFindingCount: 4,
+          inspectedSessionCount: 2,
+          sessionsWithConsistencyFindings: 2
+        },
+        status: "degraded"
+      });
+
       const missingSessionResponse = await server.inject({
         method: "GET",
         url: "/v1/sessions/missing-session"

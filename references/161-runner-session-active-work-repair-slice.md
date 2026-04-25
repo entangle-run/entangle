@@ -68,8 +68,8 @@ Coverage now asserts that runner startup:
 The next delegated-session runtime steps should be explicit, not implicit:
 
 - operator-visible repair commands for session lifecycle mismatches;
-- session-level diagnostics for active sessions with no open conversation
-  records;
+- explicit lifecycle repair policy for active sessions with no open
+  conversation records;
 - cross-runtime owner-level synthesis that distinguishes upstream session
   ownership from downstream delegated work;
 - host event emission that makes runner-owned repair activity observable

@@ -42,12 +42,11 @@ describe("runtime session CLI output", () => {
       rootArtifactIds: ["artifact-alpha"],
       sessionConsistencyFindings: [
         {
-          code: "terminal_conversation_still_active",
-          conversationId: "conv-alpha",
+          code: "active_session_without_open_conversations",
           message:
-            "Session 'session-alpha' on node 'worker-it' still references conversation 'conv-alpha' as active after it reached 'closed'.",
+            "Session 'session-alpha' on node 'worker-it' is active but has no active conversation ids and no open conversation records.",
           nodeId: "worker-it",
-          severity: "error"
+          severity: "warning"
         }
       ],
       sessionId: "session-alpha",
@@ -69,10 +68,9 @@ describe("runtime session CLI output", () => {
       rootArtifactCount: 1,
       sessionConsistencyFindings: [
         {
-          code: "terminal_conversation_still_active",
-          conversationId: "conv-alpha",
+          code: "active_session_without_open_conversations",
           nodeId: "worker-it",
-          severity: "error"
+          severity: "warning"
         }
       ],
       sessionId: "session-alpha",

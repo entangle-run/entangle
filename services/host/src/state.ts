@@ -5118,8 +5118,8 @@ function sortSessionConsistencyFindings(
       return nodeOrdering;
     }
 
-    const conversationOrdering = left.conversationId.localeCompare(
-      right.conversationId
+    const conversationOrdering = (left.conversationId ?? "").localeCompare(
+      right.conversationId ?? ""
     );
 
     if (conversationOrdering !== 0) {
@@ -5144,7 +5144,28 @@ function inspectSessionConversationConsistency(input: {
   const activeConversationIds = new Set(
     input.sessionRecord.activeConversationIds
   );
+  const openConversationRecords = input.conversationRecords.filter(
+    hasOpenConversationStatusForHostDiagnostics
+  );
   const findings: HostSessionConsistencyFinding[] = [];
+
+  if (
+    input.sessionRecord.status === "active" &&
+    activeConversationIds.size === 0 &&
+    openConversationRecords.length === 0
+  ) {
+    findings.push(
+      buildSessionConsistencyFinding({
+        code: "active_session_without_open_conversations",
+        message:
+          `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+          "is active but has no active conversation ids and no open " +
+          "conversation records.",
+        nodeId: input.nodeId,
+        severity: "warning"
+      })
+    );
+  }
 
   for (const conversationId of input.sessionRecord.activeConversationIds) {
     const conversationRecord = conversationRecordsById.get(conversationId);
@@ -5181,9 +5202,8 @@ function inspectSessionConversationConsistency(input: {
     }
   }
 
-  for (const conversationRecord of input.conversationRecords) {
+  for (const conversationRecord of openConversationRecords) {
     if (
-      hasOpenConversationStatusForHostDiagnostics(conversationRecord) &&
       !activeConversationIds.has(conversationRecord.conversationId)
     ) {
       findings.push(

@@ -19,6 +19,7 @@ import {
   gitServiceProfileSchema,
   hostErrorResponseSchema,
   hostEventRecordSchema,
+  hostSessionConsistencyFindingSchema,
   hostStatusResponseSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
@@ -550,6 +551,24 @@ describe("host event contracts", () => {
       policy: {
         mode: "restart_on_failure"
       }
+    });
+  });
+
+  it("accepts session-level consistency findings without conversation ids", () => {
+    const finding = hostSessionConsistencyFindingSchema.parse({
+      code: "active_session_without_open_conversations",
+      message:
+        "Session 'session-alpha' on node 'worker-it' is active but has no active conversation ids and no open conversation records.",
+      nodeId: "worker-it",
+      severity: "warning"
+    });
+
+    expect(finding).toEqual({
+      code: "active_session_without_open_conversations",
+      message:
+        "Session 'session-alpha' on node 'worker-it' is active but has no active conversation ids and no open conversation records.",
+      nodeId: "worker-it",
+      severity: "warning"
     });
   });
 

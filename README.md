@@ -168,8 +168,9 @@ This repository currently contains:
   `packages/host-client` and the CLI, with list summaries now carrying
   aggregate active-conversation ids, waiting approval ids, root artifact ids,
   host-derived conversation lifecycle status counts, optional consistency
-  findings for drift between session active ids and conversation records, and
-  the latest observed A2A message type across participating nodes;
+  findings for drift between session active ids and conversation records plus
+  active sessions with no open work, and the latest observed A2A message type
+  across participating nodes;
 - a widening of the host event surface where `entangle-host` now derives and
   persists `session.updated` plus `runner.turn.updated` events from persisted
   runner session and turn state, with `session.updated` now carrying
@@ -385,8 +386,8 @@ This repository currently contains:
   now carries derived reconciliation state and finding codes, persisted host
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` no longer reduces runtime health to raw
-  failure counts alone, with session consistency findings now contributing to
-  top-level degraded host status;
+  failure counts alone, with conversation-level and session-level consistency
+  findings now contributing to top-level degraded host status;
 - a host-owned runtime recovery-history surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/recovery`, persists per-node recovery
   records under observed host state, deduplicates unchanged states with
