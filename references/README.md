@@ -163,6 +163,7 @@ This directory is the canonical design corpus for Entangle.
 157. [156-shared-graph-presentation-slice.md](156-shared-graph-presentation-slice.md)
 158. [157-shared-resource-inventory-presentation-slice.md](157-shared-resource-inventory-presentation-slice.md)
 159. [158-shared-runtime-inspection-presentation-slice.md](158-shared-runtime-inspection-presentation-slice.md)
+160. [159-shared-host-status-presentation-slice.md](159-shared-host-status-presentation-slice.md)
 
 ## Role of this corpus
 

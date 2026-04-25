@@ -761,6 +761,11 @@ export {
   type HostEventFilter
 } from "./event-inspection.js";
 export {
+  formatHostStatusDetailLines,
+  formatHostStatusLabel,
+  formatHostStatusReconciliationSummary
+} from "./host-status.js";
+export {
   formatGraphEdgeDetail,
   formatGraphEdgeLabel,
   formatGraphRevisionDetail,

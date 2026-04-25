@@ -29,6 +29,7 @@ import {
   validatePackageDirectory
 } from "@entangle/validator";
 import { buildHostEventFilter } from "./host-event-inspection.js";
+import { projectHostStatusSummary } from "./host-status-output.js";
 import {
   projectGraphRevisionInspectionSummary,
   projectGraphRevisionSummary,
@@ -266,10 +267,14 @@ const hostCommand = program
 
 hostCommand
   .command("status")
+  .option("--summary", "Print a compact operator-oriented host status summary.")
   .description("Fetch the current status from a running entangle-host.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.getHostStatus());
+    const response = await client.getHostStatus();
+    printJson(
+      options.summary ? { status: projectHostStatusSummary(response) } : response
+    );
   });
 
 const hostEventsCommand = hostCommand

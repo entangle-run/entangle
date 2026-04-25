@@ -1338,3 +1338,14 @@ provisioning details.
 The CLI now supports compact operator-oriented `--summary` output for
 `host runtimes list` and `host runtimes get <nodeId>` over the existing
 host-owned `RuntimeInspectionResponse` contract.
+
+## [2026-04-25] implementation | Added shared host status presentation
+
+Closed the top-level host health summary gap by adding shared host-status
+presentation helpers to `packages/host-client`. The helpers cover host labels,
+reconciliation summary strings, runtime counts, finding codes, graph revision,
+backend, and last reconciliation time.
+
+The CLI now supports compact operator-oriented `host status --summary` output
+over the existing host-owned `HostStatusResponse` contract while keeping raw
+`host status` output unchanged.
