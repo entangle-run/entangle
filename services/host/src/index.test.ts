@@ -3248,9 +3248,15 @@ describe("buildHostServer", () => {
         approvalId: "approval-source-application-alpha",
         approverNodeIds: ["operator-alpha"],
         graphId: runtimeContext.binding.graphId,
+        operation: "source_application",
         reason: "Approve accepted source application.",
         requestedAt: "2026-04-24T00:00:00.000Z",
         requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-change-turn-alpha",
+          kind: "source_change_candidate",
+          label: "source-change-turn-alpha"
+        },
         sessionId: "session-alpha",
         status: "approved",
         updatedAt: "2026-04-24T00:00:01.000Z"
@@ -3259,23 +3265,90 @@ describe("buildHostServer", () => {
         approvalId: "approval-source-application-other-session",
         approverNodeIds: ["operator-alpha"],
         graphId: runtimeContext.binding.graphId,
+        operation: "source_application",
         reason: "Approve a different source application session.",
         requestedAt: "2026-04-24T00:00:30.000Z",
         requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-change-turn-alpha",
+          kind: "source_change_candidate",
+          label: "source-change-turn-alpha"
+        },
         sessionId: "session-other",
         status: "approved",
         updatedAt: "2026-04-24T00:00:31.000Z"
+      });
+      const sourceApplicationWrongOperationApproval = approvalRecordSchema.parse({
+        approvalId: "approval-source-application-wrong-operation",
+        approverNodeIds: ["operator-alpha"],
+        graphId: runtimeContext.binding.graphId,
+        operation: "source_publication",
+        reason: "Approve a different source mutation operation.",
+        requestedAt: "2026-04-24T00:00:40.000Z",
+        requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-change-turn-alpha",
+          kind: "source_change_candidate",
+          label: "source-change-turn-alpha"
+        },
+        sessionId: "session-alpha",
+        status: "approved",
+        updatedAt: "2026-04-24T00:00:41.000Z"
+      });
+      const sourceApplicationWrongResourceApproval = approvalRecordSchema.parse({
+        approvalId: "approval-source-application-wrong-resource",
+        approverNodeIds: ["operator-alpha"],
+        graphId: runtimeContext.binding.graphId,
+        operation: "source_application",
+        reason: "Approve a different source change candidate.",
+        requestedAt: "2026-04-24T00:00:50.000Z",
+        requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-change-other",
+          kind: "source_change_candidate",
+          label: "source-change-other"
+        },
+        sessionId: "session-alpha",
+        status: "approved",
+        updatedAt: "2026-04-24T00:00:51.000Z"
       });
       const sourcePublicationApproval = approvalRecordSchema.parse({
         approvalId: "approval-source-publication-alpha",
         approverNodeIds: ["operator-alpha"],
         graphId: runtimeContext.binding.graphId,
+        operation: "source_publication",
         reason: "Approve source publication to a non-primary target.",
         requestedAt: "2026-04-24T00:01:00.000Z",
         requestedByNodeId: "worker-it",
+        resource: {
+          id:
+            "source-history-source-change-turn-alpha|local-gitea|team-alpha|missing-target",
+          kind: "source_history_publication",
+          label:
+            "source-history-source-change-turn-alpha -> local-gitea/team-alpha/missing-target"
+        },
         sessionId: "session-alpha",
         status: "approved",
         updatedAt: "2026-04-24T00:01:01.000Z"
+      });
+      const sourcePublicationWrongResourceApproval = approvalRecordSchema.parse({
+        approvalId: "approval-source-publication-wrong-resource",
+        approverNodeIds: ["operator-alpha"],
+        graphId: runtimeContext.binding.graphId,
+        operation: "source_publication",
+        reason: "Approve source publication to a different target.",
+        requestedAt: "2026-04-24T00:01:20.000Z",
+        requestedByNodeId: "worker-it",
+        resource: {
+          id:
+            "source-history-source-change-turn-alpha|local-gitea|team-alpha|other-target",
+          kind: "source_history_publication",
+          label:
+            "source-history-source-change-turn-alpha -> local-gitea/team-alpha/other-target"
+        },
+        sessionId: "session-alpha",
+        status: "approved",
+        updatedAt: "2026-04-24T00:01:21.000Z"
       });
       await mkdir(path.join(runtimeContext.workspace.runtimeRoot, "approvals"), {
         recursive: true
@@ -3305,6 +3378,33 @@ describe("buildHostServer", () => {
           `${sourcePublicationApproval.approvalId}.json`
         ),
         JSON.stringify(sourcePublicationApproval, null, 2),
+        "utf8"
+      );
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          `${sourceApplicationWrongOperationApproval.approvalId}.json`
+        ),
+        JSON.stringify(sourceApplicationWrongOperationApproval, null, 2),
+        "utf8"
+      );
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          `${sourceApplicationWrongResourceApproval.approvalId}.json`
+        ),
+        JSON.stringify(sourceApplicationWrongResourceApproval, null, 2),
+        "utf8"
+      );
+      await writeFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          `${sourcePublicationWrongResourceApproval.approvalId}.json`
+        ),
+        JSON.stringify(sourcePublicationWrongResourceApproval, null, 2),
         "utf8"
       );
 
@@ -3558,6 +3658,38 @@ describe("buildHostServer", () => {
         hostErrorResponseSchema.parse(wrongSessionApplyResponse.json()).message
       ).toContain("not session 'session-alpha'");
 
+      const wrongOperationApplyResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-application-wrong-operation",
+          appliedBy: "operator-alpha",
+          reason: "Try applying with an approval for another operation."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      });
+
+      expect(wrongOperationApplyResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(wrongOperationApplyResponse.json()).message
+      ).toContain("requires 'source_application'");
+
+      const wrongResourceApplyResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-application-wrong-resource",
+          appliedBy: "operator-alpha",
+          reason: "Try applying with an approval for another resource."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      });
+
+      expect(wrongResourceApplyResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(wrongResourceApplyResponse.json()).message
+      ).toContain("requires 'source_change_candidate:source-change-turn-alpha");
+
       const applyResponse = await server.inject({
         method: "POST",
         payload: {
@@ -3646,6 +3778,25 @@ describe("buildHostServer", () => {
       expect(
         hostErrorResponseSchema.parse(policyBlockedPublishResponse.json()).message
       ).toContain("requires an approved approvalId");
+
+      const wrongResourcePublishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-publication-wrong-resource",
+          publishedBy: "operator-alpha",
+          reason: "Try a non-primary target with an approval for another target.",
+          targetRepositoryName: "missing-target"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
+      });
+
+      expect(wrongResourcePublishResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(wrongResourcePublishResponse.json()).message
+      ).toContain(
+        "source_history_publication:source-history-source-change-turn-alpha|local-gitea|team-alpha|missing-target"
+      );
 
       const failedPublishResponse = await server.inject({
         method: "POST",
@@ -4650,8 +4801,14 @@ describe("buildHostServer", () => {
           approverNodeIds: ["supervisor-it"],
           conversationId: "conv-alpha",
           graphId: "team-alpha",
+          operation: "artifact_publication",
           requestedAt: "2026-04-24T10:01:00.000Z",
           requestedByNodeId: "worker-it",
+          resource: {
+            id: "report-turn-001",
+            kind: "artifact",
+            label: "report-turn-001"
+          },
           sessionId: "session-alpha",
           status: "pending",
           updatedAt: "2026-04-24T10:05:00.000Z"
@@ -4793,6 +4950,12 @@ describe("buildHostServer", () => {
             category: "session",
             conversationId: "conv-alpha",
             nodeId: "worker-it",
+            operation: "artifact_publication",
+            resource: {
+              id: "report-turn-001",
+              kind: "artifact",
+              label: "report-turn-001"
+            },
             sessionId: "session-alpha",
             status: "pending",
             type: "approval.trace.event"
@@ -4951,8 +5114,14 @@ describe("buildHostServer", () => {
           approverNodeIds: ["supervisor-it"],
           conversationId: "conv-alpha",
           graphId: "team-alpha",
+          operation: "artifact_publication",
           requestedAt: "2026-04-24T10:01:00.000Z",
           requestedByNodeId: "worker-it",
+          resource: {
+            id: "report-turn-001",
+            kind: "artifact",
+            label: "report-turn-001"
+          },
           sessionId: "session-alpha",
           status: "approved",
           updatedAt: "2026-04-24T10:06:00.000Z"

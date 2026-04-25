@@ -101,10 +101,12 @@ This slice intentionally does not:
 
 - generate approval records directly from OpenCode permission prompts;
 - feed approval decisions back into a resumable OpenCode lifecycle;
-- add operation-scoped approval record metadata;
 - auto-provision non-primary git repositories;
 - add fallback publication or replication;
 - move source application or publication side effects into runner commands.
+
+Operation and resource scoped approval metadata was added in
+`references/206-operation-resource-scoped-approvals-slice.md`.
 
 The source mutation gate is a host-enforced Entangle policy guard. Engine-native
 permission mapping remains part of the broader B3 policy bridge because the
@@ -118,8 +120,8 @@ The remaining policy and source workflow implementation should add:
 - durable approval records from live OpenCode permission requests where the
   engine lifecycle can be mapped safely;
 - resumable approval-decision feedback into the coding-agent lifecycle;
-- operation-scoped approval evidence so approvals cannot be reused outside the
-  intended action;
+- operator-facing approval request creation flows for source mutation scopes
+  instead of test-seeded approval records;
 - non-primary git repository provisioning and fallback/replication behavior;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;

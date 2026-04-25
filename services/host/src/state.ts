@@ -188,6 +188,8 @@ import {
   type ArtifactRecord,
   type ConversationRecord,
   type ConversationStatusCounts,
+  type PolicyOperation,
+  type PolicyResourceScope,
   type HostSessionConsistencyFinding,
   type HostSessionConsistencyFindingCode,
   type SessionInspectionResponse,
@@ -6439,9 +6441,31 @@ type SourceMutationApprovalResolution =
       ok: false;
     };
 
+function formatPolicyResourceScope(resource?: PolicyResourceScope): string {
+  if (!resource) {
+    return "unspecified";
+  }
+
+  return resource.label
+    ? `${resource.kind}:${resource.id} (${resource.label})`
+    : `${resource.kind}:${resource.id}`;
+}
+
+function policyResourceScopeMatches(
+  approvalResource: PolicyResourceScope | undefined,
+  expectedResource: PolicyResourceScope
+): boolean {
+  return (
+    approvalResource?.kind === expectedResource.kind &&
+    approvalResource.id === expectedResource.id
+  );
+}
+
 async function resolveApprovedSourceMutationApproval(input: {
   approvalId?: string | undefined;
   context: EffectiveRuntimeContext;
+  expectedOperation: PolicyOperation;
+  expectedResource: PolicyResourceScope;
   operation: "source application" | "source publication";
   required: boolean;
   sessionId?: string | undefined;
@@ -6501,6 +6525,26 @@ async function resolveApprovedSourceMutationApproval(input: {
     };
   }
 
+  if (approval.operation !== input.expectedOperation) {
+    return {
+      message:
+        `Approval '${input.approvalId}' is scoped to operation ` +
+        `'${approval.operation ?? "unspecified"}', but ${input.operation} ` +
+        `requires '${input.expectedOperation}'.`,
+      ok: false
+    };
+  }
+
+  if (!policyResourceScopeMatches(approval.resource, input.expectedResource)) {
+    return {
+      message:
+        `Approval '${input.approvalId}' is scoped to resource ` +
+        `'${formatPolicyResourceScope(approval.resource)}', but ${input.operation} ` +
+        `requires '${formatPolicyResourceScope(input.expectedResource)}'.`,
+      ok: false
+    };
+  }
+
   if (approval.status !== "approved") {
     return {
       message:
@@ -6528,6 +6572,24 @@ function isPrimarySourceHistoryPublicationTarget(input: {
     primaryTarget.namespace === input.target.namespace &&
     primaryTarget.repositoryName === input.target.repositoryName
   );
+}
+
+function buildSourceHistoryPublicationApprovalResource(input: {
+  historyId: string;
+  target: GitRepositoryTarget;
+}): PolicyResourceScope {
+  return {
+    id: [
+      input.historyId,
+      input.target.gitServiceRef,
+      input.target.namespace,
+      input.target.repositoryName
+    ].join("|"),
+    kind: "source_history_publication",
+    label:
+      `${input.historyId} -> ${input.target.gitServiceRef}/` +
+      `${input.target.namespace}/${input.target.repositoryName}`
+  };
 }
 
 function resolveSourceHistoryPublicationTarget(input: {
@@ -6666,6 +6728,12 @@ export async function applyRuntimeSourceChangeCandidate(input: {
   const approvalResolution = await resolveApprovedSourceMutationApproval({
     approvalId: apply.approvalId,
     context,
+    expectedOperation: "source_application",
+    expectedResource: {
+      id: candidate.candidateId,
+      kind: "source_change_candidate",
+      label: candidate.candidateId
+    },
     operation: "source application",
     required: context.policyContext.sourceMutation.applyRequiresApproval,
     sessionId: candidate.sessionId
@@ -6954,6 +7022,11 @@ export async function publishRuntimeSourceHistory(input: {
   const approvalResolution = await resolveApprovedSourceMutationApproval({
     approvalId: publish.approvalId,
     context,
+    expectedOperation: "source_publication",
+    expectedResource: buildSourceHistoryPublicationApprovalResource({
+      historyId: history.sourceHistoryId,
+      target
+    }),
     operation: "source publication",
     required: publicationRequiresApproval,
     sessionId: history.sessionId
@@ -7930,6 +8003,8 @@ async function synchronizeApprovalActivityObservation(input: {
     fingerprint,
     graphId: approvalRecord.graphId,
     nodeId: runtime.nodeId,
+    ...(approvalRecord.operation ? { operation: approvalRecord.operation } : {}),
+    ...(approvalRecord.resource ? { resource: approvalRecord.resource } : {}),
     requestedAt: approvalRecord.requestedAt,
     requestedByNodeId: approvalRecord.requestedByNodeId,
     schemaVersion: "1",
@@ -7959,6 +8034,8 @@ async function synchronizeApprovalActivityObservation(input: {
       `Approval '${approvalRecord.approvalId}' on node '${runtime.nodeId}' ` +
       `is now '${approvalRecord.status}'.`,
     nodeId: runtime.nodeId,
+    ...(approvalRecord.operation ? { operation: approvalRecord.operation } : {}),
+    ...(approvalRecord.resource ? { resource: approvalRecord.resource } : {}),
     requestedAt: approvalRecord.requestedAt,
     requestedByNodeId: approvalRecord.requestedByNodeId,
     sessionId: approvalRecord.sessionId,

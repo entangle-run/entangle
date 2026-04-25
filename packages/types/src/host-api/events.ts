@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { nostrEventIdSchema } from "../common/crypto.js";
+import {
+  policyOperationSchema,
+  policyResourceScopeSchema
+} from "../common/policy.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
@@ -341,8 +345,10 @@ export const approvalTraceEventSchema = hostEventBaseSchema.extend({
   conversationId: identifierSchema.optional(),
   graphId: identifierSchema,
   nodeId: identifierSchema,
+  operation: policyOperationSchema.optional(),
   requestedAt: nonEmptyStringSchema,
   requestedByNodeId: identifierSchema,
+  resource: policyResourceScopeSchema.optional(),
   sessionId: identifierSchema,
   status: approvalLifecycleStateSchema,
   type: z.literal("approval.trace.event"),

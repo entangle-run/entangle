@@ -70,9 +70,8 @@ terminate overlong OpenCode probe/run processes with classified failure
 evidence, and report OpenCode one-shot permission auto-rejections as generic
 `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
-complete policy bridge, resumable permission approval mapping, operation-scoped
-approval evidence, artifact restore/replay workflow, git/wiki workflow,
-external cancellation bridge,
+policy bridge, live OpenCode permission approval mapping, artifact
+restore/replay workflow, git/wiki workflow, external cancellation bridge,
 doctor-backed workspace health checks, and full CLI/Studio configuration and
 observability surface required for L3 acceptance.
 
@@ -472,10 +471,14 @@ Current partial implementation:
   `policyContext.sourceMutation` defaults, and host source application/
   publication mutations can require an approved runtime approval id before the
   source side effect is accepted;
+- approval records, approval request metadata, observed approval activity, and
+  approval trace events now carry optional operation and resource scope, and
+  host source mutation gates require exact operation/resource matches before
+  accepting a supplied approval id;
 - this does not yet create durable approval records from live OpenCode
   permission requests or feed approval decisions back into OpenCode because the
   current one-shot `opencode run` lifecycle auto-rejects unless unsafe bypass
-  is enabled, and approval records are not yet operation-scoped.
+  is enabled.
 
 Acceptance:
 
@@ -594,11 +597,15 @@ Current partial implementation:
   application, for all source publication, or for non-primary publication
   targets by default, and accepted approval ids are persisted on source records
   and source history events;
+- source mutation approvals are now operation and resource scoped:
+  source-candidate application requires `source_application` plus the concrete
+  source-change candidate id, while source-history publication requires
+  `source_publication` plus the concrete source-history and git target tuple;
 - materialized git artifacts now have bounded host-owned history and diff
   inspection through host API, host-client, CLI, and Studio surfaces;
-- live OpenCode permission-to-approval flow, operation-scoped approval
-  evidence, non-primary target provisioning/fallback behavior, and artifact
-  restore/replay workflow remain open.
+- live OpenCode permission-to-approval flow, operator-facing scoped approval
+  request creation, non-primary target provisioning/fallback behavior, and
+  artifact restore/replay workflow remain open.
 
 Acceptance:
 

@@ -210,6 +210,7 @@ This directory is the canonical design corpus for Entangle.
 204. [203-artifact-history-diff-slice.md](203-artifact-history-diff-slice.md)
 205. [204-source-history-publication-controls-slice.md](204-source-history-publication-controls-slice.md)
 206. [205-source-mutation-policy-gates-slice.md](205-source-mutation-policy-gates-slice.md)
+207. [206-operation-resource-scoped-approvals-slice.md](206-operation-resource-scoped-approvals-slice.md)
 
 ## Role of this corpus
 

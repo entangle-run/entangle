@@ -1047,6 +1047,11 @@ describe("RunnerService", () => {
           approval: {
             approvalId: "approval-request-alpha",
             approverNodeIds: ["worker-it"],
+            operation: "artifact_publication",
+            resource: {
+              id: "artifact-alpha",
+              kind: "artifact"
+            },
             reason: "Approve the proposed publication."
           }
         },
@@ -1071,8 +1076,13 @@ describe("RunnerService", () => {
       approvalId: "approval-request-alpha",
       approverNodeIds: ["worker-it"],
       conversationId: "conv-approval-request",
+      operation: "artifact_publication",
       reason: "Approve the proposed publication.",
       requestedByNodeId: "reviewer-it",
+      resource: {
+        id: "artifact-alpha",
+        kind: "artifact"
+      },
       sessionId: "session-approval-request",
       status: "pending"
     });

@@ -8,6 +8,7 @@ import {
   identifierSchema,
   nonEmptyStringSchema
 } from "../common/primitives.js";
+import { policyOperationSchema } from "../common/policy.js";
 import { entangleA2AResponsePolicySchema } from "../protocol/a2a.js";
 import { modelEndpointAdapterKindSchema } from "../resources/catalog.js";
 
@@ -85,23 +86,7 @@ export const engineToolExecutionObservationSchema = z.object({
   toolId: nonEmptyStringSchema
 });
 
-export const enginePolicyOperationSchema = z.enum([
-  "filesystem_read",
-  "filesystem_write",
-  "filesystem_access",
-  "command_execution",
-  "git_commit",
-  "git_push",
-  "artifact_publication",
-  "wiki_update",
-  "peer_message",
-  "graph_mutation",
-  "approval_request",
-  "network_access",
-  "subagent_execution",
-  "tool_execution",
-  "unknown"
-]);
+export const enginePolicyOperationSchema = policyOperationSchema;
 
 export const enginePermissionDecisionSchema = z.enum([
   "allowed",

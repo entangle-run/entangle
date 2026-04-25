@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { artifactRefSchema } from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
+import {
+  policyOperationSchema,
+  policyResourceScopeSchema
+} from "../common/policy.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 
 export const entangleA2AProtocolSchema = z.literal("entangle.a2a.v1");
@@ -41,6 +45,8 @@ export const entangleA2AApprovalRequestMetadataSchema = z.object({
   approval: z.object({
     approvalId: identifierSchema,
     approverNodeIds: z.array(identifierSchema).default([]),
+    operation: policyOperationSchema.optional(),
+    resource: policyResourceScopeSchema.optional(),
     reason: nonEmptyStringSchema.optional()
   })
 });

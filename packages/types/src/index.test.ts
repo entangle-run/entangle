@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  approvalTraceEventSchema,
   agentEngineProfileSchema,
   agentEngineTurnResultSchema,
   artifactRecordSchema,
@@ -328,9 +329,15 @@ describe("runtime approval host API contracts", () => {
       approverNodeIds: ["supervisor-it"],
       conversationId: "conv-alpha",
       graphId: "team-alpha",
+      operation: "source_publication",
       reason: "Supervisor approval is required before publication.",
       requestedAt: "2026-04-24T00:00:00.000Z",
       requestedByNodeId: "worker-it",
+      resource: {
+        id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+        kind: "source_history_publication",
+        label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+      },
       sessionId: "session-alpha",
       status: "pending",
       updatedAt: "2026-04-24T00:01:00.000Z"
@@ -342,6 +349,13 @@ describe("runtime approval host API contracts", () => {
     expect(
       runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.status
     ).toBe("pending");
+    expect(
+      runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.operation
+    ).toBe("source_publication");
+    expect(
+      runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.resource
+        ?.kind
+    ).toBe("source_history_publication");
   });
 });
 
@@ -690,6 +704,11 @@ describe("Entangle A2A machine-readable contracts", () => {
         approval: {
           approvalId: "approval-alpha",
           approverNodeIds: ["lead-it"],
+          operation: "artifact_publication",
+          resource: {
+            id: "artifact-alpha",
+            kind: "artifact"
+          },
           reason: "Approve publication before the session can complete."
         }
       })
@@ -697,6 +716,11 @@ describe("Entangle A2A machine-readable contracts", () => {
       approval: {
         approvalId: "approval-alpha",
         approverNodeIds: ["lead-it"],
+        operation: "artifact_publication",
+        resource: {
+          id: "artifact-alpha",
+          kind: "artifact"
+        },
         reason: "Approve publication before the session can complete."
       }
     });
@@ -1469,8 +1493,14 @@ describe("host event contracts", () => {
       graphId: "graph-alpha",
       message: "Approval 'approval-alpha' on node 'worker-it' is now 'pending'.",
       nodeId: "worker-it",
+      operation: "source_publication",
       requestedAt: "2026-04-24T00:00:03.000Z",
       requestedByNodeId: "worker-it",
+      resource: {
+        id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+        kind: "source_history_publication",
+        label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+      },
       schemaVersion: "1",
       sessionId: "session-alpha",
       status: "pending",
@@ -1501,6 +1531,9 @@ describe("host event contracts", () => {
 
     expect(conversationEvent.type).toBe("conversation.trace.event");
     expect(approvalEvent.type).toBe("approval.trace.event");
+    const parsedApprovalEvent = approvalTraceEventSchema.parse(approvalEvent);
+    expect(parsedApprovalEvent.operation).toBe("source_publication");
+    expect(parsedApprovalEvent.resource?.kind).toBe("source_history_publication");
     expect(artifactEvent.type).toBe("artifact.trace.event");
   });
 

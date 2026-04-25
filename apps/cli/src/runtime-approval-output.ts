@@ -21,6 +21,8 @@ export interface RuntimeApprovalSummaryRecord {
   conversationId?: string;
   detailLines: string[];
   label: string;
+  operation?: ApprovalRecord["operation"];
+  resource?: ApprovalRecord["resource"];
   requestedAt: string;
   requestedByNodeId: string;
   sessionId: string;
@@ -40,6 +42,8 @@ export function projectRuntimeApprovalSummary(
       : {}),
     detailLines: formatRuntimeApprovalDetailLines(approval),
     label: formatRuntimeApprovalLabel(approval),
+    ...(approval.operation ? { operation: approval.operation } : {}),
+    ...(approval.resource ? { resource: approval.resource } : {}),
     requestedAt: approval.requestedAt,
     requestedByNodeId: approval.requestedByNodeId,
     sessionId: approval.sessionId,

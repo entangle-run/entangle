@@ -1,5 +1,25 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Scoped approvals to operations and resources
+
+Tightened Entangle Local L3 approval evidence for source mutations. Approval
+request metadata, runner approval records, observed approval activity, and
+typed approval trace events now carry optional operation and resource scope.
+Source-candidate application and source-history publication gates require exact
+operation/resource matches before accepting a supplied approval id.
+
+Source application approvals now bind to the concrete source-change candidate,
+while source-history publication approvals bind to the source-history entry and
+resolved git target tuple. Shared host-client helpers, CLI summaries, Studio
+approval inspection, and runtime trace presentation now surface both operation
+and resource scope. Added
+`references/206-operation-resource-scoped-approvals-slice.md`.
+
+Focused package typecheck/test coverage passed for the touched contracts,
+host, runner, host-client, CLI, and Studio packages. `git diff --check`,
+`pnpm build`, and `CI=1 TURBO_DAEMON=false pnpm verify` also passed; build
+still reports only the known Studio chunk-size warning.
+
 ## [2026-04-25] implementation | Added source mutation policy gates
 
 Advanced Entangle Local L3 workstreams B3 and B5. Graph node bindings now carry
@@ -14,9 +34,9 @@ records, source-history application/publication records, and
 `source_history.updated` / `source_history.published` events. CLI, Studio, and
 shared host-client presentation now surface source approval evidence. Added
 `references/205-source-mutation-policy-gates-slice.md`. Live OpenCode
-permission-to-approval mapping, operation-scoped approval evidence, non-primary
-git provisioning/fallback, artifact restore/replay, and end-to-end
-OpenCode-backed smoke coverage remain open.
+permission-to-approval mapping, operator-facing scoped approval request
+creation, non-primary git provisioning/fallback, artifact restore/replay, and
+end-to-end OpenCode-backed smoke coverage remain open.
 
 Focused package lint/typecheck/test checks, `git diff --check`, and `pnpm build`
 passed. The aggregate `pnpm verify` and recursive workspace test attempts were

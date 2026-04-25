@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { artifactPublicationSchema } from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
+import {
+  policyOperationSchema,
+  policyResourceScopeSchema
+} from "../common/policy.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
@@ -266,9 +270,11 @@ export const approvalRecordSchema = z.object({
   approverNodeIds: z.array(identifierSchema).default([]),
   conversationId: identifierSchema.optional(),
   graphId: identifierSchema,
+  operation: policyOperationSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
   requestedAt: nonEmptyStringSchema,
   requestedByNodeId: identifierSchema,
+  resource: policyResourceScopeSchema.optional(),
   sessionId: identifierSchema,
   status: approvalLifecycleStateSchema,
   updatedAt: nonEmptyStringSchema

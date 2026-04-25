@@ -1385,9 +1385,11 @@ export class RunnerService {
           : approverNodeIds,
         conversationId: input.envelope.message.conversationId,
         graphId: input.envelope.message.graphId,
+        ...(approval.operation ? { operation: approval.operation } : {}),
         reason: approval.reason ?? input.envelope.message.work.summary,
         requestedAt: existingApproval?.requestedAt ?? input.envelope.receivedAt,
         requestedByNodeId: input.envelope.message.fromNodeId,
+        ...(approval.resource ? { resource: approval.resource } : {}),
         sessionId: input.envelope.message.sessionId,
         status: "pending",
         updatedAt: input.envelope.receivedAt

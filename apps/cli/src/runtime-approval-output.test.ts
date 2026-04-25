@@ -12,9 +12,15 @@ const approvals: ApprovalRecord[] = [
     approverNodeIds: ["supervisor-it"],
     conversationId: "conv-alpha",
     graphId: "team-alpha",
+    operation: "source_publication",
     reason: "Review publication.",
     requestedAt: "2026-04-24T11:00:00.000Z",
     requestedByNodeId: "worker-it",
+    resource: {
+      id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+      kind: "source_history_publication",
+      label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+    },
     sessionId: "session-alpha",
     status: "pending",
     updatedAt: "2026-04-24T11:05:00.000Z"
@@ -56,6 +62,12 @@ describe("runtime-approval-output", () => {
       approverNodeIds: ["supervisor-it"],
       conversationId: "conv-alpha",
       label: "approval-newer · pending",
+      operation: "source_publication",
+      resource: {
+        id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+        kind: "source_history_publication",
+        label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+      },
       requestedByNodeId: "worker-it",
       sessionId: "session-alpha",
       status: "pending",
@@ -64,6 +76,8 @@ describe("runtime-approval-output", () => {
     });
     expect(projectRuntimeApprovalSummary(approval!).detailLines).toEqual(
       expect.arrayContaining([
+        "operation source_publication",
+        "resource source_history_publication:source-history-alpha|local-gitea|team-alpha|team-alpha (source-history-alpha -> local-gitea/team-alpha/team-alpha)",
         "reason Review publication.",
         "conversation conv-alpha"
       ])

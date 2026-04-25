@@ -200,7 +200,14 @@ export function describeRuntimeTraceEvent(
       return {
         detailLines: [
           `Requested by: ${event.requestedByNodeId}`,
-          `Approvers: ${event.approverNodeIds.length}`
+          `Approvers: ${event.approverNodeIds.length}`,
+          ...(event.operation ? [`Operation: ${event.operation}`] : []),
+          ...(event.resource
+            ? [
+                `Resource: ${event.resource.kind}:${event.resource.id}` +
+                  (event.resource.label ? ` (${event.resource.label})` : "")
+              ]
+            : [])
         ],
         label: `Approval ${event.approvalId} is ${event.status}`
       };

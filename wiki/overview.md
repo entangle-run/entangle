@@ -165,8 +165,9 @@ The repository now also contains the first real implementation baseline:
   failed attempts, with node-configured source mutation policy now able to
   require approved runtime approval ids before source application, before any
   source-history publication, or before non-primary publication targets by
-  default, and with bounded host/CLI/Studio history and diff inspection for
-  supported materialized git artifacts;
+  default, while validating approval operation and concrete resource scope
+  before accepting a supplied approval id, and with bounded host/CLI/Studio
+  history and diff inspection for supported materialized git artifacts;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -679,10 +680,10 @@ The current implementation-truth audit now lives in
   listed-file preview plus review, local source-history state, and first
   retryable target-aware source-history commit artifact publication plus
   bounded artifact history/diff inspection for materialized git artifacts; the
-  next git gaps are operation-scoped approval evidence, artifact
-  restore/replay semantics, and non-primary target provisioning/fallback
-  behavior, while the next deployment-grade gap is non-disposable local-profile
-  upgrade and repair behavior for older Gitea volumes;
+  next git gaps are artifact restore/replay semantics and non-primary target
+  provisioning/fallback behavior, while the next deployment-grade gap is
+  non-disposable local-profile upgrade and repair behavior for older Gitea
+  volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

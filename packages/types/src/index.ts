@@ -2,6 +2,7 @@ export * from "./artifacts/artifact-ref.js";
 export * from "./artifacts/git-repository-provisioning.js";
 export * from "./artifacts/git-repository-target.js";
 export * from "./common/crypto.js";
+export * from "./common/policy.js";
 export * from "./common/primitives.js";
 export * from "./common/topology.js";
 export * from "./common/validation.js";

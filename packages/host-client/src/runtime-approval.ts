@@ -86,6 +86,17 @@ export function formatRuntimeApprovalDetailLines(
     `status ${approval.status}`
   ];
 
+  if (approval.operation) {
+    lines.push(`operation ${approval.operation}`);
+  }
+
+  if (approval.resource) {
+    const resource = approval.resource.label
+      ? `${approval.resource.kind}:${approval.resource.id} (${approval.resource.label})`
+      : `${approval.resource.kind}:${approval.resource.id}`;
+    lines.push(`resource ${resource}`);
+  }
+
   if (approval.conversationId) {
     lines.push(`conversation ${approval.conversationId}`);
   }
