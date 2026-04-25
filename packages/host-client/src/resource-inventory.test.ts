@@ -123,7 +123,7 @@ describe("resource inventory presentation helpers", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "hackathon_local"
+        runtimeProfile: "local"
       },
       edges: [],
       graphId: "demo",
@@ -201,7 +201,7 @@ describe("resource inventory presentation helpers", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "hackathon_local"
+        runtimeProfile: "local"
       },
       edges: [],
       graphId: "team-alpha",

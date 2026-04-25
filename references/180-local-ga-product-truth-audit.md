@@ -72,6 +72,8 @@ local runtime baseline:
 - first per-node agent-runtime contracts in the catalog, graph spec,
   effective runtime context, validator, and host materialization path, with
   OpenCode as the required default node engine profile.
+- the active Local runtime profile now uses the stable machine value `local`
+  instead of the legacy `hackathon_local` value.
 
 ## Durable Fix From This Audit
 
@@ -152,9 +154,9 @@ failure.
 
 ## Known Limitations
 
-- The productized Local profile still carries the legacy machine value
-  `hackathon_local`; this is not a public product claim, but should be retired
-  before Local Workbench or GA.
+- Historical release packets still mention the former `hackathon_local` machine
+  value as historical evidence. Active schemas, scaffolds, examples, tests, and
+  smoke scripts now use the stable `local` runtime profile.
 - Studio's production bundle still exceeds Vite's default 500 kB chunk warning.
 - Local has reset-by-volume-teardown but no productized doctor, repair,
   backup, restore, or upgrade command yet.

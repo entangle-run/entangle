@@ -36,8 +36,8 @@ closed:
 - live local host state should live under a disciplined `.entangle/` runtime
   root with explicit desired, observed, trace, import, and workspace
   partitions;
-- the hackathon should include a thin but real CLI plus package scaffolding,
-  while Studio remains the richer operator surface.
+- the early Local profile should include a thin but real CLI plus package
+  scaffolding, while Studio remains the richer operator surface.
 
 The repository is therefore no longer best described as "entering
 implementation" or as being in a control-plane-only stage.
@@ -596,14 +596,16 @@ The specification corpus now has five layers:
 - canonical type definitions;
 - normative invariants, normalization rules, validation rules, and runtime state machines.
 - operational specifications for packaging, graph policy, artifact backends, control-plane behavior, and compatibility.
-- product-operational specifications for observability, Studio, hackathon runtime profile, and phase quality gates.
+- product-operational specifications for observability, Studio, the early Local
+  runtime profile, and phase quality gates.
 
 The central design direction is now clear:
 
 - graph-native, not orchestrator-only;
 - user as node;
 - agents as first-class nodes;
-- hackathon topology should visibly include non-flat organizational structure, not only one coordinator with flat subagents;
+- Entangle Local topology should visibly include non-flat organizational
+  structure, not only one coordinator with flat subagents;
 - Nostr-signed messaging for coordination;
 - artifact backends for work;
 - wiki memory per node;
@@ -611,7 +613,8 @@ The central design direction is now clear:
 - Studio as graph-aware user and operator client;
 - a separate host control-plane service for node admission and runtime lifecycle.
 - headless operation should remain possible through CLI and host-facing surfaces, not only through Studio.
-- the project should remain in one monorepo with explicit internal package boundaries during the hackathon and early product phase.
+- the project should remain in one monorepo with explicit internal package
+  boundaries during Entangle Local and the early product phase.
 - relay, git service, and model endpoint configuration should come from a
   deployment-scoped resource catalog, not hardcoded runtime assumptions.
 - git-facing principals should be bound explicitly through host-managed
@@ -639,7 +642,7 @@ The central design direction is now clear:
     runtime context rather than ad hoc coupling.
 11. The engine/provider layer must stay behind an adapter boundary, not leak
     provider-native types into the runner contract.
-12. The hackathon build should preserve the final architecture while restricting active features.
+12. Entangle Local should preserve the final architecture while restricting active features.
 
 ## Immediate next steps
 

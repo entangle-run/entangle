@@ -265,7 +265,7 @@ export async function createRuntimeFixture(input: {
         primaryGitServiceRef: "local-gitea",
         modelEndpointProfileRef: "shared-model"
       },
-      runtimeProfile: "hackathon_local",
+      runtimeProfile: "local",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-22T00:00:00.000Z",
@@ -328,7 +328,7 @@ export async function createRuntimeFixture(input: {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     relayContext: {
       edgeRoutes: [],

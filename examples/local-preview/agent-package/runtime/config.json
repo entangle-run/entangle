@@ -1,5 +1,5 @@
 {
-  "runtimeProfile": "hackathon_local",
+  "runtimeProfile": "local",
   "toolBudget": {
     "maxOutputTokens": 512,
     "maxToolTurns": 2

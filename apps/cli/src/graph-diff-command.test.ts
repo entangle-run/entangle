@@ -10,7 +10,7 @@ function buildGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     edges: [
       {

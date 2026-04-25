@@ -194,12 +194,13 @@ This directory is the canonical design corpus for Entangle.
 188. [187-cli-session-launch-wait-slice.md](187-cli-session-launch-wait-slice.md)
 189. [188-local-memory-workbench-slice.md](188-local-memory-workbench-slice.md)
 190. [189-entangle-local-completion-plan.md](189-entangle-local-completion-plan.md)
+191. [190-local-runtime-profile-rename-slice.md](190-local-runtime-profile-rename-slice.md)
 
 ## Role of this corpus
 
 These documents are intended to serve as:
 
 - the project's architectural baseline;
-- the source of truth for hackathon scoping decisions;
+- the source of truth for early Local scoping decisions;
 - the initial specification set for future implementation work;
 - the maintenance baseline that keeps the repository coherent across long-running design and implementation sessions.

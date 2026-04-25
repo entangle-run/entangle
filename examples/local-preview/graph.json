@@ -122,6 +122,6 @@
         "local-preview-git"
       ]
     },
-    "runtimeProfile": "hackathon_local"
+    "runtimeProfile": "local"
   }
 }

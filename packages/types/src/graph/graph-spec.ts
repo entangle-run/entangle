@@ -78,7 +78,7 @@ export const graphDefaultsSchema = z.object({
     gitServiceRefs: [],
     externalPrincipalRefs: []
   }),
-  runtimeProfile: runtimeProfileSchema.default("hackathon_local"),
+  runtimeProfile: runtimeProfileSchema.default("local"),
   agentRuntime: nodeAgentRuntimeSchema.default(defaultGraphAgentRuntime)
 });
 
@@ -94,7 +94,7 @@ export const graphSpecSchema = z.object({
       gitServiceRefs: [],
       externalPrincipalRefs: []
     },
-    runtimeProfile: "hackathon_local",
+    runtimeProfile: "local",
     agentRuntime: defaultGraphAgentRuntime
   })
 });

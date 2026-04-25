@@ -154,7 +154,7 @@ async function createAdmittedPackageDirectory(rootPath: string): Promise<string>
       "utf8"
     ),
     writeJsonFile(path.join(packageRoot, "runtime", "config.json"), {
-      runtimeProfile: "hackathon_local",
+      runtimeProfile: "local",
       toolBudget: {
         maxToolTurns: 8,
         maxOutputTokens: 4096

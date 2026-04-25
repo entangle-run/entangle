@@ -17,7 +17,7 @@ function createGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: []
       },
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     edges: [],
     graphId: "team-alpha",

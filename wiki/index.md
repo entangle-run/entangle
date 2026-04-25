@@ -12,7 +12,7 @@
 
 ## Decisions
 
-- [decisions/architecture-baseline.md](decisions/architecture-baseline.md) — Baseline architecture and scope rule for the hackathon.
+- [decisions/architecture-baseline.md](decisions/architecture-baseline.md) — Baseline architecture and early Local scope rule.
 - [decisions/identity-and-transport.md](decisions/identity-and-transport.md) — Use Nostr keys for global identity and signed communication while keeping git credentials and signing surfaces separate.
 - [decisions/git-as-first-artifact-backend.md](decisions/git-as-first-artifact-backend.md) — Git is the first implemented work substrate, not the only conceptual backend.
 - [decisions/repository-audit-loop.md](decisions/repository-audit-loop.md) — Every substantial interaction starts with an audit pass and leaves the repo in a more coherent state.

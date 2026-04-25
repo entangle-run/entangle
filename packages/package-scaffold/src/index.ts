@@ -134,7 +134,7 @@ export async function createAgentPackageScaffold(
       "runtime/config.json",
       `${JSON.stringify(
         {
-          runtimeProfile: "hackathon_local",
+          runtimeProfile: "local",
           toolBudget: {
             maxToolTurns: 8,
             maxOutputTokens: 4096

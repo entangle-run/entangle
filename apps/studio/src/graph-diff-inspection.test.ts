@@ -39,7 +39,7 @@ function createDiff(): GraphDiffSummary {
       graphId: "local-preview",
       name: "Local Preview",
       nodeCount: 1,
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     hasChanges: true,
     identityChangedFields: ["name"],
@@ -68,7 +68,7 @@ function createDiff(): GraphDiffSummary {
       graphId: "local-preview",
       name: "Local Workbench",
       nodeCount: 1,
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     totals: {
       edgesAdded: 0,

@@ -13,14 +13,11 @@ and the L1/R1 ledger in
   `v0.1-local-operator-baseline`
 - [L1.5 Local Operator Preview](l1.5-local-operator-preview.md) —
   `v0.1.5-local-operator-preview`
-
-## Next Release
-
-- [L2 Local Workbench](l2-local-workbench.md) — active implementation,
-  target tag `v0.2-local-workbench`
+- [L2 Local Workbench](l2-local-workbench.md) —
+  `v0.2-local-workbench`
 
 ## Planned Release Train
 
-- L2 Local Workbench;
-- L3 Local Reliability;
-- L4 Entangle Local GA.
+- L3 Agentic Node Runtime;
+- L4 Local Reliability;
+- L5 Entangle Local GA.

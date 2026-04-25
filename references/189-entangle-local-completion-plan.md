@@ -66,14 +66,14 @@ the following baseline has been refreshed in the current working session:
 - Code boundaries touched by the task are inspected directly instead of
   inferred from memory or prior summaries.
 
-The deep audit performed before this plan update confirmed:
+The deep audit performed before workstream A1 confirmed:
 
 - the worktree was clean before the audit update started;
 - the current product state is L2 complete, L3 in progress, L4 and L5 not
   complete;
-- `hackathon_local` remains active machine state in schemas, examples,
-  fixtures, and tests and is therefore a required cleanup target, not only a
-  documentation issue;
+- `hackathon_local` remained active machine state in schemas, examples,
+  fixtures, and tests before A1 and was therefore a required cleanup target,
+  not only a documentation issue;
 - OpenCode is the only default wired coding-agent runtime, with a first safe
   runner process adapter but not yet a complete policy-bound coding-agent node
   implementation;
@@ -267,9 +267,9 @@ on top of it.
 
 Tasks:
 
-- Replace public `hackathon_local` schema value with `local_operator` or
-  `local`.
-- Pick one canonical machine value and document it before editing code.
+- Replace public `hackathon_local` schema value with `local`.
+- Use `local` as the canonical machine value for Entangle Local because it is
+  product-stable and does not imply GA status.
 - Add compatibility parsing only if needed for old fixtures or release assets.
 - Update graph defaults, package scaffolds, examples, smoke scripts, and tests.
 - Update release notes to record the migration.
@@ -282,8 +282,8 @@ Constraints:
 
 Acceptance:
 
-- New scaffolds no longer emit `hackathon_local`.
-- Active examples no longer use `hackathon_local`.
+- New scaffolds emit `local` and no longer emit `hackathon_local`.
+- Active examples use `local` and no longer use `hackathon_local`.
 - Validator accepts the new Local profile.
 - Tests and smokes use the new Local profile.
 

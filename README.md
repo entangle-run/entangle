@@ -52,16 +52,17 @@ Entangle generalizes that model into an explicit graph:
 
 The system is not just a chat application with agents behind it. It is a graph-native runtime for AI organizations.
 
-## Hackathon Principle
+## Entangle Local Scope Principle
 
-Entangle should not be architecturally simplified for the hackathon. The correct rule is:
+Entangle Local should not be architecturally simplified for short-term delivery.
+The correct rule is:
 
 > Keep the final architecture. Reduce only the active feature surface and the number of active components.
 
 That means:
 
 - stable types now;
-- restricted execution profile for the hackathon;
+- restricted execution profile for Entangle Local while the product matures;
 - no deliberate shortcuts that would invalidate later features such as remote node attachment, richer transport policies, multi-relay operation, or stronger governance.
 
 ## Current Status

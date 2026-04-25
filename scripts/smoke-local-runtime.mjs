@@ -557,7 +557,7 @@ async function writeSmokePackage(packageRoot) {
       "utf8"
     ),
     writeJsonFile(path.join(packageRoot, "runtime", "config.json"), {
-      runtimeProfile: "hackathon_local",
+      runtimeProfile: "local",
       toolBudget: {
         maxOutputTokens: 256,
         maxToolTurns: 2
@@ -768,7 +768,7 @@ function buildSmokeGraph(catalog) {
     edges,
     defaults: {
       resourceBindings: sharedResourceBindings,
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     }
   };
 }

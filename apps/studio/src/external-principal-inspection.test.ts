@@ -62,7 +62,7 @@ describe("external principal inspection helpers", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "hackathon_local"
+        runtimeProfile: "local"
       },
       edges: [],
       graphId: "team-alpha",

@@ -129,7 +129,7 @@ describe("package source admission helpers", () => {
         agentRuntime: {
           mode: "coding_agent"
         },
-        runtimeProfile: "hackathon_local"
+        runtimeProfile: "local"
       },
       edges: [],
       graphId: "demo",

@@ -15,7 +15,7 @@ function buildGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     edges: [],
     graphId: "local-preview",
@@ -79,7 +79,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "hackathon_local",
+      runtimeProfile: "local",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-25T00:00:00.000Z",
@@ -99,7 +99,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     relayContext: {
       edgeRoutes: [],

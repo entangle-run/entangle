@@ -97,11 +97,11 @@ markers under the active application, package, service, deployment, and script
 trees. The repository currently has 53 source test files under `apps`,
 `packages`, and `services`.
 
-One code naming issue remains intentionally deferred: the current machine
-contract still exposes `hackathon_local` as the only runtime profile. That is
-not a current product-name claim, but it should be reconsidered before Local
-Workbench or Local GA so the productized Local profile does not inherit
-obsolete hackathon wording.
+One code naming issue was intentionally deferred at the time of this audit: the
+machine contract still exposed `hackathon_local` as the only runtime profile.
+That was not a current product-name claim, but it needed retirement before the
+productized Local profile could be considered clean. The active runtime profile
+was later renamed to `local` in the Entangle Local completion workstream.
 
 ## Remaining L1 Release Blockers
 

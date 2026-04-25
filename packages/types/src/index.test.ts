@@ -1297,7 +1297,7 @@ describe("node inspection contracts", () => {
           primaryRelayProfileRef: "local-relay",
           relayProfileRefs: ["local-relay"]
         },
-        runtimeProfile: "hackathon_local",
+        runtimeProfile: "local",
         schemaVersion: "1"
       },
       runtime: {
@@ -1820,7 +1820,7 @@ describe("agent runtime contracts", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "hackathon_local",
+        runtimeProfile: "local",
         agentRuntime: {
           mode: "coding_agent"
         }

@@ -37,7 +37,7 @@ function buildGraph(
         gitServiceRefs: [],
         relayProfileRefs: []
       },
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     edges: [],
     graphId: "demo-graph",
@@ -161,7 +161,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         primaryGitServiceRef: "local-gitea",
         relayProfileRefs: []
       },
-      runtimeProfile: "hackathon_local",
+      runtimeProfile: "local",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-23T00:00:00.000Z",
@@ -181,7 +181,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "hackathon_local"
+      runtimeProfile: "local"
     },
     relayContext: {
       edgeRoutes: [],

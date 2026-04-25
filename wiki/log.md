@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Renamed the active Local runtime profile
+
+Started Entangle Local completion workstream A1/A2. The active runtime profile
+machine value is now `local` in schemas, graph defaults, package scaffolds,
+examples, smoke scripts, and active tests. Current product documents now use
+Entangle Local language for scope and release status, while historical release
+packets remain historical evidence. Added
+`references/190-local-runtime-profile-rename-slice.md` to record the slice
+scope, decision, constraints, and verification plan.
+
 ## [2026-04-25] planning | Made the Entangle Local plan audit-gated
 
 Updated `references/189-entangle-local-completion-plan.md` so the plan now

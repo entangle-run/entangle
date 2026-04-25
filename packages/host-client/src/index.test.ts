@@ -371,7 +371,7 @@ describe("createHostClient", () => {
                   gitServiceRefs: ["local-gitea"],
                   relayProfileRefs: ["local-relay"]
                 },
-                runtimeProfile: "hackathon_local",
+                runtimeProfile: "local",
                 schemaVersion: "1"
               },
               runtime: {
@@ -408,7 +408,7 @@ describe("createHostClient", () => {
               gitServiceRefs: ["local-gitea"],
               relayProfileRefs: ["local-relay"]
             },
-            runtimeProfile: "hackathon_local",
+            runtimeProfile: "local",
             schemaVersion: "1"
           },
           runtime: {
@@ -474,7 +474,7 @@ describe("createHostClient", () => {
                 gitServiceRefs: ["local-gitea"],
                 relayProfileRefs: ["local-relay"]
               },
-              runtimeProfile: "hackathon_local",
+              runtimeProfile: "local",
               schemaVersion: "1"
             },
             runtime: {
@@ -515,7 +515,7 @@ describe("createHostClient", () => {
                 gitServiceRefs: ["local-gitea"],
                 relayProfileRefs: ["local-relay"]
               },
-              runtimeProfile: "hackathon_local",
+              runtimeProfile: "local",
               schemaVersion: "1"
             },
             runtime: {
