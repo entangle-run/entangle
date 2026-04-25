@@ -32,6 +32,20 @@ function createSession(
   };
 }
 
+function createApprovalStatusCounts(
+  overrides: Partial<NonNullable<HostSessionSummary["approvalStatusCounts"]>>
+): NonNullable<HostSessionSummary["approvalStatusCounts"]> {
+  return {
+    approved: 0,
+    expired: 0,
+    not_required: 0,
+    pending: 0,
+    rejected: 0,
+    withdrawn: 0,
+    ...overrides
+  };
+}
+
 describe("studio runtime session inspection helpers", () => {
   it("filters sessions for one runtime and sorts them by recency", () => {
     const sessions = [
@@ -58,6 +72,9 @@ describe("studio runtime session inspection helpers", () => {
       { nodeId: "lead-it", status: "planning" }
     ]);
     session.activeConversationIds = ["conv-alpha"];
+    session.approvalStatusCounts = createApprovalStatusCounts({
+      pending: 1
+    });
     session.latestMessageType = "task.result";
     session.rootArtifactIds = ["artifact-alpha"];
     session.waitingApprovalIds = ["approval-alpha"];
@@ -70,6 +87,9 @@ describe("studio runtime session inspection helpers", () => {
       "active conversations 1"
     );
     expect(formatRuntimeSessionDetail(session)).toContain("approvals 1");
+    expect(formatRuntimeSessionDetail(session)).toContain(
+      "approval statuses pending 1"
+    );
     expect(formatRuntimeSessionDetail(session)).toContain("root artifacts 1");
     expect(formatRuntimeSessionDetail(session)).toContain(
       "latest message task.result"
@@ -112,6 +132,9 @@ describe("studio runtime session inspection helpers", () => {
           }
         },
         {
+          approvalStatusCounts: createApprovalStatusCounts({
+            pending: 1
+          }),
           nodeId: "worker-it",
           runtime: {
             backendKind: "docker",
@@ -166,6 +189,9 @@ describe("studio runtime session inspection helpers", () => {
       "active conversations 1"
     );
     expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain("approvals 1");
+    expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "approval statuses pending 1"
+    );
     expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain(
       "last message task.result"
     );

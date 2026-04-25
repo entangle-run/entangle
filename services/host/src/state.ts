@@ -17,7 +17,9 @@ import { promisify } from "node:util";
 import {
   activeGraphRevisionRecordSchema,
   artifactRecordSchema,
+  approvalLifecycleStateSchema,
   approvalRecordSchema,
+  approvalStatusCountsSchema,
   conversationLifecycleStateSchema,
   conversationRecordSchema,
   conversationStatusCountsSchema,
@@ -130,6 +132,7 @@ import {
   runtimeListResponseSchema,
   runnerTurnRecordSchema,
   type ApprovalRecord,
+  type ApprovalStatusCounts,
   type ArtifactRecord,
   type ConversationRecord,
   type ConversationStatusCounts,
@@ -5080,6 +5083,40 @@ function mergeConversationStatusCounts(
   return conversationStatusCountsSchema.parse(mergedCounts);
 }
 
+function buildEmptyApprovalStatusCounts(): ApprovalStatusCounts {
+  return approvalStatusCountsSchema.parse({});
+}
+
+function countApprovalStatuses(
+  approvalRecords: ApprovalRecord[]
+): ApprovalStatusCounts {
+  const counts = buildEmptyApprovalStatusCounts();
+
+  for (const approvalRecord of approvalRecords) {
+    counts[approvalRecord.status] += 1;
+  }
+
+  return approvalStatusCountsSchema.parse(counts);
+}
+
+function mergeApprovalStatusCounts(
+  statusCounts: Array<ApprovalStatusCounts | undefined>
+): ApprovalStatusCounts {
+  const mergedCounts = buildEmptyApprovalStatusCounts();
+
+  for (const counts of statusCounts) {
+    if (!counts) {
+      continue;
+    }
+
+    for (const status of approvalLifecycleStateSchema.options) {
+      mergedCounts[status] += counts[status];
+    }
+  }
+
+  return approvalStatusCountsSchema.parse(mergedCounts);
+}
+
 function groupConversationRecordsBySessionId(
   conversationRecords: ConversationRecord[]
 ): Map<string, ConversationRecord[]> {
@@ -5089,6 +5126,20 @@ function groupConversationRecordsBySessionId(
     const records = recordsBySessionId.get(conversationRecord.sessionId) ?? [];
     records.push(conversationRecord);
     recordsBySessionId.set(conversationRecord.sessionId, records);
+  }
+
+  return recordsBySessionId;
+}
+
+function groupApprovalRecordsBySessionId(
+  approvalRecords: ApprovalRecord[]
+): Map<string, ApprovalRecord[]> {
+  const recordsBySessionId = new Map<string, ApprovalRecord[]>();
+
+  for (const approvalRecord of approvalRecords) {
+    const records = recordsBySessionId.get(approvalRecord.sessionId) ?? [];
+    records.push(approvalRecord);
+    recordsBySessionId.set(approvalRecord.sessionId, records);
   }
 
   return recordsBySessionId;
@@ -5242,12 +5293,17 @@ async function collectSessionInspectionNodes(): Promise<
     const sessionRecords = await listRuntimeSessionRecords(
       context.workspace.runtimeRoot
     );
+    const approvalRecordsBySessionId = groupApprovalRecordsBySessionId(
+      await listRuntimeApprovalRecords(context.workspace.runtimeRoot)
+    );
     const conversationRecordsBySessionId = groupConversationRecordsBySessionId(
       await listRuntimeConversationRecords(context.workspace.runtimeRoot)
     );
 
     for (const sessionRecord of sessionRecords) {
       const entries = sessions.get(sessionRecord.sessionId) ?? [];
+      const approvalRecords =
+        approvalRecordsBySessionId.get(sessionRecord.sessionId) ?? [];
       const conversationRecords =
         conversationRecordsBySessionId.get(sessionRecord.sessionId) ?? [];
       const sessionConsistencyFindings =
@@ -5257,6 +5313,7 @@ async function collectSessionInspectionNodes(): Promise<
           sessionRecord
         });
       entries.push({
+        approvalStatusCounts: countApprovalStatuses(approvalRecords),
         conversationStatusCounts: countConversationStatuses(conversationRecords),
         nodeId: runtime.nodeId,
         runtime,
@@ -5309,6 +5366,9 @@ function buildSessionSummary(
     nodes.flatMap((entry) => entry.session.waitingApprovalIds)
   );
   const latestMessageType = resolveLatestSessionMessageType(nodes);
+  const approvalStatusCounts = mergeApprovalStatusCounts(
+    nodes.map((entry) => entry.approvalStatusCounts)
+  );
   const conversationStatusCounts = mergeConversationStatusCounts(
     nodes.map((entry) => entry.conversationStatusCounts)
   );
@@ -5318,6 +5378,7 @@ function buildSessionSummary(
 
   const summaryInput = {
     activeConversationIds,
+    approvalStatusCounts,
     conversationStatusCounts,
     graphId: firstNode.session.graphId,
     nodeIds: nodes.map((entry) => entry.nodeId),

@@ -1471,3 +1471,15 @@ allowing them to complete.
 The change keeps approval ids as unresolved work gates, preserves the message
 context used for the transition, and keeps lifecycle mutation inside the
 runner-owned state boundary.
+
+## [2026-04-25] implementation | Added approval status counts to session inspection
+
+Extended the host-owned session read model with `approvalStatusCounts` derived
+from runner-local `ApprovalRecord` files. `GET /v1/sessions` and
+`GET /v1/sessions/{sessionId}` now expose approval lifecycle counts alongside
+active-work ids, conversation status counts, waiting approval ids, root
+artifacts, and consistency findings.
+
+Shared host-client helpers, CLI summary projection, and Studio session
+inspection now use the same recorded-approval count and approval-status
+summary vocabulary without moving approval mutation authority into the host.

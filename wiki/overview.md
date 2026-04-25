@@ -107,9 +107,9 @@ The repository now also contains the first real implementation baseline:
   durable conversation records, moves approval-gated drained sessions to
   `waiting_approval`, and safely completes drained active sessions before new
   transport intake begins, and with host-owned session summaries now
-  exposing aggregate active-work ids and conversation lifecycle status counts
-  plus conversation-level and session-level consistency findings for
-  list-level operator inspection;
+  exposing aggregate active-work ids plus conversation and approval lifecycle
+  status counts plus conversation-level and session-level consistency findings
+  for list-level operator inspection;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,
@@ -395,11 +395,10 @@ The repository now also contains the first real implementation baseline:
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
   same boundary through `packages/host-client` and the CLI, with aggregate
-  active-conversation ids, conversation lifecycle status counts, waiting
-  approval ids, root artifact ids, optional conversation-level and
-  session-level consistency findings, and latest message type on list
-  summaries so event traces and session inspection share the same active-work
-  vocabulary;
+  active-conversation ids, conversation and approval lifecycle status counts,
+  waiting approval ids, root artifact ids, optional conversation-level and
+  session-level consistency findings, and latest message type on list summaries
+  so event traces and session inspection share the same active-work vocabulary;
 - a host-owned runner-turn inspection surface where `entangle-host` now exposes
   `GET /v1/runtimes/{nodeId}/turns` plus
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary

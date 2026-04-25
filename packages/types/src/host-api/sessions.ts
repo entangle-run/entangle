@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
+  type ApprovalLifecycleState,
   type ConversationLifecycleState,
   sessionLifecycleStateSchema,
   sessionRecordSchema
@@ -19,6 +20,15 @@ export const conversationStatusCountsSchema = z.object({
   resolved: z.number().int().nonnegative().default(0),
   working: z.number().int().nonnegative().default(0)
 }) satisfies z.ZodType<Record<ConversationLifecycleState, number>>;
+
+export const approvalStatusCountsSchema = z.object({
+  approved: z.number().int().nonnegative().default(0),
+  expired: z.number().int().nonnegative().default(0),
+  not_required: z.number().int().nonnegative().default(0),
+  pending: z.number().int().nonnegative().default(0),
+  rejected: z.number().int().nonnegative().default(0),
+  withdrawn: z.number().int().nonnegative().default(0)
+}) satisfies z.ZodType<Record<ApprovalLifecycleState, number>>;
 
 export const hostSessionConsistencyFindingCodeSchema = z.enum([
   "active_conversation_missing_record",
@@ -42,6 +52,7 @@ export const hostSessionNodeStatusSchema = z.object({
 
 export const hostSessionSummarySchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
+  approvalStatusCounts: approvalStatusCountsSchema.optional(),
   conversationStatusCounts: conversationStatusCountsSchema.optional(),
   graphId: identifierSchema,
   latestMessageType: entangleA2AMessageTypeSchema.optional(),
@@ -58,6 +69,7 @@ export const hostSessionSummarySchema = z.object({
 });
 
 export const hostSessionNodeInspectionSchema = z.object({
+  approvalStatusCounts: approvalStatusCountsSchema.optional(),
   conversationStatusCounts: conversationStatusCountsSchema.optional(),
   nodeId: identifierSchema,
   runtime: runtimeInspectionResponseSchema,
@@ -78,6 +90,7 @@ export const sessionInspectionResponseSchema = z.object({
 });
 
 export type HostSessionNodeStatus = z.infer<typeof hostSessionNodeStatusSchema>;
+export type ApprovalStatusCounts = z.infer<typeof approvalStatusCountsSchema>;
 export type ConversationStatusCounts = z.infer<
   typeof conversationStatusCountsSchema
 >;

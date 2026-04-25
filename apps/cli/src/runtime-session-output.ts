@@ -1,5 +1,6 @@
 import {
   collectHostSessionInspectionTraceIds,
+  countHostSessionApprovalStatusRecords,
   countHostSessionConsistencyFindings,
   countHostSessionConversationStatusRecords,
   formatHostSessionDetail,
@@ -9,6 +10,7 @@ import {
   sortHostSessionInspectionNodes
 } from "@entangle/host-client";
 import type {
+  ApprovalStatusCounts,
   ConversationStatusCounts,
   HostSessionConsistencyFinding,
   HostSessionSummary,
@@ -17,6 +19,7 @@ import type {
 
 export interface HostSessionCliSummaryRecord {
   activeConversationCount: number;
+  approvalStatusCounts?: ApprovalStatusCounts;
   consistencyFindingCount: number;
   conversationStatusCounts?: ConversationStatusCounts;
   detail: string;
@@ -24,6 +27,7 @@ export interface HostSessionCliSummaryRecord {
   label: string;
   latestMessageType?: HostSessionSummary["latestMessageType"];
   nodeIds: string[];
+  recordedApprovalCount: number;
   recordedConversationCount: number;
   rootArtifactCount: number;
   sessionConsistencyFindings?: HostSessionConsistencyFinding[];
@@ -36,11 +40,13 @@ export interface HostSessionCliSummaryRecord {
 
 export interface HostSessionInspectionCliNodeRecord {
   activeConversationCount: number;
+  approvalStatusCounts?: ApprovalStatusCounts;
   consistencyFindingCount: number;
   conversationStatusCounts?: ConversationStatusCounts;
   detail: string;
   label: string;
   nodeId: string;
+  recordedApprovalCount: number;
   recordedConversationCount: number;
   rootArtifactCount: number;
   runtimeState: string;
@@ -63,6 +69,9 @@ export function projectHostSessionSummary(
 ): HostSessionCliSummaryRecord {
   return {
     activeConversationCount: session.activeConversationIds.length,
+    ...(session.approvalStatusCounts
+      ? { approvalStatusCounts: session.approvalStatusCounts }
+      : {}),
     consistencyFindingCount: countHostSessionConsistencyFindings(
       session.sessionConsistencyFindings
     ),
@@ -76,6 +85,9 @@ export function projectHostSessionSummary(
       ? { latestMessageType: session.latestMessageType }
       : {}),
     nodeIds: session.nodeIds,
+    recordedApprovalCount: countHostSessionApprovalStatusRecords(
+      session.approvalStatusCounts
+    ),
     recordedConversationCount: countHostSessionConversationStatusRecords(
       session.conversationStatusCounts
     ),
@@ -98,6 +110,9 @@ export function projectHostSessionInspectionSummary(
     graphId: inspection.graphId,
     nodes: sortHostSessionInspectionNodes(inspection).map((entry) => ({
       activeConversationCount: entry.session.activeConversationIds.length,
+      ...(entry.approvalStatusCounts
+        ? { approvalStatusCounts: entry.approvalStatusCounts }
+        : {}),
       consistencyFindingCount: countHostSessionConsistencyFindings(
         entry.sessionConsistencyFindings
       ),
@@ -107,6 +122,9 @@ export function projectHostSessionInspectionSummary(
       detail: formatHostSessionInspectionNodeDetail(entry),
       label: formatHostSessionInspectionNodeLabel(entry),
       nodeId: entry.nodeId,
+      recordedApprovalCount: countHostSessionApprovalStatusRecords(
+        entry.approvalStatusCounts
+      ),
       recordedConversationCount: countHostSessionConversationStatusRecords(
         entry.conversationStatusCounts
       ),

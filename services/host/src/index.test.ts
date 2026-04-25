@@ -3012,7 +3012,7 @@ describe("buildHostServer", () => {
           status: "active",
           traceId: "trace-alpha",
           updatedAt: "2026-04-24T10:05:00.000Z",
-          waitingApprovalIds: []
+          waitingApprovalIds: ["approval-alpha"]
         }
       );
       await writeJsonFile(
@@ -3108,6 +3108,43 @@ describe("buildHostServer", () => {
           updatedAt: "2026-04-24T10:06:00.000Z"
         }
       );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-alpha.json"
+        ),
+        {
+          approvalId: "approval-alpha",
+          approverNodeIds: ["supervisor-it"],
+          conversationId: "conv-alpha",
+          graphId: "team-alpha",
+          reason: "Supervisor approval is required before final publication.",
+          requestedAt: "2026-04-24T10:03:00.000Z",
+          requestedByNodeId: "worker-it",
+          sessionId: "session-alpha",
+          status: "pending",
+          updatedAt: "2026-04-24T10:03:00.000Z"
+        }
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-closed.json"
+        ),
+        {
+          approvalId: "approval-closed",
+          approverNodeIds: ["supervisor-it"],
+          conversationId: "conv-closed",
+          graphId: "team-alpha",
+          requestedAt: "2026-04-24T10:01:00.000Z",
+          requestedByNodeId: "worker-it",
+          sessionId: "session-alpha",
+          status: "approved",
+          updatedAt: "2026-04-24T10:02:00.000Z"
+        }
+      );
 
       const listedSessionsResponse = await server.inject({
         method: "GET",
@@ -3121,6 +3158,14 @@ describe("buildHostServer", () => {
         sessions: [
           {
             activeConversationIds: ["conv-alpha", "conv-closed", "conv-missing"],
+            approvalStatusCounts: {
+              approved: 1,
+              expired: 0,
+              not_required: 0,
+              pending: 1,
+              rejected: 0,
+              withdrawn: 0
+            },
             conversationStatusCounts: {
               acknowledged: 0,
               awaiting_approval: 0,
@@ -3170,7 +3215,7 @@ describe("buildHostServer", () => {
             ],
             sessionId: "session-alpha",
             traceIds: ["trace-alpha"],
-            waitingApprovalIds: [],
+            waitingApprovalIds: ["approval-alpha"],
             updatedAt: "2026-04-24T10:05:00.000Z"
           }
         ]
@@ -3188,6 +3233,10 @@ describe("buildHostServer", () => {
         graphId: "team-alpha",
         nodes: [
           {
+            approvalStatusCounts: {
+              approved: 1,
+              pending: 1
+            },
             conversationStatusCounts: {
               closed: 1,
               working: 2

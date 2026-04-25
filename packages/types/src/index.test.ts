@@ -20,6 +20,7 @@ import {
   hostErrorResponseSchema,
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
+  hostSessionSummarySchema,
   hostStatusResponseSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
@@ -570,6 +571,36 @@ describe("host event contracts", () => {
       nodeId: "worker-it",
       severity: "warning"
     });
+  });
+
+  it("accepts approval lifecycle counts on host session summaries", () => {
+    const summary = hostSessionSummarySchema.parse({
+      activeConversationIds: [],
+      approvalStatusCounts: {
+        approved: 1,
+        expired: 0,
+        not_required: 0,
+        pending: 2,
+        rejected: 0,
+        withdrawn: 0
+      },
+      graphId: "graph-alpha",
+      nodeIds: ["worker-it"],
+      nodeStatuses: [
+        {
+          nodeId: "worker-it",
+          status: "waiting_approval"
+        }
+      ],
+      rootArtifactIds: [],
+      sessionId: "session-alpha",
+      traceIds: ["trace-alpha"],
+      updatedAt: "2026-04-24T00:00:00.000Z",
+      waitingApprovalIds: ["approval-alpha", "approval-beta"]
+    });
+
+    expect(summary.approvalStatusCounts?.pending).toBe(2);
+    expect(summary.approvalStatusCounts?.approved).toBe(1);
   });
 
   it("accepts typed runtime recovery-recorded and controller-updated events", () => {

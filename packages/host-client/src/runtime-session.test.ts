@@ -51,6 +51,20 @@ function createConversationStatusCounts(
   };
 }
 
+function createApprovalStatusCounts(
+  overrides: Partial<NonNullable<HostSessionSummary["approvalStatusCounts"]>>
+): NonNullable<HostSessionSummary["approvalStatusCounts"]> {
+  return {
+    approved: 0,
+    expired: 0,
+    not_required: 0,
+    pending: 0,
+    rejected: 0,
+    withdrawn: 0,
+    ...overrides
+  };
+}
+
 describe("host session presentation helpers", () => {
   it("sorts and filters session summaries for operator presentation", () => {
     const sessions = [
@@ -83,6 +97,9 @@ describe("host session presentation helpers", () => {
       { nodeId: "lead-it", status: "planning" }
     ]);
     session.activeConversationIds = ["conv-alpha"];
+    session.approvalStatusCounts = createApprovalStatusCounts({
+      pending: 1
+    });
     session.conversationStatusCounts = createConversationStatusCounts({
       working: 1
     });
@@ -120,6 +137,10 @@ describe("host session presentation helpers", () => {
       "consistency findings 1: error active_conversation_missing_record on worker-it/conv-missing"
     );
     expect(formatHostSessionDetail(session)).toContain("approvals 1");
+    expect(formatHostSessionDetail(session)).toContain("recorded approvals 1");
+    expect(formatHostSessionDetail(session)).toContain(
+      "approval statuses pending 1"
+    );
     expect(formatHostSessionDetail(session)).toContain("root artifacts 1");
     expect(formatHostSessionDetail(session)).toContain(
       "latest message task.result"
@@ -180,6 +201,9 @@ describe("host session presentation helpers", () => {
         },
         {
           nodeId: "worker-it",
+          approvalStatusCounts: createApprovalStatusCounts({
+            pending: 1
+          }),
           conversationStatusCounts: createConversationStatusCounts({
             awaiting_approval: 1,
             working: 1
@@ -265,6 +289,12 @@ describe("host session presentation helpers", () => {
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "approvals 1"
+    );
+    expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "recorded approvals 1"
+    );
+    expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "approval statuses pending 1"
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "last message task.result"

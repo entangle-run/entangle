@@ -1,4 +1,5 @@
 import type {
+  ApprovalStatusCounts,
   HostSessionConsistencyFinding,
   ConversationStatusCounts,
   HostSessionNodeInspection,
@@ -28,6 +29,24 @@ const emptyConversationStatusCounts: ConversationStatusCounts = {
   rejected: 0,
   resolved: 0,
   working: 0
+};
+
+const approvalStatusOrder: Array<keyof ApprovalStatusCounts> = [
+  "not_required",
+  "pending",
+  "approved",
+  "rejected",
+  "expired",
+  "withdrawn"
+];
+
+const emptyApprovalStatusCounts: ApprovalStatusCounts = {
+  approved: 0,
+  expired: 0,
+  not_required: 0,
+  pending: 0,
+  rejected: 0,
+  withdrawn: 0
 };
 
 export function sortHostSessionSummariesForPresentation(
@@ -109,6 +128,43 @@ export function formatHostSessionConversationStatusSummary(
   return statusParts.length > 0 ? statusParts.join(", ") : "none";
 }
 
+export function resolveHostSessionApprovalStatusCounts(
+  counts?: ApprovalStatusCounts
+): ApprovalStatusCounts {
+  return {
+    ...emptyApprovalStatusCounts,
+    ...(counts ?? {})
+  };
+}
+
+export function countHostSessionApprovalStatusRecords(
+  counts?: ApprovalStatusCounts
+): number {
+  const normalizedCounts = resolveHostSessionApprovalStatusCounts(counts);
+
+  return approvalStatusOrder.reduce(
+    (total, status) => total + normalizedCounts[status],
+    0
+  );
+}
+
+export function formatHostSessionApprovalStatusDetail(
+  counts?: ApprovalStatusCounts
+): string {
+  return `approval statuses ${formatHostSessionApprovalStatusSummary(counts)}`;
+}
+
+export function formatHostSessionApprovalStatusSummary(
+  counts?: ApprovalStatusCounts
+): string {
+  const normalizedCounts = resolveHostSessionApprovalStatusCounts(counts);
+  const statusParts = approvalStatusOrder
+    .filter((status) => normalizedCounts[status] > 0)
+    .map((status) => `${status} ${normalizedCounts[status]}`);
+
+  return statusParts.length > 0 ? statusParts.join(", ") : "none";
+}
+
 export function countHostSessionConsistencyFindings(
   findings?: HostSessionConsistencyFinding[]
 ): number {
@@ -158,6 +214,9 @@ export function formatHostSessionDetail(
   const consistencyFindingCount = countHostSessionConsistencyFindings(
     session.sessionConsistencyFindings
   );
+  const approvalRecordCount = countHostSessionApprovalStatusRecords(
+    session.approvalStatusCounts
+  );
   const activeWorkSummary = [
     `active conversations ${session.activeConversationIds.length}`,
     `recorded conversations ${conversationRecordCount}`,
@@ -176,6 +235,10 @@ export function formatHostSessionDetail(
         ]
       : []),
     `approvals ${session.waitingApprovalIds.length}`,
+    `recorded approvals ${approvalRecordCount}`,
+    ...(approvalRecordCount > 0
+      ? [formatHostSessionApprovalStatusDetail(session.approvalStatusCounts)]
+      : []),
     `root artifacts ${session.rootArtifactIds.length}`,
     ...(session.latestMessageType
       ? [`latest message ${session.latestMessageType}`]
@@ -239,6 +302,9 @@ export function formatHostSessionInspectionNodeDetail(
   const consistencyFindingCount = countHostSessionConsistencyFindings(
     entry.sessionConsistencyFindings
   );
+  const approvalRecordCount = countHostSessionApprovalStatusRecords(
+    entry.approvalStatusCounts
+  );
 
   return [
     `Runtime ${entry.runtime.desiredState}/${entry.runtime.observedState}`,
@@ -259,6 +325,10 @@ export function formatHostSessionInspectionNodeDetail(
         ]
       : []),
     `approvals ${entry.session.waitingApprovalIds.length}`,
+    `recorded approvals ${approvalRecordCount}`,
+    ...(approvalRecordCount > 0
+      ? [formatHostSessionApprovalStatusDetail(entry.approvalStatusCounts)]
+      : []),
     `root artifacts ${entry.session.rootArtifactIds.length}`,
     ...(entry.session.lastMessageType
       ? [`last message ${entry.session.lastMessageType}`]

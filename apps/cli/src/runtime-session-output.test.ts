@@ -25,10 +25,27 @@ function createConversationStatusCounts(
   };
 }
 
+function createApprovalStatusCounts(
+  overrides: Partial<NonNullable<HostSessionSummary["approvalStatusCounts"]>>
+): NonNullable<HostSessionSummary["approvalStatusCounts"]> {
+  return {
+    approved: 0,
+    expired: 0,
+    not_required: 0,
+    pending: 0,
+    rejected: 0,
+    withdrawn: 0,
+    ...overrides
+  };
+}
+
 describe("runtime session CLI output", () => {
   it("projects aggregated session summaries into compact active-work records", () => {
     const session: HostSessionSummary = {
       activeConversationIds: ["conv-alpha"],
+      approvalStatusCounts: createApprovalStatusCounts({
+        pending: 1
+      }),
       conversationStatusCounts: createConversationStatusCounts({
         working: 1
       }),
@@ -57,6 +74,9 @@ describe("runtime session CLI output", () => {
 
     expect(projectHostSessionSummary(session)).toMatchObject({
       activeConversationCount: 1,
+      approvalStatusCounts: createApprovalStatusCounts({
+        pending: 1
+      }),
       consistencyFindingCount: 1,
       conversationStatusCounts: createConversationStatusCounts({
         working: 1
@@ -64,6 +84,7 @@ describe("runtime session CLI output", () => {
       graphId: "team-alpha",
       label: "session-alpha · worker-it:active, lead-it:planning",
       latestMessageType: "task.result",
+      recordedApprovalCount: 1,
       recordedConversationCount: 1,
       rootArtifactCount: 1,
       sessionConsistencyFindings: [
@@ -80,6 +101,9 @@ describe("runtime session CLI output", () => {
     expect(projectHostSessionSummary(session).detail).toContain(
       "active conversations 1"
     );
+    expect(projectHostSessionSummary(session).detail).toContain(
+      "approval statuses pending 1"
+    );
   });
 
   it("projects session inspection detail into per-node summaries", () => {
@@ -87,6 +111,9 @@ describe("runtime session CLI output", () => {
       graphId: "team-alpha",
       nodes: [
         {
+          approvalStatusCounts: createApprovalStatusCounts({
+            pending: 1
+          }),
           conversationStatusCounts: createConversationStatusCounts({
             closed: 1,
             working: 1
@@ -136,6 +163,9 @@ describe("runtime session CLI output", () => {
       nodes: [
         {
           activeConversationCount: 1,
+          approvalStatusCounts: createApprovalStatusCounts({
+            pending: 1
+          }),
           consistencyFindingCount: 1,
           conversationStatusCounts: createConversationStatusCounts({
             closed: 1,
@@ -143,6 +173,7 @@ describe("runtime session CLI output", () => {
           }),
           label: "worker-it · active",
           nodeId: "worker-it",
+          recordedApprovalCount: 1,
           recordedConversationCount: 2,
           rootArtifactCount: 1,
           runtimeState: "running/running",
@@ -170,6 +201,9 @@ describe("runtime session CLI output", () => {
     );
     expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
       "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conv-beta"
+    );
+    expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
+      "approval statuses pending 1"
     );
   });
 });

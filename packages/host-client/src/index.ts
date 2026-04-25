@@ -822,10 +822,13 @@ export {
 } from "./runtime-trace.js";
 export {
   collectHostSessionInspectionTraceIds,
+  countHostSessionApprovalStatusRecords,
   countHostSessionConsistencyFindings,
   countHostSessionConversationStatusRecords,
   filterHostSessionsForNode,
   formatHostSessionDetail,
+  formatHostSessionApprovalStatusDetail,
+  formatHostSessionApprovalStatusSummary,
   formatHostSessionConsistencyFinding,
   formatHostSessionConsistencySummary,
   formatHostSessionConversationStatusDetail,
@@ -833,6 +836,7 @@ export {
   formatHostSessionInspectionNodeDetail,
   formatHostSessionInspectionNodeLabel,
   formatHostSessionLabel,
+  resolveHostSessionApprovalStatusCounts,
   resolveHostSessionConversationStatusCounts,
   sessionInspectionReferencesNode,
   sortHostSessionInspectionNodes,
