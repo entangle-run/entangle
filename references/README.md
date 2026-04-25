@@ -178,6 +178,7 @@ This directory is the canonical design corpus for Entangle.
 172. [171-working-context-approval-gate-carry-forward-slice.md](171-working-context-approval-gate-carry-forward-slice.md)
 173. [172-runner-approval-message-handling-slice.md](172-runner-approval-message-handling-slice.md)
 174. [173-approval-metadata-validation-slice.md](173-approval-metadata-validation-slice.md)
+175. [174-definitive-production-delivery-roadmap.md](174-definitive-production-delivery-roadmap.md)
 
 ## Role of this corpus
 

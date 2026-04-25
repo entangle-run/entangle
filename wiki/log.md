@@ -1584,6 +1584,19 @@ the approval rejected, closes the approval conversation when policy allows,
 clears active waiting gates, and moves the blocked session to `failed` when the
 session lifecycle allows it.
 
+## [2026-04-25] planning | Added definitive production delivery roadmap
+
+Added `references/174-definitive-production-delivery-roadmap.md` as the
+release-oriented plan for taking Entangle from the current local operator
+baseline to the complete production product. The roadmap defines the R0 through
+R6 release sequence, the mandatory audit and reconsideration loop, quality
+gates, a 48-hour presentable milestone plan, and explicit non-goals before R1
+and R3.
+
+The plan keeps the immediate target honest: close and present Entangle v0.1 as
+a local operator baseline, then begin production-foundation work around
+PostgreSQL, workspace-aware identity, authorization, audit, and API hardening.
+
 ## [2026-04-25] implementation | Validated approval message metadata
 
 Closed the approval-message contract gap in the canonical A2A validator.
