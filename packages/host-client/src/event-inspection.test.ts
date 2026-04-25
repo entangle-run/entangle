@@ -67,6 +67,27 @@ function createSourceChangeCandidateReviewedEvent(): HostEventRecord {
   };
 }
 
+function createSourceHistoryUpdatedEvent(): HostEventRecord {
+  return {
+    candidateId: "source-change-turn-alpha",
+    category: "runtime",
+    commit: "commit-alpha",
+    eventId: "evt-source-history-updated",
+    graphId: "team-alpha",
+    graphRevisionId: "team-alpha-20260424-000000",
+    historyId: "source-history-source-change-turn-alpha",
+    message:
+      "Source history 'source-history-source-change-turn-alpha' for runtime 'worker-it' recorded candidate 'source-change-turn-alpha' at commit 'commit-alpha'.",
+    mode: "already_in_workspace",
+    nodeId: "worker-it",
+    schemaVersion: "1",
+    sourceHistoryRef: "refs/heads/entangle-source-history",
+    timestamp: "2026-04-24T10:00:30.000Z",
+    turnId: "turn-alpha",
+    type: "source_history.updated"
+  };
+}
+
 describe("host event inspection helpers", () => {
   it("matches runtime recovery events by node id and type prefix", () => {
     const event = createRuntimeRecoveryRecordedEvent();
@@ -116,6 +137,12 @@ describe("host event inspection helpers", () => {
     ).toBe(false);
     expect(
       hostEventMatchesFilter(createSourceChangeCandidateReviewedEvent(), {
+        nodeId: "worker-it",
+        typePrefixes: [...runtimeTraceEventTypePrefixes]
+      })
+    ).toBe(true);
+    expect(
+      hostEventMatchesFilter(createSourceHistoryUpdatedEvent(), {
         nodeId: "worker-it",
         typePrefixes: [...runtimeTraceEventTypePrefixes]
       })

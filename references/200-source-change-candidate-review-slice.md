@@ -85,20 +85,20 @@ This slice intentionally does not:
 - expose runtime-local filesystem paths.
 
 The term `accepted` currently means "operator-reviewed as accepted" inside the
-candidate lifecycle. A later B5 slice must still implement runner-owned source
-history, policy/approval checks, publication, and artifact linkage before
-accepted source changes become published work.
+candidate lifecycle. A later B5 slice added explicit runtime-local
+source-history application for accepted candidates. Policy/approval checks,
+remote publication, and artifact linkage are still required before accepted
+source changes become published shared work.
 
 ## Remaining B5 Work
 
 The remaining B5 implementation should add:
 
 - Entangle policy checks before source application or publication;
-- approval records for policy-gated source publication;
-- runner-owned application of accepted candidates into node source history;
-- source-history host APIs;
+- approval records for policy-gated source application or publication;
+- remote publication of source-history commits;
+- source commit or branch artifact records;
 - artifact history/diff APIs;
-- CLI and Studio source-history views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff and file inspection, candidate review, source

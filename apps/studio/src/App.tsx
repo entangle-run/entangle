@@ -47,11 +47,13 @@ import type {
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
+  RuntimeSourceHistoryInspectionResponse,
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
   SessionLaunchResponse,
   SourceChangeCandidateReviewDecision,
-  SourceChangeCandidateRecord
+  SourceChangeCandidateRecord,
+  SourceHistoryRecord
 } from "@entangle/types";
 import {
   buildEdgeCreateRequest,
@@ -166,6 +168,11 @@ import {
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidates
 } from "./runtime-source-change-candidate-inspection.js";
+import {
+  formatRuntimeSourceHistoryDetailLines,
+  formatRuntimeSourceHistoryLabel,
+  sortRuntimeSourceHistory
+} from "./runtime-source-history-inspection.js";
 import {
   buildSessionLaunchRequest,
   createDefaultSessionLaunchDraft,
@@ -492,6 +499,18 @@ export function App() {
     pendingSourceChangeCandidateReview,
     setPendingSourceChangeCandidateReview
   ] = useState<SourceChangeCandidateReviewDecision | null>(null);
+  const [selectedSourceHistory, setSelectedSourceHistory] = useState<
+    SourceHistoryRecord[]
+  >([]);
+  const [sourceHistoryError, setSourceHistoryError] = useState<string | null>(null);
+  const [selectedSourceHistoryId, setSelectedSourceHistoryId] =
+    useState<string | null>(null);
+  const [selectedSourceHistoryInspection, setSelectedSourceHistoryInspection] =
+    useState<RuntimeSourceHistoryInspectionResponse | null>(null);
+  const [sourceHistoryDetailError, setSourceHistoryDetailError] =
+    useState<string | null>(null);
+  const [pendingSourceChangeCandidateApply, setPendingSourceChangeCandidateApply] =
+    useState(false);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -995,6 +1014,7 @@ export function App() {
       memoryResult,
       turnResult,
       sourceCandidateResult,
+      sourceHistoryResult,
       sessionResult
     ] =
       await Promise.allSettled([
@@ -1006,6 +1026,7 @@ export function App() {
         client.getRuntimeMemory(nodeId),
         client.listRuntimeTurns(nodeId),
         client.listRuntimeSourceChangeCandidates(nodeId),
+        client.listRuntimeSourceHistory(nodeId),
         client.listSessions()
       ]);
     const nextSelectedApprovals =
@@ -1040,6 +1061,10 @@ export function App() {
     const nextSelectedSourceChangeCandidates =
       sourceCandidateResult.status === "fulfilled"
         ? sortRuntimeSourceChangeCandidates(sourceCandidateResult.value.candidates)
+        : [];
+    const nextSelectedSourceHistory =
+      sourceHistoryResult.status === "fulfilled"
+        ? sortRuntimeSourceHistory(sourceHistoryResult.value.history)
         : [];
     const nextSelectedMemoryPages =
       memoryResult.status === "fulfilled"
@@ -1136,6 +1161,19 @@ export function App() {
       selectedSourceChangeCandidateResults?.[1] ?? null;
     const selectedSourceChangeCandidateFilePreviewResult =
       selectedSourceChangeCandidateResults?.[2] ?? null;
+    const currentSelectedSourceHistoryId = selectedSourceHistoryId;
+    const shouldRefreshSelectedSourceHistory =
+      currentSelectedSourceHistoryId !== null &&
+      nextSelectedSourceHistory.some(
+        (entry) => entry.sourceHistoryId === currentSelectedSourceHistoryId
+      );
+    const selectedSourceHistoryResult = shouldRefreshSelectedSourceHistory
+      ? (
+          await Promise.allSettled([
+            client.getRuntimeSourceHistory(nodeId, currentSelectedSourceHistoryId)
+          ])
+        )[0]
+      : null;
     const currentSelectedSessionId = selectedSessionId;
     const shouldRefreshSelectedSession =
       currentSelectedSessionId !== null &&
@@ -1437,6 +1475,42 @@ export function App() {
         setSourceChangeCandidateDetailError(null);
       }
 
+      if (sourceHistoryResult.status === "fulfilled") {
+        setSelectedSourceHistory(nextSelectedSourceHistory);
+        setSourceHistoryError(null);
+
+        if (!selectedSourceHistoryId) {
+          setSelectedSourceHistoryInspection(null);
+          setSourceHistoryDetailError(null);
+        } else if (!shouldRefreshSelectedSourceHistory) {
+          setSelectedSourceHistoryId(null);
+          setSelectedSourceHistoryInspection(null);
+          setSourceHistoryDetailError(null);
+        } else if (selectedSourceHistoryResult?.status === "fulfilled") {
+          setSelectedSourceHistoryInspection(selectedSourceHistoryResult.value);
+          setSourceHistoryDetailError(null);
+        } else if (selectedSourceHistoryResult?.status === "rejected") {
+          setSelectedSourceHistoryInspection(null);
+          setSourceHistoryDetailError(
+            normalizeError(
+              selectedSourceHistoryResult.reason,
+              "Unknown error while loading source history detail."
+            )
+          );
+        }
+      } else {
+        setSelectedSourceHistory([]);
+        setSourceHistoryError(
+          normalizeError(
+            sourceHistoryResult.reason,
+            "Unknown error while loading source history."
+          )
+        );
+        setSelectedSourceHistoryId(null);
+        setSelectedSourceHistoryInspection(null);
+        setSourceHistoryDetailError(null);
+      }
+
       if (sessionResult.status === "fulfilled") {
         setSelectedSessions(nextSelectedSessions);
         setSessionError(null);
@@ -1485,6 +1559,7 @@ export function App() {
     selectedMemoryPagePath,
     selectedSourceChangeCandidateId,
     selectedSourceChangeCandidateFilePath,
+    selectedSourceHistoryId,
     selectedSessionId,
     selectedTurnId
   ]);
@@ -1651,6 +1726,7 @@ export function App() {
       setSelectedSourceChangeCandidateFilePath(null);
       setSelectedSourceChangeCandidateFilePreview(null);
       setPendingSourceChangeCandidateReview(null);
+      setPendingSourceChangeCandidateApply(false);
       setSourceChangeCandidateDetailError(null);
       await loadSelectedSourceChangeCandidateInspection(
         selectedRuntimeId,
@@ -1734,6 +1810,102 @@ export function App() {
       selectedRuntimeId,
       selectedSourceChangeCandidateId
     ]
+  );
+
+  const applySelectedSourceChangeCandidate = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedSourceChangeCandidateId) {
+      return;
+    }
+
+    try {
+      setPendingSourceChangeCandidateApply(true);
+      const response = await client.applyRuntimeSourceChangeCandidate(
+        selectedRuntimeId,
+        selectedSourceChangeCandidateId,
+        {}
+      );
+      const candidateResponse = await client.getRuntimeSourceChangeCandidate(
+        selectedRuntimeId,
+        selectedSourceChangeCandidateId
+      );
+
+      startTransition(() => {
+        setSelectedSourceHistory((history) =>
+          sortRuntimeSourceHistory([
+            response.entry,
+            ...history.filter(
+              (entry) => entry.sourceHistoryId !== response.entry.sourceHistoryId
+            )
+          ])
+        );
+        setSelectedSourceHistoryId(response.entry.sourceHistoryId);
+        setSelectedSourceHistoryInspection(response);
+        setSourceHistoryError(null);
+        setSourceHistoryDetailError(null);
+        setSelectedSourceChangeCandidateInspection(candidateResponse);
+        setSelectedSourceChangeCandidates((candidates) =>
+          candidates.map((candidate) =>
+            candidate.candidateId === candidateResponse.candidate.candidateId
+              ? candidateResponse.candidate
+              : candidate
+          )
+        );
+        setSourceChangeCandidateDetailError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setSourceChangeCandidateDetailError(
+          normalizeError(
+            caught,
+            "Unknown error while applying source change candidate."
+          )
+        );
+      });
+    } finally {
+      setPendingSourceChangeCandidateApply(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedSourceChangeCandidateId
+  ]);
+
+  const selectRuntimeSourceHistory = useCallback(
+    async (sourceHistoryId: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedSourceHistoryId(sourceHistoryId);
+      setSelectedSourceHistoryInspection(null);
+      setSourceHistoryDetailError(null);
+
+      try {
+        const response = await client.getRuntimeSourceHistory(
+          selectedRuntimeId,
+          sourceHistoryId
+        );
+
+        startTransition(() => {
+          setSelectedSourceHistoryInspection(response);
+          setSourceHistoryDetailError(null);
+        });
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setSelectedSourceHistoryInspection(null);
+          setSourceHistoryDetailError(
+            normalizeError(
+              caught,
+              "Unknown error while loading source history detail."
+            )
+          );
+        });
+      }
+    },
+    [client, selectedRuntimeId]
   );
 
   const selectGraphRevision = useCallback(
@@ -2126,6 +2298,12 @@ export function App() {
       setSelectedSourceChangeCandidateFilePath(null);
       setSelectedSourceChangeCandidateFilePreview(null);
       setSourceChangeCandidateDetailError(null);
+      setSelectedSourceHistory([]);
+      setSourceHistoryError(null);
+      setSelectedSourceHistoryId(null);
+      setSelectedSourceHistoryInspection(null);
+      setSourceHistoryDetailError(null);
+      setPendingSourceChangeCandidateApply(false);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -2166,6 +2344,12 @@ export function App() {
     setSelectedSourceChangeCandidateFilePath(null);
     setSelectedSourceChangeCandidateFilePreview(null);
     setSourceChangeCandidateDetailError(null);
+    setSelectedSourceHistory([]);
+    setSourceHistoryError(null);
+    setSelectedSourceHistoryId(null);
+    setSelectedSourceHistoryInspection(null);
+    setSourceHistoryDetailError(null);
+    setPendingSourceChangeCandidateApply(false);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -4370,6 +4554,26 @@ export function App() {
                           </div>
                         ) : null}
 
+                        {selectedSourceChangeCandidateInspection.candidate.status ===
+                          "accepted" &&
+                        !selectedSourceChangeCandidateInspection.candidate
+                          .application ? (
+                          <div className="source-file-selector">
+                            <button
+                              className="action-button"
+                              disabled={pendingSourceChangeCandidateApply}
+                              onClick={() => {
+                                void applySelectedSourceChangeCandidate();
+                              }}
+                              type="button"
+                            >
+                              {pendingSourceChangeCandidateApply
+                                ? "Applying"
+                                : "Apply to source history"}
+                            </button>
+                          </div>
+                        ) : null}
+
                         <div className="artifact-preview-panel">
                           <div className="section-header">
                             <h3>Source Diff</h3>
@@ -4477,6 +4681,83 @@ export function App() {
                     ) : selectedSourceChangeCandidates.length > 0 ? (
                       <div className="inline-empty-state">
                         <p>Select one source change candidate to inspect its host-backed detail.</p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Source History</h3>
+                      <span className="panel-caption">
+                        {selectedSourceHistory.length} records
+                      </span>
+                    </div>
+
+                    {sourceHistoryError ? (
+                      <p className="error-box">{sourceHistoryError}</p>
+                    ) : null}
+
+                    {selectedSourceHistory.length > 0 ? (
+                      <ul className="timeline-list">
+                        {selectedSourceHistory.slice(0, 8).map((entry) => (
+                          <li
+                            key={entry.sourceHistoryId}
+                            className="timeline-item"
+                          >
+                            <button
+                              className={`timeline-button ${selectedSourceHistoryId === entry.sourceHistoryId ? "is-selected" : ""}`}
+                              onClick={() => {
+                                void selectRuntimeSourceHistory(
+                                  entry.sourceHistoryId
+                                );
+                              }}
+                              type="button"
+                            >
+                              <div className="timeline-row">
+                                <strong>
+                                  {formatRuntimeSourceHistoryLabel(entry)}
+                                </strong>
+                                <span>{entry.appliedAt}</span>
+                              </div>
+                              <p>{`Candidate ${entry.candidateId} · commit ${entry.commit.slice(0, 12)}`}</p>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No source history entries are visible for this runtime yet.</p>
+                      </div>
+                    )}
+
+                    {sourceHistoryDetailError ? (
+                      <p className="error-box">{sourceHistoryDetailError}</p>
+                    ) : null}
+
+                    {selectedSourceHistoryInspection ? (
+                      <div className="turn-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Source History Detail</h3>
+                          <span className="panel-caption">
+                            {selectedSourceHistoryInspection.entry.sourceHistoryId}
+                          </span>
+                        </div>
+
+                        <ul className="detail-list">
+                          {formatRuntimeSourceHistoryDetailLines(
+                            selectedSourceHistoryInspection.entry
+                          ).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : selectedSourceHistoryId ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected source history detail...</p>
+                      </div>
+                    ) : selectedSourceHistory.length > 0 ? (
+                      <div className="inline-empty-state">
+                        <p>Select one source history entry to inspect its host-backed detail.</p>
                       </div>
                     ) : null}
                   </div>

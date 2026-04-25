@@ -22,6 +22,7 @@ import {
   runnerPhaseSchema,
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema,
+  sourceHistoryApplicationModeSchema,
   sourceChangeCandidateReviewDecisionSchema,
   sourceChangeCandidateStatusSchema,
   sourceChangeSummarySchema
@@ -281,6 +282,20 @@ export const sourceChangeCandidateReviewedEventSchema =
     type: z.literal("source_change_candidate.reviewed")
   });
 
+export const sourceHistoryUpdatedEventSchema = hostEventBaseSchema.extend({
+  candidateId: identifierSchema,
+  category: z.literal("runtime"),
+  commit: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  historyId: identifierSchema,
+  mode: sourceHistoryApplicationModeSchema,
+  nodeId: identifierSchema,
+  sourceHistoryRef: nonEmptyStringSchema,
+  turnId: identifierSchema,
+  type: z.literal("source_history.updated")
+});
+
 export const conversationTraceEventSchema = hostEventBaseSchema.extend({
   artifactIds: z.array(identifierSchema),
   category: z.literal("session"),
@@ -367,6 +382,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   sessionUpdatedEventSchema,
   runnerTurnUpdatedEventSchema,
   sourceChangeCandidateReviewedEventSchema,
+  sourceHistoryUpdatedEventSchema,
   conversationTraceEventSchema,
   approvalTraceEventSchema,
   artifactTraceEventSchema,
@@ -433,6 +449,9 @@ export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
 export type RunnerTurnUpdatedEvent = z.infer<typeof runnerTurnUpdatedEventSchema>;
 export type SourceChangeCandidateReviewedEvent = z.infer<
   typeof sourceChangeCandidateReviewedEventSchema
+>;
+export type SourceHistoryUpdatedEvent = z.infer<
+  typeof sourceHistoryUpdatedEventSchema
 >;
 export type ConversationTraceEvent = z.infer<typeof conversationTraceEventSchema>;
 export type ApprovalTraceEvent = z.infer<typeof approvalTraceEventSchema>;

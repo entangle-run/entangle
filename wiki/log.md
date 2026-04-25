@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added local source history application
+
+Advanced Entangle Local L3 workstream B5. Accepted source-change candidates can
+now be explicitly applied into runtime-local source history. The host validates
+that the current source workspace still matches either the candidate base tree
+or head tree, records `already_in_workspace` or `applied_to_workspace`, creates
+a commit on `refs/heads/entangle-source-history`, annotates the candidate with
+application metadata, writes a durable source-history record, and emits
+`source_history.updated`.
+
+The shared host client, CLI, and Studio now expose source-history apply, list,
+and inspect surfaces. Added
+`references/201-source-history-application-slice.md`. Policy approval, remote
+publication, source commit artifact records, artifact history/diff, and
+end-to-end OpenCode-backed smoke coverage remain open B5 work.
+
 ## [2026-04-25] implementation | Added source change candidate review mutation
 
 Advanced Entangle Local L3 workstream B5. Source-change candidates now have an

@@ -45,11 +45,14 @@ import {
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
+  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
+  runtimeSourceHistoryInspectionResponseSchema,
+  runtimeSourceHistoryListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   resolveEffectiveAgentRuntime,
@@ -326,6 +329,11 @@ describe("source change candidate host API contracts", () => {
         ],
         status: "changed"
       },
+      snapshot: {
+        baseTree: "base-tree-alpha",
+        headTree: "head-tree-alpha",
+        kind: "shadow_git_tree"
+      },
       status: "pending_review",
       turnId: "turn-alpha",
       updatedAt: "2026-04-24T00:01:00.000Z"
@@ -349,6 +357,12 @@ describe("source change candidate host API contracts", () => {
       }).status
     ).toBe("accepted");
     expect(
+      runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
+        appliedBy: "operator-alpha",
+        reason: "Accepted for the local source history."
+      }).appliedBy
+    ).toBe("operator-alpha");
+    expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
           ...candidate,
@@ -363,6 +377,57 @@ describe("source change candidate host API contracts", () => {
         }
       }).candidate.review?.decision
     ).toBe("rejected");
+    const historyEntry = {
+      appliedAt: "2026-04-24T00:03:00.000Z",
+      appliedBy: "operator-alpha",
+      baseTree: "base-tree-alpha",
+      branch: "entangle-source-history",
+      candidateId: "source-change-turn-alpha",
+      commit: "commit-alpha",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      headTree: "head-tree-alpha",
+      mode: "already_in_workspace",
+      nodeId: "worker-it",
+      reason: "Accepted for the local source history.",
+      sourceChangeSummary: candidate.sourceChangeSummary,
+      sourceHistoryId: "source-history-source-change-turn-alpha",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:03:00.000Z"
+    };
+
+    expect(
+      runtimeSourceHistoryListResponseSchema.parse({
+        history: [historyEntry]
+      }).history
+    ).toHaveLength(1);
+    expect(
+      runtimeSourceHistoryInspectionResponseSchema.parse({
+        entry: historyEntry
+      }).entry.mode
+    ).toBe("already_in_workspace");
+    expect(
+      runtimeSourceChangeCandidateInspectionResponseSchema.parse({
+        candidate: {
+          ...candidate,
+          application: {
+            appliedAt: "2026-04-24T00:03:00.000Z",
+            appliedBy: "operator-alpha",
+            commit: "commit-alpha",
+            mode: "already_in_workspace",
+            reason: "Accepted for the local source history.",
+            sourceHistoryId: "source-history-source-change-turn-alpha"
+          },
+          review: {
+            decidedAt: "2026-04-24T00:02:00.000Z",
+            decidedBy: "operator-alpha",
+            decision: "accepted"
+          },
+          status: "accepted",
+          updatedAt: "2026-04-24T00:03:00.000Z"
+        }
+      }).candidate.application?.sourceHistoryId
+    ).toBe("source-history-source-change-turn-alpha");
     expect(
       runtimeSourceChangeCandidateDiffResponseSchema.parse({
         candidate,
@@ -1113,6 +1178,24 @@ describe("host event contracts", () => {
       turnId: "turn-alpha",
       type: "source_change_candidate.reviewed"
     });
+    const sourceHistoryEvent = hostEventRecordSchema.parse({
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "commit-alpha",
+      eventId: "evt-source-history-updated",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260424-000000",
+      historyId: "source-history-source-change-turn-alpha",
+      message:
+        "Source history 'source-history-source-change-turn-alpha' for runtime 'worker-it' recorded candidate 'source-change-turn-alpha' at commit 'commit-alpha'.",
+      mode: "already_in_workspace",
+      nodeId: "worker-it",
+      schemaVersion: "1",
+      sourceHistoryRef: "refs/heads/entangle-source-history",
+      timestamp: "2026-04-24T00:00:03.000Z",
+      turnId: "turn-alpha",
+      type: "source_history.updated"
+    });
 
     expect(sessionEvent.type).toBe("session.updated");
     expect(sessionEvent.category).toBe("session");
@@ -1144,6 +1227,8 @@ describe("host event contracts", () => {
     ]);
     expect(reviewedCandidateEvent.type).toBe("source_change_candidate.reviewed");
     expect(reviewedCandidateEvent.status).toBe("accepted");
+    expect(sourceHistoryEvent.type).toBe("source_history.updated");
+    expect(sourceHistoryEvent.mode).toBe("already_in_workspace");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

@@ -39,11 +39,14 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
+  runtimeSourceHistoryInspectionResponseSchema,
+  runtimeSourceHistoryListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -89,11 +92,14 @@ import {
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
+  type RuntimeSourceChangeCandidateApplyMutationRequest,
   type RuntimeSourceChangeCandidateDiffResponse,
   type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeSourceChangeCandidateReviewMutationRequest,
+  type RuntimeSourceHistoryInspectionResponse,
+  type RuntimeSourceHistoryListResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type SessionInspectionResponse,
@@ -788,6 +794,50 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async applyRuntimeSourceChangeCandidate(
+      nodeId: string,
+      candidateId: string,
+      apply: RuntimeSourceChangeCandidateApplyMutationRequest = {}
+    ): Promise<RuntimeSourceHistoryInspectionResponse> {
+      const request =
+        runtimeSourceChangeCandidateApplyMutationRequestSchema.parse(apply);
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/apply`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(request)
+          }
+        ),
+        runtimeSourceHistoryInspectionResponseSchema
+      );
+    },
+
+    async listRuntimeSourceHistory(
+      nodeId: string
+    ): Promise<RuntimeSourceHistoryListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/source-history`),
+        runtimeSourceHistoryListResponseSchema
+      );
+    },
+
+    async getRuntimeSourceHistory(
+      nodeId: string,
+      sourceHistoryId: string
+    ): Promise<RuntimeSourceHistoryInspectionResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}`
+        ),
+        runtimeSourceHistoryInspectionResponseSchema
+      );
+    },
+
     async getRuntimeRecovery(
       nodeId: string,
       limit = 50
@@ -1046,3 +1096,8 @@ export {
   sortRuntimeSourceChangeCandidatesForPresentation,
   type RuntimeSourceChangeCandidateFilter
 } from "./runtime-source-change-candidate.js";
+export {
+  formatRuntimeSourceHistoryDetailLines,
+  formatRuntimeSourceHistoryLabel,
+  sortRuntimeSourceHistoryForPresentation
+} from "./runtime-source-history.js";

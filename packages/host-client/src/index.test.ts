@@ -1774,6 +1774,109 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("applies source change candidates and inspects source history through the host surface", async () => {
+    const requests: Array<{ body?: string; method?: string; url: string }> = [];
+    const sourceHistoryEntry = {
+      appliedAt: "2026-04-24T00:03:00.000Z",
+      appliedBy: "operator-alpha",
+      baseTree: "base-tree-alpha",
+      branch: "entangle-source-history",
+      candidateId: "source-change-turn-alpha",
+      commit: "commit-alpha",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      headTree: "head-tree-alpha",
+      mode: "already_in_workspace",
+      nodeId: "worker-it",
+      reason: "Promote accepted source.",
+      sourceChangeSummary: {
+        additions: 1,
+        checkedAt: "2026-04-24T00:01:00.000Z",
+        deletions: 0,
+        fileCount: 1,
+        files: [],
+        status: "changed",
+        truncated: false
+      },
+      sourceHistoryId: "source-history-source-change-turn-alpha",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:03:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        const body = url.endsWith("/source-history")
+          ? { history: [sourceHistoryEntry] }
+          : { entry: sourceHistoryEntry };
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(body),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.applyRuntimeSourceChangeCandidate(
+        "worker-it",
+        "source-change-turn-alpha",
+        {
+          appliedBy: "operator-alpha",
+          reason: "Promote accepted source."
+        }
+      )
+    ).resolves.toMatchObject({
+      entry: {
+        mode: "already_in_workspace",
+        sourceHistoryId: "source-history-source-change-turn-alpha"
+      }
+    });
+    await expect(client.listRuntimeSourceHistory("worker-it")).resolves.toMatchObject({
+      history: [
+        {
+          sourceHistoryId: "source-history-source-change-turn-alpha"
+        }
+      ]
+    });
+    await expect(
+      client.getRuntimeSourceHistory(
+        "worker-it",
+        "source-history-source-change-turn-alpha"
+      )
+    ).resolves.toMatchObject({
+      entry: {
+        commit: "commit-alpha"
+      }
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          appliedBy: "operator-alpha",
+          reason: "Promote accepted source."
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      },
+      {
+        method: undefined,
+        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history"
+      },
+      {
+        method: undefined,
+        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

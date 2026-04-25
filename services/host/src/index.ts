@@ -48,12 +48,15 @@ import {
   runtimeRecoveryListQuerySchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewQuerySchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
+  runtimeSourceHistoryInspectionResponseSchema,
+  runtimeSourceHistoryListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -64,6 +67,7 @@ import {
 import { ZodError, type ZodType } from "zod";
 import {
   admitPackageSource,
+  applyRuntimeSourceChangeCandidate,
   applyCatalog,
   applyGraph,
   buildHostStatus,
@@ -81,11 +85,13 @@ import {
   getRuntimeSourceChangeCandidateDiff,
   getRuntimeSourceChangeCandidateFilePreview,
   getRuntimeSourceChangeCandidateInspection,
+  getRuntimeSourceHistoryInspection,
   getRuntimeTurnInspection,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
   listRuntimeApprovals,
   listRuntimeSourceChangeCandidates,
+  listRuntimeSourceHistory,
   listRuntimeTurns,
   listHostEvents,
   getCatalogInspection,
@@ -1508,6 +1514,70 @@ export async function buildHostServer() {
     }
   );
 
+  server.post(
+    "/v1/runtimes/:nodeId/source-change-candidates/:candidateId/apply",
+    async (request, reply) => {
+      const params = request.params as { candidateId: string; nodeId: string };
+      const apply = parseRequestInput(
+        runtimeSourceChangeCandidateApplyMutationRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected source-change candidate application schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const applyResult = await applyRuntimeSourceChangeCandidate({
+        apply,
+        candidateId: params.candidateId,
+        nodeId: params.nodeId
+      });
+
+      if (!applyResult) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source change candidate '${params.candidateId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      if (!applyResult.ok) {
+        throw new HostHttpError({
+          code: applyResult.code,
+          message: applyResult.message,
+          statusCode: 409
+        });
+      }
+
+      return runtimeSourceHistoryInspectionResponseSchema.parse(
+        applyResult.history
+      );
+    }
+  );
+
   server.get(
     "/v1/runtimes/:nodeId/source-change-candidates/:candidateId",
     async (request, reply) => {
@@ -1551,6 +1621,95 @@ export async function buildHostServer() {
 
       return runtimeSourceChangeCandidateInspectionResponseSchema.parse(
         candidateInspection
+      );
+    }
+  );
+
+  server.get("/v1/runtimes/:nodeId/source-history", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const history = await listRuntimeSourceHistory(params.nodeId);
+
+    if (!history) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeSourceHistoryListResponseSchema.parse(history);
+  });
+
+  server.get(
+    "/v1/runtimes/:nodeId/source-history/:sourceHistoryId",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string; sourceHistoryId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const historyInspection = await getRuntimeSourceHistoryInspection({
+        nodeId: params.nodeId,
+        sourceHistoryId: params.sourceHistoryId
+      });
+
+      if (!historyInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source history entry '${params.sourceHistoryId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeSourceHistoryInspectionResponseSchema.parse(
+        historyInspection
       );
     }
   );

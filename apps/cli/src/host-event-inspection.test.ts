@@ -44,7 +44,8 @@ describe("buildHostEventFilter", () => {
         "session.updated",
         "conversation.trace.event",
         "approval.trace.event",
-        "source_change_candidate.reviewed"
+        "source_change_candidate.reviewed",
+        "source_history.updated"
       ]
     });
   });

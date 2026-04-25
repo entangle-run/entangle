@@ -110,15 +110,17 @@ This slice intentionally does not:
 
 Source changes are evidence and future source-change candidates. They are not
 yet applied to source history, committed, or published artifacts. A later slice
-added accepted/rejected/superseded review mutation, but source-history
-application and publication remain separate work.
+added accepted/rejected/superseded review mutation, and a subsequent slice
+added explicit runtime-local source-history application. Policy gates, remote
+publication, and artifact linkage remain separate work.
 
 ## Remaining B5 Work
 
 The remaining B5 implementation should add:
 
 - approval/policy flow before source application or publication;
-- runner-owned application of reviewed source changes into node git history;
+- remote publication of reviewed source-history commits;
+- source commit or branch artifact records where appropriate;
 - source diff artifact records where appropriate;
 - artifact history/diff host APIs;
 - CLI and Studio diff/history views;

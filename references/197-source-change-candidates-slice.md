@@ -104,6 +104,10 @@ superseded candidate decisions. That mutation records review metadata and emits
 `source_change_candidate.reviewed`, but does not apply, commit, push, or
 publish candidate changes.
 
+A later slice added explicit runtime-local source-history application for
+accepted candidates, with host-client, CLI, and Studio apply/list/detail
+surfaces. Remote publication and artifact linkage remain separate work.
+
 ## Boundary Decisions
 
 This slice intentionally does not:
@@ -111,23 +115,23 @@ This slice intentionally does not:
 - auto-commit source workspace changes;
 - auto-push source workspace changes;
 - publish candidate changes as artifacts;
-- expose full source history APIs;
+- publish local source-history commits remotely;
 - expose raw runtime-local workspace paths as protocol locators;
 - treat OpenCode private state as Entangle source-of-truth.
 
-Candidates are durable review records. Source-history application, policy
-approval, git publication, and artifact linkage remain explicit future work.
+Candidates are durable review records. Local source-history application now
+exists; policy approval, remote git publication, and artifact linkage remain
+explicit future work.
 
 ## Remaining B5 Work
 
 The remaining B5 implementation should add:
 
 - Entangle policy checks before candidate source application or publication;
-- approval records for policy-gated source publication;
-- runner-owned application of accepted candidates into node git history;
-- source-history host APIs;
+- approval records for policy-gated source application or publication;
+- remote publication of source-history commits;
+- source commit or branch artifact records;
 - artifact history/diff APIs;
-- CLI and Studio source-history views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, candidate review, source history, publication, and

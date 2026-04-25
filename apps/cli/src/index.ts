@@ -12,6 +12,7 @@ import {
   sortNodeInspectionsForPresentation,
   sortPackageSourceInspections,
   sortRuntimeInspectionsForPresentation,
+  sortRuntimeSourceHistoryForPresentation,
   sortRuntimeTurnsForPresentation
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
@@ -25,6 +26,7 @@ import {
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
+  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema
@@ -96,6 +98,7 @@ import {
   projectRuntimeSourceChangeCandidateSummary,
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
+import { projectRuntimeSourceHistorySummary } from "./runtime-source-history-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
@@ -1532,23 +1535,27 @@ hostRuntimesCommand
   .argument("<candidateId>", "Source change candidate identifier to inspect.")
   .option("--diff", "Include the bounded source diff when available.")
   .option("--file <path>", "Include a bounded preview for one changed source file.")
+  .option("--apply", "Apply an accepted candidate into runtime source history.")
   .option(
     "--review <status>",
     "Review the candidate as accepted, rejected, or superseded."
   )
-  .option("--reason <reason>", "Attach a review reason when --review is used.")
+  .option("--reason <reason>", "Attach a review or application reason.")
   .option("--reviewed-by <operatorId>", "Attach the reviewing operator id.")
+  .option("--applied-by <operatorId>", "Attach the applying operator id.")
   .option(
     "--superseded-by <candidateId>",
     "Candidate id that supersedes this candidate when --review superseded is used."
   )
   .option("--summary", "Print a compact operator-oriented candidate summary.")
-  .description("Inspect or review one persisted source change candidate.")
+  .description("Inspect, review, or apply one persisted source change candidate.")
   .action(
     async (
       nodeId: string,
       candidateId: string,
       options: {
+        appliedBy?: string;
+        apply?: boolean;
         diff?: boolean;
         file?: string;
         reason?: string;
@@ -1561,19 +1568,49 @@ hostRuntimesCommand
     ) => {
       const client = createCliHostClient(command);
       const selectedInspectionModes = [
+        options.apply,
         options.diff,
         Boolean(options.file),
         Boolean(options.review)
       ].filter(Boolean).length;
 
       if (selectedInspectionModes > 1) {
-        throw new Error("Use only one of --diff, --file, or --review.");
+        throw new Error("Use only one of --apply, --diff, --file, or --review.");
       }
 
-      if ((options.reason || options.reviewedBy || options.supersededBy) && !options.review) {
+      if (options.reason && !options.review && !options.apply) {
         throw new Error(
-          "Use --reason, --reviewed-by, or --superseded-by only with --review."
+          "Use --reason only with --review or --apply."
         );
+      }
+
+      if ((options.reviewedBy || options.supersededBy) && !options.review) {
+        throw new Error("Use --reviewed-by or --superseded-by only with --review.");
+      }
+
+      if (options.appliedBy && !options.apply) {
+        throw new Error("Use --applied-by only with --apply.");
+      }
+
+      if (options.apply) {
+        const apply =
+          runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
+            ...(options.appliedBy ? { appliedBy: options.appliedBy } : {}),
+            ...(options.reason ? { reason: options.reason } : {})
+          });
+        const response = await client.applyRuntimeSourceChangeCandidate(
+          nodeId,
+          candidateId,
+          apply
+        );
+        printJson(
+          options.summary
+            ? {
+                sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
+              }
+            : response
+        );
+        return;
       }
 
       if (options.review) {
@@ -1691,6 +1728,62 @@ hostRuntimesCommand
           ? candidates.map(projectRuntimeSourceChangeCandidateSummary)
           : candidates
       });
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--summary", "Print compact operator-oriented source history summaries.")
+  .description("Inspect persisted source history for one runtime.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.listRuntimeSourceHistory(nodeId);
+      const history = sortRuntimeSourceHistoryForPresentation(response.history);
+
+      printJson({
+        history: options.summary
+          ? history.map(projectRuntimeSourceHistorySummary)
+          : history
+      });
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-entry")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<sourceHistoryId>", "Source history entry identifier to inspect.")
+  .option("--summary", "Print a compact operator-oriented source history summary.")
+  .description("Inspect one persisted source history entry.")
+  .action(
+    async (
+      nodeId: string,
+      sourceHistoryId: string,
+      options: {
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.getRuntimeSourceHistory(
+        nodeId,
+        sourceHistoryId
+      );
+
+      printJson(
+        options.summary
+          ? {
+              sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
+            }
+          : response
+      );
     }
   );
 

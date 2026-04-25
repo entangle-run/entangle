@@ -26,6 +26,7 @@ import {
   runnerTurnRecordSchema,
   sourceChangeCandidateReviewDecisionSchema,
   sourceChangeCandidateRecordSchema,
+  sourceHistoryRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 
@@ -226,6 +227,14 @@ export const runtimeSourceChangeCandidateInspectionResponseSchema = z.object({
   candidate: sourceChangeCandidateRecordSchema
 });
 
+export const runtimeSourceHistoryListResponseSchema = z.object({
+  history: z.array(sourceHistoryRecordSchema)
+});
+
+export const runtimeSourceHistoryInspectionResponseSchema = z.object({
+  entry: sourceHistoryRecordSchema
+});
+
 export const runtimeSourceChangeCandidateReviewMutationRequestSchema = z
   .object({
     reason: nonEmptyStringSchema.optional(),
@@ -252,6 +261,11 @@ export const runtimeSourceChangeCandidateReviewMutationRequestSchema = z
       });
     }
   });
+
+export const runtimeSourceChangeCandidateApplyMutationRequestSchema = z.object({
+  appliedBy: identifierSchema.optional(),
+  reason: nonEmptyStringSchema.optional()
+});
 
 export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
   "available",
@@ -356,8 +370,17 @@ export type RuntimeSourceChangeCandidateListResponse = z.infer<
 export type RuntimeSourceChangeCandidateInspectionResponse = z.infer<
   typeof runtimeSourceChangeCandidateInspectionResponseSchema
 >;
+export type RuntimeSourceHistoryListResponse = z.infer<
+  typeof runtimeSourceHistoryListResponseSchema
+>;
+export type RuntimeSourceHistoryInspectionResponse = z.infer<
+  typeof runtimeSourceHistoryInspectionResponseSchema
+>;
 export type RuntimeSourceChangeCandidateReviewMutationRequest = z.infer<
   typeof runtimeSourceChangeCandidateReviewMutationRequestSchema
+>;
+export type RuntimeSourceChangeCandidateApplyMutationRequest = z.infer<
+  typeof runtimeSourceChangeCandidateApplyMutationRequestSchema
 >;
 export type RuntimeSourceChangeCandidateDiff = z.infer<
   typeof runtimeSourceChangeCandidateDiffSchema

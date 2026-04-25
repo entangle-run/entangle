@@ -52,6 +52,8 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
+  runtimeSourceHistoryInspectionResponseSchema,
+  runtimeSourceHistoryListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -3420,6 +3422,96 @@ describe("buildHostServer", () => {
       expect(reviewedCandidateFile.status).toBe("accepted");
       expect(reviewedCandidateFile.review?.decision).toBe("accepted");
 
+      await writeFile(
+        path.join(sourceWorkspaceRoot, "worker.ts"),
+        "export const generated = false;\n",
+        "utf8"
+      );
+
+      const applyResponse = await server.inject({
+        method: "POST",
+        payload: {
+          appliedBy: "operator-alpha",
+          reason: "Promote the accepted change into local source history."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      });
+
+      expect(applyResponse.statusCode).toBe(200);
+      const sourceHistoryEntry =
+        runtimeSourceHistoryInspectionResponseSchema.parse(
+          applyResponse.json()
+        ).entry;
+      expect(sourceHistoryEntry).toMatchObject({
+        appliedBy: "operator-alpha",
+        candidateId: "source-change-turn-alpha",
+        mode: "applied_to_workspace",
+        nodeId: "worker-it",
+        reason: "Promote the accepted change into local source history.",
+        sourceHistoryId: "source-history-source-change-turn-alpha"
+      });
+      expect(sourceHistoryEntry.commit).toMatch(/^[0-9a-f]{40}$/);
+
+      const appliedCandidateFile = sourceChangeCandidateRecordSchema.parse(
+        JSON.parse(
+          await readFile(
+            path.join(
+              runtimeContext.workspace.runtimeRoot,
+              "source-change-candidates",
+              "source-change-turn-alpha.json"
+            ),
+            "utf8"
+          )
+        ) as unknown
+      );
+      expect(appliedCandidateFile.application).toMatchObject({
+        mode: "applied_to_workspace",
+        sourceHistoryId: "source-history-source-change-turn-alpha"
+      });
+      await expect(
+        readFile(path.join(sourceWorkspaceRoot, "worker.ts"), "utf8")
+      ).resolves.toBe("export const generated = true;\n");
+
+      const sourceHistoryListResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-history"
+      });
+
+      expect(sourceHistoryListResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryListResponseSchema.parse(
+          sourceHistoryListResponse.json()
+        ).history
+      ).toHaveLength(1);
+
+      const sourceHistoryInspectionResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha"
+      });
+
+      expect(sourceHistoryInspectionResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryInspectionResponseSchema.parse(
+          sourceHistoryInspectionResponse.json()
+        ).entry.commit
+      ).toBe(sourceHistoryEntry.commit);
+
+      const repeatedApplyResponse = await server.inject({
+        method: "POST",
+        payload: {},
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      });
+
+      expect(repeatedApplyResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(repeatedApplyResponse.json())
+      ).toMatchObject({
+        code: "conflict"
+      });
+
       const repeatedReviewResponse = await server.inject({
         method: "PATCH",
         payload: {
@@ -3453,6 +3545,22 @@ describe("buildHostServer", () => {
         candidateId: "source-change-turn-alpha",
         previousStatus: "pending_review",
         status: "accepted"
+      });
+      const sourceHistoryEvents = hostEventListResponseSchema
+        .parse(
+          (
+            await server.inject({
+              method: "GET",
+              url: "/v1/events?limit=20"
+            })
+          ).json()
+        )
+        .events.filter((event) => event.type === "source_history.updated");
+      expect(sourceHistoryEvents).toHaveLength(1);
+      expect(sourceHistoryEvents[0]).toMatchObject({
+        candidateId: "source-change-turn-alpha",
+        historyId: "source-history-source-change-turn-alpha",
+        mode: "applied_to_workspace"
       });
 
       const missingCandidateResponse = await server.inject({

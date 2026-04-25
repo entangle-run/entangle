@@ -149,6 +149,20 @@ export const sourceChangeCandidateReviewRecordSchema = z
     }
   });
 
+export const sourceHistoryApplicationModeSchema = z.enum([
+  "already_in_workspace",
+  "applied_to_workspace"
+]);
+
+export const sourceChangeCandidateApplicationRecordSchema = z.object({
+  appliedAt: nonEmptyStringSchema,
+  appliedBy: identifierSchema.optional(),
+  commit: nonEmptyStringSchema,
+  mode: sourceHistoryApplicationModeSchema,
+  reason: nonEmptyStringSchema.optional(),
+  sourceHistoryId: identifierSchema
+});
+
 export const sourceChangeSnapshotRefSchema = z.object({
   baseTree: nonEmptyStringSchema,
   headTree: nonEmptyStringSchema,
@@ -156,6 +170,7 @@ export const sourceChangeSnapshotRefSchema = z.object({
 });
 
 export const sourceChangeCandidateRecordSchema = z.object({
+  application: sourceChangeCandidateApplicationRecordSchema.optional(),
   candidateId: identifierSchema,
   conversationId: identifierSchema.optional(),
   createdAt: nonEmptyStringSchema,
@@ -166,6 +181,27 @@ export const sourceChangeCandidateRecordSchema = z.object({
   snapshot: sourceChangeSnapshotRefSchema.optional(),
   sourceChangeSummary: sourceChangeSummarySchema,
   status: sourceChangeCandidateStatusSchema,
+  turnId: identifierSchema,
+  updatedAt: nonEmptyStringSchema
+});
+
+export const sourceHistoryRecordSchema = z.object({
+  appliedAt: nonEmptyStringSchema,
+  appliedBy: identifierSchema.optional(),
+  baseTree: nonEmptyStringSchema,
+  branch: nonEmptyStringSchema,
+  candidateId: identifierSchema,
+  commit: nonEmptyStringSchema,
+  conversationId: identifierSchema.optional(),
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  headTree: nonEmptyStringSchema,
+  mode: sourceHistoryApplicationModeSchema,
+  nodeId: identifierSchema,
+  reason: nonEmptyStringSchema.optional(),
+  sessionId: identifierSchema.optional(),
+  sourceChangeSummary: sourceChangeSummarySchema,
+  sourceHistoryId: identifierSchema,
   turnId: identifierSchema,
   updatedAt: nonEmptyStringSchema
 });
@@ -345,12 +381,19 @@ export type SourceChangeCandidateReviewDecision = z.infer<
 export type SourceChangeCandidateReviewRecord = z.infer<
   typeof sourceChangeCandidateReviewRecordSchema
 >;
+export type SourceHistoryApplicationMode = z.infer<
+  typeof sourceHistoryApplicationModeSchema
+>;
+export type SourceChangeCandidateApplicationRecord = z.infer<
+  typeof sourceChangeCandidateApplicationRecordSchema
+>;
 export type SourceChangeSnapshotRef = z.infer<
   typeof sourceChangeSnapshotRefSchema
 >;
 export type SourceChangeCandidateRecord = z.infer<
   typeof sourceChangeCandidateRecordSchema
 >;
+export type SourceHistoryRecord = z.infer<typeof sourceHistoryRecordSchema>;
 export type SessionRecord = z.infer<typeof sessionRecordSchema>;
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ApprovalRecord = z.infer<typeof approvalRecordSchema>;

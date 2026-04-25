@@ -93,6 +93,22 @@ export function formatRuntimeSourceChangeCandidateDetailLines(
     }
   }
 
+  if (candidate.application) {
+    lines.push(
+      `application ${candidate.application.mode} at ${candidate.application.appliedAt}`
+    );
+    lines.push(`source history ${candidate.application.sourceHistoryId}`);
+    lines.push(`source commit ${candidate.application.commit}`);
+
+    if (candidate.application.appliedBy) {
+      lines.push(`applied by ${candidate.application.appliedBy}`);
+    }
+
+    if (candidate.application.reason) {
+      lines.push(`application reason ${candidate.application.reason}`);
+    }
+  }
+
   if (candidate.snapshot) {
     lines.push(
       `snapshot ${candidate.snapshot.kind} ${candidate.snapshot.baseTree}..${candidate.snapshot.headTree}`

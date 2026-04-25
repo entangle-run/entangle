@@ -38,6 +38,14 @@ const candidates: SourceChangeCandidateRecord[] = [
     updatedAt: "2026-04-24T10:00:00.000Z"
   },
   {
+    application: {
+      appliedAt: "2026-04-24T11:08:00.000Z",
+      appliedBy: "operator-alpha",
+      commit: "commit-new",
+      mode: "already_in_workspace",
+      reason: "Promote accepted source.",
+      sourceHistoryId: "source-history-source-change-turn-new"
+    },
     candidateId: "source-change-turn-new",
     conversationId: "conv-alpha",
     createdAt: "2026-04-24T11:00:00.000Z",
@@ -119,6 +127,11 @@ describe("runtime source change candidate presentation helpers", () => {
         "review accepted at 2026-04-24T11:05:00.000Z",
         "reviewed by operator-alpha",
         "review reason Reviewed by the operator.",
+        "application already_in_workspace at 2026-04-24T11:08:00.000Z",
+        "source history source-history-source-change-turn-new",
+        "source commit commit-new",
+        "applied by operator-alpha",
+        "application reason Promote accepted source.",
         "snapshot shadow_git_tree base-tree..head-tree",
         "source file modified src/new.ts (+3/-1)",
         "diff excerpt available"

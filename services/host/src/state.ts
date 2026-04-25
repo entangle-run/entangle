@@ -116,6 +116,7 @@ import {
   sessionListResponseSchema,
   sessionRecordSchema,
   sourceChangeCandidateRecordSchema,
+  sourceHistoryRecordSchema,
   runtimeAgentRuntimeInspectionSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
@@ -129,9 +130,12 @@ import {
   runtimeRecoveryPolicyRecordSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
+  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
+  runtimeSourceHistoryInspectionResponseSchema,
+  runtimeSourceHistoryListResponseSchema,
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
@@ -154,9 +158,12 @@ import {
   type RuntimeMemoryPageSummary,
   type RuntimeSourceChangeCandidateDiffResponse,
   type RuntimeSourceChangeCandidateFilePreviewResponse,
+  type RuntimeSourceChangeCandidateApplyMutationRequest,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeSourceChangeCandidateReviewMutationRequest,
+  type RuntimeSourceHistoryInspectionResponse,
+  type RuntimeSourceHistoryListResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   runtimeTurnInspectionResponseSchema,
@@ -175,6 +182,7 @@ import {
   type SessionRecord,
   type RunnerTurnRecord,
   type SourceChangeCandidateRecord,
+  type SourceHistoryRecord,
   type RuntimeListResponse,
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryRecord,
@@ -394,6 +402,10 @@ type RunnerTurnUpdatedEventInput = Omit<
 >;
 type SourceChangeCandidateReviewedEventInput = Omit<
   Extract<HostEventRecord, { type: "source_change_candidate.reviewed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type SourceHistoryUpdatedEventInput = Omit<
+  Extract<HostEventRecord, { type: "source_history.updated" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type ConversationTraceEventInput = Omit<
@@ -5085,6 +5097,39 @@ export async function getRuntimeSourceChangeCandidateInspection(input: {
     : null;
 }
 
+export async function listRuntimeSourceHistory(
+  nodeId: string
+): Promise<RuntimeSourceHistoryListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeSourceHistoryListResponseSchema.parse({
+    history: await listRuntimeSourceHistoryRecords(context.workspace.runtimeRoot)
+  });
+}
+
+export async function getRuntimeSourceHistoryInspection(input: {
+  nodeId: string;
+  sourceHistoryId: string;
+}): Promise<RuntimeSourceHistoryInspectionResponse | null> {
+  const history = await listRuntimeSourceHistory(input.nodeId);
+
+  if (!history) {
+    return null;
+  }
+
+  const entry = history.history.find(
+    (historyRecord) => historyRecord.sourceHistoryId === input.sourceHistoryId
+  );
+
+  return entry
+    ? runtimeSourceHistoryInspectionResponseSchema.parse({ entry })
+    : null;
+}
+
 export type RuntimeSourceChangeCandidateReviewMutationResult =
   | {
       inspection: RuntimeSourceChangeCandidateInspectionResponse;
@@ -5208,6 +5253,468 @@ export async function reviewRuntimeSourceChangeCandidate(input: {
     }),
     ok: true
   };
+}
+
+export type RuntimeSourceChangeCandidateApplyMutationResult =
+  | {
+      history: RuntimeSourceHistoryInspectionResponse;
+      ok: true;
+    }
+  | {
+      code: "conflict";
+      message: string;
+      ok: false;
+    };
+
+const sourceHistoryBranchName = "entangle-source-history";
+const sourceHistoryRef = `refs/heads/${sourceHistoryBranchName}`;
+const gitEmptyTreeHash = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
+type HostGitCommandOptions = {
+  env?: NodeJS.ProcessEnv | undefined;
+  gitDir?: string | undefined;
+  workTree?: string | undefined;
+};
+
+async function runSourceHistoryGitCommand(
+  cwd: string,
+  args: string[],
+  options: HostGitCommandOptions = {}
+): Promise<string> {
+  const fullArgs = [
+    ...(options.gitDir ? ["--git-dir", options.gitDir] : []),
+    ...(options.workTree ? ["--work-tree", options.workTree] : []),
+    ...args
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", fullArgs, {
+      cwd,
+      env: {
+        ...process.env,
+        ...options.env
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+        return;
+      }
+
+      reject(
+        new Error(
+          `Git source-history command failed (${args.join(" ")}): ${
+            stderr.trim() || stdout.trim() || `exit ${code ?? "unknown"}`
+          }`
+        )
+      );
+    });
+  });
+}
+
+function sanitizeRuntimePathError(
+  context: EffectiveRuntimeContext,
+  error: unknown
+): string {
+  let message = formatUnknownError(error);
+
+  for (const [targetPath, placeholder] of [
+    [context.workspace.root, "<workspace_root>"],
+    [context.workspace.sourceWorkspaceRoot, "<source_workspace>"],
+    [context.workspace.runtimeRoot, "<runtime_state>"]
+  ] as Array<[string | undefined, string]>) {
+    if (targetPath) {
+      message = message.replaceAll(targetPath, placeholder);
+    }
+  }
+
+  return message;
+}
+
+function buildSourceHistoryId(candidateId: string): string {
+  const candidateComponent = sanitizeIdentifier(candidateId);
+  const raw = `source-history-${candidateComponent}`;
+
+  if (raw.length <= 100) {
+    return raw;
+  }
+
+  const digest = createHash("sha256").update(candidateId).digest("hex").slice(0, 12);
+  const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${digest}`;
+}
+
+async function writeCurrentSourceWorkspaceTree(input: {
+  gitDir: string;
+  sourceWorkspaceRoot: string;
+}): Promise<string> {
+  await runSourceHistoryGitCommand(input.sourceWorkspaceRoot, ["add", "--all", "--", "."], {
+    gitDir: input.gitDir,
+    workTree: input.sourceWorkspaceRoot
+  });
+
+  return runSourceHistoryGitCommand(input.sourceWorkspaceRoot, ["write-tree"], {
+    gitDir: input.gitDir,
+    workTree: input.sourceWorkspaceRoot
+  });
+}
+
+async function replaceSourceWorkspaceWithTree(input: {
+  gitDir: string;
+  headTree: string;
+  sourceWorkspaceRoot: string;
+}): Promise<void> {
+  const entries = await readdir(input.sourceWorkspaceRoot);
+
+  await Promise.all(
+    entries.map((entry) =>
+      rm(path.join(input.sourceWorkspaceRoot, entry), {
+        force: true,
+        recursive: true
+      })
+    )
+  );
+  if (input.headTree === gitEmptyTreeHash) {
+    return;
+  }
+
+  await runSourceHistoryGitCommand(
+    input.sourceWorkspaceRoot,
+    ["checkout", "--force", input.headTree, "--", "."],
+    {
+      gitDir: input.gitDir,
+      workTree: input.sourceWorkspaceRoot
+    }
+  );
+}
+
+async function createSourceHistoryCommit(input: {
+  candidate: SourceChangeCandidateRecord;
+  context: EffectiveRuntimeContext;
+  gitDir: string;
+  reason?: string | undefined;
+  sourceWorkspaceRoot: string;
+}): Promise<string> {
+  let parentCommit: string | undefined;
+
+  try {
+    parentCommit = await runSourceHistoryGitCommand(
+      input.sourceWorkspaceRoot,
+      ["rev-parse", "--verify", `${sourceHistoryRef}^{commit}`],
+      {
+        gitDir: input.gitDir,
+        workTree: input.sourceWorkspaceRoot
+      }
+    );
+  } catch {
+    parentCommit = undefined;
+  }
+
+  const messageLines = [
+    `entangle(${input.context.binding.node.nodeId}): apply ${input.candidate.candidateId}`,
+    "",
+    `candidate: ${input.candidate.candidateId}`,
+    `turn: ${input.candidate.turnId}`,
+    ...(input.reason ? ["", input.reason] : [])
+  ];
+  const gitIdentityEnv = {
+    GIT_AUTHOR_EMAIL: `${input.context.binding.node.nodeId}@entangle.invalid`,
+    GIT_AUTHOR_NAME: input.context.binding.node.displayName,
+    GIT_COMMITTER_EMAIL: `${input.context.binding.node.nodeId}@entangle.invalid`,
+    GIT_COMMITTER_NAME: input.context.binding.node.displayName
+  };
+  const commit = await runSourceHistoryGitCommand(
+    input.sourceWorkspaceRoot,
+    [
+      "commit-tree",
+      input.candidate.snapshot?.headTree ?? "",
+      "-m",
+      messageLines.join("\n"),
+      ...(parentCommit ? ["-p", parentCommit] : [])
+    ],
+    {
+      env: gitIdentityEnv,
+      gitDir: input.gitDir,
+      workTree: input.sourceWorkspaceRoot
+    }
+  );
+
+  await runSourceHistoryGitCommand(
+    input.sourceWorkspaceRoot,
+    ["update-ref", sourceHistoryRef, commit, ...(parentCommit ? [parentCommit] : [])],
+    {
+      gitDir: input.gitDir,
+      workTree: input.sourceWorkspaceRoot
+    }
+  );
+
+  return commit;
+}
+
+export async function applyRuntimeSourceChangeCandidate(input: {
+  apply: RuntimeSourceChangeCandidateApplyMutationRequest;
+  candidateId: string;
+  nodeId: string;
+}): Promise<RuntimeSourceChangeCandidateApplyMutationResult | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const candidates = await listRuntimeSourceChangeCandidateRecords(
+    context.workspace.runtimeRoot
+  );
+  const candidate = candidates.find(
+    (candidateRecord) => candidateRecord.candidateId === input.candidateId
+  );
+
+  if (!candidate) {
+    return null;
+  }
+
+  const apply = runtimeSourceChangeCandidateApplyMutationRequestSchema.parse(
+    input.apply
+  );
+
+  if (candidate.status !== "accepted") {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' is '${candidate.status}', ` +
+        "but only accepted candidates can be applied to source history.",
+      ok: false
+    };
+  }
+
+  if (candidate.application) {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' was already applied to ` +
+        `source history '${candidate.application.sourceHistoryId}'.`,
+      ok: false
+    };
+  }
+
+  if (!candidate.snapshot) {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' cannot be applied because it has no shadow git snapshot.`,
+      ok: false
+    };
+  }
+
+  const sourceWorkspaceRoot = context.workspace.sourceWorkspaceRoot;
+
+  if (!sourceWorkspaceRoot) {
+    return {
+      code: "conflict",
+      message:
+        `Runtime '${input.nodeId}' does not have a configured source workspace root.`,
+      ok: false
+    };
+  }
+
+  if (
+    !isPathInsideRoot({
+      candidatePath: sourceWorkspaceRoot,
+      rootPath: context.workspace.root
+    })
+  ) {
+    return {
+      code: "conflict",
+      message:
+        `Runtime '${input.nodeId}' source workspace is outside the node workspace root.`,
+      ok: false
+    };
+  }
+
+  const gitDir = path.join(context.workspace.runtimeRoot, "source-snapshot.git");
+  const sourceHistoryId = buildSourceHistoryId(candidate.candidateId);
+
+  try {
+    if (!(await pathExists(gitDir))) {
+      return {
+        code: "conflict",
+        message:
+          `Source change candidate '${input.candidateId}' cannot be applied because its shadow git repository is missing.`,
+        ok: false
+      };
+    }
+
+    const sourceWorkspaceStats = await stat(sourceWorkspaceRoot);
+
+    if (!sourceWorkspaceStats.isDirectory()) {
+      return {
+        code: "conflict",
+        message:
+          `Runtime '${input.nodeId}' source workspace is not a directory.`,
+        ok: false
+      };
+    }
+
+    const existingHistory = await listRuntimeSourceHistoryRecords(
+      context.workspace.runtimeRoot
+    );
+
+    if (
+      existingHistory.some(
+        (historyRecord) => historyRecord.candidateId === candidate.candidateId
+      )
+    ) {
+      return {
+        code: "conflict",
+        message:
+          `Source change candidate '${input.candidateId}' already has a source history entry.`,
+        ok: false
+      };
+    }
+
+    const currentTree = await writeCurrentSourceWorkspaceTree({
+      gitDir,
+      sourceWorkspaceRoot
+    });
+    const mode =
+      currentTree === candidate.snapshot.headTree
+        ? "already_in_workspace"
+        : "applied_to_workspace";
+
+    if (
+      currentTree !== candidate.snapshot.headTree &&
+      currentTree !== candidate.snapshot.baseTree
+    ) {
+      return {
+        code: "conflict",
+        message:
+          `Source change candidate '${input.candidateId}' cannot be applied because the source workspace changed after the candidate snapshot.`,
+        ok: false
+      };
+    }
+
+    if (mode === "applied_to_workspace") {
+      await replaceSourceWorkspaceWithTree({
+        gitDir,
+        headTree: candidate.snapshot.headTree,
+        sourceWorkspaceRoot
+      });
+      const appliedTree = await writeCurrentSourceWorkspaceTree({
+        gitDir,
+        sourceWorkspaceRoot
+      });
+
+      if (appliedTree !== candidate.snapshot.headTree) {
+        return {
+          code: "conflict",
+          message:
+            `Source change candidate '${input.candidateId}' did not apply cleanly to the source workspace.`,
+          ok: false
+        };
+      }
+    }
+
+    const commit = await createSourceHistoryCommit({
+      candidate,
+      context,
+      gitDir,
+      ...(apply.reason ? { reason: apply.reason } : {}),
+      sourceWorkspaceRoot
+    });
+    const appliedAt = nowIsoString();
+    const historyRecord = sourceHistoryRecordSchema.parse({
+      appliedAt,
+      ...(apply.appliedBy ? { appliedBy: apply.appliedBy } : {}),
+      baseTree: candidate.snapshot.baseTree,
+      branch: sourceHistoryBranchName,
+      candidateId: candidate.candidateId,
+      commit,
+      ...(candidate.conversationId
+        ? { conversationId: candidate.conversationId }
+        : {}),
+      graphId: context.binding.graphId,
+      graphRevisionId: context.binding.graphRevisionId,
+      headTree: candidate.snapshot.headTree,
+      mode,
+      nodeId: input.nodeId,
+      ...(apply.reason ? { reason: apply.reason } : {}),
+      ...(candidate.sessionId ? { sessionId: candidate.sessionId } : {}),
+      sourceChangeSummary: candidate.sourceChangeSummary,
+      sourceHistoryId,
+      turnId: candidate.turnId,
+      updatedAt: appliedAt
+    });
+    const nextCandidate = sourceChangeCandidateRecordSchema.parse({
+      ...candidate,
+      application: {
+        appliedAt,
+        ...(apply.appliedBy ? { appliedBy: apply.appliedBy } : {}),
+        commit,
+        mode,
+        ...(apply.reason ? { reason: apply.reason } : {}),
+        sourceHistoryId
+      },
+      updatedAt: appliedAt
+    });
+
+    await writeJsonFile(
+      runtimeSourceHistoryRecordPath(
+        context.workspace.runtimeRoot,
+        historyRecord.sourceHistoryId
+      ),
+      historyRecord
+    );
+    await writeJsonFile(
+      runtimeSourceChangeCandidateRecordPath(
+        context.workspace.runtimeRoot,
+        candidate.candidateId
+      ),
+      nextCandidate
+    );
+    await appendHostEvent({
+      candidateId: candidate.candidateId,
+      category: "runtime",
+      commit,
+      graphId: context.binding.graphId,
+      graphRevisionId: context.binding.graphRevisionId,
+      historyId: historyRecord.sourceHistoryId,
+      message:
+        `Source history '${historyRecord.sourceHistoryId}' for runtime '${input.nodeId}' ` +
+        `recorded candidate '${candidate.candidateId}' at commit '${commit}'.`,
+      mode,
+      nodeId: input.nodeId,
+      sourceHistoryRef,
+      turnId: candidate.turnId,
+      type: "source_history.updated"
+    } satisfies SourceHistoryUpdatedEventInput);
+
+    return {
+      history: runtimeSourceHistoryInspectionResponseSchema.parse({
+        entry: historyRecord
+      }),
+      ok: true
+    };
+  } catch (error) {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' could not be applied: ` +
+        sanitizeRuntimePathError(context, error),
+      ok: false
+    };
+  }
 }
 
 async function readSourceChangeCandidateDiff(input: {
@@ -5736,6 +6243,28 @@ async function listRuntimeSourceChangeCandidateRecords(
   );
 }
 
+async function listRuntimeSourceHistoryRecords(
+  runtimeRoot: string
+): Promise<SourceHistoryRecord[]> {
+  const sourceHistoryRoot = runtimeSourceHistoryRoot(runtimeRoot);
+
+  if (!(await pathExists(sourceHistoryRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(sourceHistoryRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sourceHistoryRecordSchema.parse(
+        await readJsonFile<unknown>(path.join(sourceHistoryRoot, fileName))
+      )
+    )
+  );
+}
+
 function runtimeSourceChangeCandidatesRoot(runtimeRoot: string): string {
   return path.join(runtimeRoot, "source-change-candidates");
 }
@@ -5745,6 +6274,17 @@ function runtimeSourceChangeCandidateRecordPath(
   candidateId: string
 ): string {
   return path.join(runtimeSourceChangeCandidatesRoot(runtimeRoot), `${candidateId}.json`);
+}
+
+function runtimeSourceHistoryRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "source-history");
+}
+
+function runtimeSourceHistoryRecordPath(
+  runtimeRoot: string,
+  sourceHistoryId: string
+): string {
+  return path.join(runtimeSourceHistoryRoot(runtimeRoot), `${sourceHistoryId}.json`);
 }
 
 async function listRuntimeArtifactRecords(

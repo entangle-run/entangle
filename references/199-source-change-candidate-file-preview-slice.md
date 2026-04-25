@@ -83,7 +83,7 @@ This slice intentionally does not:
 - mutate the node source workspace;
 - commit or push candidate changes;
 - publish candidate changes as artifacts;
-- expose full source history APIs;
+- publish local source-history commits remotely;
 - expose runtime-local filesystem paths through host responses.
 
 Restricting preview to listed changed files keeps the route aligned with the
@@ -95,11 +95,10 @@ reader.
 The remaining B5 implementation should add:
 
 - Entangle policy checks before candidate source application or publication;
-- approval records for policy-gated source publication;
-- runner-owned application of accepted candidates into node git history;
-- source-history host APIs;
+- approval records for policy-gated source application or publication;
+- remote publication of source-history commits;
+- source commit or branch artifact records;
 - artifact history/diff APIs;
-- CLI and Studio source-history views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff and file inspection, candidate review, source

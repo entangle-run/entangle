@@ -140,8 +140,10 @@ This repository currently contains:
   host events, runtime inspection, CLI output, and Studio details, plus
   durable pending source-change candidate records with host, CLI, and Studio
   inspection plus bounded candidate diff, listed-file previews, and audited
-  review lifecycle mutations for accepted/rejected/superseded decisions,
-  without auto-committing or publishing those engine-generated files;
+  review lifecycle mutations for accepted/rejected/superseded decisions, and a
+  runtime-local source-history application path for accepted candidates that
+  validates the current source tree before recording a local history commit,
+  without publishing those engine-generated files remotely;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
@@ -655,8 +657,8 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff model,
-  especially source-change candidate source-history application/publication,
-  non-primary target provisioning, and replicated fallback paths;
+  especially source-change candidate remote publication, source commit artifact
+  records, non-primary target provisioning, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;
