@@ -181,6 +181,7 @@ This directory is the canonical design corpus for Entangle.
 175. [174-definitive-production-delivery-roadmap.md](174-definitive-production-delivery-roadmap.md)
 176. [175-runner-orphan-approval-response-guard-slice.md](175-runner-orphan-approval-response-guard-slice.md)
 177. [176-approval-response-policy-validation-slice.md](176-approval-response-policy-validation-slice.md)
+178. [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md)
 
 ## Role of this corpus
 

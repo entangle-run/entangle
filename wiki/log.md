@@ -1630,3 +1630,16 @@ and `maxFollowups: 0`.
 
 This keeps approval coordination from turning into a protocol ping-pong while
 leaving approval mutation authority inside the runner lifecycle boundary.
+
+## [2026-04-25] planning | Added R1 local operator release ledger
+
+Added `references/177-r1-local-operator-release-ledger.md` as the active
+release-truth companion to the definitive production roadmap. The ledger
+tracks current R1 evidence, remaining release-note and smoke obligations,
+explicit non-goals, verification commands, and the exit decision for tagging
+`v0.1-local-operator-baseline`.
+
+This keeps the immediate milestone honest: Entangle can close as a presentable
+local operator baseline only when README, wiki overview, roadmap, release
+ledger, verification, and smoke evidence agree without overclaiming production
+readiness.

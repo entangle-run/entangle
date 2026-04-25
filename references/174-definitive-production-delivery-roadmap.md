@@ -148,6 +148,8 @@ instead of continuing as open-ended slice work.
 - Finish or explicitly defer any in-progress runner/session/approval work.
 - Preserve all user changes.
 - Create a release ledger for R1 through R6.
+- Keep the active R1 ledger in
+  [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md).
 - Ensure current docs do not misstate the implementation phase.
 
 ### Tasks
@@ -276,7 +278,9 @@ Preferred when Docker is available:
 - The repository can be described as "Entangle v0.1 local operator baseline".
 - Local end-to-end proof covers host, runner, relay, git service, artifact
   handoff, provider-compatible execution, and operator inspection.
-- README, wiki overview, implementation audit, and release ledger agree.
+- README, wiki overview, implementation audit, and
+  [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md)
+  agree.
 - Any production-grade exclusions are explicit.
 - The release can be tagged without apologizing for hidden fake behavior.
 

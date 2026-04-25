@@ -236,6 +236,9 @@ This repository currently contains:
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
+- a release-oriented production roadmap plus an R1 local-operator release
+  ledger that separate the presentable local baseline from later production
+  persistence, tenancy, authorization, and compliance claims;
 - a first real provider-backed `agent-engine` slice with an internal
   Anthropic adapter behind the stable engine boundary, typed error
   normalization, live runner entrypoints wired to the real engine path, and
