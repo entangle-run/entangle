@@ -41,6 +41,9 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeMemoryInspectionResponseSchema,
+  runtimeMemoryPageInspectionResponseSchema,
+  runtimeMemoryPageQuerySchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryListQuerySchema,
   runtimeRecoveryPolicyMutationRequestSchema,
@@ -84,6 +87,8 @@ import {
   listNodeInspections,
   getPackageSourceInspection,
   getRuntimeArtifactInspection,
+  getRuntimeMemoryInspection,
+  getRuntimeMemoryPageInspection,
   getSessionInspection,
   initializeHostState,
   listRuntimeInspections,
@@ -1107,6 +1112,94 @@ export async function buildHostServer() {
       return runtimeArtifactInspectionResponseSchema.parse(artifactInspection);
     }
   );
+
+  server.get("/v1/runtimes/:nodeId/memory", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const memoryInspection = await getRuntimeMemoryInspection(params.nodeId);
+
+    if (!memoryInspection) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeMemoryInspectionResponseSchema.parse(memoryInspection);
+  });
+
+  server.get("/v1/runtimes/:nodeId/memory/page", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const query = parseRequestInput(runtimeMemoryPageQuerySchema, request.query, {
+      detailsKey: "queryIssues",
+      message: "Request query did not match the expected schema."
+    });
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const pageInspection = await getRuntimeMemoryPageInspection({
+      nodeId: params.nodeId,
+      path: query.path
+    });
+
+    if (!pageInspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Memory page '${query.path}' was not found for runtime '${params.nodeId}'.`
+      });
+    }
+
+    return runtimeMemoryPageInspectionResponseSchema.parse(pageInspection);
+  });
 
   server.get("/v1/runtimes/:nodeId/approvals", async (request, reply) => {
     const params = request.params as { nodeId: string };

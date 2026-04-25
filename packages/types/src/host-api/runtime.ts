@@ -87,6 +87,56 @@ export const runtimeArtifactPreviewResponseSchema = z.object({
   preview: runtimeArtifactPreviewSchema
 });
 
+export const runtimeMemoryPageKindSchema = z.enum([
+  "schema",
+  "summary",
+  "task",
+  "wiki_index",
+  "wiki_log",
+  "wiki_page"
+]);
+
+export const runtimeMemoryPageSummarySchema = z.object({
+  kind: runtimeMemoryPageKindSchema,
+  path: nonEmptyStringSchema,
+  sizeBytes: z.number().int().nonnegative(),
+  updatedAt: nonEmptyStringSchema
+});
+
+export const runtimeMemoryInspectionResponseSchema = z.object({
+  focusedRegisters: z.array(runtimeMemoryPageSummarySchema),
+  memoryRoot: filesystemPathSchema,
+  nodeId: identifierSchema,
+  pages: z.array(runtimeMemoryPageSummarySchema),
+  taskPages: z.array(runtimeMemoryPageSummarySchema)
+});
+
+export const runtimeMemoryPageQuerySchema = z.object({
+  path: nonEmptyStringSchema
+});
+
+export const runtimeMemoryPagePreviewSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    bytesRead: z.number().int().nonnegative(),
+    content: z.string(),
+    contentEncoding: z.literal("utf8"),
+    contentType: z.enum(["text/markdown", "text/plain"]),
+    sourcePath: filesystemPathSchema,
+    truncated: z.boolean()
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: nonEmptyStringSchema
+  })
+]);
+
+export const runtimeMemoryPageInspectionResponseSchema = z.object({
+  nodeId: identifierSchema,
+  page: runtimeMemoryPageSummarySchema,
+  preview: runtimeMemoryPagePreviewSchema
+});
+
 export const runtimeApprovalListResponseSchema = z.object({
   approvals: z.array(approvalRecordSchema)
 });
@@ -111,6 +161,18 @@ export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResp
 export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;
 export type RuntimeArtifactPreview = z.infer<typeof runtimeArtifactPreviewSchema>;
 export type RuntimeArtifactPreviewResponse = z.infer<typeof runtimeArtifactPreviewResponseSchema>;
+export type RuntimeMemoryPageKind = z.infer<typeof runtimeMemoryPageKindSchema>;
+export type RuntimeMemoryPageSummary = z.infer<typeof runtimeMemoryPageSummarySchema>;
+export type RuntimeMemoryInspectionResponse = z.infer<
+  typeof runtimeMemoryInspectionResponseSchema
+>;
+export type RuntimeMemoryPageQuery = z.infer<typeof runtimeMemoryPageQuerySchema>;
+export type RuntimeMemoryPagePreview = z.infer<
+  typeof runtimeMemoryPagePreviewSchema
+>;
+export type RuntimeMemoryPageInspectionResponse = z.infer<
+  typeof runtimeMemoryPageInspectionResponseSchema
+>;
 export type RuntimeApprovalListResponse = z.infer<typeof runtimeApprovalListResponseSchema>;
 export type RuntimeApprovalInspectionResponse = z.infer<typeof runtimeApprovalInspectionResponseSchema>;
 export type RuntimeTurnListResponse = z.infer<typeof runtimeTurnListResponseSchema>;

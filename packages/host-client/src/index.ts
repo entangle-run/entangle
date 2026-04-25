@@ -34,6 +34,8 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeMemoryInspectionResponseSchema,
+  runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
@@ -77,6 +79,8 @@ import {
   type RuntimeArtifactPreviewResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
+  type RuntimeMemoryInspectionResponse,
+  type RuntimeMemoryPageInspectionResponse,
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
@@ -662,6 +666,28 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async getRuntimeMemory(
+      nodeId: string
+    ): Promise<RuntimeMemoryInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/memory`),
+        runtimeMemoryInspectionResponseSchema
+      );
+    },
+
+    async getRuntimeMemoryPage(
+      nodeId: string,
+      pagePath: string
+    ): Promise<RuntimeMemoryPageInspectionResponse> {
+      const url = new URL(`${baseUrl}/v1/runtimes/${nodeId}/memory/page`);
+      url.searchParams.set("path", pagePath);
+
+      return parseResponse(
+        await hostFetch(url.toString()),
+        runtimeMemoryPageInspectionResponseSchema
+      );
+    },
+
     async listRuntimeApprovals(nodeId: string): Promise<RuntimeApprovalListResponse> {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals`),
@@ -873,6 +899,11 @@ export {
   formatRuntimeInspectionStatus,
   sortRuntimeInspectionsForPresentation
 } from "./runtime-inspection.js";
+export {
+  formatRuntimeMemoryPageDetail,
+  formatRuntimeMemoryPageLabel,
+  sortRuntimeMemoryPagesForPresentation
+} from "./runtime-memory.js";
 export {
   collectExternalPrincipalReferenceNodeIds,
   collectPackageSourceReferenceNodeIds,

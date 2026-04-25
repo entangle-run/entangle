@@ -1288,6 +1288,101 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses runtime memory list and page responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        if (url.endsWith("/memory")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                focusedRegisters: [
+                  {
+                    kind: "summary",
+                    path: "wiki/summaries/working-context.md",
+                    sizeBytes: 128,
+                    updatedAt: "2026-04-25T12:00:00.000Z"
+                  }
+                ],
+                memoryRoot: "/tmp/entangle-runner/memory",
+                nodeId: "worker-it",
+                pages: [
+                  {
+                    kind: "summary",
+                    path: "wiki/summaries/working-context.md",
+                    sizeBytes: 128,
+                    updatedAt: "2026-04-25T12:00:00.000Z"
+                  }
+                ],
+                taskPages: []
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              nodeId: "worker-it",
+              page: {
+                kind: "summary",
+                path: "wiki/summaries/working-context.md",
+                sizeBytes: 128,
+                updatedAt: "2026-04-25T12:00:00.000Z"
+              },
+              preview: {
+                available: true,
+                bytesRead: 42,
+                content: "# Working Context Summary\n",
+                contentEncoding: "utf8",
+                contentType: "text/markdown",
+                sourcePath:
+                  "/tmp/entangle-runner/memory/wiki/summaries/working-context.md",
+                truncated: false
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.getRuntimeMemory("worker-it")).resolves.toMatchObject({
+      focusedRegisters: [
+        {
+          kind: "summary",
+          path: "wiki/summaries/working-context.md"
+        }
+      ],
+      nodeId: "worker-it"
+    });
+    await expect(
+      client.getRuntimeMemoryPage(
+        "worker-it",
+        "wiki/summaries/working-context.md"
+      )
+    ).resolves.toMatchObject({
+      nodeId: "worker-it",
+      page: {
+        path: "wiki/summaries/working-context.md"
+      },
+      preview: {
+        available: true,
+        contentType: "text/markdown"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/memory",
+      "http://entangle-host.test/v1/runtimes/worker-it/memory/page?path=wiki%2Fsummaries%2Fworking-context.md"
+    ]);
+  });
+
   it("parses runtime approval list and inspection responses from the host surface", async () => {
     const requests: string[] = [];
     const approval = {

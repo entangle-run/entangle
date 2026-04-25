@@ -394,6 +394,7 @@ code {
 .session-detail-card,
 .approval-detail-card,
 .artifact-detail-card,
+.memory-page-detail-card,
 .graph-diff-card,
 .turn-detail-card {
   display: grid;
@@ -408,7 +409,43 @@ code {
   gap: 10px;
 }
 
-.artifact-preview-content {
+.memory-page-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.memory-page-groups h4 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.supporting-memory-pages {
+  color: rgba(247, 241, 232, 0.76);
+}
+
+.supporting-memory-pages summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.inline-link-button {
+  border: 0;
+  background: transparent;
+  color: rgba(139, 193, 255, 0.92);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.inline-link-button:hover {
+  color: rgba(247, 241, 232, 0.95);
+}
+
+.artifact-preview-content,
+.memory-preview-content {
   overflow: auto;
   max-height: 320px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -425,6 +462,11 @@ code {
   padding: 12px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.memory-preview-panel {
+  display: grid;
+  gap: 10px;
 }
 
 .edge-list {

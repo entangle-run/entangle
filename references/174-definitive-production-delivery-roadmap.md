@@ -388,6 +388,7 @@ Incremental features:
 4. Artifact workbench:
    - artifact list/detail improvements;
    - bounded markdown/text preview through the host boundary;
+   - runtime memory page list and bounded preview;
    - git commit and remote publication summary;
    - basic diff/history for report artifacts.
 5. Memory workbench:
@@ -842,14 +843,13 @@ L1.5 shipped:
 
 Remaining implementation sequence:
 
-1. Freeze L2 scope around a real Local workbench rather than another demo
-   proof path.
-2. Add package inspect/import depth and decide whether graph bundle ergonomics
-   are needed beyond the single-file host graph import/export workflow.
-3. Decide whether relay-publish retry belongs in L2, now that CLI launch wait
-   polling exists over host session inspection.
-4. Add artifact history/diff and memory workbench surfaces over existing
-   host/runner truth.
+1. Treat L2 Local Workbench as closed at `v0.2-local-workbench`.
+2. Run the post-L2 roadmap review before starting the next implementation
+   milestone.
+3. Decide how the proposed Autonomous Coding Runtime milestone fits before
+   Local Reliability without back-porting coding-runtime decisions into L2.
+4. Keep graph bundles, artifact history/diff, relay-publish retry, doctor,
+   repair, backup, restore, and upgrade work out of the L2 release claim.
 5. Run `pnpm verify`, strict preflight, preview demo, and disposable runtime
    smoke before closing L2.
 

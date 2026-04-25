@@ -38,6 +38,8 @@ import {
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeMemoryInspectionResponseSchema,
+  runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
@@ -125,6 +127,48 @@ describe("runtime artifact host API contracts", () => {
         contentEncoding: "utf8",
         contentType: "text/markdown",
         sourcePath: "/tmp/entangle-runner/reports/turn-001.md",
+        truncated: false
+      }
+    });
+
+    expect(result.preview.available).toBe(true);
+  });
+});
+
+describe("runtime memory host API contracts", () => {
+  const memoryPage = {
+    kind: "summary",
+    path: "wiki/summaries/working-context.md",
+    sizeBytes: 128,
+    updatedAt: "2026-04-25T12:00:00.000Z"
+  };
+
+  it("accepts runtime memory list responses", () => {
+    const result = runtimeMemoryInspectionResponseSchema.parse({
+      focusedRegisters: [memoryPage],
+      memoryRoot: "/tmp/entangle-runner/memory",
+      nodeId: "worker-it",
+      pages: [memoryPage],
+      taskPages: []
+    });
+
+    expect(result.focusedRegisters[0]?.path).toBe(
+      "wiki/summaries/working-context.md"
+    );
+  });
+
+  it("accepts bounded runtime memory page previews", () => {
+    const result = runtimeMemoryPageInspectionResponseSchema.parse({
+      nodeId: "worker-it",
+      page: memoryPage,
+      preview: {
+        available: true,
+        bytesRead: 27,
+        content: "# Working Context Summary",
+        contentEncoding: "utf8",
+        contentType: "text/markdown",
+        sourcePath:
+          "/tmp/entangle-runner/memory/wiki/summaries/working-context.md",
         truncated: false
       }
     });

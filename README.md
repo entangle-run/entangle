@@ -244,7 +244,7 @@ This repository currently contains:
   through the local relay, writes git-backed artifacts to local Gitea, and
   leaves the profile running for Studio and CLI inspection, with
   `pnpm ops:demo-local-preview:reset` as the reset path;
-- an active L2 Local Workbench implementation slice with `entangle package
+- a released L2 Local Workbench implementation with `entangle package
   inspect`, package tool-catalog validation, `entangle graph diff`,
   root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
   `entangle host sessions launch` through the host API over host-resolved
@@ -254,8 +254,9 @@ This repository currently contains:
   Studio graph revision diff against active graph state, host-backed Studio
   active-graph validation, host graph import/export through the CLI, runtime
   artifact filtering by `--session-id`, bounded local report-artifact preview
-  through the host API, CLI, and Studio, and CLI graph template list/export
-  commands for the canonical Local Preview graph;
+  through the host API, CLI, and Studio, runtime memory page inspection and
+  bounded preview through the host API, CLI, and Studio, and CLI graph
+  template list/export commands for the canonical Local Preview graph;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

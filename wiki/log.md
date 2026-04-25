@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-25] release | Closed L2 Local Workbench
+
+Closed L2 as `v0.2-local-workbench`. The final L2 slice added read-only
+runtime memory inspection over existing runner-owned memory files, including
+host routes for memory lists and bounded page preview, shared host-client
+presentation helpers, CLI commands under `entangle host runtimes memory`, and
+a Studio Runtime Memory panel for focused registers, task pages, supporting
+wiki pages, and selected-page preview.
+
+The release remains Local-only and does not claim Local GA, Cloud,
+Enterprise, reliability tooling, autonomous coding runtime, memory-as-repo, or
+artifact history/diff. Those are deferred for roadmap review.
+
 ## [2026-04-25] implementation | Added CLI session launch wait polling
 
 Improved the L2 headless session workflow by adding `--wait`,

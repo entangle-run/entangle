@@ -17,7 +17,10 @@ import {
 } from "@xyflow/react";
 import {
   createHostClient,
-  formatHostStatusSessionDiagnosticsSummary
+  formatHostStatusSessionDiagnosticsSummary,
+  formatRuntimeMemoryPageDetail,
+  formatRuntimeMemoryPageLabel,
+  sortRuntimeMemoryPagesForPresentation
 } from "@entangle/host-client";
 import type {
   ApprovalRecord,
@@ -37,6 +40,8 @@ import type {
   RuntimeArtifactInspectionResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeInspectionResponse,
+  RuntimeMemoryInspectionResponse,
+  RuntimeMemoryPageInspectionResponse,
   RuntimeRecoveryInspectionResponse,
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
@@ -432,6 +437,14 @@ export function App() {
     useState<RuntimeArtifactPreviewResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
+  const [selectedMemory, setSelectedMemory] =
+    useState<RuntimeMemoryInspectionResponse | null>(null);
+  const [selectedMemoryPagePath, setSelectedMemoryPagePath] =
+    useState<string | null>(null);
+  const [selectedMemoryPageInspection, setSelectedMemoryPageInspection] =
+    useState<RuntimeMemoryPageInspectionResponse | null>(null);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
+  const [memoryPageError, setMemoryPageError] = useState<string | null>(null);
   const [selectedTurns, setSelectedTurns] = useState<RunnerTurnRecord[]>([]);
   const [turnError, setTurnError] = useState<string | null>(null);
   const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
@@ -463,6 +476,7 @@ export function App() {
   const selectedRuntimeIdRef = useRef<string | null>(null);
   const selectedApprovalIdRef = useRef<string | null>(null);
   const selectedArtifactIdRef = useRef<string | null>(null);
+  const selectedMemoryPagePathRef = useRef<string | null>(null);
   const selectedTurnIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
   const recoveryPolicySeedRef = useRef<string | null>(null);
@@ -472,6 +486,7 @@ export function App() {
   selectedRuntimeIdRef.current = selectedRuntimeId;
   selectedApprovalIdRef.current = selectedApprovalId;
   selectedArtifactIdRef.current = selectedArtifactId;
+  selectedMemoryPagePathRef.current = selectedMemoryPagePath;
   selectedTurnIdRef.current = selectedTurnId;
   selectedSessionIdRef.current = selectedSessionId;
 
@@ -753,6 +768,41 @@ export function App() {
     [client]
   );
 
+  const loadSelectedMemoryPageInspection = useCallback(
+    async (nodeId: string, pagePath: string) => {
+      try {
+        const inspection = await client.getRuntimeMemoryPage(nodeId, pagePath);
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedMemoryPagePathRef.current !== pagePath
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedMemoryPageInspection(inspection);
+          setMemoryPageError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedMemoryPagePathRef.current !== pagePath
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedMemoryPageInspection(null);
+          setMemoryPageError(
+            normalizeError(caught, "Unknown error while loading memory page.")
+          );
+        });
+      }
+    },
+    [client]
+  );
+
   const loadSelectedTurnInspection = useCallback(
     async (nodeId: string, turnId: string) => {
       try {
@@ -795,6 +845,7 @@ export function App() {
       recoveryResult,
       approvalResult,
       artifactResult,
+      memoryResult,
       turnResult,
       sessionResult
     ] =
@@ -804,6 +855,7 @@ export function App() {
         client.getRuntimeRecovery(nodeId, 20),
         client.listRuntimeApprovals(nodeId),
         client.listRuntimeArtifacts(nodeId),
+        client.getRuntimeMemory(nodeId),
         client.listRuntimeTurns(nodeId),
         client.listSessions()
       ]);
@@ -836,6 +888,23 @@ export function App() {
       turnResult.status === "fulfilled"
         ? sortRuntimeTurns(turnResult.value.turns)
         : [];
+    const nextSelectedMemoryPages =
+      memoryResult.status === "fulfilled"
+        ? sortRuntimeMemoryPagesForPresentation(memoryResult.value.pages)
+        : [];
+    const currentSelectedMemoryPagePath = selectedMemoryPagePath;
+    const shouldRefreshSelectedMemoryPage =
+      currentSelectedMemoryPagePath !== null &&
+      nextSelectedMemoryPages.some(
+        (page) => page.path === currentSelectedMemoryPagePath
+      );
+    const selectedMemoryPageResult = shouldRefreshSelectedMemoryPage
+      ? (
+          await Promise.allSettled([
+            client.getRuntimeMemoryPage(nodeId, currentSelectedMemoryPagePath)
+          ])
+        )[0]
+      : null;
     const currentSelectedArtifactId = selectedArtifactId;
     const shouldRefreshSelectedArtifact =
       currentSelectedArtifactId !== null &&
@@ -1003,6 +1072,42 @@ export function App() {
         setArtifactDetailError(null);
       }
 
+      if (memoryResult.status === "fulfilled") {
+        setSelectedMemory(memoryResult.value);
+        setMemoryError(null);
+
+        if (!selectedMemoryPagePath) {
+          setSelectedMemoryPageInspection(null);
+          setMemoryPageError(null);
+        } else if (!shouldRefreshSelectedMemoryPage) {
+          setSelectedMemoryPagePath(null);
+          setSelectedMemoryPageInspection(null);
+          setMemoryPageError(null);
+        } else if (selectedMemoryPageResult?.status === "fulfilled") {
+          setSelectedMemoryPageInspection(selectedMemoryPageResult.value);
+          setMemoryPageError(null);
+        } else if (selectedMemoryPageResult?.status === "rejected") {
+          setSelectedMemoryPageInspection(null);
+          setMemoryPageError(
+            normalizeError(
+              selectedMemoryPageResult.reason,
+              "Unknown error while loading memory page."
+            )
+          );
+        }
+      } else {
+        setSelectedMemory(null);
+        setMemoryError(
+          normalizeError(
+            memoryResult.reason,
+            "Unknown error while loading runtime memory."
+          )
+        );
+        setSelectedMemoryPagePath(null);
+        setSelectedMemoryPageInspection(null);
+        setMemoryPageError(null);
+      }
+
       if (turnResult.status === "fulfilled") {
         setSelectedTurns(nextSelectedTurns);
         setTurnError(null);
@@ -1084,6 +1189,7 @@ export function App() {
     client,
     selectedApprovalId,
     selectedArtifactId,
+    selectedMemoryPagePath,
     selectedSessionId,
     selectedTurnId
   ]);
@@ -1208,6 +1314,20 @@ export function App() {
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
     [loadSelectedArtifactInspection, selectedRuntimeId]
+  );
+
+  const selectRuntimeMemoryPage = useCallback(
+    async (pagePath: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedMemoryPagePath(pagePath);
+      setSelectedMemoryPageInspection(null);
+      setMemoryPageError(null);
+      await loadSelectedMemoryPageInspection(selectedRuntimeId, pagePath);
+    },
+    [loadSelectedMemoryPageInspection, selectedRuntimeId]
   );
 
   const selectRuntimeTurn = useCallback(
@@ -1831,6 +1951,35 @@ export function App() {
         : [],
     [selectedSessionInspection]
   );
+  const selectedMemoryFocusedRegisters = useMemo(
+    () =>
+      selectedMemory
+        ? sortRuntimeMemoryPagesForPresentation(selectedMemory.focusedRegisters)
+        : [],
+    [selectedMemory]
+  );
+  const selectedMemoryTaskPages = useMemo(
+    () =>
+      selectedMemory
+        ? sortRuntimeMemoryPagesForPresentation(selectedMemory.taskPages)
+        : [],
+    [selectedMemory]
+  );
+  const selectedMemorySupportingPages = useMemo(() => {
+    if (!selectedMemory) {
+      return [];
+    }
+
+    const highlightedPaths = new Set(
+      [...selectedMemory.focusedRegisters, ...selectedMemory.taskPages].map(
+        (page) => page.path
+      )
+    );
+
+    return sortRuntimeMemoryPagesForPresentation(
+      selectedMemory.pages.filter((page) => !highlightedPaths.has(page.path))
+    );
+  }, [selectedMemory]);
   const statusTone = useMemo(() => status?.status ?? "pending", [status]);
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
@@ -3583,6 +3732,188 @@ export function App() {
                     ) : selectedTurns.length > 0 ? (
                       <div className="inline-empty-state">
                         <p>Select one turn to inspect its host-backed detail.</p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Runtime Memory</h3>
+                      <span className="panel-caption">
+                        {selectedMemory
+                          ? `${selectedMemory.pages.length} pages`
+                          : "loading"}
+                      </span>
+                    </div>
+
+                    {memoryError ? (
+                      <p className="error-box">{memoryError}</p>
+                    ) : null}
+
+                    {selectedMemory ? (
+                      <>
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Memory root</dt>
+                            <dd>{selectedMemory.memoryRoot}</dd>
+                          </div>
+                          <div>
+                            <dt>Focused registers</dt>
+                            <dd>{selectedMemory.focusedRegisters.length}</dd>
+                          </div>
+                          <div>
+                            <dt>Task pages</dt>
+                            <dd>{selectedMemory.taskPages.length}</dd>
+                          </div>
+                        </dl>
+
+                        <div className="memory-page-groups">
+                          <div>
+                            <h4>Focused Registers</h4>
+                            {selectedMemoryFocusedRegisters.length > 0 ? (
+                              <ul className="timeline-list">
+                                {selectedMemoryFocusedRegisters.map((page) => (
+                                  <li key={page.path} className="timeline-item">
+                                    <button
+                                      className={`timeline-button ${selectedMemoryPagePath === page.path ? "is-selected" : ""}`}
+                                      onClick={() => {
+                                        void selectRuntimeMemoryPage(page.path);
+                                      }}
+                                      type="button"
+                                    >
+                                      <div className="timeline-row">
+                                        <strong>
+                                          {formatRuntimeMemoryPageLabel(page)}
+                                        </strong>
+                                        <span>{page.updatedAt}</span>
+                                      </div>
+                                      <p>{formatRuntimeMemoryPageDetail(page)}</p>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>No focused memory registers are visible yet.</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4>Task Pages</h4>
+                            {selectedMemoryTaskPages.length > 0 ? (
+                              <ul className="timeline-list">
+                                {selectedMemoryTaskPages.slice(0, 8).map((page) => (
+                                  <li key={page.path} className="timeline-item">
+                                    <button
+                                      className={`timeline-button ${selectedMemoryPagePath === page.path ? "is-selected" : ""}`}
+                                      onClick={() => {
+                                        void selectRuntimeMemoryPage(page.path);
+                                      }}
+                                      type="button"
+                                    >
+                                      <div className="timeline-row">
+                                        <strong>
+                                          {formatRuntimeMemoryPageLabel(page)}
+                                        </strong>
+                                        <span>{page.updatedAt}</span>
+                                      </div>
+                                      <p>{formatRuntimeMemoryPageDetail(page)}</p>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>No task memory pages are visible yet.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {selectedMemorySupportingPages.length > 0 ? (
+                          <details className="supporting-memory-pages">
+                            <summary>Supporting memory pages</summary>
+                            <ul className="detail-list">
+                              {selectedMemorySupportingPages.slice(0, 8).map((page) => (
+                                <li key={page.path}>
+                                  <button
+                                    className="inline-link-button"
+                                    onClick={() => {
+                                      void selectRuntimeMemoryPage(page.path);
+                                    }}
+                                    type="button"
+                                  >
+                                    {formatRuntimeMemoryPageLabel(page)}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
+                      </>
+                    ) : selectedRuntime ? (
+                      <div className="inline-empty-state">
+                        <p>Loading runtime memory pages...</p>
+                      </div>
+                    ) : null}
+
+                    {memoryPageError ? (
+                      <p className="error-box">{memoryPageError}</p>
+                    ) : null}
+
+                    {selectedMemoryPageInspection ? (
+                      <div className="memory-page-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Memory Page</h3>
+                          <span className="panel-caption">
+                            {selectedMemoryPageInspection.page.kind}
+                          </span>
+                        </div>
+
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Path</dt>
+                            <dd>{selectedMemoryPageInspection.page.path}</dd>
+                          </div>
+                          <div>
+                            <dt>Size</dt>
+                            <dd>{selectedMemoryPageInspection.page.sizeBytes} bytes</dd>
+                          </div>
+                          <div>
+                            <dt>Updated</dt>
+                            <dd>{selectedMemoryPageInspection.page.updatedAt}</dd>
+                          </div>
+                        </dl>
+
+                        <div className="memory-preview-panel">
+                          <div className="section-header">
+                            <h3>Memory Preview</h3>
+                            <span className="panel-caption">
+                              {selectedMemoryPageInspection.preview.available
+                                ? selectedMemoryPageInspection.preview.contentType
+                                : "unavailable"}
+                            </span>
+                          </div>
+
+                          {selectedMemoryPageInspection.preview.available ? (
+                            <pre className="memory-preview-content">
+                              {selectedMemoryPageInspection.preview.content}
+                            </pre>
+                          ) : (
+                            <div className="inline-empty-state">
+                              <p>{selectedMemoryPageInspection.preview.reason}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : selectedMemoryPagePath ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected memory page...</p>
+                      </div>
+                    ) : selectedMemory?.pages.length ? (
+                      <div className="inline-empty-state">
+                        <p>Select one memory page to inspect its bounded preview.</p>
                       </div>
                     ) : null}
                   </div>

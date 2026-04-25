@@ -83,6 +83,10 @@ import {
   type HostSessionWaitOutcome
 } from "./session-wait.js";
 import { projectRuntimeInspectionSummary } from "./runtime-inspection-output.js";
+import {
+  projectRuntimeMemoryPagePreviewSummary,
+  projectRuntimeMemorySummary
+} from "./runtime-memory-command.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
@@ -1387,6 +1391,46 @@ hostRuntimesCommand
       });
     }
   );
+
+hostRuntimesCommand
+  .command("memory")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--summary", "Print a compact operator-oriented memory summary.")
+  .description("Inspect persisted runner memory pages for one runtime.")
+  .action(async (
+    nodeId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.getRuntimeMemory(nodeId);
+    printJson(
+      options.summary
+        ? { memory: projectRuntimeMemorySummary(response) }
+        : response
+    );
+  });
+
+hostRuntimesCommand
+  .command("memory-page")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<path>", "Runtime memory page path relative to the memory root.")
+  .option("--summary", "Print a compact operator-oriented memory page summary.")
+  .description("Inspect one persisted runner memory page with a bounded preview.")
+  .action(async (
+    nodeId: string,
+    pagePath: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.getRuntimeMemoryPage(nodeId, pagePath);
+    printJson(
+      options.summary
+        ? projectRuntimeMemoryPagePreviewSummary(response)
+        : response
+    );
+  });
 
 hostRuntimesCommand
   .command("approval")

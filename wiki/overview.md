@@ -127,7 +127,7 @@ The repository now also contains the first real implementation baseline:
   `pnpm ops:demo-local-preview`, which reuses the real local host, runner,
   relay, model-stub, and Gitea/git-backed artifact path for an inspectable
   preview session;
-- an active L2 Local Workbench slice with CLI package inspection, package
+- a released L2 Local Workbench slice with CLI package inspection, package
   tool-catalog validation, offline graph diffing, root-relative path handling
   for `pnpm --filter @entangle/cli dev`, headless session launch through the
   host API over host-resolved runtime context and the local relay, optional
@@ -136,8 +136,10 @@ The repository now also contains the first real implementation baseline:
   diffing for CLI and Studio, Studio graph revision diff against active graph
   state, host-backed Studio active-graph validation, host graph import/export
   through the CLI, CLI graph template list/export commands for the canonical
-  Local Preview graph, artifact filtering by session id, and bounded local
-  report-artifact preview through the host API, CLI, and Studio;
+  Local Preview graph, artifact filtering by session id, bounded local
+  report-artifact preview through the host API, CLI, and Studio, and runtime
+  memory page inspection plus bounded preview through the host API, CLI, and
+  Studio;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

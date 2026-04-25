@@ -132,6 +132,12 @@ import {
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeArtifactPreviewResponse,
+  runtimeMemoryInspectionResponseSchema,
+  runtimeMemoryPageInspectionResponseSchema,
+  type RuntimeMemoryInspectionResponse,
+  type RuntimeMemoryPageInspectionResponse,
+  type RuntimeMemoryPageKind,
+  type RuntimeMemoryPageSummary,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   runtimeTurnInspectionResponseSchema,
@@ -234,6 +240,16 @@ const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
 const artifactPreviewMaxBytes = 16 * 1024;
+const memoryPreviewMaxBytes = 16 * 1024;
+const focusedMemoryRegisterPaths = new Set([
+  "wiki/summaries/working-context.md",
+  "wiki/summaries/decisions.md",
+  "wiki/summaries/stable-facts.md",
+  "wiki/summaries/open-questions.md",
+  "wiki/summaries/next-actions.md",
+  "wiki/summaries/resolutions.md",
+  "wiki/summaries/recent-work.md"
+]);
 const packageStoreMetadataFileName = ".package-store.json";
 const gunzipAsync = promisify(gunzip);
 
@@ -4212,6 +4228,259 @@ function isPathInsideRoot(input: {
     relativePath.length === 0 ||
     (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
   );
+}
+
+function toRuntimeMemoryRelativePath(input: {
+  filePath: string;
+  memoryRoot: string;
+}): string {
+  return path
+    .relative(input.memoryRoot, input.filePath)
+    .split(path.sep)
+    .join(path.posix.sep);
+}
+
+function classifyRuntimeMemoryPage(
+  relativePath: string
+): RuntimeMemoryPageKind {
+  if (relativePath.startsWith("schema/")) {
+    return "schema";
+  }
+
+  if (relativePath === "wiki/index.md") {
+    return "wiki_index";
+  }
+
+  if (relativePath === "wiki/log.md") {
+    return "wiki_log";
+  }
+
+  if (relativePath.startsWith("wiki/summaries/")) {
+    return "summary";
+  }
+
+  if (relativePath.startsWith("wiki/tasks/")) {
+    return "task";
+  }
+
+  return "wiki_page";
+}
+
+async function collectRuntimeMemoryFilePaths(rootPath: string): Promise<string[]> {
+  if (!(await pathExists(rootPath))) {
+    return [];
+  }
+
+  const entries = await readdir(rootPath, { withFileTypes: true });
+  const childPaths = await Promise.all(
+    entries.map(async (entry) => {
+      const entryPath = path.join(rootPath, entry.name);
+
+      if (entry.isDirectory()) {
+        return collectRuntimeMemoryFilePaths(entryPath);
+      }
+
+      return entry.isFile() ? [entryPath] : [];
+    })
+  );
+
+  return childPaths.flat();
+}
+
+async function buildRuntimeMemoryPageSummary(input: {
+  filePath: string;
+  memoryRoot: string;
+}): Promise<RuntimeMemoryPageSummary | null> {
+  if (!isPathInsideRoot({ candidatePath: input.filePath, rootPath: input.memoryRoot })) {
+    return null;
+  }
+
+  const fileStat = await stat(input.filePath);
+
+  if (!fileStat.isFile()) {
+    return null;
+  }
+
+  const relativePath = toRuntimeMemoryRelativePath(input);
+
+  return {
+    kind: classifyRuntimeMemoryPage(relativePath),
+    path: relativePath,
+    sizeBytes: fileStat.size,
+    updatedAt: fileStat.mtime.toISOString()
+  };
+}
+
+async function collectRuntimeMemoryPageSummaries(
+  memoryRoot: string
+): Promise<RuntimeMemoryPageSummary[]> {
+  const filePaths = await collectRuntimeMemoryFilePaths(memoryRoot);
+  const pages = (
+    await Promise.all(
+      filePaths.map((filePath) =>
+        buildRuntimeMemoryPageSummary({ filePath, memoryRoot })
+      )
+    )
+  ).filter((page): page is RuntimeMemoryPageSummary => page !== null);
+
+  return pages.sort((left, right) => left.path.localeCompare(right.path));
+}
+
+export async function getRuntimeMemoryInspection(
+  nodeId: string
+): Promise<RuntimeMemoryInspectionResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const pages = await collectRuntimeMemoryPageSummaries(context.workspace.memoryRoot);
+
+  return runtimeMemoryInspectionResponseSchema.parse({
+    focusedRegisters: pages.filter((page) =>
+      focusedMemoryRegisterPaths.has(page.path)
+    ),
+    memoryRoot: context.workspace.memoryRoot,
+    nodeId,
+    pages,
+    taskPages: pages.filter((page) => page.kind === "task")
+  });
+}
+
+function resolveRuntimeMemoryPagePath(input: {
+  memoryRoot: string;
+  pagePath: string;
+}): { filePath: string } | { reason: string } {
+  const normalizedPath = path.posix.normalize(
+    input.pagePath.replace(/\\/g, "/")
+  );
+
+  if (
+    normalizedPath === "." ||
+    normalizedPath === ".." ||
+    normalizedPath.startsWith("../") ||
+    path.posix.isAbsolute(normalizedPath)
+  ) {
+    return {
+      reason:
+        "Memory page preview is unavailable because the requested path is outside the runtime memory workspace."
+    };
+  }
+
+  const filePath = path.resolve(
+    input.memoryRoot,
+    ...normalizedPath.split(path.posix.sep)
+  );
+
+  if (!isPathInsideRoot({ candidatePath: filePath, rootPath: input.memoryRoot })) {
+    return {
+      reason:
+        "Memory page preview is unavailable because the requested path is outside the runtime memory workspace."
+    };
+  }
+
+  return { filePath };
+}
+
+function inferRuntimeMemoryContentType(
+  filePath: string
+): "text/markdown" | "text/plain" {
+  const extension = path.extname(filePath).toLowerCase();
+
+  return extension === ".md" || extension === ".markdown"
+    ? "text/markdown"
+    : "text/plain";
+}
+
+async function readRuntimeMemoryPreview(
+  filePath: string
+): Promise<RuntimeMemoryPageInspectionResponse["preview"]> {
+  if (!(await pathExists(filePath))) {
+    return {
+      available: false,
+      reason: "Memory page preview is unavailable because the page is missing."
+    };
+  }
+
+  if (!(await stat(filePath)).isFile()) {
+    return {
+      available: false,
+      reason: "Memory page preview is unavailable because the path is not a file."
+    };
+  }
+
+  const file = await open(filePath, "r");
+
+  try {
+    const buffer = Buffer.alloc(memoryPreviewMaxBytes + 1);
+    const { bytesRead } = await file.read(
+      buffer,
+      0,
+      memoryPreviewMaxBytes + 1,
+      0
+    );
+    const truncated = bytesRead > memoryPreviewMaxBytes;
+    const previewBuffer = buffer.subarray(
+      0,
+      Math.min(bytesRead, memoryPreviewMaxBytes)
+    );
+
+    if (previewBuffer.includes(0)) {
+      return {
+        available: false,
+        reason:
+          "Memory page preview is unavailable because the page is not text."
+      };
+    }
+
+    return {
+      available: true,
+      bytesRead: previewBuffer.length,
+      content: previewBuffer.toString("utf8"),
+      contentEncoding: "utf8",
+      contentType: inferRuntimeMemoryContentType(filePath),
+      sourcePath: filePath,
+      truncated
+    };
+  } finally {
+    await file.close();
+  }
+}
+
+export async function getRuntimeMemoryPageInspection(input: {
+  nodeId: string;
+  path: string;
+}): Promise<RuntimeMemoryPageInspectionResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const resolvedPath = resolveRuntimeMemoryPagePath({
+    memoryRoot: context.workspace.memoryRoot,
+    pagePath: input.path
+  });
+
+  if ("reason" in resolvedPath) {
+    return null;
+  }
+
+  const page = await buildRuntimeMemoryPageSummary({
+    filePath: resolvedPath.filePath,
+    memoryRoot: context.workspace.memoryRoot
+  });
+
+  if (!page) {
+    return null;
+  }
+
+  return runtimeMemoryPageInspectionResponseSchema.parse({
+    nodeId: input.nodeId,
+    page,
+    preview: await readRuntimeMemoryPreview(resolvedPath.filePath)
+  });
 }
 
 function resolveArtifactPreviewPath(input: {

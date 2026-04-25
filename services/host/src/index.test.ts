@@ -43,6 +43,8 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeMemoryInspectionResponseSchema,
+  runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -2896,6 +2898,95 @@ describe("buildHostServer", () => {
           contentType: "text/markdown",
           truncated: false
         }
+      });
+
+      const workingContextPath = path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "working-context.md"
+      );
+      const taskPagePath = path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "tasks",
+        "session-alpha",
+        "turn-001.md"
+      );
+      await mkdir(path.dirname(workingContextPath), { recursive: true });
+      await mkdir(path.dirname(taskPagePath), { recursive: true });
+      await writeFile(
+        workingContextPath,
+        "# Working Context Summary\n\nCurrent focus.\n",
+        "utf8"
+      );
+      await writeFile(
+        taskPagePath,
+        "# Task Memory session-alpha / turn-001\n\nCompleted task.\n",
+        "utf8"
+      );
+
+      const memoryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/memory"
+      });
+
+      expect(memoryResponse.statusCode).toBe(200);
+      expect(
+        runtimeMemoryInspectionResponseSchema.parse(memoryResponse.json())
+      ).toMatchObject({
+        focusedRegisters: [
+          {
+            kind: "summary",
+            path: "wiki/summaries/working-context.md"
+          }
+        ],
+        nodeId: "worker-it",
+        taskPages: [
+          {
+            kind: "task",
+            path: "wiki/tasks/session-alpha/turn-001.md"
+          }
+        ]
+      });
+
+      const memoryPageResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/memory/page?path=" +
+          encodeURIComponent("wiki/summaries/working-context.md")
+      });
+
+      expect(memoryPageResponse.statusCode).toBe(200);
+      expect(
+        runtimeMemoryPageInspectionResponseSchema.parse(
+          memoryPageResponse.json()
+        )
+      ).toMatchObject({
+        nodeId: "worker-it",
+        page: {
+          kind: "summary",
+          path: "wiki/summaries/working-context.md"
+        },
+        preview: {
+          available: true,
+          content: "# Working Context Summary\n\nCurrent focus.\n",
+          contentType: "text/markdown",
+          truncated: false
+        }
+      });
+
+      const escapedMemoryPageResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/memory/page?path=" +
+          encodeURIComponent("../outside.md")
+      });
+
+      expect(escapedMemoryPageResponse.statusCode).toBe(404);
+      expect(hostErrorResponseSchema.parse(escapedMemoryPageResponse.json())).toEqual({
+        code: "not_found",
+        message: "Memory page '../outside.md' was not found for runtime 'worker-it'."
       });
 
       const missingArtifactResponse = await server.inject({
