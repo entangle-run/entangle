@@ -115,6 +115,11 @@ The same boundary is now available through:
 This keeps session inspection headless-capable and prevents Studio from
 becoming the only serious operator surface.
 
+The CLI now also supports compact operator summaries through:
+
+- `entangle host sessions list --summary`
+- `entangle host sessions get <sessionId> --summary`
+
 ## Testing and verification
 
 This slice was closed only after:

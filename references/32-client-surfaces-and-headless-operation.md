@@ -117,6 +117,7 @@ Recommended conceptual scope:
 
 - inspect applied graph state;
 - list nodes, edges, revisions, and runtime health;
+- inspect active and historical host-visible sessions;
 - admit local packages as nodes;
 - create, update, enable, disable, or remove edges through bounded flows;
 - start, stop, restart, or remove node runtimes;

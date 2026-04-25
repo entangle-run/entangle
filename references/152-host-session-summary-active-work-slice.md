@@ -38,6 +38,9 @@ Studio runtime session summaries now render:
 - root artifact count;
 - latest message type when available.
 
+The same presentation vocabulary is now shared through `packages/host-client`
+and consumed by CLI `host sessions list --summary` output.
+
 Per-node drilldown remains grounded in `GET /v1/sessions/{sessionId}` and
 continues to render node-owned active conversations, approvals, root artifacts,
 and last message type directly from each `SessionRecord`.

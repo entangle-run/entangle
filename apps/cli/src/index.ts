@@ -5,6 +5,7 @@ import {
   createHostClient,
   filterHostEvents,
   hostEventMatchesFilter,
+  sortHostSessionSummariesForPresentation,
   sortRuntimeTurnsForPresentation
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
@@ -33,6 +34,10 @@ import {
   filterRuntimeArtifactsForCli,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
+import {
+  projectHostSessionInspectionSummary,
+  projectHostSessionSummary
+} from "./runtime-session-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
@@ -1154,19 +1159,39 @@ const hostSessionsCommand = hostCommand
 
 hostSessionsCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented session summaries.")
   .description("List aggregated persisted sessions across the current host runtimes.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listSessions());
+    const response = await client.listSessions();
+    printJson(
+      options.summary
+        ? {
+            sessions: sortHostSessionSummariesForPresentation(
+              response.sessions
+            ).map(projectHostSessionSummary)
+          }
+        : response
+    );
   });
 
 hostSessionsCommand
   .command("get")
   .argument("<sessionId>", "Session identifier in the current host runtime state.")
+  .option("--summary", "Print a compact operator-oriented session summary.")
   .description("Inspect one persisted session aggregated across participating nodes.")
-  .action(async (sessionId: string, _options, command: Command) => {
+  .action(async (
+    sessionId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getSession(sessionId));
+    const response = await client.getSession(sessionId);
+    printJson(
+      options.summary
+        ? { session: projectHostSessionInspectionSummary(response) }
+        : response
+    );
   });
 
 const graphCommand = program

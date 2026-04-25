@@ -504,6 +504,10 @@ This repository currently contains:
   and `host runtimes turns` now support `--summary` over shared
   `host-client` runtime-turn presentation helpers, keeping Studio and CLI
   operator output aligned;
+- the matching headless session-inspection slice where `host sessions list`
+  and `host sessions get` now support `--summary` over shared `host-client`
+  session presentation helpers, keeping Studio and CLI active-work summaries
+  aligned;
 
 The highest-value remaining gaps are:
 

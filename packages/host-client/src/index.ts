@@ -767,6 +767,17 @@ export {
   type RuntimeTraceEventPresentation
 } from "./runtime-trace.js";
 export {
+  collectHostSessionInspectionTraceIds,
+  filterHostSessionsForNode,
+  formatHostSessionDetail,
+  formatHostSessionInspectionNodeDetail,
+  formatHostSessionInspectionNodeLabel,
+  formatHostSessionLabel,
+  sessionInspectionReferencesNode,
+  sortHostSessionInspectionNodes,
+  sortHostSessionSummariesForPresentation
+} from "./runtime-session.js";
+export {
   formatRuntimeTurnArtifactSummary,
   formatRuntimeTurnDetailLines,
   formatRuntimeTurnLabel,

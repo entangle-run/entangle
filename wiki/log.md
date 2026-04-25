@@ -1260,3 +1260,15 @@ The host now computes deterministic unique aggregate ids across participating
 node records, the shared host client parses the widened contract, and Studio
 session summaries render the aggregate active-work counts before operators
 open per-node session detail.
+
+## [2026-04-25] implementation | Added shared session presentation and CLI summaries
+
+Closed the headless follow-through for the widened session summary surface by
+moving session presentation helpers into `packages/host-client`. Studio now
+uses the shared helper boundary through a thin re-export instead of owning
+session formatting locally.
+
+The CLI now supports compact operator-oriented output for
+`host sessions list --summary` and `host sessions get <sessionId> --summary`,
+including active conversation, approval, root artifact, node status, trace,
+and latest message signals over the existing host session read model.

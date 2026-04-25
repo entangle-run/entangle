@@ -402,6 +402,9 @@ The repository now also contains the first real implementation baseline:
 - shared runtime-turn presentation helpers in `packages/host-client`, with
   Studio consuming the same formatting and the CLI exposing compact
   `host runtimes turn --summary` and `host runtimes turns --summary` output;
+- shared session presentation helpers in `packages/host-client`, with Studio
+  consuming the same formatting and the CLI exposing compact
+  `host sessions list --summary` and `host sessions get --summary` output;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving
