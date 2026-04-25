@@ -134,6 +134,7 @@ import {
   type ConversationRecord,
   type ConversationStatusCounts,
   type HostSessionConsistencyFinding,
+  type HostSessionConsistencyFindingCode,
   type SessionInspectionResponse,
   type SessionListResponse,
   type SessionRecord,
@@ -4365,11 +4366,29 @@ async function listRuntimeArtifactRecords(
 }
 
 async function synchronizeSessionActivityObservation(input: {
+  conversationRecords: ConversationRecord[];
   runtime: RuntimeInspectionResponse;
   sessionRecord: SessionRecord;
 }): Promise<void> {
   const { runtime, sessionRecord } = input;
-  const fingerprint = buildObservationFingerprint(sessionRecord);
+  const conversationStatusCounts = countConversationStatuses(
+    input.conversationRecords
+  );
+  const sessionConsistencyFindings = inspectSessionConversationConsistency({
+    conversationRecords: input.conversationRecords,
+    nodeId: runtime.nodeId,
+    sessionRecord
+  });
+  const sessionConsistencyFindingCodes: HostSessionConsistencyFindingCode[] =
+    Array.from(
+      new Set(sessionConsistencyFindings.map((finding) => finding.code))
+    ).sort();
+  const fingerprint = buildObservationFingerprint({
+    conversationStatusCounts,
+    sessionConsistencyFindingCodes,
+    sessionConsistencyFindingCount: sessionConsistencyFindings.length,
+    sessionRecord
+  });
   const existingRecord = await readObservedSessionActivityRecord(
     runtime.nodeId,
     sessionRecord.sessionId
@@ -4406,6 +4425,7 @@ async function synchronizeSessionActivityObservation(input: {
     category: "session",
     graphId: sessionRecord.graphId,
     activeConversationIds: sessionRecord.activeConversationIds,
+    conversationStatusCounts,
     ...(sessionRecord.lastMessageType
       ? { lastMessageType: sessionRecord.lastMessageType }
       : {}),
@@ -4416,6 +4436,8 @@ async function synchronizeSessionActivityObservation(input: {
     nodeId: runtime.nodeId,
     ownerNodeId: sessionRecord.ownerNodeId,
     rootArtifactIds: sessionRecord.rootArtifactIds,
+    sessionConsistencyFindingCodes,
+    sessionConsistencyFindingCount: sessionConsistencyFindings.length,
     sessionId: sessionRecord.sessionId,
     status: sessionRecord.status,
     traceId: sessionRecord.traceId,
@@ -4766,6 +4788,10 @@ async function synchronizeRuntimeActivityEvents(input: {
     for (const sessionRecord of sessionRecords) {
       activeSessionActivityIds.add(`${runtime.nodeId}--${sessionRecord.sessionId}`);
       await synchronizeSessionActivityObservation({
+        conversationRecords: conversationRecords.filter(
+          (conversationRecord) =>
+            conversationRecord.sessionId === sessionRecord.sessionId
+        ),
         runtime,
         sessionRecord
       });

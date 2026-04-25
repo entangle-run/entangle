@@ -171,9 +171,10 @@ This repository currently contains:
 - a widening of the host event surface where `entangle-host` now derives and
   persists `session.updated` plus `runner.turn.updated` events from persisted
   runner session and turn state, with `session.updated` now carrying
-  active-conversation ids, root artifact ids, and last message type, and with
-  durable deduplication anchored in observed host state instead of transient
-  in-memory delivery state;
+  active-conversation ids, conversation lifecycle counts, bounded session
+  consistency finding diagnostics, root artifact ids, and last message type,
+  and with durable deduplication anchored in observed host state instead of
+  transient in-memory delivery state;
 - a live Nostr transport adapter for the runner that uses NIP-59 gift wrapping,
   a dedicated Entangle rumor kind, relay-readiness preconnect semantics, and a
   verified local relay smoke where a real wrapped message produces persisted

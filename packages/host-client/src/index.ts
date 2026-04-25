@@ -829,6 +829,7 @@ export {
   formatHostSessionConsistencyFinding,
   formatHostSessionConsistencySummary,
   formatHostSessionConversationStatusDetail,
+  formatHostSessionConversationStatusSummary,
   formatHostSessionInspectionNodeDetail,
   formatHostSessionInspectionNodeLabel,
   formatHostSessionLabel,

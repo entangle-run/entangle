@@ -3491,9 +3491,22 @@ describe("buildHostServer", () => {
           expect.objectContaining({
             activeConversationIds: ["conv-alpha"],
             category: "session",
+            conversationStatusCounts: {
+              acknowledged: 0,
+              awaiting_approval: 0,
+              blocked: 0,
+              closed: 0,
+              expired: 0,
+              opened: 0,
+              rejected: 0,
+              resolved: 0,
+              working: 1
+            },
             lastMessageType: "task.request",
             nodeId: "worker-it",
             rootArtifactIds: ["report-turn-001"],
+            sessionConsistencyFindingCodes: [],
+            sessionConsistencyFindingCount: 0,
             sessionId: "session-alpha",
             status: "active",
             type: "session.updated"

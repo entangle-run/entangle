@@ -51,6 +51,17 @@ describe("runtime trace helpers", () => {
     const event: HostEventRecord = {
       activeConversationIds: ["conv-alpha"],
       category: "session",
+      conversationStatusCounts: {
+        acknowledged: 0,
+        awaiting_approval: 0,
+        blocked: 0,
+        closed: 1,
+        expired: 0,
+        opened: 0,
+        rejected: 0,
+        resolved: 0,
+        working: 1
+      },
       eventId: "evt-session-updated",
       graphId: "team-alpha",
       lastMessageType: "task.result",
@@ -59,6 +70,8 @@ describe("runtime trace helpers", () => {
       ownerNodeId: "worker-it",
       rootArtifactIds: ["artifact-report-001", "artifact-report-002"],
       schemaVersion: "1",
+      sessionConsistencyFindingCodes: ["terminal_conversation_still_active"],
+      sessionConsistencyFindingCount: 1,
       sessionId: "session-alpha",
       status: "active",
       timestamp: "2026-04-24T11:00:03.000Z",
@@ -71,6 +84,9 @@ describe("runtime trace helpers", () => {
       detailLines: [
         "Trace: trace-alpha",
         "Active conversations: 1",
+        "Recorded conversations: 2",
+        "Conversation statuses: working 1, closed 1",
+        "Consistency findings: 1 (terminal_conversation_still_active)",
         "Root artifacts: 2",
         "Last message: task.result"
       ],

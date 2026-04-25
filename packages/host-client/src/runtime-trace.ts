@@ -1,5 +1,9 @@
 import type { HostEventRecord } from "@entangle/types";
 import { filterHostEvents, runtimeTraceEventTypePrefixes } from "./event-inspection.js";
+import {
+  countHostSessionConversationStatusRecords,
+  formatHostSessionConversationStatusSummary
+} from "./runtime-session.js";
 
 export interface RuntimeTraceEventPresentation {
   detailLines: string[];
@@ -104,10 +108,30 @@ function buildSessionUpdatedDetailLines(
 ): string[] {
   const activeConversationIds = event.activeConversationIds ?? [];
   const rootArtifactIds = event.rootArtifactIds ?? [];
+  const conversationRecordCount = event.conversationStatusCounts
+    ? countHostSessionConversationStatusRecords(event.conversationStatusCounts)
+    : undefined;
+  const consistencyFindingCodes = event.sessionConsistencyFindingCodes ?? [];
+  const consistencyFindingCount = event.sessionConsistencyFindingCount ?? 0;
 
   return [
     `Trace: ${event.traceId}`,
     `Active conversations: ${activeConversationIds.length}`,
+    ...(conversationRecordCount !== undefined
+      ? [
+          `Recorded conversations: ${conversationRecordCount}`,
+          `Conversation statuses: ${formatHostSessionConversationStatusSummary(
+            event.conversationStatusCounts
+          )}`
+        ]
+      : []),
+    ...(event.sessionConsistencyFindingCount !== undefined
+      ? [
+          consistencyFindingCodes.length > 0
+            ? `Consistency findings: ${consistencyFindingCount} (${consistencyFindingCodes.join(", ")})`
+            : `Consistency findings: ${consistencyFindingCount}`
+        ]
+      : []),
     `Root artifacts: ${rootArtifactIds.length}`,
     ...(event.lastMessageType ? [`Last message: ${event.lastMessageType}`] : [])
   ];

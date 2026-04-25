@@ -30,6 +30,10 @@ import {
   runtimeObservedStateSchema,
   runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
+import {
+  conversationStatusCountsSchema,
+  hostSessionConsistencyFindingCodeSchema
+} from "./sessions.js";
 
 const hostEventBaseSchema = z.object({
   eventId: identifierSchema,
@@ -217,11 +221,16 @@ export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
   activeConversationIds: z.array(identifierSchema).default([]),
   category: z.literal("session"),
+  conversationStatusCounts: conversationStatusCountsSchema.optional(),
   graphId: identifierSchema,
   lastMessageType: entangleA2AMessageTypeSchema.optional(),
   nodeId: identifierSchema,
   ownerNodeId: identifierSchema,
   rootArtifactIds: z.array(identifierSchema).default([]),
+  sessionConsistencyFindingCodes: z
+    .array(hostSessionConsistencyFindingCodeSchema)
+    .optional(),
+  sessionConsistencyFindingCount: z.number().int().nonnegative().optional(),
   sessionId: identifierSchema,
   status: sessionLifecycleStateSchema,
   traceId: identifierSchema,

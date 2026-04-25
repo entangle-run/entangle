@@ -95,14 +95,18 @@ export function countHostSessionConversationStatusRecords(
 export function formatHostSessionConversationStatusDetail(
   counts?: ConversationStatusCounts
 ): string {
+  return `conversation statuses ${formatHostSessionConversationStatusSummary(counts)}`;
+}
+
+export function formatHostSessionConversationStatusSummary(
+  counts?: ConversationStatusCounts
+): string {
   const normalizedCounts = resolveHostSessionConversationStatusCounts(counts);
   const statusParts = conversationStatusOrder
     .filter((status) => normalizedCounts[status] > 0)
     .map((status) => `${status} ${normalizedCounts[status]}`);
 
-  return statusParts.length > 0
-    ? `conversation statuses ${statusParts.join(", ")}`
-    : "conversation statuses none";
+  return statusParts.length > 0 ? statusParts.join(", ") : "none";
 }
 
 export function countHostSessionConsistencyFindings(

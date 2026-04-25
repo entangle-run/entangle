@@ -610,6 +610,17 @@ describe("host event contracts", () => {
     const sessionEvent = hostEventRecordSchema.parse({
       activeConversationIds: ["conv-alpha"],
       category: "session",
+      conversationStatusCounts: {
+        acknowledged: 0,
+        awaiting_approval: 0,
+        blocked: 0,
+        closed: 0,
+        expired: 0,
+        opened: 0,
+        rejected: 0,
+        resolved: 0,
+        working: 1
+      },
       eventId: "session-worker-it-001",
       graphId: "graph-alpha",
       lastMessageType: "task.result",
@@ -618,6 +629,10 @@ describe("host event contracts", () => {
       ownerNodeId: "worker-it",
       rootArtifactIds: ["artifact-report-001"],
       schemaVersion: "1",
+      sessionConsistencyFindingCodes: [
+        "open_conversation_missing_active_reference"
+      ],
+      sessionConsistencyFindingCount: 1,
       sessionId: "session-alpha",
       status: "active",
       timestamp: "2026-04-24T00:00:00.000Z",
@@ -688,6 +703,11 @@ describe("host event contracts", () => {
     expect(sessionEvent.activeConversationIds).toEqual(["conv-alpha"]);
     expect(sessionEvent.rootArtifactIds).toEqual(["artifact-report-001"]);
     expect(sessionEvent.lastMessageType).toBe("task.result");
+    expect(sessionEvent.conversationStatusCounts?.working).toBe(1);
+    expect(sessionEvent.sessionConsistencyFindingCount).toBe(1);
+    expect(sessionEvent.sessionConsistencyFindingCodes).toEqual([
+      "open_conversation_missing_active_reference"
+    ]);
     expect(runnerTurnEvent.type).toBe("runner.turn.updated");
     expect(runnerTurnEvent.category).toBe("runner");
     if (runnerTurnEvent.type !== "runner.turn.updated") {

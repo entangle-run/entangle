@@ -1407,3 +1407,12 @@ now treats `session.updated` and `conversation.trace.event` records as
 overview-refresh triggers because those node-scoped events can change the
 host-wide inspected-session and consistency-finding counts shown in Host
 Status.
+
+## [2026-04-25] implementation | Added bounded session diagnostics to trace events
+
+Closed the explanation gap between top-level host degradation and runtime
+trace detail by widening `session.updated` events with conversation lifecycle
+counts plus bounded session-consistency finding count and finding-code
+summaries. Host observation fingerprints now include those diagnostics, so a
+session trace event can change when drift appears or clears even if the raw
+session record did not otherwise change.
