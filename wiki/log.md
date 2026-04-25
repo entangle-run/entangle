@@ -1483,3 +1483,13 @@ artifacts, and consistency findings.
 Shared host-client helpers, CLI summary projection, and Studio session
 inspection now use the same recorded-approval count and approval-status
 summary vocabulary without moving approval mutation authority into the host.
+
+## [2026-04-25] implementation | Added approval status counts to session events
+
+Aligned runtime trace events with the widened session read model.
+`session.updated` now carries `approvalStatusCounts`, and host observation
+fingerprints include those counts so approval lifecycle changes can refresh the
+session trace event even when the session record itself is otherwise stable.
+
+Shared runtime-trace presentation now renders recorded approval count and
+approval lifecycle summaries, with Studio consuming the same helper output.

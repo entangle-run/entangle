@@ -441,11 +441,11 @@ The repository now also contains the first real implementation baseline:
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving
-  active-conversation ids, conversation lifecycle counts, bounded session
-  consistency finding diagnostics, root artifact ids, and last message type so
-  runtime traces can distinguish active work and drift from session history,
-  while persisting those observations under observed host state and emitting
-  them only when the durable observed fingerprint changes;
+  active-conversation ids, conversation and approval lifecycle counts, bounded
+  session consistency finding diagnostics, root artifact ids, and last message
+  type so runtime traces can distinguish active work, approval state, and drift
+  from session history, while persisting those observations under observed host
+  state and emitting them only when the durable observed fingerprint changes;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,

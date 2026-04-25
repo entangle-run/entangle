@@ -659,6 +659,14 @@ describe("host event contracts", () => {
   it("accepts typed session and runner-turn activity events", () => {
     const sessionEvent = hostEventRecordSchema.parse({
       activeConversationIds: ["conv-alpha"],
+      approvalStatusCounts: {
+        approved: 0,
+        expired: 0,
+        not_required: 0,
+        pending: 1,
+        rejected: 0,
+        withdrawn: 0
+      },
       category: "session",
       conversationStatusCounts: {
         acknowledged: 0,
@@ -753,6 +761,7 @@ describe("host event contracts", () => {
     expect(sessionEvent.activeConversationIds).toEqual(["conv-alpha"]);
     expect(sessionEvent.rootArtifactIds).toEqual(["artifact-report-001"]);
     expect(sessionEvent.lastMessageType).toBe("task.result");
+    expect(sessionEvent.approvalStatusCounts?.pending).toBe(1);
     expect(sessionEvent.conversationStatusCounts?.working).toBe(1);
     expect(sessionEvent.sessionConsistencyFindingCount).toBe(1);
     expect(sessionEvent.sessionConsistencyFindingCodes).toEqual([

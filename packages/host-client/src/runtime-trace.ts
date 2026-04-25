@@ -1,7 +1,9 @@
 import type { HostEventRecord } from "@entangle/types";
 import { filterHostEvents, runtimeTraceEventTypePrefixes } from "./event-inspection.js";
 import {
+  countHostSessionApprovalStatusRecords,
   countHostSessionConversationStatusRecords,
+  formatHostSessionApprovalStatusSummary,
   formatHostSessionConversationStatusSummary
 } from "./runtime-session.js";
 
@@ -108,6 +110,9 @@ function buildSessionUpdatedDetailLines(
 ): string[] {
   const activeConversationIds = event.activeConversationIds ?? [];
   const rootArtifactIds = event.rootArtifactIds ?? [];
+  const approvalRecordCount = event.approvalStatusCounts
+    ? countHostSessionApprovalStatusRecords(event.approvalStatusCounts)
+    : undefined;
   const conversationRecordCount = event.conversationStatusCounts
     ? countHostSessionConversationStatusRecords(event.conversationStatusCounts)
     : undefined;
@@ -122,6 +127,14 @@ function buildSessionUpdatedDetailLines(
           `Recorded conversations: ${conversationRecordCount}`,
           `Conversation statuses: ${formatHostSessionConversationStatusSummary(
             event.conversationStatusCounts
+          )}`
+        ]
+      : []),
+    ...(approvalRecordCount !== undefined
+      ? [
+          `Recorded approvals: ${approvalRecordCount}`,
+          `Approval statuses: ${formatHostSessionApprovalStatusSummary(
+            event.approvalStatusCounts
           )}`
         ]
       : []),

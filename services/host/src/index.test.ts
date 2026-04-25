@@ -3606,6 +3606,14 @@ describe("buildHostServer", () => {
           }),
           expect.objectContaining({
             activeConversationIds: ["conv-alpha"],
+            approvalStatusCounts: {
+              approved: 0,
+              expired: 0,
+              not_required: 0,
+              pending: 1,
+              rejected: 0,
+              withdrawn: 0
+            },
             category: "session",
             conversationStatusCounts: {
               acknowledged: 0,
@@ -3712,6 +3720,61 @@ describe("buildHostServer", () => {
       expect(
         secondEvents.filter((event) => event.type === "runner.turn.updated").length
       ).toBe(firstRunnerTurnEventCount);
+
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-alpha.json"
+        ),
+        {
+          approvalId: "approval-alpha",
+          approverNodeIds: ["supervisor-it"],
+          conversationId: "conv-alpha",
+          graphId: "team-alpha",
+          requestedAt: "2026-04-24T10:01:00.000Z",
+          requestedByNodeId: "worker-it",
+          sessionId: "session-alpha",
+          status: "approved",
+          updatedAt: "2026-04-24T10:06:00.000Z"
+        }
+      );
+
+      await server.inject({
+        method: "GET",
+        url: "/v1/sessions"
+      });
+
+      const thirdEventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=40"
+      });
+      const thirdEvents = hostEventListResponseSchema.parse(
+        thirdEventsResponse.json()
+      ).events;
+
+      expect(
+        thirdEvents.filter((event) => event.type === "session.updated").length
+      ).toBe(firstSessionEventCount + 1);
+      expect(
+        thirdEvents.filter((event) => event.type === "approval.trace.event").length
+      ).toBe(firstApprovalEventCount + 1);
+      expect(thirdEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            approvalStatusCounts: {
+              approved: 1,
+              expired: 0,
+              not_required: 0,
+              pending: 0,
+              rejected: 0,
+              withdrawn: 0
+            },
+            sessionId: "session-alpha",
+            type: "session.updated"
+          })
+        ])
+      );
     } finally {
       await server.close();
     }

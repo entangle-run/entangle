@@ -50,6 +50,14 @@ describe("runtime trace helpers", () => {
   it("describes session activity with bounded active-work details", () => {
     const event: HostEventRecord = {
       activeConversationIds: ["conv-alpha"],
+      approvalStatusCounts: {
+        approved: 0,
+        expired: 0,
+        not_required: 0,
+        pending: 1,
+        rejected: 0,
+        withdrawn: 0
+      },
       category: "session",
       conversationStatusCounts: {
         acknowledged: 0,
@@ -86,6 +94,8 @@ describe("runtime trace helpers", () => {
         "Active conversations: 1",
         "Recorded conversations: 2",
         "Conversation statuses: working 1, closed 1",
+        "Recorded approvals: 1",
+        "Approval statuses: pending 1",
         "Consistency findings: 1 (terminal_conversation_still_active)",
         "Root artifacts: 2",
         "Last message: task.result"

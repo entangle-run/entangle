@@ -170,6 +170,7 @@ This directory is the canonical design corpus for Entangle.
 164. [163-runner-drained-session-startup-completion-slice.md](163-runner-drained-session-startup-completion-slice.md)
 165. [164-runner-approval-gated-session-repair-slice.md](164-runner-approval-gated-session-repair-slice.md)
 166. [165-host-session-approval-status-counts-slice.md](165-host-session-approval-status-counts-slice.md)
+167. [166-session-event-approval-status-counts-slice.md](166-session-event-approval-status-counts-slice.md)
 
 ## Role of this corpus
 

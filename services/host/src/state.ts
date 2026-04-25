@@ -4369,11 +4369,13 @@ async function listRuntimeArtifactRecords(
 }
 
 async function synchronizeSessionActivityObservation(input: {
+  approvalRecords: ApprovalRecord[];
   conversationRecords: ConversationRecord[];
   runtime: RuntimeInspectionResponse;
   sessionRecord: SessionRecord;
 }): Promise<void> {
   const { runtime, sessionRecord } = input;
+  const approvalStatusCounts = countApprovalStatuses(input.approvalRecords);
   const conversationStatusCounts = countConversationStatuses(
     input.conversationRecords
   );
@@ -4387,6 +4389,7 @@ async function synchronizeSessionActivityObservation(input: {
       new Set(sessionConsistencyFindings.map((finding) => finding.code))
     ).sort();
   const fingerprint = buildObservationFingerprint({
+    approvalStatusCounts,
     conversationStatusCounts,
     sessionConsistencyFindingCodes,
     sessionConsistencyFindingCount: sessionConsistencyFindings.length,
@@ -4428,6 +4431,7 @@ async function synchronizeSessionActivityObservation(input: {
     category: "session",
     graphId: sessionRecord.graphId,
     activeConversationIds: sessionRecord.activeConversationIds,
+    approvalStatusCounts,
     conversationStatusCounts,
     ...(sessionRecord.lastMessageType
       ? { lastMessageType: sessionRecord.lastMessageType }
@@ -4791,6 +4795,9 @@ async function synchronizeRuntimeActivityEvents(input: {
     for (const sessionRecord of sessionRecords) {
       activeSessionActivityIds.add(`${runtime.nodeId}--${sessionRecord.sessionId}`);
       await synchronizeSessionActivityObservation({
+        approvalRecords: approvalRecords.filter(
+          (approvalRecord) => approvalRecord.sessionId === sessionRecord.sessionId
+        ),
         conversationRecords: conversationRecords.filter(
           (conversationRecord) =>
             conversationRecord.sessionId === sessionRecord.sessionId

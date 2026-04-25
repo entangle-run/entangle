@@ -180,6 +180,14 @@ describe("studio runtime trace inspection helpers", () => {
   it("surfaces session active-work detail lines", () => {
     const detailLines = formatRuntimeTraceEventDetailLines({
       activeConversationIds: ["conv-alpha"],
+      approvalStatusCounts: {
+        approved: 0,
+        expired: 0,
+        not_required: 0,
+        pending: 1,
+        rejected: 0,
+        withdrawn: 0
+      },
       category: "session",
       eventId: "evt-session-updated",
       graphId: "team-alpha",
@@ -200,6 +208,8 @@ describe("studio runtime trace inspection helpers", () => {
     expect(detailLines).toEqual([
       "Trace: trace-alpha",
       "Active conversations: 1",
+      "Recorded approvals: 1",
+      "Approval statuses: pending 1",
       "Root artifacts: 1",
       "Last message: task.result"
     ]);

@@ -31,6 +31,7 @@ import {
   runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
 import {
+  approvalStatusCountsSchema,
   conversationStatusCountsSchema,
   hostSessionConsistencyFindingCodeSchema
 } from "./sessions.js";
@@ -220,6 +221,7 @@ export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend
 
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
   activeConversationIds: z.array(identifierSchema).default([]),
+  approvalStatusCounts: approvalStatusCountsSchema.optional(),
   category: z.literal("session"),
   conversationStatusCounts: conversationStatusCountsSchema.optional(),
   graphId: identifierSchema,
