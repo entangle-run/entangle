@@ -58,6 +58,10 @@ The system is constructing the runtime execution subgraph and work decomposition
 #### `active`
 
 At least one conversation or work path is active in the runtime subgraph.
+In runner-local state, `activeConversationIds` should be reconciled from
+non-terminal conversation records rather than treated as append-only history.
+Resolved, rejected, closed, or expired conversations must not keep a session
+active by themselves.
 
 #### `waiting_approval`
 

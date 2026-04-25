@@ -159,6 +159,10 @@ That implemented slice currently includes:
 - machine-readable A2A payload validation before lifecycle mutation;
 - lifecycle advancement from intake through completion for the current strict
   local path;
+- runner-local session active-conversation reconciliation, so
+  `activeConversationIds` reflect currently open conversations and delegated
+  multi-handoff sessions complete only after the final open conversation
+  resolves or closes;
 - git-backed turn artifact materialization into a runner-local artifact
   workspace;
 - deterministic post-turn wiki maintenance that now writes task pages, keeps
@@ -200,6 +204,7 @@ That implemented slice currently includes:
 
 The runner lifecycle is therefore no longer only conceptual prose plus a single
 bootstrap turn. The next meaningful gaps are clearer upward surfacing of
-runtime/session activity plus broader artifact and tool-execution depth beyond
-the current first report-file, bounded builtin inspection paths, and bounded
-working-context synthesis.
+runtime/session activity, cross-runtime session closure beyond the current
+runner-local reconciliation rule, plus broader artifact and tool-execution
+depth beyond the current first report-file, bounded builtin inspection paths,
+and bounded working-context synthesis.

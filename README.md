@@ -98,7 +98,9 @@ This repository currently contains:
   `handoffDirectives` are validated against local autonomy policy, effective
   edge routes, peer pubkeys, and allowed edge relations before emitting
   `task.handoff`, with emitted handoff message ids preserved on runner turns,
-  host activity events, and shared runtime-turn presentation;
+  host activity events, and shared runtime-turn presentation, plus
+  runner-owned active-conversation reconciliation so multi-handoff sessions
+  remain active until every open delegated conversation resolves or closes;
 - host-resolved model credential delivery in the effective runtime context,
   so live runner execution now starts only when the bound model secret is
   actually available instead of assuming endpoint presence is sufficient, with
@@ -126,7 +128,9 @@ This repository currently contains:
   state, builds engine turn requests from inbound context, and emits
   `task.result` replies when response policy requires them, while treating
   non-executable coordination messages such as `task.result` and
-  `conversation.close` as state updates rather than fresh engine turns;
+  `conversation.close` as state updates rather than fresh engine turns and
+  deriving session `activeConversationIds` from open conversation records
+  instead of leaving them as append-only history;
 - a first git-backed artifact materialization slice in the runner, where each
   completed turn can persist a structured `ArtifactRecord`, write a durable
   report file into a node-local git workspace, commit it, and attach the
@@ -502,9 +506,9 @@ The highest-value remaining gaps are:
 - richer model-guided memory maintenance on top of the now stronger
   session-aware and artifact-aware/artifact-carrying/engine-outcome-aware/
   execution-insight-carrying bounded runtime inspection surface;
-- controlled autonomous `task.handoff` emission on top of the now
-  peer-identity-aware runtime edge routes, without allowing agents to invent
-  destinations or mutate graph topology;
+- deeper delegated-session runtime semantics beyond the current controlled
+  autonomous handoff and runner-local active-conversation reconciliation path,
+  especially cross-runtime owner-level synthesis and diagnostics;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

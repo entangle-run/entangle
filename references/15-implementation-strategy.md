@@ -315,9 +315,10 @@ Remaining work in this phase:
    production-grade identity and authorization only after the next contracts can
    preserve real principals, policy decisions, tenant/workspace scope, and
    stronger host auditability without collapsing the local operator profile.
-5. add controlled autonomous `task.handoff` emission only on top of resolved
-   edge routes and peer identities, with explicit runner policy and state
-   transitions instead of hidden provider-output conventions.
+5. continue delegated-session deepening now that controlled autonomous
+   `task.handoff` emission and runner-local active-conversation reconciliation
+   are implemented on top of resolved edge routes, peer identities, explicit
+   runner policy, and state-derived completion rules.
 
 Acceptance for the phase:
 

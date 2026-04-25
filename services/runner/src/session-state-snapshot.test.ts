@@ -239,6 +239,7 @@ describe("session state snapshot", () => {
     }
 
     expect(snapshot.counts).toEqual({
+      activeConversationCount: 2,
       artifactCount: 4,
       conversationCount: 2,
       recentTurnCount: 1
@@ -257,6 +258,8 @@ describe("session state snapshot", () => {
     const rendered = renderRunnerSessionStateSnapshotForPrompt(snapshot);
     expect(rendered).toContain("Current session snapshot:");
     expect(rendered).toContain("Session status: `active`");
+    expect(rendered).toContain("Active conversations: 2");
+    expect(rendered).toContain("Conversations observed: 2");
     expect(rendered).toContain("conv-alpha with lead-it [acknowledged] followups=2");
     expect(rendered).toContain(
       "turn-newer [persisting/message] outcome=completed produced=1 consumed=1"

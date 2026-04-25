@@ -1216,3 +1216,19 @@ of accidental fresh engine turns.
 Closed the slice after widening types, runner, host, and host-client coverage,
 then rerunning targeted lint, typecheck, and test gates for the touched
 packages.
+
+## [2026-04-25] implementation | Reconciled active conversations for delegated sessions
+
+Closed the first follow-on lifecycle gap after autonomous handoff emission by
+making the runner derive session `activeConversationIds` from currently open
+conversation records instead of preserving append-only conversation history.
+Sessions with multiple outbound handoffs now remain active while any delegated
+conversation is still working, and complete with an empty active-conversation
+set once the final delegated result or close message arrives.
+
+Also widened the session-state snapshot used by runtime-local inspection so it
+distinguishes active conversation count from total observed conversation
+history.
+
+Closed the implementation pass after widening runner service and builtin
+inspection tests, then rerunning targeted runner tests and typecheck.

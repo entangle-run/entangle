@@ -867,6 +867,7 @@ describe("runner builtin tool executor", () => {
     const artifacts = content.artifacts;
 
     expect(counts).toEqual({
+      activeConversationCount: 2,
       artifactCount: 3,
       conversationCount: 2,
       recentTurnCount: 1

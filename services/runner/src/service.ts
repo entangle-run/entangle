@@ -665,6 +665,19 @@ function hasOpenConversationStatus(record: ConversationRecord): boolean {
   return !["closed", "expired", "rejected", "resolved"].includes(record.status);
 }
 
+function listOpenConversationIdsForSession(input: {
+  conversationRecords: ConversationRecord[];
+  sessionId: string;
+}): string[] {
+  return input.conversationRecords
+    .filter(
+      (conversationRecord) =>
+        conversationRecord.sessionId === input.sessionId &&
+        hasOpenConversationStatus(conversationRecord)
+    )
+    .map((conversationRecord) => conversationRecord.conversationId);
+}
+
 function buildConversationTransitionInput(input: {
   followupCount?: number | undefined;
   lastInboundMessageId?: string | undefined;
@@ -852,20 +865,28 @@ export class RunnerService {
     statePaths: RunnerStatePaths;
   }): Promise<SessionRecord> {
     const conversationRecords = await listConversationRecords(input.statePaths);
-    const hasOpenConversation = conversationRecords.some(
-      (conversationRecord) =>
-        conversationRecord.sessionId === input.session.sessionId &&
-        hasOpenConversationStatus(conversationRecord)
-    );
+    const activeConversationIds = listOpenConversationIdsForSession({
+      conversationRecords,
+      sessionId: input.session.sessionId
+    });
+    const currentSession: SessionRecord = {
+      ...input.session,
+      activeConversationIds
+    };
 
-    if (hasOpenConversation || input.session.status !== "active") {
-      return transitionSessionStatus(input.statePaths, input.session, input.session.status, {
-        lastMessageId: input.lastMessageId,
-        lastMessageType: input.lastMessageType
-      });
+    if (activeConversationIds.length > 0 || currentSession.status !== "active") {
+      return transitionSessionStatus(
+        input.statePaths,
+        currentSession,
+        currentSession.status,
+        {
+          lastMessageId: input.lastMessageId,
+          lastMessageType: input.lastMessageType
+        }
+      );
     }
 
-    return completeSession(input.statePaths, input.session, {
+    return completeSession(input.statePaths, currentSession, {
       lastMessageId: input.lastMessageId,
       lastMessageType: input.lastMessageType
     });

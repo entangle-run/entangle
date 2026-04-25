@@ -129,6 +129,11 @@ The first autonomous handoff slice now extends runner turns with
 `emittedHandoffMessageIds`, and the host event/observed-state layer preserves
 that field for runtime auditability.
 
+The runner now also treats `SessionRecord.activeConversationIds` as a derived
+open-work set. After task results or explicit close messages, the runner
+reconciles that field from non-terminal `ConversationRecord` entries instead
+of leaving every seen conversation id in the session forever.
+
 ## Validator surfaces
 
 `packages/validator` now exposes validation entrypoints for:

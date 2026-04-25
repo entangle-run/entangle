@@ -79,6 +79,7 @@ export type RunnerSessionStateSnapshot = {
   artifacts: RunnerSessionArtifactSummary[];
   conversations: RunnerSessionConversationSummary[];
   counts: {
+    activeConversationCount: number;
     artifactCount: number;
     conversationCount: number;
     recentTurnCount: number;
@@ -226,6 +227,7 @@ export async function buildRunnerSessionStateSnapshot(input: {
       updatedAt: conversationRecord.updatedAt
     })),
     counts: {
+      activeConversationCount: sessionRecord.activeConversationIds.length,
       artifactCount: relatedArtifactIds.size,
       conversationCount: sessionConversations.length,
       recentTurnCount: Math.min(sessionTurns.length, input.maxRecentTurns)
@@ -331,7 +333,8 @@ export function renderRunnerSessionStateSnapshotForPrompt(
     "Current session snapshot:",
     `- Session status: \`${snapshot.session.status}\``,
     `- Session intent: ${snapshot.session.intent}`,
-    `- Active conversations: ${snapshot.counts.conversationCount}`,
+    `- Active conversations: ${snapshot.counts.activeConversationCount}`,
+    `- Conversations observed: ${snapshot.counts.conversationCount}`,
     `- Related artifacts: ${snapshot.counts.artifactCount}`,
     `- Recent turns: ${snapshot.counts.recentTurnCount}`,
     "- Conversation summary:",

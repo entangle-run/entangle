@@ -100,7 +100,9 @@ The repository now also contains the first real implementation baseline:
   `handoffDirectives` must resolve through effective edge routes, local
   autonomy policy, materialized peer pubkeys, and allowed handoff relations
   before the runner emits `task.handoff`, with emitted handoff ids carried
-  through runner-turn, host-event, and client presentation contracts;
+  through runner-turn, host-event, and client presentation contracts, and with
+  runner-owned active-conversation reconciliation now keeping multi-handoff
+  sessions active only while real delegated conversations remain open;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,
@@ -547,8 +549,9 @@ The current implementation-truth audit now lives in
   model; the next deployment-grade gap is non-disposable local-profile
   upgrade and repair behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
-- controlled autonomous `task.handoff` emission on top of the now
-  peer-identity-aware edge-route substrate;
+- continue narrowing the remaining delegated-session gaps now that controlled
+  autonomous `task.handoff` emission and runner-local active-conversation
+  reconciliation are implemented;
 - deepen the new bootstrap host operator-token and request-audit boundary into
   real production identity and authorization only through explicit contracts,
   tests, policy decisions, and operator-visible attribution;

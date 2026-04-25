@@ -154,6 +154,7 @@ This directory is the canonical design corpus for Entangle.
 148. [147-docker-gitea-multi-node-handoff-smoke-slice.md](147-docker-gitea-multi-node-handoff-smoke-slice.md)
 149. [148-peer-runtime-route-identity-slice.md](148-peer-runtime-route-identity-slice.md)
 150. [149-runner-autonomous-handoff-slice.md](149-runner-autonomous-handoff-slice.md)
+151. [150-runner-session-active-conversation-reconciliation-slice.md](150-runner-session-active-conversation-reconciliation-slice.md)
 
 ## Role of this corpus
 

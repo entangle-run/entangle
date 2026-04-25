@@ -106,3 +106,8 @@ Entangle now has the first controlled autonomous multi-node work path:
 a node can produce a git-backed artifact, ask the runner for a graph-valid
 handoff, and have another node consume that artifact under the same A2A,
 runner-state, and host-observability contracts.
+
+The immediate follow-on lifecycle slice now reconciles session
+`activeConversationIds` from open conversation records, so multi-handoff
+sessions do not complete until every delegated conversation has resolved or
+closed.

@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import {
+  entangleA2AMessageSchema,
   sessionRecordSchema,
   type AgentEngineTurnRequest,
   type EffectiveRuntimeContext
@@ -30,6 +31,9 @@ import {
   runnerSecretHex
 } from "./test-fixtures.js";
 import { InMemoryRunnerTransport } from "./transport.js";
+
+const docsPublicKey =
+  "3333333333333333333333333333333333333333333333333333333333333333";
 
 afterEach(async () => {
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
@@ -529,6 +533,7 @@ describe("RunnerService", () => {
       );
       expect(handoffConversation?.lastMessageType).toBe("task.result");
       expect(upstreamSession?.status).toBe("completed");
+      expect(upstreamSession?.activeConversationIds).toEqual([]);
       expect(upstreamSession?.rootArtifactIds).toEqual(
         expect.arrayContaining(
           downstreamResponse.message.work.artifactRefs.map(
@@ -536,6 +541,257 @@ describe("RunnerService", () => {
           )
         )
       );
+    } finally {
+      await downstreamService.stop();
+      await upstreamService.stop();
+    }
+  });
+
+  it("keeps a delegated session active until every outbound handoff conversation closes", async () => {
+    const upstreamFixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    const downstreamFixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!upstreamFixture.remoteRepositoryPath) {
+      throw new Error("Expected an upstream bare remote repository path.");
+    }
+
+    const upstreamBaseContext = await loadRuntimeContext(
+      upstreamFixture.contextPath
+    );
+    const downstreamBaseContext = await loadRuntimeContext(
+      downstreamFixture.contextPath
+    );
+    const upstreamContext: EffectiveRuntimeContext = {
+      ...upstreamBaseContext,
+      binding: {
+        ...upstreamBaseContext.binding,
+        node: {
+          ...upstreamBaseContext.binding.node,
+          autonomy: {
+            ...upstreamBaseContext.binding.node.autonomy,
+            canInitiateSessions: true
+          }
+        }
+      },
+      policyContext: {
+        ...upstreamBaseContext.policyContext,
+        autonomy: {
+          ...upstreamBaseContext.policyContext.autonomy,
+          canInitiateSessions: true
+        }
+      },
+      relayContext: {
+        ...upstreamBaseContext.relayContext,
+        edgeRoutes: [
+          {
+            channel: "default",
+            edgeId: "worker-it-to-worker-qa",
+            peerNodeId: "worker-qa",
+            peerPubkey: remotePublicKey,
+            relation: "delegates_to",
+            relayProfileRefs: ["local-relay"]
+          },
+          {
+            channel: "default",
+            edgeId: "worker-it-to-worker-docs",
+            peerNodeId: "worker-docs",
+            peerPubkey: docsPublicKey,
+            relation: "peer_collaborates_with",
+            relayProfileRefs: ["local-relay"]
+          }
+        ]
+      }
+    };
+    const downstreamContext: EffectiveRuntimeContext = {
+      ...downstreamBaseContext,
+      artifactContext: {
+        ...downstreamBaseContext.artifactContext,
+        primaryGitRepositoryTarget:
+          upstreamContext.artifactContext.primaryGitRepositoryTarget
+      },
+      binding: {
+        ...downstreamBaseContext.binding,
+        bindingId: "graph-revision-alpha.worker-qa",
+        node: {
+          ...downstreamBaseContext.binding.node,
+          displayName: "Worker QA",
+          nodeId: "worker-qa"
+        }
+      },
+      identityContext: {
+        ...downstreamBaseContext.identityContext,
+        publicKey: remotePublicKey
+      }
+    };
+    const transport = new InMemoryRunnerTransport();
+    const upstreamService = new RunnerService({
+      context: upstreamContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Prepared review and documentation handoffs."],
+            handoffDirectives: [
+              {
+                edgeId: "worker-it-to-worker-qa",
+                includeArtifacts: "produced",
+                responsePolicy: {
+                  closeOnResult: true,
+                  maxFollowups: 1,
+                  responseRequired: true
+                },
+                summary: "Review the produced multi-handoff artifact.",
+                targetNodeId: "worker-qa"
+              },
+              {
+                edgeId: "worker-it-to-worker-docs",
+                includeArtifacts: "produced",
+                responsePolicy: {
+                  closeOnResult: true,
+                  maxFollowups: 1,
+                  responseRequired: true
+                },
+                summary: "Prepare documentation notes from the produced artifact.",
+                targetNodeId: "worker-docs"
+              }
+            ],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: []
+          });
+        }
+      },
+      transport
+    });
+    const downstreamService = new RunnerService({
+      context: downstreamContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["QA completed the delegated review."],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: []
+          });
+        }
+      },
+      transport
+    });
+
+    await upstreamService.start();
+    await downstreamService.start();
+
+    try {
+      const upstreamResult = await upstreamService.handleInboundEnvelope(
+        buildInboundTaskRequest({
+          conversationId: "multi-handoff-source-conv",
+          intent: "prepare_multi_handoff",
+          sessionId: "multi-handoff-session",
+          summary: "Prepare one artifact and delegate review plus documentation.",
+          turnId: "multi-handoff-turn-001"
+        })
+      );
+
+      if (!upstreamResult.handled || !upstreamResult.response) {
+        throw new Error("Expected the upstream node to publish a source result.");
+      }
+
+      expect(upstreamResult.handoffs).toHaveLength(2);
+      const qaHandoff = upstreamResult.handoffs.find(
+        (publishedEnvelope) => publishedEnvelope.message.toNodeId === "worker-qa"
+      );
+      const docsHandoff = upstreamResult.handoffs.find(
+        (publishedEnvelope) => publishedEnvelope.message.toNodeId === "worker-docs"
+      );
+
+      if (!qaHandoff || !docsHandoff) {
+        throw new Error("Expected QA and documentation handoff envelopes.");
+      }
+
+      const downstreamResponse = transport.listPublishedEnvelopes().find(
+        (publishedEnvelope) =>
+          publishedEnvelope.message.messageType === "task.result" &&
+          publishedEnvelope.message.parentMessageId === qaHandoff.eventId
+      );
+
+      if (!downstreamResponse) {
+        throw new Error("Expected the QA node to close its handoff.");
+      }
+
+      const upstreamStatePaths = buildRunnerStatePaths(
+        upstreamContext.workspace.runtimeRoot
+      );
+      const [
+        sessionAfterQa,
+        sourceConversation,
+        qaConversation,
+        docsConversation
+      ] = await Promise.all([
+        readSessionRecord(upstreamStatePaths, "multi-handoff-session"),
+        readConversationRecord(upstreamStatePaths, "multi-handoff-source-conv"),
+        readConversationRecord(
+          upstreamStatePaths,
+          qaHandoff.message.conversationId
+        ),
+        readConversationRecord(
+          upstreamStatePaths,
+          docsHandoff.message.conversationId
+        )
+      ]);
+
+      expect(sourceConversation?.status).toBe("closed");
+      expect(qaConversation?.status).toBe("closed");
+      expect(docsConversation?.status).toBe("working");
+      expect(sessionAfterQa?.status).toBe("active");
+      expect(sessionAfterQa?.activeConversationIds).toEqual([
+        docsHandoff.message.conversationId
+      ]);
+
+      const docsResultMessage = entangleA2AMessageSchema.parse({
+        constraints: {
+          approvalRequiredBeforeAction: false
+        },
+        conversationId: docsHandoff.message.conversationId,
+        fromNodeId: "worker-docs",
+        fromPubkey: docsPublicKey,
+        graphId: "graph-alpha",
+        intent: "prepare_multi_handoff",
+        messageType: "task.result",
+        parentMessageId: docsHandoff.eventId,
+        protocol: "entangle.a2a.v1",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        sessionId: "multi-handoff-session",
+        toNodeId: "worker-it",
+        toPubkey: upstreamContext.identityContext.publicKey,
+        turnId: "multi-handoff-docs-result",
+        work: {
+          artifactRefs: [],
+          metadata: {},
+          summary: "Documentation handoff completed."
+        }
+      });
+      const docsResultEnvelope = await transport.publish(docsResultMessage);
+      const [finalSession, finalDocsConversation] = await Promise.all([
+        readSessionRecord(upstreamStatePaths, "multi-handoff-session"),
+        readConversationRecord(
+          upstreamStatePaths,
+          docsHandoff.message.conversationId
+        )
+      ]);
+
+      expect(finalDocsConversation?.status).toBe("closed");
+      expect(finalSession?.status).toBe("completed");
+      expect(finalSession?.activeConversationIds).toEqual([]);
+      expect(finalSession?.lastMessageId).toBe(docsResultEnvelope.eventId);
+      expect(finalSession?.lastMessageType).toBe("task.result");
     } finally {
       await downstreamService.stop();
       await upstreamService.stop();

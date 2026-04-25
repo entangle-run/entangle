@@ -200,6 +200,11 @@ and widening, not rethinking the boundary.
 - coordination-message intake for `task.result` and `conversation.close` so
   handoff responses update local conversation/session state without becoming
   accidental fresh engine turns;
+- runner-owned active-conversation reconciliation where session
+  `activeConversationIds` are derived from non-terminal conversation records,
+  allowing sessions with multiple outbound handoffs to remain active until the
+  final delegated conversation resolves or closes and then complete with no
+  stale active conversation ids;
 - live runner entrypoints wired to the real internal engine boundary instead of
   the stub path;
 - deterministic post-turn wiki maintenance that writes task pages, appends to
@@ -208,9 +213,9 @@ and widening, not rethinking the boundary.
 
 ### Still missing or incomplete
 
-- richer completion semantics for long multi-hop sessions after delegated
-  results, including clearer global-session closure rules across multiple
-  active outbound conversations;
+- richer cross-runtime/global completion semantics beyond the current
+  runner-local active-conversation reconciliation, especially once sessions
+  span hosts or require explicit owner-level synthesis;
 - more explicit upward surfacing of runtime events.
 
 ### Assessment
@@ -672,11 +677,13 @@ This ordering preserves the best current properties of the repository:
 The git secret-delivery, repository-target-resolution, publication-state,
 preexisting-repository publication, locator-specific retrieval, host-owned
 `gitea_api` provisioning, first real provider-backed engine, first bounded
-tool-loop, deterministic post-turn memory, first host-event-surface, and
-Docker/Gitea-backed multi-node provider-backed runtime smoke slices are now
-complete for the current disposable local operator profile, so the next best
-capability move is controlled autonomous multi-node runtime deepening and
-host-surface completion rather than another foundational rewrite.
+tool-loop, deterministic post-turn memory, first host-event-surface,
+controlled autonomous handoff, runner-local active-conversation
+reconciliation, and Docker/Gitea-backed multi-node provider-backed runtime
+smoke slices are now complete for the current disposable local operator
+profile, so the next best capability move is cross-runtime delegated-session
+semantics and diagnostics-oriented host-surface completion rather than another
+foundational rewrite.
 
 ## What should not happen next
 
