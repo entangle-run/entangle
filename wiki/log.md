@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Isolated OpenCode node runtime state
+
+Advanced Entangle Local L3 workstream B1/B2. Engine turn outcomes now carry a
+generic optional `engineSessionId`, and the OpenCode runner adapter captures
+the JSON `sessionID` emitted by `opencode run --format json` so persisted turns
+and trace surfaces can link Entangle turns to engine sessions without exposing
+OpenCode-specific schema fields.
+
+The adapter now launches OpenCode with node-scoped DB, config, home, and XDG
+state/cache/data/config roots under the node engine-state workspace, prepares
+those directories before execution, and fails with a classified
+`configuration_error` if the workspace or engine-state root is unavailable.
+Added `references/191-opencode-runtime-state-isolation-slice.md` to record the
+audit findings, boundary decisions, and verification scope. The
+permission/approval bridge, timeout/cancellation handling, and full runtime
+availability DTOs remain open L3 work.
+
 ## [2026-04-25] implementation | Renamed the active Local runtime profile
 
 Started Entangle Local completion workstream A1/A2. The active runtime profile

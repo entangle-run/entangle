@@ -43,6 +43,10 @@ function buildRunnerTurnDetailLines(
       );
     }
 
+    if (engineOutcome.engineSessionId) {
+      detailLines.push(`Engine session: ${engineOutcome.engineSessionId}`);
+    }
+
     const stopReasonLine = engineOutcome.providerStopReason
       ? `Outcome: ${engineOutcome.stopReason} (provider: ${engineOutcome.providerStopReason})`
       : `Outcome: ${engineOutcome.stopReason}`;

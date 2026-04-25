@@ -125,7 +125,9 @@ This repository currently contains:
   `agentRuntimeContext`, local defaults point at `local-opencode`, and per-node
   source, engine-state, and wiki-repository workspace roots are materialized,
   with the runner now able to execute the first safe OpenCode CLI/process
-  adapter for primary node turns;
+  adapter for primary node turns while isolating OpenCode DB/config/XDG state
+  under the node engine-state workspace and carrying generic engine-session ids
+  on persisted turn outcomes;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

@@ -1,4 +1,6 @@
 import { EventEmitter } from "node:events";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
@@ -169,6 +171,7 @@ describe("OpenCode runner engine adapter", () => {
 
     expect(result).toMatchObject({
       assistantMessages: ["Completed the requested review."],
+      engineSessionId: "opencode-session",
       providerStopReason: "opencode_process_exit_0",
       stopReason: "completed",
       toolExecutions: [
@@ -195,10 +198,16 @@ describe("OpenCode runner engine adapter", () => {
     expect(mock.calls[0]!.options.cwd).toBe(
       fixture.context.workspace.sourceWorkspaceRoot
     );
+    const engineStateRoot = fixture.context.workspace.engineStateRoot!;
     expect(mock.calls[0]!.options.env).toMatchObject({
       ENTANGLE_NODE_ID: "worker-it",
-      OPENCODE_CONFIG_DIR: fixture.context.workspace.engineStateRoot,
-      OPENCODE_DB: `${fixture.context.workspace.engineStateRoot}/opencode.db`
+      OPENCODE_CONFIG_DIR: path.join(engineStateRoot, "config"),
+      OPENCODE_DB: path.join(engineStateRoot, "opencode.db"),
+      OPENCODE_TEST_HOME: path.join(engineStateRoot, "home"),
+      XDG_CACHE_HOME: path.join(engineStateRoot, "xdg", "cache"),
+      XDG_CONFIG_HOME: path.join(engineStateRoot, "xdg", "config"),
+      XDG_DATA_HOME: path.join(engineStateRoot, "xdg", "data"),
+      XDG_STATE_HOME: path.join(engineStateRoot, "xdg", "state")
     });
     expect(mock.calls[0]!.readStdin()).toContain(
       "Review the current workspace"
@@ -251,5 +260,24 @@ describe("OpenCode runner engine adapter", () => {
       classification: "provider_unavailable",
       name: AgentEngineExecutionError.name
     });
+  });
+
+  it("throws a classified configuration error when the node workspace is unavailable", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn();
+    await rm(fixture.context.workspace.sourceWorkspaceRoot!, {
+      force: true,
+      recursive: true
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    await expect(engine.executeTurn(buildTurnRequest())).rejects.toMatchObject({
+      classification: "configuration_error",
+      name: AgentEngineExecutionError.name
+    });
+    expect(mock.calls).toHaveLength(0);
   });
 });

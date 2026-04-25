@@ -903,6 +903,9 @@ function buildEngineTurnOutcome(
   context: EffectiveRuntimeContext
 ): EngineTurnOutcome {
   return engineTurnOutcomeSchema.parse({
+    ...(result.engineSessionId
+      ? { engineSessionId: result.engineSessionId }
+      : {}),
     ...(result.failure ? { failure: result.failure } : {}),
     ...(result.providerMetadata
       ? { providerMetadata: result.providerMetadata }

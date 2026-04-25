@@ -77,6 +77,10 @@ export function formatRuntimeTurnDetailLines(
 
     lines.push(`engine outcome ${turn.engineOutcome.stopReason}`);
 
+    if (turn.engineOutcome.engineSessionId) {
+      lines.push(`engine session ${turn.engineOutcome.engineSessionId}`);
+    }
+
     if (turn.engineOutcome.providerStopReason) {
       lines.push(`provider stop ${turn.engineOutcome.providerStopReason}`);
     }

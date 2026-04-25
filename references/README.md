@@ -195,6 +195,7 @@ This directory is the canonical design corpus for Entangle.
 189. [188-local-memory-workbench-slice.md](188-local-memory-workbench-slice.md)
 190. [189-entangle-local-completion-plan.md](189-entangle-local-completion-plan.md)
 191. [190-local-runtime-profile-rename-slice.md](190-local-runtime-profile-rename-slice.md)
+192. [191-opencode-runtime-state-isolation-slice.md](191-opencode-runtime-state-isolation-slice.md)
 
 ## Role of this corpus
 

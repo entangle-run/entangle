@@ -35,13 +35,16 @@ The latest implementation state includes:
 - effective runtime context with `agentRuntimeContext`;
 - OpenCode as the default local agent engine profile;
 - per-node source, engine-state, and wiki-repository workspace roots;
-- a first safe OpenCode CLI/process adapter in the runner.
+- a first safe OpenCode CLI/process adapter in the runner;
+- node-scoped OpenCode DB, config, XDG state/cache/data roots, and generic
+  engine-session-id observability on runner turn outcomes.
 
 The current OpenCode adapter is intentionally not yet enough for L3 acceptance.
-It can execute a primary node turn, but it does not yet provide the complete
-policy bridge, permission mapping, artifact/diff harvesting, git/wiki workflow,
-or CLI/Studio configuration and observability surface required for Entangle
-Local.
+It can execute a primary node turn, persist the engine session id, and fail
+early when its workspace/state roots are unavailable, but it does not yet
+provide the complete policy bridge, permission mapping, artifact/diff
+harvesting, git/wiki workflow, timeout/cancellation bridge, or CLI/Studio
+configuration and observability surface required for Entangle Local.
 
 ## Initial Deep Audit Baseline
 
@@ -360,6 +363,18 @@ Constraints:
 - Keep engine state under node-scoped engine-state roots.
 - Keep source workspace operations inside the node workspace.
 - Do not couple runner state to OpenCode internals beyond adapter-owned state.
+
+Current partial implementation:
+
+- the runner now captures OpenCode JSON `sessionID` values as generic
+  `engineSessionId` values on engine turn outcomes;
+- the OpenCode process is launched with node-scoped `OPENCODE_DB`,
+  `OPENCODE_CONFIG_DIR`, `OPENCODE_TEST_HOME`, and XDG config/state/data/cache
+  roots under the node engine-state workspace;
+- the adapter verifies workspace and engine-state readability/writability
+  before spawning OpenCode;
+- this does not yet complete executable version probing, timeout/cancellation,
+  permission mapping, or full degraded-runtime status DTOs.
 
 Acceptance:
 

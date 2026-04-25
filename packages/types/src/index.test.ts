@@ -952,6 +952,17 @@ describe("host event contracts", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts generic engine session identifiers on engine outcomes", () => {
+    const result = engineTurnOutcomeSchema.parse({
+      engineSessionId: "engine-session-alpha",
+      providerStopReason: "opencode_process_exit_0",
+      stopReason: "completed",
+      toolExecutions: []
+    });
+
+    expect(result.engineSessionId).toBe("engine-session-alpha");
+  });
+
   it("accepts typed conversation, approval, and artifact trace events", () => {
     const conversationEvent = hostEventRecordSchema.parse({
       artifactIds: ["report-turn-001"],

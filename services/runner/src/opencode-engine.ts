@@ -3,6 +3,9 @@ import type {
   ChildProcessWithoutNullStreams,
   SpawnOptionsWithoutStdio
 } from "node:child_process";
+import { constants as fsConstants } from "node:fs";
+import { access, mkdir } from "node:fs/promises";
+import path from "node:path";
 import type { Readable } from "node:stream";
 import {
   AgentEngineConfigurationError,
@@ -34,6 +37,17 @@ type OpenCodeRunEvent = {
   part?: unknown;
   sessionID?: unknown;
   type?: unknown;
+};
+
+type OpenCodeRuntimePaths = {
+  configDir: string;
+  databasePath: string;
+  engineStateRoot: string;
+  homeRoot: string;
+  xdgCacheHome: string;
+  xdgConfigHome: string;
+  xdgDataHome: string;
+  xdgStateHome: string;
 };
 
 const maxCapturedStderrCharacters = 12_000;
@@ -99,6 +113,58 @@ function chooseOpenCodeWorkspace(context: EffectiveRuntimeContext): string {
     context.workspace.artifactWorkspaceRoot ??
     context.workspace.root
   );
+}
+
+function buildOpenCodeRuntimePaths(
+  context: EffectiveRuntimeContext
+): OpenCodeRuntimePaths {
+  const engineStateRoot =
+    context.workspace.engineStateRoot ?? context.workspace.runtimeRoot;
+  const xdgRoot = path.join(engineStateRoot, "xdg");
+
+  return {
+    configDir: path.join(engineStateRoot, "config"),
+    databasePath: path.join(engineStateRoot, "opencode.db"),
+    engineStateRoot,
+    homeRoot: path.join(engineStateRoot, "home"),
+    xdgCacheHome: path.join(xdgRoot, "cache"),
+    xdgConfigHome: path.join(xdgRoot, "config"),
+    xdgDataHome: path.join(xdgRoot, "data"),
+    xdgStateHome: path.join(xdgRoot, "state")
+  };
+}
+
+async function prepareOpenCodeRuntime(input: {
+  context: EffectiveRuntimeContext;
+  workspace: string;
+}): Promise<OpenCodeRuntimePaths> {
+  const nodeId = input.context.binding.node.nodeId;
+  const runtimePaths = buildOpenCodeRuntimePaths(input.context);
+
+  try {
+    await Promise.all([
+      mkdir(runtimePaths.configDir, { recursive: true }),
+      mkdir(runtimePaths.homeRoot, { recursive: true }),
+      mkdir(runtimePaths.xdgCacheHome, { recursive: true }),
+      mkdir(runtimePaths.xdgConfigHome, { recursive: true }),
+      mkdir(runtimePaths.xdgDataHome, { recursive: true }),
+      mkdir(runtimePaths.xdgStateHome, { recursive: true })
+    ]);
+    await Promise.all([
+      access(input.workspace, fsConstants.R_OK | fsConstants.W_OK),
+      access(runtimePaths.engineStateRoot, fsConstants.R_OK | fsConstants.W_OK)
+    ]);
+  } catch (error) {
+    throw new AgentEngineExecutionError(
+      `OpenCode runtime for node '${nodeId}' is not ready; workspace and engine-state directories must exist and be readable/writable.`,
+      {
+        cause: error,
+        classification: "configuration_error"
+      }
+    );
+  }
+
+  return runtimePaths;
 }
 
 export function buildOpenCodePrompt(request: AgentEngineTurnRequest): string {
@@ -227,6 +293,7 @@ function processOpenCodeStdoutLine(
   line: string,
   output: {
     assistantMessages: string[];
+    engineSessionId: string | undefined;
     errors: string[];
     toolExecutions: EngineToolExecutionObservation[];
   }
@@ -235,6 +302,10 @@ function processOpenCodeStdoutLine(
 
   if (!event) {
     return;
+  }
+
+  if (typeof event.sessionID === "string" && event.sessionID.trim()) {
+    output.engineSessionId = event.sessionID.trim();
   }
 
   collectTextMessage(event, output.assistantMessages);
@@ -294,19 +365,24 @@ function buildOpenCodeArgs(input: {
   return args;
 }
 
-function buildOpenCodeEnv(context: EffectiveRuntimeContext): NodeJS.ProcessEnv {
+function buildOpenCodeEnv(input: {
+  context: EffectiveRuntimeContext;
+  runtimePaths: OpenCodeRuntimePaths;
+}): NodeJS.ProcessEnv {
   return {
     ...process.env,
-    ENTANGLE_GRAPH_ID: context.binding.graphId,
-    ENTANGLE_NODE_ID: context.binding.node.nodeId,
-    ENTANGLE_RUNTIME_PROFILE: context.binding.runtimeProfile,
-    OPENCODE_CONFIG_DIR:
-      context.workspace.engineStateRoot ?? context.workspace.runtimeRoot,
-    OPENCODE_DB: `${
-      context.workspace.engineStateRoot ?? context.workspace.runtimeRoot
-    }/opencode.db`,
+    ENTANGLE_GRAPH_ID: input.context.binding.graphId,
+    ENTANGLE_NODE_ID: input.context.binding.node.nodeId,
+    ENTANGLE_RUNTIME_PROFILE: input.context.binding.runtimeProfile,
+    OPENCODE_CONFIG_DIR: input.runtimePaths.configDir,
+    OPENCODE_DB: input.runtimePaths.databasePath,
     OPENCODE_DISABLE_AUTOUPDATE: "true",
-    OPENCODE_DISABLE_LSP_DOWNLOAD: "true"
+    OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
+    OPENCODE_TEST_HOME: input.runtimePaths.homeRoot,
+    XDG_CACHE_HOME: input.runtimePaths.xdgCacheHome,
+    XDG_CONFIG_HOME: input.runtimePaths.xdgConfigHome,
+    XDG_DATA_HOME: input.runtimePaths.xdgDataHome,
+    XDG_STATE_HOME: input.runtimePaths.xdgStateHome
   };
 }
 
@@ -329,6 +405,10 @@ export function createOpenCodeAgentEngine(input: {
     async executeTurn(request): Promise<AgentEngineTurnResult> {
       const normalizedRequest = agentEngineTurnRequestSchema.parse(request);
       const workspace = chooseOpenCodeWorkspace(input.runtimeContext);
+      const runtimePaths = await prepareOpenCodeRuntime({
+        context: input.runtimeContext,
+        workspace
+      });
       const args = buildOpenCodeArgs({
         context: input.runtimeContext,
         request: normalizedRequest,
@@ -336,10 +416,14 @@ export function createOpenCodeAgentEngine(input: {
       });
       const child = spawn(executable, args, {
         cwd: workspace,
-        env: buildOpenCodeEnv(input.runtimeContext)
+        env: buildOpenCodeEnv({
+          context: input.runtimeContext,
+          runtimePaths
+        })
       });
       const output = {
         assistantMessages: [] as string[],
+        engineSessionId: undefined as string | undefined,
         errors: [] as string[],
         toolExecutions: [] as EngineToolExecutionObservation[]
       };
@@ -398,6 +482,9 @@ export function createOpenCodeAgentEngine(input: {
       if (output.errors.length > 0) {
         return agentEngineTurnResultSchema.parse({
           assistantMessages: output.assistantMessages,
+          ...(output.engineSessionId
+            ? { engineSessionId: output.engineSessionId }
+            : {}),
           failure: {
             classification: "unknown_provider_error",
             message: truncate(
@@ -414,6 +501,9 @@ export function createOpenCodeAgentEngine(input: {
 
       return agentEngineTurnResultSchema.parse({
         assistantMessages: output.assistantMessages,
+        ...(output.engineSessionId
+          ? { engineSessionId: output.engineSessionId }
+          : {}),
         providerStopReason: "opencode_process_exit_0",
         stopReason: "completed",
         toolExecutions: output.toolExecutions,

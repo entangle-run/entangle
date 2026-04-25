@@ -146,7 +146,9 @@ The repository now also contains the first real implementation baseline:
   `agentRuntimeContext`, the default local engine profile is OpenCode, and
   per-node source, engine-state, and wiki-repository workspace roots now exist,
   with the runner wired to a first safe OpenCode CLI/process adapter for
-  primary node turns;
+  primary node turns that now isolates OpenCode DB/config/XDG state under the
+  node engine-state workspace and persists generic engine-session ids on turn
+  outcomes;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

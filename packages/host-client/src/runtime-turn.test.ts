@@ -15,6 +15,7 @@ function createTurn(
   return {
     consumedArtifactIds: ["artifact-inbound"],
     engineOutcome: {
+      engineSessionId: "engine-session-alpha",
       providerMetadata: {
         adapterKind: "anthropic",
         modelId: "claude-opus-4-7",
@@ -95,6 +96,7 @@ describe("runtime turn presentation helpers", () => {
         "handoff messages aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
+        "engine session engine-session-alpha",
         "provider stop end_turn",
         "usage 42 input / 12 output tokens",
         "tool executions 2 total (1 success, 1 error)",

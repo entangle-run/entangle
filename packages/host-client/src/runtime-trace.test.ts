@@ -109,6 +109,7 @@ describe("runtime trace helpers", () => {
       category: "runner",
       consumedArtifactIds: [],
       engineOutcome: {
+        engineSessionId: "engine-session-alpha",
         providerMetadata: {
           adapterKind: "anthropic",
           modelId: "claude-opus-4-7",
@@ -170,6 +171,7 @@ describe("runtime trace helpers", () => {
     expect(describeRuntimeTraceEvent(event)).toEqual({
       detailLines: [
         "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
+        "Engine session: engine-session-alpha",
         "Outcome: completed (provider: end_turn)",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
