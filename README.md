@@ -248,8 +248,9 @@ This repository currently contains:
   inspect`, package tool-catalog validation, `entangle graph diff`,
   root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
   `entangle host sessions launch` through the host API over host-resolved
-  runtime context and the local NIP-59 relay, plus runtime artifact filtering
-  by `--session-id`;
+  runtime context and the local NIP-59 relay, Studio selected-runtime session
+  launch through the same host API, plus runtime artifact filtering by
+  `--session-id`;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;
@@ -495,6 +496,9 @@ This repository currently contains:
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status, trace ids, and host-derived conversation
   and approval lifecycle status counts plus session consistency findings;
+- a Studio session-launch slice where visual operators can initiate a local
+  task session for the selected runtime through the host API without deriving
+  relay or runtime-context truth inside the browser;
 - a deeper Studio runtime-approval inspection slice where the selected-runtime
   surface now exposes persisted approval records, sorts them by recency, and
   expands one selected approval into host-backed detail without introducing

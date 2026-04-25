@@ -1,5 +1,24 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added Studio session launch
+
+Closed the next L2 Local Workbench parity slice by adding selected-runtime
+session launch to Studio. The Runtime Sessions panel now builds a summary and
+optional intent draft, calls the shared host-client `launchSession(...)`
+method, records the launch response, selects the launched session id, and
+refreshes selected-runtime state after the host publishes the launch request.
+
+The host remains the only component that resolves runtime context, default user
+node, relay selection, NIP-59 wrapping, and relay publication. Studio does not
+publish directly to Nostr or read runner-local context files.
+
+Verification passed with `pnpm --filter @entangle/studio test`,
+`pnpm --filter @entangle/studio typecheck`, and
+`pnpm --filter @entangle/studio lint`. The full post-slice gate also passed
+with `pnpm verify`, `pnpm build`, `pnpm ops:check-local:strict`,
+`pnpm ops:smoke-local:disposable --skip-build`, and
+`pnpm ops:smoke-local` after clearing an unrelated Docker Desktop restart loop.
+
 ## [2026-04-25] implementation | Started L2 Local Workbench
 
 Added the first L2 Local Workbench implementation slice. The CLI now has

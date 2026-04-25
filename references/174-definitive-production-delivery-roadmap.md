@@ -845,8 +845,8 @@ Remaining implementation sequence:
    proof path.
 2. Add package inspect/import depth and graph template/import/export/diff
    workflows where they fit the current host boundary.
-3. Add host-backed session launch from Studio and CLI if it can be supported
-   without bypassing the graph/runtime contracts.
+3. Deepen the new host-backed Studio and CLI session launch flow with clearer
+   wait/retry and navigation ergonomics where it can remain host-owned.
 4. Add artifact and memory workbench surfaces over existing host/runner truth.
 5. Run `pnpm verify`, strict preflight, preview demo, and disposable runtime
    smoke before closing L2.

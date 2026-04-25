@@ -505,7 +505,8 @@ code {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
@@ -515,8 +516,22 @@ code {
 }
 
 .field input:disabled,
-.field select:disabled {
+.field select:disabled,
+.field textarea:disabled {
   opacity: 0.62;
+}
+
+.field textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.session-launch-card {
+  display: grid;
+  gap: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
 }
 
 .toggle-field {
