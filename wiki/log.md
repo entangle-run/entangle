@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Wired the first OpenCode runner adapter
+
+Added a first safe OpenCode CLI/process adapter for primary node turns. The
+runner now resolves the per-node `agentRuntimeContext`, starts OpenCode through
+the configured executable, sends a structured Entangle task prompt over stdin,
+parses `opencode run --format=json` text/tool/error events, and keeps OpenCode
+state under the node-scoped engine-state workspace.
+
+The runner no longer auto-creates the legacy model-endpoint one-turn engine for
+primary execution or for default memory synthesis. Remaining L3 work is the
+policy/approval bridge, richer OpenCode session lifecycle, artifact/diff
+harvesting, git/wiki repository behavior, and CLI/Studio configuration and
+observability.
+
 ## [2026-04-25] implementation | Added OpenCode-first node agent runtime contracts
 
 Started the L3 Agentic Node Runtime foundation. Deployment catalogs now require
@@ -9,10 +23,9 @@ at least one agent engine profile, graph and node bindings can select
 OpenCode as the node coding engine profile.
 
 The old one-turn model adapter is no longer exposed as a node runtime profile.
-It remains only as internal implementation code until the OpenCode adapter
-fully replaces the runner's current injected-engine boundary. The host also
-materializes per-node `source`, `engine-state`, and `wiki-repository` workspace
-roots for the upcoming coding-agent integration.
+It remains only as internal implementation code outside the public node runtime
+catalog. The host also materializes per-node `source`, `engine-state`, and
+`wiki-repository` workspace roots for the coding-agent integration.
 
 ## [2026-04-25] release | Closed L2 Local Workbench
 

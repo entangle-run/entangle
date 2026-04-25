@@ -13,9 +13,10 @@ import {
   mapPackageToolCatalogToEngineToolDefinitions,
   resolveRuntimeContextPath
 } from "./runtime-context.js";
-import { createModelGuidedMemorySynthesizer } from "./memory-synthesizer.js";
+import type { RunnerMemorySynthesizer } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
 import type { RunnerTransport } from "./transport.js";
+import { createOpenCodeAgentEngine } from "./opencode-engine.js";
 
 function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefined {
   if (!secretHex) {
@@ -93,10 +94,10 @@ function createProcessAbortController(): AbortController {
   return controller;
 }
 
-function assertAgentRuntimeCanStart(input: {
-  injectedEngine: boolean;
+function createAgentEngineForRuntimeContext(input: {
+  injectedEngine: AgentEngine | undefined;
   runtimeContext: EffectiveRuntimeContext;
-}): void {
+}): AgentEngine {
   const { runtimeContext } = input;
   const agentRuntime = runtimeContext.agentRuntimeContext;
 
@@ -106,18 +107,26 @@ function assertAgentRuntimeCanStart(input: {
     );
   }
 
-  if (!input.injectedEngine) {
-    throw new Error(
-      `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}' (${agentRuntime.engineProfile.kind}), but no coding-agent adapter is wired into this runner build yet.`
-    );
+  if (input.injectedEngine) {
+    return input.injectedEngine;
   }
+
+  if (agentRuntime.engineProfile.kind === "opencode_server") {
+    return createOpenCodeAgentEngine({
+      runtimeContext
+    });
+  }
+
+  throw new Error(
+    `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}' (${agentRuntime.engineProfile.kind}), but this runner build only has an OpenCode adapter wired.`
+  );
 }
 
 export async function createConfiguredRunnerService(
   runtimeContextPath?: string,
   input: {
     engine?: AgentEngine;
-    memorySynthesizer?: ReturnType<typeof createModelGuidedMemorySynthesizer>;
+    memorySynthesizer?: RunnerMemorySynthesizer;
     transport?: RunnerTransport;
   } = {}
 ): Promise<{
@@ -138,19 +147,16 @@ export async function createConfiguredRunnerService(
       context: runtimeContext,
       secretKey
     });
-  const memorySynthesizer =
-    input.memorySynthesizer ??
-    createModelGuidedMemorySynthesizer({
-      context: runtimeContext
-    });
-  assertAgentRuntimeCanStart({
-    injectedEngine: Boolean(input.engine),
+  const engine = createAgentEngineForRuntimeContext({
+    injectedEngine: input.engine,
     runtimeContext
   });
   const service = new RunnerService({
     context: runtimeContext,
-    engine: input.engine!,
-    memorySynthesizer,
+    engine,
+    ...(input.memorySynthesizer
+      ? { memorySynthesizer: input.memorySynthesizer }
+      : {}),
     toolDefinitions,
     transport
   });
@@ -182,11 +188,10 @@ export async function runRunnerOnce(input: {
   const turnRequest = await buildAgentEngineTurnRequest(runtimeContext, {
     toolDefinitions
   });
-  assertAgentRuntimeCanStart({
-    injectedEngine: Boolean(input.engine),
+  const engine = createAgentEngineForRuntimeContext({
+    injectedEngine: input.engine,
     runtimeContext
   });
-  const engine = input.engine!;
   const { publicKey } = resolveRunnerIdentity(runtimeContext);
 
   const result = await engine.executeTurn(turnRequest);
@@ -204,7 +209,7 @@ export async function runRunnerOnce(input: {
 export async function runRunnerServiceUntilSignal(input: {
   abortSignal?: AbortSignal;
   engine?: AgentEngine;
-  memorySynthesizer?: ReturnType<typeof createModelGuidedMemorySynthesizer>;
+  memorySynthesizer?: RunnerMemorySynthesizer;
   runtimeContextPath?: string;
   transport?: RunnerTransport;
 } = {}): Promise<{

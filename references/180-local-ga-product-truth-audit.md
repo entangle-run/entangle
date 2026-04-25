@@ -92,7 +92,7 @@ known Vite chunk-size warning for the current bundle.
 | R1 / L1 Local Operator Baseline | Released as `v0.1-local-operator-baseline`. | Host, runner, Studio, CLI, local Compose, active/disposable/runtime smokes all passed in this audit and the final release packet records the release boundary. | None for R1/L1; next work moves to L1.5. |
 | R1.1 / L1.5 Local Operator Preview | Released as `v0.1.5-local-operator-preview`. | Canonical preview assets and a near-one-command demo path reuse the same host, runner, local relay, model-stub, and Gitea/git-backed artifact flow as the runtime smoke. | None for L1.5; next work moves to L2 Local Workbench. |
 | R1.2 / L2 Local Workbench | Released as `v0.2-local-workbench`. | Package scaffold/admission, package inspect, package tool-catalog validation, graph/node/edge mutation, shared graph diff for CLI and Studio, Studio active-graph validation, host graph import/export through the CLI, CLI graph template export, host API plus CLI and Studio session launch over host-resolved runtime context, CLI launch wait polling through host session inspection, runtime/session/artifact/turn/approval inspection, artifact filtering and bounded preview, and runtime memory inspection with bounded page preview exist. | None for L2; graph bundles, artifact history/diff, and relay-publish retry remain later work. |
-| R1.3 / L3 Agentic Node Runtime | Contract and host-context foundation exists, but OpenCode execution is not implemented yet. | Catalog-level `agentEngineProfiles`, graph/node `agentRuntime`, effective runtime `agentRuntimeContext`, validator semantics, host default OpenCode profile, per-node engine/source/wiki workspace roots, and runner guard against unimplemented adapters exist. | OpenCode adapter, policy bridge, engine lifecycle, permission/approval mapping, CLI/Studio runtime configuration, git/wiki repository behavior. |
+| R1.3 / L3 Agentic Node Runtime | Contract, host-context foundation, and first safe OpenCode process execution path exist, but the product milestone is not complete. | Catalog-level `agentEngineProfiles`, graph/node `agentRuntime`, effective runtime `agentRuntimeContext`, validator semantics, host default OpenCode profile, per-node engine/source/wiki workspace roots, and runner OpenCode CLI/process adapter exist. | Policy bridge, richer engine lifecycle, permission/approval mapping, artifact/diff harvesting, CLI/Studio runtime configuration, git/wiki repository behavior. |
 | R1.4 / L4 Local Reliability | Early reliability foundation exists, but reliability product is incomplete and must follow L3. | Strict preflight, active smoke, disposable smoke, runtime smoke, reset through Compose volume teardown. | Doctor command, repair flow, backup/restore, local state versioning, upgrade checks, logs bundle, conservative drift repair. |
 | L5 Entangle Local GA | Not ready and must not be claimed. | Core local runtime works, but agentic-node-runtime, reliability, onboarding, and release-discipline gaps remain. | Complete Local docs, install/demo path, OpenCode-backed node execution, repair/backup/upgrade, release notes, website claim audit, GA tag only after all gates pass. |
 
@@ -161,9 +161,12 @@ failure.
 - Local has CLI and Studio session launch over the host boundary, CLI wait
   polling over host session inspection, bounded report-artifact preview, and
   runtime memory inspection. Relay-publish retry, graph bundles, artifact
-  history/diff, and the OpenCode-backed agentic-node runtime are not complete.
-- Per-node agent runtime contracts now exist and default to OpenCode, but the
-  runner does not yet implement the OpenCode adapter.
+  history/diff, and the full OpenCode-backed agentic-node runtime are not
+  complete.
+- Per-node agent runtime contracts now exist and default to OpenCode, and the
+  runner has a first safe OpenCode CLI/process adapter. It still lacks the
+  complete policy bridge, artifact harvesting, and UI/CLI configuration
+  surface required for L3 acceptance.
 - Website claims have not been audited in this pass.
 
 ## Execution Plan

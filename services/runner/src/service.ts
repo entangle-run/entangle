@@ -145,6 +145,10 @@ function truncateBoundedText(value: string, maxCharacters = 240): string {
 function buildEngineProviderMetadataFromContext(
   context: EffectiveRuntimeContext
 ): EngineProviderMetadata | undefined {
+  if (context.agentRuntimeContext.engineProfile.kind === "opencode_server") {
+    return undefined;
+  }
+
   const profile = context.modelContext.modelEndpointProfile;
 
   if (!profile) {

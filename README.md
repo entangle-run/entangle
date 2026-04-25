@@ -122,8 +122,9 @@ This repository currently contains:
   catalogs carry `agentEngineProfiles`, graph and node bindings carry
   `agentRuntime`, effective runtime context carries the resolved
   `agentRuntimeContext`, local defaults point at `local-opencode`, and per-node
-  source, engine-state, and wiki-repository workspace roots are materialized
-  for the upcoming coding-agent adapter;
+  source, engine-state, and wiki-repository workspace roots are materialized,
+  with the runner now able to execute the first safe OpenCode CLI/process
+  adapter for primary node turns;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

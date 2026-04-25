@@ -1551,11 +1551,6 @@ describe("RunnerService", () => {
     expect(producedArtifact?.ref.backend).toBe("git");
     expect(turnRecord?.consumedArtifactIds).toContain(inboundArtifact.artifactId);
     expect(turnRecord?.engineOutcome).toEqual({
-      providerMetadata: {
-        adapterKind: "anthropic",
-        modelId: "claude-opus",
-        profileId: "shared-model"
-      },
       providerStopReason: "end_turn",
       stopReason: "completed",
       toolExecutions: [
@@ -1729,11 +1724,6 @@ describe("RunnerService", () => {
         message:
           "Anthropic engine execution failed because authentication was rejected by the provider."
       },
-      providerMetadata: {
-        adapterKind: "anthropic",
-        modelId: "claude-opus",
-        profileId: "shared-model"
-      },
       stopReason: "error",
       toolExecutions: []
     });
@@ -1788,11 +1778,6 @@ describe("RunnerService", () => {
     expect(sessionRecord?.status).toBe("failed");
     expect(turnRecord?.phase).toBe("errored");
     expect(turnRecord?.engineOutcome).toEqual({
-      providerMetadata: {
-        adapterKind: "anthropic",
-        modelId: "claude-opus",
-        profileId: "shared-model"
-      },
       stopReason: "completed",
       toolExecutions: [],
       usage: {
