@@ -1363,3 +1363,18 @@ Shared `packages/host-client` presentation helpers, Studio's selected-runtime
 session panel, and CLI `host sessions ... --summary` output now expose recorded
 conversation counts and lifecycle-state summaries alongside active
 conversation ids, approvals, root artifacts, traces, and latest message type.
+
+## [2026-04-25] implementation | Added session consistency findings
+
+Extended the host session read model from raw delegated-conversation counts
+into actionable consistency diagnostics. The host now compares each
+runner-owned `SessionRecord.activeConversationIds` set with the node-owned
+conversation records for the same session and surfaces bounded findings for
+active ids without records, terminal conversations still marked active, and
+open conversation records missing from active ids.
+
+The findings remain read-only diagnostics: runner records still own session
+and conversation truth, while host summaries, per-node session inspection,
+shared presentation helpers, Studio, and CLI summary output can now show drift
+that should be repaired by runtime reconciliation rather than hidden behind
+aggregate counts.

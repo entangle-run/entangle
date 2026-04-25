@@ -29,6 +29,7 @@ import {
   graphRevisionRecordSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
+  hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
   observedApprovalActivityRecordSchema,
   observedArtifactActivityRecordSchema,
@@ -132,6 +133,7 @@ import {
   type ArtifactRecord,
   type ConversationRecord,
   type ConversationStatusCounts,
+  type HostSessionConsistencyFinding,
   type SessionInspectionResponse,
   type SessionListResponse,
   type SessionRecord,
@@ -5066,6 +5068,117 @@ function groupConversationRecordsBySessionId(
   return recordsBySessionId;
 }
 
+function hasOpenConversationStatusForHostDiagnostics(
+  conversationRecord: ConversationRecord
+): boolean {
+  return !["closed", "expired", "rejected", "resolved"].includes(
+    conversationRecord.status
+  );
+}
+
+function buildSessionConsistencyFinding(
+  input: HostSessionConsistencyFinding
+): HostSessionConsistencyFinding {
+  return hostSessionConsistencyFindingSchema.parse(input);
+}
+
+function sortSessionConsistencyFindings(
+  findings: HostSessionConsistencyFinding[]
+): HostSessionConsistencyFinding[] {
+  return [...findings].sort((left, right) => {
+    const nodeOrdering = left.nodeId.localeCompare(right.nodeId);
+
+    if (nodeOrdering !== 0) {
+      return nodeOrdering;
+    }
+
+    const conversationOrdering = left.conversationId.localeCompare(
+      right.conversationId
+    );
+
+    if (conversationOrdering !== 0) {
+      return conversationOrdering;
+    }
+
+    return left.code.localeCompare(right.code);
+  });
+}
+
+function inspectSessionConversationConsistency(input: {
+  conversationRecords: ConversationRecord[];
+  nodeId: string;
+  sessionRecord: SessionRecord;
+}): HostSessionConsistencyFinding[] {
+  const conversationRecordsById = new Map(
+    input.conversationRecords.map((conversationRecord) => [
+      conversationRecord.conversationId,
+      conversationRecord
+    ])
+  );
+  const activeConversationIds = new Set(
+    input.sessionRecord.activeConversationIds
+  );
+  const findings: HostSessionConsistencyFinding[] = [];
+
+  for (const conversationId of input.sessionRecord.activeConversationIds) {
+    const conversationRecord = conversationRecordsById.get(conversationId);
+
+    if (!conversationRecord) {
+      findings.push(
+        buildSessionConsistencyFinding({
+          code: "active_conversation_missing_record",
+          conversationId,
+          message:
+            `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+            `references active conversation '${conversationId}', but no ` +
+            "conversation record exists.",
+          nodeId: input.nodeId,
+          severity: "error"
+        })
+      );
+      continue;
+    }
+
+    if (!hasOpenConversationStatusForHostDiagnostics(conversationRecord)) {
+      findings.push(
+        buildSessionConsistencyFinding({
+          code: "terminal_conversation_still_active",
+          conversationId,
+          message:
+            `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+            `still references conversation '${conversationId}' as active ` +
+            `after it reached '${conversationRecord.status}'.`,
+          nodeId: input.nodeId,
+          severity: "error"
+        })
+      );
+    }
+  }
+
+  for (const conversationRecord of input.conversationRecords) {
+    if (
+      hasOpenConversationStatusForHostDiagnostics(conversationRecord) &&
+      !activeConversationIds.has(conversationRecord.conversationId)
+    ) {
+      findings.push(
+        buildSessionConsistencyFinding({
+          code: "open_conversation_missing_active_reference",
+          conversationId: conversationRecord.conversationId,
+          message:
+            `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+            `has open conversation '${conversationRecord.conversationId}' in ` +
+            `'${conversationRecord.status}' but it is missing from ` +
+            "activeConversationIds.",
+          nodeId: input.nodeId,
+          severity: "warning"
+        })
+      );
+    }
+  }
+
+  return sortSessionConsistencyFindings(findings);
+}
+
 async function collectSessionInspectionNodes(): Promise<
   Map<string, SessionInspectionResponse["nodes"]>
 > {
@@ -5089,12 +5202,21 @@ async function collectSessionInspectionNodes(): Promise<
 
     for (const sessionRecord of sessionRecords) {
       const entries = sessions.get(sessionRecord.sessionId) ?? [];
+      const conversationRecords =
+        conversationRecordsBySessionId.get(sessionRecord.sessionId) ?? [];
+      const sessionConsistencyFindings =
+        inspectSessionConversationConsistency({
+          conversationRecords,
+          nodeId: runtime.nodeId,
+          sessionRecord
+        });
       entries.push({
-        conversationStatusCounts: countConversationStatuses(
-          conversationRecordsBySessionId.get(sessionRecord.sessionId) ?? []
-        ),
+        conversationStatusCounts: countConversationStatuses(conversationRecords),
         nodeId: runtime.nodeId,
         runtime,
+        ...(sessionConsistencyFindings.length > 0
+          ? { sessionConsistencyFindings }
+          : {}),
         session: sessionRecord
       });
       sessions.set(sessionRecord.sessionId, entries);
@@ -5144,6 +5266,9 @@ function buildSessionSummary(
   const conversationStatusCounts = mergeConversationStatusCounts(
     nodes.map((entry) => entry.conversationStatusCounts)
   );
+  const sessionConsistencyFindings = sortSessionConsistencyFindings(
+    nodes.flatMap((entry) => entry.sessionConsistencyFindings ?? [])
+  );
 
   const summaryInput = {
     activeConversationIds,
@@ -5155,6 +5280,9 @@ function buildSessionSummary(
       status: entry.session.status
     })),
     rootArtifactIds,
+    ...(sessionConsistencyFindings.length > 0
+      ? { sessionConsistencyFindings }
+      : {}),
     sessionId,
     traceIds,
     waitingApprovalIds,

@@ -20,6 +20,20 @@ export const conversationStatusCountsSchema = z.object({
   working: z.number().int().nonnegative().default(0)
 }) satisfies z.ZodType<Record<ConversationLifecycleState, number>>;
 
+export const hostSessionConsistencyFindingCodeSchema = z.enum([
+  "active_conversation_missing_record",
+  "open_conversation_missing_active_reference",
+  "terminal_conversation_still_active"
+]);
+
+export const hostSessionConsistencyFindingSchema = z.object({
+  code: hostSessionConsistencyFindingCodeSchema,
+  conversationId: identifierSchema,
+  message: nonEmptyStringSchema,
+  nodeId: identifierSchema,
+  severity: z.enum(["warning", "error"])
+});
+
 export const hostSessionNodeStatusSchema = z.object({
   nodeId: identifierSchema,
   status: sessionLifecycleStateSchema
@@ -33,6 +47,9 @@ export const hostSessionSummarySchema = z.object({
   nodeIds: z.array(identifierSchema),
   nodeStatuses: z.array(hostSessionNodeStatusSchema),
   rootArtifactIds: z.array(identifierSchema).default([]),
+  sessionConsistencyFindings: z
+    .array(hostSessionConsistencyFindingSchema)
+    .optional(),
   sessionId: identifierSchema,
   traceIds: z.array(identifierSchema),
   waitingApprovalIds: z.array(identifierSchema).default([]),
@@ -43,6 +60,9 @@ export const hostSessionNodeInspectionSchema = z.object({
   conversationStatusCounts: conversationStatusCountsSchema.optional(),
   nodeId: identifierSchema,
   runtime: runtimeInspectionResponseSchema,
+  sessionConsistencyFindings: z
+    .array(hostSessionConsistencyFindingSchema)
+    .optional(),
   session: sessionRecordSchema
 });
 
@@ -59,6 +79,12 @@ export const sessionInspectionResponseSchema = z.object({
 export type HostSessionNodeStatus = z.infer<typeof hostSessionNodeStatusSchema>;
 export type ConversationStatusCounts = z.infer<
   typeof conversationStatusCountsSchema
+>;
+export type HostSessionConsistencyFindingCode = z.infer<
+  typeof hostSessionConsistencyFindingCodeSchema
+>;
+export type HostSessionConsistencyFinding = z.infer<
+  typeof hostSessionConsistencyFindingSchema
 >;
 export type HostSessionSummary = z.infer<typeof hostSessionSummarySchema>;
 export type HostSessionNodeInspection = z.infer<

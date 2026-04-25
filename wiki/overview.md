@@ -104,7 +104,8 @@ The repository now also contains the first real implementation baseline:
   runner-owned active-conversation reconciliation now keeping multi-handoff
   sessions active only while real delegated conversations remain open, with
   host-owned session summaries now exposing aggregate active-work ids and
-  conversation lifecycle status counts for list-level operator inspection;
+  conversation lifecycle status counts plus consistency findings for
+  list-level operator inspection;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,
@@ -391,9 +392,9 @@ The repository now also contains the first real implementation baseline:
   runner session records across the current host runtime set, and shares the
   same boundary through `packages/host-client` and the CLI, with aggregate
   active-conversation ids, conversation lifecycle status counts, waiting
-  approval ids, root artifact ids, and latest message type on list summaries
-  so event traces and session inspection share the same active-work
-  vocabulary;
+  approval ids, root artifact ids, optional session consistency findings, and
+  latest message type on list summaries so event traces and session
+  inspection share the same active-work vocabulary;
 - a host-owned runner-turn inspection surface where `entangle-host` now exposes
   `GET /v1/runtimes/{nodeId}/turns` plus
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary
@@ -586,8 +587,8 @@ The current implementation-truth audit now lives in
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation
-  reconciliation plus host-derived conversation lifecycle diagnostics are
-  implemented;
+  reconciliation plus host-derived conversation lifecycle diagnostics and
+  consistency findings are implemented;
 - deepen the new bootstrap host operator-token and request-audit boundary into
   real production identity and authorization only through explicit contracts,
   tests, policy decisions, and operator-visible attribution;

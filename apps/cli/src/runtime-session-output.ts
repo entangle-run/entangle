@@ -1,5 +1,6 @@
 import {
   collectHostSessionInspectionTraceIds,
+  countHostSessionConsistencyFindings,
   countHostSessionConversationStatusRecords,
   formatHostSessionDetail,
   formatHostSessionInspectionNodeDetail,
@@ -9,12 +10,14 @@ import {
 } from "@entangle/host-client";
 import type {
   ConversationStatusCounts,
+  HostSessionConsistencyFinding,
   HostSessionSummary,
   SessionInspectionResponse
 } from "@entangle/types";
 
 export interface HostSessionCliSummaryRecord {
   activeConversationCount: number;
+  consistencyFindingCount: number;
   conversationStatusCounts?: ConversationStatusCounts;
   detail: string;
   graphId: string;
@@ -23,6 +26,7 @@ export interface HostSessionCliSummaryRecord {
   nodeIds: string[];
   recordedConversationCount: number;
   rootArtifactCount: number;
+  sessionConsistencyFindings?: HostSessionConsistencyFinding[];
   sessionId: string;
   statusByNode: HostSessionSummary["nodeStatuses"];
   traceIds: string[];
@@ -32,6 +36,7 @@ export interface HostSessionCliSummaryRecord {
 
 export interface HostSessionInspectionCliNodeRecord {
   activeConversationCount: number;
+  consistencyFindingCount: number;
   conversationStatusCounts?: ConversationStatusCounts;
   detail: string;
   label: string;
@@ -39,6 +44,7 @@ export interface HostSessionInspectionCliNodeRecord {
   recordedConversationCount: number;
   rootArtifactCount: number;
   runtimeState: string;
+  sessionConsistencyFindings?: HostSessionConsistencyFinding[];
   status: HostSessionSummary["nodeStatuses"][number]["status"];
   traceId: string;
   updatedAt: string;
@@ -57,6 +63,9 @@ export function projectHostSessionSummary(
 ): HostSessionCliSummaryRecord {
   return {
     activeConversationCount: session.activeConversationIds.length,
+    consistencyFindingCount: countHostSessionConsistencyFindings(
+      session.sessionConsistencyFindings
+    ),
     ...(session.conversationStatusCounts
       ? { conversationStatusCounts: session.conversationStatusCounts }
       : {}),
@@ -71,6 +80,9 @@ export function projectHostSessionSummary(
       session.conversationStatusCounts
     ),
     rootArtifactCount: session.rootArtifactIds.length,
+    ...(session.sessionConsistencyFindings
+      ? { sessionConsistencyFindings: session.sessionConsistencyFindings }
+      : {}),
     sessionId: session.sessionId,
     statusByNode: session.nodeStatuses,
     traceIds: session.traceIds,
@@ -86,6 +98,9 @@ export function projectHostSessionInspectionSummary(
     graphId: inspection.graphId,
     nodes: sortHostSessionInspectionNodes(inspection).map((entry) => ({
       activeConversationCount: entry.session.activeConversationIds.length,
+      consistencyFindingCount: countHostSessionConsistencyFindings(
+        entry.sessionConsistencyFindings
+      ),
       ...(entry.conversationStatusCounts
         ? { conversationStatusCounts: entry.conversationStatusCounts }
         : {}),
@@ -97,6 +112,9 @@ export function projectHostSessionInspectionSummary(
       ),
       rootArtifactCount: entry.session.rootArtifactIds.length,
       runtimeState: `${entry.runtime.desiredState}/${entry.runtime.observedState}`,
+      ...(entry.sessionConsistencyFindings
+        ? { sessionConsistencyFindings: entry.sessionConsistencyFindings }
+        : {}),
       status: entry.session.status,
       traceId: entry.session.traceId,
       updatedAt: entry.session.updatedAt,

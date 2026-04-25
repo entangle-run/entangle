@@ -40,6 +40,16 @@ describe("runtime session CLI output", () => {
         { nodeId: "lead-it", status: "planning" }
       ],
       rootArtifactIds: ["artifact-alpha"],
+      sessionConsistencyFindings: [
+        {
+          code: "terminal_conversation_still_active",
+          conversationId: "conv-alpha",
+          message:
+            "Session 'session-alpha' on node 'worker-it' still references conversation 'conv-alpha' as active after it reached 'closed'.",
+          nodeId: "worker-it",
+          severity: "error"
+        }
+      ],
       sessionId: "session-alpha",
       traceIds: ["trace-alpha"],
       updatedAt: "2026-04-24T10:05:00.000Z",
@@ -48,6 +58,7 @@ describe("runtime session CLI output", () => {
 
     expect(projectHostSessionSummary(session)).toMatchObject({
       activeConversationCount: 1,
+      consistencyFindingCount: 1,
       conversationStatusCounts: createConversationStatusCounts({
         working: 1
       }),
@@ -56,6 +67,14 @@ describe("runtime session CLI output", () => {
       latestMessageType: "task.result",
       recordedConversationCount: 1,
       rootArtifactCount: 1,
+      sessionConsistencyFindings: [
+        {
+          code: "terminal_conversation_still_active",
+          conversationId: "conv-alpha",
+          nodeId: "worker-it",
+          severity: "error"
+        }
+      ],
       sessionId: "session-alpha",
       traceIds: ["trace-alpha"],
       waitingApprovalCount: 1
@@ -98,7 +117,17 @@ describe("runtime session CLI output", () => {
             traceId: "trace-alpha",
             updatedAt: "2026-04-24T10:05:00.000Z",
             waitingApprovalIds: ["approval-alpha"]
-          }
+          },
+          sessionConsistencyFindings: [
+            {
+              code: "open_conversation_missing_active_reference",
+              conversationId: "conv-beta",
+              message:
+                "Session 'session-alpha' on node 'worker-it' has open conversation 'conv-beta' in 'working' but it is missing from activeConversationIds.",
+              nodeId: "worker-it",
+              severity: "warning"
+            }
+          ]
         }
       ],
       sessionId: "session-alpha"
@@ -109,6 +138,7 @@ describe("runtime session CLI output", () => {
       nodes: [
         {
           activeConversationCount: 1,
+          consistencyFindingCount: 1,
           conversationStatusCounts: createConversationStatusCounts({
             closed: 1,
             working: 1
@@ -118,6 +148,14 @@ describe("runtime session CLI output", () => {
           recordedConversationCount: 2,
           rootArtifactCount: 1,
           runtimeState: "running/running",
+          sessionConsistencyFindings: [
+            {
+              code: "open_conversation_missing_active_reference",
+              conversationId: "conv-beta",
+              nodeId: "worker-it",
+              severity: "warning"
+            }
+          ],
           status: "active",
           traceId: "trace-alpha",
           waitingApprovalCount: 1
@@ -131,6 +169,9 @@ describe("runtime session CLI output", () => {
     );
     expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
       "conversation statuses working 1, closed 1"
+    );
+    expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
+      "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conv-beta"
     );
   });
 });

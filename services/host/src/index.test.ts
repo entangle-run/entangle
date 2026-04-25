@@ -3001,7 +3001,7 @@ describe("buildHostServer", () => {
           "session-alpha.json"
         ),
         {
-          activeConversationIds: ["conv-alpha"],
+          activeConversationIds: ["conv-alpha", "conv-closed", "conv-missing"],
           graphId: "team-alpha",
           intent: "Review the latest patch set.",
           lastMessageType: "task.request",
@@ -3046,6 +3046,68 @@ describe("buildHostServer", () => {
           updatedAt: "2026-04-24T10:05:00.000Z"
         }
       );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "conversations",
+          "conv-closed.json"
+        ),
+        {
+          artifactIds: [],
+          conversationId: "conv-closed",
+          followupCount: 1,
+          graphId: "team-alpha",
+          initiator: "remote",
+          lastInboundMessageId:
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          lastMessageType: "task.result",
+          localNodeId: "worker-it",
+          localPubkey: runtimeContext.identityContext.publicKey,
+          openedAt: "2026-04-24T10:00:00.000Z",
+          peerNodeId: "supervisor-it",
+          peerPubkey:
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          responsePolicy: {
+            closeOnResult: true,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: "session-alpha",
+          status: "closed",
+          updatedAt: "2026-04-24T10:04:00.000Z"
+        }
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "conversations",
+          "conv-extra.json"
+        ),
+        {
+          artifactIds: [],
+          conversationId: "conv-extra",
+          followupCount: 0,
+          graphId: "team-alpha",
+          initiator: "local",
+          lastOutboundMessageId:
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          lastMessageType: "task.handoff",
+          localNodeId: "worker-it",
+          localPubkey: runtimeContext.identityContext.publicKey,
+          openedAt: "2026-04-24T10:02:00.000Z",
+          peerNodeId: "reviewer-it",
+          peerPubkey:
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          responsePolicy: {
+            closeOnResult: true,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: "session-alpha",
+          status: "working",
+          updatedAt: "2026-04-24T10:06:00.000Z"
+        }
+      );
 
       const listedSessionsResponse = await server.inject({
         method: "GET",
@@ -3058,17 +3120,17 @@ describe("buildHostServer", () => {
       ).toEqual({
         sessions: [
           {
-            activeConversationIds: ["conv-alpha"],
+            activeConversationIds: ["conv-alpha", "conv-closed", "conv-missing"],
             conversationStatusCounts: {
               acknowledged: 0,
               awaiting_approval: 0,
               blocked: 0,
-              closed: 0,
+              closed: 1,
               expired: 0,
               opened: 0,
               rejected: 0,
               resolved: 0,
-              working: 1
+              working: 2
             },
             graphId: "team-alpha",
             latestMessageType: "task.request",
@@ -3080,6 +3142,32 @@ describe("buildHostServer", () => {
               }
             ],
             rootArtifactIds: ["report-turn-001"],
+            sessionConsistencyFindings: [
+              {
+                code: "terminal_conversation_still_active",
+                conversationId: "conv-closed",
+                message:
+                  "Session 'session-alpha' on node 'worker-it' still references conversation 'conv-closed' as active after it reached 'closed'.",
+                nodeId: "worker-it",
+                severity: "error"
+              },
+              {
+                code: "open_conversation_missing_active_reference",
+                conversationId: "conv-extra",
+                message:
+                  "Session 'session-alpha' on node 'worker-it' has open conversation 'conv-extra' in 'working' but it is missing from activeConversationIds.",
+                nodeId: "worker-it",
+                severity: "warning"
+              },
+              {
+                code: "active_conversation_missing_record",
+                conversationId: "conv-missing",
+                message:
+                  "Session 'session-alpha' on node 'worker-it' references active conversation 'conv-missing', but no conversation record exists.",
+                nodeId: "worker-it",
+                severity: "error"
+              }
+            ],
             sessionId: "session-alpha",
             traceIds: ["trace-alpha"],
             waitingApprovalIds: [],
@@ -3101,7 +3189,8 @@ describe("buildHostServer", () => {
         nodes: [
           {
             conversationStatusCounts: {
-              working: 1
+              closed: 1,
+              working: 2
             },
             nodeId: "worker-it",
             runtime: {
@@ -3113,7 +3202,27 @@ describe("buildHostServer", () => {
               sessionId: "session-alpha",
               status: "active",
               traceId: "trace-alpha"
-            }
+            },
+            sessionConsistencyFindings: [
+              {
+                code: "terminal_conversation_still_active",
+                conversationId: "conv-closed",
+                nodeId: "worker-it",
+                severity: "error"
+              },
+              {
+                code: "open_conversation_missing_active_reference",
+                conversationId: "conv-extra",
+                nodeId: "worker-it",
+                severity: "warning"
+              },
+              {
+                code: "active_conversation_missing_record",
+                conversationId: "conv-missing",
+                nodeId: "worker-it",
+                severity: "error"
+              }
+            ]
           }
         ],
         sessionId: "session-alpha"

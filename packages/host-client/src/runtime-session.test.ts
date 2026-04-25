@@ -87,6 +87,16 @@ describe("host session presentation helpers", () => {
     });
     session.latestMessageType = "task.result";
     session.rootArtifactIds = ["artifact-alpha"];
+    session.sessionConsistencyFindings = [
+      {
+        code: "active_conversation_missing_record",
+        conversationId: "conv-missing",
+        message:
+          "Session 'session-alpha' on node 'worker-it' references active conversation 'conv-missing', but no conversation record exists.",
+        nodeId: "worker-it",
+        severity: "error"
+      }
+    ];
     session.waitingApprovalIds = ["approval-alpha"];
 
     expect(formatHostSessionLabel(session, "worker-it")).toBe(
@@ -104,6 +114,9 @@ describe("host session presentation helpers", () => {
     );
     expect(formatHostSessionDetail(session)).toContain(
       "conversation statuses working 1"
+    );
+    expect(formatHostSessionDetail(session)).toContain(
+      "consistency findings 1: error active_conversation_missing_record on worker-it/conv-missing"
     );
     expect(formatHostSessionDetail(session)).toContain("approvals 1");
     expect(formatHostSessionDetail(session)).toContain("root artifacts 1");
@@ -183,7 +196,17 @@ describe("host session presentation helpers", () => {
             traceId: "trace-alpha",
             updatedAt: "2026-04-24T10:05:00.000Z",
             waitingApprovalIds: ["approval-worker"]
-          }
+          },
+          sessionConsistencyFindings: [
+            {
+              code: "open_conversation_missing_active_reference",
+              conversationId: "conv-extra",
+              message:
+                "Session 'session-alpha' on node 'worker-it' has open conversation 'conv-extra' in 'working' but it is missing from activeConversationIds.",
+              nodeId: "worker-it",
+              severity: "warning"
+            }
+          ]
         }
       ],
       sessionId: "session-alpha"
@@ -221,6 +244,9 @@ describe("host session presentation helpers", () => {
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "conversation statuses working 1, awaiting_approval 1"
+    );
+    expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conv-extra"
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "approvals 1"

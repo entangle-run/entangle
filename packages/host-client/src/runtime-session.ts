@@ -1,4 +1,5 @@
 import type {
+  HostSessionConsistencyFinding,
   ConversationStatusCounts,
   HostSessionNodeInspection,
   HostSessionSummary,
@@ -104,6 +105,36 @@ export function formatHostSessionConversationStatusDetail(
     : "conversation statuses none";
 }
 
+export function countHostSessionConsistencyFindings(
+  findings?: HostSessionConsistencyFinding[]
+): number {
+  return findings?.length ?? 0;
+}
+
+export function formatHostSessionConsistencyFinding(
+  finding: HostSessionConsistencyFinding
+): string {
+  return `${finding.severity} ${finding.code} on ${finding.nodeId}/${finding.conversationId}`;
+}
+
+export function formatHostSessionConsistencySummary(
+  findings?: HostSessionConsistencyFinding[]
+): string {
+  if (!findings || findings.length === 0) {
+    return "consistency findings none";
+  }
+
+  const preview = findings
+    .slice(0, 2)
+    .map(formatHostSessionConsistencyFinding)
+    .join("; ");
+  const overflowCount = findings.length - 2;
+
+  return overflowCount > 0
+    ? `consistency findings ${findings.length}: ${preview}; +${overflowCount} more`
+    : `consistency findings ${findings.length}: ${preview}`;
+}
+
 export function formatHostSessionDetail(
   session: HostSessionSummary
 ): string {
@@ -116,6 +147,9 @@ export function formatHostSessionDetail(
   const conversationRecordCount = countHostSessionConversationStatusRecords(
     session.conversationStatusCounts
   );
+  const consistencyFindingCount = countHostSessionConsistencyFindings(
+    session.sessionConsistencyFindings
+  );
   const activeWorkSummary = [
     `active conversations ${session.activeConversationIds.length}`,
     `recorded conversations ${conversationRecordCount}`,
@@ -123,6 +157,13 @@ export function formatHostSessionDetail(
       ? [
           formatHostSessionConversationStatusDetail(
             session.conversationStatusCounts
+          )
+        ]
+      : []),
+    ...(consistencyFindingCount > 0
+      ? [
+          formatHostSessionConsistencySummary(
+            session.sessionConsistencyFindings
           )
         ]
       : []),
@@ -187,6 +228,9 @@ export function formatHostSessionInspectionNodeDetail(
   const conversationRecordCount = countHostSessionConversationStatusRecords(
     entry.conversationStatusCounts
   );
+  const consistencyFindingCount = countHostSessionConsistencyFindings(
+    entry.sessionConsistencyFindings
+  );
 
   return [
     `Runtime ${entry.runtime.desiredState}/${entry.runtime.observedState}`,
@@ -196,6 +240,13 @@ export function formatHostSessionInspectionNodeDetail(
       ? [
           formatHostSessionConversationStatusDetail(
             entry.conversationStatusCounts
+          )
+        ]
+      : []),
+    ...(consistencyFindingCount > 0
+      ? [
+          formatHostSessionConsistencySummary(
+            entry.sessionConsistencyFindings
           )
         ]
       : []),
