@@ -14,6 +14,11 @@ const candidates: SourceChangeCandidateRecord[] = [
     createdAt: "2026-04-24T10:00:00.000Z",
     graphId: "team-alpha",
     nodeId: "worker-it",
+    review: {
+      decidedAt: "2026-04-24T10:05:00.000Z",
+      decision: "rejected",
+      reason: "Not wanted."
+    },
     sourceChangeSummary: {
       additions: 1,
       checkedAt: "2026-04-24T10:00:00.000Z",
@@ -74,6 +79,9 @@ describe("runtime source change candidate CLI output", () => {
       turnId: "turn-new"
     });
     expect(summary.detailLines).toContain("source changes 2 files (+4/-1)");
+    expect(projectRuntimeSourceChangeCandidateSummary(candidates[0]!).detailLines).toContain(
+      "review rejected at 2026-04-24T10:05:00.000Z"
+    );
   });
 
   it("projects source candidate diff previews without duplicating full content", () => {

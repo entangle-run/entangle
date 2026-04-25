@@ -138,8 +138,9 @@ This repository currently contains:
   CLI, and Studio surfaces, with runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus
-  durable pending source-change candidate records with read-only host, CLI, and
-  Studio inspection plus bounded candidate diff and listed-file previews,
+  durable pending source-change candidate records with host, CLI, and Studio
+  inspection plus bounded candidate diff, listed-file previews, and audited
+  review lifecycle mutations for accepted/rejected/superseded decisions,
   without auto-committing or publishing those engine-generated files;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
@@ -654,7 +655,7 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff model,
-  especially source-change candidate acceptance/publication, source history,
+  especially source-change candidate source-history application/publication,
   non-primary target provisioning, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and

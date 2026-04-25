@@ -17,7 +17,8 @@ export const runtimeTraceEventTypePrefixes = [
   "conversation.trace.event",
   "approval.trace.event",
   "artifact.trace.event",
-  "runner.turn.updated"
+  "runner.turn.updated",
+  "source_change_candidate.reviewed"
 ] as const;
 
 function eventHasNodeId(

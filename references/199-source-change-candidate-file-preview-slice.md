@@ -9,7 +9,7 @@ read-only file preview for files listed on a source-change candidate.
 
 The goal remains operator inspection. Entangle can now preview one changed
 source file from a candidate's shadow-git `headTree` through the host, host
-client, CLI, and Studio, without accepting the candidate, mutating the source
+client, CLI, and Studio, without applying the candidate, mutating the source
 workspace, committing files, or publishing artifacts.
 
 ## Entry Audit
@@ -69,11 +69,15 @@ entangle host runtimes source-candidate <nodeId> <candidateId> --file <path> [--
 Studio now lets the operator choose a changed file from the selected candidate
 detail panel and shows the same bounded host-backed preview.
 
+A later slice added an audited review mutation for accepted, rejected, and
+superseded candidate decisions. That mutation records review metadata and emits
+`source_change_candidate.reviewed`, but does not apply, commit, push, or
+publish candidate changes.
+
 ## Boundary Decisions
 
 This slice intentionally does not:
 
-- accept, reject, or supersede source-change candidates;
 - read arbitrary files from the candidate tree;
 - read paths that are not listed in the candidate changed-file summary;
 - mutate the node source workspace;
@@ -90,17 +94,16 @@ reader.
 
 The remaining B5 implementation should add:
 
-- candidate acceptance, rejection, and supersession mutations;
-- Entangle policy checks before candidate acceptance or publication;
+- Entangle policy checks before candidate source application or publication;
 - approval records for policy-gated source publication;
-- runner-owned acceptance of candidates into node git history;
+- runner-owned application of accepted candidates into node git history;
 - source-history host APIs;
 - artifact history/diff APIs;
-- CLI and Studio source-history and candidate mutation views;
+- CLI and Studio source-history views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
-  candidate creation, diff and file inspection, candidate acceptance,
-  publication, and downstream inspection.
+  candidate creation, diff and file inspection, candidate review, source
+  history, publication, and downstream inspection.
 
 ## Verification
 

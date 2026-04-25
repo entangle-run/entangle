@@ -115,6 +115,40 @@ export const sourceChangeCandidateStatusSchema = z.enum([
   "superseded"
 ]);
 
+export const sourceChangeCandidateReviewDecisionSchema = z.enum([
+  "accepted",
+  "rejected",
+  "superseded"
+]);
+
+export const sourceChangeCandidateReviewRecordSchema = z
+  .object({
+    decidedAt: nonEmptyStringSchema,
+    decidedBy: identifierSchema.optional(),
+    decision: sourceChangeCandidateReviewDecisionSchema,
+    reason: nonEmptyStringSchema.optional(),
+    supersededByCandidateId: identifierSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (value.decision === "superseded" && !value.supersededByCandidateId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Superseded source change candidate reviews must include supersededByCandidateId.",
+        path: ["supersededByCandidateId"]
+      });
+    }
+
+    if (value.decision !== "superseded" && value.supersededByCandidateId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Only superseded source change candidate reviews may include supersededByCandidateId.",
+        path: ["supersededByCandidateId"]
+      });
+    }
+  });
+
 export const sourceChangeSnapshotRefSchema = z.object({
   baseTree: nonEmptyStringSchema,
   headTree: nonEmptyStringSchema,
@@ -127,6 +161,7 @@ export const sourceChangeCandidateRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
   graphId: identifierSchema,
   nodeId: identifierSchema,
+  review: sourceChangeCandidateReviewRecordSchema.optional(),
   sessionId: identifierSchema.optional(),
   snapshot: sourceChangeSnapshotRefSchema.optional(),
   sourceChangeSummary: sourceChangeSummarySchema,
@@ -303,6 +338,12 @@ export type SourceChangeFileSummary = z.infer<
 export type SourceChangeSummary = z.infer<typeof sourceChangeSummarySchema>;
 export type SourceChangeCandidateStatus = z.infer<
   typeof sourceChangeCandidateStatusSchema
+>;
+export type SourceChangeCandidateReviewDecision = z.infer<
+  typeof sourceChangeCandidateReviewDecisionSchema
+>;
+export type SourceChangeCandidateReviewRecord = z.infer<
+  typeof sourceChangeCandidateReviewRecordSchema
 >;
 export type SourceChangeSnapshotRef = z.infer<
   typeof sourceChangeSnapshotRefSchema

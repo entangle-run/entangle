@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source change candidate review mutation
+
+Advanced Entangle Local L3 workstream B5. Source-change candidates now have an
+audited host review mutation for `accepted`, `rejected`, and `superseded`
+decisions. The host only mutates pending candidates, records structured review
+metadata, validates supersession targets, and emits
+`source_change_candidate.reviewed` without applying source files, committing,
+pushing, or publishing artifacts.
+
+The shared host client parses the mutation response and formats review
+evidence, the CLI adds `host runtimes source-candidate <nodeId> <candidateId>
+--review <status>`, and Studio exposes review actions in the selected
+candidate detail panel. Added
+`references/200-source-change-candidate-review-slice.md`. Policy approval,
+runner-owned source history, git publication, artifact history/diff, and
+end-to-end OpenCode-backed smoke coverage remain open B5 work.
+
 ## [2026-04-25] implementation | Added source change candidate file preview
 
 Advanced Entangle Local L3 workstream B5. Source-change candidates with

@@ -99,11 +99,15 @@ A later slice added a bounded read-only file preview route for paths listed in
 the candidate changed-file summary. That route reads from the candidate
 `headTree` and does not expose runtime-local filesystem paths.
 
+A later slice added an audited review mutation for accepted, rejected, and
+superseded candidate decisions. That mutation records review metadata and emits
+`source_change_candidate.reviewed`, but does not apply, commit, push, or
+publish candidate changes.
+
 ## Boundary Decisions
 
 This slice intentionally does not:
 
-- mark candidates as accepted or rejected;
 - auto-commit source workspace changes;
 - auto-push source workspace changes;
 - publish candidate changes as artifacts;
@@ -111,24 +115,23 @@ This slice intentionally does not:
 - expose raw runtime-local workspace paths as protocol locators;
 - treat OpenCode private state as Entangle source-of-truth.
 
-Candidates are durable review records. Acceptance, policy approval, git
-publication, and artifact linkage remain explicit future work.
+Candidates are durable review records. Source-history application, policy
+approval, git publication, and artifact linkage remain explicit future work.
 
 ## Remaining B5 Work
 
 The remaining B5 implementation should add:
 
-- candidate acceptance, rejection, and supersession mutations;
-- Entangle policy checks before candidate acceptance or publication;
+- Entangle policy checks before candidate source application or publication;
 - approval records for policy-gated source publication;
-- runner-owned acceptance of candidates into node git history;
+- runner-owned application of accepted candidates into node git history;
 - source-history host APIs;
 - artifact history/diff APIs;
-- CLI and Studio source-history and candidate mutation views;
+- CLI and Studio source-history views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
-  candidate creation, candidate acceptance, publication, and downstream
-  inspection.
+  candidate creation, candidate review, source history, publication, and
+  downstream inspection.
 
 ## Verification
 

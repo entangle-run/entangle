@@ -109,18 +109,18 @@ This slice intentionally does not:
 - rely on OpenCode private database, snapshot, or TUI state as Entangle truth.
 
 Source changes are evidence and future source-change candidates. They are not
-yet accepted, committed, or published artifacts.
+yet applied to source history, committed, or published artifacts. A later slice
+added accepted/rejected/superseded review mutation, but source-history
+application and publication remain separate work.
 
 ## Remaining B5 Work
 
 The remaining B5 implementation should add:
 
-- source-change candidate acceptance/rejection/supersession and
-  approval/policy flow;
-- runner-owned acceptance of source changes into node git history;
+- approval/policy flow before source application or publication;
+- runner-owned application of reviewed source changes into node git history;
 - source diff artifact records where appropriate;
 - artifact history/diff host APIs;
-- bounded source/file preview APIs;
 - CLI and Studio diff/history views;
 - publication rules tied to the node git principal and policy;
 - end-to-end OpenCode-backed smoke coverage proving workspace modification,

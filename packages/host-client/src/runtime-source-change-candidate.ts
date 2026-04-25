@@ -77,6 +77,22 @@ export function formatRuntimeSourceChangeCandidateDetailLines(
     lines.push(`conversation ${candidate.conversationId}`);
   }
 
+  if (candidate.review) {
+    lines.push(`review ${candidate.review.decision} at ${candidate.review.decidedAt}`);
+
+    if (candidate.review.decidedBy) {
+      lines.push(`reviewed by ${candidate.review.decidedBy}`);
+    }
+
+    if (candidate.review.reason) {
+      lines.push(`review reason ${candidate.review.reason}`);
+    }
+
+    if (candidate.review.supersededByCandidateId) {
+      lines.push(`superseded by ${candidate.review.supersededByCandidateId}`);
+    }
+  }
+
   if (candidate.snapshot) {
     lines.push(
       `snapshot ${candidate.snapshot.kind} ${candidate.snapshot.baseTree}..${candidate.snapshot.headTree}`

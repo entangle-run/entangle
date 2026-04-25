@@ -55,7 +55,8 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
-  sessionListResponseSchema
+  sessionListResponseSchema,
+  sourceChangeCandidateRecordSchema
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -3376,6 +3377,82 @@ describe("buildHostServer", () => {
         ).preview
       ).toMatchObject({
         available: false
+      });
+
+      const reviewResponse = await server.inject({
+        method: "PATCH",
+        payload: {
+          reason: "Reviewed by the operator.",
+          reviewedBy: "operator-alpha",
+          status: "accepted"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review"
+      });
+
+      expect(reviewResponse.statusCode).toBe(200);
+      const reviewedCandidate =
+        runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+          reviewResponse.json()
+        ).candidate;
+      expect(reviewedCandidate).toMatchObject({
+        candidateId: "source-change-turn-alpha",
+        review: {
+          decidedBy: "operator-alpha",
+          decision: "accepted",
+          reason: "Reviewed by the operator."
+        },
+        status: "accepted"
+      });
+
+      const reviewedCandidateFile = sourceChangeCandidateRecordSchema.parse(
+        JSON.parse(
+          await readFile(
+            path.join(
+              runtimeContext.workspace.runtimeRoot,
+              "source-change-candidates",
+              "source-change-turn-alpha.json"
+            ),
+            "utf8"
+          )
+        ) as unknown
+      );
+      expect(reviewedCandidateFile.status).toBe("accepted");
+      expect(reviewedCandidateFile.review?.decision).toBe("accepted");
+
+      const repeatedReviewResponse = await server.inject({
+        method: "PATCH",
+        payload: {
+          status: "rejected"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review"
+      });
+
+      expect(repeatedReviewResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(repeatedReviewResponse.json())
+      ).toMatchObject({
+        code: "conflict"
+      });
+
+      const reviewEvents = hostEventListResponseSchema
+        .parse(
+          (
+            await server.inject({
+              method: "GET",
+              url: "/v1/events?limit=20"
+            })
+          ).json()
+        )
+        .events.filter(
+          (event) => event.type === "source_change_candidate.reviewed"
+        );
+      expect(reviewEvents).toHaveLength(1);
+      expect(reviewEvents[0]).toMatchObject({
+        candidateId: "source-change-turn-alpha",
+        previousStatus: "pending_review",
+        status: "accepted"
       });
 
       const missingCandidateResponse = await server.inject({

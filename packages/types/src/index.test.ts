@@ -49,6 +49,7 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
+  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   resolveEffectiveAgentRuntime,
@@ -340,6 +341,28 @@ describe("source change candidate host API contracts", () => {
         candidate
       }).candidate.status
     ).toBe("pending_review");
+    expect(
+      runtimeSourceChangeCandidateReviewMutationRequestSchema.parse({
+        reason: "Reviewed by the local operator.",
+        reviewedBy: "operator-alpha",
+        status: "accepted"
+      }).status
+    ).toBe("accepted");
+    expect(
+      runtimeSourceChangeCandidateInspectionResponseSchema.parse({
+        candidate: {
+          ...candidate,
+          review: {
+            decidedAt: "2026-04-24T00:02:00.000Z",
+            decidedBy: "operator-alpha",
+            decision: "rejected",
+            reason: "The generated source is not wanted."
+          },
+          status: "rejected",
+          updatedAt: "2026-04-24T00:02:00.000Z"
+        }
+      }).candidate.review?.decision
+    ).toBe("rejected");
     expect(
       runtimeSourceChangeCandidateDiffResponseSchema.parse({
         candidate,
@@ -1071,6 +1094,25 @@ describe("host event contracts", () => {
       type: "runner.turn.updated",
       updatedAt: "2026-04-24T00:00:01.000Z"
     });
+    const reviewedCandidateEvent = hostEventRecordSchema.parse({
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      eventId: "evt-source-change-reviewed",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260424-000000",
+      message:
+        "Source change candidate 'source-change-turn-alpha' for runtime 'worker-it' was reviewed as 'accepted'.",
+      nodeId: "worker-it",
+      previousStatus: "pending_review",
+      reason: "Reviewed by the local operator.",
+      reviewedAt: "2026-04-24T00:00:02.000Z",
+      reviewedBy: "operator-alpha",
+      schemaVersion: "1",
+      status: "accepted",
+      timestamp: "2026-04-24T00:00:02.000Z",
+      turnId: "turn-alpha",
+      type: "source_change_candidate.reviewed"
+    });
 
     expect(sessionEvent.type).toBe("session.updated");
     expect(sessionEvent.category).toBe("session");
@@ -1100,6 +1142,8 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.sourceChangeCandidateIds).toEqual([
       "source-change-turn-alpha"
     ]);
+    expect(reviewedCandidateEvent.type).toBe("source_change_candidate.reviewed");
+    expect(reviewedCandidateEvent.status).toBe("accepted");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

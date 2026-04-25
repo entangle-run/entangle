@@ -22,6 +22,8 @@ import {
   runnerPhaseSchema,
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema,
+  sourceChangeCandidateReviewDecisionSchema,
+  sourceChangeCandidateStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
@@ -262,6 +264,23 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("runner.turn.updated")
 });
 
+export const sourceChangeCandidateReviewedEventSchema =
+  hostEventBaseSchema.extend({
+    candidateId: identifierSchema,
+    category: z.literal("runtime"),
+    graphId: identifierSchema,
+    graphRevisionId: identifierSchema,
+    nodeId: identifierSchema,
+    previousStatus: sourceChangeCandidateStatusSchema,
+    reason: nonEmptyStringSchema.optional(),
+    reviewedAt: nonEmptyStringSchema,
+    reviewedBy: identifierSchema.optional(),
+    status: sourceChangeCandidateReviewDecisionSchema,
+    supersededByCandidateId: identifierSchema.optional(),
+    turnId: identifierSchema,
+    type: z.literal("source_change_candidate.reviewed")
+  });
+
 export const conversationTraceEventSchema = hostEventBaseSchema.extend({
   artifactIds: z.array(identifierSchema),
   category: z.literal("session"),
@@ -347,6 +366,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeObservedStateChangedEventSchema,
   sessionUpdatedEventSchema,
   runnerTurnUpdatedEventSchema,
+  sourceChangeCandidateReviewedEventSchema,
   conversationTraceEventSchema,
   approvalTraceEventSchema,
   artifactTraceEventSchema,
@@ -411,6 +431,9 @@ export type RuntimeObservedStateChangedEvent = z.infer<
 >;
 export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
 export type RunnerTurnUpdatedEvent = z.infer<typeof runnerTurnUpdatedEventSchema>;
+export type SourceChangeCandidateReviewedEvent = z.infer<
+  typeof sourceChangeCandidateReviewedEventSchema
+>;
 export type ConversationTraceEvent = z.infer<typeof conversationTraceEventSchema>;
 export type ApprovalTraceEvent = z.infer<typeof approvalTraceEventSchema>;
 export type ArtifactTraceEvent = z.infer<typeof artifactTraceEventSchema>;

@@ -25,6 +25,7 @@ import {
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
+  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema
 } from "@entangle/types";
@@ -1531,18 +1532,74 @@ hostRuntimesCommand
   .argument("<candidateId>", "Source change candidate identifier to inspect.")
   .option("--diff", "Include the bounded source diff when available.")
   .option("--file <path>", "Include a bounded preview for one changed source file.")
+  .option(
+    "--review <status>",
+    "Review the candidate as accepted, rejected, or superseded."
+  )
+  .option("--reason <reason>", "Attach a review reason when --review is used.")
+  .option("--reviewed-by <operatorId>", "Attach the reviewing operator id.")
+  .option(
+    "--superseded-by <candidateId>",
+    "Candidate id that supersedes this candidate when --review superseded is used."
+  )
   .option("--summary", "Print a compact operator-oriented candidate summary.")
-  .description("Inspect one persisted source change candidate.")
+  .description("Inspect or review one persisted source change candidate.")
   .action(
     async (
       nodeId: string,
       candidateId: string,
-      options: { diff?: boolean; file?: string; summary?: boolean },
+      options: {
+        diff?: boolean;
+        file?: string;
+        reason?: string;
+        review?: string;
+        reviewedBy?: string;
+        supersededBy?: string;
+        summary?: boolean;
+      },
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      if (options.diff && options.file) {
-        throw new Error("Use either --diff or --file, not both.");
+      const selectedInspectionModes = [
+        options.diff,
+        Boolean(options.file),
+        Boolean(options.review)
+      ].filter(Boolean).length;
+
+      if (selectedInspectionModes > 1) {
+        throw new Error("Use only one of --diff, --file, or --review.");
+      }
+
+      if ((options.reason || options.reviewedBy || options.supersededBy) && !options.review) {
+        throw new Error(
+          "Use --reason, --reviewed-by, or --superseded-by only with --review."
+        );
+      }
+
+      if (options.review) {
+        const review = runtimeSourceChangeCandidateReviewMutationRequestSchema.parse({
+          ...(options.reason ? { reason: options.reason } : {}),
+          ...(options.reviewedBy ? { reviewedBy: options.reviewedBy } : {}),
+          status: options.review,
+          ...(options.supersededBy
+            ? { supersededByCandidateId: options.supersededBy }
+            : {})
+        });
+        const response = await client.reviewRuntimeSourceChangeCandidate(
+          nodeId,
+          candidateId,
+          review
+        );
+        printJson(
+          options.summary
+            ? {
+                candidate: projectRuntimeSourceChangeCandidateSummary(
+                  response.candidate
+                )
+              }
+            : response
+        );
+        return;
       }
 
       if (options.diff) {

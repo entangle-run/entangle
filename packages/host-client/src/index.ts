@@ -43,6 +43,7 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
+  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -92,6 +93,7 @@ import {
   type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
+  type RuntimeSourceChangeCandidateReviewMutationRequest,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type SessionInspectionResponse,
@@ -760,6 +762,29 @@ export function createHostClient(options: HostClientOptions) {
           `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/file?${query.toString()}`
         ),
         runtimeSourceChangeCandidateFilePreviewResponseSchema
+      );
+    },
+
+    async reviewRuntimeSourceChangeCandidate(
+      nodeId: string,
+      candidateId: string,
+      review: RuntimeSourceChangeCandidateReviewMutationRequest
+    ): Promise<RuntimeSourceChangeCandidateInspectionResponse> {
+      const request =
+        runtimeSourceChangeCandidateReviewMutationRequestSchema.parse(review);
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/review`,
+          {
+            method: "PATCH",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(request)
+          }
+        ),
+        runtimeSourceChangeCandidateInspectionResponseSchema
       );
     },
 

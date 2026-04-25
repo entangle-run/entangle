@@ -131,6 +131,7 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
+  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
@@ -155,6 +156,7 @@ import {
   type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
+  type RuntimeSourceChangeCandidateReviewMutationRequest,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   runtimeTurnInspectionResponseSchema,
@@ -388,6 +390,10 @@ type SessionUpdatedEventInput = Omit<
 >;
 type RunnerTurnUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "runner.turn.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type SourceChangeCandidateReviewedEventInput = Omit<
+  Extract<HostEventRecord, { type: "source_change_candidate.reviewed" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type ConversationTraceEventInput = Omit<
@@ -5079,6 +5085,131 @@ export async function getRuntimeSourceChangeCandidateInspection(input: {
     : null;
 }
 
+export type RuntimeSourceChangeCandidateReviewMutationResult =
+  | {
+      inspection: RuntimeSourceChangeCandidateInspectionResponse;
+      ok: true;
+    }
+  | {
+      code: "conflict";
+      message: string;
+      ok: false;
+    };
+
+export async function reviewRuntimeSourceChangeCandidate(input: {
+  candidateId: string;
+  nodeId: string;
+  review: RuntimeSourceChangeCandidateReviewMutationRequest;
+}): Promise<RuntimeSourceChangeCandidateReviewMutationResult | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const candidates = await listRuntimeSourceChangeCandidateRecords(
+    context.workspace.runtimeRoot
+  );
+  const candidate = candidates.find(
+    (candidateRecord) => candidateRecord.candidateId === input.candidateId
+  );
+
+  if (!candidate) {
+    return null;
+  }
+
+  const review = runtimeSourceChangeCandidateReviewMutationRequestSchema.parse(
+    input.review
+  );
+
+  if (candidate.status !== "pending_review") {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' is already '${candidate.status}' ` +
+        "and cannot be reviewed again.",
+      ok: false
+    };
+  }
+
+  if (review.supersededByCandidateId === candidate.candidateId) {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' cannot supersede itself.`,
+      ok: false
+    };
+  }
+
+  if (
+    review.status === "superseded" &&
+    !candidates.some(
+      (candidateRecord) =>
+        candidateRecord.candidateId === review.supersededByCandidateId
+    )
+  ) {
+    return {
+      code: "conflict",
+      message:
+        `Source change candidate '${input.candidateId}' cannot be superseded by ` +
+        `missing candidate '${review.supersededByCandidateId}'.`,
+      ok: false
+    };
+  }
+
+  const reviewedAt = nowIsoString();
+  const nextCandidate = sourceChangeCandidateRecordSchema.parse({
+    ...candidate,
+    review: {
+      decidedAt: reviewedAt,
+      ...(review.reviewedBy ? { decidedBy: review.reviewedBy } : {}),
+      decision: review.status,
+      ...(review.reason ? { reason: review.reason } : {}),
+      ...(review.supersededByCandidateId
+        ? { supersededByCandidateId: review.supersededByCandidateId }
+        : {})
+    },
+    status: review.status,
+    updatedAt: reviewedAt
+  });
+
+  await writeJsonFile(
+    runtimeSourceChangeCandidateRecordPath(
+      context.workspace.runtimeRoot,
+      candidate.candidateId
+    ),
+    nextCandidate
+  );
+
+  await appendHostEvent({
+    candidateId: nextCandidate.candidateId,
+    category: "runtime",
+    graphId: context.binding.graphId,
+    graphRevisionId: context.binding.graphRevisionId,
+    message:
+      `Source change candidate '${nextCandidate.candidateId}' for runtime '${input.nodeId}' ` +
+      `was reviewed as '${review.status}'.`,
+    nodeId: input.nodeId,
+    previousStatus: candidate.status,
+    ...(review.reason ? { reason: review.reason } : {}),
+    reviewedAt,
+    ...(review.reviewedBy ? { reviewedBy: review.reviewedBy } : {}),
+    status: review.status,
+    ...(review.supersededByCandidateId
+      ? { supersededByCandidateId: review.supersededByCandidateId }
+      : {}),
+    turnId: nextCandidate.turnId,
+    type: "source_change_candidate.reviewed"
+  } satisfies SourceChangeCandidateReviewedEventInput);
+
+  return {
+    inspection: runtimeSourceChangeCandidateInspectionResponseSchema.parse({
+      candidate: nextCandidate
+    }),
+    ok: true
+  };
+}
+
 async function readSourceChangeCandidateDiff(input: {
   context: EffectiveRuntimeContext;
   candidate: SourceChangeCandidateRecord;
@@ -5586,7 +5717,7 @@ async function listRuntimeTurnRecords(
 async function listRuntimeSourceChangeCandidateRecords(
   runtimeRoot: string
 ): Promise<SourceChangeCandidateRecord[]> {
-  const candidatesRoot = path.join(runtimeRoot, "source-change-candidates");
+  const candidatesRoot = runtimeSourceChangeCandidatesRoot(runtimeRoot);
 
   if (!(await pathExists(candidatesRoot))) {
     return [];
@@ -5603,6 +5734,17 @@ async function listRuntimeSourceChangeCandidateRecords(
       )
     )
   );
+}
+
+function runtimeSourceChangeCandidatesRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "source-change-candidates");
+}
+
+function runtimeSourceChangeCandidateRecordPath(
+  runtimeRoot: string,
+  candidateId: string
+): string {
+  return path.join(runtimeSourceChangeCandidatesRoot(runtimeRoot), `${candidateId}.json`);
 }
 
 async function listRuntimeArtifactRecords(

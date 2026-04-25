@@ -24,6 +24,7 @@ import {
 import {
   approvalRecordSchema,
   runnerTurnRecordSchema,
+  sourceChangeCandidateReviewDecisionSchema,
   sourceChangeCandidateRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
@@ -225,6 +226,33 @@ export const runtimeSourceChangeCandidateInspectionResponseSchema = z.object({
   candidate: sourceChangeCandidateRecordSchema
 });
 
+export const runtimeSourceChangeCandidateReviewMutationRequestSchema = z
+  .object({
+    reason: nonEmptyStringSchema.optional(),
+    reviewedBy: identifierSchema.optional(),
+    status: sourceChangeCandidateReviewDecisionSchema,
+    supersededByCandidateId: identifierSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (value.status === "superseded" && !value.supersededByCandidateId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Superseded source change candidate reviews must include supersededByCandidateId.",
+        path: ["supersededByCandidateId"]
+      });
+    }
+
+    if (value.status !== "superseded" && value.supersededByCandidateId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Only superseded source change candidate reviews may include supersededByCandidateId.",
+        path: ["supersededByCandidateId"]
+      });
+    }
+  });
+
 export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
   "available",
   [
@@ -327,6 +355,9 @@ export type RuntimeSourceChangeCandidateListResponse = z.infer<
 >;
 export type RuntimeSourceChangeCandidateInspectionResponse = z.infer<
   typeof runtimeSourceChangeCandidateInspectionResponseSchema
+>;
+export type RuntimeSourceChangeCandidateReviewMutationRequest = z.infer<
+  typeof runtimeSourceChangeCandidateReviewMutationRequestSchema
 >;
 export type RuntimeSourceChangeCandidateDiff = z.infer<
   typeof runtimeSourceChangeCandidateDiffSchema

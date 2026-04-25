@@ -43,6 +43,12 @@ const candidates: SourceChangeCandidateRecord[] = [
     createdAt: "2026-04-24T11:00:00.000Z",
     graphId: "team-alpha",
     nodeId: "worker-it",
+    review: {
+      decidedAt: "2026-04-24T11:05:00.000Z",
+      decidedBy: "operator-alpha",
+      decision: "accepted",
+      reason: "Reviewed by the operator."
+    },
     sessionId: "session-beta",
     snapshot: {
       baseTree: "base-tree",
@@ -110,6 +116,9 @@ describe("runtime source change candidate presentation helpers", () => {
         "status accepted",
         "session session-beta",
         "conversation conv-alpha",
+        "review accepted at 2026-04-24T11:05:00.000Z",
+        "reviewed by operator-alpha",
+        "review reason Reviewed by the operator.",
         "snapshot shadow_git_tree base-tree..head-tree",
         "source file modified src/new.ts (+3/-1)",
         "diff excerpt available"

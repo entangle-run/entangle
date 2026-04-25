@@ -50,6 +50,7 @@ import type {
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
   SessionLaunchResponse,
+  SourceChangeCandidateReviewDecision,
   SourceChangeCandidateRecord
 } from "@entangle/types";
 import {
@@ -487,6 +488,10 @@ export function App() {
   ] = useState<RuntimeSourceChangeCandidateFilePreviewResponse | null>(null);
   const [sourceChangeCandidateDetailError, setSourceChangeCandidateDetailError] =
     useState<string | null>(null);
+  const [
+    pendingSourceChangeCandidateReview,
+    setPendingSourceChangeCandidateReview
+  ] = useState<SourceChangeCandidateReviewDecision | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -1645,6 +1650,7 @@ export function App() {
       setSelectedSourceChangeCandidateDiff(null);
       setSelectedSourceChangeCandidateFilePath(null);
       setSelectedSourceChangeCandidateFilePreview(null);
+      setPendingSourceChangeCandidateReview(null);
       setSourceChangeCandidateDetailError(null);
       await loadSelectedSourceChangeCandidateInspection(
         selectedRuntimeId,
@@ -1671,6 +1677,60 @@ export function App() {
     },
     [
       loadSelectedSourceChangeCandidateFilePreview,
+      selectedRuntimeId,
+      selectedSourceChangeCandidateId
+    ]
+  );
+
+  const reviewSelectedSourceChangeCandidate = useCallback(
+    async (
+      status: SourceChangeCandidateReviewDecision,
+      supersededByCandidateId?: string
+    ) => {
+      if (!selectedRuntimeId || !selectedSourceChangeCandidateId) {
+        return;
+      }
+
+      try {
+        setPendingSourceChangeCandidateReview(status);
+        const response = await client.reviewRuntimeSourceChangeCandidate(
+          selectedRuntimeId,
+          selectedSourceChangeCandidateId,
+          {
+            status,
+            ...(supersededByCandidateId ? { supersededByCandidateId } : {})
+          }
+        );
+
+        startTransition(() => {
+          setSelectedSourceChangeCandidateInspection(response);
+          setSelectedSourceChangeCandidates((candidates) =>
+            candidates.map((candidate) =>
+              candidate.candidateId === response.candidate.candidateId
+                ? response.candidate
+                : candidate
+            )
+          );
+          setSourceChangeCandidateDetailError(null);
+        });
+
+        await refreshSelectedRuntimeDetails(selectedRuntimeId);
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setSourceChangeCandidateDetailError(
+            normalizeError(
+              caught,
+              "Unknown error while reviewing source change candidate."
+            )
+          );
+        });
+      } finally {
+        setPendingSourceChangeCandidateReview(null);
+      }
+    },
+    [
+      client,
+      refreshSelectedRuntimeDetails,
       selectedRuntimeId,
       selectedSourceChangeCandidateId
     ]
@@ -4249,6 +4309,66 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        {selectedSourceChangeCandidateInspection.candidate.status ===
+                        "pending_review" ? (
+                          <div className="source-file-selector">
+                            <button
+                              className="action-button"
+                              disabled={pendingSourceChangeCandidateReview !== null}
+                              onClick={() => {
+                                void reviewSelectedSourceChangeCandidate(
+                                  "accepted"
+                                );
+                              }}
+                              type="button"
+                            >
+                              {pendingSourceChangeCandidateReview === "accepted"
+                                ? "Accepting"
+                                : "Accept"}
+                            </button>
+                            <button
+                              className="action-button"
+                              disabled={pendingSourceChangeCandidateReview !== null}
+                              onClick={() => {
+                                void reviewSelectedSourceChangeCandidate(
+                                  "rejected"
+                                );
+                              }}
+                              type="button"
+                            >
+                              {pendingSourceChangeCandidateReview === "rejected"
+                                ? "Rejecting"
+                                : "Reject"}
+                            </button>
+                            {selectedSourceChangeCandidates
+                              .filter(
+                                (candidate) =>
+                                  candidate.candidateId !==
+                                  selectedSourceChangeCandidateInspection.candidate
+                                    .candidateId
+                              )
+                              .slice(0, 3)
+                              .map((candidate) => (
+                                <button
+                                  className="action-button"
+                                  disabled={
+                                    pendingSourceChangeCandidateReview !== null
+                                  }
+                                  key={candidate.candidateId}
+                                  onClick={() => {
+                                    void reviewSelectedSourceChangeCandidate(
+                                      "superseded",
+                                      candidate.candidateId
+                                    );
+                                  }}
+                                  type="button"
+                                >
+                                  {`Supersede by ${candidate.candidateId}`}
+                                </button>
+                              ))}
+                          </div>
+                        ) : null}
 
                         <div className="artifact-preview-panel">
                           <div className="section-header">

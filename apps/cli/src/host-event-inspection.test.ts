@@ -43,7 +43,8 @@ describe("buildHostEventFilter", () => {
         "artifact.trace.event",
         "session.updated",
         "conversation.trace.event",
-        "approval.trace.event"
+        "approval.trace.event",
+        "source_change_candidate.reviewed"
       ]
     });
   });
