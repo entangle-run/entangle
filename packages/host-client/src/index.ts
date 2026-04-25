@@ -791,6 +791,12 @@ export {
   formatRuntimeRecoveryRecordLabel
 } from "./runtime-recovery.js";
 export {
+  formatRuntimeInspectionDetailLines,
+  formatRuntimeInspectionLabel,
+  formatRuntimeInspectionStatus,
+  sortRuntimeInspectionsForPresentation
+} from "./runtime-inspection.js";
+export {
   collectExternalPrincipalReferenceNodeIds,
   collectPackageSourceReferenceNodeIds,
   formatExternalPrincipalDetail,

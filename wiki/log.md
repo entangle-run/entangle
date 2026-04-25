@@ -1325,3 +1325,16 @@ package-source and external-principal list/detail commands. Summary mode reads
 the active graph only when requested so headless operators see the same active
 reference and deletion-safety signals as Studio without changing raw host
 responses.
+
+## [2026-04-25] implementation | Added shared runtime inspection presentation
+
+Closed the top-level runtime inventory summary gap by adding shared
+runtime-inspection presentation helpers to `packages/host-client`. The helpers
+cover deterministic runtime sorting, desired/observed state, reconciliation
+state and finding codes, context readiness, restart generation, backend,
+package source, runtime handle, status/reason text, and primary git
+provisioning details.
+
+The CLI now supports compact operator-oriented `--summary` output for
+`host runtimes list` and `host runtimes get <nodeId>` over the existing
+host-owned `RuntimeInspectionResponse` contract.

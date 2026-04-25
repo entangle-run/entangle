@@ -524,6 +524,11 @@ This repository currently contains:
   including active graph reference summaries, while the CLI exposes compact
   `--summary` output for package-source and external-principal list/detail
   inspection;
+- a shared runtime-inspection presentation slice where the CLI now exposes
+  compact `host runtimes list --summary` and `host runtimes get --summary`
+  output over desired/observed state, reconciliation, context readiness,
+  restart generation, backend, package source, runtime handle, and git
+  provisioning signals;
 
 The highest-value remaining gaps are:
 

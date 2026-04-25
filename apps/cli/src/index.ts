@@ -10,6 +10,7 @@ import {
   sortHostSessionSummariesForPresentation,
   sortNodeInspectionsForPresentation,
   sortPackageSourceInspections,
+  sortRuntimeInspectionsForPresentation,
   sortRuntimeTurnsForPresentation
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
@@ -54,6 +55,7 @@ import {
   projectHostSessionInspectionSummary,
   projectHostSessionSummary
 } from "./runtime-session-output.js";
+import { projectRuntimeInspectionSummary } from "./runtime-inspection-output.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
@@ -1003,19 +1005,39 @@ const hostRuntimesCommand = hostCommand
 
 hostRuntimesCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented runtime summaries.")
   .description("List runtime inspections for the active graph.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listRuntimes());
+    const response = await client.listRuntimes();
+    printJson(
+      options.summary
+        ? {
+            runtimes: sortRuntimeInspectionsForPresentation(
+              response.runtimes
+            ).map(projectRuntimeInspectionSummary)
+          }
+        : response
+    );
   });
 
 hostRuntimesCommand
   .command("get")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--summary", "Print a compact operator-oriented runtime summary.")
   .description("Inspect one runtime in the active graph.")
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (
+    nodeId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getRuntime(nodeId));
+    const response = await client.getRuntime(nodeId);
+    printJson(
+      options.summary
+        ? { runtime: projectRuntimeInspectionSummary(response) }
+        : response
+    );
   });
 
 hostRuntimesCommand

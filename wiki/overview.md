@@ -420,6 +420,11 @@ The repository now also contains the first real implementation baseline:
   vocabulary and active-reference summaries, and the CLI exposing compact
   `--summary` output for package-source and external-principal list/detail
   inspection;
+- shared runtime-inspection presentation helpers in `packages/host-client`,
+  with the CLI exposing compact `host runtimes list --summary` and
+  `host runtimes get --summary` output over runtime state, reconciliation,
+  context readiness, restart generation, backend, package source, runtime
+  handle, and git provisioning signals;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving
