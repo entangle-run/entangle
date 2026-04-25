@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-25] planning | Made the Entangle Local plan audit-gated
+
+Updated `references/189-entangle-local-completion-plan.md` so the plan now
+requires a deep initial audit before execution and a mandatory entry, drift,
+design, implementation, closure, milestone-exit, and blocker audit loop for
+every task from A1 through D5. The update records the current audit baseline:
+L2 complete, L3 in progress, L4/L5 incomplete, `hackathon_local` still active
+as machine state, OpenCode wired only as the first safe adapter, and the local
+reference corpus materialized at the manifest commits.
+
 ## [2026-04-25] planning | Added the Entangle Local completion plan
 
 Added `references/189-entangle-local-completion-plan.md` as the detailed

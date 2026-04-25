@@ -43,6 +43,45 @@ policy bridge, permission mapping, artifact/diff harvesting, git/wiki workflow,
 or CLI/Studio configuration and observability surface required for Entangle
 Local.
 
+## Initial Deep Audit Baseline
+
+Before executing this plan, the repository must be treated as audited only when
+the following baseline has been refreshed in the current working session:
+
+- `git status --short` is checked before edits.
+- `README.md`, `resources/README.md`, `wiki/overview.md`, `wiki/index.md`,
+  and `wiki/log.md` are read.
+- `AGENTS.md` is read for repository-local working rules.
+- The current task's relevant reference files are read, including this plan,
+  the Local GA product truth audit, repository audit rules, quality gates, and
+  quality engineering baseline when the task changes process or release
+  readiness.
+- The local reference corpus under
+  `/Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources` is checked
+  when work depends on OpenCode, OpenClaw, Open Claude Code, Nostr, A2A, MCP, or
+  relay behavior.
+- Stale terms, obsolete runtime profile names, missing index entries, stale
+  release claims, and implementation/documentation contradictions are searched
+  before implementation starts.
+- Code boundaries touched by the task are inspected directly instead of
+  inferred from memory or prior summaries.
+
+The deep audit performed before this plan update confirmed:
+
+- the worktree was clean before the audit update started;
+- the current product state is L2 complete, L3 in progress, L4 and L5 not
+  complete;
+- `hackathon_local` remains active machine state in schemas, examples,
+  fixtures, and tests and is therefore a required cleanup target, not only a
+  documentation issue;
+- OpenCode is the only default wired coding-agent runtime, with a first safe
+  runner process adapter but not yet a complete policy-bound coding-agent node
+  implementation;
+- the external resource repositories listed in `resources/README.md` are
+  materialized at the manifest commits;
+- no new wiki pages were introduced by this plan update, so `wiki/index.md`
+  does not need a new entry for this change.
+
 ## Professional Constraints
 
 These constraints are mandatory for every task below.
@@ -112,6 +151,112 @@ These constraints are mandatory for every task below.
   preflight, and smoke commands.
 - Repository state, references, wiki, release packets, and logs must stay
   internally consistent.
+
+## Mandatory Per-Step Audit Loop
+
+Every task and subtask in this plan must start and end with an audit loop. This
+is a gate, not a suggestion. No workstream item from A1 through D5 is allowed to
+start from assumed memory.
+
+### Step 0: Entry Audit
+
+Before implementation:
+
+- check `git status --short`;
+- read the core state files required by `AGENTS.md`;
+- read this plan and the specific workstream section being executed;
+- read every concept, decision, source, reference, schema, service, client,
+  Studio, CLI, deployment, script, or test file directly touched by the task;
+- search for stale names, stale claims, contradictions, unsupported behavior,
+  unindexed references, missing release notes, missing tests, unsafe secret
+  exposure, browser-unsafe imports, and hidden product-scope expansion;
+- for OpenCode work, inspect the relevant local OpenCode source paths before
+  changing the adapter;
+- for Nostr, A2A, MCP, relay, or memory/wiki work, inspect the relevant local
+  reference source or specification before changing Entangle behavior;
+- write down the task-local acceptance gates before editing.
+
+### Step 1: Drift Reconciliation
+
+Before adding new functionality:
+
+- correct durable documentation drift that would make the new work ambiguous;
+- correct missing indexes when new canonical files exist but are not listed;
+- correct stale status statements in README, wiki overview, product truth
+  audit, roadmap, release packets, or source comments when the task relies on
+  them;
+- if a contradiction affects architecture, policy, identity, artifact,
+  transport, engine, or release semantics, resolve it first or stop and record
+  the blocker.
+
+### Step 2: Design Check
+
+Before code edits:
+
+- identify the owning package or service boundary;
+- identify whether the change belongs in `packages/types`,
+  `packages/validator`, `packages/host-client`, `services/host`,
+  `services/runner`, `apps/cli`, `apps/studio`, deployment scripts, or docs;
+- verify that host remains the control plane and runner remains the per-node
+  execution boundary;
+- verify that CLI and Studio will consume the same host/client truth when both
+  surfaces are affected;
+- verify that engine-specific details remain behind adapter/runtime
+  boundaries;
+- choose the smallest coherent batch that can be implemented, tested, and
+  committed without mixing unrelated work.
+
+### Step 3: Implementation Audit
+
+During implementation:
+
+- keep changes scoped to the audited task;
+- update or add focused tests for material behavior changes;
+- avoid public fallback to legacy one-turn inference;
+- avoid hidden environment-only configuration for product-visible behavior;
+- keep secrets out of browser bundles, non-secret runtime context, logs, and
+  support bundles;
+- preserve protocol locator portability instead of leaking runtime-local paths;
+- preserve historical release records unless a current product claim is stale.
+
+### Step 4: Closure Audit
+
+Before committing:
+
+- rerun `git status --short`;
+- inspect the full diff for scope creep and accidental unrelated changes;
+- run `git diff --check`;
+- run focused lint, typecheck, and tests for touched packages or services;
+- run `pnpm verify` for coherent code or tooling batches;
+- run `pnpm build`, local preflight, and relevant smokes for deployment,
+  runtime, release, or Local reliability batches;
+- update affected canonical references, README, wiki overview, release packets,
+  and examples when project state changed;
+- update `wiki/index.md` when new wiki pages are added;
+- append a meaningful entry to `wiki/log.md` when state, design baseline, or
+  release readiness changes;
+- commit only a coherent batch with a message that reflects the actual change.
+
+### Step 5: Per-Milestone Exit Audit
+
+Before closing L3, L4, or L5:
+
+- compare implemented behavior against every acceptance criterion in this plan;
+- compare current state against `references/180-local-ga-product-truth-audit.md`;
+- verify no stale Local GA, Cloud, Enterprise, or legacy hackathon claims are
+  present in current product surfaces;
+- verify release packets contain command evidence and known limitations;
+- verify failures are blockers, not silently documented exceptions.
+
+### Step 6: Blocker Protocol
+
+If the audit loop finds a blocker:
+
+- do not continue implementing on top of stale assumptions;
+- fix the blocker first when the fix is clearly within scope;
+- otherwise record the blocker in the relevant reference or release planning
+  document and ask for direction only when the project cannot safely choose a
+  default.
 
 ## Workstream A: Local Naming And Contract Cleanup
 
@@ -625,7 +770,8 @@ Acceptance:
 
 ## Execution Order
 
-The professional order is:
+The professional order is below. Every numbered item starts with the mandatory
+per-step audit loop and ends with the closure audit.
 
 1. A1/A2: clean Local naming and current product language.
 2. B1/B2: stabilize contracts and OpenCode lifecycle.
@@ -652,4 +798,3 @@ Entangle Local is complete when:
 - doctor, repair, backup, restore, upgrade, logs, and smokes are productized;
 - current docs and public claims match the implementation;
 - all GA verification gates pass from a clean state.
-
