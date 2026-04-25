@@ -1311,3 +1311,17 @@ The CLI now supports compact operator-oriented `--summary` output for active
 graph inspection, graph revision list/detail, applied node list/detail, and
 applied edge list commands over the existing host-owned graph resource
 surfaces.
+
+## [2026-04-25] implementation | Added shared resource inventory presentation
+
+Closed the package-source and external-principal inventory presentation drift
+by moving sorting, labels, details, active graph reference collection, and
+reference summaries into `packages/host-client`. Studio now consumes those
+helpers through thin local boundaries while keeping package-source admission
+draft construction local to the UI.
+
+The CLI now supports compact operator-oriented `--summary` output for
+package-source and external-principal list/detail commands. Summary mode reads
+the active graph only when requested so headless operators see the same active
+reference and deletion-safety signals as Studio without changing raw host
+responses.

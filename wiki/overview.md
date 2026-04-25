@@ -415,6 +415,11 @@ The repository now also contains the first real implementation baseline:
   Studio consuming the same graph revision, managed-node, and edge vocabulary
   and the CLI exposing compact `--summary` output for active graph, graph
   revision, node, and edge inspection;
+- shared resource-inventory presentation helpers in `packages/host-client`,
+  with Studio consuming the same package-source and external-principal
+  vocabulary and active-reference summaries, and the CLI exposing compact
+  `--summary` output for package-source and external-principal list/detail
+  inspection;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving

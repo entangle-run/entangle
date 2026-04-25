@@ -791,6 +791,18 @@ export {
   formatRuntimeRecoveryRecordLabel
 } from "./runtime-recovery.js";
 export {
+  collectExternalPrincipalReferenceNodeIds,
+  collectPackageSourceReferenceNodeIds,
+  formatExternalPrincipalDetail,
+  formatExternalPrincipalLabel,
+  formatExternalPrincipalReferenceSummary,
+  formatPackageSourceDetail,
+  formatPackageSourceOptionLabel,
+  formatPackageSourceReferenceSummary,
+  sortExternalPrincipalInspections,
+  sortPackageSourceInspections
+} from "./resource-inventory.js";
+export {
   collectRuntimeTraceEvents,
   describeRuntimeTraceEvent,
   formatRuntimeTraceEventLabel,

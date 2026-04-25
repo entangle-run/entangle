@@ -5,9 +5,11 @@ import {
   createHostClient,
   filterHostEvents,
   hostEventMatchesFilter,
+  sortExternalPrincipalInspections,
   sortGraphRevisions,
   sortHostSessionSummariesForPresentation,
   sortNodeInspectionsForPresentation,
+  sortPackageSourceInspections,
   sortRuntimeTurnsForPresentation
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
@@ -39,6 +41,10 @@ import {
   type PackageInitCliOptions
 } from "./package-init-command.js";
 import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
+import {
+  projectExternalPrincipalSummary,
+  projectPackageSourceSummary
+} from "./resource-inventory-output.js";
 import {
   filterRuntimeArtifactsForCli,
   projectRuntimeArtifactSummary,
@@ -415,19 +421,47 @@ const hostPackageSourcesCommand = hostCommand
 
 hostPackageSourcesCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented package-source summaries.")
   .description("List admitted package sources.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listPackageSources());
+    const response = await client.listPackageSources();
+
+    if (!options.summary) {
+      printJson(response);
+      return;
+    }
+
+    const graph = (await client.getGraph()).graph;
+    printJson({
+      packageSources: sortPackageSourceInspections(
+        response.packageSources
+      ).map((inspection) => projectPackageSourceSummary(inspection, graph))
+    });
   });
 
 hostPackageSourcesCommand
   .command("get")
   .argument("<packageSourceId>", "Package source identifier.")
+  .option("--summary", "Print a compact operator-oriented package-source summary.")
   .description("Inspect one admitted package source.")
-  .action(async (packageSourceId: string, _options, command: Command) => {
+  .action(async (
+    packageSourceId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getPackageSource(packageSourceId));
+    const response = await client.getPackageSource(packageSourceId);
+
+    if (!options.summary) {
+      printJson(response);
+      return;
+    }
+
+    const graph = (await client.getGraph()).graph;
+    printJson({
+      packageSource: projectPackageSourceSummary(response, graph)
+    });
   });
 
 hostPackageSourcesCommand
@@ -525,19 +559,47 @@ const hostExternalPrincipalsCommand = hostCommand
 
 hostExternalPrincipalsCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented external-principal summaries.")
   .description("List bound external principals.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listExternalPrincipals());
+    const response = await client.listExternalPrincipals();
+
+    if (!options.summary) {
+      printJson(response);
+      return;
+    }
+
+    const graph = (await client.getGraph()).graph;
+    printJson({
+      principals: sortExternalPrincipalInspections(response.principals).map(
+        (inspection) => projectExternalPrincipalSummary(inspection, graph)
+      )
+    });
   });
 
 hostExternalPrincipalsCommand
   .command("get")
   .argument("<principalId>", "External principal identifier.")
+  .option("--summary", "Print a compact operator-oriented external-principal summary.")
   .description("Inspect one external principal.")
-  .action(async (principalId: string, _options, command: Command) => {
+  .action(async (
+    principalId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getExternalPrincipal(principalId));
+    const response = await client.getExternalPrincipal(principalId);
+
+    if (!options.summary) {
+      printJson(response);
+      return;
+    }
+
+    const graph = (await client.getGraph()).graph;
+    printJson({
+      principal: projectExternalPrincipalSummary(response, graph)
+    });
   });
 
 hostExternalPrincipalsCommand

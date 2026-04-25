@@ -519,6 +519,11 @@ This repository currently contains:
   `host-client` helpers for graph revisions, managed nodes, and edges, while
   the CLI exposes compact `--summary` output for active graph, graph revision,
   applied node, and edge inspection;
+- a shared resource-inventory presentation slice where Studio now reuses
+  `host-client` helpers for package-source and external-principal inventory,
+  including active graph reference summaries, while the CLI exposes compact
+  `--summary` output for package-source and external-principal list/detail
+  inspection;
 
 The highest-value remaining gaps are:
 
