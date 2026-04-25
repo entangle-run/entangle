@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This ledger is the release-truth companion to the definitive production
+This ledger is the release-truth companion to the definitive three-product
 delivery roadmap.
 
 It captures what must be true before Entangle can honestly be described as
@@ -155,7 +155,7 @@ The R1 release note must include:
 - known limitations;
 - upgrade notes for local state;
 - rollback guidance for local operator state;
-- next release target: `R2 Production Foundation`.
+- next release target: `L1.5 Local Operator Preview`.
 
 ## R1 Exit Decision
 
@@ -174,6 +174,6 @@ Current implementation evidence does not invalidate the redesigned product
 direction. It does narrow the immediate milestone: Entangle should close as a
 local operator baseline before production foundation work begins.
 
-The next highest-value release after R1 remains `R2 Production Foundation`,
-centered on PostgreSQL persistence, workspace-aware identity, authorization,
-audit hardening, and production API discipline.
+The next highest-value release after R1 is now `L1.5 Local Operator Preview`,
+not production foundation. The project should finish Entangle Local Pro as the
+first final product before starting Cloud/SaaS production foundation work.

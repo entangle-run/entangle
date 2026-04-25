@@ -1643,3 +1643,17 @@ This keeps the immediate milestone honest: Entangle can close as a presentable
 local operator baseline only when README, wiki overview, roadmap, release
 ledger, verification, and smoke evidence agree without overclaiming production
 readiness.
+
+## [2026-04-25] planning | Reframed roadmap around three final products
+
+Rewrote `references/174-definitive-production-delivery-roadmap.md` around the
+three final products: Entangle Local Pro, Entangle Cloud / LatticeOps SaaS, and
+Entangle Enterprise Self-Hosted. The roadmap now requires sequential product
+development: finish Local Pro first, then begin Cloud/SaaS, then package the
+stable production core as Enterprise Self-Hosted.
+
+The Local product line now has its own incremental release train from L1 local
+operator baseline through L1.5 local operator preview, L2 local workbench, L3
+local reliability, and L4 Local Pro GA. The R1 ledger now points to L1.5 as
+the next release instead of production foundation, preventing later-product
+infrastructure from displacing completion of the first final product.

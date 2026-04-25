@@ -1,83 +1,171 @@
-# Definitive Production Delivery Roadmap
+# Definitive Three-Product Delivery Roadmap
 
-This document is the execution roadmap for taking Entangle from the current
-local operator baseline to a complete production-grade product.
+This document is the execution roadmap for turning Entangle into three final
+products:
 
-It complements the accepted production redesign program under
-`wiki/redesign/latticeops/` and the current implementation-truth audit in
-`references/59-implementation-state-and-delivery-audit.md`.
+1. Entangle Local Pro;
+2. Entangle Cloud / LatticeOps SaaS;
+3. Entangle Enterprise Self-Hosted.
+
+It supersedes the earlier single-track production roadmap while preserving its
+audit discipline, release gates, and implementation rigor.
+
+The accepted production redesign corpus under `wiki/redesign/latticeops/`
+remains the strategic reference for the Cloud and Enterprise products. The
+current implementation-truth audit in
+`references/59-implementation-state-and-delivery-audit.md` remains the baseline
+for what the repository already proves.
 
 ## Purpose
 
-The project now needs a release-oriented delivery plan, not another broad
-architecture note.
+The project now has three product destinations, not one.
 
 This roadmap defines:
 
-- the near-term presentable milestone;
-- the later product releases;
-- the audit and reconsideration loop used before and after every serious
-  slice;
-- quality gates for promotion between releases;
-- the remaining gap between Entangle's local runtime baseline and the complete
-  production product vision.
+- the final product line;
+- the strict sequencing rule between products;
+- incremental release trains for each product;
+- the audit and reconsideration loop before and after every serious slice;
+- quality gates for each release family;
+- the immediate path from the current repository to the first final product:
+  Entangle Local Pro.
 
-## Planning Stance
+## Current State
 
-The correct next move is disciplined completion, not architectural churn.
+Entangle is currently a partial end-to-end local runtime implementation.
 
 The repository already has:
 
-- a real host control plane;
-- a real per-node runner;
-- real local Nostr transport;
-- real git-backed artifact materialization and handoff;
+- a real `entangle-host` control-plane service;
+- a real per-node `entangle-runner`;
+- local Nostr transport over `strfry`;
+- git-backed artifact materialization, publication, and retrieval;
 - Docker-backed local runtime lifecycle;
-- host-owned runtime, session, turn, approval, artifact, recovery, and event
-  inspection surfaces;
+- host-owned runtime, session, turn, approval, artifact, recovery, graph,
+  node, edge, package-source, principal, status, and event inspection;
 - Studio and CLI surfaces over the same host boundary;
-- a credible `pnpm verify` quality baseline.
+- provider-backed engine adapters through the internal agent-engine boundary;
+- bounded tools, memory maintenance, approval handling, and delegated handoff;
+- local preflight and smoke commands;
+- a credible `pnpm verify` quality baseline;
+- an active R1 ledger in
+  [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md).
 
 The repository does not yet have:
 
-- production persistence on PostgreSQL;
-- workspace-aware authentication and authorization;
+- PostgreSQL production persistence;
+- workspace-aware production identity;
 - tenant isolation;
-- production-grade policy enforcement;
+- production RBAC or ABAC;
 - production artifact service over object storage;
 - production sandbox and scheduler infrastructure;
-- search, analytics, billing, notifications, and compliance surfaces.
+- search, analytics, notifications, billing, compliance, or enterprise
+  self-host packaging.
 
-That means the next presentable milestone should be a local operator release,
-not a false production claim.
+## Final Product Line
 
-## Global Delivery Rules
+### Product 1: Entangle Local Pro
 
-Every release and every substantial slice must follow the same loop.
+Entangle Local Pro is the maximum local product.
+
+It is not a throwaway preview. It is the durable local/developer product for:
+
+- agent package builders;
+- graph designers;
+- technical founders;
+- local demos;
+- small technical teams;
+- CI and smoke environments;
+- lightweight self-host experiments.
+
+Its promise:
+
+> Run, build, inspect, and debug graph-native AI organizations locally with a
+> polished Studio, serious CLI, local runners, local relay, local git-backed
+> artifacts, approval flows, memory, traces, demos, repair tools, and clear
+> limits.
+
+### Product 2: Entangle Cloud / LatticeOps SaaS
+
+Entangle Cloud is the managed production platform.
+
+It is for teams and companies that want governed AI organizations without
+operating the infrastructure themselves.
+
+Its promise:
+
+> Multi-user, multi-workspace, governed AI operations with production
+> persistence, identity, policy, sandboxed execution, artifact service,
+> approvals, audit, search, analytics, integrations, billing, and managed
+> reliability.
+
+### Product 3: Entangle Enterprise Self-Hosted
+
+Entangle Enterprise Self-Hosted is the production product installed inside the
+customer's cloud, VPC, or controlled environment.
+
+It is for regulated or security-sensitive customers.
+
+Its promise:
+
+> The production Cloud product's core control-plane and governed execution
+> capabilities, packaged for customer-operated infrastructure with enterprise
+> identity, external dependency integration, audit export, backup, upgrade,
+> observability, and air-gapped maturity where required.
+
+## Sequencing Rule
+
+Product development is sequential.
+
+1. Finish Entangle Local Pro as the first final product.
+2. Start Entangle Cloud only after Entangle Local Pro reaches its GA gate.
+3. Start Enterprise Self-Hosted only after the Cloud product has a stable
+   production core worth packaging for customer-operated environments.
+
+Allowed before a later product starts:
+
+- documentation;
+- architectural decisions;
+- small exploratory spikes that do not delay the active product;
+- contract choices that keep the active product cleaner.
+
+Not allowed before the active product reaches its gate:
+
+- broad implementation of later-product infrastructure;
+- UI branches for later-product workflows;
+- production-only abstractions that make the local product harder to finish;
+- claiming later-product capabilities in release notes.
+
+## Global Audit Loop
+
+Every release and every substantial slice must follow this loop.
 
 ### Pre-Slice Audit
 
 Before implementation:
 
-1. Read the current canonical state:
+1. Read:
    - `README.md`;
    - `resources/README.md`;
    - `wiki/overview.md`;
    - `wiki/index.md`;
    - `wiki/log.md`;
    - this roadmap;
-   - the current implementation audit;
+   - the active release ledger;
    - any directly touched reference files.
-2. Check `git status --short`.
-3. Identify user or previous-session changes already present in the working
-   tree.
-4. Map the requested slice to:
-   - current code ownership;
-   - current contracts;
-   - current tests;
-   - current docs;
-   - known drift.
+2. Run `git status --short`.
+3. Identify existing user or previous-session changes.
+4. Map the slice to current code ownership:
+   - `packages/types`;
+   - `packages/validator`;
+   - `packages/host-client`;
+   - `services/host`;
+   - `services/runner`;
+   - `apps/cli`;
+   - `apps/studio`;
+   - `deploy`.
 5. Write the gap statement before editing code.
+6. Confirm the slice belongs to the currently active product and release.
 
 ### Implementation Discipline
 
@@ -85,624 +173,612 @@ During implementation:
 
 1. Keep the slice narrow.
 2. Update contracts before widening behavior.
-3. Keep host, runner, CLI, and Studio boundaries clean.
-4. Do not move authority across boundaries casually:
+3. Keep authority boundaries clean:
    - host owns control-plane state;
    - runner owns runner-local lifecycle mutation;
    - CLI and Studio are clients;
-   - shared packages own shared presentation and DTO contracts.
-5. Avoid temporary behavior that contradicts the final architecture.
-6. Prefer tests around behavior and contracts, not only snapshots.
+   - shared packages own shared contracts and presentation helpers.
+4. Do not create temporary behavior that contradicts the active product.
+5. Do not widen the local product into production claims.
+6. Prefer behavior and contract tests over brittle snapshots.
 
 ### Post-Slice Audit
 
 After implementation:
 
-1. Run the narrow test suite for the touched package.
+1. Run focused package tests.
 2. Run `pnpm verify` unless the slice is documentation-only.
 3. Run local smoke checks when deployment, Docker, relay, Gitea, or runtime
    lifecycle behavior changed.
-4. Update affected canonical docs.
+4. Update canonical docs.
 5. Update `references/README.md` if a reference file was added.
-6. Update `wiki/log.md` if project state or design baseline changed.
-7. Re-read the changed docs for contradictions.
+6. Update `wiki/log.md` if state or baseline changed.
+7. Re-read changed docs for contradiction.
 8. Commit the coherent batch.
 
 ### Reconsideration Gate
 
-After every major release, explicitly answer:
+After every release:
 
-1. Did implementation evidence invalidate any redesign assumption?
-2. Did the current slice create a new boundary or authority rule?
-3. Did the local operator profile become misleading relative to production?
+1. Did implementation evidence invalidate a roadmap assumption?
+2. Did this release create a new authority boundary?
+3. Did the active product become less coherent?
 4. Did quality drift increase?
 5. Is the next planned release still the highest-value release?
 
-If any answer is yes, update this roadmap or add a superseding decision record
-before continuing.
+If yes, update this roadmap or add a decision record before continuing.
 
-## Release Taxonomy
+## Release Train Overview
 
-This roadmap uses six releases.
+| Product | Release | Name | Purpose |
+| --- | --- | --- | --- |
+| Local | L0 | Closure and Ledger | Freeze current state and close active slices. |
+| Local | L1 | Local Operator Baseline | Presentable local architecture proof. |
+| Local | L1.5 | Local Operator Preview | Usable local demo and technical preview. |
+| Local | L2 | Local Workbench | Productized local package, graph, session, and artifact workflows. |
+| Local | L3 | Local Reliability | Doctor, repair, backup, import/export, upgrade, and diagnostics. |
+| Local | L4 | Local Pro GA | Complete local/developer product. |
+| Cloud | C0 | Cloud Start Gate | Confirm Local Pro is complete and production work may begin. |
+| Cloud | C1 | Cloud Foundation | PostgreSQL, identity, tenancy, auth, audit, API discipline. |
+| Cloud | C2 | Governed Execution MVP | Production-style session launch, sandbox, artifact service, approvals. |
+| Cloud | C3 | Cloud Private Beta | Design partner usability, integrations, search, notifications, cost. |
+| Cloud | C4 | Cloud Production GA | Paid-customer SaaS readiness. |
+| Cloud | C5 | Cloud Scale | Advanced governance, marketplace, analytics, and optimization. |
+| Enterprise | E0 | Self-Hosted Start Gate | Confirm the Cloud core is stable enough to package. |
+| Enterprise | E1 | Self-Hosted Alpha | Helm, external dependencies, basic customer-operated install. |
+| Enterprise | E2 | Enterprise Beta | SSO/SCIM, secrets, SIEM, backup, upgrade, audit export. |
+| Enterprise | E3 | Enterprise GA | Supported production self-host. |
+| Enterprise | E4 | Enterprise Complete | Air-gapped, HA, DR, multi-region, regulated-enterprise maturity. |
 
-| Release | Name | Purpose |
-| --- | --- | --- |
-| R0 | Closure and Ledger | Freeze current state, close dirty slices, and create release truth. |
-| R1 | Local Operator Baseline | Presentable local Entangle v0.1. |
-| R2 | Production Foundation | Persistence, identity, tenancy, and API hardening. |
-| R3 | Governed Execution MVP | End-to-end production-style session execution. |
-| R4 | Private Beta | Design-partner readiness, integrations, search, and operations. |
-| R5 | Production Launch | Paid-customer readiness, security, scale, and compliance. |
-| R6 | Enterprise Complete | Full product vision: advanced governance, marketplace, analytics, and self-host maturity. |
+## Product 1: Entangle Local Pro
 
-## R0: Closure And Ledger
+### L0: Closure And Ledger
 
 Target duration: 0.5 to 1 day.
 
-Target outcome: the repository is coherent enough to start a release closure
-instead of continuing as open-ended slice work.
+Target outcome: the repository is coherent enough to close the first release
+without continuing open-ended slice work.
 
-### Scope
+Scope:
 
-- Audit the working tree.
-- Finish or explicitly defer any in-progress runner/session/approval work.
-- Preserve all user changes.
-- Create a release ledger for R1 through R6.
-- Keep the active R1 ledger in
-  [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md).
-- Ensure current docs do not misstate the implementation phase.
+- audit the working tree;
+- finish or explicitly defer active approval/session/runtime slices;
+- preserve user changes;
+- keep the active R1 ledger current;
+- keep docs honest about local versus production claims.
 
-### Tasks
-
-1. Inspect current dirty files.
-2. Identify whether each dirty file belongs to:
-   - the active approval/session slice;
-   - unrelated user work;
-   - generated output;
-   - documentation drift.
-3. Complete active slice tests.
-4. Update the relevant reference slice.
-5. Update `wiki/log.md`.
-6. Run focused tests.
-7. Run `pnpm verify`.
-8. Commit the coherent R0 batch.
-
-### Acceptance Criteria
+Acceptance criteria:
 
 - `git status --short` is clean after commit, or only explicitly deferred user
-  changes remain.
-- `pnpm verify` passes.
-- Current canonical docs identify the repository as a partial end-to-end local
-  runtime implementation, not a production product.
-- The remaining production scope is explicit.
+  work remains;
+- `pnpm verify` passes;
+- canonical docs describe a local runtime baseline, not a production platform;
+- remaining Local Pro work is explicit.
 
-### Exit Decision
+### L1: Local Operator Baseline
 
-Do not enter R1 closure if the runner/session/approval lifecycle has unresolved
-failing tests or if docs still describe unimplemented production features as
-current behavior.
+Target tag: `v0.1-local-operator-baseline`.
 
-## R1: Local Operator Baseline
+Target outcome: Entangle can be presented as a serious local graph-native
+operator runtime.
 
-Target duration: 1 to 2 days from the current repository state.
+Included capabilities:
 
-Target outcome: Entangle v0.1 local/operator baseline is presentable,
-verifiable, and honest.
+- host control plane over local state;
+- per-node runner;
+- local Nostr relay transport;
+- git-backed artifact publish and retrieve;
+- graph-bound handoff;
+- approval request and response handling;
+- approval metadata and response-policy validation;
+- orphan approval-response guard;
+- runner session repair and active-work reconciliation;
+- provider-backed engine adapters;
+- bounded tools and memory summaries;
+- Studio and CLI inspection over host truth;
+- local preflight and smoke commands;
+- R1 release note and known limitations.
 
-### Product Promise
+Not included:
 
-R1 proves the architecture locally:
+- polished onboarding;
+- one-command demo;
+- graph templates;
+- local backup and restore;
+- local upgrade/migration tooling;
+- production persistence, identity, tenancy, or compliance.
 
-- a user/operator can run a graph-native local control plane;
-- the host can manage packages, graph state, runtime lifecycle, and observed
-  state;
-- runners can execute real provider-backed turns;
-- messages coordinate work;
-- git-backed artifacts carry work between nodes;
-- CLI and Studio can inspect the same host truth.
+Exit criteria:
 
-R1 does not claim production tenancy, production auth, production sandboxing,
-or enterprise compliance.
+- the active R1 ledger is complete;
+- `pnpm verify` passes;
+- `pnpm ops:check-local:strict` passes or a local blocker is recorded;
+- the strongest feasible local smoke passes or is explicitly deferred;
+- README, wiki overview, roadmap, ledger, and release note agree.
 
-### Required Capabilities
+### L1.5: Local Operator Preview
 
-1. Contracts and validation:
-   - package manifests validate;
-   - graph specs validate;
-   - transport and resource binding errors are explicit;
-   - approval/session/turn/artifact state contracts are current.
-2. Host:
-   - status, events, graph, package-source, node, edge, runtime, session,
-     approval, turn, artifact, and recovery read surfaces are coherent;
-   - local operator-token behavior is documented and tested;
-   - runtime reconciliation findings are operator-readable.
-3. Runner:
-   - long-lived service starts from injected runtime context;
-   - Nostr transport path works through local relay;
-   - controlled handoff path stays edge-bound;
-   - approval lifecycle messages materialize runner-local approval state;
-   - session repair does not strand completed or approved work;
-   - git artifact publication and retrieval work in the local profile.
-4. Studio:
-   - graph and runtime state are host-backed;
-   - runtime/session/artifact/approval/turn/recovery panels do not invent
-     state;
-   - graph, node, edge, package-source, and lifecycle mutations go through host
-     APIs.
-5. CLI:
-   - headless inspection and key mutations work through the same host client;
-   - `--summary` and `--dry-run` flows are coherent for R1 workflows.
-6. Deployment:
-   - local Compose profile is documented;
-   - preflight and smoke commands are documented;
-   - disposable runtime smoke is the strongest proof path.
+Target tag: `v0.1.5-local-operator-preview`.
 
-### R1 Freeze Scope
+Target outcome: a technical user can try Entangle locally without knowing the
+whole codebase.
 
-Allowed:
+Incremental features:
 
-- bug fixes;
-- consistency repairs;
-- targeted diagnostics;
-- docs and release notes;
-- smoke hardening where it protects the local operator baseline.
+1. Canonical demo assets:
+   - demo agent package;
+   - demo graph with user node, two agent nodes, approval edge, handoff edge,
+     and git artifact path;
+   - deterministic demo model profile or model stub path.
+2. Demo flow:
+   - near-one-command local demo;
+   - documented happy path from install to completed session;
+   - CLI and Studio inspection steps.
+3. Troubleshooting:
+   - Docker daemon failures;
+   - stale Gitea volume;
+   - missing model secret;
+   - relay unreachable;
+   - runner degraded;
+   - reset and cleanup.
+4. Operator UX:
+   - clearer Studio landing state for local profile;
+   - clearer selected-runtime empty/error states;
+   - CLI summary examples for host, runtime, session, approval, artifact, and
+     event flows.
+5. Smoke confidence:
+   - release note records smoke output;
+   - disposable runtime smoke becomes the recommended proof path.
 
-Not allowed:
+Exit criteria:
 
-- PostgreSQL migration;
-- full workspace tenancy;
-- SSO/SAML/SCIM;
-- billing;
-- marketplace;
-- broad UI redesign;
-- Kubernetes production deployment;
-- new integration catalog.
+- a fresh technical user can run the documented demo locally;
+- demo output includes a session, turn, approval or approval bypass statement,
+  artifact, and trace/event evidence;
+- troubleshooting covers the top local failure modes;
+- no production claim is made.
 
-### R1 Verification
+### L2: Local Workbench
 
-Required:
+Target tag: `v0.2-local-workbench`.
 
-- `pnpm verify`;
-- `pnpm --filter @entangle/runner test` after runner changes;
-- `pnpm --filter @entangle/host test` after host changes;
-- `pnpm --filter @entangle/validator test` after validation changes;
-- `pnpm ops:check-local:strict` when local deployment files changed.
+Target outcome: Entangle Local becomes a productive local workbench, not only a
+demo runtime.
 
-Preferred when Docker is available:
+Incremental features:
 
-- `pnpm ops:smoke-local:disposable`;
-- `pnpm ops:smoke-local:disposable:runtime`.
+1. Package authoring:
+   - better `entangle package init`;
+   - package validate command with readable diagnostics;
+   - package manifest and tool catalog examples;
+   - local package inventory in Studio.
+2. Graph authoring:
+   - graph templates;
+   - graph validation drawer or equivalent Studio surface;
+   - graph revision diff for local revisions;
+   - import/export graph JSON.
+3. Session launching:
+   - Studio local session launch flow;
+   - CLI session launch command over the same host boundary;
+   - attach prompt/input and optional artifact refs;
+   - show launch result as a navigable session.
+4. Artifact workbench:
+   - artifact list/detail improvements;
+   - markdown/text preview;
+   - git commit and remote publication summary;
+   - basic diff/history for report artifacts.
+5. Memory workbench:
+   - local memory summary viewer;
+   - task page viewer;
+   - focused register viewer for decisions, stable facts, open questions,
+     next actions, and resolutions.
 
-### R1 Acceptance Criteria
+Exit criteria:
 
-- The repository can be described as "Entangle v0.1 local operator baseline".
-- Local end-to-end proof covers host, runner, relay, git service, artifact
-  handoff, provider-compatible execution, and operator inspection.
-- README, wiki overview, implementation audit, and
-  [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md)
-  agree.
-- Any production-grade exclusions are explicit.
-- The release can be tagged without apologizing for hidden fake behavior.
+- users can create or import a package, instantiate it in a graph, launch a
+  local session, inspect work, and export graph/package state;
+- Studio and CLI remain clients of host APIs;
+- local workbench features do not require production tenancy.
 
-### R1 Release Artifacts
+### L3: Local Reliability
 
-- Release note: `references/<next>-local-operator-baseline-release.md`.
-- Updated `README.md`.
-- Updated `wiki/overview.md`.
-- Updated `wiki/log.md`.
-- Clean commit and optional tag: `v0.1-local-operator-baseline`.
+Target tag: `v0.3-local-reliability`.
 
-## R2: Production Foundation
+Target outcome: Entangle Local is robust enough for repeated technical use.
 
-Target duration: 3 to 5 weeks after R1 for a small focused team, longer for a
-single developer.
+Incremental features:
 
-Target outcome: replace local-only foundations with production-capable
-foundations while preserving Entangle's graph-native semantics.
+1. Local doctor:
+   - one command checks Node, pnpm, Docker, Compose, relay, Gitea, host,
+     Studio, runner image, and model secret readiness;
+   - machine-readable and human-readable output.
+2. Local repair:
+   - repair stale local runtime state where safe;
+   - detect old Gitea profile state;
+   - recommend destructive reset only explicitly.
+3. Backup and restore:
+   - export local state bundle;
+   - restore local state bundle;
+   - document what is included and excluded.
+4. Upgrade path:
+   - version local state layout;
+   - migration notes between Local releases;
+   - compatibility checks before startup.
+5. Diagnostics:
+   - guided degraded-runtime explanation;
+   - event trace shortcuts;
+   - local logs collection bundle.
 
-### Scope
+Exit criteria:
 
-1. Persistence:
-   - introduce PostgreSQL;
-   - define migrations;
-   - create durable tables for workspaces, packages, graphs, sessions,
-     artifacts, approvals, runtimes, events, audit logs, and outbox events;
-   - migrate read/write services behind repositories.
-2. Identity:
-   - introduce authenticated users;
-   - define local development auth;
-   - establish OIDC-ready user model;
-   - keep bootstrap operator token only as local fallback.
-3. Authorization:
-   - define workspace roles;
-   - enforce authorization on mutating routes;
-   - add tenant/workspace context to host API calls;
-   - preserve service identities separately from user identities.
-4. API hardening:
-   - stabilize versioned `/v1` API shape;
-   - standardize errors;
-   - add request ids and idempotency keys for retryable mutations;
-   - generate or validate OpenAPI coverage.
-5. Audit:
-   - move audit from local event convenience to append-only production audit
-     semantics;
-   - log actor, action, target, decision, request id, and trace id.
+- repeated start/stop/restart cycles are documented and tested;
+- local state can be backed up and restored;
+- common local drift is diagnosed without reading raw files;
+- repair behavior is conservative and never silently destroys user work.
 
-### Required Decisions
+### L4: Entangle Local Pro GA
 
-- Database migration tool.
-- Auth provider strategy for local, hosted, and self-host modes.
-- Whether the current `entangle-host` evolves into the production control
-  plane or is split behind modules.
-- Event bus choice for MVP: in-process outbox consumer, NATS JetStream, or
-  equivalent.
+Target tag: `v1.0-local-pro`.
 
-### Acceptance Criteria
+Target outcome: Entangle Local Pro is a complete local/developer product.
 
-- No unauthenticated mutating endpoint remains in production profile.
-- Tenant/workspace context is required for tenant-scoped operations.
-- PostgreSQL is the source of truth for production profile control-plane state.
-- Local file-backed state remains only as a local/dev profile or migration
-  bridge.
-- Authorization tests cover every core resource class.
-- Audit records exist for all mutating control-plane actions.
+Required capabilities:
 
-### Reconsideration Gate
+- polished local install path;
+- stable Docker Compose profile;
+- Studio local workbench;
+- serious CLI;
+- package scaffold, validate, import, and inspect;
+- graph templates, validation, mutation, diff, import, and export;
+- session launch, timeline, trace, approval, turn, artifact, and memory
+  inspection;
+- local git artifact workflow with preview and history;
+- local relay and local Gitea integration;
+- model provider setup guidance;
+- doctor, repair, backup, restore, and upgrade notes;
+- demo assets and tutorials;
+- clear non-goals versus Cloud and Enterprise;
+- regression smoke suite for Local.
 
-If PostgreSQL migration exposes that current local state shapes are too
-file-layout-specific, introduce repository-layer DTOs rather than pushing file
-layout assumptions into production tables.
+Local Pro GA exit criteria:
 
-## R3: Governed Execution MVP
+- a technical user can use Entangle Local Pro without reading source code;
+- the product can survive repeated local use and upgrades;
+- Local Pro remains useful even after Cloud and Enterprise exist;
+- Cloud development can begin without stealing Local Pro closure work.
 
-Target duration: 6 to 8 weeks after R2.
+## Product 2: Entangle Cloud / LatticeOps SaaS
 
-Target outcome: a user can launch, monitor, approve, and inspect a governed
-AI-work session in a production-style environment.
+Cloud work starts only after L4 is accepted.
 
-### Scope
+### C0: Cloud Start Gate
 
-1. Session launch:
-   - user/API-triggered session creation;
-   - graph revision selection;
-   - target node or intake path;
-   - inputs, attachments, budget, deadline, and approval requirements.
-2. Runtime orchestration:
-   - production executor abstraction;
-   - sandbox profile definition;
-   - scoped runtime context injection;
-   - retry and failure policy.
-3. Model gateway:
-   - provider routing behind internal boundary;
-   - secret references instead of direct credential handling;
-   - usage and cost metadata;
-   - provider error normalization.
-4. Tool gateway:
-   - governed tool registration;
-   - schema validation;
-   - audit for tool calls;
-   - scoped tool grants.
-5. Artifact service:
-   - object storage-backed artifacts;
-   - metadata in PostgreSQL;
-   - lineage;
-   - markdown/text/json previews;
-   - publication records.
-6. Approvals:
-   - approval inbox;
-   - approve, reject, request changes;
-   - approval evidence;
-   - policy-triggered approval gates.
-7. Timeline and trace:
-   - session event timeline;
-   - runtime and model/tool events;
-   - artifact and approval linkage.
+Target outcome: confirm the team is allowed to leave Local Pro as the active
+product and begin managed production work.
 
-### Acceptance Criteria
+Checks:
 
-- A new workspace can run the first governed session in under one hour.
-- A reviewer can approve or reject an artifact with context.
-- An operator can diagnose a failed runtime from UI and CLI evidence.
-- Execution uses scoped secrets and sandbox boundaries.
-- MVP E2E tests pass for:
-  - workspace setup;
-  - package ingestion;
-  - graph publication;
-  - session launch;
-  - artifact creation;
-  - approval gate;
-  - trace inspection;
-  - unauthorized read denial.
+- Local Pro GA exit criteria are met;
+- Local state and production state boundaries are documented;
+- reusable contracts are stable enough to carry forward;
+- product positioning distinguishes Local Pro from Cloud.
 
-### Reconsideration Gate
+### C1: Cloud Foundation
 
-If production execution needs Temporal, NATS, or Kubernetes earlier than
-planned, introduce them behind interfaces and keep local R1 behavior as a dev
-profile, not as the production runtime model.
+Target outcome: build production foundations.
 
-## R4: Private Beta
+Incremental features:
 
-Target duration: 6 to 8 weeks after R3.
+- PostgreSQL source of truth;
+- migrations;
+- repository layer behind host/control-plane state;
+- users, workspaces, environments, memberships;
+- local development auth plus OIDC-ready model;
+- production authorization checks on mutating endpoints;
+- structured audit log;
+- request ids;
+- idempotency keys for retryable mutations;
+- cursor pagination;
+- OpenAPI contract generation or drift checks.
+
+Exit criteria:
+
+- no unauthenticated mutating endpoint exists in the production profile;
+- tenant/workspace context is enforced for tenant-scoped operations;
+- audit records exist for all core mutations;
+- Local Pro still works as a local product.
+
+### C2: Governed Execution MVP
+
+Target outcome: a workspace user can launch, monitor, approve, and inspect a
+governed AI session in a production-style environment.
+
+Incremental features:
+
+- session launch API and UI;
+- graph revision selection;
+- input and artifact attachment;
+- production executor abstraction;
+- scoped runtime context and secrets;
+- sandbox profile;
+- model gateway;
+- minimal tool gateway;
+- object-storage artifact service;
+- artifact metadata and lineage;
+- approval inbox;
+- session timeline;
+- trace and failure evidence.
+
+Exit criteria:
+
+- first governed session can complete in a new workspace;
+- reviewer can approve or reject with context;
+- unauthorized artifact read is denied;
+- MVP E2E suite passes.
+
+### C3: Cloud Private Beta
 
 Target outcome: design partners can run real workflows with support.
 
-### Scope
+Incremental features:
 
-1. Product completeness:
-   - onboarding templates;
-   - graph validation UX;
-   - graph revision diff;
-   - package promotion;
-   - approval inbox;
-   - search v1;
-   - cost dashboard v1.
-2. Integrations:
-   - GitHub;
-   - GitLab or Gitea;
-   - Slack;
-   - webhooks.
-3. Operations:
-   - staging environment;
-   - backup and restore drills;
-   - load test baseline;
-   - design partner support runbooks.
-4. Security:
-   - tenant isolation tests;
-   - dependency and container scanning;
-   - threat model review;
-   - audit export v1.
+- onboarding templates;
+- graph validation UX;
+- graph revision diff;
+- package promotion;
+- search v1;
+- notifications v1;
+- Slack and GitHub/GitLab or Gitea integrations;
+- cost dashboard v1;
+- backup and restore drills;
+- staging environment;
+- support runbooks.
 
-### Acceptance Criteria
+Exit criteria:
 
-- 3 to 5 design partners can run real workflows.
-- Median time to first successful run is under 60 minutes.
-- Critical workflow success rate is above 95 percent in beta environments.
-- No known critical or high security findings remain unaddressed.
-- Backup restore has been tested.
+- 3 to 5 design partners can run workflows;
+- median time to first successful run is under 60 minutes;
+- critical workflow success rate is above 95 percent in beta;
+- no known critical or high security issue remains.
 
-### Reconsideration Gate
+### C4: Cloud Production GA
 
-If design partners do not understand graph composition, prioritize templates,
-workflow-first views, and validation explainers before adding more runtime
-features.
+Target outcome: paid customers can be onboarded into the managed SaaS.
 
-## R5: Production Launch
+Incremental features:
 
-Target duration: 8 to 12 weeks after R4.
+- billing and entitlements;
+- plan limits;
+- SLO dashboards;
+- alerting;
+- incident runbooks;
+- production backup and restore;
+- security review;
+- GDPR export and deletion basics;
+- SOC 2 Type I readiness work;
+- customer onboarding flow.
 
-Target outcome: paid production customers can be onboarded with security,
-support, and operational confidence.
+Exit criteria:
 
-### Scope
+- production readiness review passes;
+- billing and entitlement checks work;
+- support can onboard ordinary customers without engineering intervention;
+- pen test findings are remediated or formally accepted.
 
-1. Enterprise identity:
-   - SAML;
-   - SCIM;
-   - MFA policy;
-   - emergency access flow.
-2. Authorization:
-   - advanced RBAC;
-   - ABAC for environment, data class, graph, node, action, and resource;
-   - policy decision audit.
-3. Compliance:
-   - SOC 2 Type I readiness;
-   - GDPR data export and deletion workflows;
-   - retention policies;
-   - audit export.
-4. Scale and reliability:
-   - production SLOs;
-   - alerting;
-   - load testing;
-   - disaster recovery targets;
-   - incident runbooks.
-5. Commercial:
-   - billing and entitlements;
-   - plan limits;
-   - usage metering;
-   - support workflows.
+### C5: Cloud Scale
 
-### Acceptance Criteria
+Target outcome: expand the managed platform after production launch.
 
-- Production readiness review passes.
-- Penetration test findings are remediated or formally accepted.
-- RPO/RTO targets are validated.
-- SLO dashboards and alerts are active.
-- Paid customers can be onboarded without manual engineering intervention for
-  ordinary setup.
+Incremental features:
 
-### Reconsideration Gate
+- advanced policy simulation;
+- analytics v2;
+- richer connector framework;
+- private package catalog;
+- package evaluation suites;
+- replay and regression workflows;
+- cost optimization and model routing;
+- advanced artifact publication workflows.
 
-If compliance work uncovers audit or retention gaps in earlier data models,
-stop feature work and repair the data model before onboarding regulated
-customers.
+## Product 3: Entangle Enterprise Self-Hosted
 
-## R6: Enterprise Complete
+Enterprise Self-Hosted work starts only after the Cloud core is production
+stable enough to package.
 
-Target duration: ongoing after R5.
+### E0: Self-Hosted Start Gate
 
-Target outcome: complete the full LatticeOps/Entangle enterprise vision.
+Checks:
 
-### Scope
+- Cloud production core is stable;
+- control-plane migrations are repeatable;
+- deployment dependencies are explicit;
+- support model for customer-operated installs is accepted.
 
-1. Advanced governance:
-   - policy simulation;
-   - policy test suites;
-   - tamper-evident audit storage;
-   - data-classification-aware model and tool routing.
-2. Artifact maturity:
-   - rich previews;
-   - comments;
-   - approvals;
-   - redaction;
-   - version comparison;
-   - publication workflows.
-3. Memory governance:
-   - human-reviewed memory promotion;
-   - retention;
-   - deletion;
-   - provenance;
-   - semantic search with authorization filters.
-4. Integrations:
-   - Jira;
-   - Linear;
-   - Teams;
-   - Google Drive;
-   - Confluence;
-   - SharePoint;
-   - ServiceNow;
-   - Zendesk.
-5. Analytics:
-   - success rate;
-   - cost attribution;
-   - model/tool usage;
-   - approval latency;
-   - artifact acceptance;
-   - department and workspace KPIs.
-6. Platform:
-   - multi-region options;
-   - self-host Helm chart;
-   - Terraform examples;
-   - air-gapped install path;
-   - SIEM export;
-   - warehouse export.
-7. Ecosystem:
-   - private package catalog;
-   - package evaluation suites;
-   - regression tests;
-   - marketplace path only after governance is mature.
+### E1: Self-Hosted Alpha
 
-### Acceptance Criteria
+Target outcome: install the production core in a customer-like environment.
 
-- Enterprise customers can run governed AI work across multiple departments.
-- Security, audit, retention, and export workflows are customer-operable.
-- Self-host deployment has documented upgrade and backup paths.
-- Package quality can be evaluated and regressed before promotion.
-- Analytics explain operational value, cost, risk, and reliability.
+Incremental features:
 
-## Cross-Release Epics
+- Helm chart alpha;
+- Kubernetes namespace model;
+- external PostgreSQL mode;
+- external object storage mode;
+- external secret manager mode;
+- OIDC integration;
+- ingress/TLS documentation;
+- installation preflight.
 
-These epics span multiple releases and must not be implemented as one large
-undifferentiated rewrite.
+Exit criteria:
+
+- internal team can install and run a basic governed session in a fresh
+  cluster;
+- uninstall and reinstall paths are documented;
+- dependency requirements are explicit.
+
+### E2: Enterprise Beta
+
+Target outcome: design partners can run self-hosted pilots.
+
+Incremental features:
+
+- SAML;
+- SCIM;
+- enterprise RBAC/ABAC hardening;
+- SIEM/log export;
+- audit export;
+- backup and restore;
+- upgrade and rollback;
+- network policy guidance;
+- customer runbooks.
+
+Exit criteria:
+
+- at least one design partner can operate a pilot;
+- backup/restore drill passes;
+- upgrade drill passes;
+- security review for self-host scope passes.
+
+### E3: Enterprise GA
+
+Target outcome: supported production self-host product.
+
+Incremental features:
+
+- supported Helm chart;
+- Terraform examples;
+- compatibility matrix;
+- release notes and migration policy;
+- production monitoring guide;
+- support bundle;
+- incident and escalation process;
+- enterprise audit package.
+
+Exit criteria:
+
+- customer-operated production install is supportable;
+- RPO/RTO targets are validated for supported topology;
+- support can diagnose issues from bundles and runbooks.
+
+### E4: Enterprise Complete
+
+Target outcome: regulated-enterprise maturity.
+
+Incremental features:
+
+- air-gapped install bundle;
+- HA reference architecture;
+- multi-region guidance where justified;
+- customer-managed keys;
+- tamper-evident audit option;
+- advanced retention;
+- data residency controls;
+- ISO 27001 and SOC 2 Type II readiness support.
+
+## Cross-Product Epics
+
+These epics span products but must stay aligned to the active product.
 
 ### Contracts
 
-Owner packages:
+Owners:
 
 - `packages/types`;
 - `packages/validator`;
-- generated OpenAPI and clients when introduced.
+- generated OpenAPI/client artifacts once introduced.
 
 Rules:
 
 - primary contracts remain machine-readable;
 - validators own semantic correctness;
 - generated artifacts are derivative;
-- every API widening has tests and documentation.
+- local contracts must not be broken casually for Cloud;
+- Cloud contracts must not make Local Pro unusable.
 
 ### Control Plane
 
-Owner service:
+Current owner:
 
-- `services/host` in the current repository shape.
+- `services/host`.
 
-Production evolution:
+Evolution:
 
-- keep host as the control-plane facade;
-- introduce persistence and service modules behind it;
-- split services only when scale, security, or team ownership justify it.
+- Local Pro keeps a local host profile;
+- Cloud introduces production persistence and tenant-aware modules behind the
+  control-plane facade;
+- Enterprise packages the production control plane with customer-operated
+  dependencies.
 
 ### Runner And Execution
-
-Owner service:
-
-- `services/runner`.
 
 Rules:
 
 - runner-local lifecycle mutation remains runner-owned;
-- host can observe and reconcile, but must not silently edit runner-owned truth;
-- execution providers stay behind the internal agent-engine boundary;
-- sandbox and secret scopes become production requirements by R3.
+- host observes and reconciles;
+- provider logic stays behind `packages/agent-engine`;
+- Local Pro uses local runners;
+- Cloud introduces production sandbox/scheduler abstractions;
+- Enterprise packages the production executor model for customer clusters.
 
 ### Artifacts
 
-Current state:
+Evolution:
 
-- git-backed local artifacts and handoff are real.
-
-Production evolution:
-
-- git remains a first backend and collaboration path;
-- object storage becomes the production blob store;
-- artifact metadata, lineage, approvals, and publication state live in the
-  production database;
-- connectors publish artifacts outward without becoming the source of truth.
+- Local Pro: git-backed local artifact workspace and local Gitea integration;
+- Cloud: object-storage artifact service with metadata, lineage, permissions,
+  previews, and publication records;
+- Enterprise: same artifact service over customer-managed storage options.
 
 ### Studio
 
+Evolution:
+
+- Local Pro: local workbench;
+- Cloud: multi-user operations console;
+- Enterprise: same console with customer-operated identity and infrastructure
+  constraints.
+
 Rules:
 
-- Studio is an operator console, not a second control plane;
-- every mutation uses host APIs;
-- Studio should render host-owned state and shared presentation helpers;
-- richer UX follows host capability, not the reverse.
+- Studio never owns control-plane truth;
+- every mutation uses host/API boundaries;
+- product-specific UX should be additive, not forked.
 
 ### CLI
 
-Rules:
+Evolution:
 
-- CLI remains thin and automation-friendly;
-- CLI should preserve JSON and summary output modes;
-- CLI should use the same host client and presentation helpers as Studio where
-  practical.
-
-### Deployment
-
-R1:
-
-- Docker Compose local operator profile.
-
-R3 and later:
-
-- production container artifacts;
-- Kubernetes or equivalent scheduler;
-- object storage;
-- PostgreSQL;
-- event bus;
-- observability pipeline.
-
-R5 and later:
-
-- Helm charts;
-- GitOps;
-- Terraform examples;
-- backup and restore drills;
-- upgrade and rollback runbooks.
+- Local Pro: developer/operator CLI;
+- Cloud: authenticated automation CLI;
+- Enterprise: install, diagnostics, backup, support, and upgrade CLI
+  extensions.
 
 ## Quality Gates
 
-### Gate A: Local Operator Baseline
-
-Required:
+### Gate L1: Local Baseline
 
 - `pnpm verify` passes;
-- local smoke commands are documented;
-- current implementation audit is accurate;
-- known local-profile limitations are explicit.
+- local preflight passes or blocker is recorded;
+- strongest feasible smoke passes or is explicitly deferred;
+- release note does not overclaim production readiness.
 
-### Gate B: Production Foundation
+### Gate L4: Local Pro GA
 
-Required:
+- local install path is documented and repeatable;
+- demo assets work on a fresh machine;
+- Studio and CLI cover core local workflows;
+- doctor, backup, restore, and upgrade notes exist;
+- Local Pro regression smoke passes.
 
-- production profile has no unauthenticated mutations;
+### Gate C1: Cloud Foundation
+
 - PostgreSQL migrations run cleanly;
-- authorization tests cover core resources;
+- auth is required for production mutations;
+- tenant/workspace authorization tests pass;
 - audit writes are tested;
-- OpenAPI/API contract drift is checked.
+- OpenAPI/API drift is checked.
 
-### Gate C: Governed Execution MVP
-
-Required:
+### Gate C2: Governed Execution MVP
 
 - E2E session workflow passes;
 - approval gate workflow passes;
@@ -710,138 +786,111 @@ Required:
 - unauthorized access denial passes;
 - model/provider failure evidence is inspectable.
 
-### Gate D: Private Beta
+### Gate C4: Cloud GA
 
-Required:
+- production readiness review passes;
+- billing and entitlements work;
+- SLO dashboards and alerts are active;
+- pen test is remediated or formally accepted;
+- customer onboarding is supportable.
 
-- design partners can onboard;
-- restore drill passes;
-- security review for beta scope passes;
-- critical workflow success rate exceeds 95 percent;
-- support runbooks exist.
+### Gate E3: Enterprise GA
 
-### Gate E: Production Launch
+- supported install and upgrade paths exist;
+- external dependency modes are tested;
+- backup/restore drill passes;
+- support bundle works;
+- customer-operated runbooks exist.
 
-Required:
+## 48-Hour Immediate Plan
 
-- pen test completed and remediated;
-- SLO dashboards active;
-- incident runbooks complete;
-- billing and entitlements operational;
-- compliance readiness review passed.
+The current two-day target is still L1 closure, not Local Pro GA.
 
-## 48-Hour Presentable Milestone Plan
+Day 1:
 
-If the project must produce the strongest possible result within two days, the
-goal is R1 release closure.
+1. Freeze scope to release closure.
+2. Finish active approval/session/local-runtime hardening only if already in
+   progress or release-blocking.
+3. Complete the R1 ledger.
+4. Create the R1 release note.
+5. Run focused tests and `pnpm verify`.
 
-### Day 1
-
-1. Freeze scope:
-   - no production infra;
-   - no new product modules;
-   - only closure, correctness, docs, and verification.
-2. Close active dirty slice:
-   - finish tests;
-   - update reference slice;
-   - update log;
-   - run package tests.
-3. Audit docs:
-   - README;
-   - wiki overview;
-   - implementation audit;
-   - implementation strategy;
-   - this roadmap.
-4. Run `pnpm verify`.
-5. Commit coherent closure batch.
-
-### Day 2
+Day 2:
 
 1. Run local preflight.
-2. Run disposable smoke if Docker is available.
-3. Fix only release-blocking failures.
-4. Create R1 release note.
-5. Update README and wiki to point at R1 status.
-6. Run final `pnpm verify`.
-7. Commit release note and docs.
-8. Tag if desired.
+2. Run disposable smoke if Docker conditions allow.
+3. Fix only release blockers.
+4. Update README and wiki state.
+5. Commit release docs.
+6. Tag `v0.1-local-operator-baseline` if all gate conditions are met.
 
-### Day 2 Exit Statement
-
-The correct public statement is:
+Correct L1 statement:
 
 > Entangle v0.1 is a local operator baseline for graph-native AI
-> organizations. It proves the host/runner/transport/artifact/control-surface
-> architecture locally and defines the production roadmap, but it is not yet a
-> production multi-tenant enterprise platform.
+> organizations. It proves host, runner, transport, artifact handoff, approval
+> lifecycle, Studio, and CLI locally. It is the first step toward Entangle
+> Local Pro, not a production multi-tenant platform.
 
 ## Completion Forecast
 
-Assuming sustained disciplined execution:
+Assuming disciplined sequencing:
 
-| Milestone | Realistic Target |
-| --- | --- |
-| R1 local operator baseline | late April 2026 |
-| R2 production foundation | May to June 2026 |
-| R3 governed execution MVP | June to July 2026 |
-| R4 private beta | August to September 2026 |
-| R5 production launch | October to November 2026 |
-| R6 enterprise complete | late 2026 to early 2027 |
+| Product | Milestone | Target |
+| --- | --- | --- |
+| Local | L1 local operator baseline | late April 2026 |
+| Local | L1.5 local operator preview | early May 2026 |
+| Local | L2 local workbench | May 2026 |
+| Local | L3 local reliability | late May to June 2026 |
+| Local | L4 Local Pro GA | June 2026 |
+| Cloud | C1 cloud foundation | June to July 2026 |
+| Cloud | C2 governed execution MVP | July to August 2026 |
+| Cloud | C3 private beta | September 2026 |
+| Cloud | C4 production GA | October to November 2026 |
+| Enterprise | E1 self-hosted alpha | after Cloud GA planning gate |
+| Enterprise | E3 enterprise GA | late 2026 to early 2027 |
 
-This forecast assumes scope control. It should be revised after every release
-gate using repository evidence, not optimism.
+This forecast must be revised after each gate using repository evidence.
 
-## Explicit Non-Goals Before R1
+## Explicit Non-Goals Before Local Pro GA
 
-- No billing.
+- No Cloud/SaaS implementation track.
+- No PostgreSQL migration as active product work.
+- No production tenancy claim.
 - No enterprise SSO.
-- No marketplace.
-- No broad connector catalog.
-- No PostgreSQL migration.
-- No Kubernetes production deployment.
-- No claims of tenant isolation.
-- No claims of production compliance.
+- No billing.
+- No Kubernetes production install.
+- No compliance claim.
 
-## Explicit Non-Goals Before R3
-
-- No full marketplace.
-- No broad analytics suite.
-- No SOC 2 claim.
-- No unrestricted autonomous topology mutation.
-- No multi-region production promise.
+Preparatory design notes are allowed only if they do not delay Local Pro.
 
 ## Highest-Risk Areas
 
-1. Production persistence migration:
-   local state is useful, but production will require stricter transactional
-   semantics and migrations.
-2. Identity and authorization:
+1. Local product sprawl:
+   Local Pro can absorb endless "nice to have" features. The release train must
+   prioritize install, demo, workbench, reliability, and docs before polish.
+2. Production leakage:
+   Cloud abstractions must not make Local Pro harder to complete.
+3. Persistence migration:
+   production PostgreSQL work will be large and must wait for Local Pro GA.
+4. Identity and authorization:
    bootstrap token semantics must not be mistaken for production identity.
-3. Sandbox execution:
-   Docker local lifecycle is not production-grade executor isolation.
-4. Artifact governance:
-   git handoff is strong, but production artifacts need metadata, lineage,
-   object storage, previews, permissions, and retention.
-5. Product complexity:
-   graph-native control can overwhelm users without templates, validation, and
-   workflow-first UX.
-6. Scope creep:
-   integrations, marketplace, and analytics must not outrun governed execution
-   and auditability.
+5. Sandbox execution:
+   Docker local lifecycle is useful but not production isolation.
+6. Artifact governance:
+   git handoff is strong locally; Cloud and Enterprise need an artifact service.
 
 ## Immediate Next Slice
 
-The next implementation slice should be release closure, not feature widening.
+The next implementation slice should remain L1 release closure.
 
 Recommended order:
 
-1. Finish and commit any active approval/session lifecycle changes.
+1. Finish any active approval/session guard work.
 2. Re-run focused runner and validator tests.
 3. Run `pnpm verify`.
-4. Add an R1 release note.
-5. Run local deployment preflight and, where available, disposable runtime
-   smoke.
-6. Update the implementation audit only if the release closure changes the
-   durable project state.
+4. Add the R1 release note.
+5. Run local preflight and strongest feasible smoke.
+6. Update the R1 ledger with actual command results.
+7. Tag L1 only when the ledger exit criteria are met.
 
-Only after that should R2 production-foundation work begin.
+Only after L1 should the project start L1.5 Local Operator Preview work.
