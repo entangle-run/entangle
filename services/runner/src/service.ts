@@ -720,6 +720,25 @@ async function repairSessionActiveConversationIds(
       if (
         repairedSession.status === "active" &&
         repairedSession.activeConversationIds.length === 0 &&
+        repairedSession.waitingApprovalIds.length > 0 &&
+        repairedSession.lastMessageId &&
+        repairedSession.lastMessageType
+      ) {
+        await transitionSessionStatus(
+          statePaths,
+          repairedSession,
+          "waiting_approval",
+          {
+            lastMessageId: repairedSession.lastMessageId,
+            lastMessageType: repairedSession.lastMessageType
+          }
+        );
+        return;
+      }
+
+      if (
+        repairedSession.status === "active" &&
+        repairedSession.activeConversationIds.length === 0 &&
         repairedSession.waitingApprovalIds.length === 0 &&
         repairedSession.lastMessageId &&
         repairedSession.lastMessageType
@@ -946,6 +965,18 @@ export class RunnerService {
         input.statePaths,
         currentSession,
         currentSession.status,
+        {
+          lastMessageId: input.lastMessageId,
+          lastMessageType: input.lastMessageType
+        }
+      );
+    }
+
+    if (currentSession.waitingApprovalIds.length > 0) {
+      return transitionSessionStatus(
+        input.statePaths,
+        currentSession,
+        "waiting_approval",
         {
           lastMessageId: input.lastMessageId,
           lastMessageType: input.lastMessageType

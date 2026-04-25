@@ -40,18 +40,21 @@ For each session:
 - unchanged records are left untouched;
 - repaired records receive a fresh `updatedAt` timestamp.
 
-The repair pass now also completes a drained `active` session when the runner
-has enough durable context to do so safely: no active conversations, no open
-conversation records, no waiting approvals, and a known last message id/type.
-Sessions missing that context remain diagnostic-only.
+The repair pass now also handles drained `active` sessions when the runner has
+enough durable context to do so safely:
+
+- sessions with pending approvals move to `waiting_approval`;
+- sessions with no pending approvals complete through the canonical transition
+  path;
+- sessions missing last-message context remain diagnostic-only.
 
 ## Boundary Decisions
 
 - Runner state remains authoritative for session and conversation truth.
 - Host diagnostics remain read-only and never rewrite runner state.
-- Startup repair is bounded to derived active work and safe drained-session
-  completion; it does not invent messages, approvals, artifacts, or lifecycle
-  history.
+- Startup repair is bounded to derived active work, approval-gated waiting
+  repair, and safe drained-session completion; it does not invent messages,
+  approvals, artifacts, or lifecycle history.
 - The repair runs before transport subscription so new inbound work starts from
   a coherent active-work baseline.
 
@@ -62,6 +65,7 @@ Coverage now asserts that runner startup:
 - removes stale active ids for terminal or missing conversations;
 - adds durable open conversations that were missing from the active set;
 - preserves active session lifecycle status when open work remains;
+- moves drained approval-gated sessions to `waiting_approval`;
 - completes drained active sessions when the last message context is available.
 
 ## Follow-On Work

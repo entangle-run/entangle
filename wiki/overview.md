@@ -104,8 +104,9 @@ The repository now also contains the first real implementation baseline:
   runner-owned active-conversation reconciliation now keeping multi-handoff
   sessions active only while real delegated conversations remain open, with
   a runner-start repair pass that realigns stale active-conversation ids from
-  durable conversation records and safely completes drained active sessions
-  before new transport intake begins, and with host-owned session summaries now
+  durable conversation records, moves approval-gated drained sessions to
+  `waiting_approval`, and safely completes drained active sessions before new
+  transport intake begins, and with host-owned session summaries now
   exposing aggregate active-work ids and conversation lifecycle status counts
   plus conversation-level and session-level consistency findings for
   list-level operator inspection;

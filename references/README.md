@@ -168,6 +168,7 @@ This directory is the canonical design corpus for Entangle.
 162. [161-runner-session-active-work-repair-slice.md](161-runner-session-active-work-repair-slice.md)
 163. [162-session-level-consistency-diagnostics-slice.md](162-session-level-consistency-diagnostics-slice.md)
 164. [163-runner-drained-session-startup-completion-slice.md](163-runner-drained-session-startup-completion-slice.md)
+165. [164-runner-approval-gated-session-repair-slice.md](164-runner-approval-gated-session-repair-slice.md)
 
 ## Role of this corpus
 

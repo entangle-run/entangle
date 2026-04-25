@@ -30,6 +30,11 @@ If the runner lacks the last-message context required to explain the lifecycle
 transition, startup repair does not invent it. The host diagnostic remains the
 operator-visible signal for those cases.
 
+The same repair pass now also treats pending approvals as a hard completion
+gate. If a drained `active` session still has `waitingApprovalIds` and the
+last-message context is known, the runner moves it to `waiting_approval`
+instead of completing it.
+
 ## Boundary Decisions
 
 - The host never performs the lifecycle mutation.
@@ -38,13 +43,15 @@ operator-visible signal for those cases.
 - No synthetic message id, approval id, artifact id, or lifecycle history is
   created.
 - Waiting approvals prevent automatic completion because they represent a
-  separate unresolved work gate.
+  separate unresolved work gate, and the runner now preserves that gate through
+  `active -> waiting_approval` repair when it can explain the transition.
 
 ## Tests
 
 Runner coverage now asserts that startup repair:
 
 - completes a drained active session with only terminal conversations;
+- moves a drained approval-gated active session to `waiting_approval`;
 - clears stale active ids;
 - preserves the last message id and type used to justify the completion.
 

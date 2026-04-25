@@ -1460,3 +1460,14 @@ transport intake.
 
 The host diagnostic remains read-only; the lifecycle mutation stays inside the
 runner and does not invent message, approval, artifact, or history records.
+
+## [2026-04-25] implementation | Preserved approval gates during session repair
+
+Closed the approval-gated session lifecycle gap in the runner. Live
+conversation-drain handling and startup repair now both move drained `active`
+sessions with pending `waitingApprovalIds` to `waiting_approval` instead of
+allowing them to complete.
+
+The change keeps approval ids as unresolved work gates, preserves the message
+context used for the transition, and keeps lifecycle mutation inside the
+runner-owned state boundary.

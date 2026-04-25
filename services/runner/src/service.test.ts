@@ -20,6 +20,7 @@ import {
   readConversationRecord,
   readRunnerTurnRecord,
   readSessionRecord,
+  writeApprovalRecord,
   writeConversationRecord,
   writeSessionRecord
 } from "./state-store.js";
@@ -798,6 +799,119 @@ describe("RunnerService", () => {
       await downstreamService.stop();
       await upstreamService.stop();
     }
+  });
+
+  it("moves approval-gated active sessions to waiting_approval when the final conversation closes", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const requestMessageId =
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const resultMessageId =
+      "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-alpha"],
+      graphId: "graph-alpha",
+      intent: "Review an approval-gated work product.",
+      lastMessageId: requestMessageId,
+      lastMessageType: "task.request",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-alpha",
+      status: "active",
+      traceId: "session-alpha",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: ["approval-alpha"]
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-alpha",
+      followupCount: 0,
+      graphId: "graph-alpha",
+      initiator: "remote",
+      lastInboundMessageId: requestMessageId,
+      lastMessageType: "task.request",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-alpha",
+      status: "working",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-alpha",
+      approverNodeIds: ["reviewer-it"],
+      conversationId: "conv-alpha",
+      graphId: "graph-alpha",
+      reason: "Approve the final work product before session completion.",
+      requestedAt: "2026-04-24T10:03:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "pending",
+      updatedAt: "2026-04-24T10:03:00.000Z"
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+    const resultMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-alpha",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Review an approval-gated work product.",
+      messageType: "task.result",
+      parentMessageId: requestMessageId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-alpha",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "approval-gated-result",
+      work: {
+        artifactRefs: [],
+        metadata: {},
+        summary: "Review is complete, but approval is still pending."
+      }
+    });
+
+    const result = await service.handleInboundEnvelope({
+      eventId: resultMessageId,
+      message: resultMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [sessionRecord, conversationRecord] = await Promise.all([
+      readSessionRecord(statePaths, "session-alpha"),
+      readConversationRecord(statePaths, "conv-alpha")
+    ]);
+
+    expect(result.handled).toBe(true);
+    expect(conversationRecord?.status).toBe("closed");
+    expect(sessionRecord?.status).toBe("waiting_approval");
+    expect(sessionRecord?.activeConversationIds).toEqual([]);
+    expect(sessionRecord?.waitingApprovalIds).toEqual(["approval-alpha"]);
+    expect(sessionRecord?.lastMessageId).toBe(resultMessageId);
+    expect(sessionRecord?.lastMessageType).toBe("task.result");
   });
 
   it("retrieves published inbound git artifacts from the primary remote and passes them to the engine", async () => {
@@ -1895,6 +2009,85 @@ describe("RunnerService", () => {
 
       expect(repairedSession?.status).toBe("completed");
       expect(repairedSession?.activeConversationIds).toEqual([]);
+      expect(repairedSession?.lastMessageId).toBe(lastMessageId);
+      expect(repairedSession?.lastMessageType).toBe("task.result");
+    } finally {
+      await service.stop();
+    }
+  });
+
+  it("moves approval-gated drained sessions to waiting_approval during startup repair", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const lastMessageId =
+      "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-closed"],
+      graphId: "graph-alpha",
+      intent: "Repair approval-gated delegated session state.",
+      lastMessageId,
+      lastMessageType: "task.result",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-alpha",
+      status: "active",
+      traceId: "session-alpha",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: ["approval-alpha"]
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-closed",
+      followupCount: 1,
+      graphId: "graph-alpha",
+      initiator: "local",
+      lastInboundMessageId: lastMessageId,
+      lastMessageType: "task.result",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-alpha",
+      status: "closed",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-alpha",
+      approverNodeIds: ["reviewer-it"],
+      conversationId: "conv-closed",
+      graphId: "graph-alpha",
+      reason: "Approve the final work product before session completion.",
+      requestedAt: "2026-04-24T10:03:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "pending",
+      updatedAt: "2026-04-24T10:03:00.000Z"
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+
+    await service.start();
+
+    try {
+      const repairedSession = await readSessionRecord(statePaths, "session-alpha");
+
+      expect(repairedSession?.status).toBe("waiting_approval");
+      expect(repairedSession?.activeConversationIds).toEqual([]);
+      expect(repairedSession?.waitingApprovalIds).toEqual(["approval-alpha"]);
       expect(repairedSession?.lastMessageId).toBe(lastMessageId);
       expect(repairedSession?.lastMessageType).toBe("task.result");
     } finally {
