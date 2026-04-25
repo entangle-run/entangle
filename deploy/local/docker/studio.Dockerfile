@@ -22,7 +22,7 @@ RUN pnpm --filter @entangle/studio... build
 
 FROM nginx:1.29-alpine AS runtime
 
-COPY deploy/config/nginx.studio.conf /etc/nginx/conf.d/default.conf
+COPY deploy/local/config/nginx.studio.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/studio/dist /usr/share/nginx/html
 
 EXPOSE 3000

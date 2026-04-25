@@ -21,7 +21,12 @@ architecture discovery.
   Shared internal packages. The first scaffold includes `types/`, `validator/`,
   `host-client/`, `agent-engine/`, and `package-scaffold/`.
 - `deploy/`
-  Local deployment material such as the first Compose profile and Dockerfiles.
+  Deployment profiles. The active profile is `deploy/local/`; future Cloud and
+  Enterprise deployment material should be added only when the roadmap reaches
+  those gates.
+- `releases/`
+  Release-control packets organized by product line. These point back to the
+  canonical roadmap and ledgers instead of duplicating specification truth.
 - `resources/`
   External reference repositories and a manifest of the research corpus. This directory holds local clones of the primary systems, protocols, and engines studied while designing Entangle.
 - `references/`
@@ -208,6 +213,11 @@ This repository currently contains:
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for toolchain, Docker, Docker Compose, daemon access, and Compose config
   validity;
+- an explicit deployment profile layout where active Local deployment material
+  lives under `deploy/local/`, with scripts sharing profile paths through
+  `scripts/local-profile-paths.mjs`;
+- an explicit release-control area under `releases/`, with the active Local L1
+  release packet pointing back to the canonical R1/L1 ledger;
 - an active local profile smoke through `pnpm ops:smoke-local` that checks the
   running Compose services, runner image presence, host JSON APIs, Studio HTTP,
   Gitea HTTP reachability, and the local `strfry` Nostr WebSocket path;

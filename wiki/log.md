@@ -602,7 +602,7 @@ that produced session, conversation, and turn records under the runtime root.
 
 Found that the local Compose relay service was not actually usable because it
 started `strfry` without a config file. Added an explicit
-`deploy/config/strfry.local.conf`, mounted it into the Compose service, and
+`deploy/local/config/strfry.local.conf`, mounted it into the Compose service, and
 revalidated local relay reachability through `nostr-tools` before rerunning the
 end-to-end runner smoke.
 
@@ -1675,3 +1675,20 @@ before any L1.5, Cloud, or Enterprise work begins.
 `pnpm ops:check-local:strict` also passed when run with Docker socket access;
 the sandboxed attempt failed only because the Docker daemon socket was not
 available inside the sandbox.
+
+## [2026-04-25] organization | Partitioned local deployment and release packets
+
+Moved the active local deployment profile under `deploy/local/`, added
+`deploy/README.md` as the deployment-profile index, and introduced
+`scripts/local-profile-paths.mjs` so local preflight and smoke scripts consume
+one shared Compose/config/Dockerfile path definition.
+
+Added `releases/` as a release-control area distinct from the canonical
+`references/` corpus, with `releases/local/l1-local-operator-baseline.md` as
+the active Local L1 packet pointing back to the R1/L1 ledger. The monorepo
+itself remains intact; `apps/`, `services/`, and `packages/` were not moved,
+and no active Cloud or Enterprise deployment profile was introduced.
+
+Verified the reorganization with script syntax checks, Compose config
+validation against `deploy/local/compose/docker-compose.local.yml`, strict
+local preflight with Docker socket access, and `pnpm verify`.

@@ -53,6 +53,6 @@ it starts from a fresh Gitea volume and tears down all local state afterward.
 ## Verification
 
 - `node --check scripts/smoke-local-runtime.mjs`
-- `docker compose -f deploy/compose/docker-compose.local.yml config >/dev/null`
+- `docker compose -f deploy/local/compose/docker-compose.local.yml config >/dev/null`
 - `pnpm ops:smoke-local:disposable:runtime --skip-build`
 - `pnpm ops:smoke-local:disposable:runtime`

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
+import { localProfileComposeFile } from "./local-profile-paths.mjs";
 
 const defaultHostUrl = "http://localhost:7071";
 const defaultStudioUrl = "http://localhost:3000";
@@ -200,7 +201,7 @@ function checkComposeServices() {
   const result = run("docker", [
     "compose",
     "-f",
-    "deploy/compose/docker-compose.local.yml",
+    localProfileComposeFile,
     "ps",
     "--status",
     "running",

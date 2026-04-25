@@ -4,10 +4,11 @@ import { spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { localProfileComposeFile } from "./local-profile-paths.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
-const composeFile = "deploy/compose/docker-compose.local.yml";
+const composeFile = localProfileComposeFile;
 const defaultTimeoutMs = 180_000;
 const defaultProbeTimeoutMs = 5_000;
 

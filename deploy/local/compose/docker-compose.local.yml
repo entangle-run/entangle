@@ -1,8 +1,8 @@
 services:
   studio:
     build:
-      context: ../..
-      dockerfile: deploy/docker/studio.Dockerfile
+      context: ../../..
+      dockerfile: deploy/local/docker/studio.Dockerfile
     environment:
       VITE_ENTANGLE_HOST_URL: ${ENTANGLE_STUDIO_HOST_API_URL:-http://localhost:7071}
     ports:
@@ -15,8 +15,8 @@ services:
 
   host:
     build:
-      context: ../..
-      dockerfile: deploy/docker/host.Dockerfile
+      context: ../../..
+      dockerfile: deploy/local/docker/host.Dockerfile
     environment:
       ENTANGLE_HOST_PORT: ${ENTANGLE_HOST_PORT:-7071}
       ENTANGLE_HOME: /entangle-state/.entangle
@@ -43,8 +43,8 @@ services:
       - runner-build
     image: entangle-runner:local
     build:
-      context: ../..
-      dockerfile: deploy/docker/runner.Dockerfile
+      context: ../../..
+      dockerfile: deploy/local/docker/runner.Dockerfile
     command:
       - "true"
     networks:

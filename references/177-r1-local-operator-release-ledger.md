@@ -9,6 +9,9 @@ It captures what must be true before Entangle can honestly be described as
 `v0.1-local-operator-baseline`, and it separates that local baseline from the
 later production releases.
 
+The active release packet is
+[`../releases/local/l1-local-operator-baseline.md`](../releases/local/l1-local-operator-baseline.md).
+
 ## Release Position
 
 Current release target:

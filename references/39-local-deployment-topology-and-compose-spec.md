@@ -221,6 +221,10 @@ The hackathon should use:
 
 This gives the cleanest demo while remaining faithful to the architecture.
 
+The active local profile lives under `deploy/local/`, with the Compose file at
+`deploy/local/compose/docker-compose.local.yml`. Scripts should consume shared
+path constants rather than duplicating that path in multiple places.
+
 ## 12. What should stay outside the main product runtime
 
 The following may exist as convenience tooling under `deploy/`, but should not

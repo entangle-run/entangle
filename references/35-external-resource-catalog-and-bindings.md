@@ -200,7 +200,7 @@ Packages may include:
 
 For the hackathon, it is correct to keep a minimal local infrastructure profile
 inside the main Entangle monorepo under deployment tooling such as
-`deploy/compose`.
+`deploy/local`.
 
 That gives:
 

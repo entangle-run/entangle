@@ -303,7 +303,7 @@ In practical terms, the repository is ready to move into:
 - `services/runner`
 - `apps/studio`
 - `apps/cli`
-- `deploy/compose`
+- `deploy/local`
 
 ## Recommended next move
 

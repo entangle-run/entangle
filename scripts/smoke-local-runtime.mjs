@@ -11,12 +11,13 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { localProfileComposeFile } from "./local-profile-paths.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   ".."
 );
-const composeFile = "deploy/compose/docker-compose.local.yml";
+const composeFile = localProfileComposeFile;
 const defaultHostUrl = "http://localhost:7071";
 const defaultRelayUrl = "ws://localhost:7777";
 const defaultTimeoutMs = 120_000;

@@ -64,6 +64,11 @@ The repository now also contains the first real implementation baseline:
 - `packages/types`, `validator`, `host-client`, `agent-engine`, and
   `package-scaffold`;
 - a first local Compose profile and service Dockerfiles;
+- an explicit `deploy/local/` profile layout for Entangle Local deployment
+  material, with shared script path constants instead of duplicated local
+  Compose paths;
+- an explicit `releases/` area for release-control packets, starting with the
+  active Local L1 release packet;
 - a persistent local host-state model under `.entangle/host`;
 - a separate local secret root for host-owned runtime identities;
 - a safer `entangle package init` path that exposes package name, package id,

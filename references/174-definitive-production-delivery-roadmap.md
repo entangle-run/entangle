@@ -279,6 +279,9 @@ The historical `R1` ledger is the release-control ledger for this L1 milestone.
 It keeps its existing name because it predates the final L-series Local release
 train.
 
+The active release packet lives in
+[`releases/local/l1-local-operator-baseline.md`](../releases/local/l1-local-operator-baseline.md).
+
 Included capabilities:
 
 - host control plane over local state;

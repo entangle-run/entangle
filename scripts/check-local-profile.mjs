@@ -4,21 +4,14 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  localProfileComposeFile,
+  requiredLocalProfilePaths
+} from "./local-profile-paths.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
 const strict = process.argv.includes("--strict");
-
-const requiredPaths = [
-  "deploy/compose/docker-compose.local.yml",
-  "deploy/config/nginx.studio.conf",
-  "deploy/config/strfry.local.conf",
-  "deploy/docker/host.Dockerfile",
-  "deploy/docker/runner.Dockerfile",
-  "deploy/docker/studio.Dockerfile",
-  "package.json",
-  "pnpm-lock.yaml"
-];
 
 const checks = [];
 
@@ -54,7 +47,7 @@ function checkCommand(name, command, args, options = {}) {
   return false;
 }
 
-for (const requiredPath of requiredPaths) {
+for (const requiredPath of requiredLocalProfilePaths) {
   addCheck(
     `path:${requiredPath}`,
     existsSync(path.join(repositoryRoot, requiredPath)) ? "pass" : "fail",
@@ -102,7 +95,7 @@ if (dockerAvailable) {
       [
         "compose",
         "-f",
-        "deploy/compose/docker-compose.local.yml",
+        localProfileComposeFile,
         "config",
         "--quiet"
       ],
