@@ -1052,6 +1052,73 @@ describe("RunnerService", () => {
     expect(sessionRecord).toBeUndefined();
   });
 
+  it("does not create phantom local state for orphan approval responses", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const orphanApprovalResponseMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-orphan-approval-response",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Complete after approval.",
+      messageType: "approval.response",
+      parentMessageId:
+        "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-orphan-approval-response",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "orphan-approval-response-turn",
+      work: {
+        artifactRefs: [],
+        metadata: {
+          approval: {
+            approvalId: "approval-orphan-alpha",
+            decision: "approved"
+          }
+        },
+        summary: "Approval is granted."
+      }
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+    const result = await service.handleInboundEnvelope({
+      eventId:
+        "5656565656565656565656565656565656565656565656565656565656565656",
+      message: orphanApprovalResponseMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [approvalRecord, conversationRecord, sessionRecord] = await Promise.all([
+      readApprovalRecord(statePaths, "approval-orphan-alpha"),
+      readConversationRecord(statePaths, "conv-orphan-approval-response"),
+      readSessionRecord(statePaths, "session-orphan-approval-response")
+    ]);
+
+    expect(result).toEqual({
+      handled: true,
+      handoffs: [],
+      response: undefined
+    });
+    expect(approvalRecord).toBeUndefined();
+    expect(conversationRecord).toBeUndefined();
+    expect(sessionRecord).toBeUndefined();
+  });
+
   it("applies approved approval responses and completes unblocked waiting sessions", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;

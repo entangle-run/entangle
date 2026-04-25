@@ -1509,6 +1509,28 @@ export class RunnerService {
       (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
     this.statePaths = statePaths;
 
+    if (envelope.message.messageType === "approval.response") {
+      const metadata = entangleA2AApprovalResponseMetadataSchema.safeParse(
+        envelope.message.work.metadata
+      );
+      const [approvalRecord, conversationRecord, sessionRecord] =
+        await Promise.all([
+          metadata.success
+            ? readApprovalRecord(statePaths, metadata.data.approval.approvalId)
+            : undefined,
+          readConversationRecord(statePaths, envelope.message.conversationId),
+          readSessionRecord(statePaths, envelope.message.sessionId)
+        ]);
+
+      if (!approvalRecord && !conversationRecord && !sessionRecord) {
+        return {
+          handled: true,
+          handoffs: [],
+          response: undefined
+        };
+      }
+    }
+
     const inboundArtifactIds = envelope.message.work.artifactRefs.map(
       (artifactRef) => artifactRef.artifactId
     );

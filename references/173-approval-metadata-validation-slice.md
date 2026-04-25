@@ -55,6 +55,9 @@ gate stricter and easier to reason about.
 - The host remains read-only for approval records.
 - Unknown approval ids in otherwise valid responses are still a runner-local
   lifecycle concern, not a protocol-shape error.
+- Orphan approval responses that match no local approval, session, or
+  conversation state are absorbed by the runner without creating phantom active
+  work.
 - The metadata contract remains intentionally minimal until richer approval
   authority, timeout, evidence, and policy semantics are added.
 

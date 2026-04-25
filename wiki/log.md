@@ -1576,8 +1576,9 @@ when allowed.
 Inbound approved approval responses now update the matching approval record,
 attribute the responding approver, close the approval conversation when policy
 allows, and reuse the existing no-open-work completion path so unblocked
-waiting sessions can complete. Unknown or malformed approval metadata remains
-non-fatal and does not synthesize approval truth.
+waiting sessions can complete. Unknown approval ids remain non-fatal and do
+not synthesize approval truth; malformed approval metadata is now rejected at
+the canonical A2A validator boundary.
 
 Rejected approval responses now also have explicit coverage: the runner marks
 the approval rejected, closes the approval conversation when policy allows,
@@ -1607,3 +1608,15 @@ runner can write session, conversation, or approval state.
 This keeps approval mutation authority inside the runner while moving malformed
 approval lifecycle intent out of the "coordination no-op" path and into the
 protocol validation boundary.
+
+## [2026-04-25] implementation | Guarded orphan approval responses
+
+Tightened the runner coordination path for valid but locally orphaned
+`approval.response` messages. The runner now checks for a matching local
+approval record, session record, or conversation record before writing
+lifecycle state; when none exist, it absorbs the response as a handled no-op
+instead of creating a phantom active session and opened conversation.
+
+This keeps unknown approval ids as a runner-local lifecycle concern while
+preventing stale or irrelevant approval responses from manufacturing active
+work.

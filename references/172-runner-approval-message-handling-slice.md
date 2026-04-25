@@ -56,7 +56,10 @@ allows it.
   validator before the runner writes session, conversation, or approval state.
 - A response for an unknown approval id does not synthesize a new approval
   record. Missing records remain visible through existing consistency
-  diagnostics.
+  diagnostics when there is existing local session or conversation context.
+- A response for an unknown approval id with no matching local approval,
+  session, or conversation state is absorbed without creating phantom active
+  work.
 - The protocol metadata contract is intentionally minimal until richer approval
   policy, authority, timeout, and evidence rules are implemented.
 
@@ -76,6 +79,8 @@ Coverage now asserts that:
   fails the blocked session.
 - malformed approval metadata is rejected at the A2A validator boundary before
   runner-local lifecycle state is written.
+- orphan approval responses with no matching local state are absorbed without
+  creating local session, conversation, or approval records.
 
 ## Result
 
