@@ -3,6 +3,7 @@ import type { SourceChangeCandidateRecord } from "@entangle/types";
 import {
   filterRuntimeSourceChangeCandidates,
   formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateDiffStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidates
@@ -88,5 +89,18 @@ describe("studio source change candidate inspection helpers", () => {
     expect(formatRuntimeSourceChangeCandidateDetailLines(candidate)).toContain(
       "source file modified src/index.ts (+4/-2)"
     );
+    expect(
+      formatRuntimeSourceChangeCandidateDiffStatus({
+        candidate,
+        diff: {
+          available: true,
+          bytesRead: 128,
+          content: "diff --git a/src/index.ts b/src/index.ts\n",
+          contentEncoding: "utf8",
+          contentType: "text/x-diff",
+          truncated: false
+        }
+      })
+    ).toBe("text/x-diff · 128 bytes");
   });
 });

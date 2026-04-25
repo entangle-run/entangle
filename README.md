@@ -139,8 +139,8 @@ This repository currently contains:
   harvesting now recording bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus
   durable pending source-change candidate records with read-only host, CLI, and
-  Studio inspection, without auto-committing or publishing those
-  engine-generated files;
+  Studio inspection plus bounded candidate diff previews, without
+  auto-committing or publishing those engine-generated files;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
@@ -654,8 +654,8 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff model,
-  especially source-change candidate acceptance/publication, non-primary target
-  provisioning, and replicated fallback paths;
+  especially source-change candidate acceptance/publication, source history and
+  file preview, non-primary target provisioning, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

@@ -202,6 +202,7 @@ This directory is the canonical design corpus for Entangle.
 196. [195-node-workspace-health-slice.md](195-node-workspace-health-slice.md)
 197. [196-source-workspace-change-harvesting-slice.md](196-source-workspace-change-harvesting-slice.md)
 198. [197-source-change-candidates-slice.md](197-source-change-candidates-slice.md)
+199. [198-source-change-candidate-diff-slice.md](198-source-change-candidate-diff-slice.md)
 
 ## Role of this corpus
 

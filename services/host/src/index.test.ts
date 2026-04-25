@@ -9,6 +9,7 @@ import {
   stat,
   writeFile
 } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { gzip } from "node:zlib";
@@ -47,6 +48,7 @@ import {
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -88,6 +90,45 @@ type MockFetchResponse = {
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+async function runGitCommand(input: {
+  args: string[];
+  cwd: string;
+  env?: NodeJS.ProcessEnv;
+}): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", input.args, {
+      cwd: input.cwd,
+      env: {
+        ...process.env,
+        ...input.env
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+        return;
+      }
+
+      reject(
+        new Error(
+          stderr.trim() || stdout.trim() || `git exited with ${code ?? "unknown"}`
+        )
+      );
+    });
+  });
 }
 
 function secretRefStoragePath(secretRef: string): string {
@@ -3154,6 +3195,55 @@ describe("buildHostServer", () => {
           })
         ).json()
       );
+      const gitDir = path.join(
+        runtimeContext.workspace.runtimeRoot,
+        "source-snapshot.git"
+      );
+      const sourceWorkspaceRoot = runtimeContext.workspace.sourceWorkspaceRoot;
+
+      if (!sourceWorkspaceRoot) {
+        throw new Error("Expected source workspace root in runtime context.");
+      }
+
+      const gitEnv = {
+        GIT_DIR: gitDir,
+        GIT_WORK_TREE: sourceWorkspaceRoot
+      };
+      await runGitCommand({
+        args: ["init"],
+        cwd: sourceWorkspaceRoot,
+        env: gitEnv
+      });
+      await writeFile(
+        path.join(sourceWorkspaceRoot, "worker.ts"),
+        "export const generated = false;\n",
+        "utf8"
+      );
+      await runGitCommand({
+        args: ["add", "--all", "--", "."],
+        cwd: sourceWorkspaceRoot,
+        env: gitEnv
+      });
+      const baseTree = await runGitCommand({
+        args: ["write-tree"],
+        cwd: sourceWorkspaceRoot,
+        env: gitEnv
+      });
+      await writeFile(
+        path.join(sourceWorkspaceRoot, "worker.ts"),
+        "export const generated = true;\n",
+        "utf8"
+      );
+      await runGitCommand({
+        args: ["add", "--all", "--", "."],
+        cwd: sourceWorkspaceRoot,
+        env: gitEnv
+      });
+      const headTree = await runGitCommand({
+        args: ["write-tree"],
+        cwd: sourceWorkspaceRoot,
+        env: gitEnv
+      });
       const candidateRecord = {
         candidateId: "source-change-turn-alpha",
         conversationId: "conv-alpha",
@@ -3162,8 +3252,8 @@ describe("buildHostServer", () => {
         nodeId: "worker-it",
         sessionId: "session-alpha",
         snapshot: {
-          baseTree: "base-tree-alpha",
-          headTree: "head-tree-alpha",
+          baseTree,
+          headTree,
           kind: "shadow_git_tree"
         },
         sourceChangeSummary: {
@@ -3223,6 +3313,31 @@ describe("buildHostServer", () => {
       ).toEqual({
         candidate: candidateRecord
       });
+
+      const diffResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
+      });
+
+      expect(diffResponse.statusCode).toBe(200);
+      const parsedDiffResponse =
+        runtimeSourceChangeCandidateDiffResponseSchema.parse(diffResponse.json());
+      expect(parsedDiffResponse).toMatchObject({
+        candidate: candidateRecord,
+        diff: {
+          available: true,
+          contentEncoding: "utf8",
+          contentType: "text/x-diff",
+          truncated: false
+        }
+      });
+      expect(parsedDiffResponse.diff.available).toBe(true);
+      if (parsedDiffResponse.diff.available) {
+        expect(parsedDiffResponse.diff.content).toContain(
+          "export const generated = true;"
+        );
+      }
 
       const missingCandidateResponse = await server.inject({
         method: "GET",

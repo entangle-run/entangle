@@ -12,6 +12,7 @@ import {
   symlink,
   writeFile
 } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -126,6 +127,7 @@ import {
   runtimeRecoveryRecordSchema,
   runtimeRecoveryControllerRecordSchema,
   runtimeRecoveryPolicyRecordSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   type RuntimeRecoveryControllerRecord,
@@ -148,6 +150,7 @@ import {
   type RuntimeMemoryPageInspectionResponse,
   type RuntimeMemoryPageKind,
   type RuntimeMemoryPageSummary,
+  type RuntimeSourceChangeCandidateDiffResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeTurnInspectionResponse,
@@ -254,6 +257,7 @@ const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
 const artifactPreviewMaxBytes = 16 * 1024;
 const memoryPreviewMaxBytes = 16 * 1024;
+const sourceCandidateDiffMaxBytes = 64 * 1024;
 const focusedMemoryRegisterPaths = new Set([
   "wiki/summaries/working-context.md",
   "wiki/summaries/decisions.md",
@@ -5070,6 +5074,139 @@ export async function getRuntimeSourceChangeCandidateInspection(input: {
   return candidate
     ? runtimeSourceChangeCandidateInspectionResponseSchema.parse({ candidate })
     : null;
+}
+
+async function readSourceChangeCandidateDiff(input: {
+  context: EffectiveRuntimeContext;
+  candidate: SourceChangeCandidateRecord;
+}): Promise<RuntimeSourceChangeCandidateDiffResponse["diff"]> {
+  if (!input.candidate.snapshot) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate diff is unavailable because the candidate has no snapshot."
+    };
+  }
+
+  const gitDir = path.join(input.context.workspace.runtimeRoot, "source-snapshot.git");
+  const sanitizeReason = (reason: string): string =>
+    reason
+      .replaceAll(gitDir, "<source_snapshot>")
+      .replaceAll(input.context.workspace.runtimeRoot, "<runtime_state>");
+
+  if (!(await pathExists(gitDir))) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate diff is unavailable because the source snapshot store is missing."
+    };
+  }
+
+  const args = [
+    "--git-dir",
+    gitDir,
+    "diff",
+    "--no-ext-diff",
+    "--no-renames",
+    input.candidate.snapshot.baseTree,
+    input.candidate.snapshot.headTree,
+    "--"
+  ];
+
+  return new Promise((resolve) => {
+    const child = spawn("git", args, {
+      cwd: input.context.workspace.runtimeRoot,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let stdoutBytes = 0;
+    let stdoutKeptBytes = 0;
+    let stderrKeptBytes = 0;
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      stdoutBytes += buffer.length;
+
+      if (stdoutKeptBytes < sourceCandidateDiffMaxBytes) {
+        const remaining = sourceCandidateDiffMaxBytes - stdoutKeptBytes;
+        stdoutChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stdoutKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
+      if (stderrKeptBytes < 1_000) {
+        const remaining = 1_000 - stderrKeptBytes;
+        stderrChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stderrKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.on("error", (error) => {
+      resolve({
+        available: false,
+        reason: `Source change candidate diff is unavailable: ${sanitizeReason(
+          formatUnknownError(error)
+        )}`
+      });
+    });
+    child.on("close", (code) => {
+      if (code !== 0) {
+        const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+        const reason = stderr || `git diff exited with code ${code ?? "unknown"}`;
+
+        resolve({
+          available: false,
+          reason: `Source change candidate diff is unavailable: ${sanitizeReason(
+            reason
+          )}`
+        });
+        return;
+      }
+
+      const content = Buffer.concat(stdoutChunks).toString("utf8");
+
+      resolve({
+        available: true,
+        bytesRead: Buffer.byteLength(content),
+        content,
+        contentEncoding: "utf8",
+        contentType: "text/x-diff",
+        truncated: stdoutBytes > sourceCandidateDiffMaxBytes
+      });
+    });
+  });
+}
+
+export async function getRuntimeSourceChangeCandidateDiff(input: {
+  candidateId: string;
+  nodeId: string;
+}): Promise<RuntimeSourceChangeCandidateDiffResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const candidates = await listRuntimeSourceChangeCandidates(input.nodeId);
+
+  if (!candidates) {
+    return null;
+  }
+
+  const candidate = candidates.candidates.find(
+    (candidateRecord) => candidateRecord.candidateId === input.candidateId
+  );
+
+  if (!candidate) {
+    return null;
+  }
+
+  return runtimeSourceChangeCandidateDiffResponseSchema.parse({
+    candidate,
+    diff: await readSourceChangeCandidateDiff({ candidate, context })
+  });
 }
 
 export async function listRuntimeTurns(

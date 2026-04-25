@@ -90,6 +90,7 @@ import {
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import {
   filterRuntimeSourceChangeCandidatesForCli,
+  projectRuntimeSourceChangeCandidateDiffSummary,
   projectRuntimeSourceChangeCandidateSummary,
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
@@ -1527,16 +1528,35 @@ hostRuntimesCommand
   .command("source-candidate")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<candidateId>", "Source change candidate identifier to inspect.")
+  .option("--diff", "Include the bounded source diff when available.")
   .option("--summary", "Print a compact operator-oriented candidate summary.")
   .description("Inspect one persisted source change candidate.")
   .action(
     async (
       nodeId: string,
       candidateId: string,
-      options: { summary?: boolean },
+      options: { diff?: boolean; summary?: boolean },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      if (options.diff) {
+        const response = await client.getRuntimeSourceChangeCandidateDiff(
+          nodeId,
+          candidateId
+        );
+        printJson(
+          options.summary
+            ? {
+                candidate: projectRuntimeSourceChangeCandidateSummary(
+                  response.candidate
+                ),
+                diff: projectRuntimeSourceChangeCandidateDiffSummary(response)
+              }
+            : response
+        );
+        return;
+      }
+
       const response = await client.getRuntimeSourceChangeCandidate(
         nodeId,
         candidateId

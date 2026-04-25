@@ -45,6 +45,7 @@ import {
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -338,6 +339,20 @@ describe("source change candidate host API contracts", () => {
         candidate
       }).candidate.status
     ).toBe("pending_review");
+    expect(
+      runtimeSourceChangeCandidateDiffResponseSchema.parse({
+        candidate,
+        diff: {
+          available: true,
+          bytesRead: 42,
+          content:
+            "diff --git a/src/index.ts b/src/index.ts\n+export const value = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/x-diff",
+          truncated: false
+        }
+      }).diff.available
+    ).toBe(true);
   });
 });
 

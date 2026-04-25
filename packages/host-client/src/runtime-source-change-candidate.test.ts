@@ -3,6 +3,7 @@ import type { SourceChangeCandidateRecord } from "@entangle/types";
 import {
   filterRuntimeSourceChangeCandidatesForPresentation,
   formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateDiffStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidatesForPresentation
@@ -112,6 +113,34 @@ describe("runtime source change candidate presentation helpers", () => {
         "source file modified src/new.ts (+3/-1)",
         "diff excerpt available"
       ])
+    );
+  });
+
+  it("formats source candidate diff status", () => {
+    expect(
+      formatRuntimeSourceChangeCandidateDiffStatus({
+        candidate: candidates[1]!,
+        diff: {
+          available: true,
+          bytesRead: 128,
+          content: "diff --git a/src/new.ts b/src/new.ts\n",
+          contentEncoding: "utf8",
+          contentType: "text/x-diff",
+          truncated: true
+        }
+      })
+    ).toBe("text/x-diff · 128 bytes · truncated");
+    expect(
+      formatRuntimeSourceChangeCandidateDiffStatus({
+        candidate: candidates[0]!,
+        diff: {
+          available: false,
+          reason:
+            "Source change candidate diff is unavailable because the candidate has no snapshot."
+        }
+      })
+    ).toBe(
+      "Source change candidate diff is unavailable because the candidate has no snapshot."
     );
   });
 });

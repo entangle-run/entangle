@@ -1,4 +1,7 @@
-import type { SourceChangeCandidateRecord } from "@entangle/types";
+import type {
+  RuntimeSourceChangeCandidateDiffResponse,
+  SourceChangeCandidateRecord
+} from "@entangle/types";
 import { formatSourceChangeSummary } from "./runtime-turn.js";
 
 export type RuntimeSourceChangeCandidateFilter = {
@@ -97,4 +100,16 @@ export function formatRuntimeSourceChangeCandidateDetailLines(
   }
 
   return lines;
+}
+
+export function formatRuntimeSourceChangeCandidateDiffStatus(
+  response: RuntimeSourceChangeCandidateDiffResponse
+): string {
+  if (!response.diff.available) {
+    return response.diff.reason;
+  }
+
+  return `${response.diff.contentType} · ${response.diff.bytesRead} bytes${
+    response.diff.truncated ? " · truncated" : ""
+  }`;
 }

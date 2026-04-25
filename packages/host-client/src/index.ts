@@ -39,6 +39,7 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -86,6 +87,7 @@ import {
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
+  type RuntimeSourceChangeCandidateDiffResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeTurnInspectionResponse,
@@ -732,6 +734,18 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async getRuntimeSourceChangeCandidateDiff(
+      nodeId: string,
+      candidateId: string
+    ): Promise<RuntimeSourceChangeCandidateDiffResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/diff`
+        ),
+        runtimeSourceChangeCandidateDiffResponseSchema
+      );
+    },
+
     async getRuntimeRecovery(
       nodeId: string,
       limit = 50
@@ -983,6 +997,7 @@ export {
 export {
   filterRuntimeSourceChangeCandidatesForPresentation,
   formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateDiffStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidatesForPresentation,

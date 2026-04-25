@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source change candidate diff inspection
+
+Advanced Entangle Local L3 workstream B5. Source-change candidates that carry a
+shadow-git tree snapshot can now be inspected through a bounded read-only diff
+route on the host. The response returns the candidate plus either a sanitized
+`text/x-diff` payload or a bounded unavailable reason, without changing
+candidate lifecycle state, committing files, publishing artifacts, or exposing
+runtime-local filesystem paths.
+
+The shared host client parses and formats the new diff response, the CLI adds
+`host runtimes source-candidate <nodeId> <candidateId> --diff`, and Studio
+shows the same bounded diff preview when a candidate is selected. Added
+`references/198-source-change-candidate-diff-slice.md`. Candidate mutation,
+policy approval, source history/file preview, git publication, and artifact
+linkage remain open B5 work.
+
 ## [2026-04-25] implementation | Added source change candidate inspection
 
 Advanced Entangle Local L3 workstream B5. Changed source workspace turns now

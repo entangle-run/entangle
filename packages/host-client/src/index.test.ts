@@ -1561,6 +1561,70 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses source change candidate diff responses from the host surface", async () => {
+    const requests: string[] = [];
+    const candidate = {
+      candidateId: "source-change-turn-alpha",
+      createdAt: "2026-04-24T00:01:00.000Z",
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      sourceChangeSummary: {
+        additions: 1,
+        checkedAt: "2026-04-24T00:01:00.000Z",
+        deletions: 0,
+        fileCount: 1,
+        files: [],
+        status: "changed",
+        truncated: false
+      },
+      status: "pending_review",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              candidate,
+              diff: {
+                available: true,
+                bytesRead: 64,
+                content: "diff --git a/src/index.ts b/src/index.ts\n",
+                contentEncoding: "utf8",
+                contentType: "text/x-diff",
+                truncated: false
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.getRuntimeSourceChangeCandidateDiff(
+        "worker-it",
+        "source-change-turn-alpha"
+      )
+    ).resolves.toMatchObject({
+      candidate: {
+        candidateId: "source-change-turn-alpha"
+      },
+      diff: {
+        available: true,
+        contentType: "text/x-diff"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

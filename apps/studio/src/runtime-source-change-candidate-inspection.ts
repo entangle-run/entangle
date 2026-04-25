@@ -1,6 +1,7 @@
 export {
   filterRuntimeSourceChangeCandidatesForPresentation as filterRuntimeSourceChangeCandidates,
   formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateDiffStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidatesForPresentation as sortRuntimeSourceChangeCandidates

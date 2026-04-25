@@ -51,7 +51,8 @@ The latest implementation state includes:
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
 - durable pending source-change candidate records for changed node turns, with
-  read-only host, host-client, CLI, and Studio inspection surfaces;
+  read-only host, host-client, CLI, and Studio inspection surfaces, including
+  bounded diff inspection for candidates with shadow-git tree snapshots;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -64,10 +65,10 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
 policy bridge, resumable permission approval mapping, candidate
-acceptance/publication workflow, artifact history/diff workflow, git/wiki
-workflow, external cancellation bridge, doctor-backed workspace health checks,
-and full CLI/Studio configuration and observability surface required for L3
-acceptance.
+acceptance/publication workflow, per-file source preview, source history,
+artifact history/diff workflow, git/wiki workflow, external cancellation
+bridge, doctor-backed workspace health checks, and full CLI/Studio
+configuration and observability surface required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -554,9 +555,13 @@ Current partial implementation:
 - host runtime inspection exposes the latest candidate id, and read-only
   source-change candidate list/detail APIs are consumed by shared host-client
   helpers, CLI commands, and Studio selected-runtime details;
+- host runtime candidate diff APIs now expose bounded read-only `text/x-diff`
+  previews for candidates with shadow-git tree snapshots, consumed by the
+  shared host client, CLI `source-candidate --diff`, and Studio selected-runtime
+  details;
 - candidate acceptance/rejection/supersession, approval flow,
-  source-history/diff APIs, artifact publication, and remote git workflow
-  remain open.
+  per-file source preview, source-history APIs, artifact publication, and
+  remote git workflow remain open.
 
 Acceptance:
 
@@ -632,10 +637,11 @@ Current partial implementation:
 - CLI and Studio now also show the latest runner-owned source workspace change
   summary when host runtime inspection or runtime-turn records report it;
 - CLI and Studio now inspect pending source-change candidates through the same
-  host-backed read model used by the host client;
+  host-backed read model used by the host client, and can inspect bounded
+  candidate diffs where shadow-git tree snapshots are available;
 - graph/node editing support for agent-runtime selection, OpenCode availability
   probing, approval blockers, candidate mutation, produced artifacts, source
-  diff/history views, and recent engine-event panels remain open.
+  history/file-preview views, and recent engine-event panels remain open.
 
 Acceptance:
 

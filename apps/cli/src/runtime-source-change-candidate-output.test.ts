@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SourceChangeCandidateRecord } from "@entangle/types";
 import {
   filterRuntimeSourceChangeCandidatesForCli,
+  projectRuntimeSourceChangeCandidateDiffSummary,
   projectRuntimeSourceChangeCandidateSummary,
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
@@ -72,5 +73,28 @@ describe("runtime source change candidate CLI output", () => {
       turnId: "turn-new"
     });
     expect(summary.detailLines).toContain("source changes 2 files (+4/-1)");
+  });
+
+  it("projects source candidate diff previews without duplicating full content", () => {
+    expect(
+      projectRuntimeSourceChangeCandidateDiffSummary({
+        candidate: candidates[1]!,
+        diff: {
+          available: true,
+          bytesRead: 96,
+          content: "diff --git a/src/index.ts b/src/index.ts\n",
+          contentEncoding: "utf8",
+          contentType: "text/x-diff",
+          truncated: false
+        }
+      })
+    ).toEqual({
+      available: true,
+      candidateId: "source-change-turn-new",
+      contentType: "text/x-diff",
+      previewBytes: 96,
+      status: "text/x-diff · 96 bytes",
+      truncated: false
+    });
   });
 });

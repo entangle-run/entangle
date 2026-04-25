@@ -44,6 +44,7 @@ import type {
   RuntimeMemoryInspectionResponse,
   RuntimeMemoryPageInspectionResponse,
   RuntimeRecoveryInspectionResponse,
+  RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
@@ -157,6 +158,7 @@ import {
 } from "./runtime-turn-inspection.js";
 import {
   formatRuntimeSourceChangeCandidateDetailLines,
+  formatRuntimeSourceChangeCandidateDiffStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidates
@@ -471,6 +473,8 @@ export function App() {
     selectedSourceChangeCandidateInspection,
     setSelectedSourceChangeCandidateInspection
   ] = useState<RuntimeSourceChangeCandidateInspectionResponse | null>(null);
+  const [selectedSourceChangeCandidateDiff, setSelectedSourceChangeCandidateDiff] =
+    useState<RuntimeSourceChangeCandidateDiffResponse | null>(null);
   const [sourceChangeCandidateDetailError, setSourceChangeCandidateDetailError] =
     useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
@@ -865,10 +869,10 @@ export function App() {
   const loadSelectedSourceChangeCandidateInspection = useCallback(
     async (nodeId: string, candidateId: string) => {
       try {
-        const inspection = await client.getRuntimeSourceChangeCandidate(
-          nodeId,
-          candidateId
-        );
+        const [inspection, diff] = await Promise.all([
+          client.getRuntimeSourceChangeCandidate(nodeId, candidateId),
+          client.getRuntimeSourceChangeCandidateDiff(nodeId, candidateId)
+        ]);
 
         if (
           selectedRuntimeIdRef.current !== nodeId ||
@@ -879,6 +883,7 @@ export function App() {
 
         startTransition(() => {
           setSelectedSourceChangeCandidateInspection(inspection);
+          setSelectedSourceChangeCandidateDiff(diff);
           setSourceChangeCandidateDetailError(null);
         });
       } catch (caught: unknown) {
@@ -891,6 +896,7 @@ export function App() {
 
         startTransition(() => {
           setSelectedSourceChangeCandidateInspection(null);
+          setSelectedSourceChangeCandidateDiff(null);
           setSourceChangeCandidateDetailError(
             normalizeError(
               caught,
@@ -1011,17 +1017,25 @@ export function App() {
         (candidate) =>
           candidate.candidateId === currentSelectedSourceChangeCandidateId
       );
-    const selectedSourceChangeCandidateResult =
+    const selectedSourceChangeCandidateResults =
       shouldRefreshSelectedSourceChangeCandidate
         ? (
             await Promise.allSettled([
               client.getRuntimeSourceChangeCandidate(
                 nodeId,
                 currentSelectedSourceChangeCandidateId
+              ),
+              client.getRuntimeSourceChangeCandidateDiff(
+                nodeId,
+                currentSelectedSourceChangeCandidateId
               )
             ])
-          )[0]
+          )
         : null;
+    const selectedSourceChangeCandidateResult =
+      selectedSourceChangeCandidateResults?.[0] ?? null;
+    const selectedSourceChangeCandidateDiffResult =
+      selectedSourceChangeCandidateResults?.[1] ?? null;
     const currentSelectedSessionId = selectedSessionId;
     const shouldRefreshSelectedSession =
       currentSelectedSessionId !== null &&
@@ -1240,22 +1254,42 @@ export function App() {
 
         if (!selectedSourceChangeCandidateId) {
           setSelectedSourceChangeCandidateInspection(null);
+          setSelectedSourceChangeCandidateDiff(null);
           setSourceChangeCandidateDetailError(null);
         } else if (!shouldRefreshSelectedSourceChangeCandidate) {
           setSelectedSourceChangeCandidateId(null);
           setSelectedSourceChangeCandidateInspection(null);
+          setSelectedSourceChangeCandidateDiff(null);
           setSourceChangeCandidateDetailError(null);
-        } else if (selectedSourceChangeCandidateResult?.status === "fulfilled") {
+        } else if (
+          selectedSourceChangeCandidateResult?.status === "fulfilled" &&
+          selectedSourceChangeCandidateDiffResult?.status === "fulfilled"
+        ) {
           setSelectedSourceChangeCandidateInspection(
             selectedSourceChangeCandidateResult.value
+          );
+          setSelectedSourceChangeCandidateDiff(
+            selectedSourceChangeCandidateDiffResult.value
           );
           setSourceChangeCandidateDetailError(null);
         } else if (selectedSourceChangeCandidateResult?.status === "rejected") {
           setSelectedSourceChangeCandidateInspection(null);
+          setSelectedSourceChangeCandidateDiff(null);
           setSourceChangeCandidateDetailError(
             normalizeError(
               selectedSourceChangeCandidateResult.reason,
               "Unknown error while loading source change candidate detail."
+            )
+          );
+        } else if (
+          selectedSourceChangeCandidateDiffResult?.status === "rejected"
+        ) {
+          setSelectedSourceChangeCandidateInspection(null);
+          setSelectedSourceChangeCandidateDiff(null);
+          setSourceChangeCandidateDetailError(
+            normalizeError(
+              selectedSourceChangeCandidateDiffResult.reason,
+              "Unknown error while loading source change candidate diff."
             )
           );
         }
@@ -1269,6 +1303,7 @@ export function App() {
         );
         setSelectedSourceChangeCandidateId(null);
         setSelectedSourceChangeCandidateInspection(null);
+        setSelectedSourceChangeCandidateDiff(null);
         setSourceChangeCandidateDetailError(null);
       }
 
@@ -1481,6 +1516,7 @@ export function App() {
 
       setSelectedSourceChangeCandidateId(candidateId);
       setSelectedSourceChangeCandidateInspection(null);
+      setSelectedSourceChangeCandidateDiff(null);
       setSourceChangeCandidateDetailError(null);
       await loadSelectedSourceChangeCandidateInspection(
         selectedRuntimeId,
@@ -1876,6 +1912,7 @@ export function App() {
       setSelectedSourceChangeCandidates([]);
       setSelectedSourceChangeCandidateId(null);
       setSelectedSourceChangeCandidateInspection(null);
+      setSelectedSourceChangeCandidateDiff(null);
       setSourceChangeCandidateDetailError(null);
       setSessionError(null);
       setSelectedSessions([]);
@@ -1913,6 +1950,7 @@ export function App() {
     setSelectedSourceChangeCandidates([]);
     setSelectedSourceChangeCandidateId(null);
     setSelectedSourceChangeCandidateInspection(null);
+    setSelectedSourceChangeCandidateDiff(null);
     setSourceChangeCandidateDetailError(null);
     setSessionError(null);
     setSelectedSessions([]);
@@ -4057,6 +4095,40 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        <div className="artifact-preview-panel">
+                          <div className="section-header">
+                            <h3>Source Diff</h3>
+                            <span className="panel-caption">
+                              {selectedSourceChangeCandidateDiff
+                                ? formatRuntimeSourceChangeCandidateDiffStatus(
+                                    selectedSourceChangeCandidateDiff
+                                  )
+                                : "loading"}
+                            </span>
+                          </div>
+
+                          {selectedSourceChangeCandidateDiff ? (
+                            selectedSourceChangeCandidateDiff.diff.available ? (
+                              <pre className="artifact-preview-content">
+                                {selectedSourceChangeCandidateDiff.diff.content}
+                              </pre>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>
+                                  {
+                                    selectedSourceChangeCandidateDiff.diff
+                                      .reason
+                                  }
+                                </p>
+                              </div>
+                            )
+                          ) : (
+                            <div className="inline-empty-state">
+                              <p>Loading source diff...</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : selectedSourceChangeCandidateId ? (
                       <div className="inline-empty-state">

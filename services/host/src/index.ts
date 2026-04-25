@@ -48,6 +48,7 @@ import {
   runtimeRecoveryListQuerySchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -74,6 +75,7 @@ import {
   getRuntimeInspection,
   getRuntimeApprovalInspection,
   getRuntimeRecoveryInspection,
+  getRuntimeSourceChangeCandidateDiff,
   getRuntimeSourceChangeCandidateInspection,
   getRuntimeTurnInspection,
   getExternalPrincipalInspection,
@@ -1335,6 +1337,50 @@ export async function buildHostServer() {
       }
 
       return runtimeSourceChangeCandidateListResponseSchema.parse(candidates);
+    }
+  );
+
+  server.get(
+    "/v1/runtimes/:nodeId/source-change-candidates/:candidateId/diff",
+    async (request, reply) => {
+      const params = request.params as { candidateId: string; nodeId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const candidateDiff = await getRuntimeSourceChangeCandidateDiff({
+        candidateId: params.candidateId,
+        nodeId: params.nodeId
+      });
+
+      if (!candidateDiff) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source change candidate '${params.candidateId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeSourceChangeCandidateDiffResponseSchema.parse(candidateDiff);
     }
   );
 

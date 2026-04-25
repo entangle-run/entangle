@@ -225,6 +225,29 @@ export const runtimeSourceChangeCandidateInspectionResponseSchema = z.object({
   candidate: sourceChangeCandidateRecordSchema
 });
 
+export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
+  "available",
+  [
+    z.object({
+      available: z.literal(true),
+      bytesRead: z.number().int().nonnegative(),
+      content: z.string(),
+      contentEncoding: z.literal("utf8"),
+      contentType: z.literal("text/x-diff"),
+      truncated: z.boolean()
+    }),
+    z.object({
+      available: z.literal(false),
+      reason: nonEmptyStringSchema
+    })
+  ]
+);
+
+export const runtimeSourceChangeCandidateDiffResponseSchema = z.object({
+  candidate: sourceChangeCandidateRecordSchema,
+  diff: runtimeSourceChangeCandidateDiffSchema
+});
+
 export const runtimeTurnListResponseSchema = z.object({
   turns: z.array(runnerTurnRecordSchema)
 });
@@ -276,6 +299,12 @@ export type RuntimeSourceChangeCandidateListResponse = z.infer<
 >;
 export type RuntimeSourceChangeCandidateInspectionResponse = z.infer<
   typeof runtimeSourceChangeCandidateInspectionResponseSchema
+>;
+export type RuntimeSourceChangeCandidateDiff = z.infer<
+  typeof runtimeSourceChangeCandidateDiffSchema
+>;
+export type RuntimeSourceChangeCandidateDiffResponse = z.infer<
+  typeof runtimeSourceChangeCandidateDiffResponseSchema
 >;
 export type RuntimeTurnListResponse = z.infer<typeof runtimeTurnListResponseSchema>;
 export type RuntimeTurnInspectionResponse = z.infer<

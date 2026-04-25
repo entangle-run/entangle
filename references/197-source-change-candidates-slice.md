@@ -86,6 +86,15 @@ Studio now refreshes source-change candidates through the host boundary for the
 selected runtime, lists recent candidates, and shows host-backed detail for a
 selected candidate.
 
+A later slice added a bounded read-only diff inspection route for candidates
+with shadow-git tree snapshots:
+
+```text
+GET /v1/runtimes/:nodeId/source-change-candidates/:candidateId/diff
+```
+
+That route does not change candidate lifecycle state or publish files.
+
 ## Boundary Decisions
 
 This slice intentionally does not:
@@ -94,7 +103,7 @@ This slice intentionally does not:
 - auto-commit source workspace changes;
 - auto-push source workspace changes;
 - publish candidate changes as artifacts;
-- expose full source diff/history APIs;
+- expose full source history or per-file preview APIs;
 - expose raw runtime-local workspace paths as protocol locators;
 - treat OpenCode private state as Entangle source-of-truth.
 
@@ -109,9 +118,9 @@ The remaining B5 implementation should add:
 - Entangle policy checks before candidate acceptance or publication;
 - approval records for policy-gated source publication;
 - runner-owned acceptance of candidates into node git history;
-- source diff and file preview host APIs;
+- bounded per-file source preview and source-history host APIs;
 - artifact history/diff APIs;
-- CLI and Studio diff/history and candidate mutation views;
+- CLI and Studio source-history, file-preview, and candidate mutation views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, candidate acceptance, publication, and downstream
