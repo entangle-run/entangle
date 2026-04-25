@@ -128,6 +128,21 @@ pnpm ops:smoke-local:disposable:runtime
 The smoke commands may be skipped only with an explicit release-note statement
 that records the local environmental blocker.
 
+## Latest Audit-Time Verification
+
+The product-line roadmap readiness audit on 2026-04-25 reran the portable
+verification and local preflight gates:
+
+- `git diff --check`: passed;
+- `pnpm verify`: passed;
+- `pnpm ops:check-local:strict`: passed with Docker socket access.
+
+The first sandboxed preflight attempt failed only at `docker:daemon` because
+the sandbox could not access `/Users/vincenzo/.docker/run/docker.sock`; the
+same command passed after running with Docker access. This evidence supports
+starting L1 release closure, but it does not replace the final release-note
+evidence required before tagging `v0.1-local-operator-baseline`.
+
 ## Known R1 Non-Goals
 
 R1 must not claim:
@@ -175,5 +190,5 @@ direction. It does narrow the immediate milestone: Entangle should close as a
 local operator baseline before production foundation work begins.
 
 The next highest-value release after R1 is now `L1.5 Local Operator Preview`,
-not production foundation. The project should finish Entangle Local Pro as the
-first final product before starting Cloud/SaaS production foundation work.
+not production foundation. The project should finish Entangle Local as the
+first final product before starting Cloud production foundation work.

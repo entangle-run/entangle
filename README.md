@@ -237,10 +237,9 @@ This repository currently contains:
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
 - a definitive three-product roadmap plus an R1 local-operator release ledger
-  that sequence Entangle Local Pro first, then Entangle Cloud / LatticeOps
-  SaaS, then Entangle Enterprise Self-Hosted, while separating the presentable
-  local baseline from later production persistence, tenancy, authorization,
-  and compliance claims;
+  that sequence Entangle Local first, then Entangle Cloud, then Entangle
+  Enterprise, while separating the presentable local baseline from later
+  production persistence, tenancy, authorization, and compliance claims;
 - a first real provider-backed `agent-engine` slice with an internal
   Anthropic adapter behind the stable engine boundary, typed error
   normalization, live runner entrypoints wired to the real engine path, and

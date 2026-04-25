@@ -1647,13 +1647,31 @@ readiness.
 ## [2026-04-25] planning | Reframed roadmap around three final products
 
 Rewrote `references/174-definitive-production-delivery-roadmap.md` around the
-three final products: Entangle Local Pro, Entangle Cloud / LatticeOps SaaS, and
-Entangle Enterprise Self-Hosted. The roadmap now requires sequential product
-development: finish Local Pro first, then begin Cloud/SaaS, then package the
-stable production core as Enterprise Self-Hosted.
+three final products: Entangle Local, Entangle Cloud, and
+Entangle Enterprise. The roadmap now requires sequential product
+development: finish Local first, then begin Cloud, then package the
+stable production core as Entangle Enterprise.
 
 The Local product line now has its own incremental release train from L1 local
 operator baseline through L1.5 local operator preview, L2 local workbench, L3
-local reliability, and L4 Local Pro GA. The R1 ledger now points to L1.5 as
+local reliability, and L4 Local GA. The R1 ledger now points to L1.5 as
 the next release instead of production foundation, preventing later-product
 infrastructure from displacing completion of the first final product.
+
+## [2026-04-25] planning | Audited product-line roadmap readiness
+
+Added `references/178-product-line-roadmap-readiness-audit.md` after a critical
+roadmap, documentation, and code readiness audit. The audit corrected product
+name drift across README, wiki overview, wiki log, the definitive roadmap, and
+the R1 ledger so the final products are Entangle Local, Entangle Cloud, and
+Entangle Enterprise.
+
+The roadmap now records that `LatticeOps` is only the imported redesign corpus
+name, that the historical R1 ledger controls the L1 Local Operator Baseline
+milestone, and that execution should now proceed through L1 release closure
+before any L1.5, Cloud, or Enterprise work begins.
+
+`git diff --check` and `pnpm verify` passed after the audit changes.
+`pnpm ops:check-local:strict` also passed when run with Docker socket access;
+the sandboxed attempt failed only because the Docker daemon socket was not
+available inside the sandbox.

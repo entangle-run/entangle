@@ -557,10 +557,9 @@ The repository now also contains the first real implementation baseline:
   persisted session, conversation, and turn records under the runner runtime
   root.
 - a definitive three-product roadmap plus an R1 local-operator release ledger
-  that sequence Entangle Local Pro first, then Entangle Cloud / LatticeOps
-  SaaS, then Entangle Enterprise Self-Hosted, while separating the presentable
-  local baseline from later production persistence, tenancy, authorization,
-  and compliance claims.
+  that sequence Entangle Local first, then Entangle Cloud, then Entangle
+  Enterprise, while separating the presentable local baseline from later
+  production persistence, tenancy, authorization, and compliance claims.
 
 The specification corpus now has five layers:
 

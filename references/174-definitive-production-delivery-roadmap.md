@@ -3,9 +3,9 @@
 This document is the execution roadmap for turning Entangle into three final
 products:
 
-1. Entangle Local Pro;
-2. Entangle Cloud / LatticeOps SaaS;
-3. Entangle Enterprise Self-Hosted.
+1. Entangle Local;
+2. Entangle Cloud;
+3. Entangle Enterprise.
 
 It supersedes the earlier single-track production roadmap while preserving its
 audit discipline, release gates, and implementation rigor.
@@ -15,6 +15,19 @@ remains the strategic reference for the Cloud and Enterprise products. The
 current implementation-truth audit in
 `references/59-implementation-state-and-delivery-audit.md` remains the baseline
 for what the repository already proves.
+
+## Product Naming Authority
+
+The product names are:
+
+1. Entangle Local;
+2. Entangle Cloud;
+3. Entangle Enterprise.
+
+`LatticeOps` is the name of the imported redesign corpus only. It is not a
+product name. `Local Pro`, `Cloud / LatticeOps SaaS`, and `Enterprise
+Self-Hosted` are retired planning labels and must not appear in current release
+claims.
 
 ## Purpose
 
@@ -28,7 +41,7 @@ This roadmap defines:
 - the audit and reconsideration loop before and after every serious slice;
 - quality gates for each release family;
 - the immediate path from the current repository to the first final product:
-  Entangle Local Pro.
+  Entangle Local.
 
 ## Current State
 
@@ -64,9 +77,9 @@ The repository does not yet have:
 
 ## Final Product Line
 
-### Product 1: Entangle Local Pro
+### Product 1: Entangle Local
 
-Entangle Local Pro is the maximum local product.
+Entangle Local is the maximum local product.
 
 It is not a throwaway preview. It is the durable local/developer product for:
 
@@ -85,7 +98,7 @@ Its promise:
 > artifacts, approval flows, memory, traces, demos, repair tools, and clear
 > limits.
 
-### Product 2: Entangle Cloud / LatticeOps SaaS
+### Product 2: Entangle Cloud
 
 Entangle Cloud is the managed production platform.
 
@@ -99,9 +112,9 @@ Its promise:
 > approvals, audit, search, analytics, integrations, billing, and managed
 > reliability.
 
-### Product 3: Entangle Enterprise Self-Hosted
+### Product 3: Entangle Enterprise
 
-Entangle Enterprise Self-Hosted is the production product installed inside the
+Entangle Enterprise is the production product installed inside the
 customer's cloud, VPC, or controlled environment.
 
 It is for regulated or security-sensitive customers.
@@ -117,9 +130,9 @@ Its promise:
 
 Product development is sequential.
 
-1. Finish Entangle Local Pro as the first final product.
-2. Start Entangle Cloud only after Entangle Local Pro reaches its GA gate.
-3. Start Enterprise Self-Hosted only after the Cloud product has a stable
+1. Finish Entangle Local as the first final product.
+2. Start Entangle Cloud only after Entangle Local reaches its GA gate.
+3. Start Entangle Enterprise only after the Cloud product has a stable
    production core worth packaging for customer-operated environments.
 
 Allowed before a later product starts:
@@ -217,20 +230,20 @@ If yes, update this roadmap or add a decision record before continuing.
 | Local | L1.5 | Local Operator Preview | Usable local demo and technical preview. |
 | Local | L2 | Local Workbench | Productized local package, graph, session, and artifact workflows. |
 | Local | L3 | Local Reliability | Doctor, repair, backup, import/export, upgrade, and diagnostics. |
-| Local | L4 | Local Pro GA | Complete local/developer product. |
-| Cloud | C0 | Cloud Start Gate | Confirm Local Pro is complete and production work may begin. |
+| Local | L4 | Local GA | Complete local/developer product. |
+| Cloud | C0 | Cloud Start Gate | Confirm Local is complete and production work may begin. |
 | Cloud | C1 | Cloud Foundation | PostgreSQL, identity, tenancy, auth, audit, API discipline. |
 | Cloud | C2 | Governed Execution MVP | Production-style session launch, sandbox, artifact service, approvals. |
 | Cloud | C3 | Cloud Private Beta | Design partner usability, integrations, search, notifications, cost. |
 | Cloud | C4 | Cloud Production GA | Paid-customer SaaS readiness. |
 | Cloud | C5 | Cloud Scale | Advanced governance, marketplace, analytics, and optimization. |
-| Enterprise | E0 | Self-Hosted Start Gate | Confirm the Cloud core is stable enough to package. |
-| Enterprise | E1 | Self-Hosted Alpha | Helm, external dependencies, basic customer-operated install. |
+| Enterprise | E0 | Enterprise Start Gate | Confirm the Cloud core is stable enough to package. |
+| Enterprise | E1 | Enterprise Install Alpha | Helm, external dependencies, basic customer-operated install. |
 | Enterprise | E2 | Enterprise Beta | SSO/SCIM, secrets, SIEM, backup, upgrade, audit export. |
 | Enterprise | E3 | Enterprise GA | Supported production self-host. |
 | Enterprise | E4 | Enterprise Complete | Air-gapped, HA, DR, multi-region, regulated-enterprise maturity. |
 
-## Product 1: Entangle Local Pro
+## Product 1: Entangle Local
 
 ### L0: Closure And Ledger
 
@@ -253,7 +266,7 @@ Acceptance criteria:
   work remains;
 - `pnpm verify` passes;
 - canonical docs describe a local runtime baseline, not a production platform;
-- remaining Local Pro work is explicit.
+- remaining Local work is explicit.
 
 ### L1: Local Operator Baseline
 
@@ -261,6 +274,10 @@ Target tag: `v0.1-local-operator-baseline`.
 
 Target outcome: Entangle can be presented as a serious local graph-native
 operator runtime.
+
+The historical `R1` ledger is the release-control ledger for this L1 milestone.
+It keeps its existing name because it predates the final L-series Local release
+train.
 
 Included capabilities:
 
@@ -416,11 +433,11 @@ Exit criteria:
 - common local drift is diagnosed without reading raw files;
 - repair behavior is conservative and never silently destroys user work.
 
-### L4: Entangle Local Pro GA
+### L4: Entangle Local GA
 
-Target tag: `v1.0-local-pro`.
+Target tag: `v1.0-local`.
 
-Target outcome: Entangle Local Pro is a complete local/developer product.
+Target outcome: Entangle Local is a complete local/developer product.
 
 Required capabilities:
 
@@ -440,28 +457,28 @@ Required capabilities:
 - clear non-goals versus Cloud and Enterprise;
 - regression smoke suite for Local.
 
-Local Pro GA exit criteria:
+Local GA exit criteria:
 
-- a technical user can use Entangle Local Pro without reading source code;
+- a technical user can use Entangle Local without reading source code;
 - the product can survive repeated local use and upgrades;
-- Local Pro remains useful even after Cloud and Enterprise exist;
-- Cloud development can begin without stealing Local Pro closure work.
+- Local remains useful even after Cloud and Enterprise exist;
+- Cloud development can begin without stealing Local closure work.
 
-## Product 2: Entangle Cloud / LatticeOps SaaS
+## Product 2: Entangle Cloud
 
 Cloud work starts only after L4 is accepted.
 
 ### C0: Cloud Start Gate
 
-Target outcome: confirm the team is allowed to leave Local Pro as the active
+Target outcome: confirm the team is allowed to leave Local as the active
 product and begin managed production work.
 
 Checks:
 
-- Local Pro GA exit criteria are met;
+- Local GA exit criteria are met;
 - Local state and production state boundaries are documented;
 - reusable contracts are stable enough to carry forward;
-- product positioning distinguishes Local Pro from Cloud.
+- product positioning distinguishes Local from Cloud.
 
 ### C1: Cloud Foundation
 
@@ -486,7 +503,7 @@ Exit criteria:
 - no unauthenticated mutating endpoint exists in the production profile;
 - tenant/workspace context is enforced for tenant-scoped operations;
 - audit records exist for all core mutations;
-- Local Pro still works as a local product.
+- Local still works as a local product.
 
 ### C2: Governed Execution MVP
 
@@ -580,12 +597,12 @@ Incremental features:
 - cost optimization and model routing;
 - advanced artifact publication workflows.
 
-## Product 3: Entangle Enterprise Self-Hosted
+## Product 3: Entangle Enterprise
 
-Enterprise Self-Hosted work starts only after the Cloud core is production
+Entangle Enterprise work starts only after the Cloud core is production
 stable enough to package.
 
-### E0: Self-Hosted Start Gate
+### E0: Enterprise Start Gate
 
 Checks:
 
@@ -594,7 +611,7 @@ Checks:
 - deployment dependencies are explicit;
 - support model for customer-operated installs is accepted.
 
-### E1: Self-Hosted Alpha
+### E1: Enterprise Install Alpha
 
 Target outcome: install the production core in a customer-like environment.
 
@@ -693,7 +710,7 @@ Rules:
 - validators own semantic correctness;
 - generated artifacts are derivative;
 - local contracts must not be broken casually for Cloud;
-- Cloud contracts must not make Local Pro unusable.
+- Cloud contracts must not make Local unusable.
 
 ### Control Plane
 
@@ -703,7 +720,7 @@ Current owner:
 
 Evolution:
 
-- Local Pro keeps a local host profile;
+- Local keeps a local host profile;
 - Cloud introduces production persistence and tenant-aware modules behind the
   control-plane facade;
 - Enterprise packages the production control plane with customer-operated
@@ -716,7 +733,7 @@ Rules:
 - runner-local lifecycle mutation remains runner-owned;
 - host observes and reconciles;
 - provider logic stays behind `packages/agent-engine`;
-- Local Pro uses local runners;
+- Local uses local runners;
 - Cloud introduces production sandbox/scheduler abstractions;
 - Enterprise packages the production executor model for customer clusters.
 
@@ -724,7 +741,7 @@ Rules:
 
 Evolution:
 
-- Local Pro: git-backed local artifact workspace and local Gitea integration;
+- Local: git-backed local artifact workspace and local Gitea integration;
 - Cloud: object-storage artifact service with metadata, lineage, permissions,
   previews, and publication records;
 - Enterprise: same artifact service over customer-managed storage options.
@@ -733,7 +750,7 @@ Evolution:
 
 Evolution:
 
-- Local Pro: local workbench;
+- Local: local workbench;
 - Cloud: multi-user operations console;
 - Enterprise: same console with customer-operated identity and infrastructure
   constraints.
@@ -748,7 +765,7 @@ Rules:
 
 Evolution:
 
-- Local Pro: developer/operator CLI;
+- Local: developer/operator CLI;
 - Cloud: authenticated automation CLI;
 - Enterprise: install, diagnostics, backup, support, and upgrade CLI
   extensions.
@@ -762,13 +779,13 @@ Evolution:
 - strongest feasible smoke passes or is explicitly deferred;
 - release note does not overclaim production readiness.
 
-### Gate L4: Local Pro GA
+### Gate L4: Local GA
 
 - local install path is documented and repeatable;
 - demo assets work on a fresh machine;
 - Studio and CLI cover core local workflows;
 - doctor, backup, restore, and upgrade notes exist;
-- Local Pro regression smoke passes.
+- Local regression smoke passes.
 
 ### Gate C1: Cloud Foundation
 
@@ -804,7 +821,7 @@ Evolution:
 
 ## 48-Hour Immediate Plan
 
-The current two-day target is still L1 closure, not Local Pro GA.
+The current two-day target is still L1 closure, not Local GA.
 
 Day 1:
 
@@ -829,7 +846,7 @@ Correct L1 statement:
 > Entangle v0.1 is a local operator baseline for graph-native AI
 > organizations. It proves host, runner, transport, artifact handoff, approval
 > lifecycle, Studio, and CLI locally. It is the first step toward Entangle
-> Local Pro, not a production multi-tenant platform.
+> Local, not a production multi-tenant platform.
 
 ## Completion Forecast
 
@@ -841,7 +858,7 @@ Assuming disciplined sequencing:
 | Local | L1.5 local operator preview | early May 2026 |
 | Local | L2 local workbench | May 2026 |
 | Local | L3 local reliability | late May to June 2026 |
-| Local | L4 Local Pro GA | June 2026 |
+| Local | L4 Local GA | June 2026 |
 | Cloud | C1 cloud foundation | June to July 2026 |
 | Cloud | C2 governed execution MVP | July to August 2026 |
 | Cloud | C3 private beta | September 2026 |
@@ -851,9 +868,9 @@ Assuming disciplined sequencing:
 
 This forecast must be revised after each gate using repository evidence.
 
-## Explicit Non-Goals Before Local Pro GA
+## Explicit Non-Goals Before Local GA
 
-- No Cloud/SaaS implementation track.
+- No Cloud implementation track.
 - No PostgreSQL migration as active product work.
 - No production tenancy claim.
 - No enterprise SSO.
@@ -861,17 +878,17 @@ This forecast must be revised after each gate using repository evidence.
 - No Kubernetes production install.
 - No compliance claim.
 
-Preparatory design notes are allowed only if they do not delay Local Pro.
+Preparatory design notes are allowed only if they do not delay Local.
 
 ## Highest-Risk Areas
 
 1. Local product sprawl:
-   Local Pro can absorb endless "nice to have" features. The release train must
+   Local can absorb endless "nice to have" features. The release train must
    prioritize install, demo, workbench, reliability, and docs before polish.
 2. Production leakage:
-   Cloud abstractions must not make Local Pro harder to complete.
+   Cloud abstractions must not make Local harder to complete.
 3. Persistence migration:
-   production PostgreSQL work will be large and must wait for Local Pro GA.
+   production PostgreSQL work will be large and must wait for Local GA.
 4. Identity and authorization:
    bootstrap token semantics must not be mistaken for production identity.
 5. Sandbox execution:
