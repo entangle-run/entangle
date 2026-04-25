@@ -250,10 +250,11 @@ This repository currently contains:
   `entangle host sessions launch` through the host API over host-resolved
   runtime context and the local NIP-59 relay, Studio selected-runtime session
   launch through the same host API, shared graph diffing for CLI and Studio,
-  Studio graph revision diff against active graph state, plus runtime artifact
-  filtering by `--session-id`, bounded local report-artifact preview through
-  the host API, CLI, and Studio, and CLI graph template list/export commands
-  for the canonical Local Preview graph;
+  Studio graph revision diff against active graph state, host-backed Studio
+  active-graph validation, runtime artifact filtering by `--session-id`,
+  bounded local report-artifact preview through the host API, CLI, and Studio,
+  and CLI graph template list/export commands for the canonical Local Preview
+  graph;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

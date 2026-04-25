@@ -31,6 +31,7 @@ Included in the current implementation slice:
   CLI and Studio;
 - Studio selected-revision `Diff Against Active` view for persisted graph
   revisions;
+- Studio active-graph validation through the existing host validation API;
 - graph template listing and export through `entangle graph templates list`
   and `entangle graph templates export local-preview <file>`;
 - artifact list filtering by `--session-id`;
@@ -41,9 +42,8 @@ Included in the current implementation slice:
 
 Still required before the L2 release tag:
 
-- Studio workbench affordances for graph validation;
 - graph import/export workflow beyond direct graph JSON apply/get and template
-  export;
+  export, including richer validation ergonomics around imported candidates;
 - artifact history/diff workflow for report artifacts;
 - memory workbench inspection for focused registers and task pages;
 - full local verification gate, including Docker-backed smokes, on the final
@@ -130,9 +130,9 @@ must pass the repository-level and Docker-backed gates before tagging.
 
 - Session launch is now available from CLI and Studio through the host launch
   API, but it does not wait for completion or retry failed relay publication.
-- Graph diff is available in CLI and Studio, but it is still client-side over
-  local graph JSON or already-loaded revisions; no host-owned graph diff API,
-  graph validation drawer, or revision restore flow exists yet.
+- Graph diff is available in CLI and Studio, and Studio can validate the
+  active graph through the host API, but no host-owned graph diff API,
+  imported-candidate validation flow, or revision restore flow exists yet.
 - Graph templates can be exported from the CLI, but there is no graph template
   editor, graph import/export bundle format, or host-owned template registry.
 - Package inspection validates the manifest and tool catalog, but package

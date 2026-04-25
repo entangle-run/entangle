@@ -24,6 +24,7 @@ import type {
   ArtifactRecord,
   ExternalPrincipalInspectionResponse,
   GraphInspectionResponse,
+  GraphMutationResponse,
   GraphRevisionInspectionResponse,
   GraphRevisionMetadata,
   GraphSpec,
@@ -54,7 +55,11 @@ import {
   sortGraphEdges,
   type EdgeEditorDraft
 } from "./graph-edge-mutation.js";
-import { summarizeValidationReport } from "./graph-mutation-feedback.js";
+import {
+  countValidationFindings,
+  formatValidationFindingLine,
+  summarizeValidationReport
+} from "./graph-mutation-feedback.js";
 import {
   buildManagedNodeCreateRequest,
   buildManagedNodeEditorDraft,
@@ -361,6 +366,12 @@ export function App() {
     useState<GraphRevisionInspectionResponse | null>(null);
   const [graphRevisionDetailError, setGraphRevisionDetailError] =
     useState<string | null>(null);
+  const [graphValidationResult, setGraphValidationResult] =
+    useState<GraphMutationResponse | null>(null);
+  const [graphValidationError, setGraphValidationError] = useState<string | null>(
+    null
+  );
+  const [pendingGraphValidation, setPendingGraphValidation] = useState(false);
   const [packageSources, setPackageSources] = useState<
     PackageSourceInspectionResponse[]
   >([]);
@@ -646,6 +657,26 @@ export function App() {
     },
     [client]
   );
+
+  const validateActiveGraph = useCallback(async () => {
+    if (!graphInspection?.graph) {
+      return;
+    }
+
+    try {
+      setPendingGraphValidation(true);
+      const response = await client.validateGraph(graphInspection.graph);
+      setGraphValidationResult(response);
+      setGraphValidationError(summarizeValidationReport(response.validation));
+    } catch (caught: unknown) {
+      setGraphValidationResult(null);
+      setGraphValidationError(
+        normalizeError(caught, "Unknown error while validating the active graph.")
+      );
+    } finally {
+      setPendingGraphValidation(false);
+    }
+  }, [client, graphInspection]);
 
   const loadSelectedApprovalInspection = useCallback(
     async (nodeId: string, approvalId: string) => {
@@ -1551,6 +1582,11 @@ export function App() {
   useEffect(() => {
     setSelectedRuntimeId((current) => deriveSelectedRuntimeId(runtimes, current));
   }, [runtimes]);
+
+  useEffect(() => {
+    setGraphValidationResult(null);
+    setGraphValidationError(null);
+  }, [graphInspection?.activeRevisionId]);
 
   useEffect(() => {
     if (!selectedRuntimeId) {
@@ -2601,6 +2637,87 @@ export function App() {
           </dl>
 
           {error ? <p className="error-box">{error}</p> : null}
+
+          <section className="subpanel">
+            <div className="section-header">
+              <h3>Graph Validation</h3>
+              <span
+                className={`status-pill status-${
+                  graphValidationResult
+                    ? graphValidationResult.validation.ok
+                      ? "healthy"
+                      : "degraded"
+                    : "pending"
+                }`}
+              >
+                {graphValidationResult
+                  ? graphValidationResult.validation.ok
+                    ? "valid"
+                    : "findings"
+                  : "not run"}
+              </span>
+            </div>
+
+            <div className="action-row">
+              <button
+                className="action-button"
+                disabled={!graphInspection?.graph || pendingGraphValidation}
+                onClick={() => {
+                  void validateActiveGraph();
+                }}
+                type="button"
+              >
+                {pendingGraphValidation ? "Validating..." : "Validate Active Graph"}
+              </button>
+            </div>
+
+            {graphValidationError ? (
+              <p className="error-box">{graphValidationError}</p>
+            ) : null}
+
+            {graphValidationResult ? (
+              <>
+                <dl className="status-list compact-list">
+                  <div>
+                    <dt>Errors</dt>
+                    <dd>
+                      {countValidationFindings(
+                        graphValidationResult.validation,
+                        "error"
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Warnings</dt>
+                    <dd>
+                      {countValidationFindings(
+                        graphValidationResult.validation,
+                        "warning"
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+
+                {graphValidationResult.validation.findings.length > 0 ? (
+                  <ul className="detail-list">
+                    {graphValidationResult.validation.findings.map((finding) => (
+                      <li key={`${finding.code}-${finding.message}`}>
+                        {formatValidationFindingLine(finding)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="inline-empty-state">
+                    <p>Active graph validation passed.</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="inline-empty-state">
+                <p>Active graph validation has not run.</p>
+              </div>
+            )}
+          </section>
 
           <section className="subpanel">
             <div className="section-header">

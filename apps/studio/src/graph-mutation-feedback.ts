@@ -1,4 +1,8 @@
-import type { ValidationReport } from "@entangle/types";
+import type {
+  ValidationFinding,
+  ValidationReport,
+  ValidationSeverity
+} from "@entangle/types";
 
 export function summarizeValidationReport(
   report: ValidationReport
@@ -17,4 +21,18 @@ export function summarizeValidationReport(
     .slice(0, 3)
     .map((finding) => finding.message)
     .join(" ");
+}
+
+export function countValidationFindings(
+  report: ValidationReport,
+  severity: ValidationSeverity
+): number {
+  return report.findings.filter((finding) => finding.severity === severity).length;
+}
+
+export function formatValidationFindingLine(
+  finding: ValidationFinding
+): string {
+  const path = finding.path.length > 0 ? ` [${finding.path.join(".")}]` : "";
+  return `${finding.severity.toUpperCase()} ${finding.code}${path}: ${finding.message}`;
 }

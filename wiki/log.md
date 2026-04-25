@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added Studio graph validation
+
+Closed the first L2 Studio graph-validation slice by adding a `Graph
+Validation` panel over the existing host `POST /v1/graph/validate` boundary.
+Studio submits the currently loaded active graph, renders error and warning
+counts, and lists bounded validation findings without applying a new graph
+revision.
+
+This is intentionally not graph import/export, imported-candidate validation,
+revision restore, rollback, or a host-owned graph diff API.
+
+Verification passed for focused Studio test, typecheck, and lint commands.
+
 ## [2026-04-25] implementation | Added bounded artifact preview
 
 Closed the first L2 artifact preview slice by adding a bounded host-owned
