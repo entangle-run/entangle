@@ -249,8 +249,9 @@ This repository currently contains:
   root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
   `entangle host sessions launch` through the host API over host-resolved
   runtime context and the local NIP-59 relay, Studio selected-runtime session
-  launch through the same host API, plus runtime artifact filtering by
-  `--session-id`;
+  launch through the same host API, shared graph diffing for CLI and Studio,
+  Studio graph revision diff against active graph state, plus runtime artifact
+  filtering by `--session-id`;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;
@@ -544,6 +545,9 @@ This repository currently contains:
 - a Studio graph-revision history slice where visual operators can inspect the
   host-owned applied graph revision list and drill into one persisted topology
   snapshot without adding client-owned graph history state;
+- a Studio graph-revision diff slice where visual operators can compare a
+  selected persisted revision against the active graph using the same shared
+  diff engine as `entangle graph diff`;
 - the next bounded CLI parity slice where headless operators can now inspect
   one admitted package source and admit canonical `local_path` or
   `local_archive` sources with optional explicit package-source ids instead of

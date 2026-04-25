@@ -1,5 +1,23 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added Studio graph revision diff
+
+Closed the next L2 Local Workbench graph slice by moving the graph diff engine
+from the CLI into `packages/host-client`, keeping `entangle graph diff` on that
+shared implementation, and adding a Studio `Diff Against Active` card for
+selected graph revisions.
+
+The new Studio view compares the selected persisted revision against the
+current active graph already loaded from the host. It is intentionally a
+client-side revision comparison, not a host-owned diff endpoint, graph import
+flow, validation drawer, rollback, or restore path.
+
+Verification passed with focused host-client, CLI, and Studio test,
+typecheck, and lint commands. The full post-slice gate also passed with
+`pnpm verify`, `pnpm build`, `pnpm ops:check-local:strict`,
+`pnpm ops:smoke-local:disposable --skip-build --keep-running`, and
+`pnpm ops:smoke-local`.
+
 ## [2026-04-25] implementation | Added Studio session launch
 
 Closed the next L2 Local Workbench parity slice by adding selected-runtime

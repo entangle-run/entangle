@@ -349,6 +349,16 @@ code {
   line-height: 1.45;
 }
 
+.graph-diff-section-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.graph-diff-section h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 .artifact-meta {
   font-family:
     "IBM Plex Mono",
@@ -384,6 +394,7 @@ code {
 .session-detail-card,
 .approval-detail-card,
 .artifact-detail-card,
+.graph-diff-card,
 .turn-detail-card {
   display: grid;
   gap: 14px;

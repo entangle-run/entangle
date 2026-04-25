@@ -27,11 +27,15 @@ Included in the current implementation slice:
   local NIP-59 relay path;
 - Studio selected-runtime session launch through the same host launch API,
   with host-owned runtime context and relay publication;
+- shared graph diff implementation in `packages/host-client`, reused by the
+  CLI and Studio;
+- Studio selected-revision `Diff Against Active` view for persisted graph
+  revisions;
 - artifact list filtering by `--session-id`.
 
 Still required before the L2 release tag:
 
-- Studio workbench affordances for graph validation or diff;
+- Studio workbench affordances for graph validation;
 - graph template or import/export workflow beyond direct graph JSON apply/get;
 - artifact preview/history for report artifacts;
 - memory workbench inspection for focused registers and task pages;
@@ -76,6 +80,9 @@ pnpm --filter @entangle/validator typecheck
 pnpm --filter @entangle/host-client test
 pnpm --filter @entangle/host-client lint
 pnpm --filter @entangle/host-client typecheck
+pnpm --filter @entangle/cli test
+pnpm --filter @entangle/cli lint
+pnpm --filter @entangle/cli typecheck
 pnpm --filter @entangle/studio test
 pnpm --filter @entangle/studio lint
 pnpm --filter @entangle/studio typecheck
@@ -108,8 +115,9 @@ must pass the repository-level and Docker-backed gates before tagging.
 
 - Session launch is now available from CLI and Studio through the host launch
   API, but it does not wait for completion or retry failed relay publication.
-- Graph diff is offline JSON diffing; host revision diff and Studio diff views
-  are still pending.
+- Graph diff is available in CLI and Studio, but it is still client-side over
+  local graph JSON or already-loaded revisions; no host-owned graph diff API,
+  graph validation drawer, or revision restore flow exists yet.
 - Package inspection validates the manifest and tool catalog, but package
   import/export archives are still pending.
 - Artifact session filtering helps navigation, but report preview and history

@@ -131,8 +131,9 @@ The repository now also contains the first real implementation baseline:
   tool-catalog validation, offline graph diffing, root-relative path handling
   for `pnpm --filter @entangle/cli dev`, headless session launch through the
   host API over host-resolved runtime context and the local relay, Studio
-  selected-runtime session launch through the same host API, and artifact
-  filtering by session id;
+  selected-runtime session launch through the same host API, shared graph
+  diffing for CLI and Studio, Studio graph revision diff against active graph
+  state, and artifact filtering by session id;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

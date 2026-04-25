@@ -807,6 +807,15 @@ export {
   formatHostStatusSessionDiagnosticsSummary
 } from "./host-status.js";
 export {
+  buildGraphDiff,
+  type ChangedGraphEdgeSummary,
+  type ChangedGraphNodeSummary,
+  type GraphDiffSummary,
+  type GraphEdgeSummary,
+  type GraphEntityChangeSummary,
+  type GraphNodeSummary
+} from "./graph-diff.js";
+export {
   formatGraphEdgeDetail,
   formatGraphEdgeLabel,
   formatGraphRevisionDetail,

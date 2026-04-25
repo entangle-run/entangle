@@ -843,8 +843,8 @@ Remaining implementation sequence:
 
 1. Freeze L2 scope around a real Local workbench rather than another demo
    proof path.
-2. Add package inspect/import depth and graph template/import/export/diff
-   workflows where they fit the current host boundary.
+2. Add package inspect/import depth and graph template/import/export plus
+   validation workflows where they fit the current host boundary.
 3. Deepen the new host-backed Studio and CLI session launch flow with clearer
    wait/retry and navigation ergonomics where it can remain host-owned.
 4. Add artifact and memory workbench surfaces over existing host/runner truth.

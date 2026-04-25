@@ -95,6 +95,15 @@ import {
   sortGraphRevisions
 } from "./graph-revision-inspection.js";
 import {
+  buildGraphDiff,
+  formatChangedGraphEdgeDiffLine,
+  formatChangedGraphNodeDiffLine,
+  formatGraphDiffIdentitySummary,
+  formatGraphDiffTotals,
+  formatGraphEdgeDiffLine,
+  formatGraphNodeDiffLine
+} from "./graph-diff-inspection.js";
+import {
   buildRuntimeRecoveryPolicyMutationRequest,
   collectRuntimeRecoveryEvents,
   createRuntimeRecoveryPolicyDraft,
@@ -1760,6 +1769,52 @@ export function App() {
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
   );
+  const selectedGraphRevisionDiff = useMemo(
+    () =>
+      graphInspection?.graph && selectedGraphRevisionInspection
+        ? buildGraphDiff(
+            selectedGraphRevisionInspection.graph,
+            graphInspection.graph
+          )
+        : null,
+    [graphInspection, selectedGraphRevisionInspection]
+  );
+  const selectedGraphRevisionDiffSections = useMemo(() => {
+    if (!selectedGraphRevisionDiff?.hasChanges) {
+      return [];
+    }
+
+    return [
+      {
+        rows: selectedGraphRevisionDiff.nodes.added.map(formatGraphNodeDiffLine),
+        title: "Added nodes"
+      },
+      {
+        rows: selectedGraphRevisionDiff.nodes.changed.map(
+          formatChangedGraphNodeDiffLine
+        ),
+        title: "Changed nodes"
+      },
+      {
+        rows: selectedGraphRevisionDiff.nodes.removed.map(formatGraphNodeDiffLine),
+        title: "Removed nodes"
+      },
+      {
+        rows: selectedGraphRevisionDiff.edges.added.map(formatGraphEdgeDiffLine),
+        title: "Added edges"
+      },
+      {
+        rows: selectedGraphRevisionDiff.edges.changed.map(
+          formatChangedGraphEdgeDiffLine
+        ),
+        title: "Changed edges"
+      },
+      {
+        rows: selectedGraphRevisionDiff.edges.removed.map(formatGraphEdgeDiffLine),
+        title: "Removed edges"
+      }
+    ].filter((section) => section.rows.length > 0);
+  }, [selectedGraphRevisionDiff]);
   const recoveryEvents = useMemo(
     () =>
       selectedRuntimeId
@@ -2559,41 +2614,99 @@ export function App() {
             ) : null}
 
             {selectedGraphRevisionInspection ? (
-              <div className="artifact-detail-card">
-                <div className="section-header">
-                  <h3>Selected Revision Detail</h3>
-                  <span className="panel-caption">
-                    {selectedGraphRevisionInspection.revision.isActive
-                      ? "active"
-                      : "inactive"}
-                  </span>
+              <>
+                <div className="artifact-detail-card">
+                  <div className="section-header">
+                    <h3>Selected Revision Detail</h3>
+                    <span className="panel-caption">
+                      {selectedGraphRevisionInspection.revision.isActive
+                        ? "active"
+                        : "inactive"}
+                    </span>
+                  </div>
+
+                  <dl className="status-list compact-list">
+                    <div>
+                      <dt>Revision</dt>
+                      <dd>
+                        {selectedGraphRevisionInspection.revision.revisionId}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Graph</dt>
+                      <dd>{selectedGraphRevisionInspection.revision.graphId}</dd>
+                    </div>
+                    <div>
+                      <dt>Applied</dt>
+                      <dd>{selectedGraphRevisionInspection.revision.appliedAt}</dd>
+                    </div>
+                    <div>
+                      <dt>Topology</dt>
+                      <dd>
+                        {formatGraphRevisionInspectionSummary(
+                          selectedGraphRevisionInspection
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
 
-                <dl className="status-list compact-list">
-                  <div>
-                    <dt>Revision</dt>
-                    <dd>
-                      {selectedGraphRevisionInspection.revision.revisionId}
-                    </dd>
+                {selectedGraphRevisionDiff ? (
+                  <div className="graph-diff-card">
+                    <div className="section-header">
+                      <h3>Diff Against Active</h3>
+                      <span
+                        className={`status-pill status-${selectedGraphRevisionDiff.hasChanges ? "degraded" : "healthy"}`}
+                      >
+                        {selectedGraphRevisionDiff.hasChanges
+                          ? "changes"
+                          : "no changes"}
+                      </span>
+                    </div>
+
+                    <dl className="status-list compact-list">
+                      <div>
+                        <dt>Comparison</dt>
+                        <dd>
+                          {selectedGraphRevisionDiff.from.name} -&gt;{" "}
+                          {selectedGraphRevisionDiff.to.name}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Totals</dt>
+                        <dd>{formatGraphDiffTotals(selectedGraphRevisionDiff)}</dd>
+                      </div>
+                      <div>
+                        <dt>Identity</dt>
+                        <dd>
+                          {formatGraphDiffIdentitySummary(
+                            selectedGraphRevisionDiff
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {selectedGraphRevisionDiffSections.length > 0 ? (
+                      <div className="graph-diff-section-grid">
+                        {selectedGraphRevisionDiffSections.map((section) => (
+                          <div key={section.title} className="graph-diff-section">
+                            <h4>{section.title}</h4>
+                            <ul className="detail-list">
+                              {section.rows.map((row) => (
+                                <li key={row}>{row}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>Selected revision matches the active graph.</p>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <dt>Graph</dt>
-                    <dd>{selectedGraphRevisionInspection.revision.graphId}</dd>
-                  </div>
-                  <div>
-                    <dt>Applied</dt>
-                    <dd>{selectedGraphRevisionInspection.revision.appliedAt}</dd>
-                  </div>
-                  <div>
-                    <dt>Topology</dt>
-                    <dd>
-                      {formatGraphRevisionInspectionSummary(
-                        selectedGraphRevisionInspection
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+                ) : null}
+              </>
             ) : selectedGraphRevisionId ? (
               <div className="inline-empty-state">
                 <p>Loading selected revision detail...</p>
