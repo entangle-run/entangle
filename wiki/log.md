@@ -1391,3 +1391,11 @@ reconciliation itself is aligned, so operators do not have to inspect
 Shared host-status presentation helpers and CLI summary projection now expose
 the session diagnostics line alongside runtime counts, reconciliation summary,
 backend, graph revision, finding codes, and last reconciliation time.
+
+## [2026-04-25] implementation | Surfaced session diagnostics in Studio host status
+
+Closed the visual follow-through for top-level session diagnostics by wiring
+Studio's Host Status panel to the shared `host-client` session-diagnostics
+formatter. Visual operators now see inspected-session count, consistency
+finding count, and affected-session count at the same top-level point where
+the degraded host status appears, matching the CLI summary vocabulary.

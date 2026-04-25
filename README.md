@@ -535,10 +535,10 @@ This repository currently contains:
   output over desired/observed state, reconciliation, context readiness,
   restart generation, backend, package source, runtime handle, and git
   provisioning signals;
-- a shared host-status presentation slice where the CLI now exposes compact
-  `host status --summary` output over service health, runtime counts,
-  reconciliation counts, session diagnostics, finding codes, graph revision,
-  backend, and last reconciliation time;
+- a shared host-status presentation slice where Studio's Host Status panel and
+  the CLI now expose compact status output over service health, runtime
+  counts, reconciliation counts, session diagnostics, finding codes, graph
+  revision, backend, and last reconciliation time;
 
 The highest-value remaining gaps are:
 

@@ -15,7 +15,10 @@ import {
   type Edge,
   type Node
 } from "@xyflow/react";
-import { createHostClient } from "@entangle/host-client";
+import {
+  createHostClient,
+  formatHostStatusSessionDiagnosticsSummary
+} from "@entangle/host-client";
 import type {
   ArtifactRecord,
   ExternalPrincipalInspectionResponse,
@@ -2287,6 +2290,14 @@ export function App() {
             <div>
               <dt>Running runtimes</dt>
               <dd>{status?.runtimeCounts.running ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Session diagnostics</dt>
+              <dd>
+                {status
+                  ? formatHostStatusSessionDiagnosticsSummary(status)
+                  : "not loaded"}
+              </dd>
             </div>
           </dl>
 
