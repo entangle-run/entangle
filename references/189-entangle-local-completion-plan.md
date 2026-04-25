@@ -56,8 +56,9 @@ The latest implementation state includes:
   bounded preview for changed files listed on the candidate plus audited
   accepted/rejected/superseded review mutation and explicit runtime-local
   source-history application for accepted candidates, source-history
-  publication as git commit artifacts, and bounded artifact history/diff
-  inspection for supported materialized git artifacts;
+  publication as git commit artifacts with explicit retry and target-selection
+  controls, and bounded artifact history/diff inspection for supported
+  materialized git artifacts;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -579,14 +580,16 @@ Current partial implementation:
   apply/list/detail surfaces;
 - applied source-history entries can now be published as git commit artifacts;
   the host materializes the source-history tree into a publication repository,
-  pushes to the resolved primary git target when possible, records publication
-  metadata on both the source-history entry and artifact, emits
-  `source_history.published`, and exposes host-client, CLI, and Studio publish
-  surfaces;
+  pushes to the resolved git target when possible, records publication
+  metadata and the resolved target on both the source-history entry and artifact
+  locator, emits `source_history.published`, rejects repeated failed attempts
+  unless `retry: true` is supplied, and exposes host-client, CLI, and Studio
+  publish surfaces;
 - materialized git artifacts now have bounded host-owned history and diff
   inspection through host API, host-client, CLI, and Studio surfaces;
-- approval flow, richer policy-gated publication controls, retry/target
-  selection, and artifact restore/replay workflow remain open.
+- approval flow, richer policy-gated publication controls, non-primary target
+  provisioning/fallback behavior, and artifact restore/replay workflow remain
+  open.
 
 Acceptance:
 

@@ -309,6 +309,9 @@ export const sourceHistoryPublishedEventSchema = hostEventBaseSchema.extend({
   remoteName: identifierSchema.optional(),
   remoteUrl: nonEmptyStringSchema.optional(),
   sourceHistoryBranch: nonEmptyStringSchema,
+  targetGitServiceRef: identifierSchema.optional(),
+  targetNamespace: identifierSchema.optional(),
+  targetRepositoryName: identifierSchema.optional(),
   turnId: identifierSchema,
   type: z.literal("source_history.published")
 });

@@ -5,6 +5,16 @@ import {
 } from "@entangle/host-client";
 
 export function projectRuntimeSourceHistorySummary(entry: SourceHistoryRecord) {
+  const publicationTarget = entry.publication
+    ? [
+        entry.publication.targetGitServiceRef,
+        entry.publication.targetNamespace,
+        entry.publication.targetRepositoryName
+      ]
+        .filter((value) => value !== undefined)
+        .join("/")
+    : undefined;
+
   return {
     appliedAt: entry.appliedAt,
     candidateId: entry.candidateId,
@@ -14,6 +24,7 @@ export function projectRuntimeSourceHistorySummary(entry: SourceHistoryRecord) {
     mode: entry.mode,
     nodeId: entry.nodeId,
     publicationState: entry.publication?.publication.state ?? "not_requested",
+    ...(publicationTarget ? { publicationTarget } : {}),
     publishedArtifactId: entry.publication?.artifactId,
     sourceHistoryId: entry.sourceHistoryId,
     turnId: entry.turnId

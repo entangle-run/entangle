@@ -52,7 +52,10 @@ const history: SourceHistoryRecord[] = [
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
-      requestedAt: "2026-04-24T00:04:00.000Z"
+      requestedAt: "2026-04-24T00:04:00.000Z",
+      targetGitServiceRef: "local-gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha"
     },
     reason: "Promote accepted source.",
     sourceChangeSummary: {
@@ -89,6 +92,9 @@ describe("runtime source history presentation helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
       "publication published"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
+      "publication target local-gitea/team-alpha/graph-alpha"
     );
   });
 });

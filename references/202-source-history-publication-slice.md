@@ -43,10 +43,12 @@ The host API now includes:
 POST /v1/runtimes/:nodeId/source-history/:sourceHistoryId/publish
 ```
 
-The publish request accepts optional `publishedBy` and `reason`. The mutation
-requires an existing source-history entry, a runtime shadow git repository, and
-a resolved primary git repository target. A source-history entry that already
-has `publication.state: "published"` is rejected as a conflict.
+The initial publish request accepted optional `publishedBy` and `reason`. The
+follow-up controls slice now also accepts explicit retry and target-selection
+fields. The mutation requires an existing source-history entry, a runtime
+shadow git repository, and a resolved git repository target. A source-history
+entry that already has `publication.state: "published"` is rejected as a
+conflict.
 
 For a publishable entry, the host:
 
@@ -60,7 +62,7 @@ For a publishable entry, the host:
   `<nodeId>/source-history/<sourceHistoryId>`;
 - writes an `ArtifactRecord` with `artifactKind: "commit"` and `backend:
   "git"`;
-- attempts to push that commit to the resolved primary git target;
+- attempts to push that commit to the resolved git target;
 - persists publication success or failure metadata without deleting the local
   artifact record;
 - annotates the `SourceHistoryRecord` with the produced artifact id, branch,
@@ -95,7 +97,7 @@ This slice intentionally does not:
 - bypass future policy or approval gates;
 - emit peer handoff messages for source publications;
 - implement artifact restore/replay APIs or remote-only artifact inspection;
-- implement non-primary target selection or fallback replication;
+- implement non-primary target provisioning or fallback replication;
 - treat failed remote publication as loss of local artifact truth.
 
 The publication mutation is host-mediated for the current Entangle Local
@@ -107,8 +109,7 @@ operation without changing the public host contract.
 The remaining B5 implementation should add:
 
 - policy checks and approval gates before source application or publication;
-- richer remote publication controls, including retry semantics and target
-  selection;
+- richer policy-gated remote publication controls and non-primary provisioning;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;
 - artifact restore/replay semantics only after rollback and policy behavior are

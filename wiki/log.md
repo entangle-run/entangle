@@ -1,5 +1,24 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source history publication controls
+
+Advanced Entangle Local L3 workstream B5. Source-history publication now has
+explicit retry and git target-selection semantics. The host rejects replacement
+of a failed publication attempt unless `retry: true` is supplied, keeps already
+published source-history entries immutable, resolves optional git service,
+namespace, and repository targets through the runtime artifact context, and
+records the resolved target on source-history publication records, git artifact
+locators, and `source_history.published` events.
+
+The shared host client, CLI, and Studio now consume the widened contract. CLI
+publish commands accept `--retry` and target-selection options, Studio sends a
+retry when republishing a failed selected source-history entry, and shared
+presentation helpers show publication targets. Added
+`references/204-source-history-publication-controls-slice.md`. Policy-gated
+publication approval, non-primary provisioning/fallback behavior, artifact
+restore/replay semantics, and end-to-end OpenCode-backed source-publication
+smoke coverage remain open.
+
 ## [2026-04-25] implementation | Added runtime artifact history and diff inspection
 
 Advanced Entangle Local L3 workstream B5. Materialized git-backed runtime

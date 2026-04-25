@@ -460,7 +460,10 @@ describe("source change candidate host API contracts", () => {
           state: "published"
         },
         requestedAt: "2026-04-24T00:04:00.000Z",
-        requestedBy: "operator-alpha"
+        requestedBy: "operator-alpha",
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha"
       },
       reason: "Accepted for the local source history.",
       sourceChangeSummary: candidate.sourceChangeSummary,
@@ -513,9 +516,17 @@ describe("source change candidate host API contracts", () => {
     expect(
       runtimeSourceHistoryPublishMutationRequestSchema.parse({
         publishedBy: "operator-alpha",
-        reason: "Publish source for peer review."
-      }).publishedBy
-    ).toBe("operator-alpha");
+        reason: "Publish source for peer review.",
+        retry: true,
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha"
+      })
+    ).toMatchObject({
+      publishedBy: "operator-alpha",
+      retry: true,
+      targetRepositoryName: "graph-alpha"
+    });
     expect(
       runtimeSourceHistoryPublicationResponseSchema.parse({
         artifact: sourceArtifact,
@@ -1330,6 +1341,9 @@ describe("host event contracts", () => {
       schemaVersion: "1",
       sourceHistoryBranch:
         "worker-it/source-history/source-history-source-change-turn-alpha",
+      targetGitServiceRef: "local-gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha",
       timestamp: "2026-04-24T00:00:04.000Z",
       turnId: "turn-alpha",
       type: "source_history.published"
@@ -1369,6 +1383,7 @@ describe("host event contracts", () => {
     expect(sourceHistoryEvent.mode).toBe("already_in_workspace");
     expect(sourceHistoryPublishedEvent.type).toBe("source_history.published");
     expect(sourceHistoryPublishedEvent.publicationState).toBe("published");
+    expect(sourceHistoryPublishedEvent.targetRepositoryName).toBe("graph-alpha");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

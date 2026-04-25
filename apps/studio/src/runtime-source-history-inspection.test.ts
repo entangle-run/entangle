@@ -51,7 +51,10 @@ const entries: SourceHistoryRecord[] = [
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
-      requestedAt: "2026-04-24T00:04:00.000Z"
+      requestedAt: "2026-04-24T00:04:00.000Z",
+      targetGitServiceRef: "local-gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha"
     },
     sourceChangeSummary: {
       additions: 2,
@@ -81,6 +84,9 @@ describe("runtime source history Studio helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
       "artifact source-source-history-source-change-turn-new"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
+      "publication target local-gitea/team-alpha/graph-alpha"
     );
   });
 });

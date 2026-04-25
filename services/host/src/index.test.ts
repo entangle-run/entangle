@@ -3523,11 +3523,63 @@ describe("buildHostServer", () => {
         ).entry.commit
       ).toBe(sourceHistoryEntry.commit);
 
+      const failedPublishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          publishedBy: "operator-alpha",
+          reason: "Try a missing repository target before retrying.",
+          targetRepositoryName: "missing-target"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
+      });
+
+      expect(failedPublishResponse.statusCode).toBe(200);
+      const failedPublication =
+        runtimeSourceHistoryPublicationResponseSchema.parse(
+          failedPublishResponse.json()
+        );
+      expect(failedPublication.entry.publication).toMatchObject({
+        artifactId: "source-source-history-source-change-turn-alpha",
+        publication: {
+          state: "failed"
+        },
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "missing-target"
+      });
+      expect(failedPublication.artifact).toMatchObject({
+        publication: {
+          state: "failed"
+        },
+        ref: {
+          locator: {
+            repositoryName: "missing-target"
+          }
+        }
+      });
+
+      const retryRequiredPublishResponse = await server.inject({
+        method: "POST",
+        payload: {},
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
+      });
+
+      expect(retryRequiredPublishResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(retryRequiredPublishResponse.json()).message
+      ).toContain("retry");
+
       const publishResponse = await server.inject({
         method: "POST",
         payload: {
           publishedBy: "operator-alpha",
-          reason: "Publish accepted source for downstream handoff."
+          reason: "Publish accepted source for downstream handoff.",
+          retry: true,
+          targetGitServiceRef: "local-gitea",
+          targetNamespace: "team-alpha",
+          targetRepositoryName: "team-alpha"
         },
         url:
           "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
@@ -3543,7 +3595,10 @@ describe("buildHostServer", () => {
         publication: {
           state: "published"
         },
-        requestedBy: "operator-alpha"
+        requestedBy: "operator-alpha",
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "team-alpha"
       });
       expect(publishedSourceHistory.artifact).toMatchObject({
         publication: {
@@ -3553,6 +3608,9 @@ describe("buildHostServer", () => {
         ref: {
           artifactKind: "commit",
           backend: "git",
+          locator: {
+            repositoryName: "team-alpha"
+          },
           status: "published"
         }
       });
@@ -3714,12 +3772,23 @@ describe("buildHostServer", () => {
           ).json()
         )
         .events.filter((event) => event.type === "source_history.published");
-      expect(sourceHistoryPublishedEvents).toHaveLength(1);
-      expect(sourceHistoryPublishedEvents[0]).toMatchObject({
-        artifactId: "source-source-history-source-change-turn-alpha",
-        historyId: "source-history-source-change-turn-alpha",
-        publicationState: "published"
-      });
+      expect(sourceHistoryPublishedEvents).toHaveLength(2);
+      expect(sourceHistoryPublishedEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            artifactId: "source-source-history-source-change-turn-alpha",
+            historyId: "source-history-source-change-turn-alpha",
+            publicationState: "failed",
+            targetRepositoryName: "missing-target"
+          }),
+          expect.objectContaining({
+            artifactId: "source-source-history-source-change-turn-alpha",
+            historyId: "source-history-source-change-turn-alpha",
+            publicationState: "published",
+            targetRepositoryName: "team-alpha"
+          })
+        ])
+      );
 
       const missingCandidateResponse = await server.inject({
         method: "GET",

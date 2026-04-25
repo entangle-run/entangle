@@ -17,6 +17,16 @@ export function formatRuntimeSourceHistoryLabel(
 export function formatRuntimeSourceHistoryDetailLines(
   history: SourceHistoryRecord
 ): string[] {
+  const publicationTarget = history.publication
+    ? [
+        history.publication.targetGitServiceRef,
+        history.publication.targetNamespace,
+        history.publication.targetRepositoryName
+      ]
+        .filter((entry) => entry !== undefined)
+        .join("/")
+    : undefined;
+
   return [
     `history ${history.sourceHistoryId}`,
     `candidate ${history.candidateId}`,
@@ -30,6 +40,9 @@ export function formatRuntimeSourceHistoryDetailLines(
           `artifact ${history.publication.artifactId}`,
           `publication ${history.publication.publication.state}`,
           `publication branch ${history.publication.branch}`,
+          ...(publicationTarget
+            ? [`publication target ${publicationTarget}`]
+            : []),
           ...(history.publication.publication.remoteName
             ? [`publication remote ${history.publication.publication.remoteName}`]
             : []),

@@ -208,6 +208,7 @@ This directory is the canonical design corpus for Entangle.
 202. [201-source-history-application-slice.md](201-source-history-application-slice.md)
 203. [202-source-history-publication-slice.md](202-source-history-publication-slice.md)
 204. [203-artifact-history-diff-slice.md](203-artifact-history-diff-slice.md)
+205. [204-source-history-publication-controls-slice.md](204-source-history-publication-controls-slice.md)
 
 ## Role of this corpus
 

@@ -1948,7 +1948,10 @@ describe("createHostClient", () => {
           state: "published"
         },
         requestedAt: "2026-04-24T00:04:00.000Z",
-        requestedBy: "operator-alpha"
+        requestedBy: "operator-alpha",
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha"
       },
       updatedAt: "2026-04-24T00:04:00.000Z"
     };
@@ -2045,7 +2048,11 @@ describe("createHostClient", () => {
         "source-history-source-change-turn-alpha",
         {
           publishedBy: "operator-alpha",
-          reason: "Publish source history."
+          reason: "Publish source history.",
+          retry: true,
+          targetGitServiceRef: "local-gitea",
+          targetNamespace: "team-alpha",
+          targetRepositoryName: "graph-alpha"
         }
       )
     ).resolves.toMatchObject({
@@ -2082,7 +2089,11 @@ describe("createHostClient", () => {
       {
         body: JSON.stringify({
           publishedBy: "operator-alpha",
-          reason: "Publish source history."
+          reason: "Publish source history.",
+          retry: true,
+          targetGitServiceRef: "local-gitea",
+          targetNamespace: "team-alpha",
+          targetRepositoryName: "graph-alpha"
         }),
         method: "POST",
         url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"

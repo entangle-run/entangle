@@ -176,7 +176,10 @@ export const sourceHistoryPublicationRecordSchema = z.object({
   publication: artifactPublicationSchema,
   reason: nonEmptyStringSchema.optional(),
   requestedAt: nonEmptyStringSchema,
-  requestedBy: identifierSchema.optional()
+  requestedBy: identifierSchema.optional(),
+  targetGitServiceRef: identifierSchema.optional(),
+  targetNamespace: identifierSchema.optional(),
+  targetRepositoryName: identifierSchema.optional()
 });
 
 export const sourceChangeCandidateRecordSchema = z.object({

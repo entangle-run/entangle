@@ -145,8 +145,10 @@ This repository currently contains:
   validates the current source tree before recording a local history commit,
   plus a separate source-history publication path that materializes an applied
   source-history commit as a git commit artifact, records publication metadata,
-  emits `source_history.published`, and can push to the runtime's primary git
-  target, including local `file://` git remotes for Entangle Local tests;
+  records the resolved git target, requires explicit retry after failed
+  attempts, emits `source_history.published`, and can push to the runtime's
+  primary or selected git target, including local `file://` git remotes for
+  Entangle Local tests;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

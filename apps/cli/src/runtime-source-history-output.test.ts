@@ -23,7 +23,10 @@ const entry: SourceHistoryRecord = {
       remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
       state: "published"
     },
-    requestedAt: "2026-04-24T00:04:00.000Z"
+    requestedAt: "2026-04-24T00:04:00.000Z",
+    targetGitServiceRef: "local-gitea",
+    targetNamespace: "team-alpha",
+    targetRepositoryName: "graph-alpha"
   },
   reason: "Promote accepted source.",
   sourceChangeSummary: {
@@ -46,6 +49,7 @@ describe("runtime source history CLI output", () => {
       candidateId: "source-change-turn-alpha",
       label: "source-history-source-change-turn-alpha · already_in_workspace",
       mode: "already_in_workspace",
+      publicationTarget: "local-gitea/team-alpha/graph-alpha",
       publicationState: "published",
       publishedArtifactId: "source-source-history-source-change-turn-alpha",
       sourceHistoryId: "source-history-source-change-turn-alpha"

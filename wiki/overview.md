@@ -161,8 +161,9 @@ The repository now also contains the first real implementation baseline:
   review lifecycle mutations plus runtime-local source-history application for
   accepted candidates, and a separate source-history publication mutation that
   turns applied source-history commits into git commit artifacts with durable
-  publication metadata, with bounded host/CLI/Studio history and diff
-  inspection for supported materialized git artifacts;
+  publication metadata, resolved target metadata, and explicit retry after
+  failed attempts, with bounded host/CLI/Studio history and diff inspection for
+  supported materialized git artifacts;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -673,12 +674,12 @@ The current implementation-truth audit now lives in
   provisioning record model, the publication/retrieval-state record model, and
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
-  source-history commit artifact publication plus bounded artifact history/diff
-  inspection for materialized git artifacts; the next git gaps are
-  policy-gated publication controls, artifact restore/replay semantics, and
-  non-primary target/fallback behavior, while the next deployment-grade gap is
-  non-disposable local-profile upgrade and repair behavior for older Gitea
-  volumes;
+  retryable target-aware source-history commit artifact publication plus
+  bounded artifact history/diff inspection for materialized git artifacts; the
+  next git gaps are policy-gated publication controls, artifact restore/replay
+  semantics, and non-primary target provisioning/fallback behavior, while the
+  next deployment-grade gap is non-disposable local-profile upgrade and repair
+  behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

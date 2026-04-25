@@ -1976,10 +1976,15 @@ export function App() {
 
     try {
       setPendingSourceHistoryPublish(true);
+      const sourceHistoryPublication =
+        selectedSourceHistoryInspection?.entry.publication;
+      const shouldRetryPublication =
+        sourceHistoryPublication !== undefined &&
+        sourceHistoryPublication.publication.state !== "published";
       const response = await client.publishRuntimeSourceHistory(
         selectedRuntimeId,
         selectedSourceHistoryId,
-        {}
+        shouldRetryPublication ? { retry: true } : {}
       );
 
       startTransition(() => {
@@ -2029,7 +2034,8 @@ export function App() {
     client,
     refreshSelectedRuntimeDetails,
     selectedRuntimeId,
-    selectedSourceHistoryId
+    selectedSourceHistoryId,
+    selectedSourceHistoryInspection
   ]);
 
   const selectGraphRevision = useCallback(

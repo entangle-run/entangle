@@ -80,6 +80,8 @@ import {
   type GraphSpec,
   type GraphMutationResponse,
   graphSpecSchema,
+  buildGitRepositoryTarget,
+  type GitRepositoryTarget,
   intersectIdentifiers,
   type NodeBinding,
   type NodeCreateRequest,
@@ -6295,6 +6297,7 @@ function buildSourceHistoryArtifactRecord(input: {
   context: EffectiveRuntimeContext;
   history: SourceHistoryRecord;
   repoPath: string;
+  target: GitRepositoryTarget;
   timestamp: string;
 }): ArtifactRecord {
   const artifactId = buildSourceHistoryArtifactId(input.history.sourceHistoryId);
@@ -6321,10 +6324,9 @@ function buildSourceHistoryArtifactRecord(input: {
       locator: {
         branch: input.branchName,
         commit: input.artifactCommit,
-        gitServiceRef: input.context.artifactContext.primaryGitServiceRef,
-        namespace: input.context.artifactContext.defaultNamespace,
-        repositoryName:
-          input.context.artifactContext.primaryGitRepositoryTarget?.repositoryName,
+        gitServiceRef: input.target.gitServiceRef,
+        namespace: input.target.namespace,
+        repositoryName: input.target.repositoryName,
         path: "."
       },
       preferred: true,
@@ -6341,14 +6343,11 @@ async function publishSourceHistoryArtifactRecord(input: {
   branchName: string;
   context: EffectiveRuntimeContext;
   repoPath: string;
+  target: GitRepositoryTarget;
 }): Promise<ArtifactRecord> {
-  const target = input.context.artifactContext.primaryGitRepositoryTarget;
-
-  if (!target) {
-    return input.artifactRecord;
-  }
-
-  const remoteName = `entangle-${sanitizeGitBranchComponent(target.gitServiceRef)}`;
+  const remoteName = `entangle-${sanitizeGitBranchComponent(
+    input.target.gitServiceRef
+  )}`;
   const attemptTimestamp = nowIsoString();
   const artifactRef = input.artifactRecord.ref;
 
@@ -6361,12 +6360,12 @@ async function publishSourceHistoryArtifactRecord(input: {
   try {
     const gitEnv = await buildSourceHistoryGitCommandEnvForRemoteOperation({
       context: input.context,
-      target
+      target: input.target
     });
     await ensureSourceHistoryGitRemote({
       env: gitEnv,
       remoteName,
-      remoteUrl: target.remoteUrl,
+      remoteUrl: input.target.remoteUrl,
       repoPath: input.repoPath
     });
     await runSourceHistoryGitCommand(
@@ -6387,7 +6386,7 @@ async function publishSourceHistoryArtifactRecord(input: {
       publication: {
         publishedAt: attemptTimestamp,
         remoteName,
-        remoteUrl: target.remoteUrl,
+        remoteUrl: input.target.remoteUrl,
         state: "published"
       },
       ref: {
@@ -6408,12 +6407,100 @@ async function publishSourceHistoryArtifactRecord(input: {
         lastAttemptAt: attemptTimestamp,
         lastError: publicationError,
         remoteName,
-        remoteUrl: target.remoteUrl,
+        remoteUrl: input.target.remoteUrl,
         state: "failed"
       },
       updatedAt: attemptTimestamp
     });
   }
+}
+
+type SourceHistoryPublicationTargetResolution =
+  | {
+      ok: true;
+      target: GitRepositoryTarget;
+    }
+  | {
+      message: string;
+      ok: false;
+    };
+
+function resolveSourceHistoryPublicationTarget(input: {
+  context: EffectiveRuntimeContext;
+  publish: RuntimeSourceHistoryPublishMutationRequest;
+  sourceHistoryId: string;
+}): SourceHistoryPublicationTargetResolution {
+  const requestedTarget =
+    input.publish.targetGitServiceRef ||
+    input.publish.targetNamespace ||
+    input.publish.targetRepositoryName;
+
+  if (!requestedTarget) {
+    const target = input.context.artifactContext.primaryGitRepositoryTarget;
+
+    if (!target) {
+      return {
+        message:
+          `Source history entry '${input.sourceHistoryId}' cannot be published because runtime ` +
+          `'${input.context.binding.node.nodeId}' has no primary git repository target.`,
+        ok: false
+      };
+    }
+
+    return {
+      ok: true,
+      target
+    };
+  }
+
+  const gitServiceRef =
+    input.publish.targetGitServiceRef ??
+    input.context.artifactContext.primaryGitServiceRef;
+
+  if (!gitServiceRef) {
+    return {
+      message:
+        `Source history entry '${input.sourceHistoryId}' cannot be published to an explicit target because no git service was selected.`,
+      ok: false
+    };
+  }
+
+  const service = input.context.artifactContext.gitServices.find(
+    (candidate) => candidate.id === gitServiceRef
+  );
+
+  if (!service) {
+    return {
+      message:
+        `Source history entry '${input.sourceHistoryId}' cannot be published because git service '${gitServiceRef}' is not available to runtime '${input.context.binding.node.nodeId}'.`,
+      ok: false
+    };
+  }
+
+  const namespace =
+    input.publish.targetNamespace ?? input.context.artifactContext.defaultNamespace;
+
+  if (!namespace) {
+    return {
+      message:
+        `Source history entry '${input.sourceHistoryId}' cannot be published to git service '${gitServiceRef}' because no target namespace was resolved.`,
+      ok: false
+    };
+  }
+
+  const repositoryName =
+    input.publish.targetRepositoryName ??
+    input.context.artifactContext.primaryGitRepositoryTarget?.repositoryName ??
+    input.context.binding.graphId;
+
+  return {
+    ok: true,
+    target: buildGitRepositoryTarget({
+      namespace,
+      repositoryName,
+      service
+    })
+  };
 }
 
 export async function applyRuntimeSourceChangeCandidate(input: {
@@ -6706,15 +6793,32 @@ export async function publishRuntimeSourceHistory(input: {
     };
   }
 
-  if (!context.artifactContext.primaryGitRepositoryTarget) {
+  if (history.publication && !publish.retry) {
     return {
       code: "conflict",
       message:
-        `Source history entry '${input.sourceHistoryId}' cannot be published because runtime '${input.nodeId}' has no primary git repository target.`,
+        `Source history entry '${input.sourceHistoryId}' already has a ` +
+        `publication attempt in state '${history.publication.publication.state}'. ` +
+        "Set retry to true to replace the previous attempt.",
       ok: false
     };
   }
 
+  const targetResolution = resolveSourceHistoryPublicationTarget({
+    context,
+    publish,
+    sourceHistoryId: input.sourceHistoryId
+  });
+
+  if (!targetResolution.ok) {
+    return {
+      code: "conflict",
+      message: targetResolution.message,
+      ok: false
+    };
+  }
+
+  const { target } = targetResolution;
   const sourceGitDir = path.join(context.workspace.runtimeRoot, "source-snapshot.git");
 
   try {
@@ -6743,13 +6847,15 @@ export async function publishRuntimeSourceHistory(input: {
       context,
       history,
       repoPath,
+      target,
       timestamp: requestedAt
     });
     const artifact = await publishSourceHistoryArtifactRecord({
       artifactRecord: localArtifact,
       branchName,
       context,
-      repoPath
+      repoPath,
+      target
     });
     const artifactRef = artifact.ref;
 
@@ -6769,7 +6875,10 @@ export async function publishRuntimeSourceHistory(input: {
         },
         ...(publish.reason ? { reason: publish.reason } : {}),
         requestedAt,
-        ...(publish.publishedBy ? { requestedBy: publish.publishedBy } : {})
+        ...(publish.publishedBy ? { requestedBy: publish.publishedBy } : {}),
+        targetGitServiceRef: target.gitServiceRef,
+        targetNamespace: target.namespace,
+        targetRepositoryName: target.repositoryName
       },
       updatedAt: artifact.updatedAt
     });
@@ -6808,6 +6917,9 @@ export async function publishRuntimeSourceHistory(input: {
         ? { remoteUrl: artifact.publication.remoteUrl }
         : {}),
       sourceHistoryBranch: branchName,
+      targetGitServiceRef: target.gitServiceRef,
+      targetNamespace: target.namespace,
+      targetRepositoryName: target.repositoryName,
       turnId: history.turnId,
       type: "source_history.published"
     } satisfies SourceHistoryPublishedEventInput);

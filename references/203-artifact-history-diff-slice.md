@@ -92,7 +92,7 @@ This slice intentionally does not:
 - restore or replay artifact commits into a workspace;
 - diff non-git artifact backends;
 - fetch remote-only repositories before inspection;
-- add publication retry or target-selection controls;
+- add publication policy approval, target provisioning, or fallback replication;
 - change runner ownership of artifact production.
 
 The new inspection surface is deliberately read-only and bounded. Richer
@@ -104,8 +104,7 @@ publication controls remain later B5 or reliability work.
 The remaining B5 implementation should add:
 
 - policy checks and approval gates before source application or publication;
-- richer remote publication controls, including retry semantics and target
-  selection;
+- non-primary git repository provisioning and fallback/replication behavior;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;
 - artifact restore/replay semantics only after rollback and policy behavior are
