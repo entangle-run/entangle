@@ -1578,3 +1578,8 @@ attribute the responding approver, close the approval conversation when policy
 allows, and reuse the existing no-open-work completion path so unblocked
 waiting sessions can complete. Unknown or malformed approval metadata remains
 non-fatal and does not synthesize approval truth.
+
+Rejected approval responses now also have explicit coverage: the runner marks
+the approval rejected, closes the approval conversation when policy allows,
+clears active waiting gates, and moves the blocked session to `failed` when the
+session lifecycle allows it.

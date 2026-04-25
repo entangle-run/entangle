@@ -1467,15 +1467,20 @@ export class RunnerService {
     });
 
     if (approval.decision === "rejected") {
+      const rejectedSession: SessionRecord = {
+        ...input.session,
+        activeConversationIds: [],
+        waitingApprovalIds: []
+      };
       const failedSession = isAllowedSessionLifecycleTransition(
-        input.session.status,
+        rejectedSession.status,
         "failed"
       )
-        ? await transitionSessionStatus(input.statePaths, input.session, "failed", {
+        ? await transitionSessionStatus(input.statePaths, rejectedSession, "failed", {
             lastMessageId: input.envelope.eventId,
             lastMessageType: input.envelope.message.messageType
           })
-        : input.session;
+        : rejectedSession;
 
       return {
         conversation: nextConversation,

@@ -1110,6 +1110,126 @@ describe("RunnerService", () => {
     expect(sessionRecord?.lastMessageType).toBe("approval.response");
   });
 
+  it("applies rejected approval responses and fails the blocked session", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const approvalRequestMessageId =
+      "1212121212121212121212121212121212121212121212121212121212121212";
+    const approvalResponseMessageId =
+      "3434343434343434343434343434343434343434343434343434343434343434";
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-approval-rejected"],
+      graphId: "graph-alpha",
+      intent: "Fail after rejected approval.",
+      lastMessageId: approvalRequestMessageId,
+      lastMessageType: "approval.request",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-approval-rejected",
+      status: "waiting_approval",
+      traceId: "session-approval-rejected",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: ["approval-rejected-alpha"]
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-approval-rejected",
+      followupCount: 0,
+      graphId: "graph-alpha",
+      initiator: "local",
+      lastOutboundMessageId: approvalRequestMessageId,
+      lastMessageType: "approval.request",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-approval-rejected",
+      status: "awaiting_approval",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-rejected-alpha",
+      approverNodeIds: ["reviewer-it"],
+      conversationId: "conv-approval-rejected",
+      graphId: "graph-alpha",
+      reason: "Approve publication before completing the session.",
+      requestedAt: "2026-04-24T10:03:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-approval-rejected",
+      status: "pending",
+      updatedAt: "2026-04-24T10:03:00.000Z"
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+    const approvalResponseMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-approval-rejected",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Fail after rejected approval.",
+      messageType: "approval.response",
+      parentMessageId: approvalRequestMessageId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-approval-rejected",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "approval-rejected-turn",
+      work: {
+        artifactRefs: [],
+        metadata: {
+          approval: {
+            approvalId: "approval-rejected-alpha",
+            decision: "rejected"
+          }
+        },
+        summary: "Approval is rejected."
+      }
+    });
+
+    const result = await service.handleInboundEnvelope({
+      eventId: approvalResponseMessageId,
+      message: approvalResponseMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [approvalRecord, conversationRecord, sessionRecord] = await Promise.all([
+      readApprovalRecord(statePaths, "approval-rejected-alpha"),
+      readConversationRecord(statePaths, "conv-approval-rejected"),
+      readSessionRecord(statePaths, "session-approval-rejected")
+    ]);
+
+    expect(result.handled).toBe(true);
+    expect(approvalRecord?.status).toBe("rejected");
+    expect(conversationRecord?.status).toBe("closed");
+    expect(sessionRecord?.status).toBe("failed");
+    expect(sessionRecord?.activeConversationIds).toEqual([]);
+    expect(sessionRecord?.waitingApprovalIds).toEqual([]);
+    expect(sessionRecord?.lastMessageId).toBe(approvalResponseMessageId);
+    expect(sessionRecord?.lastMessageType).toBe("approval.response");
+  });
+
   it("completes drained sessions when waiting approvals were already approved", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;

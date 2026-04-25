@@ -43,10 +43,10 @@ The runner now handles inbound approval coordination messages as follows:
   - reuses the existing no-open-work repair path so approved gates can clear
     `waitingApprovalIds` and complete unblocked waiting sessions.
 
-Rejected decisions are persisted as rejected approval records and may fail the
-local session when the session lifecycle allows it. The first covered happy path
-is approved responses because that is the path needed to unblock already
-drained sessions.
+Rejected decisions are persisted as rejected approval records, close the
+approval conversation when policy allows, clear active approval gates from the
+local terminal session, and fail the local session when the session lifecycle
+allows it.
 
 ## Boundary Decisions
 
@@ -71,6 +71,9 @@ Coverage now asserts that:
 - inbound approved `approval.response` updates the approval record, closes the
   approval conversation when policy allows, clears the waiting gate, and
   completes the unblocked session.
+- inbound rejected `approval.response` updates the approval record, closes the
+  approval conversation when policy allows, clears active waiting gates, and
+  fails the blocked session.
 
 ## Result
 
