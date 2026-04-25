@@ -171,6 +171,9 @@ failure.
 
 ## Execution Plan
 
+The detailed task and constraint breakdown now lives in
+[189-entangle-local-completion-plan.md](189-entangle-local-completion-plan.md).
+
 1. Build L3 Agentic Node Runtime.
    - Keep Entangle as graph, identity, policy, artifact, wiki, and
      communication runtime.

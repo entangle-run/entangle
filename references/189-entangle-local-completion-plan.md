@@ -1,0 +1,655 @@
+# Entangle Local Completion Plan
+
+Date: 2026-04-25.
+
+## Purpose
+
+This document is the implementation plan for completing Entangle Local.
+
+For this plan, the project is Entangle Local. Historical names such as
+`hackathon_local` are treated as legacy implementation detail that must be
+retired before the Local GA release. Cloud and Enterprise are explicitly out of
+scope until Entangle Local reaches GA.
+
+## Current Baseline
+
+Completed:
+
+- L1 Local Operator Baseline.
+- L1.5 Local Operator Preview.
+- L2 Local Workbench.
+
+In progress:
+
+- L3 Agentic Node Runtime.
+
+Not complete:
+
+- L4 Local Reliability.
+- L5 Entangle Local GA.
+
+The latest implementation state includes:
+
+- graph and node-level `agentRuntime` selection;
+- deployment-level `agentEngineProfiles`;
+- effective runtime context with `agentRuntimeContext`;
+- OpenCode as the default local agent engine profile;
+- per-node source, engine-state, and wiki-repository workspace roots;
+- a first safe OpenCode CLI/process adapter in the runner.
+
+The current OpenCode adapter is intentionally not yet enough for L3 acceptance.
+It can execute a primary node turn, but it does not yet provide the complete
+policy bridge, permission mapping, artifact/diff harvesting, git/wiki workflow,
+or CLI/Studio configuration and observability surface required for Entangle
+Local.
+
+## Professional Constraints
+
+These constraints are mandatory for every task below.
+
+### Product Scope
+
+- The active product is Entangle Local.
+- Do not start Cloud or Enterprise product work before Local GA.
+- Do not use Local GA language until L3, L4, release hardening, and claim audit
+  gates pass.
+- Retire legacy public naming such as `hackathon_local` before GA.
+
+### Architecture
+
+- Preserve the final architecture while narrowing only active Local features.
+- Keep Entangle graph-native: nodes and edges remain first-class operational
+  objects.
+- The user remains a first-class node.
+- Host remains the control plane.
+- Runner remains the per-node execution boundary.
+- Studio and CLI must consume the same host boundary.
+- Do not collapse the product into a single orchestrator-centric shortcut.
+- Do not turn Entangle into an OpenCode or Claude Code fork.
+
+### Agent Engine Boundary
+
+- Coding engines are node-local implementation engines behind an Entangle
+  adapter.
+- OpenCode is the first production target and the default engine.
+- Engine-specific protocol details must not leak into graph, host API, or A2A
+  contracts.
+- Engine subagents remain internal engine detail unless explicitly surfaced as
+  Entangle nodes by configuration.
+- Legacy one-turn model inference must not return as a public node runtime.
+
+### Identity, Policy, And Security
+
+- Nostr identities are the coordination identities for nodes.
+- Git identities are separate backend principals and must remain host-managed.
+- Policy must decide what a node may read, write, execute, publish, mutate, and
+  communicate.
+- Engine-native permission prompts must map to Entangle approvals where
+  possible.
+- Repair and upgrade flows must never silently destroy user work.
+- Secrets must remain outside non-secret runtime context and browser bundles.
+
+### Artifact And Memory Model
+
+- Messages coordinate work.
+- Artifacts carry work.
+- Git is the first artifact backend, not the only possible backend.
+- Wiki/memory remains runner-owned until repository semantics are implemented
+  safely.
+- Memory-as-repo should be adopted only after migration, inspection, and
+  rollback semantics are clear.
+
+### Engineering Quality
+
+- Shared contracts live in `packages/types`.
+- Semantic validation lives in `packages/validator`.
+- Host-client presentation and parsing helpers live in `packages/host-client`
+  when shared by CLI and Studio.
+- Browser-facing shared packages must not import Node-only modules.
+- Behavior changes require focused tests.
+- Coherent code batches must pass `pnpm verify`.
+- Release or deployment batches must additionally run the relevant build,
+  preflight, and smoke commands.
+- Repository state, references, wiki, release packets, and logs must stay
+  internally consistent.
+
+## Workstream A: Local Naming And Contract Cleanup
+
+Goal: remove obsolete public Local terminology before the rest of L3/L4 builds
+on top of it.
+
+### A1. Rename runtime profile value
+
+Tasks:
+
+- Replace public `hackathon_local` schema value with `local_operator` or
+  `local`.
+- Pick one canonical machine value and document it before editing code.
+- Add compatibility parsing only if needed for old fixtures or release assets.
+- Update graph defaults, package scaffolds, examples, smoke scripts, and tests.
+- Update release notes to record the migration.
+
+Constraints:
+
+- Do not break existing Local Preview assets without a deliberate migration.
+- Keep old release packets historically accurate.
+- Do not use a name that implies GA before GA exists.
+
+Acceptance:
+
+- New scaffolds no longer emit `hackathon_local`.
+- Active examples no longer use `hackathon_local`.
+- Validator accepts the new Local profile.
+- Tests and smokes use the new Local profile.
+
+### A2. Update public project language
+
+Tasks:
+
+- Update current docs to refer to Entangle Local as the active product.
+- Keep historical hackathon documents clearly historical.
+- Make the roadmap point from L2 to L3/L4/L5 without ambiguous R1 wording.
+- Ensure README, wiki overview, product truth audit, and release index agree.
+
+Constraints:
+
+- Do not rewrite historical decision records as if the history did not happen.
+- Do not claim Local GA before the gate passes.
+
+Acceptance:
+
+- Current-state docs call the project Entangle Local.
+- Historical hackathon language remains only in historical/reference context.
+
+## Workstream B: L3 Agentic Node Runtime
+
+Goal: every non-user Entangle Local node can be configured as a real coding
+agent entity while Entangle owns graph, identity, policy, artifacts, wiki,
+communication, and inspection.
+
+### B1. Finalize agent runtime contracts
+
+Tasks:
+
+- Audit `AgentRuntime`, `AgentEngineProfile`, `EffectiveRuntimeContext`, and
+  validator semantics after the first OpenCode adapter.
+- Add missing runtime status DTOs for engine availability, engine session,
+  permission state, and harvested output.
+- Ensure graph-level defaults and node-level overrides are explicit.
+- Add validation for unsupported engine kinds, contradictory modes, and missing
+  required workspace bindings.
+- Keep `disabled` as an explicit runtime mode for nodes that should not execute.
+
+Constraints:
+
+- Contracts must remain engine-agnostic.
+- OpenCode-specific fields belong under engine profile/configuration, not in
+  graph or A2A core.
+- Browser-safe shared packages must stay browser-safe.
+
+Acceptance:
+
+- Host, CLI, Studio, and runner can all reason about effective agent runtime
+  state without provider-specific leakage.
+- Unknown or impossible runtime bindings fail validation before launch.
+
+### B2. Make the OpenCode adapter production-quality
+
+Tasks:
+
+- Study the local OpenCode source before each deeper adapter change.
+- Decide whether Entangle Local should use one-shot `opencode run`, an attached
+  OpenCode server, or a hybrid lifecycle per node.
+- Implement availability checks for executable, version, config root, DB root,
+  and workspace access.
+- Persist OpenCode session ids and map them to Entangle session/turn ids.
+- Capture structured stdout/stderr, exit reason, error classification, and
+  bounded logs.
+- Add timeout and cancellation handling.
+- Add explicit degraded-runtime evidence when OpenCode is unavailable.
+- Add unit tests around process lifecycle, events, timeout, and failures.
+
+Constraints:
+
+- Do not pass unsafe global permission bypass flags as the default.
+- Keep engine state under node-scoped engine-state roots.
+- Keep source workspace operations inside the node workspace.
+- Do not couple runner state to OpenCode internals beyond adapter-owned state.
+
+Acceptance:
+
+- A node can execute a real OpenCode-backed turn repeatedly.
+- Failures are inspectable from host, CLI, and Studio.
+- OpenCode state is node-scoped and survives normal runner restarts where
+  appropriate.
+
+### B3. Build the policy and approval bridge
+
+Tasks:
+
+- Define the Entangle Local policy operations needed by coding nodes:
+  filesystem read, filesystem write, command execution, git commit, git push,
+  artifact publication, wiki update, peer message, graph mutation, and
+  approval request.
+- Map OpenCode permission events to Entangle approval records where possible.
+- Add fallback deny behavior for permission events that cannot be mapped.
+- Persist approval requests with enough evidence for operator decisions.
+- Feed approval decisions back into the engine lifecycle.
+- Add tests for allowed, denied, pending, stale, and orphan permission flows.
+
+Constraints:
+
+- Entangle policy is authoritative.
+- OpenCode permission semantics are adapter input, not product policy.
+- Default behavior must be conservative.
+- User-visible approvals must not require reading raw engine logs.
+
+Acceptance:
+
+- Unauthorized file, command, git, publication, or peer operations are blocked.
+- Approval-gated work can pause, resume, fail, or complete through existing
+  runner/session lifecycle states.
+
+### B4. Complete the node workspace model
+
+Tasks:
+
+- Finalize source, artifact, engine-state, and wiki-repository workspace
+  boundaries.
+- Ensure each workspace is materialized by host-owned runtime context.
+- Add workspace health checks to runtime launch and doctor.
+- Decide the first safe memory-as-repo shape.
+- Implement wiki-repository initialization only after ownership and migration
+  rules are explicit.
+- Add migration from file-backed memory to wiki repository if adopted before
+  GA.
+
+Constraints:
+
+- Do not expose host filesystem paths in protocol locators.
+- Do not let engines read arbitrary local files through memory or artifact
+  preview paths.
+- Keep wiki writes runner-owned even if an engine suggests content.
+
+Acceptance:
+
+- Each node has clear workspace roots with no ambiguous ownership.
+- Memory/wiki state can be inspected and backed up as part of Local.
+
+### B5. Harvest diffs, artifacts, and engine outputs
+
+Tasks:
+
+- Detect source workspace changes after engine turns.
+- Capture git diff summaries, changed files, and commit candidates.
+- Decide when runner auto-commits versus creates an approval request.
+- Materialize report artifacts from engine output and workspace state.
+- Link produced artifacts to turns, sessions, messages, and git refs.
+- Add artifact history/diff host API, host-client, CLI, and Studio surfaces.
+- Add bounded previews for harvested text/code outputs.
+
+Constraints:
+
+- Artifacts remain the primary work handoff substrate.
+- Engine-generated files are not automatically trusted as published artifacts.
+- Publication must respect node git principal and policy.
+
+Acceptance:
+
+- An OpenCode-backed node can modify its workspace, produce an artifact, and
+  expose inspectable diff/history through Entangle Local.
+
+### B6. Complete Entangle message to engine prompt flow
+
+Tasks:
+
+- Improve prompt assembly for inbound tasks with graph context, edge policy,
+  peer routes, artifacts, memory, approvals, and workspace boundaries.
+- Ensure inbound `task.request`, `task.handoff`, approval, and conversation
+  lifecycle messages produce correct engine or state-only behavior.
+- Preserve existing rule that non-executable coordination messages do not start
+  fresh engine turns.
+- Add prompt snapshots or bounded evidence for debugging.
+
+Constraints:
+
+- A2A contracts remain coordination contracts, not engine prompts.
+- Prompt detail must be enough for engine quality without leaking secrets.
+
+Acceptance:
+
+- The same task launched from CLI, Studio, or Nostr becomes a consistent
+  engine turn.
+- Prompt evidence is inspectable without exposing secrets.
+
+### B7. Complete engine result to Entangle action flow
+
+Tasks:
+
+- Normalize engine results into assistant messages, tool observations,
+  artifacts, approval requests, commits, handoffs, and lifecycle changes.
+- Make handoff directives work from OpenCode outcomes, not only from legacy
+  injected engines.
+- Preserve graph edge constraints for every outbound peer message.
+- Add tests for produced artifact, direct result, handoff, approval request,
+  failure, and no-op outcomes.
+
+Constraints:
+
+- Runner owns publication and messaging side effects.
+- Engines may propose actions; Entangle validates and performs them.
+
+Acceptance:
+
+- A coding node can collaborate with another node through Entangle messages and
+  git-backed artifacts while remaining policy-bound.
+
+### B8. Add CLI and Studio runtime configuration
+
+Tasks:
+
+- Show effective agent runtime mode and engine profile per node.
+- Add graph/node editing support for engine profile selection and disabled
+  mode.
+- Expose OpenCode availability, last engine session, failure evidence, approval
+  state, changed files, produced artifacts, and recent engine events.
+- Add CLI commands for agent runtime inspection and configuration.
+- Add Studio panels for runtime engine state without hiding raw evidence.
+
+Constraints:
+
+- CLI and Studio must use the same host-client contracts.
+- Configuration must be graph/node state, not hidden environment-only state.
+
+Acceptance:
+
+- An operator can see which engine a node uses, why it failed, what it changed,
+  what it produced, and which approval is blocking it.
+
+### B9. Add L3 end-to-end gates
+
+Tasks:
+
+- Add an OpenCode-backed disposable runtime smoke.
+- Exercise task launch, node workspace operation, artifact production, git
+  handoff, downstream retrieval, and inspectable runtime state.
+- Add negative smoke coverage for missing OpenCode and denied policy.
+- Update release packet for `v0.3-local-agentic-node-runtime`.
+
+Constraints:
+
+- Smokes must run against the same Local host/runner/relay/Gitea topology used
+  by the product.
+- Where OpenCode is unavailable in CI, the failure must be explicit and not
+  silently skipped.
+
+Acceptance:
+
+- L3 exits only when a real OpenCode-backed node completes a graph-valid local
+  coding workflow under Entangle policy.
+
+## Workstream C: L4 Local Reliability
+
+Goal: Entangle Local becomes robust enough for repeated technical use.
+
+### C1. Build `entangle local doctor`
+
+Tasks:
+
+- Add a CLI command that checks Node, pnpm, Docker, Compose, host, Studio,
+  relay, Gitea, runner image, local state layout, OpenCode availability, model
+  secrets if used, git principals, and workspace health.
+- Provide human-readable and JSON output.
+- Add severity levels and remediation hints.
+- Reuse existing preflight code where possible.
+
+Constraints:
+
+- Doctor must inspect and report; it must not mutate state by default.
+- Checks must distinguish warnings from blockers.
+
+Acceptance:
+
+- A user can diagnose the common Local failure modes without reading source
+  code or raw `.entangle` files.
+
+### C2. Build conservative repair
+
+Tasks:
+
+- Add repair actions for stale observed runtime records, orphaned runner state,
+  old Gitea profile state, missing directories, and safe config drift.
+- Require explicit flags for destructive or high-risk actions.
+- Record repair events in host/recovery history.
+- Add dry-run previews.
+
+Constraints:
+
+- Repair must never silently delete user work, repositories, artifacts, or
+  wiki memory.
+- Destructive reset remains explicit and separately named.
+
+Acceptance:
+
+- Common stale Local states can be repaired or explained conservatively.
+
+### C3. Add backup and restore
+
+Tasks:
+
+- Define the Local backup bundle contents:
+  host state, runtime state, workspace metadata, git repositories, wiki memory,
+  release/version metadata, and selected config.
+- Explicitly document excluded secrets and external service state.
+- Implement export and restore commands.
+- Add validation before restore.
+- Add restore smoke coverage.
+
+Constraints:
+
+- Secrets must not be accidentally bundled unless explicitly designed and
+  protected.
+- Restore must detect incompatible state layout versions.
+
+Acceptance:
+
+- A user can back up Entangle Local and restore it into a clean Local
+  environment with documented limitations.
+
+### C4. Add state versioning and upgrade checks
+
+Tasks:
+
+- Version the local state layout.
+- Add startup compatibility checks.
+- Add migration notes between L2, L3, L4, and GA.
+- Add machine-readable upgrade status.
+- Add downgrade/non-supported-version error messages.
+
+Constraints:
+
+- Do not silently mutate unknown future state.
+- Migrations must be idempotent or guarded.
+
+Acceptance:
+
+- Entangle Local can detect unsupported or outdated local state before causing
+  damage.
+
+### C5. Add diagnostics and logs bundle
+
+Tasks:
+
+- Collect host logs, runner logs, Docker Compose status, recent events,
+  degraded runtime records, OpenCode failure evidence, relay status, and Gitea
+  status into a support bundle.
+- Redact secrets.
+- Add CLI and docs.
+
+Constraints:
+
+- Logs bundle must be useful without exposing secrets.
+- Bundle format must be stable enough to attach to issues or release
+  validation reports.
+
+Acceptance:
+
+- A user can produce one diagnostics bundle for Local support/debugging.
+
+### C6. Add repeated-use reliability smokes
+
+Tasks:
+
+- Add non-disposable start/stop/restart validation.
+- Add upgrade rehearsal from previous Local release state.
+- Add backup/restore smoke.
+- Add repair dry-run smoke.
+- Add logs-bundle smoke.
+
+Constraints:
+
+- Disposable smokes are not enough for L4.
+- Repeated-use tests must preserve user-data safety.
+
+Acceptance:
+
+- L4 exits only when Entangle Local can survive repeated use, restart, backup,
+  restore, and repair workflows.
+
+## Workstream D: L5 Entangle Local GA
+
+Goal: release Entangle Local as a complete local/developer product.
+
+### D1. Complete install and first-run path
+
+Tasks:
+
+- Document clean install from clone or release package.
+- Add first-run setup for local profile.
+- Add model/OpenCode setup guidance.
+- Add a single recommended demo path.
+- Ensure a technical user can complete the flow without reading source code.
+
+Constraints:
+
+- Do not rely on undocumented local machine state.
+- Keep Cloud/Enterprise out of the Local install flow.
+
+Acceptance:
+
+- Clean-machine or clean-clone rehearsal passes using only documented steps.
+
+### D2. Complete Entangle Local docs
+
+Tasks:
+
+- Write Local user guide.
+- Write operator guide.
+- Write troubleshooting guide.
+- Write architecture summary for Local.
+- Write policy and approval guide.
+- Write git/wiki/artifact workflow guide.
+- Write limitations and non-goals.
+
+Constraints:
+
+- Docs must describe implemented behavior, not aspirations.
+- Limitations must be explicit.
+
+Acceptance:
+
+- A user can operate Local and understand its boundaries from docs alone.
+
+### D3. Close release-control packet
+
+Tasks:
+
+- Create `releases/local/l5-entangle-local-ga.md`.
+- Record verification commands and results.
+- Record known limitations.
+- Record rollback guidance.
+- Record upgrade guidance from previous Local releases.
+- Tag only after gates pass.
+
+Constraints:
+
+- Release packet must not duplicate canonical truth unnecessarily.
+- No GA tag before release evidence exists.
+
+Acceptance:
+
+- The GA packet can stand as the authoritative release evidence.
+
+### D4. Audit public claims
+
+Tasks:
+
+- Audit README, wiki, release notes, examples, website claims, and package
+  metadata.
+- Remove or qualify stale Local claims.
+- Ensure `hackathon_local` is gone from current product surfaces.
+- Ensure Cloud and Enterprise are not implied as implemented.
+
+Constraints:
+
+- Website changes are separate if the website is in another repository.
+- Historical references can remain historical.
+
+Acceptance:
+
+- Public claims match the implemented Entangle Local product.
+
+### D5. Final GA verification
+
+Tasks:
+
+- Run `pnpm install --frozen-lockfile`.
+- Run `git diff --check`.
+- Run `pnpm verify`.
+- Run `pnpm build`.
+- Run `pnpm ops:check-local:strict`.
+- Run disposable and non-disposable Local smokes.
+- Run OpenCode-backed L3 smoke.
+- Run backup/restore and repair smokes.
+- Run clean-clone rehearsal.
+
+Constraints:
+
+- Failing gates are blockers, not release notes.
+- Manual verification cannot replace missing automated coverage for critical
+  behavior.
+
+Acceptance:
+
+- Tag `v1.0-local` only after all GA gates pass.
+
+## Execution Order
+
+The professional order is:
+
+1. A1/A2: clean Local naming and current product language.
+2. B1/B2: stabilize contracts and OpenCode lifecycle.
+3. B3: policy and approval bridge.
+4. B4/B5: workspaces, git/wiki behavior, diff/artifact harvesting.
+5. B6/B7: full message-to-engine and engine-to-Entangle action loop.
+6. B8/B9: CLI/Studio visibility and L3 smoke gates.
+7. C1-C6: Local reliability.
+8. D1-D5: GA documentation, release control, public claim audit, and final
+   verification.
+
+## Definition Of Done
+
+Entangle Local is complete when:
+
+- every active non-user node can run as a policy-bound coding agent through
+  OpenCode by default;
+- each node has inspectable identity, runtime, workspace, artifact, git, and
+  wiki state;
+- nodes can collaborate through Entangle messages and artifacts rather than
+  hidden engine-only state;
+- user approvals and policy gates are enforced before risky actions;
+- CLI and Studio expose the same host truth;
+- doctor, repair, backup, restore, upgrade, logs, and smokes are productized;
+- current docs and public claims match the implementation;
+- all GA verification gates pass from a clean state.
+

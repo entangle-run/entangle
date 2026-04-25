@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-25] planning | Added the Entangle Local completion plan
+
+Added `references/189-entangle-local-completion-plan.md` as the detailed
+completion plan for Entangle Local from the current post-L2/L3-in-progress
+state through L3 Agentic Node Runtime, L4 Local Reliability, and L5 Local GA.
+The plan records mandatory professional constraints, task breakdowns,
+subtasks, acceptance criteria, and the required execution order.
+
+Also corrected `references/README.md` so the existing L2 slice documents from
+181 through 188 are indexed before the new completion plan entry.
+
 ## [2026-04-25] implementation | Wired the first OpenCode runner adapter
 
 Added a first safe OpenCode CLI/process adapter for primary node turns. The

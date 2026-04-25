@@ -185,6 +185,15 @@ This directory is the canonical design corpus for Entangle.
 179. [178-product-line-roadmap-readiness-audit.md](178-product-line-roadmap-readiness-audit.md)
 180. [179-monorepo-profile-release-organization-slice.md](179-monorepo-profile-release-organization-slice.md)
 181. [180-local-ga-product-truth-audit.md](180-local-ga-product-truth-audit.md)
+182. [181-studio-session-launch-slice.md](181-studio-session-launch-slice.md)
+183. [182-studio-graph-revision-diff-slice.md](182-studio-graph-revision-diff-slice.md)
+184. [183-cli-graph-template-export-slice.md](183-cli-graph-template-export-slice.md)
+185. [184-local-artifact-preview-slice.md](184-local-artifact-preview-slice.md)
+186. [185-studio-graph-validation-slice.md](185-studio-graph-validation-slice.md)
+187. [186-cli-graph-import-export-slice.md](186-cli-graph-import-export-slice.md)
+188. [187-cli-session-launch-wait-slice.md](187-cli-session-launch-wait-slice.md)
+189. [188-local-memory-workbench-slice.md](188-local-memory-workbench-slice.md)
+190. [189-entangle-local-completion-plan.md](189-entangle-local-completion-plan.md)
 
 ## Role of this corpus
 
