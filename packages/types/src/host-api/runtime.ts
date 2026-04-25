@@ -34,6 +34,7 @@ export const runtimeAgentRuntimeInspectionSchema = z.object({
   lastEngineFailureMessage: nonEmptyStringSchema.optional(),
   lastEngineSessionId: nonEmptyStringSchema.optional(),
   lastEngineStopReason: agentEngineStopReasonSchema.optional(),
+  lastEngineVersion: nonEmptyStringSchema.optional(),
   lastTurnId: identifierSchema.optional(),
   lastTurnUpdatedAt: nonEmptyStringSchema.optional(),
   mode: nodeAgentRuntimeModeSchema,

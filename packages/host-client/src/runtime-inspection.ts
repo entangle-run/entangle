@@ -67,6 +67,12 @@ export function formatRuntimeInspectionDetailLines(
       );
     }
 
+    if (runtime.agentRuntime.lastEngineVersion) {
+      detailLines.push(
+        `last engine version ${runtime.agentRuntime.lastEngineVersion}`
+      );
+    }
+
     if (runtime.agentRuntime.lastEngineStopReason) {
       detailLines.push(
         `last engine stop ${runtime.agentRuntime.lastEngineStopReason}`

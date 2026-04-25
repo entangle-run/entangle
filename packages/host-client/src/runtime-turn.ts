@@ -81,6 +81,10 @@ export function formatRuntimeTurnDetailLines(
       lines.push(`engine session ${turn.engineOutcome.engineSessionId}`);
     }
 
+    if (turn.engineOutcome.engineVersion) {
+      lines.push(`engine version ${turn.engineOutcome.engineVersion}`);
+    }
+
     if (turn.engineOutcome.providerStopReason) {
       lines.push(`provider stop ${turn.engineOutcome.providerStopReason}`);
     }

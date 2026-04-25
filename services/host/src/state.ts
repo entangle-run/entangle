@@ -2405,6 +2405,9 @@ async function buildRuntimeAgentRuntimeInspection(
     ...(outcome?.stopReason
       ? { lastEngineStopReason: outcome.stopReason }
       : {}),
+    ...(outcome?.engineVersion
+      ? { lastEngineVersion: outcome.engineVersion }
+      : {}),
     ...(latestEngineTurn
       ? {
           lastTurnId: latestEngineTurn.turnId,

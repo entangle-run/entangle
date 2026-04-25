@@ -197,6 +197,7 @@ This directory is the canonical design corpus for Entangle.
 191. [190-local-runtime-profile-rename-slice.md](190-local-runtime-profile-rename-slice.md)
 192. [191-opencode-runtime-state-isolation-slice.md](191-opencode-runtime-state-isolation-slice.md)
 193. [192-agent-runtime-inspection-status-slice.md](192-agent-runtime-inspection-status-slice.md)
+194. [193-opencode-version-probe-timeout-slice.md](193-opencode-version-probe-timeout-slice.md)
 
 ## Role of this corpus
 

@@ -110,6 +110,7 @@ describe("runtime trace helpers", () => {
       consumedArtifactIds: [],
       engineOutcome: {
         engineSessionId: "engine-session-alpha",
+        engineVersion: "0.10.0",
         providerMetadata: {
           adapterKind: "anthropic",
           modelId: "claude-opus-4-7",
@@ -172,6 +173,7 @@ describe("runtime trace helpers", () => {
       detailLines: [
         "Provider: anthropic/shared-anthropic (claude-opus-4-7)",
         "Engine session: engine-session-alpha",
+        "Engine version: 0.10.0",
         "Outcome: completed (provider: end_turn)",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",

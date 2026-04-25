@@ -51,7 +51,10 @@ type OpenCodeRuntimePaths = {
 };
 
 const maxCapturedStderrCharacters = 12_000;
+const maxCapturedStdoutCharacters = 12_000;
+const maxEngineVersionCharacters = 200;
 const maxFailureMessageCharacters = 1_000;
+const defaultOpenCodeProcessTimeoutMs = 120_000;
 
 const defaultOpenCodeSpawn: OpenCodeSpawn = (command, args, options) =>
   spawnChildProcess(command, args, {
@@ -336,6 +339,143 @@ function attachLineReader(
   };
 }
 
+function collectStreamText(
+  stream: Readable,
+  maxCharacters: number
+): () => string {
+  let output = "";
+
+  stream.on("data", (chunk: Buffer | string) => {
+    output = truncate(`${output}${chunk.toString()}`, maxCharacters);
+  });
+
+  return () => output;
+}
+
+function firstNonEmptyLine(value: string): string | undefined {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+}
+
+async function waitForOpenCodeProcess(input: {
+  child: OpenCodeProcess;
+  flushStdout?: () => void;
+  nodeId: string;
+  processLabel: string;
+  stderr: () => string;
+  timeoutMs: number;
+}): Promise<void> {
+  let settled = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const settle = (operation: () => void): void => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        if (timer) {
+          clearTimeout(timer);
+        }
+        operation();
+      };
+
+      timer = setTimeout(() => {
+        settle(() => {
+          input.child.kill("SIGTERM");
+          reject(
+            new AgentEngineExecutionError(
+              `OpenCode ${input.processLabel} timed out for node '${input.nodeId}' after ${input.timeoutMs}ms.`,
+              {
+                classification: "provider_unavailable"
+              }
+            )
+          );
+        });
+      }, input.timeoutMs);
+
+      input.child.once("error", (error) => {
+        settle(() => {
+          reject(
+            new AgentEngineExecutionError(
+              `OpenCode ${input.processLabel} failed to start for node '${input.nodeId}'.`,
+              {
+                cause: error,
+                classification: "provider_unavailable"
+              }
+            )
+          );
+        });
+      });
+      input.child.once("close", (code, signal) => {
+        input.flushStdout?.();
+
+        if (code === 0) {
+          settle(resolve);
+          return;
+        }
+
+        settle(() => {
+          const stderr = input.stderr();
+          reject(
+            new AgentEngineExecutionError(
+              [
+                `OpenCode ${input.processLabel} exited for node '${input.nodeId}'`,
+                `code=${code ?? "unknown"}`,
+                signal ? `signal=${signal}` : undefined,
+                stderr ? `stderr=${stderr}` : undefined
+              ]
+                .filter((value): value is string => Boolean(value))
+                .join("; "),
+              {
+                classification: "provider_unavailable"
+              }
+            )
+          );
+        });
+      });
+    });
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
+
+async function probeOpenCodeVersion(input: {
+  env: NodeJS.ProcessEnv;
+  executable: string;
+  nodeId: string;
+  spawn: OpenCodeSpawn;
+  timeoutMs: number;
+  workspace: string;
+}): Promise<string | undefined> {
+  const child = input.spawn(input.executable, ["--version"], {
+    cwd: input.workspace,
+    env: input.env
+  });
+  const stdout = collectStreamText(child.stdout, maxCapturedStdoutCharacters);
+  const stderr = collectStreamText(child.stderr, maxCapturedStderrCharacters);
+
+  child.stdin.end();
+
+  await waitForOpenCodeProcess({
+    child,
+    nodeId: input.nodeId,
+    processLabel: "version probe",
+    stderr,
+    timeoutMs: input.timeoutMs
+  });
+
+  const version = firstNonEmptyLine(stdout()) ?? firstNonEmptyLine(stderr());
+
+  return version ? truncate(version, maxEngineVersionCharacters) : undefined;
+}
+
 function buildOpenCodeArgs(input: {
   context: EffectiveRuntimeContext;
   request: AgentEngineTurnRequest;
@@ -387,6 +527,7 @@ function buildOpenCodeEnv(input: {
 }
 
 export function createOpenCodeAgentEngine(input: {
+  processTimeoutMs?: number;
   runtimeContext: EffectiveRuntimeContext;
   spawn?: OpenCodeSpawn;
 }): AgentEngine {
@@ -399,6 +540,8 @@ export function createOpenCodeAgentEngine(input: {
   }
 
   const executable = profile.executable ?? "opencode";
+  const processTimeoutMs =
+    input.processTimeoutMs ?? defaultOpenCodeProcessTimeoutMs;
   const spawn = input.spawn ?? defaultOpenCodeSpawn;
 
   return {
@@ -414,12 +557,21 @@ export function createOpenCodeAgentEngine(input: {
         request: normalizedRequest,
         workspace
       });
+      const env = buildOpenCodeEnv({
+        context: input.runtimeContext,
+        runtimePaths
+      });
+      const engineVersion = await probeOpenCodeVersion({
+        env,
+        executable,
+        nodeId: normalizedRequest.nodeId,
+        spawn,
+        timeoutMs: processTimeoutMs,
+        workspace
+      });
       const child = spawn(executable, args, {
         cwd: workspace,
-        env: buildOpenCodeEnv({
-          context: input.runtimeContext,
-          runtimePaths
-        })
+        env
       });
       const output = {
         assistantMessages: [] as string[],
@@ -430,58 +582,26 @@ export function createOpenCodeAgentEngine(input: {
       const flushStdout = attachLineReader(child.stdout, (line) =>
         processOpenCodeStdoutLine(line, output)
       );
-      let stderr = "";
-
-      child.stderr.on("data", (chunk: Buffer | string) => {
-        stderr = truncate(
-          `${stderr}${chunk.toString()}`,
-          maxCapturedStderrCharacters
-        );
-      });
+      const stderr = collectStreamText(
+        child.stderr,
+        maxCapturedStderrCharacters
+      );
 
       child.stdin.end(buildOpenCodePrompt(normalizedRequest));
 
-      await new Promise<void>((resolve, reject) => {
-        child.once("error", (error) => {
-          reject(
-            new AgentEngineExecutionError(
-              `OpenCode engine process failed to start for node '${normalizedRequest.nodeId}'.`,
-              {
-                cause: error,
-                classification: "configuration_error"
-              }
-            )
-          );
-        });
-        child.once("close", (code, signal) => {
-          flushStdout();
-
-          if (code === 0) {
-            resolve();
-            return;
-          }
-
-          reject(
-            new AgentEngineExecutionError(
-              [
-                `OpenCode engine process exited for node '${normalizedRequest.nodeId}'`,
-                `code=${code ?? "unknown"}`,
-                signal ? `signal=${signal}` : undefined,
-                stderr ? `stderr=${stderr}` : undefined
-              ]
-                .filter((value): value is string => Boolean(value))
-                .join("; "),
-              {
-                classification: "provider_unavailable"
-              }
-            )
-          );
-        });
+      await waitForOpenCodeProcess({
+        child,
+        flushStdout,
+        nodeId: normalizedRequest.nodeId,
+        processLabel: "run process",
+        stderr,
+        timeoutMs: processTimeoutMs
       });
 
       if (output.errors.length > 0) {
         return agentEngineTurnResultSchema.parse({
           assistantMessages: output.assistantMessages,
+          ...(engineVersion ? { engineVersion } : {}),
           ...(output.engineSessionId
             ? { engineSessionId: output.engineSessionId }
             : {}),
@@ -501,6 +621,7 @@ export function createOpenCodeAgentEngine(input: {
 
       return agentEngineTurnResultSchema.parse({
         assistantMessages: output.assistantMessages,
+        ...(engineVersion ? { engineVersion } : {}),
         ...(output.engineSessionId
           ? { engineSessionId: output.engineSessionId }
           : {}),

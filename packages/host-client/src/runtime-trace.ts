@@ -47,6 +47,10 @@ function buildRunnerTurnDetailLines(
       detailLines.push(`Engine session: ${engineOutcome.engineSessionId}`);
     }
 
+    if (engineOutcome.engineVersion) {
+      detailLines.push(`Engine version: ${engineOutcome.engineVersion}`);
+    }
+
     const stopReasonLine = engineOutcome.providerStopReason
       ? `Outcome: ${engineOutcome.stopReason} (provider: ${engineOutcome.providerStopReason})`
       : `Outcome: ${engineOutcome.stopReason}`;

@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Hardened OpenCode adapter lifecycle checks
+
+Advanced Entangle Local L3 workstream B2. The OpenCode runner adapter now runs
+`opencode --version` with the node-scoped environment before each one-shot run,
+persists the probed version as a generic `engineVersion`, and exposes the latest
+engine version through runner outcomes, host runtime inspection, shared
+host-client presentation, CLI, and Studio runtime details.
+
+The adapter also applies bounded process timeouts to the version probe and run
+process, sends `SIGTERM` on timeout, and records classified
+`provider_unavailable` failure evidence. Added
+`references/193-opencode-version-probe-timeout-slice.md` to record the
+OpenCode source audit, boundary decisions, remaining L3 gaps, and verification
+scope. Permission/approval bridging, external cancellation, source diff
+harvesting, artifact publication policy, and OpenCode-backed L3 smoke coverage
+remain open.
+
 ## [2026-04-25] implementation | Added generic agent runtime inspection status
 
 Advanced Entangle Local L3 workstream B1/B8. Host runtime inspection now exposes

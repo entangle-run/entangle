@@ -8,6 +8,7 @@ function createRuntime(): RuntimeInspectionResponse {
       engineKind: "opencode_server",
       engineProfileRef: "local-opencode",
       lastEngineSessionId: "opencode-session-alpha",
+      lastEngineVersion: "0.10.0",
       mode: "coding_agent",
       stateScope: "node"
     },
@@ -46,6 +47,9 @@ describe("runtime inspection CLI summary projection", () => {
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "agent runtime coding_agent / opencode_server / local-opencode"
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "last engine version 0.10.0"
     );
   });
 });

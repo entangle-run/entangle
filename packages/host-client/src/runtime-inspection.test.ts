@@ -19,6 +19,7 @@ function createRuntime(
       engineProfileRef: "local-opencode",
       lastEngineSessionId: "opencode-session-alpha",
       lastEngineStopReason: "completed",
+      lastEngineVersion: "0.10.0",
       lastTurnId: "turn-alpha",
       lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
       mode: "coding_agent",
@@ -89,6 +90,9 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last engine session opencode-session-alpha"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "last engine version 0.10.0"
     );
   });
 });

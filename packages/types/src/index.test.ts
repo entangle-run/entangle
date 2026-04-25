@@ -78,6 +78,7 @@ describe("runtime inspection host API contracts", () => {
         engineProfileRef: "local-opencode",
         lastEngineSessionId: "opencode-session-alpha",
         lastEngineStopReason: "completed",
+        lastEngineVersion: "0.10.0",
         lastTurnId: "turn-alpha",
         lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
         mode: "coding_agent",
@@ -97,6 +98,7 @@ describe("runtime inspection host API contracts", () => {
     expect(result.agentRuntime?.lastEngineSessionId).toBe(
       "opencode-session-alpha"
     );
+    expect(result.agentRuntime?.lastEngineVersion).toBe("0.10.0");
   });
 });
 
@@ -985,15 +987,17 @@ describe("host event contracts", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts generic engine session identifiers on engine outcomes", () => {
+  it("accepts generic engine session identifiers and versions on engine outcomes", () => {
     const result = engineTurnOutcomeSchema.parse({
       engineSessionId: "engine-session-alpha",
+      engineVersion: "0.10.0",
       providerStopReason: "opencode_process_exit_0",
       stopReason: "completed",
       toolExecutions: []
     });
 
     expect(result.engineSessionId).toBe("engine-session-alpha");
+    expect(result.engineVersion).toBe("0.10.0");
   });
 
   it("accepts typed conversation, approval, and artifact trace events", () => {

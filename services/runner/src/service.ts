@@ -906,6 +906,7 @@ function buildEngineTurnOutcome(
     ...(result.engineSessionId
       ? { engineSessionId: result.engineSessionId }
       : {}),
+    ...(result.engineVersion ? { engineVersion: result.engineVersion } : {}),
     ...(result.failure ? { failure: result.failure } : {}),
     ...(result.providerMetadata
       ? { providerMetadata: result.providerMetadata }

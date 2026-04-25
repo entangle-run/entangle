@@ -111,6 +111,7 @@ function refineEngineFailureConsistency(
 export const engineTurnOutcomeSchema = z
   .object({
     engineSessionId: nonEmptyStringSchema.optional(),
+    engineVersion: nonEmptyStringSchema.optional(),
     failure: engineTurnFailureSchema.optional(),
     providerMetadata: engineProviderMetadataSchema.optional(),
     providerStopReason: nonEmptyStringSchema.optional(),
@@ -201,6 +202,7 @@ export const agentEngineTurnResultSchema = z
   .object({
     assistantMessages: z.array(nonEmptyStringSchema).default([]),
     engineSessionId: nonEmptyStringSchema.optional(),
+    engineVersion: nonEmptyStringSchema.optional(),
     failure: engineTurnFailureSchema.optional(),
     handoffDirectives: z.array(engineHandoffDirectiveSchema).default([]),
     providerMetadata: engineProviderMetadataSchema.optional(),

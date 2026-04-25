@@ -21,8 +21,18 @@ import {
 type MockSpawnCall = {
   args: string[];
   command: string;
+  killSignals: Array<NodeJS.Signals | number | undefined>;
   options: Parameters<OpenCodeSpawn>[2];
   readStdin: () => string;
+};
+
+type MockOpenCodeProcessStep = {
+  autoClose?: boolean;
+  closeCode?: number;
+  closeSignal?: NodeJS.Signals | null;
+  stderr?: string;
+  stdout?: string;
+  stdoutLines?: string[];
 };
 
 function buildTurnRequest(
@@ -46,20 +56,37 @@ function buildTurnRequest(
 }
 
 function createMockOpenCodeSpawn(input: {
+  autoClose?: boolean;
   closeCode?: number;
   closeSignal?: NodeJS.Signals | null;
+  processes?: MockOpenCodeProcessStep[];
   stderr?: string;
+  stdout?: string;
   stdoutLines?: string[];
 } = {}): {
   calls: MockSpawnCall[];
   spawn: OpenCodeSpawn;
 } {
   const calls: MockSpawnCall[] = [];
+  const processes =
+    input.processes ??
+    [
+      {
+        autoClose: input.autoClose,
+        closeCode: input.closeCode,
+        closeSignal: input.closeSignal,
+        stderr: input.stderr,
+        stdout: input.stdout,
+        stdoutLines: input.stdoutLines
+      }
+    ];
   const spawn: OpenCodeSpawn = (command, args, options) => {
+    const step = processes[calls.length] ?? processes[processes.length - 1] ?? {};
     const emitter = new EventEmitter();
     const stdin = new PassThrough();
     const stdout = new PassThrough();
     const stderr = new PassThrough();
+    const killSignals: Array<NodeJS.Signals | number | undefined> = [];
     let stdinText = "";
 
     stdin.on("data", (chunk: Buffer | string) => {
@@ -68,25 +95,39 @@ function createMockOpenCodeSpawn(input: {
     calls.push({
       args,
       command,
+      killSignals,
       options,
       readStdin: () => stdinText
     });
 
     process.nextTick(() => {
-      for (const line of input.stdoutLines ?? []) {
+      if (step.stdout) {
+        stdout.write(step.stdout);
+      }
+
+      for (const line of step.stdoutLines ?? []) {
         stdout.write(`${line}\n`);
       }
-      stdout.end();
 
-      if (input.stderr) {
-        stderr.write(input.stderr);
+      if (step.autoClose !== false) {
+        stdout.end();
       }
-      stderr.end();
-      emitter.emit("close", input.closeCode ?? 0, input.closeSignal ?? null);
+
+      if (step.stderr) {
+        stderr.write(step.stderr);
+      }
+
+      if (step.autoClose !== false) {
+        stderr.end();
+        emitter.emit("close", step.closeCode ?? 0, step.closeSignal ?? null);
+      }
     });
 
     return {
-      kill: () => true,
+      kill: (signal?: NodeJS.Signals | number) => {
+        killSignals.push(signal);
+        return true;
+      },
       on: emitter.on.bind(emitter),
       once: emitter.once.bind(emitter),
       stderr,
@@ -141,25 +182,32 @@ describe("OpenCode runner engine adapter", () => {
   it("runs OpenCode with node-scoped workspace state and parses JSON events", async () => {
     const fixture = await createRuntimeFixture();
     const mock = createMockOpenCodeSpawn({
-      stdoutLines: [
-        JSON.stringify({
-          part: {
-            text: "Completed the requested review."
-          },
-          sessionID: "opencode-session",
-          type: "text"
-        }),
-        JSON.stringify({
-          part: {
-            id: "tool-1",
-            state: {
-              status: "completed"
-            },
-            tool: "bash"
-          },
-          sessionID: "opencode-session",
-          type: "tool_use"
-        })
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: "Completed the requested review."
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            }),
+            JSON.stringify({
+              part: {
+                id: "tool-1",
+                state: {
+                  status: "completed"
+                },
+                tool: "bash"
+              },
+              sessionID: "opencode-session",
+              type: "tool_use"
+            })
+          ]
+        }
       ]
     });
     const engine = createOpenCodeAgentEngine({
@@ -172,6 +220,7 @@ describe("OpenCode runner engine adapter", () => {
     expect(result).toMatchObject({
       assistantMessages: ["Completed the requested review."],
       engineSessionId: "opencode-session",
+      engineVersion: "0.10.0",
       providerStopReason: "opencode_process_exit_0",
       stopReason: "completed",
       toolExecutions: [
@@ -183,9 +232,11 @@ describe("OpenCode runner engine adapter", () => {
         }
       ]
     });
-    expect(mock.calls).toHaveLength(1);
+    expect(mock.calls).toHaveLength(2);
     expect(mock.calls[0]!.command).toBe("opencode");
-    expect(mock.calls[0]!.args).toEqual(
+    expect(mock.calls[0]!.args).toEqual(["--version"]);
+    expect(mock.calls[1]!.command).toBe("opencode");
+    expect(mock.calls[1]!.args).toEqual(
       expect.arrayContaining([
         "run",
         "--format=json",
@@ -195,11 +246,11 @@ describe("OpenCode runner engine adapter", () => {
         "general"
       ])
     );
-    expect(mock.calls[0]!.options.cwd).toBe(
+    expect(mock.calls[1]!.options.cwd).toBe(
       fixture.context.workspace.sourceWorkspaceRoot
     );
     const engineStateRoot = fixture.context.workspace.engineStateRoot!;
-    expect(mock.calls[0]!.options.env).toMatchObject({
+    expect(mock.calls[1]!.options.env).toMatchObject({
       ENTANGLE_NODE_ID: "worker-it",
       OPENCODE_CONFIG_DIR: path.join(engineStateRoot, "config"),
       OPENCODE_DB: path.join(engineStateRoot, "opencode.db"),
@@ -209,23 +260,91 @@ describe("OpenCode runner engine adapter", () => {
       XDG_DATA_HOME: path.join(engineStateRoot, "xdg", "data"),
       XDG_STATE_HOME: path.join(engineStateRoot, "xdg", "state")
     });
-    expect(mock.calls[0]!.readStdin()).toContain(
+    expect(mock.calls[1]!.readStdin()).toContain(
       "Review the current workspace"
     );
+  });
+
+  it("throws a classified execution error when the OpenCode version probe fails", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          closeCode: 127,
+          stderr: "opencode not found"
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    await expect(engine.executeTurn(buildTurnRequest())).rejects.toMatchObject({
+      classification: "provider_unavailable",
+      name: AgentEngineExecutionError.name
+    });
+    expect(mock.calls).toHaveLength(1);
+    expect(mock.calls[0]!.args).toEqual(["--version"]);
+  });
+
+  it("kills the OpenCode run process when it exceeds the adapter timeout", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          autoClose: false,
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: "still running"
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      processTimeoutMs: 5,
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    const turn = engine.executeTurn(buildTurnRequest());
+
+    await expect(turn).rejects.toThrow(/timed out/);
+    await expect(turn).rejects.toMatchObject({
+      classification: "provider_unavailable",
+      name: AgentEngineExecutionError.name
+    });
+    expect(mock.calls).toHaveLength(2);
+    expect(mock.calls[1]!.killSignals).toEqual(["SIGTERM"]);
   });
 
   it("returns a bounded error result when OpenCode emits an error event", async () => {
     const fixture = await createRuntimeFixture();
     const mock = createMockOpenCodeSpawn({
-      stdoutLines: [
-        JSON.stringify({
-          error: {
-            data: {
-              message: "Provider authentication failed."
-            }
-          },
-          type: "error"
-        })
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              error: {
+                data: {
+                  message: "Provider authentication failed."
+                }
+              },
+              type: "error"
+            })
+          ]
+        }
       ]
     });
     const engine = createOpenCodeAgentEngine({
@@ -236,6 +355,7 @@ describe("OpenCode runner engine adapter", () => {
     const result = await engine.executeTurn(buildTurnRequest());
 
     expect(result).toMatchObject({
+      engineVersion: "0.10.0",
       failure: {
         classification: "unknown_provider_error",
         message: "Provider authentication failed."
@@ -248,8 +368,15 @@ describe("OpenCode runner engine adapter", () => {
   it("throws a classified execution error when the OpenCode process exits non-zero", async () => {
     const fixture = await createRuntimeFixture();
     const mock = createMockOpenCodeSpawn({
-      closeCode: 1,
-      stderr: "opencode failed"
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          closeCode: 1,
+          stderr: "opencode failed"
+        }
+      ]
     });
     const engine = createOpenCodeAgentEngine({
       runtimeContext: fixture.context,

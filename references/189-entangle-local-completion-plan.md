@@ -38,17 +38,22 @@ The latest implementation state includes:
 - a first safe OpenCode CLI/process adapter in the runner;
 - node-scoped OpenCode DB, config, XDG state/cache/data roots, and generic
   engine-session-id observability on runner turn outcomes;
+- OpenCode executable version probing before node turns, generic engine-version
+  observability on turn outcomes, and bounded process timeout handling for the
+  OpenCode version probe and one-shot run process;
 - generic host runtime inspection status for the effective agent-runtime mode,
-  engine profile, state scope, last engine session, last engine turn, and
-  bounded engine failure evidence.
+  engine profile, state scope, last engine version, last engine session, last
+  engine turn, and bounded engine failure evidence.
 
 The current OpenCode adapter is intentionally not yet enough for L3 acceptance.
-It can execute a primary node turn, persist the engine session id, and fail
-early when its workspace/state roots are unavailable. Host, CLI, and Studio can
-now see a generic agent-runtime status summary, but Entangle Local still lacks
-the complete policy bridge, permission mapping, artifact/diff harvesting,
-git/wiki workflow, timeout/cancellation bridge, and full CLI/Studio
-configuration and observability surface required for L3 acceptance.
+It can execute a primary node turn, persist the engine session id and probed
+engine version, fail early when its workspace/state roots are unavailable, and
+terminate overlong OpenCode probe/run processes with classified failure
+evidence. Host, CLI, and Studio can now see a generic agent-runtime status
+summary, but Entangle Local still lacks the complete policy bridge, permission
+mapping, artifact/diff harvesting, git/wiki workflow, external cancellation
+bridge, and full CLI/Studio configuration and observability surface required
+for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -389,8 +394,16 @@ Current partial implementation:
   roots under the node engine-state workspace;
 - the adapter verifies workspace and engine-state readability/writability
   before spawning OpenCode;
-- this does not yet complete executable version probing, timeout/cancellation,
-  permission mapping, or full degraded-runtime status DTOs.
+- the adapter now runs an `opencode --version` probe with the same node-scoped
+  environment before the turn, persists the generic `engineVersion`, and exposes
+  the latest engine version through host runtime inspection, the shared
+  host-client presentation layer, CLI, and Studio;
+- the adapter now applies a bounded timeout to the version probe and one-shot
+  run process, sends `SIGTERM` on timeout, and records classified
+  `provider_unavailable` evidence;
+- this does not yet complete external cancellation, permission mapping, full
+  degraded-runtime status DTOs, attached server lifecycle, or source
+  workspace diff/artifact harvesting.
 
 Acceptance:
 
@@ -540,7 +553,7 @@ Constraints:
 Current partial implementation:
 
 - CLI and Studio now show effective agent-runtime mode/profile and the last
-  engine session when host runtime inspection reports them;
+  engine version/session when host runtime inspection reports them;
 - graph/node editing support for agent-runtime selection, OpenCode availability
   probing, approval blockers, changed files, produced artifacts, and recent
   engine-event panels remain open.
