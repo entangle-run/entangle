@@ -34,10 +34,15 @@ export const hostSessionConsistencyFindingCodeSchema = z.enum([
   "active_conversation_missing_record",
   "active_session_without_open_conversations",
   "open_conversation_missing_active_reference",
+  "pending_approval_missing_waiting_reference",
+  "waiting_approval_missing_record",
+  "waiting_approval_not_pending",
+  "waiting_approval_session_without_pending_approval",
   "terminal_conversation_still_active"
 ]);
 
 export const hostSessionConsistencyFindingSchema = z.object({
+  approvalId: identifierSchema.optional(),
   code: hostSessionConsistencyFindingCodeSchema,
   conversationId: identifierSchema.optional(),
   message: nonEmptyStringSchema,

@@ -599,6 +599,26 @@ describe("host event contracts", () => {
     });
   });
 
+  it("accepts approval-level consistency findings with approval ids", () => {
+    const finding = hostSessionConsistencyFindingSchema.parse({
+      approvalId: "approval-alpha",
+      code: "waiting_approval_missing_record",
+      message:
+        "Session 'session-alpha' on node 'worker-it' references waiting approval 'approval-alpha', but no approval record exists.",
+      nodeId: "worker-it",
+      severity: "error"
+    });
+
+    expect(finding).toEqual({
+      approvalId: "approval-alpha",
+      code: "waiting_approval_missing_record",
+      message:
+        "Session 'session-alpha' on node 'worker-it' references waiting approval 'approval-alpha', but no approval record exists.",
+      nodeId: "worker-it",
+      severity: "error"
+    });
+  });
+
   it("accepts approval lifecycle counts on host session summaries", () => {
     const summary = hostSessionSummarySchema.parse({
       activeConversationIds: [],

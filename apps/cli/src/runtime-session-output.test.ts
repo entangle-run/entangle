@@ -200,7 +200,7 @@ describe("runtime session CLI output", () => {
       "conversation statuses working 1, closed 1"
     );
     expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
-      "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conv-beta"
+      "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conversation/conv-beta"
     );
     expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
       "approval statuses pending 1"

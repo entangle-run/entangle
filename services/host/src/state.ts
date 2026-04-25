@@ -4416,7 +4416,8 @@ async function synchronizeSessionActivityObservation(input: {
   const conversationStatusCounts = countConversationStatuses(
     input.conversationRecords
   );
-  const sessionConsistencyFindings = inspectSessionConversationConsistency({
+  const sessionConsistencyFindings = inspectSessionConsistency({
+    approvalRecords: input.approvalRecords,
     conversationRecords: input.conversationRecords,
     nodeId: runtime.nodeId,
     sessionRecord
@@ -5221,11 +5222,20 @@ function sortSessionConsistencyFindings(
       return conversationOrdering;
     }
 
+    const approvalOrdering = (left.approvalId ?? "").localeCompare(
+      right.approvalId ?? ""
+    );
+
+    if (approvalOrdering !== 0) {
+      return approvalOrdering;
+    }
+
     return left.code.localeCompare(right.code);
   });
 }
 
-function inspectSessionConversationConsistency(input: {
+function inspectSessionConsistency(input: {
+  approvalRecords: ApprovalRecord[];
   conversationRecords: ConversationRecord[];
   nodeId: string;
   sessionRecord: SessionRecord;
@@ -5241,6 +5251,16 @@ function inspectSessionConversationConsistency(input: {
   );
   const openConversationRecords = input.conversationRecords.filter(
     hasOpenConversationStatusForHostDiagnostics
+  );
+  const approvalRecordsById = new Map(
+    input.approvalRecords.map((approvalRecord) => [
+      approvalRecord.approvalId,
+      approvalRecord
+    ])
+  );
+  const waitingApprovalIds = new Set(input.sessionRecord.waitingApprovalIds);
+  const pendingApprovalRecords = input.approvalRecords.filter(
+    (approvalRecord) => approvalRecord.status === "pending"
   );
   const findings: HostSessionConsistencyFinding[] = [];
 
@@ -5317,6 +5337,77 @@ function inspectSessionConversationConsistency(input: {
     }
   }
 
+  for (const approvalId of input.sessionRecord.waitingApprovalIds) {
+    const approvalRecord = approvalRecordsById.get(approvalId);
+
+    if (!approvalRecord) {
+      findings.push(
+        buildSessionConsistencyFinding({
+          approvalId,
+          code: "waiting_approval_missing_record",
+          message:
+            `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+            `references waiting approval '${approvalId}', but no approval ` +
+            "record exists.",
+          nodeId: input.nodeId,
+          severity: "error"
+        })
+      );
+      continue;
+    }
+
+    if (approvalRecord.status !== "pending") {
+      findings.push(
+        buildSessionConsistencyFinding({
+          approvalId,
+          code: "waiting_approval_not_pending",
+          message:
+            `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+            `is still waiting on approval '${approvalId}', but that approval ` +
+            `record is '${approvalRecord.status}'.`,
+          nodeId: input.nodeId,
+          severity: "warning"
+        })
+      );
+    }
+  }
+
+  for (const approvalRecord of pendingApprovalRecords) {
+    if (!waitingApprovalIds.has(approvalRecord.approvalId)) {
+      findings.push(
+        buildSessionConsistencyFinding({
+          approvalId: approvalRecord.approvalId,
+          code: "pending_approval_missing_waiting_reference",
+          message:
+            `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+            `has pending approval '${approvalRecord.approvalId}', but it is ` +
+            "missing from waitingApprovalIds.",
+          nodeId: input.nodeId,
+          severity: "warning"
+        })
+      );
+    }
+  }
+
+  if (
+    input.sessionRecord.status === "waiting_approval" &&
+    !input.sessionRecord.waitingApprovalIds.some(
+      (approvalId) => approvalRecordsById.get(approvalId)?.status === "pending"
+    )
+  ) {
+    findings.push(
+      buildSessionConsistencyFinding({
+        code: "waiting_approval_session_without_pending_approval",
+        message:
+          `Session '${input.sessionRecord.sessionId}' on node '${input.nodeId}' ` +
+          "is waiting for approval but has no pending approval record in its " +
+          "waitingApprovalIds set.",
+        nodeId: input.nodeId,
+        severity: "error"
+      })
+    );
+  }
+
   return sortSessionConsistencyFindings(findings);
 }
 
@@ -5351,7 +5442,8 @@ async function collectSessionInspectionNodes(): Promise<
       const conversationRecords =
         conversationRecordsBySessionId.get(sessionRecord.sessionId) ?? [];
       const sessionConsistencyFindings =
-        inspectSessionConversationConsistency({
+        inspectSessionConsistency({
+          approvalRecords,
           conversationRecords,
           nodeId: runtime.nodeId,
           sessionRecord

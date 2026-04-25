@@ -176,8 +176,9 @@ This repository currently contains:
   aggregate active-conversation ids, waiting approval ids, root artifact ids,
   host-derived conversation and approval lifecycle status counts, optional
   consistency findings for drift between session active ids and conversation
-  records plus active sessions with no open work, and the latest observed A2A
-  message type across participating nodes;
+  records, drift between waiting approval ids and approval records, active
+  sessions with no open work, and the latest observed A2A message type across
+  participating nodes;
 - a widening of the host event surface where `entangle-host` now derives and
   persists `session.updated` plus `runner.turn.updated` events from persisted
   runner session and turn state, with `session.updated` now carrying
@@ -394,7 +395,8 @@ This repository currently contains:
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` no longer reduces runtime health to raw
   failure counts alone, with conversation-level and session-level consistency
-  findings now contributing to top-level degraded host status;
+  findings, including approval-gate drift behind waiting sessions, now
+  contributing to top-level degraded host status;
 - a host-owned runtime recovery-history surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/recovery`, persists per-node recovery
   records under observed host state, deduplicates unchanged states with
@@ -445,7 +447,7 @@ This repository currently contains:
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status, trace ids, and host-derived conversation
-  lifecycle status counts plus session consistency findings;
+  and approval lifecycle status counts plus session consistency findings;
 - a deeper Studio runtime-approval inspection slice where the selected-runtime
   surface now exposes persisted approval records, sorts them by recency, and
   expands one selected approval into host-backed detail without introducing

@@ -399,9 +399,10 @@ The repository now also contains the first real implementation baseline:
   runner session records across the current host runtime set, and shares the
   same boundary through `packages/host-client` and the CLI, with aggregate
   active-conversation ids, conversation and approval lifecycle status counts,
-  waiting approval ids, root artifact ids, optional conversation-level and
-  session-level consistency findings, and latest message type on list summaries
-  so event traces and session inspection share the same active-work vocabulary;
+  waiting approval ids, root artifact ids, optional conversation-level,
+  approval-level, and session-level consistency findings, and latest message
+  type on list summaries so event traces and session inspection share the same
+  active-work and approval-gate vocabulary;
 - a host-owned runtime approval inspection surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/approvals` plus
   `GET /v1/runtimes/{nodeId}/approvals/{approvalId}` and shares the same
@@ -451,9 +452,10 @@ The repository now also contains the first real implementation baseline:
   session and turn state, with `session.updated` now preserving
   active-conversation ids, conversation and approval lifecycle counts, bounded
   session consistency finding diagnostics, root artifact ids, and last message
-  type so runtime traces can distinguish active work, approval state, and drift
-  from session history, while persisting those observations under observed host
-  state and emitting them only when the durable observed fingerprint changes;
+  type so runtime traces can distinguish active work, approval state, approval
+  gate drift, and drift from session history, while persisting those
+  observations under observed host state and emitting them only when the durable
+  observed fingerprint changes;
 - a deterministic runner transport abstraction, file-backed runner-local state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,

@@ -134,7 +134,7 @@ describe("host session presentation helpers", () => {
       "conversation statuses working 1"
     );
     expect(formatHostSessionDetail(session)).toContain(
-      "consistency findings 1: error active_conversation_missing_record on worker-it/conv-missing"
+      "consistency findings 1: error active_conversation_missing_record on worker-it/conversation/conv-missing"
     );
     expect(formatHostSessionDetail(session)).toContain("approvals 1");
     expect(formatHostSessionDetail(session)).toContain("recorded approvals 1");
@@ -159,6 +159,21 @@ describe("host session presentation helpers", () => {
       })
     ).toBe(
       "warning active_session_without_open_conversations on worker-it/session"
+    );
+  });
+
+  it("formats approval-level consistency findings without pretending they are conversations", () => {
+    expect(
+      formatHostSessionConsistencyFinding({
+        approvalId: "approval-alpha",
+        code: "waiting_approval_missing_record",
+        message:
+          "Session 'session-alpha' on node 'worker-it' references waiting approval 'approval-alpha', but no approval record exists.",
+        nodeId: "worker-it",
+        severity: "error"
+      })
+    ).toBe(
+      "error waiting_approval_missing_record on worker-it/approval/approval-alpha"
     );
   });
 
@@ -285,7 +300,7 @@ describe("host session presentation helpers", () => {
       "conversation statuses working 1, awaiting_approval 1"
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
-      "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conv-extra"
+      "consistency findings 1: warning open_conversation_missing_active_reference on worker-it/conversation/conv-extra"
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "approvals 1"

@@ -1506,3 +1506,18 @@ Shared host-client helpers now own approval sorting, filtering, labels, status
 text, and bounded detail lines. The CLI can list, filter, summarize, and
 inspect runtime approvals, and Studio now exposes a selected-runtime approval
 panel with host-backed item detail.
+
+## [2026-04-25] implementation | Added session approval consistency diagnostics
+
+Closed the read-model integrity gap between `waitingApprovalIds` and
+runner-local approval records. Host session inspection now emits bounded
+approval-level consistency findings for missing waiting approval records,
+terminal approvals that still gate a session, pending approvals that are not
+referenced by the session, and `waiting_approval` sessions without any pending
+approval gate.
+
+The findings flow through `GET /v1/sessions`, `GET /v1/sessions/{sessionId}`,
+top-level session diagnostics in `GET /v1/host/status`, and `session.updated`
+finding-code summaries. Shared session presentation now distinguishes
+conversation, approval, and session finding targets without moving approval
+mutation authority into the host.

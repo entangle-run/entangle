@@ -3459,6 +3459,156 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("reports approval consistency findings on host session inspection", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "sessions",
+          "session-approval-drift.json"
+        ),
+        {
+          activeConversationIds: [],
+          graphId: "team-alpha",
+          intent: "Inspect approval drift.",
+          openedAt: "2026-04-24T11:00:00.000Z",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: [],
+          sessionId: "session-approval-drift",
+          status: "waiting_approval",
+          traceId: "trace-approval-drift",
+          updatedAt: "2026-04-24T11:05:00.000Z",
+          waitingApprovalIds: ["approval-missing", "approval-approved"]
+        }
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-approved.json"
+        ),
+        {
+          approvalId: "approval-approved",
+          approverNodeIds: ["supervisor-it"],
+          graphId: "team-alpha",
+          requestedAt: "2026-04-24T11:01:00.000Z",
+          requestedByNodeId: "worker-it",
+          sessionId: "session-approval-drift",
+          status: "approved",
+          updatedAt: "2026-04-24T11:02:00.000Z"
+        }
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-orphan.json"
+        ),
+        {
+          approvalId: "approval-orphan",
+          approverNodeIds: ["supervisor-it"],
+          graphId: "team-alpha",
+          requestedAt: "2026-04-24T11:03:00.000Z",
+          requestedByNodeId: "worker-it",
+          sessionId: "session-approval-drift",
+          status: "pending",
+          updatedAt: "2026-04-24T11:04:00.000Z"
+        }
+      );
+
+      const sessionInspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/session-approval-drift"
+      });
+
+      expect(sessionInspectionResponse.statusCode).toBe(200);
+      expect(
+        sessionInspectionResponseSchema.parse(sessionInspectionResponse.json())
+      ).toMatchObject({
+        nodes: [
+          {
+            nodeId: "worker-it",
+            sessionConsistencyFindings: [
+              {
+                code: "waiting_approval_session_without_pending_approval",
+                nodeId: "worker-it",
+                severity: "error"
+              },
+              {
+                approvalId: "approval-approved",
+                code: "waiting_approval_not_pending",
+                nodeId: "worker-it",
+                severity: "warning"
+              },
+              {
+                approvalId: "approval-missing",
+                code: "waiting_approval_missing_record",
+                nodeId: "worker-it",
+                severity: "error"
+              },
+              {
+                approvalId: "approval-orphan",
+                code: "pending_approval_missing_waiting_reference",
+                nodeId: "worker-it",
+                severity: "warning"
+              }
+            ],
+            session: {
+              sessionId: "session-approval-drift",
+              status: "waiting_approval"
+            }
+          }
+        ]
+      });
+
+      const listedSessionsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions"
+      });
+
+      expect(listedSessionsResponse.statusCode).toBe(200);
+      expect(
+        sessionListResponseSchema.parse(listedSessionsResponse.json())
+          .sessions[0]?.sessionConsistencyFindings
+      ).toHaveLength(4);
+
+      const hostStatusResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(hostStatusResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(hostStatusResponse.json())).toMatchObject({
+        sessionDiagnostics: {
+          consistencyFindingCount: 4,
+          inspectedSessionCount: 1,
+          sessionsWithConsistencyFindings: 1
+        },
+        status: "degraded"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("emits typed session-trace and runner activity events without duplicating unchanged records", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
@@ -3497,7 +3647,7 @@ describe("buildHostServer", () => {
           status: "active",
           traceId: "trace-alpha",
           updatedAt: "2026-04-24T10:05:00.000Z",
-          waitingApprovalIds: []
+          waitingApprovalIds: ["approval-alpha"]
         }
       );
       await writeJsonFile(

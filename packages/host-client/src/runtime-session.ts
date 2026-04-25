@@ -175,8 +175,10 @@ export function formatHostSessionConsistencyFinding(
   finding: HostSessionConsistencyFinding
 ): string {
   const target = finding.conversationId
-    ? `${finding.nodeId}/${finding.conversationId}`
-    : `${finding.nodeId}/session`;
+    ? `${finding.nodeId}/conversation/${finding.conversationId}`
+    : finding.approvalId
+      ? `${finding.nodeId}/approval/${finding.approvalId}`
+      : `${finding.nodeId}/session`;
 
   return `${finding.severity} ${finding.code} on ${target}`;
 }
