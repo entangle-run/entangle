@@ -104,12 +104,13 @@ The repository now also contains the first real implementation baseline:
   runner-owned active-conversation reconciliation now keeping multi-handoff
   sessions active only while real delegated conversations remain open, with
   a runner-start repair pass that realigns stale active-conversation ids from
-  durable conversation records, moves approval-gated drained sessions to
-  `waiting_approval`, and safely completes drained active sessions before new
+  durable conversation records, moves still-pending approval-gated drained
+  sessions to `waiting_approval`, clears already-approved waiting gates, and
+  safely completes drained active or unblocked waiting sessions before new
   transport intake begins, and with host-owned session summaries now
   exposing aggregate active-work ids plus conversation and approval lifecycle
-  status counts plus conversation-level and session-level consistency findings
-  for list-level operator inspection;
+  status counts plus conversation-level, approval-level, and session-level
+  consistency findings for list-level operator inspection;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,

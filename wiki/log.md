@@ -1521,3 +1521,18 @@ top-level session diagnostics in `GET /v1/host/status`, and `session.updated`
 finding-code summaries. Shared session presentation now distinguishes
 conversation, approval, and session finding targets without moving approval
 mutation authority into the host.
+
+## [2026-04-25] implementation | Repaired approved approval gates in runner sessions
+
+Moved approval-gated session repair from counting every waiting approval id as
+unresolved to clearing only those gates backed by `approved` approval records.
+Live final-conversation handling and startup repair now remove approved waiting
+ids, keep missing, pending, rejected, expired, and withdrawn records as
+unresolved gates, and can complete drained active or `waiting_approval`
+sessions once all waiting gates are approved.
+
+The change keeps approval mutation authority inside the runner boundary:
+`entangle-host` still observes approval records and diagnoses drift, while the
+runner performs the lifecycle transition through canonical
+`waiting_approval -> active -> synthesizing -> completed` paths only when
+durable message context exists.

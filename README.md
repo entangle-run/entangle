@@ -102,8 +102,9 @@ This repository currently contains:
   runner-owned active-conversation reconciliation so multi-handoff sessions
   remain active until every open delegated conversation resolves or closes,
   with a runner-start repair pass that realigns stale active-conversation ids
-  from durable conversation records, moves approval-gated drained sessions to
-  `waiting_approval`, and safely completes drained active sessions before new
+  from durable conversation records, moves still-pending approval-gated drained
+  sessions to `waiting_approval`, clears already-approved waiting gates, and
+  safely completes drained active or unblocked waiting sessions before new
   transport intake begins;
 - host-resolved model credential delivery in the effective runtime context,
   so live runner execution now starts only when the bound model secret is
@@ -394,9 +395,9 @@ This repository currently contains:
   now carries derived reconciliation state and finding codes, persisted host
   reconciliation snapshots distinguish blocked, transitioning, and degraded
   runtimes, and `GET /v1/host/status` no longer reduces runtime health to raw
-  failure counts alone, with conversation-level and session-level consistency
-  findings, including approval-gate drift behind waiting sessions, now
-  contributing to top-level degraded host status;
+  failure counts alone, with conversation-level, approval-level, and
+  session-level consistency findings now contributing to top-level degraded
+  host status;
 - a host-owned runtime recovery-history surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/recovery`, persists per-node recovery
   records under observed host state, deduplicates unchanged states with

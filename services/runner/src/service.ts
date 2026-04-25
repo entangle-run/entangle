@@ -3,6 +3,7 @@ import type {
   AgentEngineTurnResult,
   ArtifactRecord,
   ArtifactRef,
+  ApprovalRecord,
   ConversationLifecycleState,
   ConversationRecord,
   EngineArtifactInput,
@@ -40,6 +41,7 @@ import {
 import {
   type RunnerStatePaths,
   ensureRunnerStatePaths,
+  listApprovalRecords,
   listConversationRecords,
   listSessionRecords,
   readConversationRecord,
@@ -679,6 +681,22 @@ function listOpenConversationIdsForSession(input: {
     .map((conversationRecord) => conversationRecord.conversationId);
 }
 
+function listUnapprovedWaitingApprovalIds(input: {
+  approvalRecords: ApprovalRecord[];
+  sessionRecord: SessionRecord;
+}): string[] {
+  const approvalRecordsById = new Map(
+    input.approvalRecords.map((approvalRecord) => [
+      approvalRecord.approvalId,
+      approvalRecord
+    ])
+  );
+
+  return input.sessionRecord.waitingApprovalIds.filter(
+    (approvalId) => approvalRecordsById.get(approvalId)?.status !== "approved"
+  );
+}
+
 function isTerminalSessionStatus(status: SessionLifecycleState): boolean {
   return ["cancelled", "completed", "failed", "timed_out"].includes(status);
 }
@@ -690,13 +708,15 @@ function areIdentifierListsEqual(left: string[], right: string[]): boolean {
   );
 }
 
-async function repairSessionActiveConversationIds(
+async function repairSessionDerivedWorkState(
   statePaths: RunnerStatePaths
 ): Promise<void> {
-  const [conversationRecords, sessionRecords] = await Promise.all([
-    listConversationRecords(statePaths),
-    listSessionRecords(statePaths)
-  ]);
+  const [approvalRecords, conversationRecords, sessionRecords] =
+    await Promise.all([
+      listApprovalRecords(statePaths),
+      listConversationRecords(statePaths),
+      listSessionRecords(statePaths)
+    ]);
 
   await Promise.all(
     sessionRecords.map(async (sessionRecord) => {
@@ -706,16 +726,62 @@ async function repairSessionActiveConversationIds(
             conversationRecords,
             sessionId: sessionRecord.sessionId
           });
+      const canExplainLifecycleRepair = Boolean(
+        sessionRecord.lastMessageId && sessionRecord.lastMessageType
+      );
+      const waitingApprovalIds =
+        canExplainLifecycleRepair &&
+        ["active", "waiting_approval"].includes(sessionRecord.status)
+          ? listUnapprovedWaitingApprovalIds({
+              approvalRecords: approvalRecords.filter(
+                (approvalRecord) =>
+                  approvalRecord.sessionId === sessionRecord.sessionId
+              ),
+              sessionRecord
+            })
+          : sessionRecord.waitingApprovalIds;
       const repairedSession: SessionRecord = {
         ...sessionRecord,
         activeConversationIds,
-        updatedAt: areIdentifierListsEqual(
-          sessionRecord.activeConversationIds,
-          activeConversationIds
-        )
+        waitingApprovalIds,
+        updatedAt:
+          areIdentifierListsEqual(
+            sessionRecord.activeConversationIds,
+            activeConversationIds
+          ) &&
+          areIdentifierListsEqual(
+            sessionRecord.waitingApprovalIds,
+            waitingApprovalIds
+          )
           ? sessionRecord.updatedAt
           : nowIsoString()
       };
+
+      if (
+        repairedSession.status === "waiting_approval" &&
+        repairedSession.waitingApprovalIds.length === 0 &&
+        repairedSession.lastMessageId &&
+        repairedSession.lastMessageType
+      ) {
+        const activeSession = await transitionSessionStatus(
+          statePaths,
+          repairedSession,
+          "active",
+          {
+            lastMessageId: repairedSession.lastMessageId,
+            lastMessageType: repairedSession.lastMessageType
+          }
+        );
+
+        if (activeSession.activeConversationIds.length === 0) {
+          await completeSession(statePaths, activeSession, {
+            lastMessageId: repairedSession.lastMessageId,
+            lastMessageType: repairedSession.lastMessageType
+          });
+        }
+
+        return;
+      }
 
       if (
         repairedSession.status === "active" &&
@@ -754,6 +820,10 @@ async function repairSessionActiveConversationIds(
         areIdentifierListsEqual(
           sessionRecord.activeConversationIds,
           activeConversationIds
+        ) &&
+        areIdentifierListsEqual(
+          sessionRecord.waitingApprovalIds,
+          waitingApprovalIds
         )
       ) {
         return;
@@ -950,15 +1020,49 @@ export class RunnerService {
     session: SessionRecord;
     statePaths: RunnerStatePaths;
   }): Promise<SessionRecord> {
-    const conversationRecords = await listConversationRecords(input.statePaths);
+    const [approvalRecords, conversationRecords] = await Promise.all([
+      listApprovalRecords(input.statePaths),
+      listConversationRecords(input.statePaths)
+    ]);
     const activeConversationIds = listOpenConversationIdsForSession({
       conversationRecords,
       sessionId: input.session.sessionId
     });
+    const waitingApprovalIds = listUnapprovedWaitingApprovalIds({
+      approvalRecords: approvalRecords.filter(
+        (approvalRecord) => approvalRecord.sessionId === input.session.sessionId
+      ),
+      sessionRecord: input.session
+    });
     const currentSession: SessionRecord = {
       ...input.session,
-      activeConversationIds
+      activeConversationIds,
+      waitingApprovalIds
     };
+
+    if (
+      currentSession.status === "waiting_approval" &&
+      currentSession.waitingApprovalIds.length === 0
+    ) {
+      const activeSession = await transitionSessionStatus(
+        input.statePaths,
+        currentSession,
+        "active",
+        {
+          lastMessageId: input.lastMessageId,
+          lastMessageType: input.lastMessageType
+        }
+      );
+
+      if (activeSession.activeConversationIds.length === 0) {
+        return completeSession(input.statePaths, activeSession, {
+          lastMessageId: input.lastMessageId,
+          lastMessageType: input.lastMessageType
+        });
+      }
+
+      return activeSession;
+    }
 
     if (activeConversationIds.length > 0 || currentSession.status !== "active") {
       return transitionSessionStatus(
@@ -1612,7 +1716,7 @@ export class RunnerService {
     }
 
     this.statePaths = await ensureRunnerStatePaths(this.context.workspace.runtimeRoot);
-    await repairSessionActiveConversationIds(this.statePaths);
+    await repairSessionDerivedWorkState(this.statePaths);
     this.subscription = await this.transport.subscribe({
       onMessage: async (envelope) => {
         await this.handleInboundEnvelope(envelope);

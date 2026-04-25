@@ -210,6 +210,28 @@ export async function writeApprovalRecord(
   );
 }
 
+export async function listApprovalRecords(
+  statePaths: RunnerStatePaths
+): Promise<ApprovalRecord[]> {
+  if (!(await pathExists(statePaths.approvalsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.approvalsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      approvalRecordSchema.parse(
+        await readJsonFile<unknown>(
+          path.join(statePaths.approvalsRoot, fileName)
+        )
+      )
+    )
+  );
+}
+
 export async function readArtifactRecord(
   statePaths: RunnerStatePaths,
   artifactId: string
