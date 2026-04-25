@@ -87,7 +87,7 @@ known Vite chunk-size warning for the current bundle.
 | --- | --- | --- | --- |
 | R1 / L1 Local Operator Baseline | Released as `v0.1-local-operator-baseline`. | Host, runner, Studio, CLI, local Compose, active/disposable/runtime smokes all passed in this audit and the final release packet records the release boundary. | None for R1/L1; next work moves to L1.5. |
 | R1.1 / L1.5 Local Operator Preview | Released as `v0.1.5-local-operator-preview`. | Canonical preview assets and a near-one-command demo path reuse the same host, runner, local relay, model-stub, and Gitea/git-backed artifact flow as the runtime smoke. | None for L1.5; next work moves to L2 Local Workbench. |
-| R1.2 / L2 Local Workbench | Active implementation; still below the final workbench release bar. | Package scaffold/admission, package inspect, package tool-catalog validation, graph/node/edge mutation, shared graph diff for CLI and Studio, host API plus CLI and Studio session launch over host-resolved runtime context, runtime/session/artifact/turn/approval inspection, and artifact filtering by session id exist. | Studio graph validation, graph templates/import/export, artifact preview/history, memory workbench, launch wait/retry ergonomics, and final Docker-backed release verification. |
+| R1.2 / L2 Local Workbench | Active implementation; still below the final workbench release bar. | Package scaffold/admission, package inspect, package tool-catalog validation, graph/node/edge mutation, shared graph diff for CLI and Studio, CLI graph template export, host API plus CLI and Studio session launch over host-resolved runtime context, runtime/session/artifact/turn/approval inspection, and artifact filtering by session id exist. | Studio graph validation, graph import/export, artifact preview/history, memory workbench, launch wait/retry ergonomics, and final Docker-backed release verification. |
 | R1.3 / L3 Local Reliability | Early reliability foundation exists, but reliability product is incomplete. | Strict preflight, active smoke, disposable smoke, runtime smoke, reset through Compose volume teardown. | Doctor command, repair flow, backup/restore, local state versioning, upgrade checks, logs bundle, conservative drift repair. |
 | L4 Entangle Local GA | Not ready and must not be claimed. | Core local runtime works, but workbench/reliability/onboarding/release-discipline gaps remain. | Complete Local docs, install/demo path, workbench workflows, repair/backup/upgrade, release notes, website claim audit, GA tag only after all gates pass. |
 
@@ -100,7 +100,7 @@ known Vite chunk-size warning for the current bundle.
 | Runner | Long-lived service, Nostr intake, engine turns, approval handling, handoff, artifacts, memory. | Cross-host/global session semantics remain future work. | Remote federation and production scheduler. |
 | Artifact flow | Git-backed local materialization, publication, retrieval, downstream handoff proof. | Rich artifact kinds, preview/history, and fallback replication are later work. | Object-storage artifact service before Cloud. |
 | Studio | Host-backed graph, graph revision diff, runtime, recovery, trace, session launch, session inspection, turn, approval, artifact, package-source, principal, node, and edge views. | First-run demo UX, graph validation view, artifact preview, memory workbench. | SaaS/workspace admin UI before Local GA. |
-| CLI | Offline validation, package init and inspect, graph diff, host inspection, graph/resources/runtimes/sessions/artifacts/approvals/turns/events, local session launch, artifact session filtering, mutation dry runs, and root-relative path handling under `pnpm --filter @entangle/cli dev`. | Higher-level launch wait/retry/export ergonomics and graph/package import/export depth. | Production cloud automation auth before Local GA. |
+| CLI | Offline validation, package init and inspect, graph diff, graph template export, host inspection, graph/resources/runtimes/sessions/artifacts/approvals/turns/events, local session launch, artifact session filtering, mutation dry runs, and root-relative path handling under `pnpm --filter @entangle/cli dev`. | Higher-level launch wait/retry/export ergonomics and graph/package import/export depth. | Production cloud automation auth before Local GA. |
 | Deployment | Local Compose profile with Studio, host, strfry, Gitea, dynamic runner image, preflight and smokes. | Non-disposable upgrade/repair handling. | Cloud or Enterprise deployment profiles. |
 | QA | `pnpm verify`, lint/typecheck/test, build, CI, local preflight, active and disposable smokes. | Clean-clone/RC rehearsal still required before tags. | Hiding or bypassing failing tests. |
 
@@ -162,7 +162,7 @@ failure.
 
 1. Build R1.2/L2 Local Workbench.
    - Add package validate/import/inspect depth.
-   - Add graph templates/import/export and validation.
+   - Add graph import/export and validation.
    - Deepen host-backed session launch with wait/retry and clearer navigation.
    - Add artifact and memory workbench surfaces.
 2. Build R1.3/L3 Local Reliability.

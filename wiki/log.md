@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added CLI graph template export
+
+Closed the first L2 graph-template workflow by adding
+`entangle graph templates list` and
+`entangle graph templates export <templateId> <file>`. The command exposes the
+canonical `examples/local-preview/graph.json` graph as the built-in
+`local-preview` template, writes pretty JSON, and preserves root-relative path
+behavior when run through `pnpm --filter`.
+
+This is intentionally a CLI template export path over existing graph assets,
+not a host-owned template registry, graph bundle import/export format, Studio
+template editor, rollback, or restore flow.
+
+Verification passed with focused CLI test, typecheck, lint, template list,
+template export, and exported graph inspection commands.
+
 ## [2026-04-25] implementation | Added Studio graph revision diff
 
 Closed the next L2 Local Workbench graph slice by moving the graph diff engine

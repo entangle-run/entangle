@@ -133,7 +133,8 @@ The repository now also contains the first real implementation baseline:
   host API over host-resolved runtime context and the local relay, Studio
   selected-runtime session launch through the same host API, shared graph
   diffing for CLI and Studio, Studio graph revision diff against active graph
-  state, and artifact filtering by session id;
+  state, CLI graph template list/export commands for the canonical Local
+  Preview graph, and artifact filtering by session id;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

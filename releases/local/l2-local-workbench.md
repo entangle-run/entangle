@@ -31,12 +31,15 @@ Included in the current implementation slice:
   CLI and Studio;
 - Studio selected-revision `Diff Against Active` view for persisted graph
   revisions;
+- graph template listing and export through `entangle graph templates list`
+  and `entangle graph templates export local-preview <file>`;
 - artifact list filtering by `--session-id`.
 
 Still required before the L2 release tag:
 
 - Studio workbench affordances for graph validation;
-- graph template or import/export workflow beyond direct graph JSON apply/get;
+- graph import/export workflow beyond direct graph JSON apply/get and template
+  export;
 - artifact preview/history for report artifacts;
 - memory workbench inspection for focused registers and task pages;
 - full local verification gate, including Docker-backed smokes, on the final
@@ -88,6 +91,9 @@ pnpm --filter @entangle/studio lint
 pnpm --filter @entangle/studio typecheck
 pnpm --filter @entangle/cli dev package inspect examples/local-preview/agent-package
 pnpm --filter @entangle/cli dev graph diff examples/local-preview/graph.json examples/local-preview/graph.json
+pnpm --filter @entangle/cli dev graph templates list
+pnpm --filter @entangle/cli dev graph templates export local-preview /tmp/entangle-local-preview-graph.json
+pnpm --filter @entangle/cli dev graph inspect /tmp/entangle-local-preview-graph.json
 pnpm --filter @entangle/cli dev validate package examples/local-preview/agent-package
 pnpm --filter @entangle/cli dev host sessions launch --help
 pnpm verify
@@ -118,6 +124,8 @@ must pass the repository-level and Docker-backed gates before tagging.
 - Graph diff is available in CLI and Studio, but it is still client-side over
   local graph JSON or already-loaded revisions; no host-owned graph diff API,
   graph validation drawer, or revision restore flow exists yet.
+- Graph templates can be exported from the CLI, but there is no graph template
+  editor, graph import/export bundle format, or host-owned template registry.
 - Package inspection validates the manifest and tool catalog, but package
   import/export archives are still pending.
 - Artifact session filtering helps navigation, but report preview and history

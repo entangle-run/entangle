@@ -1,5 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import {
   createHostClient,
@@ -32,6 +33,10 @@ import {
   validatePackageDirectory
 } from "@entangle/validator";
 import { buildGraphDiff } from "./graph-diff-command.js";
+import {
+  getGraphTemplate,
+  listGraphTemplates
+} from "./graph-template-command.js";
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { projectHostStatusSummary } from "./host-status-output.js";
 import {
@@ -75,12 +80,26 @@ async function readJsonDocument(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
 }
 
+async function writeJsonDocument(filePath: string, value: unknown): Promise<void> {
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../.."
+);
+
 function resolveCliPath(inputPath: string): string {
   if (path.isAbsolute(inputPath)) {
     return inputPath;
   }
 
   return path.resolve(process.env.INIT_CWD ?? process.cwd(), inputPath);
+}
+
+function resolveRepositoryPath(inputPath: string): string {
+  return path.resolve(repositoryRoot, inputPath);
 }
 
 function printJson(value: unknown): void {
@@ -1550,6 +1569,49 @@ hostSessionsCommand
 const graphCommand = program
   .command("graph")
   .description("Inspect graph files from the terminal.");
+
+const graphTemplatesCommand = graphCommand
+  .command("templates")
+  .description("Export built-in graph templates for local workbench flows.");
+
+graphTemplatesCommand
+  .command("list")
+  .description("List available graph templates.")
+  .action(() => {
+    printJson({
+      templates: listGraphTemplates()
+    });
+  });
+
+graphTemplatesCommand
+  .command("export")
+  .argument("<templateId>", "Graph template identifier.")
+  .argument("<file>", "Destination graph JSON file.")
+  .description("Write a graph template JSON file.")
+  .action(async (templateId: string, file: string) => {
+    const template = getGraphTemplate(templateId);
+
+    if (!template) {
+      throw new Error(`Unknown graph template '${templateId}'.`);
+    }
+
+    const graph = graphSpecSchema.parse(
+      await readJsonDocument(resolveRepositoryPath(template.graphPath))
+    );
+    const outputPath = resolveCliPath(file);
+
+    await writeJsonDocument(outputPath, graph);
+
+    printJson({
+      template: {
+        ...template,
+        edgeCount: graph.edges.length,
+        graphId: graph.graphId,
+        nodeCount: graph.nodes.length,
+        outputPath
+      }
+    });
+  });
 
 graphCommand
   .command("inspect")
