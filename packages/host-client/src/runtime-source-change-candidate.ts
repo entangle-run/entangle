@@ -1,5 +1,6 @@
 import type {
   RuntimeSourceChangeCandidateDiffResponse,
+  RuntimeSourceChangeCandidateFilePreviewResponse,
   SourceChangeCandidateRecord
 } from "@entangle/types";
 import { formatSourceChangeSummary } from "./runtime-turn.js";
@@ -111,5 +112,17 @@ export function formatRuntimeSourceChangeCandidateDiffStatus(
 
   return `${response.diff.contentType} · ${response.diff.bytesRead} bytes${
     response.diff.truncated ? " · truncated" : ""
+  }`;
+}
+
+export function formatRuntimeSourceChangeCandidateFilePreviewStatus(
+  response: RuntimeSourceChangeCandidateFilePreviewResponse
+): string {
+  if (!response.preview.available) {
+    return response.preview.reason;
+  }
+
+  return `${response.preview.contentType} · ${response.preview.bytesRead} bytes${
+    response.preview.truncated ? " · truncated" : ""
   }`;
 }

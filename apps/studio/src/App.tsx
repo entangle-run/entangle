@@ -45,6 +45,7 @@ import type {
   RuntimeMemoryPageInspectionResponse,
   RuntimeRecoveryInspectionResponse,
   RuntimeSourceChangeCandidateDiffResponse,
+  RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
@@ -159,6 +160,7 @@ import {
 import {
   formatRuntimeSourceChangeCandidateDetailLines,
   formatRuntimeSourceChangeCandidateDiffStatus,
+  formatRuntimeSourceChangeCandidateFilePreviewStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidates
@@ -475,6 +477,14 @@ export function App() {
   ] = useState<RuntimeSourceChangeCandidateInspectionResponse | null>(null);
   const [selectedSourceChangeCandidateDiff, setSelectedSourceChangeCandidateDiff] =
     useState<RuntimeSourceChangeCandidateDiffResponse | null>(null);
+  const [
+    selectedSourceChangeCandidateFilePath,
+    setSelectedSourceChangeCandidateFilePath
+  ] = useState<string | null>(null);
+  const [
+    selectedSourceChangeCandidateFilePreview,
+    setSelectedSourceChangeCandidateFilePreview
+  ] = useState<RuntimeSourceChangeCandidateFilePreviewResponse | null>(null);
   const [sourceChangeCandidateDetailError, setSourceChangeCandidateDetailError] =
     useState<string | null>(null);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
@@ -505,6 +515,7 @@ export function App() {
   const selectedMemoryPagePathRef = useRef<string | null>(null);
   const selectedTurnIdRef = useRef<string | null>(null);
   const selectedSourceChangeCandidateIdRef = useRef<string | null>(null);
+  const selectedSourceChangeCandidateFilePathRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
   const recoveryPolicySeedRef = useRef<string | null>(null);
   const sessionLaunchDraftSeedRef = useRef<string | null>(null);
@@ -516,6 +527,8 @@ export function App() {
   selectedMemoryPagePathRef.current = selectedMemoryPagePath;
   selectedTurnIdRef.current = selectedTurnId;
   selectedSourceChangeCandidateIdRef.current = selectedSourceChangeCandidateId;
+  selectedSourceChangeCandidateFilePathRef.current =
+    selectedSourceChangeCandidateFilePath;
   selectedSessionIdRef.current = selectedSessionId;
 
   const loadOverview = useCallback(async () => {
@@ -873,6 +886,15 @@ export function App() {
           client.getRuntimeSourceChangeCandidate(nodeId, candidateId),
           client.getRuntimeSourceChangeCandidateDiff(nodeId, candidateId)
         ]);
+        const firstFilePath =
+          inspection.candidate.sourceChangeSummary.files[0]?.path ?? null;
+        const filePreview = firstFilePath
+          ? await client.getRuntimeSourceChangeCandidateFilePreview(
+              nodeId,
+              candidateId,
+              firstFilePath
+            )
+          : null;
 
         if (
           selectedRuntimeIdRef.current !== nodeId ||
@@ -884,6 +906,8 @@ export function App() {
         startTransition(() => {
           setSelectedSourceChangeCandidateInspection(inspection);
           setSelectedSourceChangeCandidateDiff(diff);
+          setSelectedSourceChangeCandidateFilePath(firstFilePath);
+          setSelectedSourceChangeCandidateFilePreview(filePreview);
           setSourceChangeCandidateDetailError(null);
         });
       } catch (caught: unknown) {
@@ -897,10 +921,57 @@ export function App() {
         startTransition(() => {
           setSelectedSourceChangeCandidateInspection(null);
           setSelectedSourceChangeCandidateDiff(null);
+          setSelectedSourceChangeCandidateFilePath(null);
+          setSelectedSourceChangeCandidateFilePreview(null);
           setSourceChangeCandidateDetailError(
             normalizeError(
               caught,
               "Unknown error while loading source change candidate detail."
+            )
+          );
+        });
+      }
+    },
+    [client]
+  );
+
+  const loadSelectedSourceChangeCandidateFilePreview = useCallback(
+    async (nodeId: string, candidateId: string, filePath: string) => {
+      try {
+        const filePreview =
+          await client.getRuntimeSourceChangeCandidateFilePreview(
+            nodeId,
+            candidateId,
+            filePath
+          );
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedSourceChangeCandidateIdRef.current !== candidateId ||
+          selectedSourceChangeCandidateFilePathRef.current !== filePath
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedSourceChangeCandidateFilePreview(filePreview);
+          setSourceChangeCandidateDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedSourceChangeCandidateIdRef.current !== candidateId ||
+          selectedSourceChangeCandidateFilePathRef.current !== filePath
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedSourceChangeCandidateFilePreview(null);
+          setSourceChangeCandidateDetailError(
+            normalizeError(
+              caught,
+              "Unknown error while loading source change candidate file preview."
             )
           );
         });
@@ -1011,12 +1082,27 @@ export function App() {
       : null;
     const currentSelectedSourceChangeCandidateId =
       selectedSourceChangeCandidateId;
+    const selectedSourceChangeCandidateRecord =
+      currentSelectedSourceChangeCandidateId !== null
+        ? nextSelectedSourceChangeCandidates.find(
+            (candidate) =>
+              candidate.candidateId === currentSelectedSourceChangeCandidateId
+          )
+        : undefined;
     const shouldRefreshSelectedSourceChangeCandidate =
       currentSelectedSourceChangeCandidateId !== null &&
-      nextSelectedSourceChangeCandidates.some(
-        (candidate) =>
-          candidate.candidateId === currentSelectedSourceChangeCandidateId
-      );
+      selectedSourceChangeCandidateRecord !== undefined;
+    const currentSelectedSourceChangeCandidateFilePath =
+      selectedSourceChangeCandidateFilePath;
+    const nextSelectedSourceChangeCandidateFilePath =
+      selectedSourceChangeCandidateRecord !== undefined
+        ? selectedSourceChangeCandidateRecord.sourceChangeSummary.files.some(
+            (file) => file.path === currentSelectedSourceChangeCandidateFilePath
+          )
+          ? currentSelectedSourceChangeCandidateFilePath
+          : (selectedSourceChangeCandidateRecord.sourceChangeSummary.files[0]
+              ?.path ?? null)
+        : null;
     const selectedSourceChangeCandidateResults =
       shouldRefreshSelectedSourceChangeCandidate
         ? (
@@ -1028,7 +1114,14 @@ export function App() {
               client.getRuntimeSourceChangeCandidateDiff(
                 nodeId,
                 currentSelectedSourceChangeCandidateId
-              )
+              ),
+              nextSelectedSourceChangeCandidateFilePath
+                ? client.getRuntimeSourceChangeCandidateFilePreview(
+                    nodeId,
+                    currentSelectedSourceChangeCandidateId,
+                    nextSelectedSourceChangeCandidateFilePath
+                  )
+                : Promise.resolve(null)
             ])
           )
         : null;
@@ -1036,6 +1129,8 @@ export function App() {
       selectedSourceChangeCandidateResults?.[0] ?? null;
     const selectedSourceChangeCandidateDiffResult =
       selectedSourceChangeCandidateResults?.[1] ?? null;
+    const selectedSourceChangeCandidateFilePreviewResult =
+      selectedSourceChangeCandidateResults?.[2] ?? null;
     const currentSelectedSessionId = selectedSessionId;
     const shouldRefreshSelectedSession =
       currentSelectedSessionId !== null &&
@@ -1255,15 +1350,20 @@ export function App() {
         if (!selectedSourceChangeCandidateId) {
           setSelectedSourceChangeCandidateInspection(null);
           setSelectedSourceChangeCandidateDiff(null);
+          setSelectedSourceChangeCandidateFilePath(null);
+          setSelectedSourceChangeCandidateFilePreview(null);
           setSourceChangeCandidateDetailError(null);
         } else if (!shouldRefreshSelectedSourceChangeCandidate) {
           setSelectedSourceChangeCandidateId(null);
           setSelectedSourceChangeCandidateInspection(null);
           setSelectedSourceChangeCandidateDiff(null);
+          setSelectedSourceChangeCandidateFilePath(null);
+          setSelectedSourceChangeCandidateFilePreview(null);
           setSourceChangeCandidateDetailError(null);
         } else if (
           selectedSourceChangeCandidateResult?.status === "fulfilled" &&
-          selectedSourceChangeCandidateDiffResult?.status === "fulfilled"
+          selectedSourceChangeCandidateDiffResult?.status === "fulfilled" &&
+          selectedSourceChangeCandidateFilePreviewResult?.status === "fulfilled"
         ) {
           setSelectedSourceChangeCandidateInspection(
             selectedSourceChangeCandidateResult.value
@@ -1271,10 +1371,18 @@ export function App() {
           setSelectedSourceChangeCandidateDiff(
             selectedSourceChangeCandidateDiffResult.value
           );
+          setSelectedSourceChangeCandidateFilePath(
+            nextSelectedSourceChangeCandidateFilePath
+          );
+          setSelectedSourceChangeCandidateFilePreview(
+            selectedSourceChangeCandidateFilePreviewResult.value
+          );
           setSourceChangeCandidateDetailError(null);
         } else if (selectedSourceChangeCandidateResult?.status === "rejected") {
           setSelectedSourceChangeCandidateInspection(null);
           setSelectedSourceChangeCandidateDiff(null);
+          setSelectedSourceChangeCandidateFilePath(null);
+          setSelectedSourceChangeCandidateFilePreview(null);
           setSourceChangeCandidateDetailError(
             normalizeError(
               selectedSourceChangeCandidateResult.reason,
@@ -1286,10 +1394,25 @@ export function App() {
         ) {
           setSelectedSourceChangeCandidateInspection(null);
           setSelectedSourceChangeCandidateDiff(null);
+          setSelectedSourceChangeCandidateFilePath(null);
+          setSelectedSourceChangeCandidateFilePreview(null);
           setSourceChangeCandidateDetailError(
             normalizeError(
               selectedSourceChangeCandidateDiffResult.reason,
               "Unknown error while loading source change candidate diff."
+            )
+          );
+        } else if (
+          selectedSourceChangeCandidateFilePreviewResult?.status === "rejected"
+        ) {
+          setSelectedSourceChangeCandidateInspection(null);
+          setSelectedSourceChangeCandidateDiff(null);
+          setSelectedSourceChangeCandidateFilePath(null);
+          setSelectedSourceChangeCandidateFilePreview(null);
+          setSourceChangeCandidateDetailError(
+            normalizeError(
+              selectedSourceChangeCandidateFilePreviewResult.reason,
+              "Unknown error while loading source change candidate file preview."
             )
           );
         }
@@ -1304,6 +1427,8 @@ export function App() {
         setSelectedSourceChangeCandidateId(null);
         setSelectedSourceChangeCandidateInspection(null);
         setSelectedSourceChangeCandidateDiff(null);
+        setSelectedSourceChangeCandidateFilePath(null);
+        setSelectedSourceChangeCandidateFilePreview(null);
         setSourceChangeCandidateDetailError(null);
       }
 
@@ -1354,6 +1479,7 @@ export function App() {
     selectedArtifactId,
     selectedMemoryPagePath,
     selectedSourceChangeCandidateId,
+    selectedSourceChangeCandidateFilePath,
     selectedSessionId,
     selectedTurnId
   ]);
@@ -1517,6 +1643,8 @@ export function App() {
       setSelectedSourceChangeCandidateId(candidateId);
       setSelectedSourceChangeCandidateInspection(null);
       setSelectedSourceChangeCandidateDiff(null);
+      setSelectedSourceChangeCandidateFilePath(null);
+      setSelectedSourceChangeCandidateFilePreview(null);
       setSourceChangeCandidateDetailError(null);
       await loadSelectedSourceChangeCandidateInspection(
         selectedRuntimeId,
@@ -1524,6 +1652,28 @@ export function App() {
       );
     },
     [loadSelectedSourceChangeCandidateInspection, selectedRuntimeId]
+  );
+
+  const selectRuntimeSourceChangeCandidateFile = useCallback(
+    async (filePath: string) => {
+      if (!selectedRuntimeId || !selectedSourceChangeCandidateId) {
+        return;
+      }
+
+      setSelectedSourceChangeCandidateFilePath(filePath);
+      setSelectedSourceChangeCandidateFilePreview(null);
+      setSourceChangeCandidateDetailError(null);
+      await loadSelectedSourceChangeCandidateFilePreview(
+        selectedRuntimeId,
+        selectedSourceChangeCandidateId,
+        filePath
+      );
+    },
+    [
+      loadSelectedSourceChangeCandidateFilePreview,
+      selectedRuntimeId,
+      selectedSourceChangeCandidateId
+    ]
   );
 
   const selectGraphRevision = useCallback(
@@ -1913,6 +2063,8 @@ export function App() {
       setSelectedSourceChangeCandidateId(null);
       setSelectedSourceChangeCandidateInspection(null);
       setSelectedSourceChangeCandidateDiff(null);
+      setSelectedSourceChangeCandidateFilePath(null);
+      setSelectedSourceChangeCandidateFilePreview(null);
       setSourceChangeCandidateDetailError(null);
       setSessionError(null);
       setSelectedSessions([]);
@@ -1951,6 +2103,8 @@ export function App() {
     setSelectedSourceChangeCandidateId(null);
     setSelectedSourceChangeCandidateInspection(null);
     setSelectedSourceChangeCandidateDiff(null);
+    setSelectedSourceChangeCandidateFilePath(null);
+    setSelectedSourceChangeCandidateFilePreview(null);
     setSourceChangeCandidateDetailError(null);
     setSessionError(null);
     setSelectedSessions([]);
@@ -4129,6 +4283,72 @@ export function App() {
                             </div>
                           )}
                         </div>
+
+                        {selectedSourceChangeCandidateInspection.candidate
+                          .sourceChangeSummary.files.length > 0 ? (
+                          <div className="artifact-preview-panel">
+                            <div className="section-header">
+                              <h3>Source File</h3>
+                              <span className="panel-caption">
+                                {selectedSourceChangeCandidateFilePreview
+                                  ? formatRuntimeSourceChangeCandidateFilePreviewStatus(
+                                      selectedSourceChangeCandidateFilePreview
+                                    )
+                                  : selectedSourceChangeCandidateFilePath
+                                    ? "loading"
+                                    : "none"}
+                              </span>
+                            </div>
+
+                            <div className="source-file-selector">
+                              {selectedSourceChangeCandidateInspection.candidate.sourceChangeSummary.files.map(
+                                (file) => (
+                                  <button
+                                    className={`action-button ${selectedSourceChangeCandidateFilePath === file.path ? "is-selected" : ""}`}
+                                    key={file.path}
+                                    onClick={() => {
+                                      void selectRuntimeSourceChangeCandidateFile(
+                                        file.path
+                                      );
+                                    }}
+                                    type="button"
+                                  >
+                                    {file.path}
+                                  </button>
+                                )
+                              )}
+                            </div>
+
+                            {selectedSourceChangeCandidateFilePreview ? (
+                              selectedSourceChangeCandidateFilePreview.preview
+                                .available ? (
+                                <pre className="artifact-preview-content">
+                                  {
+                                    selectedSourceChangeCandidateFilePreview
+                                      .preview.content
+                                  }
+                                </pre>
+                              ) : (
+                                <div className="inline-empty-state">
+                                  <p>
+                                    {
+                                      selectedSourceChangeCandidateFilePreview
+                                        .preview.reason
+                                    }
+                                  </p>
+                                </div>
+                              )
+                            ) : selectedSourceChangeCandidateFilePath ? (
+                              <div className="inline-empty-state">
+                                <p>Loading source file...</p>
+                              </div>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>No changed source file is available for preview.</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     ) : selectedSourceChangeCandidateId ? (
                       <div className="inline-empty-state">

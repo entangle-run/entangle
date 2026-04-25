@@ -46,6 +46,7 @@ import {
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -353,6 +354,20 @@ describe("source change candidate host API contracts", () => {
         }
       }).diff.available
     ).toBe(true);
+    expect(
+      runtimeSourceChangeCandidateFilePreviewResponseSchema.parse({
+        candidate,
+        path: "src/index.ts",
+        preview: {
+          available: true,
+          bytesRead: 27,
+          content: "export const value = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/plain",
+          truncated: false
+        }
+      }).path
+    ).toBe("src/index.ts");
   });
 });
 

@@ -128,6 +128,7 @@ import {
   runtimeRecoveryControllerRecordSchema,
   runtimeRecoveryPolicyRecordSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   type RuntimeRecoveryControllerRecord,
@@ -151,6 +152,7 @@ import {
   type RuntimeMemoryPageKind,
   type RuntimeMemoryPageSummary,
   type RuntimeSourceChangeCandidateDiffResponse,
+  type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeTurnInspectionResponse,
@@ -258,6 +260,7 @@ const runtimeContextFileName = "effective-runtime-context.json";
 const artifactPreviewMaxBytes = 16 * 1024;
 const memoryPreviewMaxBytes = 16 * 1024;
 const sourceCandidateDiffMaxBytes = 64 * 1024;
+const sourceCandidateFilePreviewMaxBytes = 16 * 1024;
 const focusedMemoryRegisterPaths = new Set([
   "wiki/summaries/working-context.md",
   "wiki/summaries/decisions.md",
@@ -5206,6 +5209,223 @@ export async function getRuntimeSourceChangeCandidateDiff(input: {
   return runtimeSourceChangeCandidateDiffResponseSchema.parse({
     candidate,
     diff: await readSourceChangeCandidateDiff({ candidate, context })
+  });
+}
+
+function normalizeSourceCandidateFilePreviewPath(filePath: string):
+  | {
+      path: string;
+    }
+  | {
+      reason: string;
+    } {
+  if (filePath.includes("\0") || filePath.includes("\\")) {
+    return {
+      reason:
+        "Source change candidate file preview is unavailable because the requested path is not a portable source path."
+    };
+  }
+
+  if (
+    filePath.startsWith("/") ||
+    filePath.split("/").some((part) => part === "" || part === "." || part === "..")
+  ) {
+    return {
+      reason:
+        "Source change candidate file preview is unavailable because the requested path is not a relative source path."
+    };
+  }
+
+  return {
+    path: filePath
+  };
+}
+
+function inferSourceCandidateFilePreviewContentType(
+  filePath: string
+): "text/markdown" | "text/plain" {
+  const extension = path.extname(filePath).toLowerCase();
+
+  return extension === ".md" || extension === ".markdown"
+    ? "text/markdown"
+    : "text/plain";
+}
+
+async function readSourceChangeCandidateFilePreview(input: {
+  context: EffectiveRuntimeContext;
+  candidate: SourceChangeCandidateRecord;
+  filePath: string;
+}): Promise<RuntimeSourceChangeCandidateFilePreviewResponse["preview"]> {
+  const normalized = normalizeSourceCandidateFilePreviewPath(input.filePath);
+
+  if ("reason" in normalized) {
+    return {
+      available: false,
+      reason: normalized.reason
+    };
+  }
+
+  if (!input.candidate.snapshot) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because the candidate has no snapshot."
+    };
+  }
+
+  const fileSummary = input.candidate.sourceChangeSummary.files.find(
+    (file) => file.path === normalized.path
+  );
+
+  if (!fileSummary) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because the requested path is not listed in the candidate changed-file summary."
+    };
+  }
+
+  if (fileSummary.status === "deleted") {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because the file is deleted in the candidate snapshot."
+    };
+  }
+
+  const gitDir = path.join(input.context.workspace.runtimeRoot, "source-snapshot.git");
+  const sanitizeReason = (reason: string): string =>
+    reason
+      .replaceAll(gitDir, "<source_snapshot>")
+      .replaceAll(input.context.workspace.runtimeRoot, "<runtime_state>");
+
+  if (!(await pathExists(gitDir))) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because the source snapshot store is missing."
+    };
+  }
+
+  const args = [
+    "--git-dir",
+    gitDir,
+    "show",
+    `${input.candidate.snapshot.headTree}:${normalized.path}`
+  ];
+
+  return new Promise((resolve) => {
+    const child = spawn("git", args, {
+      cwd: input.context.workspace.runtimeRoot,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let stdoutBytes = 0;
+    let stdoutKeptBytes = 0;
+    let stderrKeptBytes = 0;
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      stdoutBytes += buffer.length;
+
+      if (stdoutKeptBytes < sourceCandidateFilePreviewMaxBytes + 1) {
+        const remaining = sourceCandidateFilePreviewMaxBytes + 1 - stdoutKeptBytes;
+        stdoutChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stdoutKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
+      if (stderrKeptBytes < 1_000) {
+        const remaining = 1_000 - stderrKeptBytes;
+        stderrChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stderrKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.on("error", (error) => {
+      resolve({
+        available: false,
+        reason: `Source change candidate file preview is unavailable: ${sanitizeReason(
+          formatUnknownError(error)
+        )}`
+      });
+    });
+    child.on("close", (code) => {
+      if (code !== 0) {
+        const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+        const reason = stderr || `git show exited with code ${code ?? "unknown"}`;
+
+        resolve({
+          available: false,
+          reason: `Source change candidate file preview is unavailable: ${sanitizeReason(
+            reason
+          )}`
+        });
+        return;
+      }
+
+      const keptBuffer = Buffer.concat(stdoutChunks);
+      const previewBuffer = keptBuffer.subarray(
+        0,
+        Math.min(keptBuffer.length, sourceCandidateFilePreviewMaxBytes)
+      );
+
+      if (previewBuffer.includes(0)) {
+        resolve({
+          available: false,
+          reason:
+            "Source change candidate file preview is unavailable because the source file is not text."
+        });
+        return;
+      }
+
+      resolve({
+        available: true,
+        bytesRead: previewBuffer.length,
+        content: previewBuffer.toString("utf8"),
+        contentEncoding: "utf8",
+        contentType: inferSourceCandidateFilePreviewContentType(normalized.path),
+        truncated: stdoutBytes > sourceCandidateFilePreviewMaxBytes
+      });
+    });
+  });
+}
+
+export async function getRuntimeSourceChangeCandidateFilePreview(input: {
+  candidateId: string;
+  nodeId: string;
+  path: string;
+}): Promise<RuntimeSourceChangeCandidateFilePreviewResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const candidates = await listRuntimeSourceChangeCandidates(input.nodeId);
+
+  if (!candidates) {
+    return null;
+  }
+
+  const candidate = candidates.candidates.find(
+    (candidateRecord) => candidateRecord.candidateId === input.candidateId
+  );
+
+  if (!candidate) {
+    return null;
+  }
+
+  return runtimeSourceChangeCandidateFilePreviewResponseSchema.parse({
+    candidate,
+    path: input.path,
+    preview: await readSourceChangeCandidateFilePreview({
+      candidate,
+      context,
+      filePath: input.path
+    })
   });
 }
 

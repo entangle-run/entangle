@@ -1625,6 +1625,77 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses source change candidate file preview responses from the host surface", async () => {
+    const requests: string[] = [];
+    const candidate = {
+      candidateId: "source-change-turn-alpha",
+      createdAt: "2026-04-24T00:01:00.000Z",
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      sourceChangeSummary: {
+        additions: 1,
+        checkedAt: "2026-04-24T00:01:00.000Z",
+        deletions: 0,
+        fileCount: 1,
+        files: [
+          {
+            additions: 1,
+            deletions: 0,
+            path: "src/index.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed",
+        truncated: false
+      },
+      status: "pending_review",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              candidate,
+              path: "src/index.ts",
+              preview: {
+                available: true,
+                bytesRead: 27,
+                content: "export const value = true;\n",
+                contentEncoding: "utf8",
+                contentType: "text/plain",
+                truncated: false
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.getRuntimeSourceChangeCandidateFilePreview(
+        "worker-it",
+        "source-change-turn-alpha",
+        "src/index.ts"
+      )
+    ).resolves.toMatchObject({
+      path: "src/index.ts",
+      preview: {
+        available: true,
+        contentType: "text/plain"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/file?path=src%2Findex.ts"
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

@@ -4,6 +4,7 @@ import {
   filterRuntimeSourceChangeCandidatesForPresentation,
   formatRuntimeSourceChangeCandidateDetailLines,
   formatRuntimeSourceChangeCandidateDiffStatus,
+  formatRuntimeSourceChangeCandidateFilePreviewStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidatesForPresentation
@@ -142,5 +143,32 @@ describe("runtime source change candidate presentation helpers", () => {
     ).toBe(
       "Source change candidate diff is unavailable because the candidate has no snapshot."
     );
+  });
+
+  it("formats source candidate file preview status", () => {
+    expect(
+      formatRuntimeSourceChangeCandidateFilePreviewStatus({
+        candidate: candidates[1]!,
+        path: "src/new.ts",
+        preview: {
+          available: true,
+          bytesRead: 42,
+          content: "export const value = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/plain",
+          truncated: true
+        }
+      })
+    ).toBe("text/plain · 42 bytes · truncated");
+    expect(
+      formatRuntimeSourceChangeCandidateFilePreviewStatus({
+        candidate: candidates[0]!,
+        path: "src/old.ts",
+        preview: {
+          available: false,
+          reason: "Source change candidate file preview is unavailable."
+        }
+      })
+    ).toBe("Source change candidate file preview is unavailable.");
   });
 });

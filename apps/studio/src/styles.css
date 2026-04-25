@@ -273,6 +273,11 @@ code {
   opacity: 0.46;
 }
 
+.action-button.is-selected {
+  border-color: rgba(212, 168, 109, 0.66);
+  background: rgba(212, 168, 109, 0.16);
+}
+
 .action-row {
   display: flex;
   flex-wrap: wrap;
@@ -407,6 +412,13 @@ code {
 .artifact-preview-panel {
   display: grid;
   gap: 10px;
+}
+
+.source-file-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
 }
 
 .memory-page-groups {

@@ -95,6 +95,10 @@ GET /v1/runtimes/:nodeId/source-change-candidates/:candidateId/diff
 
 That route does not change candidate lifecycle state or publish files.
 
+A later slice added a bounded read-only file preview route for paths listed in
+the candidate changed-file summary. That route reads from the candidate
+`headTree` and does not expose runtime-local filesystem paths.
+
 ## Boundary Decisions
 
 This slice intentionally does not:
@@ -103,7 +107,7 @@ This slice intentionally does not:
 - auto-commit source workspace changes;
 - auto-push source workspace changes;
 - publish candidate changes as artifacts;
-- expose full source history or per-file preview APIs;
+- expose full source history APIs;
 - expose raw runtime-local workspace paths as protocol locators;
 - treat OpenCode private state as Entangle source-of-truth.
 
@@ -118,9 +122,9 @@ The remaining B5 implementation should add:
 - Entangle policy checks before candidate acceptance or publication;
 - approval records for policy-gated source publication;
 - runner-owned acceptance of candidates into node git history;
-- bounded per-file source preview and source-history host APIs;
+- source-history host APIs;
 - artifact history/diff APIs;
-- CLI and Studio source-history, file-preview, and candidate mutation views;
+- CLI and Studio source-history and candidate mutation views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, candidate acceptance, publication, and downstream

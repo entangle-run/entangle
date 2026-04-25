@@ -248,6 +248,34 @@ export const runtimeSourceChangeCandidateDiffResponseSchema = z.object({
   diff: runtimeSourceChangeCandidateDiffSchema
 });
 
+export const runtimeSourceChangeCandidateFilePreviewQuerySchema = z.object({
+  path: nonEmptyStringSchema
+});
+
+export const runtimeSourceChangeCandidateFilePreviewSchema = z.discriminatedUnion(
+  "available",
+  [
+    z.object({
+      available: z.literal(true),
+      bytesRead: z.number().int().nonnegative(),
+      content: z.string(),
+      contentEncoding: z.literal("utf8"),
+      contentType: z.enum(["text/markdown", "text/plain"]),
+      truncated: z.boolean()
+    }),
+    z.object({
+      available: z.literal(false),
+      reason: nonEmptyStringSchema
+    })
+  ]
+);
+
+export const runtimeSourceChangeCandidateFilePreviewResponseSchema = z.object({
+  candidate: sourceChangeCandidateRecordSchema,
+  path: nonEmptyStringSchema,
+  preview: runtimeSourceChangeCandidateFilePreviewSchema
+});
+
 export const runtimeTurnListResponseSchema = z.object({
   turns: z.array(runnerTurnRecordSchema)
 });
@@ -305,6 +333,15 @@ export type RuntimeSourceChangeCandidateDiff = z.infer<
 >;
 export type RuntimeSourceChangeCandidateDiffResponse = z.infer<
   typeof runtimeSourceChangeCandidateDiffResponseSchema
+>;
+export type RuntimeSourceChangeCandidateFilePreviewQuery = z.infer<
+  typeof runtimeSourceChangeCandidateFilePreviewQuerySchema
+>;
+export type RuntimeSourceChangeCandidateFilePreview = z.infer<
+  typeof runtimeSourceChangeCandidateFilePreviewSchema
+>;
+export type RuntimeSourceChangeCandidateFilePreviewResponse = z.infer<
+  typeof runtimeSourceChangeCandidateFilePreviewResponseSchema
 >;
 export type RuntimeTurnListResponse = z.infer<typeof runtimeTurnListResponseSchema>;
 export type RuntimeTurnInspectionResponse = z.infer<

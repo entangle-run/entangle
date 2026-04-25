@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source change candidate file preview
+
+Advanced Entangle Local L3 workstream B5. Source-change candidates with
+shadow-git tree snapshots now expose a bounded read-only file preview route for
+paths listed in the candidate changed-file summary. The host reads from the
+candidate `headTree`, bounds text to 16 KiB, rejects unsafe or unlisted paths,
+and does not expose runtime-local filesystem paths.
+
+The shared host client parses and formats the new preview response, the CLI
+adds `host runtimes source-candidate <nodeId> <candidateId> --file <path>`,
+and Studio lets the operator choose a changed file from the selected candidate
+detail panel. Added
+`references/199-source-change-candidate-file-preview-slice.md`. Candidate
+mutation, policy approval, source history, git publication, and artifact
+linkage remain open B5 work.
+
 ## [2026-04-25] implementation | Added source change candidate diff inspection
 
 Advanced Entangle Local L3 workstream B5. Source-change candidates that carry a

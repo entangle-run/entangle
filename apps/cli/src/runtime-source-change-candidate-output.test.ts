@@ -3,6 +3,7 @@ import type { SourceChangeCandidateRecord } from "@entangle/types";
 import {
   filterRuntimeSourceChangeCandidatesForCli,
   projectRuntimeSourceChangeCandidateDiffSummary,
+  projectRuntimeSourceChangeCandidateFilePreviewSummary,
   projectRuntimeSourceChangeCandidateSummary,
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
@@ -94,6 +95,31 @@ describe("runtime source change candidate CLI output", () => {
       contentType: "text/x-diff",
       previewBytes: 96,
       status: "text/x-diff · 96 bytes",
+      truncated: false
+    });
+  });
+
+  it("projects source candidate file previews without duplicating full content", () => {
+    expect(
+      projectRuntimeSourceChangeCandidateFilePreviewSummary({
+        candidate: candidates[1]!,
+        path: "src/index.ts",
+        preview: {
+          available: true,
+          bytesRead: 64,
+          content: "export const value = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/plain",
+          truncated: false
+        }
+      })
+    ).toEqual({
+      available: true,
+      candidateId: "source-change-turn-new",
+      contentType: "text/plain",
+      path: "src/index.ts",
+      previewBytes: 64,
+      status: "text/plain · 64 bytes",
       truncated: false
     });
   });

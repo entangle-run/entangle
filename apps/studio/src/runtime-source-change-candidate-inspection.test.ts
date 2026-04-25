@@ -4,6 +4,7 @@ import {
   filterRuntimeSourceChangeCandidates,
   formatRuntimeSourceChangeCandidateDetailLines,
   formatRuntimeSourceChangeCandidateDiffStatus,
+  formatRuntimeSourceChangeCandidateFilePreviewStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidates
@@ -102,5 +103,19 @@ describe("studio source change candidate inspection helpers", () => {
         }
       })
     ).toBe("text/x-diff · 128 bytes");
+    expect(
+      formatRuntimeSourceChangeCandidateFilePreviewStatus({
+        candidate,
+        path: "src/index.ts",
+        preview: {
+          available: true,
+          bytesRead: 48,
+          content: "export const value = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/plain",
+          truncated: false
+        }
+      })
+    ).toBe("text/plain · 48 bytes");
   });
 });

@@ -2,6 +2,7 @@ import {
   filterRuntimeSourceChangeCandidatesForPresentation,
   formatRuntimeSourceChangeCandidateDetailLines,
   formatRuntimeSourceChangeCandidateDiffStatus,
+  formatRuntimeSourceChangeCandidateFilePreviewStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidatesForPresentation,
@@ -9,6 +10,7 @@ import {
 } from "@entangle/host-client";
 import type {
   RuntimeSourceChangeCandidateDiffResponse,
+  RuntimeSourceChangeCandidateFilePreviewResponse,
   SourceChangeCandidateRecord
 } from "@entangle/types";
 
@@ -27,6 +29,16 @@ export interface RuntimeSourceChangeCandidateDiffSummaryRecord {
   available: boolean;
   candidateId: string;
   contentType?: "text/x-diff";
+  previewBytes?: number;
+  status: string;
+  truncated?: boolean;
+}
+
+export interface RuntimeSourceChangeCandidateFilePreviewSummaryRecord {
+  available: boolean;
+  candidateId: string;
+  contentType?: "text/markdown" | "text/plain";
+  path: string;
   previewBytes?: number;
   status: string;
   truncated?: boolean;
@@ -74,5 +86,23 @@ export function projectRuntimeSourceChangeCandidateDiffSummary(
         }
       : {}),
     status: formatRuntimeSourceChangeCandidateDiffStatus(response)
+  };
+}
+
+export function projectRuntimeSourceChangeCandidateFilePreviewSummary(
+  response: RuntimeSourceChangeCandidateFilePreviewResponse
+): RuntimeSourceChangeCandidateFilePreviewSummaryRecord {
+  return {
+    available: response.preview.available,
+    candidateId: response.candidate.candidateId,
+    path: response.path,
+    ...(response.preview.available
+      ? {
+          contentType: response.preview.contentType,
+          previewBytes: response.preview.bytesRead,
+          truncated: response.preview.truncated
+        }
+      : {}),
+    status: formatRuntimeSourceChangeCandidateFilePreviewStatus(response)
   };
 }

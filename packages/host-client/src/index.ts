@@ -40,6 +40,7 @@ import {
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -88,6 +89,7 @@ import {
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
   type RuntimeSourceChangeCandidateDiffResponse,
+  type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeTurnInspectionResponse,
@@ -746,6 +748,21 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async getRuntimeSourceChangeCandidateFilePreview(
+      nodeId: string,
+      candidateId: string,
+      filePath: string
+    ): Promise<RuntimeSourceChangeCandidateFilePreviewResponse> {
+      const query = new URLSearchParams({ path: filePath });
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/file?${query.toString()}`
+        ),
+        runtimeSourceChangeCandidateFilePreviewResponseSchema
+      );
+    },
+
     async getRuntimeRecovery(
       nodeId: string,
       limit = 50
@@ -998,6 +1015,7 @@ export {
   filterRuntimeSourceChangeCandidatesForPresentation,
   formatRuntimeSourceChangeCandidateDetailLines,
   formatRuntimeSourceChangeCandidateDiffStatus,
+  formatRuntimeSourceChangeCandidateFilePreviewStatus,
   formatRuntimeSourceChangeCandidateLabel,
   formatRuntimeSourceChangeCandidateStatus,
   sortRuntimeSourceChangeCandidatesForPresentation,

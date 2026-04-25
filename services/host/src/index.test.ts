@@ -49,6 +49,7 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -3265,7 +3266,7 @@ describe("buildHostServer", () => {
             {
               additions: 9,
               deletions: 2,
-              path: "src/worker.ts",
+              path: "worker.ts",
               status: "modified"
             }
           ],
@@ -3338,6 +3339,44 @@ describe("buildHostServer", () => {
           "export const generated = true;"
         );
       }
+
+      const filePreviewResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/file?path=worker.ts"
+      });
+
+      expect(filePreviewResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateFilePreviewResponseSchema.parse(
+          filePreviewResponse.json()
+        )
+      ).toMatchObject({
+        candidate: candidateRecord,
+        path: "worker.ts",
+        preview: {
+          available: true,
+          content: "export const generated = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/plain",
+          truncated: false
+        }
+      });
+
+      const unavailableFilePreviewResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/file?path=other.ts"
+      });
+
+      expect(unavailableFilePreviewResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateFilePreviewResponseSchema.parse(
+          unavailableFilePreviewResponse.json()
+        ).preview
+      ).toMatchObject({
+        available: false
+      });
 
       const missingCandidateResponse = await server.inject({
         method: "GET",

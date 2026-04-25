@@ -91,6 +91,7 @@ import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import {
   filterRuntimeSourceChangeCandidatesForCli,
   projectRuntimeSourceChangeCandidateDiffSummary,
+  projectRuntimeSourceChangeCandidateFilePreviewSummary,
   projectRuntimeSourceChangeCandidateSummary,
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
@@ -1529,16 +1530,21 @@ hostRuntimesCommand
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<candidateId>", "Source change candidate identifier to inspect.")
   .option("--diff", "Include the bounded source diff when available.")
+  .option("--file <path>", "Include a bounded preview for one changed source file.")
   .option("--summary", "Print a compact operator-oriented candidate summary.")
   .description("Inspect one persisted source change candidate.")
   .action(
     async (
       nodeId: string,
       candidateId: string,
-      options: { diff?: boolean; summary?: boolean },
+      options: { diff?: boolean; file?: string; summary?: boolean },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      if (options.diff && options.file) {
+        throw new Error("Use either --diff or --file, not both.");
+      }
+
       if (options.diff) {
         const response = await client.getRuntimeSourceChangeCandidateDiff(
           nodeId,
@@ -1551,6 +1557,26 @@ hostRuntimesCommand
                   response.candidate
                 ),
                 diff: projectRuntimeSourceChangeCandidateDiffSummary(response)
+              }
+            : response
+        );
+        return;
+      }
+
+      if (options.file) {
+        const response = await client.getRuntimeSourceChangeCandidateFilePreview(
+          nodeId,
+          candidateId,
+          options.file
+        );
+        printJson(
+          options.summary
+            ? {
+                candidate: projectRuntimeSourceChangeCandidateSummary(
+                  response.candidate
+                ),
+                filePreview:
+                  projectRuntimeSourceChangeCandidateFilePreviewSummary(response)
               }
             : response
         );

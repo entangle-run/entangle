@@ -69,6 +69,13 @@ Studio fetches the same host diff response when a source-change candidate is
 selected and shows a bounded preview or the unavailable reason in the selected
 runtime panel.
 
+A later slice added a bounded read-only file preview route for paths listed in
+the candidate changed-file summary:
+
+```text
+GET /v1/runtimes/:nodeId/source-change-candidates/:candidateId/file?path=<relative-source-path>
+```
+
 ## Boundary Decisions
 
 This slice intentionally does not:
@@ -77,7 +84,6 @@ This slice intentionally does not:
 - mutate the node source workspace;
 - commit or push candidate changes;
 - publish candidate changes as artifacts;
-- expose per-file source preview APIs;
 - expose full source history APIs;
 - expose runtime-local filesystem paths through host responses;
 - treat OpenCode private state as Entangle source-of-truth.
@@ -94,9 +100,9 @@ The remaining B5 implementation should add:
 - Entangle policy checks before candidate acceptance or publication;
 - approval records for policy-gated source publication;
 - runner-owned acceptance of candidates into node git history;
-- bounded per-file source preview and source-history host APIs;
+- source-history host APIs;
 - artifact history/diff APIs;
-- CLI and Studio source history, file preview, and candidate mutation views;
+- CLI and Studio source-history and candidate mutation views;
 - publication rules tied to the node git principal and repository target;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff inspection, candidate acceptance, publication, and
