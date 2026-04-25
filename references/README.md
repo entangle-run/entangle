@@ -184,6 +184,7 @@ This directory is the canonical design corpus for Entangle.
 178. [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md)
 179. [178-product-line-roadmap-readiness-audit.md](178-product-line-roadmap-readiness-audit.md)
 180. [179-monorepo-profile-release-organization-slice.md](179-monorepo-profile-release-organization-slice.md)
+181. [180-local-ga-product-truth-audit.md](180-local-ga-product-truth-audit.md)
 
 ## Role of this corpus
 

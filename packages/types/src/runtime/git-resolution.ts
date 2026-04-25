@@ -1,4 +1,3 @@
-import path from "node:path";
 import type { GitArtifactLocator } from "../artifacts/artifact-ref.js";
 import {
   buildGitRepositoryTarget,
@@ -22,6 +21,36 @@ export type GitPrincipalBindingResolution =
       status: "missing";
     };
 
+function portableBasename(value: string): string {
+  const normalized = value.replace(/\/+$/, "");
+  const lastSlash = normalized.lastIndexOf("/");
+
+  return lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+}
+
+function portableDirname(value: string): string {
+  const normalized = value.replace(/\/+$/, "");
+  const lastSlash = normalized.lastIndexOf("/");
+
+  if (lastSlash < 0) {
+    return ".";
+  }
+
+  if (lastSlash === 0) {
+    return "/";
+  }
+
+  return normalized.slice(0, lastSlash);
+}
+
+function portableJoin(directory: string, basename: string): string {
+  if (directory === "." || directory.length === 0) {
+    return basename;
+  }
+
+  return directory.endsWith("/") ? `${directory}${basename}` : `${directory}/${basename}`;
+}
+
 function deriveSiblingRemoteUrlFromPrimaryTarget(input: {
   namespace: string;
   primaryTarget: GitRepositoryTarget;
@@ -38,24 +67,24 @@ function deriveSiblingRemoteUrlFromPrimaryTarget(input: {
   const expectedBasename = `${input.primaryTarget.repositoryName}.git`;
 
   if (!input.primaryTarget.remoteUrl.includes("://")) {
-    if (path.basename(input.primaryTarget.remoteUrl) !== expectedBasename) {
+    if (portableBasename(input.primaryTarget.remoteUrl) !== expectedBasename) {
       return undefined;
     }
 
-    return path.join(
-      path.dirname(input.primaryTarget.remoteUrl),
+    return portableJoin(
+      portableDirname(input.primaryTarget.remoteUrl),
       `${input.repositoryName}.git`
     );
   }
 
   const parsed = new URL(input.primaryTarget.remoteUrl);
 
-  if (path.posix.basename(parsed.pathname) !== expectedBasename) {
+  if (portableBasename(parsed.pathname) !== expectedBasename) {
     return undefined;
   }
 
-  parsed.pathname = path.posix.join(
-    path.posix.dirname(parsed.pathname),
+  parsed.pathname = portableJoin(
+    portableDirname(parsed.pathname),
     `${input.repositoryName}.git`
   );
   return parsed.toString();

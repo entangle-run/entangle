@@ -1,5 +1,27 @@
 # Entangle Wiki Log
 
+## [2026-04-25] audit | Added Local GA product truth baseline
+
+Added `references/180-local-ga-product-truth-audit.md` as the current
+milestone truth table and execution baseline for taking Entangle Local from
+R1/L1 release closure through Local GA.
+
+The audit confirmed that the current repository is functionally ready to close
+R1/L1 after final release notes and tag evidence, while R1.1/L1.5, R1.2/L2,
+R1.3/L3, and L4/GA still have real product gaps around demo assets, workbench
+flows, reliability tooling, and public-claim alignment.
+
+The audit also fixed a shared-contract portability issue where
+`packages/types/src/runtime/git-resolution.ts` imported `node:path` and leaked
+a Node-only module into the Studio browser bundle. The helper is now portable,
+and the Studio build no longer emits that browser externalization warning.
+
+Verification during the audit passed for `pnpm verify`, explicit lint,
+typecheck, tests, production build, strict local preflight, active smoke,
+standalone disposable smoke, and the disposable runtime smoke covering
+host-managed runners, Nostr task intake, provider-backed model-stub execution,
+git artifact publication, downstream retrieval, and teardown.
+
 ## [2026-04-24] runtime | Added peer-aware runtime edge routes
 
 Effective runtime edge routes now carry host-resolved non-secret Nostr public

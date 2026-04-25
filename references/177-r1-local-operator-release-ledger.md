@@ -133,18 +133,32 @@ that records the local environmental blocker.
 
 ## Latest Audit-Time Verification
 
-The product-line roadmap readiness audit on 2026-04-25 reran the portable
-verification and local preflight gates:
+The Local GA product truth audit on 2026-04-25 reran the portable verification,
+build, local preflight, active smoke, disposable smoke, and disposable runtime
+smoke gates:
 
+- `pnpm install --frozen-lockfile`: passed;
 - `git diff --check`: passed;
 - `pnpm verify`: passed;
-- `pnpm ops:check-local:strict`: passed with Docker socket access.
+- `pnpm lint`: passed;
+- `pnpm typecheck`: passed;
+- `pnpm test`: passed;
+- `pnpm build`: passed after one manually stopped transient local
+  Vite/Rolldown idle run and a successful immediate retry;
+- `pnpm ops:check-local:strict`: passed with Docker daemon access;
+- `pnpm ops:smoke-local:disposable:runtime`: passed;
+- `pnpm ops:smoke-local:disposable --skip-build --keep-running`: passed;
+- `pnpm ops:smoke-local`: passed against the kept-running local profile.
 
-The first sandboxed preflight attempt failed only at `docker:daemon` because
-the sandbox could not access `/Users/vincenzo/.docker/run/docker.sock`; the
-same command passed after running with Docker access. This evidence supports
-starting L1 release closure, but it does not replace the final release-note
-evidence required before tagging `v0.1-local-operator-baseline`.
+The disposable runtime smoke proved the active local profile smoke, two
+host-managed runners, restart event evidence, NIP-59 task intake,
+provider-backed OpenAI-compatible execution against a local model stub,
+git-backed artifact publication, downstream artifact retrieval by
+`ArtifactRef`, runtime stops, and teardown with volumes.
+
+This evidence supports R1/L1 release closure, but it does not replace the
+final release note and tag evidence required before tagging
+`v0.1-local-operator-baseline`.
 
 ## Known R1 Non-Goals
 
