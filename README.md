@@ -216,8 +216,8 @@ This repository currently contains:
 - an explicit deployment profile layout where active Local deployment material
   lives under `deploy/local/`, with scripts sharing profile paths through
   `scripts/local-profile-paths.mjs`;
-- an explicit release-control area under `releases/`, with the active Local L1
-  release packet pointing back to the canonical R1/L1 ledger;
+- an explicit release-control area under `releases/`, with the released Local
+  L1 operator-baseline packet pointing back to the canonical R1/L1 ledger;
 - an active local profile smoke through `pnpm ops:smoke-local` that checks the
   running Compose services, runner image presence, host JSON APIs, Studio HTTP,
   Gitea HTTP reachability, and the local `strfry` Nostr WebSocket path;
@@ -246,10 +246,10 @@ This repository currently contains:
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
-- a definitive three-product roadmap plus an R1 local-operator release ledger
-  that sequence Entangle Local first, then Entangle Cloud, then Entangle
-  Enterprise, while separating the presentable local baseline from later
-  production persistence, tenancy, authorization, and compliance claims;
+- a definitive three-product roadmap plus a released R1/L1 local-operator
+  baseline that sequence Entangle Local first, then Entangle Cloud, then
+  Entangle Enterprise, while separating the presentable local baseline from
+  later production persistence, tenancy, authorization, and compliance claims;
 - a first real provider-backed `agent-engine` slice with an internal
   Anthropic adapter behind the stable engine boundary, typed error
   normalization, live runner entrypoints wired to the real engine path, and

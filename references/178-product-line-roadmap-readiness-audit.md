@@ -2,6 +2,14 @@
 
 Date: 2026-04-25.
 
+## Supersession Note
+
+This audit remains the historical readiness check that started R1/L1 release
+closure. The current R1/L1 release state is now recorded in
+[`../releases/local/l1-local-operator-baseline.md`](../releases/local/l1-local-operator-baseline.md)
+and
+[`177-r1-local-operator-release-ledger.md`](177-r1-local-operator-release-ledger.md).
+
 ## Purpose
 
 This audit checks whether the repository is internally consistent enough to

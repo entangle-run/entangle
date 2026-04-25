@@ -4,8 +4,8 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This audit is the current product-truth baseline for carrying Entangle Local
-from the active R1/L1 local operator release toward Local GA.
+This audit is the product-truth baseline for carrying Entangle Local from the
+R1/L1 local operator release toward Local GA.
 
 It maps the repository's actual implemented state against the requested Local
 milestone sequence, the canonical L-series roadmap, and the active R1/L1
@@ -85,7 +85,7 @@ known Vite chunk-size warning for the current bundle.
 
 | Milestone | Current truth | Evidence | Primary blockers |
 | --- | --- | --- | --- |
-| R1 / L1 Local Operator Baseline | Functionally ready for release closure, not tagged. | Host, runner, Studio, CLI, local Compose, active/disposable/runtime smokes all pass in this audit. | Final release notes, exact release evidence in ledger/release packet, tag decision, clean committed state. |
+| R1 / L1 Local Operator Baseline | Released as `v0.1-local-operator-baseline`. | Host, runner, Studio, CLI, local Compose, active/disposable/runtime smokes all passed in this audit and the final release packet records the release boundary. | None for R1/L1; next work moves to L1.5. |
 | R1.1 / L1.5 Local Operator Preview | Partially planned, not productized. | Core runtime path is usable through smoke scripts and host clients. | Canonical demo assets, near-one-command demo, documented happy path, troubleshooting, clearer first-run operator UX. |
 | R1.2 / L2 Local Workbench | Partially implemented below the final workbench bar. | Package scaffold/admission, graph/node/edge mutation, runtime/session/artifact/turn/approval inspection exist. | Session launch flow, graph templates, graph import/export/diff, artifact preview/history, memory workbench, CLI parity for launch/export workflows. |
 | R1.3 / L3 Local Reliability | Early reliability foundation exists, but reliability product is incomplete. | Strict preflight, active smoke, disposable smoke, runtime smoke, reset through Compose volume teardown. | Doctor command, repair flow, backup/restore, local state versioning, upgrade checks, logs bundle, conservative drift repair. |
@@ -147,8 +147,6 @@ failure.
 
 ## Known Limitations
 
-- No final R1/L1 release notes exist yet.
-- No release tag exists for `v0.1-local-operator-baseline`.
 - The productized Local profile still carries the legacy machine value
   `hackathon_local`; this is not a public product claim, but should be retired
   before Local Workbench or GA.
@@ -161,27 +159,22 @@ failure.
 
 ## Execution Plan
 
-1. Close R1/L1.
-   - Write final release notes.
-   - Update ledger evidence with final command output.
-   - Confirm clean committed state.
-   - Tag `v0.1-local-operator-baseline` only after the release packet is true.
-2. Build R1.1/L1.5 Local Operator Preview.
+1. Build R1.1/L1.5 Local Operator Preview.
    - Add demo package and graph.
    - Add near-one-command demo path.
    - Document happy path and troubleshooting.
    - Keep disposable runtime smoke as the proof path.
-3. Build R1.2/L2 Local Workbench.
+2. Build R1.2/L2 Local Workbench.
    - Add package validate/import/inspect depth.
    - Add graph templates/import/export/diff.
    - Add host-backed session launch from Studio and CLI.
    - Add artifact and memory workbench surfaces.
-4. Build R1.3/L3 Local Reliability.
+3. Build R1.3/L3 Local Reliability.
    - Add local doctor.
    - Add conservative repair.
    - Add backup/restore and state-version checks.
    - Add logs collection and repeated-use validation.
-5. Cut L4 Local GA.
+4. Cut L4 Local GA.
    - Run clean-state validation.
    - Align docs, README, release notes, roadmap, and website claims.
    - Make limitations explicit.

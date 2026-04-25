@@ -9,7 +9,7 @@ It captures what must be true before Entangle can honestly be described as
 `v0.1-local-operator-baseline`, and it separates that local baseline from the
 later production releases.
 
-The active release packet is
+The release packet is
 [`../releases/local/l1-local-operator-baseline.md`](../releases/local/l1-local-operator-baseline.md).
 
 ## Release Position
@@ -18,7 +18,8 @@ Current release target:
 
 - release: `R1`;
 - name: `Local Operator Baseline`;
-- intended tag: `v0.1-local-operator-baseline`;
+- tag: `v0.1-local-operator-baseline`;
+- status: released;
 - product claim: local graph-native operator runtime;
 - production claim: none.
 
@@ -53,7 +54,7 @@ The current repository already has evidence for the core R1 promise:
 - [x] Runner session, conversation, approval, artifact, and turn records exist.
 - [x] Approval metadata is semantically validated.
 - [x] Approval response policies are semantically validated.
-- [ ] Release note points to the exact accepted contract baseline.
+- [x] Release note points to the exact accepted contract baseline.
 
 ### Host
 
@@ -67,7 +68,7 @@ The current repository already has evidence for the core R1 promise:
 - [x] Runtime recovery policy and history exist.
 - [x] Session inspection exists.
 - [x] Runtime artifact, approval, and turn inspection exist.
-- [ ] Release note identifies local-file state as an R1-local profile, not a
+- [x] Release note identifies local-file state as an R1-local profile, not a
   production persistence model.
 
 ### Runner
@@ -80,7 +81,7 @@ The current repository already has evidence for the core R1 promise:
 - [x] Runner materializes git-backed artifacts.
 - [x] Runner retrieves published git-backed handoffs.
 - [x] Runner maintains deterministic and model-guided memory summaries.
-- [ ] Release note identifies remaining delegated-session limitations.
+- [x] Release note identifies remaining delegated-session limitations.
 
 ### Studio
 
@@ -89,7 +90,7 @@ The current repository already has evidence for the core R1 promise:
   approvals, turns, recovery, and graph revisions.
 - [x] Studio performs graph, node, edge, package-source, principal, lifecycle,
   and recovery-policy mutations through host APIs.
-- [ ] Release note describes Studio as an operator surface, not an end-user SaaS
+- [x] Release note describes Studio as an operator surface, not an end-user SaaS
   product.
 
 ### CLI
@@ -99,7 +100,7 @@ The current repository already has evidence for the core R1 promise:
 - [x] CLI supports summary output for key operator views.
 - [x] CLI supports dry-run for key mutation commands.
 - [x] CLI supports package scaffold initialization.
-- [ ] Release note includes the recommended headless smoke commands.
+- [x] Release note includes the recommended headless smoke commands.
 
 ### Deployment
 
@@ -108,7 +109,7 @@ The current repository already has evidence for the core R1 promise:
 - [x] Active local smoke exists.
 - [x] Disposable local smoke exists.
 - [x] Disposable runtime smoke exists.
-- [ ] Final R1 closure reruns the strongest smoke that local Docker conditions
+- [x] Final R1 closure reruns the strongest smoke that local Docker conditions
   allow.
 
 ## Required R1 Verification
@@ -131,9 +132,9 @@ pnpm ops:smoke-local:disposable:runtime
 The smoke commands may be skipped only with an explicit release-note statement
 that records the local environmental blocker.
 
-## Latest Audit-Time Verification
+## Final Release-Time Verification
 
-The Local GA product truth audit on 2026-04-25 reran the portable verification,
+The R1/L1 release closure on 2026-04-25 reran the portable verification,
 build, local preflight, active smoke, disposable smoke, and disposable runtime
 smoke gates:
 
@@ -156,9 +157,9 @@ provider-backed OpenAI-compatible execution against a local model stub,
 git-backed artifact publication, downstream artifact retrieval by
 `ArtifactRef`, runtime stops, and teardown with volumes.
 
-This evidence supports R1/L1 release closure, but it does not replace the
-final release note and tag evidence required before tagging
-`v0.1-local-operator-baseline`.
+This evidence, combined with the final release packet in
+`releases/local/l1-local-operator-baseline.md`, satisfies the R1/L1 release
+closure gate.
 
 ## Known R1 Non-Goals
 
@@ -191,13 +192,14 @@ The R1 release note must include:
 
 ## R1 Exit Decision
 
-R1 can be tagged only when:
+R1 was accepted for tagging after these conditions were met:
 
-- `git status --short` is clean or contains explicitly deferred user work;
-- `pnpm verify` passes;
-- local preflight passes;
-- the strongest feasible local smoke has passed or been explicitly deferred;
-- README, wiki overview, roadmap, and this ledger agree;
+- `git status --short` was clean or contained only release-closure edits before
+  the final release commit;
+- `pnpm verify` passed;
+- local preflight passed;
+- the strongest feasible local smoke passed;
+- README, wiki overview, roadmap, release packet, and this ledger agree;
 - the release note exists and does not overclaim production readiness.
 
 ## Reconsideration Notes

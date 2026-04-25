@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-04-25] release | Closed R1/L1 Local Operator Baseline
+
+Closed the historical R1 milestone as the canonical L1 Local Operator Baseline
+release packet under `releases/local/l1-local-operator-baseline.md`.
+
+The release note records the exact Local claim: a local graph-native operator
+runtime with host, runner, local relay, Gitea/git-backed artifact handoff,
+Studio, CLI, preflight, active smoke, disposable smoke, and disposable runtime
+smoke. It explicitly excludes Local GA, Cloud, Enterprise, production
+persistence, production auth, production sandboxing, compliance, backup/restore,
+and upgrade guarantees.
+
+The roadmap and release ledger now treat L1 closure as complete and move the
+next active Local target to L1.5 Local Operator Preview.
+
 ## [2026-04-25] audit | Added Local GA product truth baseline
 
 Added `references/180-local-ga-product-truth-audit.md` as the current

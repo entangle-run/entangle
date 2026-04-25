@@ -68,7 +68,7 @@ The repository now also contains the first real implementation baseline:
   material, with shared script path constants instead of duplicated local
   Compose paths;
 - an explicit `releases/` area for release-control packets, starting with the
-  active Local L1 release packet;
+  released Local L1 operator-baseline packet;
 - a persistent local host-state model under `.entangle/host`;
 - a separate local secret root for host-owned runtime identities;
 - a safer `entangle package init` path that exposes package name, package id,
@@ -561,10 +561,10 @@ The repository now also contains the first real implementation baseline:
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root.
-- a definitive three-product roadmap plus an R1 local-operator release ledger
-  that sequence Entangle Local first, then Entangle Cloud, then Entangle
-  Enterprise, while separating the presentable local baseline from later
-  production persistence, tenancy, authorization, and compliance claims.
+- a definitive three-product roadmap plus a released R1/L1 local-operator
+  baseline that sequence Entangle Local first, then Entangle Cloud, then
+  Entangle Enterprise, while separating the presentable local baseline from
+  later production persistence, tenancy, authorization, and compliance claims.
 
 The specification corpus now has five layers:
 

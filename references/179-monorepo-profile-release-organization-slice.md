@@ -5,7 +5,7 @@
 This slice applies the current monorepo organization decision without splitting
 Entangle into multiple repositories.
 
-The goal is to make the active Local release and deployment paths explicit
+The goal is to make Local release-control and deployment paths explicit
 while preserving the monorepo advantages that still matter: shared contracts,
 single quality gates, and tightly coordinated host, runner, CLI, Studio, and
 deployment changes.
@@ -17,8 +17,8 @@ deployment changes.
 - Added `scripts/local-profile-paths.mjs` so local profile scripts share path
   constants instead of duplicating the Compose and Dockerfile paths.
 - Added `releases/` as the release-control area.
-- Added `releases/local/l1-local-operator-baseline.md` as the active Local L1
-  release packet.
+- Added `releases/local/l1-local-operator-baseline.md` as the Local L1 release
+  packet.
 - Kept the canonical R1/L1 release ledger in `references/177-r1-local-operator-release-ledger.md`.
 
 ## Non-Changes

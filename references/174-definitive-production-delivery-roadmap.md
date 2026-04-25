@@ -61,7 +61,9 @@ The repository already has:
 - bounded tools, memory maintenance, approval handling, and delegated handoff;
 - local preflight and smoke commands;
 - a credible `pnpm verify` quality baseline;
-- an active R1 ledger in
+- a released R1/L1 Local Operator Baseline packet in
+  [`releases/local/l1-local-operator-baseline.md`](../releases/local/l1-local-operator-baseline.md),
+  backed by the release ledger in
   [177-r1-local-operator-release-ledger.md](177-r1-local-operator-release-ledger.md).
 
 The repository does not yet have:
@@ -279,7 +281,7 @@ The historical `R1` ledger is the release-control ledger for this L1 milestone.
 It keeps its existing name because it predates the final L-series Local release
 train.
 
-The active release packet lives in
+The release packet lives in
 [`releases/local/l1-local-operator-baseline.md`](../releases/local/l1-local-operator-baseline.md).
 
 Included capabilities:
@@ -822,27 +824,24 @@ Evolution:
 - support bundle works;
 - customer-operated runbooks exist.
 
-## 48-Hour Immediate Plan
+## Immediate Plan
 
-The current two-day target is still L1 closure, not Local GA.
+L1 release closure is complete. The current target is L1.5 Local Operator
+Preview, not Local GA.
 
-Day 1:
+Next implementation sequence:
 
-1. Freeze scope to release closure.
-2. Finish active approval/session/local-runtime hardening only if already in
-   progress or release-blocking.
-3. Complete the R1 ledger.
-4. Create the R1 release note.
-5. Run focused tests and `pnpm verify`.
-
-Day 2:
-
-1. Run local preflight.
-2. Run disposable smoke if Docker conditions allow.
-3. Fix only release blockers.
-4. Update README and wiki state.
-5. Commit release docs.
-6. Tag `v0.1-local-operator-baseline` if all gate conditions are met.
+1. Freeze L1.5 scope around a usable local operator preview.
+2. Add canonical demo assets: package, graph, and deterministic model-stub
+   path.
+3. Add a near-one-command local demo flow that reuses the same host boundary
+   and smoke primitives instead of bypassing the product.
+4. Document the happy path from install to completed local session.
+5. Add troubleshooting for Docker daemon, stale Gitea volume, missing model
+   secret, relay unreachable, and runner degraded states.
+6. Improve first-run operator guidance in Studio and CLI examples.
+7. Run `pnpm verify`, strict preflight, and disposable runtime smoke before
+   closing L1.5.
 
 Correct L1 statement:
 
