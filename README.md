@@ -244,6 +244,11 @@ This repository currently contains:
   through the local relay, writes git-backed artifacts to local Gitea, and
   leaves the profile running for Studio and CLI inspection, with
   `pnpm ops:demo-local-preview:reset` as the reset path;
+- an active L2 Local Workbench implementation slice with `entangle package
+  inspect`, package tool-catalog validation, `entangle graph diff`,
+  root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
+  `entangle host sessions launch` over host-resolved runtime context and the
+  local NIP-59 relay, plus runtime artifact filtering by `--session-id`;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

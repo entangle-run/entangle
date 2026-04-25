@@ -1,12 +1,25 @@
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import type { EffectiveRuntimeContext, GraphSpec } from "@entangle/types";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   validateA2AMessageDocument,
   validateConversationLifecycleTransition,
   validateGraphDocument,
+  validatePackageDirectory,
   validateRuntimeArtifactRefs,
   validateSessionLifecycleTransition
 } from "./index.js";
+
+let temporaryRoots: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(
+    temporaryRoots.map((root) => rm(root, { force: true, recursive: true }))
+  );
+  temporaryRoots = [];
+});
 
 function buildGraph(
   packageSourceRef?: string,
@@ -211,6 +224,99 @@ function buildA2AMessageDocument(
     ...messageOverrides
   };
 }
+
+async function createPackageDirectory(input: {
+  toolsJson: string;
+}): Promise<string> {
+  const root = await mkdtemp(path.join(os.tmpdir(), "entangle-validator-"));
+  temporaryRoots.push(root);
+
+  await mkdir(path.join(root, "prompts"), { recursive: true });
+  await mkdir(path.join(root, "runtime"), { recursive: true });
+  await mkdir(path.join(root, "memory", "schema"), { recursive: true });
+  await writeFile(
+    path.join(root, "manifest.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: "1",
+        packageId: "local-builder",
+        name: "Local Builder",
+        version: "0.1.0",
+        packageKind: "template",
+        defaultNodeKind: "worker",
+        entryPrompts: {
+          system: "prompts/system.md",
+          interaction: "prompts/interaction.md"
+        },
+        memoryProfile: {
+          wikiSeedPath: "memory/seed/wiki",
+          schemaPath: "memory/schema/AGENTS.md"
+        },
+        runtime: {
+          configPath: "runtime/config.json",
+          capabilitiesPath: "runtime/capabilities.json",
+          toolsPath: "runtime/tools.json"
+        }
+      },
+      null,
+      2
+    )}\n`
+  );
+  await writeFile(path.join(root, "prompts", "system.md"), "System\n");
+  await writeFile(path.join(root, "prompts", "interaction.md"), "Interaction\n");
+  await writeFile(path.join(root, "runtime", "config.json"), "{}\n");
+  await writeFile(path.join(root, "runtime", "capabilities.json"), "{}\n");
+  await writeFile(path.join(root, "runtime", "tools.json"), input.toolsJson);
+  await writeFile(path.join(root, "memory", "schema", "AGENTS.md"), "Rules\n");
+
+  return root;
+}
+
+describe("validatePackageDirectory", () => {
+  it("accepts a package with a valid explicit tool catalog", async () => {
+    const root = await createPackageDirectory({
+      toolsJson: `${JSON.stringify({ schemaVersion: "1", tools: [] }, null, 2)}\n`
+    });
+
+    expect(await validatePackageDirectory(root)).toMatchObject({
+      ok: true,
+      findings: []
+    });
+  });
+
+  it("rejects invalid package tool catalog JSON", async () => {
+    const root = await createPackageDirectory({
+      toolsJson: "{not-json"
+    });
+    const report = await validatePackageDirectory(root);
+
+    expect(report.ok).toBe(false);
+    expect(report.findings).toEqual([
+      expect.objectContaining({
+        code: "invalid_package_tool_catalog_json",
+        path: ["runtime/tools.json"],
+        severity: "error"
+      })
+    ]);
+  });
+
+  it("rejects tool catalogs that do not match the package tool schema", async () => {
+    const root = await createPackageDirectory({
+      toolsJson: `${JSON.stringify({ schemaVersion: "1", tools: [{}] })}\n`
+    });
+    const report = await validatePackageDirectory(root);
+
+    expect(report.ok).toBe(false);
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "package_tool_catalog_invalid",
+          severity: "error"
+        })
+      ])
+    );
+  });
+});
 
 describe("validateGraphDocument", () => {
   it("does not invent missing host state when package-source ids were not provided", () => {

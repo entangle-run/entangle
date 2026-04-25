@@ -18,6 +18,7 @@ import {
   edgeCreateRequestSchema,
   edgeReplacementRequestSchema,
   externalPrincipalMutationRequestSchema,
+  graphSpecSchema,
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
@@ -28,6 +29,7 @@ import {
   validateGraphFile,
   validatePackageDirectory
 } from "@entangle/validator";
+import { buildGraphDiff } from "./graph-diff-command.js";
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { projectHostStatusSummary } from "./host-status-output.js";
 import {
@@ -42,6 +44,7 @@ import {
   buildPackageInitOptions,
   type PackageInitCliOptions
 } from "./package-init-command.js";
+import { inspectPackageDirectory } from "./package-inspection-command.js";
 import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
 import {
   projectExternalPrincipalSummary,
@@ -61,6 +64,11 @@ import {
   projectHostSessionInspectionSummary,
   projectHostSessionSummary
 } from "./runtime-session-output.js";
+import {
+  parseSessionLaunchArtifactRef,
+  publishSessionLaunch,
+  resolveDefaultSessionLaunchUserNodeId
+} from "./session-launch-command.js";
 import { projectRuntimeInspectionSummary } from "./runtime-inspection-output.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
@@ -68,6 +76,14 @@ import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
 async function readJsonDocument(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
+}
+
+function resolveCliPath(inputPath: string): string {
+  if (path.isAbsolute(inputPath)) {
+    return inputPath;
+  }
+
+  return path.resolve(process.env.INIT_CWD ?? process.cwd(), inputPath);
 }
 
 function printJson(value: unknown): void {
@@ -221,7 +237,7 @@ validateCommand
   .argument("<directory>", "Path to an AgentPackage directory.")
   .description("Validate an AgentPackage directory.")
   .action(async (directory: string) => {
-    const report = await validatePackageDirectory(path.resolve(directory));
+    const report = await validatePackageDirectory(resolveCliPath(directory));
     console.log(formatValidationReport(report));
     process.exitCode = report.ok ? 0 : 1;
   });
@@ -231,7 +247,7 @@ validateCommand
   .argument("<file>", "Path to a graph JSON file.")
   .description("Validate a graph document.")
   .action(async (file: string) => {
-    const report = await validateGraphFile(path.resolve(file));
+    const report = await validateGraphFile(resolveCliPath(file));
     console.log(formatValidationReport(report));
     process.exitCode = report.ok ? 0 : 1;
   });
@@ -250,10 +266,20 @@ packageCommand
   .description("Create a minimal AgentPackage scaffold.")
   .action(async (directory: string, options: PackageInitCliOptions) => {
     const result = await createAgentPackageScaffold(
-      path.resolve(directory),
+      resolveCliPath(directory),
       buildPackageInitOptions(options)
     );
     printJson(result);
+  });
+
+packageCommand
+  .command("inspect")
+  .argument("<directory>", "Path to an AgentPackage directory.")
+  .description("Inspect an AgentPackage manifest, package files, tool catalog, and validation state.")
+  .action(async (directory: string) => {
+    printJson({
+      package: await inspectPackageDirectory(resolveCliPath(directory))
+    });
   });
 
 const hostCommand = program
@@ -399,7 +425,7 @@ hostCatalogCommand
   .description("Validate a catalog document against the running host contract.")
   .action(async (file: string, _options, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.validateCatalog(await readJsonDocument(path.resolve(file))));
+    printJson(await client.validateCatalog(await readJsonDocument(resolveCliPath(file))));
   });
 
 hostCatalogCommand
@@ -412,7 +438,7 @@ hostCatalogCommand
   .description("Apply a catalog document through entangle-host.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    const request = await readJsonDocument(path.resolve(file));
+    const request = await readJsonDocument(resolveCliPath(file));
 
     if (options.dryRun) {
       printJson(
@@ -625,7 +651,7 @@ hostExternalPrincipalsCommand
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
     const request = externalPrincipalMutationRequestSchema.parse(
-      await readJsonDocument(path.resolve(file))
+      await readJsonDocument(resolveCliPath(file))
     );
 
     if (options.dryRun) {
@@ -738,7 +764,7 @@ hostGraphCommand
   .description("Validate a graph candidate against the host catalog and admitted package sources.")
   .action(async (file: string, _options, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.validateGraph(await readJsonDocument(path.resolve(file))));
+    printJson(await client.validateGraph(await readJsonDocument(resolveCliPath(file))));
   });
 
 hostGraphCommand
@@ -751,7 +777,7 @@ hostGraphCommand
   .description("Apply a graph candidate through entangle-host.")
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    const request = await readJsonDocument(path.resolve(file));
+    const request = await readJsonDocument(resolveCliPath(file));
 
     if (options.dryRun) {
       printJson(
@@ -818,7 +844,7 @@ hostNodesCommand
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
     const request = nodeCreateRequestSchema.parse(
-      await readJsonDocument(path.resolve(file))
+      await readJsonDocument(resolveCliPath(file))
     );
 
     if (options.dryRun) {
@@ -854,7 +880,7 @@ hostNodesCommand
     ) => {
     const client = createCliHostClient(command);
       const request = nodeReplacementRequestSchema.parse(
-        await readJsonDocument(path.resolve(file))
+        await readJsonDocument(resolveCliPath(file))
       );
 
       if (options.dryRun) {
@@ -930,7 +956,7 @@ hostEdgesCommand
   .action(async (file: string, options: { dryRun?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
     const request = edgeCreateRequestSchema.parse(
-      await readJsonDocument(path.resolve(file))
+      await readJsonDocument(resolveCliPath(file))
     );
 
     if (options.dryRun) {
@@ -964,7 +990,7 @@ hostEdgesCommand
     ) => {
     const client = createCliHostClient(command);
       const request = edgeReplacementRequestSchema.parse(
-        await readJsonDocument(path.resolve(file))
+        await readJsonDocument(resolveCliPath(file))
       );
 
       if (options.dryRun) {
@@ -1143,6 +1169,7 @@ hostRuntimesCommand
     "--retrieval-state <retrievalState>",
     "Filter artifacts by retrieval state, including not_retrieved."
   )
+  .option("--session-id <sessionId>", "Filter artifacts by session id.")
   .option("--summary", "Print compact operator-oriented artifact summaries.")
   .description("Inspect persisted runtime artifacts for one runtime.")
   .action(
@@ -1167,6 +1194,7 @@ hostRuntimesCommand
           | "superseded";
         publicationState?: "failed" | "not_requested" | "published";
         retrievalState?: "failed" | "not_retrieved" | "retrieved";
+        sessionId?: string;
         summary?: boolean;
       },
       command: Command
@@ -1318,7 +1346,7 @@ hostRuntimesCommand
     ) => {
     const client = createCliHostClient(command);
       const request = runtimeRecoveryPolicyMutationRequestSchema.parse(
-        await readJsonDocument(path.resolve(file))
+        await readJsonDocument(resolveCliPath(file))
       );
 
       if (options.dryRun) {
@@ -1456,6 +1484,82 @@ hostSessionsCommand
     );
   });
 
+hostSessionsCommand
+  .command("launch")
+  .argument("<nodeId>", "Target runtime node identifier.")
+  .argument("<summary>", "Work summary to deliver as a task.request.")
+  .option(
+    "--artifact-ref-file <file>",
+    "Path to an ArtifactRef JSON document to attach. Repeatable.",
+    collectRepeatedOptionValue,
+    [] as string[]
+  )
+  .option("--conversation-id <conversationId>", "Explicit conversation id.")
+  .option("--from-node-id <nodeId>", "Explicit graph user node id.")
+  .option("--intent <intent>", "Intent text. Defaults to the summary.")
+  .option("--session-id <sessionId>", "Explicit session id.")
+  .option("--turn-id <turnId>", "Explicit turn id.")
+  .description(
+    "Launch a local task session by publishing a NIP-59 task.request using host-resolved runtime context."
+  )
+  .action(
+    async (
+      nodeId: string,
+      summary: string,
+      options: {
+        artifactRefFile: string[];
+        conversationId?: string;
+        fromNodeId?: string;
+        intent?: string;
+        sessionId?: string;
+        turnId?: string;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const [graphResponse, runtimeContext] = await Promise.all([
+        client.getGraph(),
+        client.getRuntimeContext(nodeId)
+      ]);
+
+      if (!graphResponse.graph) {
+        throw new Error("Cannot launch a session because no active graph exists.");
+      }
+
+      const artifactRefs = await Promise.all(
+        options.artifactRefFile.map(async (file) =>
+          parseSessionLaunchArtifactRef(await readJsonDocument(resolveCliPath(file)))
+        )
+      );
+      const fromNodeId =
+        options.fromNodeId ??
+        resolveDefaultSessionLaunchUserNodeId(graphResponse.graph);
+      const launch = await publishSessionLaunch({
+        artifactRefs,
+        ...(options.conversationId
+          ? { conversationId: options.conversationId }
+          : {}),
+        fromNodeId,
+        ...(options.intent ? { intent: options.intent } : {}),
+        runtimeContext,
+        ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+        summary,
+        ...(options.turnId ? { turnId: options.turnId } : {})
+      });
+
+      printJson({
+        launch: {
+          ...launch,
+          nextCommands: [
+            `entangle host sessions get ${launch.sessionId} --summary`,
+            `entangle host runtimes turns ${launch.targetNodeId} --summary`,
+            `entangle host runtimes artifacts ${launch.targetNodeId} --session-id ${launch.sessionId} --summary`
+          ]
+        }
+      });
+    }
+  );
+
 const graphCommand = program
   .command("graph")
   .description("Inspect graph files from the terminal.");
@@ -1465,9 +1569,27 @@ graphCommand
   .argument("<file>", "Path to a graph JSON file.")
   .description("Run offline validation and print the result for a graph file.")
   .action(async (file: string) => {
-    const report = await validateGraphFile(path.resolve(file));
+    const report = await validateGraphFile(resolveCliPath(file));
     console.log(formatValidationReport(report));
     process.exitCode = report.ok ? 0 : 1;
+  });
+
+graphCommand
+  .command("diff")
+  .argument("<fromFile>", "Path to the base graph JSON file.")
+  .argument("<toFile>", "Path to the candidate graph JSON file.")
+  .description("Compare two graph JSON files and print node, edge, and default changes.")
+  .action(async (fromFile: string, toFile: string) => {
+    const fromGraph = graphSpecSchema.parse(
+      await readJsonDocument(resolveCliPath(fromFile))
+    );
+    const toGraph = graphSpecSchema.parse(
+      await readJsonDocument(resolveCliPath(toFile))
+    );
+
+    printJson({
+      diff: buildGraphDiff(fromGraph, toGraph)
+    });
   });
 
 await program.parseAsync(process.argv);

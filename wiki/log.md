@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Started L2 Local Workbench
+
+Added the first L2 Local Workbench implementation slice. The CLI now has
+`entangle package inspect`, `entangle graph diff`, and
+`entangle host sessions launch`; package validation now parses the declared
+`runtime/tools.json` tool catalog; artifact lists can filter by session id; and
+CLI file arguments resolve relative to the original shell directory when run
+through `pnpm --filter @entangle/cli dev`.
+
+The slice is documented in `releases/local/l2-local-workbench.md` as active
+implementation, not a released L2 packet. Remaining L2 work includes Studio
+workbench affordances, graph templates/import/export, artifact preview/history,
+memory inspection, and the full Docker-backed release gate before any
+`v0.2-local-workbench` tag.
+
 ## [2026-04-25] release | Closed L1.5 Local Operator Preview
 
 Closed L1.5 as `v0.1.5-local-operator-preview`. The release adds canonical

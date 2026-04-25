@@ -29,6 +29,7 @@ import {
   resolveEffectivePrimaryGitServiceRef,
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfileRefs,
+  packageToolCatalogSchema,
   runnerTurnRecordSchema,
   sessionRecordSchema,
   type ValidationFinding,
@@ -1208,6 +1209,42 @@ export async function validatePackageDirectory(
           severity: "error",
           message: `Expected package file '${relativePath}' is missing.`,
           path: [relativePath]
+        })
+      );
+    }
+  }
+
+  const toolsPath = path.join(directoryPath, manifest.runtime.toolsPath);
+
+  if (await expectPath(toolsPath)) {
+    try {
+      const toolCatalogDocument = await readJsonFile(toolsPath);
+      const toolCatalogParse = packageToolCatalogSchema.safeParse(
+        toolCatalogDocument
+      );
+
+      if (!toolCatalogParse.success) {
+        findings.push(
+          ...toolCatalogParse.error.issues.map((issue) =>
+            createFinding({
+              code: "package_tool_catalog_invalid",
+              severity: "error",
+              message: issue.message,
+              path: [manifest.runtime.toolsPath, ...issue.path.map(String)]
+            })
+          )
+        );
+      }
+    } catch (error: unknown) {
+      findings.push(
+        createFinding({
+          code: "invalid_package_tool_catalog_json",
+          severity: "error",
+          message:
+            error instanceof Error
+              ? `Could not parse package tool catalog: ${error.message}`
+              : "Could not parse package tool catalog.",
+          path: [manifest.runtime.toolsPath]
         })
       );
     }

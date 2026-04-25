@@ -13,6 +13,7 @@ export type RuntimeArtifactPresentationFilterOptions = {
   lifecycleState?: ArtifactLifecycleState;
   publicationState?: ArtifactPublicationState | "not_requested";
   retrievalState?: ArtifactRetrievalState | "not_retrieved";
+  sessionId?: string;
 };
 
 export function sortRuntimeArtifactsForPresentation(
@@ -37,6 +38,10 @@ export function filterRuntimeArtifactsForPresentation(
     }
 
     if (options.lifecycleState && artifact.ref.status !== options.lifecycleState) {
+      return false;
+    }
+
+    if (options.sessionId && artifact.ref.sessionId !== options.sessionId) {
       return false;
     }
 

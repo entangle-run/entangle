@@ -23,6 +23,7 @@
     "@entangle/package-scaffold": "workspace:*",
     "@entangle/types": "workspace:*",
     "@entangle/validator": "workspace:*",
-    "commander": "^14.0.3"
+    "commander": "^14.0.3",
+    "nostr-tools": "^2.23.3"
   }
 }

@@ -16,7 +16,8 @@ and the L1/R1 ledger in
 
 ## Next Release
 
-- L2 Local Workbench
+- [L2 Local Workbench](l2-local-workbench.md) — active implementation,
+  target tag `v0.2-local-workbench`
 
 ## Planned Release Train
 

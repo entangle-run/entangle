@@ -32,6 +32,7 @@ const artifacts: ArtifactRecord[] = [
         path: "reports/report.md",
         repositoryName: "worker-it"
       },
+      sessionId: "session-alpha",
       status: "published"
     },
     updatedAt: "2026-04-24T10:02:00.000Z"
@@ -46,6 +47,7 @@ const artifacts: ArtifactRecord[] = [
         nodeId: "worker-it",
         path: "memory/wiki/tasks/task.md"
       },
+      sessionId: "session-beta",
       status: "materialized"
     },
     retrieval: {
@@ -70,6 +72,7 @@ const artifacts: ArtifactRecord[] = [
         commit: "fedcba9876543210",
         path: "patches/fix.patch"
       },
+      sessionId: "session-alpha",
       status: "failed"
     },
     updatedAt: "2026-04-24T08:05:00.000Z"
@@ -90,6 +93,9 @@ describe("runtime artifact presentation helpers", () => {
       backend: "git",
       publicationState: "published"
     });
+    const sessionFiltered = filterRuntimeArtifactsForPresentation(artifacts, {
+      sessionId: "session-alpha"
+    });
     const publicationFiltered = filterRuntimeArtifactsForPresentation(artifacts, {
       publicationState: "not_requested"
     });
@@ -99,6 +105,10 @@ describe("runtime artifact presentation helpers", () => {
 
     expect(filtered.map((artifact) => artifact.ref.artifactId)).toEqual([
       "artifact-report"
+    ]);
+    expect(sessionFiltered.map((artifact) => artifact.ref.artifactId)).toEqual([
+      "artifact-report",
+      "artifact-patch"
     ]);
     expect(publicationFiltered.map((artifact) => artifact.ref.artifactId)).toEqual([
       "artifact-summary"
