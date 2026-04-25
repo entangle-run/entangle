@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { EffectiveRuntimeContext, GraphSpec } from "@entangle/types";
 import {
   buildSessionLaunchMessage,
+  publishHostSessionLaunch,
   resolveDefaultSessionLaunchUserNodeId,
   resolveSessionLaunchRelaySelection
-} from "./session-launch-command.js";
+} from "./session-launch.js";
 
 function buildGraph(): GraphSpec {
   return {
@@ -115,31 +116,32 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
   };
 }
 
-describe("session launch command helpers", () => {
-  it("resolves the default user node from graph topology", () => {
+describe("host session launch helpers", () => {
+  it("resolves launch routing from graph and runtime context", () => {
     expect(resolveDefaultSessionLaunchUserNodeId(buildGraph())).toBe("user-main");
-  });
-
-  it("deduplicates writable relay URLs from runtime context", () => {
     expect(resolveSessionLaunchRelaySelection(buildRuntimeContext())).toEqual({
       authRequired: false,
       relayUrls: ["ws://localhost:7777"]
     });
   });
 
-  it("builds a valid A2A task request for launch", () => {
-    const message = buildSessionLaunchMessage({
-      conversationId: "conversation-alpha",
-      fromNodeId: "user-main",
-      fromPubkey:
-        "1111111111111111111111111111111111111111111111111111111111111111",
-      runtimeContext: buildRuntimeContext(),
-      sessionId: "session-alpha",
-      summary: "Prepare a local report.",
-      turnId: "turn-alpha"
-    });
-
-    expect(message).toMatchObject({
+  it("builds valid A2A launch messages", () => {
+    expect(
+      buildSessionLaunchMessage({
+        conversationId: "conversation-alpha",
+        fromNodeId: "user-main",
+        fromPubkey:
+          "1111111111111111111111111111111111111111111111111111111111111111",
+        request: {
+          artifactRefs: [],
+          summary: "Prepare a local report.",
+          targetNodeId: "builder"
+        },
+        runtimeContext: buildRuntimeContext(),
+        sessionId: "session-alpha",
+        turnId: "turn-alpha"
+      })
+    ).toMatchObject({
       fromNodeId: "user-main",
       graphId: "local-preview",
       intent: "Prepare a local report.",
@@ -148,10 +150,43 @@ describe("session launch command helpers", () => {
       toNodeId: "builder",
       work: {
         metadata: {
-          launchedBy: "entangle-cli"
+          launchedBy: "entangle-host"
         },
         summary: "Prepare a local report."
       }
     });
+  });
+
+  it("publishes through an injected pool for testable host launch", async () => {
+    const publish = vi.fn(() => [Promise.resolve("ws://localhost:7777")]);
+    const destroy = vi.fn();
+    const result = await publishHostSessionLaunch({
+      graph: buildGraph(),
+      pool: {
+        destroy,
+        publish
+      },
+      request: {
+        conversationId: "conversation-alpha",
+        sessionId: "session-alpha",
+        summary: "Prepare a local report.",
+        targetNodeId: "builder",
+        turnId: "turn-alpha"
+      },
+      runtimeContext: buildRuntimeContext()
+    });
+
+    expect(result).toMatchObject({
+      conversationId: "conversation-alpha",
+      fromNodeId: "user-main",
+      publishedRelays: ["ws://localhost:7777"],
+      relayUrls: ["ws://localhost:7777"],
+      sessionId: "session-alpha",
+      targetNodeId: "builder",
+      turnId: "turn-alpha"
+    });
+    expect(result.eventId).toMatch(/^[0-9a-f]{64}$/);
+    expect(publish).toHaveBeenCalledOnce();
+    expect(destroy).toHaveBeenCalledOnce();
   });
 });

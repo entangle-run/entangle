@@ -1,12 +1,12 @@
 import {
-  artifactRefSchema,
   entangleA2AMessageSchema,
   entangleNostrRumorKind,
   identifierSchema,
-  type ArtifactRef,
   type EffectiveRuntimeContext,
   type EntangleA2AMessage,
-  type GraphSpec
+  type GraphSpec,
+  type ParsedSessionLaunchRequest,
+  type SessionLaunchResponse
 } from "@entangle/types";
 import {
   finalizeEvent,
@@ -14,45 +14,20 @@ import {
   getPublicKey,
   nip59,
   SimplePool,
-  type EventTemplate
+  type EventTemplate,
+  type NostrEvent
 } from "nostr-tools";
 import type { VerifiedEvent } from "nostr-tools/pure";
 
-export type SessionLaunchRelaySelection = {
-  authRequired: boolean;
-  relayUrls: string[];
-};
-
-export type SessionLaunchMessageInput = {
-  artifactRefs?: ArtifactRef[];
-  conversationId: string;
-  fromNodeId: string;
-  fromPubkey: string;
-  intent?: string;
-  runtimeContext: EffectiveRuntimeContext;
-  sessionId: string;
-  summary: string;
-  turnId: string;
-};
-
-export type SessionLaunchPublishInput = Omit<
-  SessionLaunchMessageInput,
-  "conversationId" | "fromPubkey" | "sessionId" | "turnId"
-> & {
-  conversationId?: string;
-  sessionId?: string;
-  turnId?: string;
-};
-
-export type SessionLaunchPublishResult = {
-  conversationId: string;
-  eventId: string;
-  fromNodeId: string;
-  publishedRelays: string[];
-  relayUrls: string[];
-  sessionId: string;
-  targetNodeId: string;
-  turnId: string;
+type HostSessionLaunchPool = {
+  destroy?(): void;
+  publish(
+    relayUrls: string[],
+    event: NostrEvent,
+    params?: {
+      onauth?: (event: EventTemplate) => Promise<VerifiedEvent>;
+    }
+  ): Promise<string>[];
 };
 
 function dedupeStrings(values: string[]): string[] {
@@ -76,7 +51,10 @@ export function resolveDefaultSessionLaunchUserNodeId(graph: GraphSpec): string 
 
 export function resolveSessionLaunchRelaySelection(
   context: EffectiveRuntimeContext
-): SessionLaunchRelaySelection {
+): {
+  authRequired: boolean;
+  relayUrls: string[];
+} {
   const relayProfilesById = new Map(
     context.relayContext.relayProfiles.map((relayProfile) => [
       relayProfile.id,
@@ -104,22 +82,24 @@ export function resolveSessionLaunchRelaySelection(
   };
 }
 
-export function parseSessionLaunchArtifactRef(input: unknown): ArtifactRef {
-  return artifactRefSchema.parse(input);
-}
-
-export function buildSessionLaunchMessage(
-  input: SessionLaunchMessageInput
-): EntangleA2AMessage {
+export function buildSessionLaunchMessage(input: {
+  conversationId: string;
+  fromNodeId: string;
+  fromPubkey: string;
+  request: ParsedSessionLaunchRequest;
+  runtimeContext: EffectiveRuntimeContext;
+  sessionId: string;
+  turnId: string;
+}): EntangleA2AMessage {
   return entangleA2AMessageSchema.parse({
     constraints: {
       approvalRequiredBeforeAction: false
     },
-    conversationId: identifierSchema.parse(input.conversationId),
-    fromNodeId: identifierSchema.parse(input.fromNodeId),
+    conversationId: input.conversationId,
+    fromNodeId: input.fromNodeId,
     fromPubkey: input.fromPubkey,
     graphId: input.runtimeContext.binding.graphId,
-    intent: input.intent?.trim() || input.summary,
+    intent: input.request.intent?.trim() || input.request.summary,
     messageType: "task.request",
     protocol: "entangle.a2a.v1",
     responsePolicy: {
@@ -127,16 +107,16 @@ export function buildSessionLaunchMessage(
       maxFollowups: 0,
       responseRequired: false
     },
-    sessionId: identifierSchema.parse(input.sessionId),
+    sessionId: input.sessionId,
     toNodeId: input.runtimeContext.binding.node.nodeId,
     toPubkey: input.runtimeContext.identityContext.publicKey,
-    turnId: identifierSchema.parse(input.turnId),
+    turnId: input.turnId,
     work: {
-      artifactRefs: input.artifactRefs ?? [],
+      artifactRefs: input.request.artifactRefs,
       metadata: {
-        launchedBy: "entangle-cli"
+        launchedBy: "entangle-host"
       },
-      summary: input.summary
+      summary: input.request.summary
     }
   });
 }
@@ -147,19 +127,28 @@ function buildAuthSigner(
   return (event) => Promise.resolve(finalizeEvent(event, secretKey));
 }
 
-export async function publishSessionLaunch(
-  input: SessionLaunchPublishInput
-): Promise<SessionLaunchPublishResult> {
+export async function publishHostSessionLaunch(input: {
+  graph: GraphSpec;
+  pool?: HostSessionLaunchPool;
+  request: ParsedSessionLaunchRequest;
+  runtimeContext: EffectiveRuntimeContext;
+}): Promise<SessionLaunchResponse> {
   const userSecretKey = generateSecretKey();
   const fromPubkey = getPublicKey(userSecretKey);
-  const sessionId = input.sessionId ?? createSessionLaunchIdentifier("session");
+  const sessionId =
+    input.request.sessionId ?? createSessionLaunchIdentifier("session");
   const conversationId =
-    input.conversationId ?? createSessionLaunchIdentifier("conversation");
-  const turnId = input.turnId ?? createSessionLaunchIdentifier("turn");
+    input.request.conversationId ??
+    createSessionLaunchIdentifier("conversation");
+  const turnId = input.request.turnId ?? createSessionLaunchIdentifier("turn");
+  const fromNodeId =
+    input.request.fromNodeId ?? resolveDefaultSessionLaunchUserNodeId(input.graph);
   const message = buildSessionLaunchMessage({
-    ...input,
     conversationId,
+    fromNodeId,
     fromPubkey,
+    request: input.request,
+    runtimeContext: input.runtimeContext,
     sessionId,
     turnId
   });
@@ -188,7 +177,7 @@ export async function publishSessionLaunch(
     seal,
     input.runtimeContext.identityContext.publicKey
   );
-  const pool = new SimplePool();
+  const pool = input.pool ?? new SimplePool();
 
   try {
     const publishParams: {
@@ -206,7 +195,7 @@ export async function publishSessionLaunch(
     return {
       conversationId,
       eventId: rumor.id,
-      fromNodeId: input.fromNodeId,
+      fromNodeId,
       publishedRelays,
       relayUrls: relaySelection.relayUrls,
       sessionId,
@@ -214,6 +203,6 @@ export async function publishSessionLaunch(
       turnId
     };
   } finally {
-    pool.destroy();
+    pool.destroy?.();
   }
 }

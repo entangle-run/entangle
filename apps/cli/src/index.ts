@@ -15,6 +15,7 @@ import {
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
 import {
+  artifactRefSchema,
   edgeCreateRequestSchema,
   edgeReplacementRequestSchema,
   externalPrincipalMutationRequestSchema,
@@ -22,7 +23,8 @@ import {
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
-  runtimeRecoveryPolicyMutationRequestSchema
+  runtimeRecoveryPolicyMutationRequestSchema,
+  sessionLaunchRequestSchema
 } from "@entangle/types";
 import {
   formatValidationReport,
@@ -64,11 +66,6 @@ import {
   projectHostSessionInspectionSummary,
   projectHostSessionSummary
 } from "./runtime-session-output.js";
-import {
-  parseSessionLaunchArtifactRef,
-  publishSessionLaunch,
-  resolveDefaultSessionLaunchUserNodeId
-} from "./session-launch-command.js";
 import { projectRuntimeInspectionSummary } from "./runtime-inspection-output.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
@@ -1500,7 +1497,7 @@ hostSessionsCommand
   .option("--session-id <sessionId>", "Explicit session id.")
   .option("--turn-id <turnId>", "Explicit turn id.")
   .description(
-    "Launch a local task session by publishing a NIP-59 task.request using host-resolved runtime context."
+    "Launch a local task session through entangle-host using host-resolved runtime context."
   )
   .action(
     async (
@@ -1517,35 +1514,25 @@ hostSessionsCommand
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      const [graphResponse, runtimeContext] = await Promise.all([
-        client.getGraph(),
-        client.getRuntimeContext(nodeId)
-      ]);
-
-      if (!graphResponse.graph) {
-        throw new Error("Cannot launch a session because no active graph exists.");
-      }
-
       const artifactRefs = await Promise.all(
         options.artifactRefFile.map(async (file) =>
-          parseSessionLaunchArtifactRef(await readJsonDocument(resolveCliPath(file)))
+          artifactRefSchema.parse(await readJsonDocument(resolveCliPath(file)))
         )
       );
-      const fromNodeId =
-        options.fromNodeId ??
-        resolveDefaultSessionLaunchUserNodeId(graphResponse.graph);
-      const launch = await publishSessionLaunch({
-        artifactRefs,
-        ...(options.conversationId
-          ? { conversationId: options.conversationId }
-          : {}),
-        fromNodeId,
-        ...(options.intent ? { intent: options.intent } : {}),
-        runtimeContext,
-        ...(options.sessionId ? { sessionId: options.sessionId } : {}),
-        summary,
-        ...(options.turnId ? { turnId: options.turnId } : {})
-      });
+      const launch = await client.launchSession(
+        sessionLaunchRequestSchema.parse({
+          artifactRefs,
+          ...(options.conversationId
+            ? { conversationId: options.conversationId }
+            : {}),
+          ...(options.fromNodeId ? { fromNodeId: options.fromNodeId } : {}),
+          ...(options.intent ? { intent: options.intent } : {}),
+          ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+          summary,
+          targetNodeId: nodeId,
+          ...(options.turnId ? { turnId: options.turnId } : {})
+        })
+      );
 
       printJson({
         launch: {

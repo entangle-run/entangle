@@ -39,6 +39,8 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
+  sessionLaunchRequestSchema,
+  sessionLaunchResponseSchema,
   sessionListResponseSchema,
   type CatalogInspectionResponse,
   type EdgeCreateRequest,
@@ -79,6 +81,8 @@ import {
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type SessionInspectionResponse,
+  type SessionLaunchRequest,
+  type SessionLaunchResponse,
   type SessionListResponse,
 } from "@entangle/types";
 
@@ -703,6 +707,21 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/sessions/${sessionId}`),
         sessionInspectionResponseSchema
+      );
+    },
+
+    async launchSession(
+      request: SessionLaunchRequest
+    ): Promise<SessionLaunchResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/sessions/launch`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(sessionLaunchRequestSchema.parse(request))
+        }),
+        sessionLaunchResponseSchema
       );
     },
 

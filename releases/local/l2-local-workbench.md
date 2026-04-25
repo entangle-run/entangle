@@ -22,8 +22,9 @@ Included in the current implementation slice:
 - root-relative path handling when the CLI is run through
   `pnpm --filter @entangle/cli dev`;
 - offline graph diffing through `entangle graph diff`;
-- headless local session launch through `entangle host sessions launch`, using
-  host-resolved runtime context and the local NIP-59 relay path;
+- headless local session launch through `POST /v1/sessions/launch` and
+  `entangle host sessions launch`, using host-resolved runtime context and the
+  local NIP-59 relay path;
 - artifact list filtering by `--session-id`.
 
 Still required before the L2 release tag:
@@ -55,9 +56,9 @@ pnpm --filter @entangle/cli dev host runtimes artifacts local-preview-planner --
 ```
 
 `host sessions launch` requires a running local host, a realizable target
-runtime context, and a reachable configured relay. It publishes a local
-`task.request`; session completion still depends on the runner and model
-profile state.
+runtime context, and a reachable configured relay. The CLI calls
+`POST /v1/sessions/launch`; the host publishes a local `task.request`; session
+completion still depends on the runner and model profile state.
 
 ## Verification Evidence
 
@@ -96,9 +97,9 @@ must pass the repository-level and Docker-backed gates before tagging.
 ## Known Limitations
 
 - Session launch is CLI-first in this slice; Studio launch is still pending.
-- The launch command publishes to the local relay and returns navigation
-  commands, but it does not wait for completion or retry failed relay
-  publication.
+- The launch command calls the host launch API, which publishes to the local
+  relay and returns navigation commands, but it does not wait for completion or
+  retry failed relay publication.
 - Graph diff is offline JSON diffing; host revision diff and Studio diff views
   are still pending.
 - Package inspection validates the manifest and tool catalog, but package

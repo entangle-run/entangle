@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { artifactRefSchema } from "../artifacts/artifact-ref.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   type ApprovalLifecycleState,
@@ -94,6 +95,28 @@ export const sessionInspectionResponseSchema = z.object({
   sessionId: identifierSchema
 });
 
+export const sessionLaunchRequestSchema = z.object({
+  artifactRefs: z.array(artifactRefSchema).default([]),
+  conversationId: identifierSchema.optional(),
+  fromNodeId: identifierSchema.optional(),
+  intent: nonEmptyStringSchema.optional(),
+  sessionId: identifierSchema.optional(),
+  summary: nonEmptyStringSchema,
+  targetNodeId: identifierSchema,
+  turnId: identifierSchema.optional()
+});
+
+export const sessionLaunchResponseSchema = z.object({
+  conversationId: identifierSchema,
+  eventId: identifierSchema,
+  fromNodeId: identifierSchema,
+  publishedRelays: z.array(nonEmptyStringSchema),
+  relayUrls: z.array(nonEmptyStringSchema),
+  sessionId: identifierSchema,
+  targetNodeId: identifierSchema,
+  turnId: identifierSchema
+});
+
 export type HostSessionNodeStatus = z.infer<typeof hostSessionNodeStatusSchema>;
 export type ApprovalStatusCounts = z.infer<typeof approvalStatusCountsSchema>;
 export type ConversationStatusCounts = z.infer<
@@ -113,3 +136,8 @@ export type SessionListResponse = z.infer<typeof sessionListResponseSchema>;
 export type SessionInspectionResponse = z.infer<
   typeof sessionInspectionResponseSchema
 >;
+export type ParsedSessionLaunchRequest = z.infer<
+  typeof sessionLaunchRequestSchema
+>;
+export type SessionLaunchRequest = z.input<typeof sessionLaunchRequestSchema>;
+export type SessionLaunchResponse = z.infer<typeof sessionLaunchResponseSchema>;

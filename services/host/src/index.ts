@@ -47,6 +47,8 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
+  sessionLaunchRequestSchema,
+  sessionLaunchResponseSchema,
   sessionListResponseSchema
 } from "@entangle/types";
 import { ZodError, type ZodType } from "zod";
@@ -97,6 +99,7 @@ import {
   validateCatalogCandidate,
   validateGraphCandidate
 } from "./state.js";
+import { publishHostSessionLaunch } from "./session-launch.js";
 
 class HostHttpError extends Error {
   readonly code:
@@ -1197,6 +1200,78 @@ export async function buildHostServer() {
   server.get("/v1/sessions", async () =>
     sessionListResponseSchema.parse(await listSessions())
   );
+
+  server.post("/v1/sessions/launch", async (request) => {
+    const launchRequest = parseRequestInput(
+      sessionLaunchRequestSchema,
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected schema."
+      }
+    );
+    const inspection = await getRuntimeInspection(launchRequest.targetNodeId);
+
+    if (!inspection) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${launchRequest.targetNodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: launchRequest.targetNodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${launchRequest.targetNodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const [graphInspection, runtimeContext] = await Promise.all([
+      getGraphInspection(),
+      getRuntimeContext(launchRequest.targetNodeId)
+    ]);
+
+    if (!graphInspection.graph || !runtimeContext) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: launchRequest.targetNodeId
+        },
+        message:
+          "Cannot launch a session without an active graph and a realizable target runtime context.",
+        statusCode: 409
+      });
+    }
+
+    try {
+      return sessionLaunchResponseSchema.parse(
+        await publishHostSessionLaunch({
+          graph: graphInspection.graph,
+          request: launchRequest,
+          runtimeContext
+        })
+      );
+    } catch (error: unknown) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: launchRequest.targetNodeId
+        },
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not publish the launch request to the configured relay.",
+        statusCode: 409
+      });
+    }
+  });
 
   server.get("/v1/sessions/:sessionId", async (request, reply) => {
     const params = request.params as { sessionId: string };

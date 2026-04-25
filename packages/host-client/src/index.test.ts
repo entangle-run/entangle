@@ -807,6 +807,60 @@ describe("createHostClient", () => {
     });
   });
 
+  it("posts session launch requests to the host surface", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              conversationId: "conversation-alpha",
+              eventId:
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              fromNodeId: "user-main",
+              publishedRelays: ["ws://localhost:7777"],
+              relayUrls: ["ws://localhost:7777"],
+              sessionId: "session-alpha",
+              targetNodeId: "worker-it",
+              turnId: "turn-alpha"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.launchSession({
+        summary: "Prepare a local report.",
+        targetNodeId: "worker-it"
+      })
+    ).resolves.toMatchObject({
+      eventId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      sessionId: "session-alpha",
+      targetNodeId: "worker-it"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          artifactRefs: [],
+          summary: "Prepare a local report.",
+          targetNodeId: "worker-it"
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/sessions/launch"
+      }
+    ]);
+  });
+
   it("formats structured host conflict errors for managed node creation", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

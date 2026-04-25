@@ -4,10 +4,11 @@
 
 Added the first L2 Local Workbench implementation slice. The CLI now has
 `entangle package inspect`, `entangle graph diff`, and
-`entangle host sessions launch`; package validation now parses the declared
-`runtime/tools.json` tool catalog; artifact lists can filter by session id; and
-CLI file arguments resolve relative to the original shell directory when run
-through `pnpm --filter @entangle/cli dev`.
+`entangle host sessions launch`, with launch now routed through a host API
+endpoint instead of a direct CLI relay publish. Package validation now parses
+the declared `runtime/tools.json` tool catalog; artifact lists can filter by
+session id; and CLI file arguments resolve relative to the original shell
+directory when run through `pnpm --filter @entangle/cli dev`.
 
 The slice is documented in `releases/local/l2-local-workbench.md` as active
 implementation, not a released L2 packet. Remaining L2 work includes Studio
