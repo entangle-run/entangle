@@ -294,7 +294,9 @@ The repository now also contains the first real implementation baseline:
   flows with recovery-oriented filtering, and Studio consumes the live host
   event stream to inspect runtime recovery policy, controller state, recovery
   history, and live recovery events without introducing a client-owned
-  recovery model;
+  recovery model, with shared recovery presentation helpers and compact
+  `host runtimes recovery --summary` output now keeping Studio and CLI
+  vocabulary aligned;
 - a broader host-owned trace-event slice where `entangle-host` now derives and
   persists `conversation.trace.event`, `approval.trace.event`, and
   `artifact.trace.event` from persisted runner state using the same

@@ -402,7 +402,10 @@ This repository currently contains:
   `entangle-cli` supports `host events list` plus `host events watch` with
   recovery-oriented filtering, and Studio consumes the live host event stream
   to inspect runtime recovery policy, controller state, recovery history, and
-  live recovery events without introducing a client-owned recovery model;
+  live recovery events without introducing a client-owned recovery model, with
+  shared recovery presentation helpers and compact
+  `host runtimes recovery --summary` output now keeping Studio and CLI
+  vocabulary aligned;
 - a broader host-owned trace-event slice where `entangle-host` now derives
   and persists `conversation.trace.event`, `approval.trace.event`, and
   `artifact.trace.event` from persisted runner state using the same

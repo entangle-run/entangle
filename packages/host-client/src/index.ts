@@ -770,6 +770,14 @@ export {
   type RuntimeArtifactPresentationFilterOptions
 } from "./runtime-artifact.js";
 export {
+  collectRuntimeRecoveryEvents,
+  describeRuntimeRecoveryController,
+  describeRuntimeRecoveryPolicy,
+  formatRuntimeRecoveryEventLabel,
+  formatRuntimeRecoveryRecordDetailLines,
+  formatRuntimeRecoveryRecordLabel
+} from "./runtime-recovery.js";
+export {
   collectRuntimeTraceEvents,
   describeRuntimeTraceEvent,
   formatRuntimeTraceEventLabel,

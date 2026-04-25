@@ -1284,3 +1284,18 @@ The CLI now supports compact operator-oriented output for
 `host runtimes artifact <nodeId> <artifactId> --summary` and
 `host runtimes artifacts <nodeId> --summary`, over the existing host-backed
 runtime artifact read model.
+
+## [2026-04-25] implementation | Added shared recovery presentation and CLI summaries
+
+Closed the parallel runtime-recovery presentation drift by moving recovery
+policy descriptions, recovery-controller descriptions, event labels, event
+filtering, and recovery-history record detail helpers into
+`packages/host-client`. Studio now consumes those helpers while keeping
+editable recovery-policy draft logic local to the UI.
+
+The CLI now supports compact operator-oriented output for
+`host runtimes recovery <nodeId> --summary` over the existing host-backed
+runtime recovery inspection surface. The ESLint project-service default-file
+cap was raised deliberately so type-aware lint continues to cover the growing
+CLI and host-client helper test suites instead of forcing lower-value test
+consolidation.

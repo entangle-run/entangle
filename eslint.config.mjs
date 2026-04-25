@@ -34,7 +34,8 @@ export default tseslint.config(
             "services/runner/src/*.test.ts",
             "services/runner/src/test-fixtures.ts"
           ],
-          defaultProject: "tsconfig.eslint.json"
+          defaultProject: "tsconfig.eslint.json",
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 32
         },
         tsconfigRootDir: import.meta.dirname
       }

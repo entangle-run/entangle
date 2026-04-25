@@ -65,12 +65,18 @@ Added reusable event-inspection helpers to `packages/host-client`:
 These are now the canonical client-side helpers for recovery-oriented host
 event inspection.
 
+The shared helper layer now also owns recovery policy descriptions,
+recovery-controller descriptions, recovery event labels, and recovery-history
+record labels/detail lines so Studio and CLI summary output use the same
+operator vocabulary.
+
 ### CLI widening
 
 `entangle-cli` now provides:
 
 - `host events list`
 - `host events watch`
+- `host runtimes recovery <nodeId> --summary`
 
 with shared filtering over:
 

@@ -39,6 +39,7 @@ import {
   projectHostSessionInspectionSummary,
   projectHostSessionSummary
 } from "./runtime-session-output.js";
+import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
@@ -1036,17 +1037,27 @@ hostRuntimesCommand
   .command("recovery")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .option("--limit <n>", "Maximum number of recovery records to return.", "50")
+  .option("--summary", "Print a compact operator-oriented recovery summary.")
   .description("Inspect persisted runtime recovery history for one runtime.")
   .action(
     async (
       nodeId: string,
       options: {
         limit: string;
+        summary?: boolean;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      printJson(await client.getRuntimeRecovery(nodeId, Number.parseInt(options.limit, 10)));
+      const response = await client.getRuntimeRecovery(
+        nodeId,
+        Number.parseInt(options.limit, 10)
+      );
+      printJson(
+        options.summary
+          ? { recovery: projectRuntimeRecoverySummary(response) }
+          : response
+      );
     }
   );
 
