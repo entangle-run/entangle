@@ -4422,6 +4422,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     consumedArtifactIds: turnRecord.consumedArtifactIds,
     conversationId: turnRecord.conversationId,
     ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
+    emittedHandoffMessageIds: turnRecord.emittedHandoffMessageIds,
     ...(turnRecord.memorySynthesisOutcome
       ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
       : {}),
@@ -4454,6 +4455,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     consumedArtifactIds: turnRecord.consumedArtifactIds,
     conversationId: turnRecord.conversationId,
     ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
+    emittedHandoffMessageIds: turnRecord.emittedHandoffMessageIds,
     ...(turnRecord.memorySynthesisOutcome
       ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
       : {}),

@@ -72,6 +72,11 @@ Intermediate progress update with optional artifact references.
 
 Pass active ownership or recommended next-step work to another node.
 
+The current runner may emit `task.handoff` autonomously only from structured
+engine handoff directives that resolve to one effective runtime edge route
+with a materialized peer pubkey and an allowed handoff relation. Free-form
+assistant text is not a routing authority.
+
 ### `task.result`
 
 Final or near-final result for the current task scope.
@@ -119,4 +124,5 @@ Use public custom events only for:
 - every message must identify sender and recipient by both graph-local node id
   and authoritative pubkey;
 - every message must belong to a graph and session context;
+- every response-required message must allow at least one follow-up;
 - every message must carry enough control metadata to avoid infinite ping-pong loops.

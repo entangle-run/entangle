@@ -6,6 +6,7 @@ describe("runtime turn CLI output", () => {
   it("projects persisted runner turns into compact summary records", () => {
     const turn: RunnerTurnRecord = {
       consumedArtifactIds: ["artifact-inbound"],
+      emittedHandoffMessageIds: [],
       engineOutcome: {
         providerMetadata: {
           adapterKind: "anthropic",
@@ -43,7 +44,7 @@ describe("runtime turn CLI output", () => {
     const summary = projectRuntimeTurnSummary(turn);
 
     expect(summary).toMatchObject({
-      artifactSummary: "Artifacts consumed 1 · produced 1",
+      artifactSummary: "Artifacts consumed 1 · produced 1 · handoffs 0",
       label: "turn-alpha · persisting · session-alpha",
       phase: "persisting",
       sessionId: "session-alpha",
@@ -53,6 +54,7 @@ describe("runtime turn CLI output", () => {
     });
     expect(summary.detailLines).toEqual(
       expect.arrayContaining([
+        "handoff messages none",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "tool error #1 inspect_memory_ref: tool_result_error - Tool 'inspect_memory_ref' returned an error result."
       ])

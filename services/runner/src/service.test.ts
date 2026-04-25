@@ -15,6 +15,7 @@ import { RunnerService } from "./service.js";
 import {
   buildRunnerStatePaths,
   listArtifactRecords,
+  listRunnerTurnRecords,
   readConversationRecord,
   readRunnerTurnRecord,
   readSessionRecord
@@ -306,6 +307,239 @@ describe("RunnerService", () => {
         })
       ])
     );
+  });
+
+  it("emits a topology-bound task handoff from an engine directive", async () => {
+    const upstreamFixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    const downstreamFixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!upstreamFixture.remoteRepositoryPath) {
+      throw new Error("Expected an upstream bare remote repository path.");
+    }
+
+    const upstreamBaseContext = await loadRuntimeContext(
+      upstreamFixture.contextPath
+    );
+    const downstreamBaseContext = await loadRuntimeContext(
+      downstreamFixture.contextPath
+    );
+    const upstreamContext: EffectiveRuntimeContext = {
+      ...upstreamBaseContext,
+      binding: {
+        ...upstreamBaseContext.binding,
+        node: {
+          ...upstreamBaseContext.binding.node,
+          autonomy: {
+            ...upstreamBaseContext.binding.node.autonomy,
+            canInitiateSessions: true
+          }
+        }
+      },
+      policyContext: {
+        ...upstreamBaseContext.policyContext,
+        autonomy: {
+          ...upstreamBaseContext.policyContext.autonomy,
+          canInitiateSessions: true
+        }
+      },
+      relayContext: {
+        ...upstreamBaseContext.relayContext,
+        edgeRoutes: [
+          {
+            channel: "default",
+            edgeId: "worker-it-to-worker-qa",
+            peerNodeId: "worker-qa",
+            peerPubkey: remotePublicKey,
+            relation: "delegates_to",
+            relayProfileRefs: ["local-relay"]
+          }
+        ]
+      }
+    };
+    const downstreamContext: EffectiveRuntimeContext = {
+      ...downstreamBaseContext,
+      artifactContext: {
+        ...downstreamBaseContext.artifactContext,
+        primaryGitRepositoryTarget:
+          upstreamContext.artifactContext.primaryGitRepositoryTarget
+      },
+      binding: {
+        ...downstreamBaseContext.binding,
+        bindingId: "graph-revision-alpha.worker-qa",
+        node: {
+          ...downstreamBaseContext.binding.node,
+          displayName: "Worker QA",
+          nodeId: "worker-qa"
+        }
+      },
+      identityContext: {
+        ...downstreamBaseContext.identityContext,
+        publicKey: remotePublicKey
+      }
+    };
+    const transport = new InMemoryRunnerTransport();
+    const upstreamService = new RunnerService({
+      context: upstreamContext,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Upstream node prepared autonomous handoff."],
+            handoffDirectives: [
+              {
+                edgeId: "worker-it-to-worker-qa",
+                includeArtifacts: "produced",
+                responsePolicy: {
+                  closeOnResult: true,
+                  maxFollowups: 1,
+                  responseRequired: true
+                },
+                summary: "Review the produced autonomous handoff artifact.",
+                targetNodeId: "worker-qa"
+              }
+            ],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: []
+          });
+        }
+      },
+      transport
+    });
+    let downstreamRequest: AgentEngineTurnRequest | undefined;
+    const downstreamService = new RunnerService({
+      context: downstreamContext,
+      engine: {
+        executeTurn(request) {
+          downstreamRequest = request;
+          return Promise.resolve({
+            assistantMessages: ["Downstream node completed delegated review."],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [
+              {
+                outcome: "success",
+                sequence: 1,
+                toolCallId: "toolu_autonomous_handoff",
+                toolId: "inspect_artifact_input"
+              }
+            ],
+            toolRequests: []
+          });
+        }
+      },
+      transport
+    });
+
+    await upstreamService.start();
+    await downstreamService.start();
+
+    try {
+      const upstreamResult = await upstreamService.handleInboundEnvelope(
+        buildInboundTaskRequest({
+          conversationId: "autonomous-handoff-upstream-conv",
+          intent: "prepare_autonomous_handoff",
+          sessionId: "autonomous-handoff-session",
+          summary: "Prepare a handoff artifact and delegate review through the graph.",
+          turnId: "autonomous-handoff-turn-001"
+        })
+      );
+
+      if (!upstreamResult.handled) {
+        throw new Error("Expected the upstream node to handle the task.");
+      }
+
+      expect(upstreamResult.handoffs).toHaveLength(1);
+      const [handoffEnvelope] = upstreamResult.handoffs;
+
+      if (!handoffEnvelope) {
+        throw new Error("Expected a published handoff envelope.");
+      }
+
+      expect(handoffEnvelope.message).toMatchObject({
+        fromNodeId: "worker-it",
+        messageType: "task.handoff",
+        parentMessageId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        toNodeId: "worker-qa",
+        toPubkey: remotePublicKey
+      });
+      expect(handoffEnvelope.message.work.artifactRefs).toHaveLength(1);
+      expect(handoffEnvelope.message.work.artifactRefs[0]).toMatchObject({
+        backend: "git",
+        createdByNodeId: "worker-it",
+        status: "published"
+      });
+
+      if (!downstreamRequest) {
+        throw new Error("Expected the downstream node to receive the handoff.");
+      }
+
+      expect(downstreamRequest.artifactInputs).toHaveLength(1);
+      expect(downstreamRequest.artifactInputs[0]?.artifactId).toBe(
+        handoffEnvelope.message.work.artifactRefs[0]?.artifactId
+      );
+      const downstreamArtifactPath = downstreamRequest.artifactInputs[0]?.localPath;
+
+      if (!downstreamArtifactPath) {
+        throw new Error("Expected a downstream local artifact path.");
+      }
+
+      await expect(readFile(downstreamArtifactPath, "utf8")).resolves.toContain(
+        "Upstream node prepared autonomous handoff."
+      );
+
+      const publishedEnvelopes = transport.listPublishedEnvelopes();
+      const downstreamResponse = publishedEnvelopes.find(
+        (publishedEnvelope) =>
+          publishedEnvelope.message.messageType === "task.result" &&
+          publishedEnvelope.message.parentMessageId === handoffEnvelope.eventId
+      );
+
+      expect(downstreamResponse).toBeDefined();
+      if (!downstreamResponse) {
+        throw new Error("Expected a downstream task result.");
+      }
+
+      const upstreamStatePaths = buildRunnerStatePaths(
+        upstreamContext.workspace.runtimeRoot
+      );
+      const [upstreamTurn] = await listRunnerTurnRecords(upstreamStatePaths);
+      const upstreamSession = await readSessionRecord(
+        upstreamStatePaths,
+        "autonomous-handoff-session"
+      );
+      const handoffConversation = await readConversationRecord(
+        upstreamStatePaths,
+        handoffEnvelope.message.conversationId
+      );
+
+      expect(upstreamTurn?.emittedHandoffMessageIds).toEqual([
+        handoffEnvelope.eventId
+      ]);
+      expect(handoffConversation?.status).toBe("closed");
+      expect(handoffConversation?.lastOutboundMessageId).toBe(
+        handoffEnvelope.eventId
+      );
+      expect(handoffConversation?.lastInboundMessageId).toBe(
+        downstreamResponse.eventId
+      );
+      expect(handoffConversation?.lastMessageType).toBe("task.result");
+      expect(upstreamSession?.status).toBe("completed");
+      expect(upstreamSession?.rootArtifactIds).toEqual(
+        expect.arrayContaining(
+          downstreamResponse.message.work.artifactRefs.map(
+            (artifactRef) => artifactRef.artifactId
+          )
+        )
+      );
+    } finally {
+      await downstreamService.stop();
+      await upstreamService.stop();
+    }
   });
 
   it("retrieves published inbound git artifacts from the primary remote and passes them to the engine", async () => {
@@ -1134,6 +1368,7 @@ describe("RunnerService", () => {
 
     expect(result).toEqual({
       handled: true,
+      handoffs: [],
       response: undefined
     });
     expect(transport.listPublishedEnvelopes()).toHaveLength(0);

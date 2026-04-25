@@ -96,6 +96,11 @@ The repository now also contains the first real implementation baseline:
 - peer-identity-aware runtime edge routes where adjacent non-user node public
   keys are injected as non-secret route metadata and runner turn assembly now
   includes a bounded peer-route summary for graph-aware multi-node reasoning;
+- controlled autonomous runner handoffs where structured engine
+  `handoffDirectives` must resolve through effective edge routes, local
+  autonomy policy, materialized peer pubkeys, and allowed handoff relations
+  before the runner emits `task.handoff`, with emitted handoff ids carried
+  through runner-turn, host-event, and client presentation contracts;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,

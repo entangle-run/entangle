@@ -43,6 +43,9 @@ function createTurn(
         outputTokens: 12
       }
     },
+    emittedHandoffMessageIds: [
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
     graphId: "team-alpha",
     memorySynthesisOutcome: {
       status: "succeeded",
@@ -85,10 +88,11 @@ describe("runtime turn presentation helpers", () => {
       "Trigger message · engine completed · memory succeeded"
     );
     expect(formatRuntimeTurnArtifactSummary(turn)).toBe(
-      "Artifacts consumed 1 · produced 1"
+      "Artifacts consumed 1 · produced 1 · handoffs 1"
     );
     expect(formatRuntimeTurnDetailLines(turn)).toEqual(
       expect.arrayContaining([
+        "handoff messages aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
         "provider stop end_turn",

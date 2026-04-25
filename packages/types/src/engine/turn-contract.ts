@@ -8,6 +8,7 @@ import {
   identifierSchema,
   nonEmptyStringSchema
 } from "../common/primitives.js";
+import { entangleA2AResponsePolicySchema } from "../protocol/a2a.js";
 import { modelEndpointAdapterKindSchema } from "../resources/catalog.js";
 
 export const engineToolDefinitionSchema = z.object({
@@ -144,6 +145,36 @@ export const engineToolExecutionResultSchema = z.object({
   isError: z.boolean().default(false)
 });
 
+export const engineHandoffArtifactInclusionSchema = z.enum([
+  "none",
+  "produced",
+  "all"
+]);
+
+export const engineHandoffDirectiveSchema = z
+  .object({
+    edgeId: identifierSchema.optional(),
+    includeArtifacts: engineHandoffArtifactInclusionSchema.default("produced"),
+    intent: nonEmptyStringSchema.optional(),
+    responsePolicy: entangleA2AResponsePolicySchema.default({
+      closeOnResult: true,
+      maxFollowups: 1,
+      responseRequired: true
+    }),
+    summary: nonEmptyStringSchema,
+    targetNodeId: identifierSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (!value.edgeId && !value.targetNodeId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Engine handoff directives must specify edgeId or targetNodeId.",
+        path: ["targetNodeId"]
+      });
+    }
+  });
+
 export const agentEngineTurnRequestSchema = z.object({
   sessionId: identifierSchema,
   nodeId: identifierSchema,
@@ -169,6 +200,7 @@ export const agentEngineTurnResultSchema = z
   .object({
     assistantMessages: z.array(nonEmptyStringSchema).default([]),
     failure: engineTurnFailureSchema.optional(),
+    handoffDirectives: z.array(engineHandoffDirectiveSchema).default([]),
     providerMetadata: engineProviderMetadataSchema.optional(),
     providerStopReason: nonEmptyStringSchema.optional(),
     toolRequests: z.array(engineToolRequestSchema).default([]),
@@ -198,6 +230,10 @@ export type EngineToolExecutionRequest = z.infer<
 export type EngineToolExecutionResult = z.infer<
   typeof engineToolExecutionResultSchema
 >;
+export type EngineHandoffArtifactInclusion = z.infer<
+  typeof engineHandoffArtifactInclusionSchema
+>;
+export type EngineHandoffDirective = z.infer<typeof engineHandoffDirectiveSchema>;
 export type EngineArtifactInput = z.infer<typeof engineArtifactInputSchema>;
 export type AgentEngineTurnRequest = z.infer<typeof agentEngineTurnRequestSchema>;
 export type AgentEngineTurnResult = z.infer<typeof agentEngineTurnResultSchema>;

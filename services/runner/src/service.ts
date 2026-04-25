@@ -6,6 +6,7 @@ import type {
   ConversationLifecycleState,
   ConversationRecord,
   EngineArtifactInput,
+  EngineHandoffDirective,
   EngineProviderMetadata,
   EngineToolDefinition,
   EngineTurnFailure,
@@ -19,6 +20,7 @@ import type {
   SessionRecord
 } from "@entangle/types";
 import {
+  agentEngineTurnResultSchema,
   engineTurnOutcomeSchema,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition
@@ -42,6 +44,7 @@ import {
   readSessionRecord,
   writeArtifactRecord,
   writeConversationRecord,
+  listConversationRecords,
   writeRunnerTurnRecord,
   writeSessionRecord
 } from "./state-store.js";
@@ -75,8 +78,43 @@ export type RunnerServiceHandleResult =
     }
   | {
       handled: true;
+      handoffs: RunnerPublishedEnvelope[];
       response: RunnerPublishedEnvelope | undefined;
     };
+
+type EffectiveEdgeRouteRelation = Exclude<
+  EffectiveRuntimeContext["relayContext"]["edgeRoutes"][number]["relation"],
+  undefined
+>;
+
+type ResolvedHandoffRoute = {
+  channel: string;
+  edgeId: string;
+  peerNodeId: string;
+  peerPubkey: string;
+  relation: EffectiveEdgeRouteRelation;
+  relayProfileRefs: string[];
+};
+
+type ResolvedHandoffPlan = {
+  directive: EngineHandoffDirective;
+  route: ResolvedHandoffRoute;
+};
+
+class RunnerHandoffPolicyError extends AgentEngineExecutionError {
+  constructor(message: string) {
+    super(message, {
+      classification: "bad_request"
+    });
+  }
+}
+
+const handoffAllowedRelations = new Set([
+  "delegates_to",
+  "peer_collaborates_with",
+  "reviews",
+  "routes_to"
+]);
 
 function nowIsoString(): string {
   return new Date().toISOString();
@@ -432,11 +470,224 @@ function buildResponseMessage(input: {
   };
 }
 
+function parseEngineTurnResult(value: unknown): AgentEngineTurnResult {
+  const result = agentEngineTurnResultSchema.safeParse(value);
+
+  if (!result.success) {
+    throw new AgentEngineExecutionError(
+      `Engine returned an invalid turn result: ${result.error.issues
+        .map((issue) => issue.message)
+        .join("; ")}`,
+      {
+        cause: result.error,
+        classification: "bad_request"
+      }
+    );
+  }
+
+  return result.data;
+}
+
+function resolveHandoffPlans(
+  context: EffectiveRuntimeContext,
+  directives: EngineHandoffDirective[]
+): ResolvedHandoffPlan[] {
+  if (directives.length === 0) {
+    return [];
+  }
+
+  if (!context.policyContext.autonomy.canInitiateSessions) {
+    throw new RunnerHandoffPolicyError(
+      `Node '${context.binding.node.nodeId}' cannot emit autonomous handoffs because its autonomy policy does not allow session initiation.`
+    );
+  }
+
+  return directives.map((directive) => {
+    const matchingRoutes = context.relayContext.edgeRoutes.filter(
+      (route) =>
+        (!directive.edgeId || route.edgeId === directive.edgeId) &&
+        (!directive.targetNodeId || route.peerNodeId === directive.targetNodeId)
+    );
+
+    if (matchingRoutes.length === 0) {
+      throw new RunnerHandoffPolicyError(
+        `Engine requested a handoff from node '${context.binding.node.nodeId}' but no effective edge route matched edgeId '${directive.edgeId ?? "unspecified"}' and targetNodeId '${directive.targetNodeId ?? "unspecified"}'.`
+      );
+    }
+
+    if (matchingRoutes.length > 1) {
+      throw new RunnerHandoffPolicyError(
+        `Engine requested an ambiguous handoff from node '${context.binding.node.nodeId}'; specify edgeId to select one route.`
+      );
+    }
+
+    const route = matchingRoutes[0];
+
+    if (
+      !route?.channel ||
+      !route.edgeId ||
+      !route.peerNodeId ||
+      !route.relation
+    ) {
+      throw new RunnerHandoffPolicyError(
+        `Engine requested a handoff from node '${context.binding.node.nodeId}' but the matched route is incomplete.`
+      );
+    }
+
+    if (!handoffAllowedRelations.has(route.relation)) {
+      throw new RunnerHandoffPolicyError(
+        `Edge '${route.edgeId}' relation '${route.relation}' is not allowed for autonomous handoff.`
+      );
+    }
+
+    if (!route.peerPubkey) {
+      throw new RunnerHandoffPolicyError(
+        `Edge '${route.edgeId}' cannot be used for autonomous handoff because the peer route has no materialized Nostr public key.`
+      );
+    }
+
+    return {
+      directive,
+      route: {
+        channel: route.channel,
+        edgeId: route.edgeId,
+        peerNodeId: route.peerNodeId,
+        peerPubkey: route.peerPubkey,
+        relation: route.relation,
+        relayProfileRefs: route.relayProfileRefs ?? []
+      }
+    };
+  });
+}
+
+function dedupeArtifactRefs(artifactRefs: ArtifactRef[]): ArtifactRef[] {
+  const seenArtifactIds = new Set<string>();
+
+  return artifactRefs.filter((artifactRef) => {
+    if (seenArtifactIds.has(artifactRef.artifactId)) {
+      return false;
+    }
+
+    seenArtifactIds.add(artifactRef.artifactId);
+    return true;
+  });
+}
+
+function selectHandoffArtifactRefs(input: {
+  directive: EngineHandoffDirective;
+  inboundArtifactRefs: ArtifactRef[];
+  producedArtifacts: ArtifactRecord[];
+}): ArtifactRef[] {
+  switch (input.directive.includeArtifacts) {
+    case "all":
+      return dedupeArtifactRefs([
+        ...input.inboundArtifactRefs,
+        ...input.producedArtifacts.map((artifactRecord) => artifactRecord.ref)
+      ]);
+    case "none":
+      return [];
+    case "produced":
+      return dedupeArtifactRefs(
+        input.producedArtifacts.map((artifactRecord) => artifactRecord.ref)
+      );
+  }
+}
+
+function buildHandoffMessage(input: {
+  context: EffectiveRuntimeContext;
+  envelope: RunnerInboundEnvelope;
+  plan: ResolvedHandoffPlan;
+  producedArtifacts: ArtifactRecord[];
+  sourceRunnerTurnId: string;
+}): EntangleA2AMessage {
+  return {
+    constraints: {
+      approvalRequiredBeforeAction: false
+    },
+    conversationId: buildSyntheticTurnId("handoff-conv"),
+    fromNodeId: input.context.binding.node.nodeId,
+    fromPubkey: input.context.identityContext.publicKey,
+    graphId: input.envelope.message.graphId,
+    intent: input.plan.directive.intent ?? input.envelope.message.intent,
+    messageType: "task.handoff",
+    parentMessageId: input.envelope.eventId,
+    protocol: "entangle.a2a.v1",
+    responsePolicy: input.plan.directive.responsePolicy,
+    sessionId: input.envelope.message.sessionId,
+    toNodeId: input.plan.route.peerNodeId,
+    toPubkey: input.plan.route.peerPubkey,
+    turnId: buildSyntheticTurnId("handoff"),
+    work: {
+      artifactRefs: selectHandoffArtifactRefs({
+        directive: input.plan.directive,
+        inboundArtifactRefs: input.envelope.message.work.artifactRefs,
+        producedArtifacts: input.producedArtifacts
+      }),
+      metadata: {
+        handoff: {
+          edgeId: input.plan.route.edgeId,
+          includeArtifacts: input.plan.directive.includeArtifacts,
+          relation: input.plan.route.relation,
+          sourceConversationId: input.envelope.message.conversationId,
+          sourceMessageId: input.envelope.eventId,
+          sourceRunnerTurnId: input.sourceRunnerTurnId
+        }
+      },
+      summary: input.plan.directive.summary
+    }
+  };
+}
+
 function mergeIdentifierLists(
   currentValues: string[],
   nextValues: string[]
 ): string[] {
   return [...new Set([...currentValues, ...nextValues])];
+}
+
+function isExecutableWorkMessage(
+  messageType: EntangleA2AMessage["messageType"]
+): boolean {
+  return messageType === "task.request" || messageType === "task.handoff";
+}
+
+function determineHandoffConversationStatus(
+  responsePolicy: EntangleA2AMessage["responsePolicy"]
+): ConversationLifecycleState {
+  if (responsePolicy.responseRequired) {
+    return "working";
+  }
+
+  return responsePolicy.closeOnResult ? "closed" : "resolved";
+}
+
+function hasOpenConversationStatus(record: ConversationRecord): boolean {
+  return !["closed", "expired", "rejected", "resolved"].includes(record.status);
+}
+
+function buildConversationTransitionInput(input: {
+  followupCount?: number | undefined;
+  lastInboundMessageId?: string | undefined;
+  lastMessageType: EntangleA2AMessage["messageType"];
+  lastOutboundMessageId?: string | undefined;
+}): {
+  followupCount?: number;
+  lastInboundMessageId?: string;
+  lastMessageType: EntangleA2AMessage["messageType"];
+  lastOutboundMessageId?: string;
+} {
+  return {
+    ...(input.followupCount !== undefined
+      ? { followupCount: input.followupCount }
+      : {}),
+    ...(input.lastInboundMessageId
+      ? { lastInboundMessageId: input.lastInboundMessageId }
+      : {}),
+    lastMessageType: input.lastMessageType,
+    ...(input.lastOutboundMessageId
+      ? { lastOutboundMessageId: input.lastOutboundMessageId }
+      : {})
+  };
 }
 
 function buildEngineTurnOutcome(
@@ -511,6 +762,292 @@ export class RunnerService {
     }
 
     return this.toolDefinitionsPromise;
+  }
+
+  private async transitionConversationToResolved(input: {
+    conversation: ConversationRecord;
+    lastInboundMessageId?: string;
+    lastMessageType: EntangleA2AMessage["messageType"];
+    statePaths: RunnerStatePaths;
+  }): Promise<ConversationRecord> {
+    let currentConversation = input.conversation;
+    const transitionInput = buildConversationTransitionInput({
+      lastInboundMessageId: input.lastInboundMessageId,
+      lastMessageType: input.lastMessageType
+    });
+
+    if (["closed", "expired", "resolved"].includes(currentConversation.status)) {
+      return currentConversation;
+    }
+
+    if (currentConversation.status === "opened") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "acknowledged",
+        transitionInput
+      );
+    }
+
+    if (currentConversation.status === "acknowledged") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "working",
+        transitionInput
+      );
+    }
+
+    if (
+      currentConversation.status === "blocked" ||
+      currentConversation.status === "awaiting_approval"
+    ) {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "working",
+        transitionInput
+      );
+    }
+
+    if (currentConversation.status === "working") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "resolved",
+        transitionInput
+      );
+    }
+
+    return currentConversation;
+  }
+
+  private async transitionConversationToClosed(input: {
+    conversation: ConversationRecord;
+    lastInboundMessageId?: string;
+    lastMessageType: EntangleA2AMessage["messageType"];
+    statePaths: RunnerStatePaths;
+  }): Promise<ConversationRecord> {
+    let currentConversation = await this.transitionConversationToResolved(input);
+
+    if (currentConversation.status === "resolved") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "closed",
+        buildConversationTransitionInput({
+          lastInboundMessageId: input.lastInboundMessageId,
+          lastMessageType: input.lastMessageType
+        })
+      );
+    }
+
+    return currentConversation;
+  }
+
+  private async completeSessionIfNoOpenConversations(input: {
+    lastMessageId: string;
+    lastMessageType: EntangleA2AMessage["messageType"];
+    session: SessionRecord;
+    statePaths: RunnerStatePaths;
+  }): Promise<SessionRecord> {
+    const conversationRecords = await listConversationRecords(input.statePaths);
+    const hasOpenConversation = conversationRecords.some(
+      (conversationRecord) =>
+        conversationRecord.sessionId === input.session.sessionId &&
+        hasOpenConversationStatus(conversationRecord)
+    );
+
+    if (hasOpenConversation || input.session.status !== "active") {
+      return transitionSessionStatus(input.statePaths, input.session, input.session.status, {
+        lastMessageId: input.lastMessageId,
+        lastMessageType: input.lastMessageType
+      });
+    }
+
+    return completeSession(input.statePaths, input.session, {
+      lastMessageId: input.lastMessageId,
+      lastMessageType: input.lastMessageType
+    });
+  }
+
+  private async publishHandoffMessages(input: {
+    envelope: RunnerInboundEnvelope;
+    plans: ResolvedHandoffPlan[];
+    producedArtifacts: ArtifactRecord[];
+    statePaths: RunnerStatePaths;
+    turnId: string;
+  }): Promise<RunnerPublishedEnvelope[]> {
+    const publishedEnvelopes: RunnerPublishedEnvelope[] = [];
+
+    for (const plan of input.plans) {
+      const message = buildHandoffMessage({
+        context: this.context,
+        envelope: input.envelope,
+        plan,
+        producedArtifacts: input.producedArtifacts,
+        sourceRunnerTurnId: input.turnId
+      });
+      const validation = validateA2AMessageDocument(message);
+
+      if (!validation.ok) {
+        throw new RunnerHandoffPolicyError(
+          `Runner built an invalid task.handoff message: ${validation.findings
+            .map((finding) => finding.message)
+            .join("; ")}`
+        );
+      }
+
+      const openedAt = nowIsoString();
+      const outboundConversation: ConversationRecord = {
+        artifactIds: message.work.artifactRefs.map(
+          (artifactRef) => artifactRef.artifactId
+        ),
+        conversationId: message.conversationId,
+        followupCount: 1,
+        graphId: message.graphId,
+        initiator: "local",
+        lastMessageType: message.messageType,
+        localNodeId: this.context.binding.node.nodeId,
+        localPubkey: this.context.identityContext.publicKey,
+        openedAt,
+        peerNodeId: message.toNodeId,
+        peerPubkey: message.toPubkey,
+        responsePolicy: message.responsePolicy,
+        sessionId: message.sessionId,
+        status: determineHandoffConversationStatus(message.responsePolicy),
+        updatedAt: openedAt
+      };
+      await writeConversationRecord(input.statePaths, outboundConversation);
+
+      const publishedEnvelope = await this.transport.publish(message);
+      const latestConversation =
+        (await readConversationRecord(
+          input.statePaths,
+          outboundConversation.conversationId
+        )) ?? outboundConversation;
+
+      await writeConversationRecord(input.statePaths, {
+        ...latestConversation,
+        lastMessageType: latestConversation.lastInboundMessageId
+          ? latestConversation.lastMessageType
+          : message.messageType,
+        lastOutboundMessageId: publishedEnvelope.eventId,
+        updatedAt: latestConversation.lastInboundMessageId
+          ? latestConversation.updatedAt
+          : publishedEnvelope.receivedAt
+      });
+      publishedEnvelopes.push(publishedEnvelope);
+    }
+
+    return publishedEnvelopes;
+  }
+
+  private async handleCoordinationEnvelope(
+    envelope: RunnerInboundEnvelope
+  ): Promise<RunnerServiceHandleResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+
+    const inboundArtifactIds = envelope.message.work.artifactRefs.map(
+      (artifactRef) => artifactRef.artifactId
+    );
+    const sessionRecord =
+      (await readSessionRecord(statePaths, envelope.message.sessionId)) ??
+      ({
+        activeConversationIds: [envelope.message.conversationId],
+        entrypointNodeId: envelope.message.toNodeId,
+        graphId: envelope.message.graphId,
+        intent: envelope.message.intent,
+        lastMessageId: envelope.eventId,
+        lastMessageType: envelope.message.messageType,
+        openedAt: envelope.receivedAt,
+        originatingNodeId: envelope.message.fromNodeId,
+        ownerNodeId: this.context.binding.node.nodeId,
+        rootArtifactIds: inboundArtifactIds,
+        sessionId: envelope.message.sessionId,
+        status: "active",
+        traceId: envelope.message.sessionId,
+        updatedAt: envelope.receivedAt,
+        waitingApprovalIds: []
+      } satisfies SessionRecord);
+
+    const currentSession: SessionRecord = {
+      ...sessionRecord,
+      activeConversationIds: mergeIdentifierLists(
+        sessionRecord.activeConversationIds,
+        [envelope.message.conversationId]
+      ),
+      lastMessageId: envelope.eventId,
+      lastMessageType: envelope.message.messageType,
+      rootArtifactIds: mergeIdentifierLists(
+        sessionRecord.rootArtifactIds,
+        inboundArtifactIds
+      ),
+      updatedAt: envelope.receivedAt
+    };
+    await writeSessionRecord(statePaths, currentSession);
+
+    const conversationRecord =
+      (await readConversationRecord(statePaths, envelope.message.conversationId)) ??
+      buildInitialConversationRecord(this.context, envelope);
+    const currentConversation: ConversationRecord = {
+      ...conversationRecord,
+      artifactIds: mergeIdentifierLists(
+        conversationRecord.artifactIds,
+        inboundArtifactIds
+      ),
+      lastInboundMessageId: envelope.eventId,
+      lastMessageType: envelope.message.messageType,
+      updatedAt: envelope.receivedAt
+    };
+    await writeConversationRecord(statePaths, currentConversation);
+
+    if (envelope.message.messageType === "task.result") {
+      if (envelope.message.responsePolicy.closeOnResult) {
+        await this.transitionConversationToClosed({
+          conversation: currentConversation,
+          lastInboundMessageId: envelope.eventId,
+          lastMessageType: envelope.message.messageType,
+          statePaths
+        });
+      } else {
+        await this.transitionConversationToResolved({
+          conversation: currentConversation,
+          lastInboundMessageId: envelope.eventId,
+          lastMessageType: envelope.message.messageType,
+          statePaths
+        });
+      }
+
+      await this.completeSessionIfNoOpenConversations({
+        lastMessageId: envelope.eventId,
+        lastMessageType: envelope.message.messageType,
+        session: currentSession,
+        statePaths
+      });
+    } else if (envelope.message.messageType === "conversation.close") {
+      await this.transitionConversationToClosed({
+        conversation: currentConversation,
+        lastInboundMessageId: envelope.eventId,
+        lastMessageType: envelope.message.messageType,
+        statePaths
+      });
+      await this.completeSessionIfNoOpenConversations({
+        lastMessageId: envelope.eventId,
+        lastMessageType: envelope.message.messageType,
+        session: currentSession,
+        statePaths
+      });
+    }
+
+    return {
+      handled: true,
+      handoffs: [],
+      response: undefined
+    };
   }
 
   private async runOptionalMemorySynthesis(input: {
@@ -604,6 +1141,10 @@ export class RunnerService {
       };
     }
 
+    if (!isExecutableWorkMessage(envelope.message.messageType)) {
+      return this.handleCoordinationEnvelope(envelope);
+    }
+
     const statePaths =
       this.statePaths ??
       (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
@@ -611,6 +1152,7 @@ export class RunnerService {
     let turnRecord: RunnerTurnRecord = {
       conversationId: envelope.message.conversationId,
       consumedArtifactIds: [],
+      emittedHandoffMessageIds: [],
       graphId: envelope.message.graphId,
       messageId: envelope.eventId,
       nodeId: this.context.binding.node.nodeId,
@@ -702,9 +1244,11 @@ export class RunnerService {
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
       let result: AgentEngineTurnResult;
+      let handoffPlans: ResolvedHandoffPlan[] = [];
 
       try {
-        result = await this.engine.executeTurn(turnRequest);
+        result = parseEngineTurnResult(await this.engine.executeTurn(turnRequest));
+        handoffPlans = resolveHandoffPlans(this.context, result.handoffDirectives);
       } catch (error) {
         turnRecord = {
           ...turnRecord,
@@ -758,6 +1302,62 @@ export class RunnerService {
         )
       };
       await writeSessionRecord(statePaths, currentSession);
+      let publishedHandoffs: RunnerPublishedEnvelope[] = [];
+
+      if (handoffPlans.length > 0) {
+        turnRecord = await writeRunnerPhase(statePaths, turnRecord, "emitting");
+        publishedHandoffs = await this.publishHandoffMessages({
+          envelope,
+          plans: handoffPlans,
+          producedArtifacts: materializedArtifacts.artifacts,
+          statePaths,
+          turnId: turnRecord.turnId
+        });
+        const latestSession =
+          (await readSessionRecord(statePaths, currentSession.sessionId)) ??
+          currentSession;
+        const lastPublishedHandoff =
+          publishedHandoffs[publishedHandoffs.length - 1];
+        const shouldPreserveLatestCoordinationMessage =
+          latestSession.lastMessageType === "task.result" ||
+          latestSession.lastMessageType === "conversation.close";
+        const nextLastMessageId = shouldPreserveLatestCoordinationMessage
+          ? latestSession.lastMessageId
+          : lastPublishedHandoff?.eventId ?? latestSession.lastMessageId;
+        const nextLastMessageType = shouldPreserveLatestCoordinationMessage
+          ? latestSession.lastMessageType
+          : lastPublishedHandoff?.message.messageType ??
+            latestSession.lastMessageType;
+
+        currentSession = {
+          ...latestSession,
+          activeConversationIds: mergeIdentifierLists(
+            latestSession.activeConversationIds,
+            [
+              ...currentSession.activeConversationIds,
+              ...publishedHandoffs.map(
+                (publishedEnvelope) => publishedEnvelope.message.conversationId
+              )
+            ]
+          ),
+          ...(nextLastMessageId ? { lastMessageId: nextLastMessageId } : {}),
+          ...(nextLastMessageType ? { lastMessageType: nextLastMessageType } : {}),
+          rootArtifactIds: mergeIdentifierLists(
+            latestSession.rootArtifactIds,
+            currentSession.rootArtifactIds
+          ),
+          updatedAt: nowIsoString()
+        };
+        await writeSessionRecord(statePaths, currentSession);
+        turnRecord = {
+          ...turnRecord,
+          emittedHandoffMessageIds: publishedHandoffs.map(
+            (publishedEnvelope) => publishedEnvelope.eventId
+          ),
+          updatedAt: nowIsoString()
+        };
+        await writeRunnerTurnRecord(statePaths, turnRecord);
+      }
       const memoryUpdate = await performPostTurnMemoryUpdate({
         consumedArtifactIds,
         context: this.context,
@@ -797,9 +1397,11 @@ export class RunnerService {
           lastMessageType: envelope.message.messageType
         }
       );
-      currentSession = await completeSession(statePaths, currentSession, {
+      currentSession = await this.completeSessionIfNoOpenConversations({
         lastMessageId: envelope.eventId,
-        lastMessageType: envelope.message.messageType
+        lastMessageType: envelope.message.messageType,
+        session: currentSession,
+        statePaths
       });
 
       if (!envelope.message.responsePolicy.responseRequired) {
@@ -818,6 +1420,7 @@ export class RunnerService {
 
         return {
           handled: true,
+          handoffs: publishedHandoffs,
           response: undefined
         };
       }
@@ -844,16 +1447,23 @@ export class RunnerService {
       currentSession = await transitionSessionStatus(
         statePaths,
         currentSession,
-        "completed",
+        currentSession.status,
         {
           lastMessageId: publishedEnvelope.eventId,
           lastMessageType: responseMessage.messageType
         }
       );
+      currentSession = await this.completeSessionIfNoOpenConversations({
+        lastMessageId: publishedEnvelope.eventId,
+        lastMessageType: responseMessage.messageType,
+        session: currentSession,
+        statePaths
+      });
       turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
 
       return {
         handled: true,
+        handoffs: publishedHandoffs,
         response: publishedEnvelope
       };
     } catch (error: unknown) {

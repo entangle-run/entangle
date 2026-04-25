@@ -94,6 +94,11 @@ This repository currently contains:
   Nostr public keys are injected as non-secret route metadata, and runner turn
   requests now receive a bounded peer-route summary for controlled
   multi-node reasoning without inventing destinations;
+- controlled autonomous runner handoffs where structured engine
+  `handoffDirectives` are validated against local autonomy policy, effective
+  edge routes, peer pubkeys, and allowed edge relations before emitting
+  `task.handoff`, with emitted handoff message ids preserved on runner turns,
+  host activity events, and shared runtime-turn presentation;
 - host-resolved model credential delivery in the effective runtime context,
   so live runner execution now starts only when the bound model secret is
   actually available instead of assuming endpoint presence is sufficient, with
@@ -119,7 +124,9 @@ This repository currently contains:
   a file-backed runner state store, and a long-lived `RunnerService` that
   validates inbound A2A messages, advances session and conversation lifecycle
   state, builds engine turn requests from inbound context, and emits
-  `task.result` replies when response policy requires them;
+  `task.result` replies when response policy requires them, while treating
+  non-executable coordination messages such as `task.result` and
+  `conversation.close` as state updates rather than fresh engine turns;
 - a first git-backed artifact materialization slice in the runner, where each
   completed turn can persist a structured `ArtifactRecord`, write a durable
   report file into a node-local git workspace, commit it, and attach the

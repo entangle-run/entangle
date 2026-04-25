@@ -24,12 +24,19 @@ export function formatRuntimeTurnStatus(turn: RunnerTurnRecord): string {
 export function formatRuntimeTurnArtifactSummary(
   turn: RunnerTurnRecord
 ): string {
-  return `Artifacts consumed ${turn.consumedArtifactIds.length} · produced ${turn.producedArtifactIds.length}`;
+  const handoffMessageIds = turn.emittedHandoffMessageIds ?? [];
+
+  return (
+    `Artifacts consumed ${turn.consumedArtifactIds.length} · ` +
+    `produced ${turn.producedArtifactIds.length} · ` +
+    `handoffs ${handoffMessageIds.length}`
+  );
 }
 
 export function formatRuntimeTurnDetailLines(
   turn: RunnerTurnRecord
 ): string[] {
+  const handoffMessageIds = turn.emittedHandoffMessageIds ?? [];
   const lines = [
     `started ${turn.startedAt}`,
     `updated ${turn.updatedAt}`,
@@ -53,7 +60,8 @@ export function formatRuntimeTurnDetailLines(
 
   lines.push(
     `consumed artifacts ${formatIdList(turn.consumedArtifactIds)}`,
-    `produced artifacts ${formatIdList(turn.producedArtifactIds)}`
+    `produced artifacts ${formatIdList(turn.producedArtifactIds)}`,
+    `handoff messages ${formatIdList(handoffMessageIds)}`
   );
 
   if (turn.engineOutcome) {

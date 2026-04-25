@@ -34,9 +34,10 @@ identities while preserving host ownership of identity materialization.
 - The host remains the only owner of local runtime identity materialization.
 - The runner may consume resolved peer identity, but it does not create peer
   identity, mutate graph topology, or infer hidden destination pubkeys.
-- This slice deliberately stops before automatic `task.handoff` emission. That
-  next behavior needs an explicit runner policy and state model, not a hidden
-  provider-output convention.
+- This slice deliberately introduced only the peer identity substrate. The
+  follow-on autonomous handoff behavior is now specified separately in
+  [149-runner-autonomous-handoff-slice.md](149-runner-autonomous-handoff-slice.md)
+  and remains explicit runner policy, not a hidden provider-output convention.
 
 ## Tests
 
@@ -51,6 +52,5 @@ Added coverage that:
 ## Result
 
 Entangle now has the missing non-secret peer identity substrate for controlled
-autonomous multi-node runtime work. The next slice can build explicit
-`task.handoff` emission on top of resolved edge routes instead of hardcoding or
-guessing peer destinations.
+autonomous multi-node runtime work. Explicit `task.handoff` emission now builds
+on resolved edge routes instead of hardcoding or guessing peer destinations.

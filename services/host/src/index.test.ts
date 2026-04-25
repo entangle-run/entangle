@@ -2907,6 +2907,7 @@ describe("buildHostServer", () => {
       const turnRecord = {
         consumedArtifactIds: ["artifact-inbound-001"],
         conversationId: "conv-alpha",
+        emittedHandoffMessageIds: [],
         engineOutcome: {
           providerStopReason: "end_turn",
           stopReason: "completed",

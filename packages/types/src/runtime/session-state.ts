@@ -134,6 +134,7 @@ export const runnerTurnRecordSchema = z.object({
   conversationId: identifierSchema.optional(),
   consumedArtifactIds: z.array(identifierSchema).default([]),
   engineOutcome: engineTurnOutcomeSchema.optional(),
+  emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   graphId: identifierSchema,
   memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   messageId: nostrEventIdSchema.optional(),

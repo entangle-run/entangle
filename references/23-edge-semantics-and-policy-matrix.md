@@ -184,6 +184,12 @@ Recommended ownership model:
 - `task.handoff` transfers ownership or recommended next-step control explicitly;
 - `task.result` closes the owned unit of work unless the response policy says otherwise.
 
+The current runner implementation treats autonomous `task.handoff` as a
+strictly route-bound action. A handoff directive may emit only through one
+resolved effective edge route with a materialized peer pubkey, local autonomy
+permission to initiate sessions, and one of these relations:
+`delegates_to`, `peer_collaborates_with`, `reviews`, or `routes_to`.
+
 By default:
 
 - `delegates_to` implies target ownership after acceptance;

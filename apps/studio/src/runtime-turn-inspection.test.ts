@@ -14,6 +14,7 @@ function createTurn(
 ): RunnerTurnRecord {
   return {
     consumedArtifactIds: ["artifact-inbound"],
+    emittedHandoffMessageIds: [],
     engineOutcome: {
       providerMetadata: {
         adapterKind: "anthropic",
@@ -86,10 +87,11 @@ describe("studio runtime turn inspection helpers", () => {
       "Trigger message · engine completed · memory succeeded"
     );
     expect(formatRuntimeTurnArtifactSummary(turn)).toBe(
-      "Artifacts consumed 1 · produced 1"
+      "Artifacts consumed 1 · produced 1 · handoffs 0"
     );
     expect(formatRuntimeTurnDetailLines(turn)).toEqual(
       expect.arrayContaining([
+        "handoff messages none",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
         "provider stop end_turn",

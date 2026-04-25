@@ -35,6 +35,7 @@ The following contracts are now exported from `@entangle/types`:
 - `conversationRecordSchema`
 - `approvalRecordSchema`
 - `runnerTurnRecordSchema`
+- `engineHandoffDirectiveSchema`
 - `sessionLifecycleStateSchema`
 - `conversationLifecycleStateSchema`
 - `approvalLifecycleStateSchema`
@@ -91,6 +92,11 @@ starts:
 - `conversation.close` payloads that still request a follow-up response;
 - response-required messages that allow zero follow-ups.
 
+The engine turn-result contract now also carries structured
+`handoffDirectives`. Those directives are deliberately not transport messages:
+they are runner-validated requests that must resolve through effective edge
+routes before any `task.handoff` message is constructed.
+
 These are not the full semantic model of Entangle, but they are a meaningful
 floor under the protocol.
 
@@ -118,6 +124,10 @@ This is the minimum shape discipline needed before implementing:
 - per-message lifecycle control;
 - stop/reply enforcement;
 - artifact handoff logic.
+
+The first autonomous handoff slice now extends runner turns with
+`emittedHandoffMessageIds`, and the host event/observed-state layer preserves
+that field for runtime auditability.
 
 ## Validator surfaces
 

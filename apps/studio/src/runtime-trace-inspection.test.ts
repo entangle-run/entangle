@@ -46,6 +46,7 @@ describe("studio runtime trace inspection helpers", () => {
       {
         category: "runner",
         consumedArtifactIds: [],
+        emittedHandoffMessageIds: [],
         eventId: "evt-runner-turn",
         graphId: "team-alpha",
         message: "Runner turn 'turn-alpha' advanced to 'completed'.",
@@ -105,6 +106,7 @@ describe("studio runtime trace inspection helpers", () => {
     const detailLines = formatRuntimeTraceEventDetailLines({
       category: "runner",
       consumedArtifactIds: ["artifact-inbound"],
+      emittedHandoffMessageIds: [],
       engineOutcome: {
         providerMetadata: {
           adapterKind: "anthropic",

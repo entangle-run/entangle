@@ -1197,3 +1197,22 @@ the event-producing mutation.
 Closed the slice only after rerunning host lint, typecheck, and tests; the
 focused-register targeted gates already in the worktree; full repository
 `pnpm verify`; and `git diff --check`.
+
+## [2026-04-25] implementation | Added autonomous runner handoff emission
+
+Closed the next multi-node runtime slice by adding structured engine
+`handoffDirectives` and runner-owned validation for autonomous `task.handoff`
+emission. Handoffs now require local autonomy permission, exactly one resolved
+effective edge route, a materialized peer pubkey, and an allowed relation
+before the runner publishes a message. The runner records emitted handoff
+message ids on turn state, host activity/event surfaces preserve them, and the
+host client exposes the count and detail in runtime-turn presentation.
+
+Also corrected A2A follow-up validation so every response-required message
+must allow at least one follow-up, and taught the runner to treat inbound
+`task.result` and `conversation.close` as coordination state updates instead
+of accidental fresh engine turns.
+
+Closed the slice after widening types, runner, host, and host-client coverage,
+then rerunning targeted lint, typecheck, and test gates for the touched
+packages.

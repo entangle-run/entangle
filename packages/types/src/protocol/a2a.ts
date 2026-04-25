@@ -118,7 +118,6 @@ export const entangleA2AMessageSchema = z
     }
 
     if (
-      value.messageType === "task.request" &&
       value.responsePolicy.maxFollowups === 0 &&
       value.responsePolicy.responseRequired
     ) {

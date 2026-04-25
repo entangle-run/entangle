@@ -191,8 +191,15 @@ and widening, not rethinking the boundary.
 - response-policy-aware reply behavior;
 - host-provided effective runtime context consumption;
 - bounded peer-route context in engine turn requests, giving the node real
-  graph route, relation, relay, and resolved peer identity metadata before any
-  autonomous handoff emission is introduced;
+  graph route, relation, relay, and resolved peer identity metadata;
+- controlled autonomous `task.handoff` emission from structured engine
+  directives after runner validation against local autonomy, effective route
+  uniqueness, peer pubkey availability, and allowed handoff relations, with
+  emitted handoff message ids persisted on runner turns and surfaced through
+  host activity/event and client presentation contracts;
+- coordination-message intake for `task.result` and `conversation.close` so
+  handoff responses update local conversation/session state without becoming
+  accidental fresh engine turns;
 - live runner entrypoints wired to the real internal engine boundary instead of
   the stub path;
 - deterministic post-turn wiki maintenance that writes task pages, appends to
@@ -201,9 +208,9 @@ and widening, not rethinking the boundary.
 
 ### Still missing or incomplete
 
-- controlled autonomous `task.handoff` emission on top of resolved peer route
-  and identity context, beyond the current user-mediated multi-node artifact
-  handoff smoke;
+- richer completion semantics for long multi-hop sessions after delegated
+  results, including clearer global-session closure rules across multiple
+  active outbound conversations;
 - more explicit upward surfacing of runtime events.
 
 ### Assessment

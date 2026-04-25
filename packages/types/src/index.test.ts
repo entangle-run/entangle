@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  agentEngineTurnResultSchema,
   artifactRecordSchema,
   classifyRuntimeReconciliation,
   edgeCreateRequestSchema,
@@ -165,6 +166,76 @@ describe("Entangle A2A machine-readable contracts", () => {
       work: {
         summary: "No more follow-up is required."
       }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects response-required messages with no allowed follow-up", () => {
+    const result = entangleA2AMessageSchema.safeParse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-alpha",
+      fromNodeId: "worker-it",
+      fromPubkey: "1111111111111111111111111111111111111111111111111111111111111111",
+      graphId: "graph-alpha",
+      intent: "handoff_review",
+      messageType: "task.handoff",
+      parentMessageId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: true
+      },
+      sessionId: "session-alpha",
+      toNodeId: "reviewer-it",
+      toPubkey: "2222222222222222222222222222222222222222222222222222222222222222",
+      turnId: "turn-003",
+      work: {
+        summary: "Review the produced artifact."
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("agent engine turn contracts", () => {
+  it("accepts topology-addressed handoff directives with canonical defaults", () => {
+    const result = agentEngineTurnResultSchema.parse({
+      assistantMessages: ["Prepared a delegated review artifact."],
+      handoffDirectives: [
+        {
+          summary: "Review the produced artifact.",
+          targetNodeId: "reviewer-it"
+        }
+      ],
+      stopReason: "completed"
+    });
+
+    expect(result.handoffDirectives[0]).toMatchObject({
+      includeArtifacts: "produced",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      targetNodeId: "reviewer-it"
+    });
+  });
+
+  it("rejects handoff directives without an edge or target", () => {
+    const result = agentEngineTurnResultSchema.safeParse({
+      assistantMessages: ["Prepared a delegated review artifact."],
+      handoffDirectives: [
+        {
+          summary: "Review the produced artifact."
+        }
+      ],
+      stopReason: "completed"
     });
 
     expect(result.success).toBe(false);

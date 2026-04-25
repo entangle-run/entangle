@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nostrEventIdSchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
@@ -229,6 +230,7 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   consumedArtifactIds: z.array(identifierSchema),
   conversationId: identifierSchema.optional(),
   engineOutcome: engineTurnOutcomeSchema.optional(),
+  emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   graphId: identifierSchema,
   memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   nodeId: identifierSchema,
