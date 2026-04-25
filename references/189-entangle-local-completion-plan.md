@@ -37,14 +37,18 @@ The latest implementation state includes:
 - per-node source, engine-state, and wiki-repository workspace roots;
 - a first safe OpenCode CLI/process adapter in the runner;
 - node-scoped OpenCode DB, config, XDG state/cache/data roots, and generic
-  engine-session-id observability on runner turn outcomes.
+  engine-session-id observability on runner turn outcomes;
+- generic host runtime inspection status for the effective agent-runtime mode,
+  engine profile, state scope, last engine session, last engine turn, and
+  bounded engine failure evidence.
 
 The current OpenCode adapter is intentionally not yet enough for L3 acceptance.
 It can execute a primary node turn, persist the engine session id, and fail
-early when its workspace/state roots are unavailable, but it does not yet
-provide the complete policy bridge, permission mapping, artifact/diff
-harvesting, git/wiki workflow, timeout/cancellation bridge, or CLI/Studio
-configuration and observability surface required for Entangle Local.
+early when its workspace/state roots are unavailable. Host, CLI, and Studio can
+now see a generic agent-runtime status summary, but Entangle Local still lacks
+the complete policy bridge, permission mapping, artifact/diff harvesting,
+git/wiki workflow, timeout/cancellation bridge, and full CLI/Studio
+configuration and observability surface required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -335,6 +339,18 @@ Constraints:
   graph or A2A core.
 - Browser-safe shared packages must stay browser-safe.
 
+Current partial implementation:
+
+- `RuntimeInspectionResponse.agentRuntime` now exposes generic status for the
+  effective runtime mode, engine profile kind/reference/display name, default
+  agent, state scope, last engine session, last engine turn, stop reason, and
+  bounded engine failure evidence;
+- the host derives this status from the effective runtime context and durable
+  runner turn records without adding OpenCode-specific fields to the public
+  runtime inspection contract;
+- shared host-client detail lines, CLI runtime summaries, and Studio
+  selected-runtime details now consume the same host DTO.
+
 Acceptance:
 
 - Host, CLI, Studio, and runner can all reason about effective agent runtime
@@ -520,6 +536,14 @@ Constraints:
 
 - CLI and Studio must use the same host-client contracts.
 - Configuration must be graph/node state, not hidden environment-only state.
+
+Current partial implementation:
+
+- CLI and Studio now show effective agent-runtime mode/profile and the last
+  engine session when host runtime inspection reports them;
+- graph/node editing support for agent-runtime selection, OpenCode availability
+  probing, approval blockers, changed files, produced artifacts, and recent
+  engine-event panels remain open.
 
 Acceptance:
 

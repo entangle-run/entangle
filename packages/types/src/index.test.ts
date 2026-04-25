@@ -41,6 +41,7 @@ import {
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
@@ -64,6 +65,38 @@ describe("host API error contracts", () => {
       code: "unauthorized",
       message: "Entangle host operator token is required."
     });
+  });
+});
+
+describe("runtime inspection host API contracts", () => {
+  it("accepts generic agent runtime inspection status", () => {
+    const result = runtimeInspectionResponseSchema.parse({
+      agentRuntime: {
+        defaultAgent: "general",
+        engineKind: "opencode_server",
+        engineProfileDisplayName: "Local OpenCode",
+        engineProfileRef: "local-opencode",
+        lastEngineSessionId: "opencode-session-alpha",
+        lastEngineStopReason: "completed",
+        lastTurnId: "turn-alpha",
+        lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
+        mode: "coding_agent",
+        stateScope: "node"
+      },
+      backendKind: "docker",
+      contextAvailable: true,
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260425-080000",
+      nodeId: "worker-it",
+      observedState: "running",
+      restartGeneration: 1
+    });
+
+    expect(result.agentRuntime?.engineProfileRef).toBe("local-opencode");
+    expect(result.agentRuntime?.lastEngineSessionId).toBe(
+      "opencode-session-alpha"
+    );
   });
 });
 

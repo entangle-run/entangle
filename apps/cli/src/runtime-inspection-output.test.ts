@@ -4,6 +4,13 @@ import { projectRuntimeInspectionSummary } from "./runtime-inspection-output.js"
 
 function createRuntime(): RuntimeInspectionResponse {
   return {
+    agentRuntime: {
+      engineKind: "opencode_server",
+      engineProfileRef: "local-opencode",
+      lastEngineSessionId: "opencode-session-alpha",
+      mode: "coding_agent",
+      stateScope: "node"
+    },
     backendKind: "docker",
     contextAvailable: false,
     desiredState: "running",
@@ -36,6 +43,9 @@ describe("runtime inspection CLI summary projection", () => {
     });
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "status container exited"
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "agent runtime coding_agent / opencode_server / local-opencode"
     );
   });
 });

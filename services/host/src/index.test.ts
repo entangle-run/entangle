@@ -4599,6 +4599,20 @@ describe("buildHostServer", () => {
         mode: "coding_agent"
       });
       expect(runtimeContext.modelContext.auth?.status).toBe("missing");
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+      expect(runtimeResponse.statusCode).toBe(200);
+      expect(
+        runtimeInspectionResponseSchema.parse(runtimeResponse.json()).agentRuntime
+      ).toMatchObject({
+        engineKind: "opencode_server",
+        engineProfileRef: "local-opencode",
+        mode: "coding_agent",
+        stateScope: "node"
+      });
     } finally {
       await server.close();
     }

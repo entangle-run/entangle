@@ -3145,6 +3145,29 @@ export function App() {
                     </dd>
                   </div>
                   <div>
+                    <dt>Agent runtime</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime
+                        ? [
+                            selectedRuntime.agentRuntime.mode,
+                            selectedRuntime.agentRuntime.engineKind,
+                            selectedRuntime.agentRuntime.engineProfileRef
+                          ]
+                            .filter(Boolean)
+                            .join(" / ")
+                        : selectedRuntime
+                          ? "not reported"
+                          : "loading"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Engine session</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime?.lastEngineSessionId ??
+                        "none"}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Restart generation</dt>
                     <dd>{selectedRuntime?.restartGeneration ?? "loading"}</dd>
                   </div>

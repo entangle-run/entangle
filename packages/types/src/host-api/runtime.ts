@@ -2,6 +2,12 @@ import { z } from "zod";
 import { artifactRecordSchema } from "../artifacts/artifact-ref.js";
 import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import {
+  agentEngineFailureClassificationSchema,
+  agentEngineStopReasonSchema
+} from "../engine/turn-contract.js";
+import { nodeAgentRuntimeModeSchema } from "../graph/graph-spec.js";
+import { agentEngineProfileKindSchema } from "../resources/catalog.js";
 import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
 import {
   classifyRuntimeReconciliation,
@@ -18,8 +24,25 @@ import {
   runnerTurnRecordSchema
 } from "../runtime/session-state.js";
 
+export const runtimeAgentRuntimeInspectionSchema = z.object({
+  defaultAgent: identifierSchema.optional(),
+  engineKind: agentEngineProfileKindSchema.optional(),
+  engineProfileDisplayName: nonEmptyStringSchema.optional(),
+  engineProfileRef: identifierSchema.optional(),
+  lastEngineFailureClassification:
+    agentEngineFailureClassificationSchema.optional(),
+  lastEngineFailureMessage: nonEmptyStringSchema.optional(),
+  lastEngineSessionId: nonEmptyStringSchema.optional(),
+  lastEngineStopReason: agentEngineStopReasonSchema.optional(),
+  lastTurnId: identifierSchema.optional(),
+  lastTurnUpdatedAt: nonEmptyStringSchema.optional(),
+  mode: nodeAgentRuntimeModeSchema,
+  stateScope: z.enum(["node", "shared"]).optional()
+});
+
 export const runtimeInspectionResponseSchema = z
   .object({
+    agentRuntime: runtimeAgentRuntimeInspectionSchema.optional(),
     backendKind: runtimeBackendKindSchema,
     contextAvailable: z.boolean(),
     contextPath: filesystemPathSchema.optional(),
@@ -153,6 +176,9 @@ export const runtimeTurnInspectionResponseSchema = z.object({
   turn: runnerTurnRecordSchema
 });
 
+export type RuntimeAgentRuntimeInspection = z.infer<
+  typeof runtimeAgentRuntimeInspectionSchema
+>;
 export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponseSchema>;
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;

@@ -12,6 +12,18 @@ function createRuntime(
   observedState: RuntimeInspectionResponse["observedState"]
 ): RuntimeInspectionResponse {
   return {
+    agentRuntime: {
+      defaultAgent: "general",
+      engineKind: "opencode_server",
+      engineProfileDisplayName: "Local OpenCode",
+      engineProfileRef: "local-opencode",
+      lastEngineSessionId: "opencode-session-alpha",
+      lastEngineStopReason: "completed",
+      lastTurnId: "turn-alpha",
+      lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
+      mode: "coding_agent",
+      stateScope: "node"
+    },
     backendKind: "docker",
     contextAvailable: observedState !== "failed",
     desiredState: "running",
@@ -71,6 +83,12 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "git provisioning ready · created no · local-gitea/team-alpha/runtime"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "agent runtime coding_agent / opencode_server / local-opencode"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "last engine session opencode-session-alpha"
     );
   });
 });

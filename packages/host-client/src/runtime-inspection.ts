@@ -47,6 +47,45 @@ export function formatRuntimeInspectionDetailLines(
     detailLines.push(`status ${runtime.statusMessage}`);
   }
 
+  if (runtime.agentRuntime) {
+    const runtimeProfile = [
+      runtime.agentRuntime.mode,
+      runtime.agentRuntime.engineKind,
+      runtime.agentRuntime.engineProfileRef
+    ]
+      .filter((value): value is string => Boolean(value))
+      .join(" / ");
+    detailLines.push(`agent runtime ${runtimeProfile}`);
+
+    if (runtime.agentRuntime.defaultAgent) {
+      detailLines.push(`default agent ${runtime.agentRuntime.defaultAgent}`);
+    }
+
+    if (runtime.agentRuntime.lastEngineSessionId) {
+      detailLines.push(
+        `last engine session ${runtime.agentRuntime.lastEngineSessionId}`
+      );
+    }
+
+    if (runtime.agentRuntime.lastEngineStopReason) {
+      detailLines.push(
+        `last engine stop ${runtime.agentRuntime.lastEngineStopReason}`
+      );
+    }
+
+    if (runtime.agentRuntime.lastTurnId) {
+      detailLines.push(
+        `last engine turn ${runtime.agentRuntime.lastTurnId} updated ${runtime.agentRuntime.lastTurnUpdatedAt ?? "unknown"}`
+      );
+    }
+
+    if (runtime.agentRuntime.lastEngineFailureClassification) {
+      detailLines.push(
+        `last engine failure ${runtime.agentRuntime.lastEngineFailureClassification}: ${runtime.agentRuntime.lastEngineFailureMessage ?? "No failure message recorded."}`
+      );
+    }
+  }
+
   if (runtime.reason) {
     detailLines.push(`reason ${runtime.reason}`);
   }

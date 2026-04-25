@@ -72,6 +72,10 @@ local runtime baseline:
 - first per-node agent-runtime contracts in the catalog, graph spec,
   effective runtime context, validator, and host materialization path, with
   OpenCode as the required default node engine profile.
+- generic host runtime inspection status for effective agent-runtime mode,
+  engine profile, state scope, last engine session, last engine turn, and
+  bounded engine failure evidence, consumed by shared host-client, CLI, and
+  Studio presentation surfaces.
 - the active Local runtime profile now uses the stable machine value `local`
   instead of the legacy `hackathon_local` value.
 
@@ -94,7 +98,7 @@ known Vite chunk-size warning for the current bundle.
 | R1 / L1 Local Operator Baseline | Released as `v0.1-local-operator-baseline`. | Host, runner, Studio, CLI, local Compose, active/disposable/runtime smokes all passed in this audit and the final release packet records the release boundary. | None for R1/L1; next work moves to L1.5. |
 | R1.1 / L1.5 Local Operator Preview | Released as `v0.1.5-local-operator-preview`. | Canonical preview assets and a near-one-command demo path reuse the same host, runner, local relay, model-stub, and Gitea/git-backed artifact flow as the runtime smoke. | None for L1.5; next work moves to L2 Local Workbench. |
 | R1.2 / L2 Local Workbench | Released as `v0.2-local-workbench`. | Package scaffold/admission, package inspect, package tool-catalog validation, graph/node/edge mutation, shared graph diff for CLI and Studio, Studio active-graph validation, host graph import/export through the CLI, CLI graph template export, host API plus CLI and Studio session launch over host-resolved runtime context, CLI launch wait polling through host session inspection, runtime/session/artifact/turn/approval inspection, artifact filtering and bounded preview, and runtime memory inspection with bounded page preview exist. | None for L2; graph bundles, artifact history/diff, and relay-publish retry remain later work. |
-| R1.3 / L3 Agentic Node Runtime | Contract, host-context foundation, and first safe OpenCode process execution path exist, but the product milestone is not complete. | Catalog-level `agentEngineProfiles`, graph/node `agentRuntime`, effective runtime `agentRuntimeContext`, validator semantics, host default OpenCode profile, per-node engine/source/wiki workspace roots, runner OpenCode CLI/process adapter, node-scoped OpenCode DB/config/XDG runtime roots, pre-spawn workspace/state checks, and generic engine-session-id turn observability exist. | Policy bridge, richer engine lifecycle, permission/approval mapping, artifact/diff harvesting, timeout/cancellation bridge, CLI/Studio runtime configuration, git/wiki repository behavior. |
+| R1.3 / L3 Agentic Node Runtime | Contract, host-context foundation, first safe OpenCode process execution path, and first generic status surface exist, but the product milestone is not complete. | Catalog-level `agentEngineProfiles`, graph/node `agentRuntime`, effective runtime `agentRuntimeContext`, validator semantics, host default OpenCode profile, per-node engine/source/wiki workspace roots, runner OpenCode CLI/process adapter, node-scoped OpenCode DB/config/XDG runtime roots, pre-spawn workspace/state checks, generic engine-session-id turn observability, and generic host runtime `agentRuntime` inspection consumed by CLI and Studio exist. | Policy bridge, richer engine lifecycle, permission/approval mapping, artifact/diff harvesting, timeout/cancellation bridge, full CLI/Studio runtime configuration, git/wiki repository behavior. |
 | R1.4 / L4 Local Reliability | Early reliability foundation exists, but reliability product is incomplete and must follow L3. | Strict preflight, active smoke, disposable smoke, runtime smoke, reset through Compose volume teardown. | Doctor command, repair flow, backup/restore, local state versioning, upgrade checks, logs bundle, conservative drift repair. |
 | L5 Entangle Local GA | Not ready and must not be claimed. | Core local runtime works, but agentic-node-runtime, reliability, onboarding, and release-discipline gaps remain. | Complete Local docs, install/demo path, OpenCode-backed node execution, repair/backup/upgrade, release notes, website claim audit, GA tag only after all gates pass. |
 
@@ -102,12 +106,12 @@ known Vite chunk-size warning for the current bundle.
 
 | Area | Exists | Partial | Unsupported / excluded |
 | --- | --- | --- | --- |
-| Contracts and schemas | Package, graph, runtime context, per-node agent runtime selection, A2A, artifacts, sessions, approvals, turns, generic engine-session-id outcomes, host DTOs. | Some deeper diagnostics, OpenCode runtime DTOs, and future API generation remain later work. | Production tenancy contracts. |
-| Host control plane | Local persistent state, resource mutation, runtime lifecycle, events, recovery, session and runtime inspection. | `DELETE /v1/runtimes/{nodeId}` remains absent from the broader spec. | Production RBAC/ABAC and multi-tenant auth. |
+| Contracts and schemas | Package, graph, runtime context, per-node agent runtime selection, A2A, artifacts, sessions, approvals, turns, generic engine-session-id outcomes, generic agent-runtime inspection DTOs, host DTOs. | Some deeper diagnostics, OpenCode availability/permission DTOs, and future API generation remain later work. | Production tenancy contracts. |
+| Host control plane | Local persistent state, resource mutation, runtime lifecycle, events, recovery, session and runtime inspection, including effective agent-runtime status summaries. | `DELETE /v1/runtimes/{nodeId}` remains absent from the broader spec. | Production RBAC/ABAC and multi-tenant auth. |
 | Runner | Long-lived service, Nostr intake, approval handling, handoff, artifacts, and memory around an injected engine boundary. | OpenCode-backed coding-agent execution, engine lifecycle bridging, and cross-host/global session semantics remain future work. | Legacy one-turn model inference as a node runtime, remote federation, and production scheduler. |
 | Artifact flow | Git-backed local materialization, publication, retrieval, downstream handoff proof, host-owned bounded text preview for local materialized report artifacts. | Rich artifact kinds, history/diff, and fallback replication are later work. | Object-storage artifact service before Cloud. |
-| Studio | Host-backed graph, graph revision diff, active-graph validation, runtime, recovery, trace, session launch, session inspection, turn, approval, artifact preview, runtime memory preview, package-source, principal, node, and edge views. | First-run demo UX, imported-candidate graph validation, artifact history/diff, and graph bundle ergonomics. | SaaS/workspace admin UI before Local GA. |
-| CLI | Offline validation, package init and inspect, graph diff, graph template export, host graph import/export, host inspection, graph/resources/runtimes/sessions/artifacts/approvals/turns/events/memory, local session launch with optional wait polling, artifact session filtering and preview, memory page preview, mutation dry runs, and root-relative path handling under `pnpm --filter @entangle/cli dev`. | Relay-publish retry, graph bundle export ergonomics, and package import/export depth. | Production cloud automation auth before Local GA. |
+| Studio | Host-backed graph, graph revision diff, active-graph validation, runtime, runtime agent profile/session status, recovery, trace, session launch, session inspection, turn, approval, artifact preview, runtime memory preview, package-source, principal, node, and edge views. | First-run demo UX, imported-candidate graph validation, artifact history/diff, graph bundle ergonomics, and full agent-runtime configuration panels. | SaaS/workspace admin UI before Local GA. |
+| CLI | Offline validation, package init and inspect, graph diff, graph template export, host graph import/export, host inspection, graph/resources/runtimes/sessions/artifacts/approvals/turns/events/memory, runtime agent profile/session status, local session launch with optional wait polling, artifact session filtering and preview, memory page preview, mutation dry runs, and root-relative path handling under `pnpm --filter @entangle/cli dev`. | Relay-publish retry, graph bundle export ergonomics, package import/export depth, and explicit agent-runtime configuration commands. | Production cloud automation auth before Local GA. |
 | Deployment | Local Compose profile with Studio, host, strfry, Gitea, dynamic runner image, preflight and smokes. | Non-disposable upgrade/repair handling. | Cloud or Enterprise deployment profiles. |
 | QA | `pnpm verify`, lint/typecheck/test, build, CI, local preflight, active and disposable smokes. | Clean-clone/RC rehearsal still required before tags. | Hiding or bypassing failing tests. |
 
@@ -166,9 +170,10 @@ failure.
   history/diff, and the full OpenCode-backed agentic-node runtime are not
   complete.
 - Per-node agent runtime contracts now exist and default to OpenCode, and the
-  runner has a first safe OpenCode CLI/process adapter. It still lacks the
-  complete policy bridge, artifact harvesting, and UI/CLI configuration
-  surface required for L3 acceptance.
+  runner has a first safe OpenCode CLI/process adapter plus generic host/CLI/
+  Studio status for effective runtime profile and last engine session. It still
+  lacks the complete policy bridge, artifact harvesting, and full UI/CLI
+  configuration surface required for L3 acceptance.
 - Website claims have not been audited in this pass.
 
 ## Execution Plan

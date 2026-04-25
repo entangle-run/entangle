@@ -112,6 +112,7 @@ import {
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sessionRecordSchema,
+  runtimeAgentRuntimeInspectionSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   type RuntimeIdentityRecord,
@@ -125,6 +126,7 @@ import {
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
+  type RuntimeAgentRuntimeInspection,
   type RuntimeInspectionResponse,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
@@ -2339,6 +2341,7 @@ function didReconciliationSnapshotChange(
 }
 
 function buildRuntimeInspectionFromState(input: {
+  agentRuntime: RuntimeAgentRuntimeInspection | undefined;
   backendKind: ReturnType<typeof observedRuntimeRecordSchema.parse>["backendKind"];
   context: EffectiveRuntimeContext | undefined;
   desiredState: RuntimeDesiredState;
@@ -2354,6 +2357,7 @@ function buildRuntimeInspectionFromState(input: {
   statusMessage: string | undefined;
 }): RuntimeInspectionResponse {
   return runtimeInspectionResponseSchema.parse({
+    agentRuntime: input.agentRuntime,
     backendKind: input.backendKind,
     contextAvailable: Boolean(input.context),
     contextPath: input.context ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName) : undefined,
@@ -2368,6 +2372,47 @@ function buildRuntimeInspectionFromState(input: {
     restartGeneration: input.restartGeneration,
     runtimeHandle: input.runtimeHandle,
     statusMessage: input.statusMessage
+  });
+}
+
+async function buildRuntimeAgentRuntimeInspection(
+  context: EffectiveRuntimeContext
+): Promise<RuntimeAgentRuntimeInspection> {
+  const turns = await listRuntimeTurnRecords(context.workspace.runtimeRoot);
+  const latestEngineTurn = turns
+    .filter((turn) => Boolean(turn.engineOutcome))
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+  const outcome = latestEngineTurn?.engineOutcome;
+  const defaultAgent =
+    context.agentRuntimeContext.defaultAgent ??
+    context.agentRuntimeContext.engineProfile.defaultAgent;
+
+  return runtimeAgentRuntimeInspectionSchema.parse({
+    ...(defaultAgent ? { defaultAgent } : {}),
+    engineKind: context.agentRuntimeContext.engineProfile.kind,
+    engineProfileDisplayName:
+      context.agentRuntimeContext.engineProfile.displayName,
+    engineProfileRef: context.agentRuntimeContext.engineProfileRef,
+    ...(outcome?.failure?.classification
+      ? { lastEngineFailureClassification: outcome.failure.classification }
+      : {}),
+    ...(outcome?.failure?.message
+      ? { lastEngineFailureMessage: outcome.failure.message }
+      : {}),
+    ...(outcome?.engineSessionId
+      ? { lastEngineSessionId: outcome.engineSessionId }
+      : {}),
+    ...(outcome?.stopReason
+      ? { lastEngineStopReason: outcome.stopReason }
+      : {}),
+    ...(latestEngineTurn
+      ? {
+          lastTurnId: latestEngineTurn.turnId,
+          lastTurnUpdatedAt: latestEngineTurn.updatedAt
+        }
+      : {}),
+    mode: context.agentRuntimeContext.mode,
+    stateScope: context.agentRuntimeContext.engineProfile.stateScope
   });
 }
 
@@ -2455,8 +2500,13 @@ async function reconcileObservedRuntimeState(input: {
     } satisfies RuntimeObservedStateChangedEventInput);
   }
 
+  const agentRuntime = input.context
+    ? await buildRuntimeAgentRuntimeInspection(input.context)
+    : undefined;
+
   return {
     inspection: buildRuntimeInspectionFromState({
+      agentRuntime,
       backendKind: observedRecord.backendKind,
       context: input.context,
       desiredState: input.desiredState,

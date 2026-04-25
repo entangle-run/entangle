@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added generic agent runtime inspection status
+
+Advanced Entangle Local L3 workstream B1/B8. Host runtime inspection now exposes
+a generic `agentRuntime` summary derived from effective runtime context and
+durable turn records, including mode, engine profile kind/reference/display
+name, default agent, state scope, last engine session, last engine turn, stop
+reason, and bounded failure evidence.
+
+The shared host-client detail formatter, CLI runtime summaries, and Studio
+selected-runtime details now consume that same contract. This is deliberately
+engine-agnostic: OpenCode-specific availability probing, permission/approval
+bridging, changed-file/artifact harvesting, and full runtime configuration
+panels remain open L3 work.
+
 ## [2026-04-25] implementation | Isolated OpenCode node runtime state
 
 Advanced Entangle Local L3 workstream B1/B2. Engine turn outcomes now carry a
