@@ -100,7 +100,9 @@ This repository currently contains:
   `task.handoff`, with emitted handoff message ids preserved on runner turns,
   host activity events, and shared runtime-turn presentation, plus
   runner-owned active-conversation reconciliation so multi-handoff sessions
-  remain active until every open delegated conversation resolves or closes;
+  remain active until every open delegated conversation resolves or closes,
+  with a runner-start repair pass that realigns stale active-conversation ids
+  from durable conversation records before new transport intake begins;
 - host-resolved model credential delivery in the effective runtime context,
   so live runner execution now starts only when the bound model secret is
   actually available instead of assuming endpoint presence is sufficient, with

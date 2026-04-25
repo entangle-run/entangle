@@ -40,11 +40,12 @@ import {
 import {
   type RunnerStatePaths,
   ensureRunnerStatePaths,
+  listConversationRecords,
+  listSessionRecords,
   readConversationRecord,
   readSessionRecord,
   writeArtifactRecord,
   writeConversationRecord,
-  listConversationRecords,
   writeRunnerTurnRecord,
   writeSessionRecord
 } from "./state-store.js";
@@ -676,6 +677,52 @@ function listOpenConversationIdsForSession(input: {
         hasOpenConversationStatus(conversationRecord)
     )
     .map((conversationRecord) => conversationRecord.conversationId);
+}
+
+function isTerminalSessionStatus(status: SessionLifecycleState): boolean {
+  return ["cancelled", "completed", "failed", "timed_out"].includes(status);
+}
+
+function areIdentifierListsEqual(left: string[], right: string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
+}
+
+async function repairSessionActiveConversationIds(
+  statePaths: RunnerStatePaths
+): Promise<void> {
+  const [conversationRecords, sessionRecords] = await Promise.all([
+    listConversationRecords(statePaths),
+    listSessionRecords(statePaths)
+  ]);
+
+  await Promise.all(
+    sessionRecords.map(async (sessionRecord) => {
+      const activeConversationIds = isTerminalSessionStatus(sessionRecord.status)
+        ? []
+        : listOpenConversationIdsForSession({
+            conversationRecords,
+            sessionId: sessionRecord.sessionId
+          });
+
+      if (
+        areIdentifierListsEqual(
+          sessionRecord.activeConversationIds,
+          activeConversationIds
+        )
+      ) {
+        return;
+      }
+
+      await writeSessionRecord(statePaths, {
+        ...sessionRecord,
+        activeConversationIds,
+        updatedAt: nowIsoString()
+      });
+    })
+  );
 }
 
 function buildConversationTransitionInput(input: {
@@ -1514,6 +1561,7 @@ export class RunnerService {
     }
 
     this.statePaths = await ensureRunnerStatePaths(this.context.workspace.runtimeRoot);
+    await repairSessionActiveConversationIds(this.statePaths);
     this.subscription = await this.transport.subscribe({
       onMessage: async (envelope) => {
         await this.handleInboundEnvelope(envelope);

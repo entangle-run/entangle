@@ -135,6 +135,26 @@ export async function writeSessionRecord(
   );
 }
 
+export async function listSessionRecords(
+  statePaths: RunnerStatePaths
+): Promise<SessionRecord[]> {
+  if (!(await pathExists(statePaths.sessionsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.sessionsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sessionRecordSchema.parse(
+        await readJsonFile<unknown>(path.join(statePaths.sessionsRoot, fileName))
+      )
+    )
+  );
+}
+
 export async function readConversationRecord(
   statePaths: RunnerStatePaths,
   conversationId: string

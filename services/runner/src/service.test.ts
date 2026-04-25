@@ -19,7 +19,9 @@ import {
   listRunnerTurnRecords,
   readConversationRecord,
   readRunnerTurnRecord,
-  readSessionRecord
+  readSessionRecord,
+  writeConversationRecord,
+  writeSessionRecord
 } from "./state-store.js";
 import {
   buildInboundTaskRequest,
@@ -1750,6 +1752,88 @@ describe("RunnerService", () => {
     expect(responses).toHaveLength(1);
 
     await service.stop();
+  });
+
+  it("repairs stale session active conversation ids from durable conversation records on start", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-closed", "conv-missing"],
+      graphId: "graph-alpha",
+      intent: "Repair delegated session state.",
+      lastMessageType: "task.result",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-alpha",
+      status: "active",
+      traceId: "session-alpha",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: []
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-closed",
+      followupCount: 1,
+      graphId: "graph-alpha",
+      initiator: "local",
+      lastMessageType: "task.result",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-alpha",
+      status: "closed",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-open",
+      followupCount: 0,
+      graphId: "graph-alpha",
+      initiator: "local",
+      lastMessageType: "task.handoff",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:02:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-alpha",
+      status: "working",
+      updatedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+
+    await service.start();
+
+    try {
+      const repairedSession = await readSessionRecord(statePaths, "session-alpha");
+
+      expect(repairedSession?.status).toBe("active");
+      expect(repairedSession?.activeConversationIds).toEqual(["conv-open"]);
+      expect(repairedSession?.lastMessageType).toBe("task.result");
+    } finally {
+      await service.stop();
+    }
   });
 });
 

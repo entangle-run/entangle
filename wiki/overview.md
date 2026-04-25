@@ -103,6 +103,8 @@ The repository now also contains the first real implementation baseline:
   through runner-turn, host-event, and client presentation contracts, and with
   runner-owned active-conversation reconciliation now keeping multi-handoff
   sessions active only while real delegated conversations remain open, with
+  a runner-start repair pass that realigns stale active-conversation ids from
+  durable conversation records before new transport intake begins, and with
   host-owned session summaries now exposing aggregate active-work ids and
   conversation lifecycle status counts plus consistency findings for
   list-level operator inspection;

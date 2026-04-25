@@ -1425,3 +1425,14 @@ status, Studio refresh, and `session.updated` runtime-trace diagnostics.
 
 Also corrected the stale `references/README.md` link for the runtime recovery
 event-surface slice.
+
+## [2026-04-25] implementation | Added runner session active-work repair
+
+Moved delegated-session work from passive diagnostics toward bounded
+runner-owned repair. Runner startup now lists durable session and conversation
+records, realigns each session's `activeConversationIds` from open
+conversation records before subscribing to transport intake, and keeps
+terminal sessions from being reactivated by stale open-work references.
+
+The repair is deliberately scoped to the derived active-work set: it does not
+synthesize session lifecycle transitions or mutate state from host diagnostics.

@@ -165,6 +165,7 @@ This directory is the canonical design corpus for Entangle.
 159. [158-shared-runtime-inspection-presentation-slice.md](158-shared-runtime-inspection-presentation-slice.md)
 160. [159-shared-host-status-presentation-slice.md](159-shared-host-status-presentation-slice.md)
 161. [160-session-diagnostics-observability-slice.md](160-session-diagnostics-observability-slice.md)
+162. [161-runner-session-active-work-repair-slice.md](161-runner-session-active-work-repair-slice.md)
 
 ## Role of this corpus
 
