@@ -46,6 +46,44 @@ export const runtimeAgentRuntimeInspectionSchema = z.object({
   stateScope: z.enum(["node", "shared"]).optional()
 });
 
+export const runtimeWorkspaceSurfaceKindSchema = z.enum([
+  "root",
+  "package",
+  "injected",
+  "memory",
+  "artifact_workspace",
+  "runtime_state",
+  "retrieval_cache",
+  "source_workspace",
+  "engine_state",
+  "wiki_repository"
+]);
+
+export const runtimeWorkspaceSurfaceStatusSchema = z.enum([
+  "ready",
+  "missing",
+  "not_directory",
+  "unreadable",
+  "unwritable"
+]);
+
+export const runtimeWorkspaceAccessModeSchema = z.enum(["read", "write"]);
+
+export const runtimeWorkspaceSurfaceHealthSchema = z.object({
+  access: z.array(runtimeWorkspaceAccessModeSchema).default([]),
+  required: z.boolean(),
+  status: runtimeWorkspaceSurfaceStatusSchema,
+  surface: runtimeWorkspaceSurfaceKindSchema,
+  reason: nonEmptyStringSchema.optional()
+});
+
+export const runtimeWorkspaceHealthSchema = z.object({
+  checkedAt: nonEmptyStringSchema,
+  layoutVersion: nonEmptyStringSchema,
+  status: z.enum(["ready", "degraded"]),
+  surfaces: z.array(runtimeWorkspaceSurfaceHealthSchema)
+});
+
 export const runtimeInspectionResponseSchema = z
   .object({
     agentRuntime: runtimeAgentRuntimeInspectionSchema.optional(),
@@ -64,7 +102,8 @@ export const runtimeInspectionResponseSchema = z
     reconciliation: runtimeReconciliationSummarySchema.optional(),
     restartGeneration: runtimeRestartGenerationSchema,
     runtimeHandle: nonEmptyStringSchema.optional(),
-    statusMessage: nonEmptyStringSchema.optional()
+    statusMessage: nonEmptyStringSchema.optional(),
+    workspaceHealth: runtimeWorkspaceHealthSchema.optional()
   })
   .transform((value) => ({
     ...value,
@@ -185,6 +224,19 @@ export const runtimeTurnInspectionResponseSchema = z.object({
 export type RuntimeAgentRuntimeInspection = z.infer<
   typeof runtimeAgentRuntimeInspectionSchema
 >;
+export type RuntimeWorkspaceSurfaceKind = z.infer<
+  typeof runtimeWorkspaceSurfaceKindSchema
+>;
+export type RuntimeWorkspaceSurfaceStatus = z.infer<
+  typeof runtimeWorkspaceSurfaceStatusSchema
+>;
+export type RuntimeWorkspaceAccessMode = z.infer<
+  typeof runtimeWorkspaceAccessModeSchema
+>;
+export type RuntimeWorkspaceSurfaceHealth = z.infer<
+  typeof runtimeWorkspaceSurfaceHealthSchema
+>;
+export type RuntimeWorkspaceHealth = z.infer<typeof runtimeWorkspaceHealthSchema>;
 export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponseSchema>;
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;

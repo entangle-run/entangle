@@ -4,6 +4,7 @@ import {
   formatRuntimeInspectionDetailLines,
   formatRuntimeInspectionLabel,
   formatRuntimeInspectionStatus,
+  formatRuntimeWorkspaceHealthSummary,
   sortRuntimeInspectionsForPresentation
 } from "./runtime-inspection.js";
 
@@ -62,7 +63,26 @@ function createRuntime(
             state: "aligned"
           },
     restartGeneration: 2,
-    runtimeHandle: `${nodeId}-container`
+    runtimeHandle: `${nodeId}-container`,
+    workspaceHealth: {
+      checkedAt: "2026-04-25T08:05:01.000Z",
+      layoutVersion: "entangle-local-workspace-v1",
+      status: "ready",
+      surfaces: [
+        {
+          access: ["read", "write"],
+          required: true,
+          status: "ready",
+          surface: "source_workspace"
+        },
+        {
+          access: ["read", "write"],
+          required: true,
+          status: "ready",
+          surface: "engine_state"
+        }
+      ]
+    }
   };
 }
 
@@ -100,6 +120,12 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last permission rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request."
+    );
+    expect(formatRuntimeWorkspaceHealthSummary(runtime)).toBe(
+      "ready · 2 surfaces"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "workspace ready · 2 surfaces"
     );
   });
 });

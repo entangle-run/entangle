@@ -1,5 +1,25 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added node workspace health inspection
+
+Advanced Entangle Local L3 workstream B4. Runtime inspection now carries a
+generic `workspaceHealth` summary for the current Local node workspace layout,
+including package, injected context, memory, artifact workspace, runtime state,
+retrieval cache, source workspace, engine state, and wiki repository surfaces.
+
+The host computes readiness by logical surface name, blocks desired running
+runtimes when required workspace surfaces are degraded, and exposes bounded
+evidence through shared host-client detail helpers, CLI summaries, and Studio
+selected-runtime details. Added
+`references/195-node-workspace-health-slice.md` and aligned older workspace
+references with the active L3 layout. The wiki repository root remains reserved
+until memory-as-repo migration and rollback semantics are implemented.
+
+The root `pnpm test` gate now runs Turbo test tasks serially with
+`--concurrency=1` because the aggregate parallel run could leave the Studio
+Vitest process open even though the package-local Studio test command completed
+cleanly.
+
 ## [2026-04-25] implementation | Added OpenCode permission-block observability
 
 Advanced Entangle Local L3 workstream B3. Engine turn contracts now include a

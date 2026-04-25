@@ -41,6 +41,11 @@ The local baseline now includes:
 For coherent code or tooling batches, `pnpm verify` is the default aggregate
 gate.
 
+The root `pnpm test` gate intentionally runs Turbo test tasks with
+`--concurrency=1`. The repository favors deterministic aggregate verification
+over parallel speed because package-local Vitest runs can pass independently
+while concurrent aggregate execution may leave a frontend test process open.
+
 When workspace packages depend on one another through canonical contracts, the
 repository must model that build graph explicitly instead of relying on an
 opaque pre-build step.

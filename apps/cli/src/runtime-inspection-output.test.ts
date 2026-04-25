@@ -29,7 +29,21 @@ function createRuntime(): RuntimeInspectionResponse {
       state: "degraded"
     },
     restartGeneration: 3,
-    statusMessage: "container exited"
+    statusMessage: "container exited",
+    workspaceHealth: {
+      checkedAt: "2026-04-25T08:05:01.000Z",
+      layoutVersion: "entangle-local-workspace-v1",
+      status: "degraded",
+      surfaces: [
+        {
+          access: ["read", "write"],
+          reason: "Workspace surface is not writable by the host process.",
+          required: true,
+          status: "unwritable",
+          surface: "source_workspace"
+        }
+      ]
+    }
   };
 }
 
@@ -48,6 +62,9 @@ describe("runtime inspection CLI summary projection", () => {
     });
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "status container exited"
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "workspace degraded · source_workspace:unwritable"
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "agent runtime coding_agent / opencode_server / local-opencode"

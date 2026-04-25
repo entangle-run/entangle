@@ -44,6 +44,9 @@ The latest implementation state includes:
 - generic engine permission observations, `policy_denied` failure
   classification, and host/CLI/Studio visibility when OpenCode one-shot CLI
   auto-rejects a permission request;
+- generic runtime workspace-health inspection for the Local node workspace
+  layout, including source, artifact, engine-state, and wiki-repository
+  surfaces;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -53,11 +56,12 @@ It can execute a primary node turn, persist the engine session id and probed
 engine version, fail early when its workspace/state roots are unavailable,
 terminate overlong OpenCode probe/run processes with classified failure
 evidence, and report OpenCode one-shot permission auto-rejections as generic
-`policy_denied` outcomes. Host, CLI, and Studio can now see a generic
+ `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
 policy bridge, resumable permission approval mapping, artifact/diff harvesting,
-git/wiki workflow, external cancellation bridge, and full CLI/Studio
-configuration and observability surface required for L3 acceptance.
+git/wiki workflow, external cancellation bridge, doctor-backed workspace health
+checks, and full CLI/Studio configuration and observability surface required
+for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -482,6 +486,21 @@ Constraints:
 - Do not let engines read arbitrary local files through memory or artifact
   preview paths.
 - Keep wiki writes runner-owned even if an engine suggests content.
+
+Current partial implementation:
+
+- the host materializes the current Local node workspace layout with
+  `package`, `injected`, `memory`, `workspace`, `runtime`, `retrieval`,
+  `source`, `engine-state`, and `wiki-repository` roots;
+- runtime inspection now exposes generic `workspaceHealth` summaries using
+  logical surface names and bounded readiness reasons rather than protocol
+  locators;
+- host reconciliation blocks a desired running runtime with a failed observed
+  state when a required workspace surface is degraded;
+- shared host-client detail helpers, CLI summaries, and Studio selected-runtime
+  details show the same workspace health summary;
+- `wiki-repository` remains reserved and uninitialized until memory-as-repo
+  migration and rollback semantics are explicit.
 
 Acceptance:
 

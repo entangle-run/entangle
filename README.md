@@ -133,8 +133,9 @@ This repository currently contains:
   one-shot CLI auto-rejects a permission request, with host runtime inspection
   now exposing a generic agent-runtime summary for effective mode, engine
   profile, state scope, last engine version/session, last permission decision,
-  last turn, and bounded failure evidence through the shared host-client, CLI,
-  and Studio surfaces;
+  last turn, bounded failure evidence, and generic workspace-health status for
+  source/artifact/engine-state/wiki surfaces through the shared host-client,
+  CLI, and Studio surfaces;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

@@ -25,6 +25,26 @@ export function formatRuntimeInspectionStatus(
   return `${runtime.desiredState}/${runtime.observedState} · reconciliation ${runtime.reconciliation.state}${findings}`;
 }
 
+export function formatRuntimeWorkspaceHealthSummary(
+  runtime: RuntimeInspectionResponse
+): string {
+  const health = runtime.workspaceHealth;
+
+  if (!health) {
+    return "not reported";
+  }
+
+  const degradedSurfaces = health.surfaces
+    .filter((surface) => surface.status !== "ready")
+    .map((surface) => `${surface.surface}:${surface.status}`);
+
+  if (degradedSurfaces.length > 0) {
+    return `${health.status} · ${degradedSurfaces.join(", ")}`;
+  }
+
+  return `${health.status} · ${health.surfaces.length} surfaces`;
+}
+
 export function formatRuntimeInspectionDetailLines(
   runtime: RuntimeInspectionResponse
 ): string[] {
@@ -45,6 +65,12 @@ export function formatRuntimeInspectionDetailLines(
 
   if (runtime.statusMessage) {
     detailLines.push(`status ${runtime.statusMessage}`);
+  }
+
+  if (runtime.workspaceHealth) {
+    detailLines.push(
+      `workspace ${formatRuntimeWorkspaceHealthSummary(runtime)}`
+    );
   }
 
   if (runtime.agentRuntime) {

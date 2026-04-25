@@ -291,6 +291,14 @@ workspaces/
     workspace/
       git/
       files/
+    source/
+      # coding-engine worktree
+    engine-state/
+      # node-scoped engine database, config, cache, and state
+    retrieval/
+      # runner-owned inbound artifact cache
+    wiki-repository/
+      # reserved for future memory-as-repository migration
     runtime/
       state.json
       sessions/

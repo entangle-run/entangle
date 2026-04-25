@@ -203,6 +203,10 @@ binding and runtime-context specs:
 - `memory/`
 - `workspace/`
 - `runtime/`
+- `retrieval/`
+- `source/`
+- `engine-state/`
+- `wiki-repository/`
 
 The host may choose bind mounts or named volumes underneath this abstraction,
 but the logical structure should remain consistent.
@@ -211,6 +215,13 @@ The package surface inside `workspaces/<node_id>/package/` should be treated as
 host-managed runtime materialization backed by the immutable package store, not
 as a mutable per-node copy and not as an implicit symlink to the original
 admitted source path outside host state.
+
+For the L3 agentic node runtime, `source/` is the coding-engine worktree,
+`engine-state/` is the node-scoped engine database/config/cache surface,
+`retrieval/` is the runner-owned inbound artifact cache, and
+`wiki-repository/` is reserved for future memory-as-repository semantics. The
+active memory source of truth remains `memory/wiki` until migration and
+rollback semantics are implemented.
 
 ## 9. What should be tracked in git versus ignored
 

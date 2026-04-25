@@ -1932,7 +1932,8 @@ describe("buildHostServer", () => {
         url: "/v1/runtimes"
       });
       expect(runtimesResponse.statusCode).toBe(200);
-      expect(runtimeListResponseSchema.parse(runtimesResponse.json())).toMatchObject({
+      const runtimeList = runtimeListResponseSchema.parse(runtimesResponse.json());
+      expect(runtimeList).toMatchObject({
         runtimes: [
           {
             backendKind: "memory",
@@ -1940,10 +1941,35 @@ describe("buildHostServer", () => {
             desiredState: "running",
             contextAvailable: true,
             observedState: "running",
-            packageSourceId: admittedPackageSourceId
+            packageSourceId: admittedPackageSourceId,
+            workspaceHealth: {
+              layoutVersion: "entangle-local-workspace-v1",
+              status: "ready"
+            }
           }
         ]
       });
+      const workspaceHealth = runtimeList.runtimes[0]?.workspaceHealth;
+      expect(
+        workspaceHealth?.surfaces.some(
+          (surface) =>
+            surface.surface === "source_workspace" &&
+            surface.status === "ready"
+        )
+      ).toBe(true);
+      expect(
+        workspaceHealth?.surfaces.some(
+          (surface) =>
+            surface.surface === "engine_state" && surface.status === "ready"
+        )
+      ).toBe(true);
+      expect(
+        workspaceHealth?.surfaces.some(
+          (surface) =>
+            surface.surface === "wiki_repository" &&
+            surface.status === "ready"
+        )
+      ).toBe(true);
 
       const contextResponse = await server.inject({
         method: "GET",
@@ -1993,6 +2019,11 @@ describe("buildHostServer", () => {
         }
       });
       expect(runtimeContext.identityContext.publicKey).toHaveLength(64);
+      expect(runtimeContext.workspace.engineStateRoot).toContain("engine-state");
+      expect(runtimeContext.workspace.sourceWorkspaceRoot).toContain("source");
+      expect(runtimeContext.workspace.wikiRepositoryRoot).toContain(
+        "wiki-repository"
+      );
 
       const contextPath = runtimeContext.workspace.injectedRoot;
       const storedContext = runtimeContextInspectionResponseSchema.parse(

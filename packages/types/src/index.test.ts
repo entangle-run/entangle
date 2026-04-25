@@ -95,7 +95,20 @@ describe("runtime inspection host API contracts", () => {
       graphRevisionId: "team-alpha-20260425-080000",
       nodeId: "worker-it",
       observedState: "running",
-      restartGeneration: 1
+      restartGeneration: 1,
+      workspaceHealth: {
+        checkedAt: "2026-04-25T08:05:01.000Z",
+        layoutVersion: "entangle-local-workspace-v1",
+        status: "ready",
+        surfaces: [
+          {
+            access: ["read", "write"],
+            required: true,
+            status: "ready",
+            surface: "source_workspace"
+          }
+        ]
+      }
     });
 
     expect(result.agentRuntime?.engineProfileRef).toBe("local-opencode");
@@ -104,6 +117,7 @@ describe("runtime inspection host API contracts", () => {
     );
     expect(result.agentRuntime?.lastEngineVersion).toBe("0.10.0");
     expect(result.agentRuntime?.lastPermissionDecision).toBe("rejected");
+    expect(result.workspaceHealth?.status).toBe("ready");
   });
 });
 

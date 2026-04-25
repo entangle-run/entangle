@@ -22,7 +22,7 @@
     "ops:smoke-local:runtime": "node scripts/smoke-local-runtime.mjs",
     "ops:demo-local-preview": "node scripts/local-preview-demo.mjs",
     "ops:demo-local-preview:reset": "node scripts/local-preview-demo.mjs --reset",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=1",
     "test:coverage": "vitest run --config vitest.config.ts packages/**/*.test.ts services/**/*.test.ts --coverage.enabled true",
     "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck",
     "verify": "pnpm lint && pnpm typecheck && pnpm test"

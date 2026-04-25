@@ -897,6 +897,7 @@ export {
   formatRuntimeInspectionDetailLines,
   formatRuntimeInspectionLabel,
   formatRuntimeInspectionStatus,
+  formatRuntimeWorkspaceHealthSummary,
   sortRuntimeInspectionsForPresentation
 } from "./runtime-inspection.js";
 export {

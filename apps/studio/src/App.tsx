@@ -18,6 +18,7 @@ import {
 import {
   createHostClient,
   formatHostStatusSessionDiagnosticsSummary,
+  formatRuntimeWorkspaceHealthSummary,
   formatRuntimeMemoryPageDetail,
   formatRuntimeMemoryPageLabel,
   sortRuntimeMemoryPagesForPresentation
@@ -3141,6 +3142,14 @@ export function App() {
                     <dd>
                       {selectedRuntime
                         ? `${selectedRuntime.backendKind} / ${selectedRuntime.contextAvailable ? "ready" : "missing"}`
+                        : "loading"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Workspace health</dt>
+                    <dd>
+                      {selectedRuntime
+                        ? formatRuntimeWorkspaceHealthSummary(selectedRuntime)
                         : "loading"}
                     </dd>
                   </div>

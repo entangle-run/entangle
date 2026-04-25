@@ -288,12 +288,15 @@ specification as:
 - resolved external principal bindings materialized into effective bindings and
   artifact runtime context;
 - workspace partitions for `package/`, `memory/`, `workspace/`, `runtime/`,
-  and `injected/`;
+  `injected/`, `retrieval/`, `source/`, `engine-state/`, and
+  `wiki-repository/`;
 - a package link from workspace `package/` to the admitted package source for
   `local_path` packages;
 - seeded writable memory copied from the package template on first
   materialization;
 - non-secret relay, git, and model context delivered through injected JSON.
+- runtime inspection workspace-health summaries for the current Local layout,
+  with logical surface names rather than raw path locators.
 
 The current slice intentionally does not yet split the injected surface into
 multiple files such as `relay-context.json`, `artifact-context.json`, or

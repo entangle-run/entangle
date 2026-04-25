@@ -1,4 +1,5 @@
 import {
+  access,
   cp,
   lstat,
   mkdir,
@@ -11,6 +12,7 @@ import {
   symlink,
   writeFile
 } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { gunzip } from "node:zlib";
@@ -128,6 +130,7 @@ import {
   type RuntimeRecoveryPolicyRecord,
   type RuntimeAgentRuntimeInspection,
   type RuntimeInspectionResponse,
+  type RuntimeWorkspaceHealth,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeIntentRecordSchema,
@@ -1929,6 +1932,202 @@ function buildWorkspaceLayout(nodeId: string) {
   };
 }
 
+const runtimeWorkspaceLayoutVersion = "entangle-local-workspace-v1";
+
+type RuntimeWorkspaceSurfaceHealth =
+  RuntimeWorkspaceHealth["surfaces"][number];
+type RuntimeWorkspaceAccessMode = RuntimeWorkspaceSurfaceHealth["access"][number];
+type RuntimeWorkspaceSurfaceKind = RuntimeWorkspaceSurfaceHealth["surface"];
+
+type RuntimeWorkspaceSurfaceExpectation = {
+  access: RuntimeWorkspaceAccessMode[];
+  path: string | undefined;
+  required: boolean;
+  surface: RuntimeWorkspaceSurfaceKind;
+};
+
+function buildRuntimeWorkspaceSurfaceExpectations(
+  workspace: EffectiveRuntimeContext["workspace"]
+): RuntimeWorkspaceSurfaceExpectation[] {
+  return [
+    {
+      access: ["read", "write"],
+      path: workspace.root,
+      required: true,
+      surface: "root"
+    },
+    {
+      access: ["read"],
+      path: workspace.packageRoot,
+      required: true,
+      surface: "package"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.injectedRoot,
+      required: true,
+      surface: "injected"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.memoryRoot,
+      required: true,
+      surface: "memory"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.artifactWorkspaceRoot,
+      required: true,
+      surface: "artifact_workspace"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.runtimeRoot,
+      required: true,
+      surface: "runtime_state"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.retrievalRoot,
+      required: true,
+      surface: "retrieval_cache"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.sourceWorkspaceRoot,
+      required: true,
+      surface: "source_workspace"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.engineStateRoot,
+      required: true,
+      surface: "engine_state"
+    },
+    {
+      access: ["read", "write"],
+      path: workspace.wikiRepositoryRoot,
+      required: true,
+      surface: "wiki_repository"
+    }
+  ];
+}
+
+async function inspectRuntimeWorkspaceSurface(
+  expectation: RuntimeWorkspaceSurfaceExpectation
+): Promise<RuntimeWorkspaceSurfaceHealth> {
+  if (!expectation.path) {
+    return {
+      access: expectation.access,
+      reason: "Workspace surface path is not materialized in runtime context.",
+      required: expectation.required,
+      status: "missing",
+      surface: expectation.surface
+    };
+  }
+
+  try {
+    const entry = await stat(expectation.path);
+
+    if (!entry.isDirectory()) {
+      return {
+        access: expectation.access,
+        reason: "Workspace surface is not a directory.",
+        required: expectation.required,
+        status: "not_directory",
+        surface: expectation.surface
+      };
+    }
+
+    if (expectation.access.includes("read")) {
+      try {
+        await access(expectation.path, fsConstants.R_OK);
+      } catch {
+        return {
+          access: expectation.access,
+          reason: "Workspace surface is not readable by the host process.",
+          required: expectation.required,
+          status: "unreadable",
+          surface: expectation.surface
+        };
+      }
+    }
+
+    if (expectation.access.includes("write")) {
+      try {
+        await access(expectation.path, fsConstants.W_OK);
+      } catch {
+        return {
+          access: expectation.access,
+          reason: "Workspace surface is not writable by the host process.",
+          required: expectation.required,
+          status: "unwritable",
+          surface: expectation.surface
+        };
+      }
+    }
+
+    return {
+      access: expectation.access,
+      required: expectation.required,
+      status: "ready",
+      surface: expectation.surface
+    };
+  } catch (error) {
+    const errorWithCode = error as NodeJS.ErrnoException;
+    let status: RuntimeWorkspaceSurfaceHealth["status"] = "missing";
+    let reason = "Workspace surface is missing.";
+
+    if (errorWithCode.code !== "ENOENT") {
+      status = "unreadable";
+      reason = `Workspace surface could not be inspected: ${formatUnknownError(error)}`;
+    }
+
+    return {
+      access: expectation.access,
+      reason,
+      required: expectation.required,
+      status,
+      surface: expectation.surface
+    };
+  }
+}
+
+async function inspectRuntimeWorkspaceHealth(
+  workspace: EffectiveRuntimeContext["workspace"]
+): Promise<RuntimeWorkspaceHealth> {
+  const surfaces = await Promise.all(
+    buildRuntimeWorkspaceSurfaceExpectations(workspace).map((expectation) =>
+      inspectRuntimeWorkspaceSurface(expectation)
+    )
+  );
+  const status = surfaces.some(
+    (surface) => surface.required && surface.status !== "ready"
+  )
+    ? "degraded"
+    : "ready";
+
+  return {
+    checkedAt: nowIsoString(),
+    layoutVersion: runtimeWorkspaceLayoutVersion,
+    status,
+    surfaces
+  };
+}
+
+function summarizeRuntimeWorkspaceHealthFailure(
+  health: RuntimeWorkspaceHealth
+): string {
+  const degradedSurfaces = health.surfaces
+    .filter((surface) => surface.required && surface.status !== "ready")
+    .map((surface) => `${surface.surface}:${surface.status}`)
+    .join(", ");
+
+  return degradedSurfaces.length > 0
+    ? `Runtime workspace health check failed: ${degradedSurfaces}.`
+    : "Runtime workspace health check failed.";
+}
+
 async function readRuntimeIntentRecord(
   nodeId: string
 ): Promise<RuntimeIntentRecord | undefined> {
@@ -2298,11 +2497,18 @@ function buildRuntimeRecoveryComparable(input: {
   lastError: string | undefined;
 }) {
   const provisioning = input.inspection.primaryGitRepositoryProvisioning;
+  const workspaceHealth = input.inspection.workspaceHealth
+    ? {
+        ...input.inspection.workspaceHealth,
+        checkedAt: ""
+      }
+    : undefined;
 
   return {
     ...(input.lastError ? { lastError: input.lastError } : {}),
     runtime: {
       ...input.inspection,
+      workspaceHealth,
       primaryGitRepositoryProvisioning: provisioning
         ? {
             ...(provisioning.created === undefined
@@ -2355,12 +2561,15 @@ function buildRuntimeInspectionFromState(input: {
   restartGeneration: number;
   runtimeHandle: string | undefined;
   statusMessage: string | undefined;
+  workspaceHealth: RuntimeWorkspaceHealth | undefined;
 }): RuntimeInspectionResponse {
   return runtimeInspectionResponseSchema.parse({
     agentRuntime: input.agentRuntime,
     backendKind: input.backendKind,
     contextAvailable: Boolean(input.context),
-    contextPath: input.context ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName) : undefined,
+    contextPath: input.context
+      ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName)
+      : undefined,
     desiredState: input.desiredState,
     graphId: input.graphId,
     graphRevisionId: input.graphRevisionId,
@@ -2371,7 +2580,8 @@ function buildRuntimeInspectionFromState(input: {
     reason: input.reason,
     restartGeneration: input.restartGeneration,
     runtimeHandle: input.runtimeHandle,
-    statusMessage: input.statusMessage
+    statusMessage: input.statusMessage,
+    workspaceHealth: input.workspaceHealth
   });
 }
 
@@ -2449,34 +2659,53 @@ async function reconcileObservedRuntimeState(input: {
   const contextPath = input.context
     ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName)
     : undefined;
+  const workspaceHealth = input.context
+    ? await inspectRuntimeWorkspaceHealth(input.context.workspace)
+    : undefined;
   let observedRuntime: Awaited<ReturnType<RuntimeBackend["reconcileRuntime"]>>;
 
-  try {
-    observedRuntime = await runtimeBackend.reconcileRuntime({
-      context: input.context,
-      contextPath,
-      desiredState: input.desiredState,
-      graphId: input.graphId,
-      graphRevisionId: input.graphRevisionId,
-      nodeId: input.nodeId,
-      reason: input.reason,
-      restartGeneration: input.restartGeneration,
-      ...(input.context && input.runtimeIdentitySecret
-        ? {
-            secretEnvironment: {
-              ENTANGLE_NOSTR_SECRET_KEY: input.runtimeIdentitySecret
-            }
-          }
-        : {})
-    });
-  } catch (error: unknown) {
+  if (
+    input.context &&
+    input.desiredState === "running" &&
+    workspaceHealth?.status === "degraded"
+  ) {
+    const healthFailureMessage =
+      summarizeRuntimeWorkspaceHealthFailure(workspaceHealth);
     observedRuntime = {
       backendKind: runtimeBackend.kind,
-      lastError: formatUnknownError(error),
+      lastError: healthFailureMessage,
       observedState: "failed",
       runtimeHandle: undefined,
-      statusMessage: `Runtime reconciliation failed: ${formatUnknownError(error)}`
+      statusMessage: healthFailureMessage
     };
+  } else {
+    try {
+      observedRuntime = await runtimeBackend.reconcileRuntime({
+        context: input.context,
+        contextPath,
+        desiredState: input.desiredState,
+        graphId: input.graphId,
+        graphRevisionId: input.graphRevisionId,
+        nodeId: input.nodeId,
+        reason: input.reason,
+        restartGeneration: input.restartGeneration,
+        ...(input.context && input.runtimeIdentitySecret
+          ? {
+              secretEnvironment: {
+                ENTANGLE_NOSTR_SECRET_KEY: input.runtimeIdentitySecret
+              }
+            }
+          : {})
+      });
+    } catch (error: unknown) {
+      observedRuntime = {
+        backendKind: runtimeBackend.kind,
+        lastError: formatUnknownError(error),
+        observedState: "failed",
+        runtimeHandle: undefined,
+        statusMessage: `Runtime reconciliation failed: ${formatUnknownError(error)}`
+      };
+    }
   }
   const observedRecord = observedRuntimeRecordSchema.parse({
     backendKind: observedRuntime.backendKind,
@@ -2532,7 +2761,8 @@ async function reconcileObservedRuntimeState(input: {
       reason: input.reason,
       restartGeneration: input.restartGeneration,
       runtimeHandle: observedRecord.runtimeHandle,
-      statusMessage: observedRecord.statusMessage
+      statusMessage: observedRecord.statusMessage,
+      workspaceHealth
     }),
     observedRecord
   };
