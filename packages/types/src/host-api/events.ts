@@ -296,6 +296,23 @@ export const sourceHistoryUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("source_history.updated")
 });
 
+export const sourceHistoryPublishedEventSchema = hostEventBaseSchema.extend({
+  artifactId: identifierSchema,
+  candidateId: identifierSchema,
+  category: z.literal("runtime"),
+  commit: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  historyId: identifierSchema,
+  nodeId: identifierSchema,
+  publicationState: artifactPublicationStateSchema,
+  remoteName: identifierSchema.optional(),
+  remoteUrl: nonEmptyStringSchema.optional(),
+  sourceHistoryBranch: nonEmptyStringSchema,
+  turnId: identifierSchema,
+  type: z.literal("source_history.published")
+});
+
 export const conversationTraceEventSchema = hostEventBaseSchema.extend({
   artifactIds: z.array(identifierSchema),
   category: z.literal("session"),
@@ -383,6 +400,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runnerTurnUpdatedEventSchema,
   sourceChangeCandidateReviewedEventSchema,
   sourceHistoryUpdatedEventSchema,
+  sourceHistoryPublishedEventSchema,
   conversationTraceEventSchema,
   approvalTraceEventSchema,
   artifactTraceEventSchema,
@@ -452,6 +470,9 @@ export type SourceChangeCandidateReviewedEvent = z.infer<
 >;
 export type SourceHistoryUpdatedEvent = z.infer<
   typeof sourceHistoryUpdatedEventSchema
+>;
+export type SourceHistoryPublishedEvent = z.infer<
+  typeof sourceHistoryPublishedEventSchema
 >;
 export type ConversationTraceEvent = z.infer<typeof conversationTraceEventSchema>;
 export type ApprovalTraceEvent = z.infer<typeof approvalTraceEventSchema>;

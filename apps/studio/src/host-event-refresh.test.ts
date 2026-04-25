@@ -153,6 +153,23 @@ describe("host-event-refresh", () => {
       },
       type: "runtime.recovery_policy.updated"
     };
+    const sourceHistoryPublishedEvent: HostEventRecord = {
+      ...baseEvent,
+      artifactId: "source-source-history-source-change-turn-alpha",
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "artifact-commit-alpha",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424t100000z",
+      historyId: "source-history-source-change-turn-alpha",
+      message: "Published source history for 'worker-it'.",
+      nodeId: "worker-it",
+      publicationState: "published",
+      sourceHistoryBranch:
+        "worker-it/source-history/source-history-source-change-turn-alpha",
+      turnId: "turn-alpha",
+      type: "source_history.published"
+    };
 
     expect(
       shouldRefreshSelectedRuntimeFromHostEvent(
@@ -169,5 +186,11 @@ describe("host-event-refresh", () => {
     expect(
       shouldRefreshSelectedRuntimeFromHostEvent(selectedRuntimeEvent, null)
     ).toBe(false);
+    expect(
+      shouldRefreshSelectedRuntimeFromHostEvent(
+        sourceHistoryPublishedEvent,
+        "worker-it"
+      )
+    ).toBe(true);
   });
 });

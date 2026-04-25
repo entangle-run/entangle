@@ -254,4 +254,38 @@ describe("runtime trace helpers", () => {
       label: "Turn turn-beta is errored"
     });
   });
+
+  it("describes source history publication events", () => {
+    const event: HostEventRecord = {
+      artifactId: "source-source-history-source-change-turn-alpha",
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "artifact-commit-alpha",
+      eventId: "evt-source-history-published",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      historyId: "source-history-source-change-turn-alpha",
+      message: "Published source history.",
+      nodeId: "worker-it",
+      publicationState: "published",
+      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      schemaVersion: "1",
+      sourceHistoryBranch:
+        "worker-it/source-history/source-history-source-change-turn-alpha",
+      timestamp: "2026-04-24T11:00:04.000Z",
+      turnId: "turn-alpha",
+      type: "source_history.published"
+    };
+
+    expect(describeRuntimeTraceEvent(event)).toEqual({
+      detailLines: [
+        "Candidate: source-change-turn-alpha",
+        "Artifact: source-source-history-source-change-turn-alpha",
+        "Publication: published",
+        "Remote: ssh://git@gitea.local:22/team-alpha/graph-alpha.git"
+      ],
+      label:
+        "Source history source-history-source-change-turn-alpha publication published"
+    });
+  });
 });

@@ -57,6 +57,8 @@ import {
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublicationResponseSchema,
+  runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -115,6 +117,7 @@ import {
   replaceEdge,
   replaceManagedNode,
   reviewRuntimeSourceChangeCandidate,
+  publishRuntimeSourceHistory,
   setRuntimeDesiredState,
   setRuntimeRecoveryPolicy,
   recordHostOperatorRequestCompleted,
@@ -1667,6 +1670,70 @@ export async function buildHostServer() {
 
     return runtimeSourceHistoryListResponseSchema.parse(history);
   });
+
+  server.post(
+    "/v1/runtimes/:nodeId/source-history/:sourceHistoryId/publish",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string; sourceHistoryId: string };
+      const publish = parseRequestInput(
+        runtimeSourceHistoryPublishMutationRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected source-history publication schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const publishResult = await publishRuntimeSourceHistory({
+        nodeId: params.nodeId,
+        publish,
+        sourceHistoryId: params.sourceHistoryId
+      });
+
+      if (!publishResult) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source history entry '${params.sourceHistoryId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      if (!publishResult.ok) {
+        throw new HostHttpError({
+          code: publishResult.code,
+          message: publishResult.message,
+          statusCode: 409
+        });
+      }
+
+      return runtimeSourceHistoryPublicationResponseSchema.parse(
+        publishResult.publication
+      );
+    }
+  );
 
   server.get(
     "/v1/runtimes/:nodeId/source-history/:sourceHistoryId",

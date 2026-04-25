@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { artifactPublicationSchema } from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
@@ -169,6 +170,15 @@ export const sourceChangeSnapshotRefSchema = z.object({
   kind: z.literal("shadow_git_tree")
 });
 
+export const sourceHistoryPublicationRecordSchema = z.object({
+  artifactId: identifierSchema,
+  branch: nonEmptyStringSchema,
+  publication: artifactPublicationSchema,
+  reason: nonEmptyStringSchema.optional(),
+  requestedAt: nonEmptyStringSchema,
+  requestedBy: identifierSchema.optional()
+});
+
 export const sourceChangeCandidateRecordSchema = z.object({
   application: sourceChangeCandidateApplicationRecordSchema.optional(),
   candidateId: identifierSchema,
@@ -198,6 +208,7 @@ export const sourceHistoryRecordSchema = z.object({
   headTree: nonEmptyStringSchema,
   mode: sourceHistoryApplicationModeSchema,
   nodeId: identifierSchema,
+  publication: sourceHistoryPublicationRecordSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
   sessionId: identifierSchema.optional(),
   sourceChangeSummary: sourceChangeSummarySchema,
@@ -389,6 +400,9 @@ export type SourceChangeCandidateApplicationRecord = z.infer<
 >;
 export type SourceChangeSnapshotRef = z.infer<
   typeof sourceChangeSnapshotRefSchema
+>;
+export type SourceHistoryPublicationRecord = z.infer<
+  typeof sourceHistoryPublicationRecordSchema
 >;
 export type SourceChangeCandidateRecord = z.infer<
   typeof sourceChangeCandidateRecordSchema

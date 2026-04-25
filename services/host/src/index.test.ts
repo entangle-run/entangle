@@ -12,6 +12,7 @@ import {
 import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { gzip } from "node:zlib";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -54,6 +55,7 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublicationResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -772,6 +774,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
   delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
+  delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
   vi.unstubAllGlobals();
@@ -3181,6 +3184,25 @@ describe("buildHostServer", () => {
   });
 
   it("lists and inspects persisted source change candidates through the host surface", async () => {
+    const remoteSourceRepositoryBasePath = await mkdtemp(
+      path.join(os.tmpdir(), "entangle-source-history-remote-")
+    );
+    createdDirectories.push(remoteSourceRepositoryBasePath);
+    const remoteSourceRepositoryPath = path.join(
+      remoteSourceRepositoryBasePath,
+      "team-alpha",
+      "team-alpha.git"
+    );
+    await mkdir(path.dirname(remoteSourceRepositoryPath), { recursive: true });
+    await runGitCommand({
+      args: ["init", "--bare", remoteSourceRepositoryPath],
+      cwd: remoteSourceRepositoryBasePath
+    });
+    process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE = "team-alpha";
+    process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE = pathToFileURL(
+      remoteSourceRepositoryBasePath
+    ).toString();
+    process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT = "file";
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
@@ -3199,6 +3221,7 @@ describe("buildHostServer", () => {
           })
         ).json()
       );
+
       const gitDir = path.join(
         runtimeContext.workspace.runtimeRoot,
         "source-snapshot.git"
@@ -3498,6 +3521,71 @@ describe("buildHostServer", () => {
         ).entry.commit
       ).toBe(sourceHistoryEntry.commit);
 
+      const publishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          publishedBy: "operator-alpha",
+          reason: "Publish accepted source for downstream handoff."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
+      });
+
+      expect(publishResponse.statusCode).toBe(200);
+      const publishedSourceHistory =
+        runtimeSourceHistoryPublicationResponseSchema.parse(
+          publishResponse.json()
+        );
+      expect(publishedSourceHistory.entry.publication).toMatchObject({
+        artifactId: "source-source-history-source-change-turn-alpha",
+        publication: {
+          state: "published"
+        },
+        requestedBy: "operator-alpha"
+      });
+      expect(publishedSourceHistory.artifact).toMatchObject({
+        publication: {
+          remoteUrl: pathToFileURL(remoteSourceRepositoryPath).toString(),
+          state: "published"
+        },
+        ref: {
+          artifactKind: "commit",
+          backend: "git",
+          status: "published"
+        }
+      });
+      await expect(
+        runGitCommand({
+          args: [
+            "rev-parse",
+            "refs/heads/worker-it/source-history/source-history-source-change-turn-alpha"
+          ],
+          cwd: remoteSourceRepositoryPath
+        })
+      ).resolves.toMatch(/^[0-9a-f]{40}$/);
+
+      const sourceArtifactResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha"
+      });
+
+      expect(sourceArtifactResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactInspectionResponseSchema.parse(
+          sourceArtifactResponse.json()
+        ).artifact.publication?.state
+      ).toBe("published");
+
+      const repeatedPublishResponse = await server.inject({
+        method: "POST",
+        payload: {},
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
+      });
+
+      expect(repeatedPublishResponse.statusCode).toBe(409);
+
       const repeatedApplyResponse = await server.inject({
         method: "POST",
         payload: {},
@@ -3561,6 +3649,22 @@ describe("buildHostServer", () => {
         candidateId: "source-change-turn-alpha",
         historyId: "source-history-source-change-turn-alpha",
         mode: "applied_to_workspace"
+      });
+      const sourceHistoryPublishedEvents = hostEventListResponseSchema
+        .parse(
+          (
+            await server.inject({
+              method: "GET",
+              url: "/v1/events?limit=20"
+            })
+          ).json()
+        )
+        .events.filter((event) => event.type === "source_history.published");
+      expect(sourceHistoryPublishedEvents).toHaveLength(1);
+      expect(sourceHistoryPublishedEvents[0]).toMatchObject({
+        artifactId: "source-source-history-source-change-turn-alpha",
+        historyId: "source-history-source-change-turn-alpha",
+        publicationState: "published"
       });
 
       const missingCandidateResponse = await server.inject({

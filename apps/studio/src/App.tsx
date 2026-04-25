@@ -511,6 +511,8 @@ export function App() {
     useState<string | null>(null);
   const [pendingSourceChangeCandidateApply, setPendingSourceChangeCandidateApply] =
     useState(false);
+  const [pendingSourceHistoryPublish, setPendingSourceHistoryPublish] =
+    useState(false);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -1908,6 +1910,67 @@ export function App() {
     [client, selectedRuntimeId]
   );
 
+  const publishSelectedSourceHistory = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedSourceHistoryId) {
+      return;
+    }
+
+    try {
+      setPendingSourceHistoryPublish(true);
+      const response = await client.publishRuntimeSourceHistory(
+        selectedRuntimeId,
+        selectedSourceHistoryId,
+        {}
+      );
+
+      startTransition(() => {
+        setSelectedSourceHistory((history) =>
+          sortRuntimeSourceHistory([
+            response.entry,
+            ...history.filter(
+              (entry) => entry.sourceHistoryId !== response.entry.sourceHistoryId
+            )
+          ])
+        );
+        setSelectedSourceHistoryInspection({ entry: response.entry });
+        setSourceHistoryDetailError(null);
+        setSourceHistoryError(null);
+        setSelectedArtifacts((artifacts) =>
+          sortRuntimeArtifacts([
+            response.artifact,
+            ...artifacts.filter(
+              (artifact) =>
+                artifact.ref.artifactId !== response.artifact.ref.artifactId
+            )
+          ])
+        );
+        setSelectedArtifactId(response.artifact.ref.artifactId);
+        setSelectedArtifactInspection({ artifact: response.artifact });
+        setSelectedArtifactPreview(null);
+        setArtifactError(null);
+        setArtifactDetailError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setSourceHistoryDetailError(
+          normalizeError(
+            caught,
+            "Unknown error while publishing source history entry."
+          )
+        );
+      });
+    } finally {
+      setPendingSourceHistoryPublish(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedSourceHistoryId
+  ]);
+
   const selectGraphRevision = useCallback(
     async (revisionId: string) => {
       setSelectedGraphRevisionId(revisionId);
@@ -2304,6 +2367,7 @@ export function App() {
       setSelectedSourceHistoryInspection(null);
       setSourceHistoryDetailError(null);
       setPendingSourceChangeCandidateApply(false);
+      setPendingSourceHistoryPublish(false);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -2350,6 +2414,7 @@ export function App() {
     setSelectedSourceHistoryInspection(null);
     setSourceHistoryDetailError(null);
     setPendingSourceChangeCandidateApply(false);
+    setPendingSourceHistoryPublish(false);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -4742,6 +4807,26 @@ export function App() {
                             {selectedSourceHistoryInspection.entry.sourceHistoryId}
                           </span>
                         </div>
+
+                        {selectedSourceHistoryInspection.entry.publication?.publication
+                          .state !== "published" ? (
+                          <div className="source-file-selector">
+                            <button
+                              className="action-button"
+                              disabled={pendingSourceHistoryPublish}
+                              onClick={() => {
+                                void publishSelectedSourceHistory();
+                              }}
+                              type="button"
+                            >
+                              {pendingSourceHistoryPublish
+                                ? "Publishing"
+                                : selectedSourceHistoryInspection.entry.publication
+                                  ? "Retry publication"
+                                  : "Publish as artifact"}
+                            </button>
+                          </div>
+                        ) : null}
 
                         <ul className="detail-list">
                           {formatRuntimeSourceHistoryDetailLines(

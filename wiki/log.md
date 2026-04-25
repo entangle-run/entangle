@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source history publication
+
+Advanced Entangle Local L3 workstream B5. Applied source-history entries can
+now be published as git commit artifacts through the host boundary. The host
+verifies the recorded source-history commit and tree, materializes the tree
+into a dedicated publication repository, pushes to the runtime's resolved
+primary git target when possible, persists publication metadata on both the
+source-history record and artifact record, emits `source_history.published`,
+and exposes the flow through the shared host client, CLI, and Studio.
+
+The shared git service contract now also supports local `file://` remotes via
+`transportKind: "file"` so Entangle Local can exercise real git pushes against
+bare repositories without network access. Policy approval, richer publication
+retry/target controls, artifact history/diff APIs, and end-to-end
+OpenCode-backed source-publication smoke coverage remain open.
+
 ## [2026-04-25] implementation | Added local source history application
 
 Advanced Entangle Local L3 workstream B5. Accepted source-change candidates can

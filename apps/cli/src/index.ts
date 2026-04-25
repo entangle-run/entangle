@@ -28,6 +28,7 @@ import {
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
+  runtimeSourceHistoryPublishMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema
 } from "@entangle/types";
@@ -1760,18 +1761,51 @@ hostRuntimesCommand
   .command("source-history-entry")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<sourceHistoryId>", "Source history entry identifier to inspect.")
+  .option("--publish", "Publish the source history entry as a git artifact.")
+  .option("--published-by <operatorId>", "Attach the publishing operator id.")
+  .option("--reason <reason>", "Attach a publication reason.")
   .option("--summary", "Print a compact operator-oriented source history summary.")
-  .description("Inspect one persisted source history entry.")
+  .description("Inspect or publish one persisted source history entry.")
   .action(
     async (
       nodeId: string,
       sourceHistoryId: string,
       options: {
+        publish?: boolean;
+        publishedBy?: string;
+        reason?: string;
         summary?: boolean;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      if ((options.publishedBy || options.reason) && !options.publish) {
+        throw new Error("Use --published-by or --reason only with --publish.");
+      }
+
+      if (options.publish) {
+        const publish =
+          runtimeSourceHistoryPublishMutationRequestSchema.parse({
+            ...(options.publishedBy ? { publishedBy: options.publishedBy } : {}),
+            ...(options.reason ? { reason: options.reason } : {})
+          });
+        const response = await client.publishRuntimeSourceHistory(
+          nodeId,
+          sourceHistoryId,
+          publish
+        );
+
+        printJson(
+          options.summary
+            ? {
+                artifact: projectRuntimeArtifactSummary(response.artifact),
+                sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
+              }
+            : response
+        );
+        return;
+      }
+
       const response = await client.getRuntimeSourceHistory(
         nodeId,
         sourceHistoryId

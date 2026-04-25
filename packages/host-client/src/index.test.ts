@@ -1802,6 +1802,52 @@ describe("createHostClient", () => {
       turnId: "turn-alpha",
       updatedAt: "2026-04-24T00:03:00.000Z"
     };
+    const publishedSourceHistoryEntry = {
+      ...sourceHistoryEntry,
+      publication: {
+        artifactId: "source-source-history-source-change-turn-alpha",
+        branch: "worker-it/source-history/source-history-source-change-turn-alpha",
+        publication: {
+          publishedAt: "2026-04-24T00:04:00.000Z",
+          remoteName: "entangle-local-gitea",
+          remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+          state: "published"
+        },
+        requestedAt: "2026-04-24T00:04:00.000Z",
+        requestedBy: "operator-alpha"
+      },
+      updatedAt: "2026-04-24T00:04:00.000Z"
+    };
+    const sourceArtifact = {
+      createdAt: "2026-04-24T00:04:00.000Z",
+      materialization: {
+        repoPath: "/tmp/entangle/workspace/source-history"
+      },
+      publication: {
+        publishedAt: "2026-04-24T00:04:00.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      ref: {
+        artifactId: "source-source-history-source-change-turn-alpha",
+        artifactKind: "commit",
+        backend: "git",
+        createdByNodeId: "worker-it",
+        locator: {
+          branch: "worker-it/source-history/source-history-source-change-turn-alpha",
+          commit: "artifact-commit-alpha",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          path: ".",
+          repositoryName: "graph-alpha"
+        },
+        preferred: true,
+        status: "published"
+      },
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:04:00.000Z"
+    };
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
       fetchImpl: (url, init) => {
@@ -1813,7 +1859,9 @@ describe("createHostClient", () => {
 
         const body = url.endsWith("/source-history")
           ? { history: [sourceHistoryEntry] }
-          : { entry: sourceHistoryEntry };
+          : url.endsWith("/publish")
+            ? { artifact: sourceArtifact, entry: publishedSourceHistoryEntry }
+            : { entry: sourceHistoryEntry };
 
         return Promise.resolve(
           createMockResponse({
@@ -1857,6 +1905,29 @@ describe("createHostClient", () => {
         commit: "commit-alpha"
       }
     });
+    await expect(
+      client.publishRuntimeSourceHistory(
+        "worker-it",
+        "source-history-source-change-turn-alpha",
+        {
+          publishedBy: "operator-alpha",
+          reason: "Publish source history."
+        }
+      )
+    ).resolves.toMatchObject({
+      artifact: {
+        ref: {
+          artifactId: "source-source-history-source-change-turn-alpha"
+        }
+      },
+      entry: {
+        publication: {
+          publication: {
+            state: "published"
+          }
+        }
+      }
+    });
     expect(requests).toEqual([
       {
         body: JSON.stringify({
@@ -1873,6 +1944,14 @@ describe("createHostClient", () => {
       {
         method: undefined,
         url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha"
+      },
+      {
+        body: JSON.stringify({
+          publishedBy: "operator-alpha",
+          reason: "Publish source history."
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
       }
     ]);
   });

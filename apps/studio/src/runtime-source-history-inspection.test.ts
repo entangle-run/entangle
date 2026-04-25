@@ -42,6 +42,17 @@ const entries: SourceHistoryRecord[] = [
     headTree: "head-tree-new",
     mode: "already_in_workspace",
     nodeId: "worker-it",
+    publication: {
+      artifactId: "source-source-history-source-change-turn-new",
+      branch: "worker-it/source-history/source-history-source-change-turn-new",
+      publication: {
+        publishedAt: "2026-04-24T00:04:00.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      requestedAt: "2026-04-24T00:04:00.000Z"
+    },
     sourceChangeSummary: {
       additions: 2,
       checkedAt: "2026-04-24T00:02:00.000Z",
@@ -67,6 +78,9 @@ describe("runtime source history Studio helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
       "commit commit-new"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
+      "artifact source-source-history-source-change-turn-new"
     );
   });
 });

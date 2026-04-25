@@ -223,6 +223,25 @@ export function describeRuntimeTraceEvent(
         detailLines: buildRunnerTurnDetailLines(event),
         label: `Turn ${event.turnId} is ${event.phase}`
       };
+    case "source_history.updated":
+      return {
+        detailLines: [
+          `Candidate: ${event.candidateId}`,
+          `Mode: ${event.mode}`,
+          `Commit: ${event.commit}`
+        ],
+        label: `Source history ${event.historyId} updated`
+      };
+    case "source_history.published":
+      return {
+        detailLines: [
+          `Candidate: ${event.candidateId}`,
+          `Artifact: ${event.artifactId}`,
+          `Publication: ${event.publicationState}`,
+          ...(event.remoteUrl ? [`Remote: ${event.remoteUrl}`] : [])
+        ],
+        label: `Source history ${event.historyId} publication ${event.publicationState}`
+      };
     default:
       return {
         detailLines: [],

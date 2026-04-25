@@ -108,6 +108,7 @@ import {
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfiles,
   resolveEffectiveRelayProfileRefs,
+  resolveGitPrincipalBindingForService,
   type GitRepositoryProvisioningRecord,
   type RuntimeDesiredState,
   runtimeIdentityContextSchema,
@@ -136,6 +137,8 @@ import {
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublicationResponseSchema,
+  runtimeSourceHistoryPublishMutationRequestSchema,
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
@@ -164,6 +167,8 @@ import {
   type RuntimeSourceChangeCandidateReviewMutationRequest,
   type RuntimeSourceHistoryInspectionResponse,
   type RuntimeSourceHistoryListResponse,
+  type RuntimeSourceHistoryPublicationResponse,
+  type RuntimeSourceHistoryPublishMutationRequest,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   runtimeTurnInspectionResponseSchema,
@@ -408,6 +413,10 @@ type SourceHistoryUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "source_history.updated" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
+type SourceHistoryPublishedEventInput = Omit<
+  Extract<HostEventRecord, { type: "source_history.published" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
 type ConversationTraceEventInput = Omit<
   Extract<HostEventRecord, { type: "conversation.trace.event" }>,
   "eventId" | "schemaVersion" | "timestamp"
@@ -617,10 +626,18 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
   const gitBaseUrl =
     process.env.ENTANGLE_DEFAULT_GIT_SERVICE_BASE_URL ?? "http://gitea:3000";
   const gitTransport =
-    process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT === "https" ? "https" : "ssh";
+    process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT === "file"
+      ? "file"
+      : process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT === "https"
+        ? "https"
+        : "ssh";
   const gitRemoteBase =
     process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE ??
-    (gitTransport === "https" ? gitBaseUrl : "ssh://git@gitea:22");
+    (gitTransport === "https"
+      ? gitBaseUrl
+      : gitTransport === "file"
+        ? "file:///var/lib/entangle/git"
+        : "ssh://git@gitea:22");
   const agentEngineBaseUrl =
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL?.trim();
   const requestedAgentEngineKind =
@@ -5266,6 +5283,17 @@ export type RuntimeSourceChangeCandidateApplyMutationResult =
       ok: false;
     };
 
+export type RuntimeSourceHistoryPublishMutationResult =
+  | {
+      publication: RuntimeSourceHistoryPublicationResponse;
+      ok: true;
+    }
+  | {
+      code: "conflict";
+      message: string;
+      ok: false;
+    };
+
 const sourceHistoryBranchName = "entangle-source-history";
 const sourceHistoryRef = `refs/heads/${sourceHistoryBranchName}`;
 const gitEmptyTreeHash = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
@@ -5461,6 +5489,526 @@ async function createSourceHistoryCommit(input: {
   );
 
   return commit;
+}
+
+function sanitizeGitBranchComponent(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .replace(/-{2,}/g, "-") || "work"
+  );
+}
+
+function buildSourceHistoryArtifactId(sourceHistoryId: string): string {
+  const raw = `source-${sourceHistoryId}`;
+
+  if (raw.length <= 100) {
+    return raw;
+  }
+
+  const digest = createHash("sha256")
+    .update(sourceHistoryId)
+    .digest("hex")
+    .slice(0, 12);
+  const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${digest}`;
+}
+
+function buildSourceHistoryPublicationBranch(input: {
+  history: SourceHistoryRecord;
+}): string {
+  return [
+    sanitizeGitBranchComponent(input.history.nodeId),
+    "source-history",
+    sanitizeGitBranchComponent(input.history.sourceHistoryId)
+  ].join("/");
+}
+
+function sourceHistoryPublicationRepoRoot(
+  context: EffectiveRuntimeContext
+): string {
+  return path.join(context.workspace.artifactWorkspaceRoot, "source-history");
+}
+
+function resolveSourceHistoryPrimaryGitAttribution(
+  context: EffectiveRuntimeContext
+): {
+  email: string;
+  name: string;
+} {
+  const primaryBinding =
+    context.artifactContext.primaryGitPrincipalRef
+      ? context.artifactContext.gitPrincipalBindings.find(
+          (binding) =>
+            binding.principal.principalId ===
+            context.artifactContext.primaryGitPrincipalRef
+        )
+      : undefined;
+  const attribution = primaryBinding?.principal.attribution;
+
+  return {
+    email:
+      attribution?.email ?? `${context.binding.node.nodeId}@entangle.invalid`,
+    name: attribution?.displayName ?? context.binding.node.displayName
+  };
+}
+
+async function ensureSourceHistoryPublicationRepo(input: {
+  context: EffectiveRuntimeContext;
+  repoPath: string;
+}): Promise<void> {
+  await ensureDirectory(input.repoPath);
+
+  if (!(await pathExists(path.join(input.repoPath, ".git")))) {
+    await runSourceHistoryGitCommand(input.repoPath, ["init"]);
+  }
+
+  const attribution = resolveSourceHistoryPrimaryGitAttribution(input.context);
+  await runSourceHistoryGitCommand(input.repoPath, [
+    "config",
+    "user.name",
+    attribution.name
+  ]);
+  await runSourceHistoryGitCommand(input.repoPath, [
+    "config",
+    "user.email",
+    attribution.email
+  ]);
+}
+
+async function cleanSourceHistoryPublicationWorktree(
+  repoPath: string
+): Promise<void> {
+  const entries = await readdir(repoPath);
+
+  await Promise.all(
+    entries
+      .filter((entry) => entry !== ".git")
+      .map((entry) =>
+        rm(path.join(repoPath, entry), {
+          force: true,
+          recursive: true
+        })
+      )
+  );
+}
+
+async function readDeliveredGitSecretValue(input: {
+  principalId: string;
+  secretPurpose: string;
+  transport: EffectiveRuntimeContext["artifactContext"]["gitPrincipalBindings"][number]["transport"];
+}): Promise<string> {
+  if (input.transport.status !== "available" || !input.transport.delivery) {
+    throw new Error(
+      `Remote git operations require an available ${input.secretPurpose} secret for git principal '${input.principalId}'.`
+    );
+  }
+
+  const secretValue =
+    input.transport.delivery.mode === "mounted_file"
+      ? await readFile(input.transport.delivery.filePath, "utf8")
+      : process.env[input.transport.delivery.envVar];
+  const normalizedSecretValue = secretValue?.trim();
+
+  if (!normalizedSecretValue) {
+    throw new Error(
+      `Remote git operations require non-empty ${input.secretPurpose} secret material for git principal '${input.principalId}'.`
+    );
+  }
+
+  return normalizedSecretValue;
+}
+
+async function ensureSourceHistoryGitHttpsAskPassScript(
+  context: EffectiveRuntimeContext
+): Promise<string> {
+  const askPassScriptPath = path.join(
+    context.workspace.runtimeRoot,
+    "source-history-git-https-askpass.sh"
+  );
+  const askPassScript = [
+    "#!/bin/sh",
+    "case \"$1\" in",
+    "  *Username*) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_USERNAME\" ;;",
+    "  *Password*) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_TOKEN\" ;;",
+    "  *) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_TOKEN\" ;;",
+    "esac",
+    ""
+  ].join("\n");
+
+  await writeFile(askPassScriptPath, askPassScript, {
+    encoding: "utf8",
+    mode: 0o700
+  });
+
+  return askPassScriptPath;
+}
+
+async function buildSourceHistoryGitCommandEnvForRemoteOperation(input: {
+  context: EffectiveRuntimeContext;
+  target: NonNullable<
+    EffectiveRuntimeContext["artifactContext"]["primaryGitRepositoryTarget"]
+  >;
+}): Promise<NodeJS.ProcessEnv | undefined> {
+  if (!input.target.remoteUrl.includes("://")) {
+    return undefined;
+  }
+
+  if (input.target.transportKind === "file") {
+    return undefined;
+  }
+
+  const principalResolution = resolveGitPrincipalBindingForService({
+    artifactContext: input.context.artifactContext,
+    gitServiceRef: input.target.gitServiceRef
+  });
+
+  if (principalResolution.status === "missing") {
+    throw new Error(
+      `Remote git operations require a git principal binding for service '${input.target.gitServiceRef}', but none was resolved.`
+    );
+  }
+
+  if (principalResolution.status === "ambiguous") {
+    throw new Error(
+      `Remote git operations require a deterministic git principal for service '${input.target.gitServiceRef}', but multiple candidates were resolved: ${principalResolution.candidatePrincipalIds.join(", ")}.`
+    );
+  }
+
+  const principalBinding = principalResolution.binding;
+
+  if (input.target.transportKind === "ssh") {
+    if (principalBinding.principal.transportAuthMode !== "ssh_key") {
+      throw new Error(
+        `Remote git SSH operations require an SSH-key git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
+      );
+    }
+
+    if (
+      principalBinding.transport.status !== "available" ||
+      principalBinding.transport.delivery?.mode !== "mounted_file"
+    ) {
+      throw new Error(
+        `Remote git SSH operations require an available mounted SSH key for git principal '${principalBinding.principal.principalId}'.`
+      );
+    }
+
+    return {
+      GIT_SSH_COMMAND: [
+        "ssh",
+        "-F",
+        "/dev/null",
+        "-i",
+        principalBinding.transport.delivery.filePath,
+        "-o",
+        "IdentitiesOnly=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new"
+      ].join(" ")
+    };
+  }
+
+  if (principalBinding.principal.transportAuthMode !== "https_token") {
+    throw new Error(
+      `Remote git HTTPS operations require an HTTPS-token git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
+    );
+  }
+
+  const token = await readDeliveredGitSecretValue({
+    principalId: principalBinding.principal.principalId,
+    secretPurpose: "HTTPS token",
+    transport: principalBinding.transport
+  });
+  const askPassScriptPath =
+    await ensureSourceHistoryGitHttpsAskPassScript(input.context);
+
+  return {
+    ENTANGLE_GIT_ASKPASS_TOKEN: token,
+    ENTANGLE_GIT_ASKPASS_USERNAME: principalBinding.principal.subject,
+    GIT_ASKPASS: askPassScriptPath,
+    GIT_TERMINAL_PROMPT: "0"
+  };
+}
+
+async function ensureSourceHistoryGitRemote(input: {
+  env?: NodeJS.ProcessEnv | undefined;
+  remoteName: string;
+  remoteUrl: string;
+  repoPath: string;
+}): Promise<void> {
+  let currentRemoteUrl: string | undefined;
+
+  try {
+    currentRemoteUrl = await runSourceHistoryGitCommand(
+      input.repoPath,
+      ["remote", "get-url", input.remoteName],
+      {
+        env: input.env
+      }
+    );
+  } catch {
+    currentRemoteUrl = undefined;
+  }
+
+  if (!currentRemoteUrl) {
+    await runSourceHistoryGitCommand(
+      input.repoPath,
+      ["remote", "add", input.remoteName, input.remoteUrl],
+      {
+        env: input.env
+      }
+    );
+    return;
+  }
+
+  if (currentRemoteUrl !== input.remoteUrl) {
+    await runSourceHistoryGitCommand(
+      input.repoPath,
+      ["remote", "set-url", input.remoteName, input.remoteUrl],
+      {
+        env: input.env
+      }
+    );
+  }
+}
+
+async function materializeSourceHistoryPublicationCommit(input: {
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  repoPath: string;
+  sourceGitDir: string;
+}): Promise<string> {
+  await ensureSourceHistoryPublicationRepo({
+    context: input.context,
+    repoPath: input.repoPath
+  });
+  await runSourceHistoryGitCommand(input.repoPath, [
+    "cat-file",
+    "-e",
+    `${input.history.commit}^{commit}`
+  ], {
+    gitDir: input.sourceGitDir
+  });
+  const sourceTree = await runSourceHistoryGitCommand(
+    input.repoPath,
+    ["rev-parse", `${input.history.commit}^{tree}`],
+    {
+      gitDir: input.sourceGitDir
+    }
+  );
+
+  if (sourceTree !== input.history.headTree) {
+    throw new Error(
+      `Source history commit '${input.history.commit}' does not match recorded head tree '${input.history.headTree}'.`
+    );
+  }
+
+  await cleanSourceHistoryPublicationWorktree(input.repoPath);
+
+  if (input.history.headTree !== gitEmptyTreeHash) {
+    await runSourceHistoryGitCommand(
+      input.repoPath,
+      ["checkout", "--force", input.history.commit, "--", "."],
+      {
+        gitDir: input.sourceGitDir,
+        workTree: input.repoPath
+      }
+    );
+  }
+
+  await runSourceHistoryGitCommand(input.repoPath, ["add", "--all", "--", "."]);
+  const tree = await runSourceHistoryGitCommand(input.repoPath, ["write-tree"]);
+  const refName = `refs/heads/${input.branchName}`;
+  let parentCommit: string | undefined;
+  let parentTree: string | undefined;
+
+  try {
+    parentCommit = await runSourceHistoryGitCommand(input.repoPath, [
+      "rev-parse",
+      "--verify",
+      `${refName}^{commit}`
+    ]);
+    parentTree = await runSourceHistoryGitCommand(input.repoPath, [
+      "rev-parse",
+      `${parentCommit}^{tree}`
+    ]);
+  } catch {
+    parentCommit = undefined;
+    parentTree = undefined;
+  }
+
+  const artifactCommit =
+    parentCommit && parentTree === tree
+      ? parentCommit
+      : await runSourceHistoryGitCommand(
+          input.repoPath,
+          [
+            "commit-tree",
+            tree,
+            "-m",
+            [
+              `entangle(${input.history.nodeId}): publish ${input.history.sourceHistoryId}`,
+              "",
+              `source_history: ${input.history.sourceHistoryId}`,
+              `candidate: ${input.history.candidateId}`,
+              `source_commit: ${input.history.commit}`
+            ].join("\n"),
+            ...(parentCommit ? ["-p", parentCommit] : [])
+          ],
+          {
+            env: {
+              GIT_AUTHOR_EMAIL: `${input.history.nodeId}@entangle.invalid`,
+              GIT_AUTHOR_NAME: input.context.binding.node.displayName,
+              GIT_COMMITTER_EMAIL: `${input.history.nodeId}@entangle.invalid`,
+              GIT_COMMITTER_NAME: input.context.binding.node.displayName
+            }
+          }
+        );
+
+  await runSourceHistoryGitCommand(input.repoPath, [
+    "update-ref",
+    refName,
+    artifactCommit,
+    ...(parentCommit ? [parentCommit] : [])
+  ]);
+  await runSourceHistoryGitCommand(input.repoPath, [
+    "reset",
+    "--hard",
+    artifactCommit
+  ]);
+
+  return artifactCommit;
+}
+
+function buildSourceHistoryArtifactRecord(input: {
+  artifactCommit: string;
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  repoPath: string;
+  timestamp: string;
+}): ArtifactRecord {
+  const artifactId = buildSourceHistoryArtifactId(input.history.sourceHistoryId);
+
+  return artifactRecordSchema.parse({
+    createdAt: input.timestamp,
+    materialization: {
+      repoPath: input.repoPath
+    },
+    publication: {
+      state: "not_requested"
+    },
+    ref: {
+      artifactId,
+      artifactKind: "commit",
+      backend: "git",
+      contentSummary:
+        `Source history '${input.history.sourceHistoryId}' from candidate ` +
+        `'${input.history.candidateId}'.`,
+      ...(input.history.conversationId
+        ? { conversationId: input.history.conversationId }
+        : {}),
+      createdByNodeId: input.history.nodeId,
+      locator: {
+        branch: input.branchName,
+        commit: input.artifactCommit,
+        gitServiceRef: input.context.artifactContext.primaryGitServiceRef,
+        namespace: input.context.artifactContext.defaultNamespace,
+        repositoryName:
+          input.context.artifactContext.primaryGitRepositoryTarget?.repositoryName,
+        path: "."
+      },
+      preferred: true,
+      ...(input.history.sessionId ? { sessionId: input.history.sessionId } : {}),
+      status: "materialized"
+    },
+    turnId: input.history.turnId,
+    updatedAt: input.timestamp
+  });
+}
+
+async function publishSourceHistoryArtifactRecord(input: {
+  artifactRecord: ArtifactRecord;
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  repoPath: string;
+}): Promise<ArtifactRecord> {
+  const target = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  if (!target) {
+    return input.artifactRecord;
+  }
+
+  const remoteName = `entangle-${sanitizeGitBranchComponent(target.gitServiceRef)}`;
+  const attemptTimestamp = nowIsoString();
+  const artifactRef = input.artifactRecord.ref;
+
+  if (artifactRef.backend !== "git") {
+    throw new Error(
+      `Source history publication requires a git artifact ref for '${artifactRef.artifactId}'.`
+    );
+  }
+
+  try {
+    const gitEnv = await buildSourceHistoryGitCommandEnvForRemoteOperation({
+      context: input.context,
+      target
+    });
+    await ensureSourceHistoryGitRemote({
+      env: gitEnv,
+      remoteName,
+      remoteUrl: target.remoteUrl,
+      repoPath: input.repoPath
+    });
+    await runSourceHistoryGitCommand(
+      input.repoPath,
+      [
+        "push",
+        "--set-upstream",
+        remoteName,
+        `${artifactRef.locator.commit}:refs/heads/${input.branchName}`
+      ],
+      {
+        env: gitEnv
+      }
+    );
+
+    return artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        publishedAt: attemptTimestamp,
+        remoteName,
+        remoteUrl: target.remoteUrl,
+        state: "published"
+      },
+      ref: {
+        ...input.artifactRecord.ref,
+        status: "published"
+      },
+      updatedAt: attemptTimestamp
+    });
+  } catch (error) {
+    const publicationError =
+      error instanceof Error && error.message.trim().length > 0
+        ? error.message
+        : "Unknown remote git publication failure.";
+
+    return artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        lastAttemptAt: attemptTimestamp,
+        lastError: publicationError,
+        remoteName,
+        remoteUrl: target.remoteUrl,
+        state: "failed"
+      },
+      updatedAt: attemptTimestamp
+    });
+  }
 }
 
 export async function applyRuntimeSourceChangeCandidate(input: {
@@ -5711,6 +6259,166 @@ export async function applyRuntimeSourceChangeCandidate(input: {
       code: "conflict",
       message:
         `Source change candidate '${input.candidateId}' could not be applied: ` +
+        sanitizeRuntimePathError(context, error),
+      ok: false
+    };
+  }
+}
+
+export async function publishRuntimeSourceHistory(input: {
+  nodeId: string;
+  publish: RuntimeSourceHistoryPublishMutationRequest;
+  sourceHistoryId: string;
+}): Promise<RuntimeSourceHistoryPublishMutationResult | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const historyRecords = await listRuntimeSourceHistoryRecords(
+    context.workspace.runtimeRoot
+  );
+  const history = historyRecords.find(
+    (historyRecord) => historyRecord.sourceHistoryId === input.sourceHistoryId
+  );
+
+  if (!history) {
+    return null;
+  }
+
+  const publish = runtimeSourceHistoryPublishMutationRequestSchema.parse(
+    input.publish
+  );
+
+  if (history.publication?.publication.state === "published") {
+    return {
+      code: "conflict",
+      message:
+        `Source history entry '${input.sourceHistoryId}' was already published as ` +
+        `artifact '${history.publication.artifactId}'.`,
+      ok: false
+    };
+  }
+
+  if (!context.artifactContext.primaryGitRepositoryTarget) {
+    return {
+      code: "conflict",
+      message:
+        `Source history entry '${input.sourceHistoryId}' cannot be published because runtime '${input.nodeId}' has no primary git repository target.`,
+      ok: false
+    };
+  }
+
+  const sourceGitDir = path.join(context.workspace.runtimeRoot, "source-snapshot.git");
+
+  try {
+    if (!(await pathExists(sourceGitDir))) {
+      return {
+        code: "conflict",
+        message:
+          `Source history entry '${input.sourceHistoryId}' cannot be published because its shadow git repository is missing.`,
+        ok: false
+      };
+    }
+
+    const branchName = buildSourceHistoryPublicationBranch({ history });
+    const repoPath = sourceHistoryPublicationRepoRoot(context);
+    const requestedAt = nowIsoString();
+    const artifactCommit = await materializeSourceHistoryPublicationCommit({
+      branchName,
+      context,
+      history,
+      repoPath,
+      sourceGitDir
+    });
+    const localArtifact = buildSourceHistoryArtifactRecord({
+      artifactCommit,
+      branchName,
+      context,
+      history,
+      repoPath,
+      timestamp: requestedAt
+    });
+    const artifact = await publishSourceHistoryArtifactRecord({
+      artifactRecord: localArtifact,
+      branchName,
+      context,
+      repoPath
+    });
+    const artifactRef = artifact.ref;
+
+    if (artifactRef.backend !== "git") {
+      throw new Error(
+        `Source history publication produced non-git artifact '${artifactRef.artifactId}'.`
+      );
+    }
+
+    const nextHistory = sourceHistoryRecordSchema.parse({
+      ...history,
+      publication: {
+        artifactId: artifactRef.artifactId,
+        branch: branchName,
+        publication: artifact.publication ?? {
+          state: "not_requested"
+        },
+        ...(publish.reason ? { reason: publish.reason } : {}),
+        requestedAt,
+        ...(publish.publishedBy ? { requestedBy: publish.publishedBy } : {})
+      },
+      updatedAt: artifact.updatedAt
+    });
+
+    await writeJsonFile(
+      runtimeArtifactRecordPath(
+        context.workspace.runtimeRoot,
+        artifactRef.artifactId
+      ),
+      artifact
+    );
+    await writeJsonFile(
+      runtimeSourceHistoryRecordPath(
+        context.workspace.runtimeRoot,
+        nextHistory.sourceHistoryId
+      ),
+      nextHistory
+    );
+    await appendHostEvent({
+      artifactId: artifactRef.artifactId,
+      candidateId: history.candidateId,
+      category: "runtime",
+      commit: artifactRef.locator.commit,
+      graphId: history.graphId,
+      graphRevisionId: history.graphRevisionId,
+      historyId: history.sourceHistoryId,
+      message:
+        `Source history '${history.sourceHistoryId}' for runtime '${input.nodeId}' ` +
+        `published artifact '${artifactRef.artifactId}' with publication state '${artifact.publication?.state ?? "not_requested"}'.`,
+      nodeId: input.nodeId,
+      publicationState: artifact.publication?.state ?? "not_requested",
+      ...(artifact.publication?.remoteName
+        ? { remoteName: artifact.publication.remoteName }
+        : {}),
+      ...(artifact.publication?.remoteUrl
+        ? { remoteUrl: artifact.publication.remoteUrl }
+        : {}),
+      sourceHistoryBranch: branchName,
+      turnId: history.turnId,
+      type: "source_history.published"
+    } satisfies SourceHistoryPublishedEventInput);
+
+    return {
+      ok: true,
+      publication: runtimeSourceHistoryPublicationResponseSchema.parse({
+        artifact,
+        entry: nextHistory
+      })
+    };
+  } catch (error) {
+    return {
+      code: "conflict",
+      message:
+        `Source history entry '${input.sourceHistoryId}' could not be published: ` +
         sanitizeRuntimePathError(context, error),
       ok: false
     };
@@ -6290,7 +6998,7 @@ function runtimeSourceHistoryRecordPath(
 async function listRuntimeArtifactRecords(
   runtimeRoot: string
 ): Promise<ArtifactRecord[]> {
-  const artifactsRoot = path.join(runtimeRoot, "artifacts");
+  const artifactsRoot = runtimeArtifactsRoot(runtimeRoot);
 
   if (!(await pathExists(artifactsRoot))) {
     return [];
@@ -6307,6 +7015,17 @@ async function listRuntimeArtifactRecords(
       )
     )
   );
+}
+
+function runtimeArtifactsRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "artifacts");
+}
+
+function runtimeArtifactRecordPath(
+  runtimeRoot: string,
+  artifactId: string
+): string {
+  return path.join(runtimeArtifactsRoot(runtimeRoot), `${artifactId}.json`);
 }
 
 async function synchronizeSessionActivityObservation(input: {

@@ -68,8 +68,8 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
 policy bridge, resumable permission approval mapping, candidate
-remote-publication workflow, source commit artifact records, artifact
-history/diff workflow, git/wiki workflow, external cancellation bridge,
+policy-gated publication workflow, artifact history/diff workflow, git/wiki
+workflow, external cancellation bridge,
 doctor-backed workspace health checks, and full CLI/Studio configuration and
 observability surface required for L3 acceptance.
 
@@ -420,8 +420,8 @@ Current partial implementation:
   run process, sends `SIGTERM` on timeout, and records classified
   `provider_unavailable` evidence;
 - this does not yet complete external cancellation, permission mapping, full
-  degraded-runtime status DTOs, attached server lifecycle, or source-change
-  candidate remote publication and artifact publication/history workflow.
+  degraded-runtime status DTOs, attached server lifecycle, policy-gated source
+  publication, or artifact history/diff workflow.
 
 Acceptance:
 
@@ -575,8 +575,14 @@ Current partial implementation:
   snapshot; the host records source-history entries, annotates candidates,
   emits `source_history.updated`, and exposes host-client, CLI, and Studio
   apply/list/detail surfaces;
-- approval flow, source-history remote publication, source commit artifact
-  records, and remote git publication workflow remain open.
+- applied source-history entries can now be published as git commit artifacts;
+  the host materializes the source-history tree into a publication repository,
+  pushes to the resolved primary git target when possible, records publication
+  metadata on both the source-history entry and artifact, emits
+  `source_history.published`, and exposes host-client, CLI, and Studio publish
+  surfaces;
+- approval flow, richer policy-gated publication controls, retry/target
+  selection, and artifact history/diff workflow remain open.
 
 Acceptance:
 
@@ -655,10 +661,11 @@ Current partial implementation:
   host-backed read model used by the host client, and can inspect bounded
   candidate diffs plus listed-file previews where shadow-git tree snapshots are
   available, while also recording accepted/rejected/superseded candidate review
-  decisions and source-history application through the host boundary;
+  decisions, source-history application, and source-history publication through
+  the host boundary;
 - graph/node editing support for agent-runtime selection, OpenCode availability
-  probing, approval blockers, produced artifacts, source publication views, and
-  recent engine-event panels remain open.
+probing, approval blockers, produced artifacts, richer source publication
+history views, and recent engine-event panels remain open.
 
 Acceptance:
 

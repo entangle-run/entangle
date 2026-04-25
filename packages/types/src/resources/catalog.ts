@@ -28,10 +28,10 @@ export const gitRemoteBaseSchema = z.string().superRefine((value, context) => {
     return;
   }
 
-  if (!["ssh:", "http:", "https:"].includes(parsed.protocol)) {
+  if (!["ssh:", "http:", "https:", "file:"].includes(parsed.protocol)) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Git remote bases must use ssh://, http://, or https://."
+      message: "Git remote bases must use ssh://, http://, https://, or file://."
     });
   }
 
@@ -60,7 +60,7 @@ export const gitServiceProfileSchema = z
     displayName: nonEmptyStringSchema,
     baseUrl: httpUrlSchema,
     remoteBase: gitRemoteBaseSchema,
-    transportKind: z.enum(["ssh", "https"]).default("ssh"),
+    transportKind: z.enum(["ssh", "https", "file"]).default("ssh"),
     authMode: z.enum(["ssh_key", "https_token", "http_signature"]).default(
       "ssh_key"
     ),
@@ -89,6 +89,14 @@ export const gitServiceProfileSchema = z
         code: z.ZodIssueCode.custom,
         message:
           "HTTPS git services must use an http:// or https:// remote base.",
+        path: ["remoteBase"]
+      });
+    }
+
+    if (value.transportKind === "file" && remoteProtocol !== "file:") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "File git services must use a file:// remote base.",
         path: ["remoteBase"]
       });
     }

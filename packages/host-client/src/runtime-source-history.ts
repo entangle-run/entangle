@@ -25,6 +25,22 @@ export function formatRuntimeSourceHistoryDetailLines(
     ...(history.appliedBy ? [`applied by ${history.appliedBy}`] : []),
     `commit ${history.commit}`,
     `branch ${history.branch}`,
+    ...(history.publication
+      ? [
+          `artifact ${history.publication.artifactId}`,
+          `publication ${history.publication.publication.state}`,
+          `publication branch ${history.publication.branch}`,
+          ...(history.publication.publication.remoteName
+            ? [`publication remote ${history.publication.publication.remoteName}`]
+            : []),
+          ...(history.publication.publication.remoteUrl
+            ? [`published remote ${history.publication.publication.remoteUrl}`]
+            : []),
+          ...(history.publication.publication.lastError
+            ? [`publication error ${history.publication.publication.lastError}`]
+            : [])
+        ]
+      : []),
     `turn ${history.turnId}`,
     ...(history.sessionId ? [`session ${history.sessionId}`] : []),
     ...(history.conversationId

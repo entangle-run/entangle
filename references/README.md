@@ -206,6 +206,7 @@ This directory is the canonical design corpus for Entangle.
 200. [199-source-change-candidate-file-preview-slice.md](199-source-change-candidate-file-preview-slice.md)
 201. [200-source-change-candidate-review-slice.md](200-source-change-candidate-review-slice.md)
 202. [201-source-history-application-slice.md](201-source-history-application-slice.md)
+203. [202-source-history-publication-slice.md](202-source-history-publication-slice.md)
 
 ## Role of this corpus
 

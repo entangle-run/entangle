@@ -235,6 +235,16 @@ export const runtimeSourceHistoryInspectionResponseSchema = z.object({
   entry: sourceHistoryRecordSchema
 });
 
+export const runtimeSourceHistoryPublishMutationRequestSchema = z.object({
+  publishedBy: identifierSchema.optional(),
+  reason: nonEmptyStringSchema.optional()
+});
+
+export const runtimeSourceHistoryPublicationResponseSchema = z.object({
+  artifact: artifactRecordSchema,
+  entry: sourceHistoryRecordSchema
+});
+
 export const runtimeSourceChangeCandidateReviewMutationRequestSchema = z
   .object({
     reason: nonEmptyStringSchema.optional(),
@@ -375,6 +385,12 @@ export type RuntimeSourceHistoryListResponse = z.infer<
 >;
 export type RuntimeSourceHistoryInspectionResponse = z.infer<
   typeof runtimeSourceHistoryInspectionResponseSchema
+>;
+export type RuntimeSourceHistoryPublishMutationRequest = z.infer<
+  typeof runtimeSourceHistoryPublishMutationRequestSchema
+>;
+export type RuntimeSourceHistoryPublicationResponse = z.infer<
+  typeof runtimeSourceHistoryPublicationResponseSchema
 >;
 export type RuntimeSourceChangeCandidateReviewMutationRequest = z.infer<
   typeof runtimeSourceChangeCandidateReviewMutationRequestSchema

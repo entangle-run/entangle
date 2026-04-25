@@ -53,6 +53,8 @@ import {
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublicationResponseSchema,
+  runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   resolveEffectiveAgentRuntime,
@@ -389,6 +391,18 @@ describe("source change candidate host API contracts", () => {
       headTree: "head-tree-alpha",
       mode: "already_in_workspace",
       nodeId: "worker-it",
+      publication: {
+        artifactId: "source-source-history-source-change-turn-alpha",
+        branch: "worker-it/source-history/source-history-source-change-turn-alpha",
+        publication: {
+          publishedAt: "2026-04-24T00:04:00.000Z",
+          remoteName: "entangle-local-gitea",
+          remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+          state: "published"
+        },
+        requestedAt: "2026-04-24T00:04:00.000Z",
+        requestedBy: "operator-alpha"
+      },
       reason: "Accepted for the local source history.",
       sourceChangeSummary: candidate.sourceChangeSummary,
       sourceHistoryId: "source-history-source-change-turn-alpha",
@@ -406,6 +420,49 @@ describe("source change candidate host API contracts", () => {
         entry: historyEntry
       }).entry.mode
     ).toBe("already_in_workspace");
+    const sourceArtifact = artifactRecordSchema.parse({
+      createdAt: "2026-04-24T00:04:00.000Z",
+      materialization: {
+        repoPath: "/tmp/entangle/workspace/source-history"
+      },
+      publication: {
+        publishedAt: "2026-04-24T00:04:00.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      ref: {
+        artifactId: "source-source-history-source-change-turn-alpha",
+        artifactKind: "commit",
+        backend: "git",
+        createdByNodeId: "worker-it",
+        locator: {
+          branch:
+            "worker-it/source-history/source-history-source-change-turn-alpha",
+          commit: "artifact-commit-alpha",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          path: ".",
+          repositoryName: "graph-alpha"
+        },
+        preferred: true,
+        status: "published"
+      },
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:04:00.000Z"
+    });
+    expect(
+      runtimeSourceHistoryPublishMutationRequestSchema.parse({
+        publishedBy: "operator-alpha",
+        reason: "Publish source for peer review."
+      }).publishedBy
+    ).toBe("operator-alpha");
+    expect(
+      runtimeSourceHistoryPublicationResponseSchema.parse({
+        artifact: sourceArtifact,
+        entry: historyEntry
+      }).artifact.ref.artifactId
+    ).toBe("source-source-history-source-change-turn-alpha");
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
@@ -1196,6 +1253,28 @@ describe("host event contracts", () => {
       turnId: "turn-alpha",
       type: "source_history.updated"
     });
+    const sourceHistoryPublishedEvent = hostEventRecordSchema.parse({
+      artifactId: "source-source-history-source-change-turn-alpha",
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "artifact-commit-alpha",
+      eventId: "evt-source-history-published",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260424-000000",
+      historyId: "source-history-source-change-turn-alpha",
+      message:
+        "Source history 'source-history-source-change-turn-alpha' for runtime 'worker-it' published artifact 'source-source-history-source-change-turn-alpha'.",
+      nodeId: "worker-it",
+      publicationState: "published",
+      remoteName: "entangle-local-gitea",
+      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      schemaVersion: "1",
+      sourceHistoryBranch:
+        "worker-it/source-history/source-history-source-change-turn-alpha",
+      timestamp: "2026-04-24T00:00:04.000Z",
+      turnId: "turn-alpha",
+      type: "source_history.published"
+    });
 
     expect(sessionEvent.type).toBe("session.updated");
     expect(sessionEvent.category).toBe("session");
@@ -1229,6 +1308,8 @@ describe("host event contracts", () => {
     expect(reviewedCandidateEvent.status).toBe("accepted");
     expect(sourceHistoryEvent.type).toBe("source_history.updated");
     expect(sourceHistoryEvent.mode).toBe("already_in_workspace");
+    expect(sourceHistoryPublishedEvent.type).toBe("source_history.published");
+    expect(sourceHistoryPublishedEvent.publicationState).toBe("published");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

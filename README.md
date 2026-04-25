@@ -143,7 +143,10 @@ This repository currently contains:
   review lifecycle mutations for accepted/rejected/superseded decisions, and a
   runtime-local source-history application path for accepted candidates that
   validates the current source tree before recording a local history commit,
-  without publishing those engine-generated files remotely;
+  plus a separate source-history publication path that materializes an applied
+  source-history commit as a git commit artifact, records publication metadata,
+  emits `source_history.published`, and can push to the runtime's primary git
+  target, including local `file://` git remotes for Entangle Local tests;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
@@ -656,9 +659,10 @@ The highest-value remaining gaps are:
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
-- advanced git widening beyond the current locator-specific handoff model,
-  especially source-change candidate remote publication, source commit artifact
-  records, non-primary target provisioning, and replicated fallback paths;
+- advanced git widening beyond the current locator-specific handoff and
+  source-history publication model, especially policy-gated publication
+  controls, artifact history/diff APIs, non-primary target provisioning, and
+  replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

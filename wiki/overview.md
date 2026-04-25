@@ -159,7 +159,9 @@ The repository now also contains the first real implementation baseline:
   pending source-change candidate records with host, CLI, and Studio
   inspection plus bounded candidate diff, listed-file previews, and audited
   review lifecycle mutations plus runtime-local source-history application for
-  accepted candidates, without publishing engine-generated files remotely;
+  accepted candidates, and a separate source-history publication mutation that
+  turns applied source-history commits into git commit artifacts with durable
+  publication metadata;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -668,10 +670,12 @@ The current implementation-truth audit now lives in
   bindings, the explicit repository-target contract, the host-owned
   provisioning record model, the publication/retrieval-state record model, and
   the new pending source-change candidate records with bounded diff and
-  listed-file preview plus review and local source-history state; the next git
-  gap is source-history remote publication and source commit artifact records,
-  while the next deployment-grade gap is non-disposable local-profile upgrade
-  and repair behavior for older Gitea volumes;
+  listed-file preview plus review, local source-history state, and first
+  source-history commit artifact publication; the next git gaps are
+  policy-gated publication controls, artifact history/diff workflow, and
+  non-primary target/fallback behavior, while the next deployment-grade gap is
+  non-disposable local-profile upgrade and repair behavior for older Gitea
+  volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

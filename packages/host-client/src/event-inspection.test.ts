@@ -88,6 +88,29 @@ function createSourceHistoryUpdatedEvent(): HostEventRecord {
   };
 }
 
+function createSourceHistoryPublishedEvent(): HostEventRecord {
+  return {
+    artifactId: "source-source-history-source-change-turn-alpha",
+    candidateId: "source-change-turn-alpha",
+    category: "runtime",
+    commit: "artifact-commit-alpha",
+    eventId: "evt-source-history-published",
+    graphId: "team-alpha",
+    graphRevisionId: "team-alpha-20260424-000000",
+    historyId: "source-history-source-change-turn-alpha",
+    message:
+      "Source history 'source-history-source-change-turn-alpha' for runtime 'worker-it' published artifact 'source-source-history-source-change-turn-alpha'.",
+    nodeId: "worker-it",
+    publicationState: "published",
+    schemaVersion: "1",
+    sourceHistoryBranch:
+      "worker-it/source-history/source-history-source-change-turn-alpha",
+    timestamp: "2026-04-24T10:00:40.000Z",
+    turnId: "turn-alpha",
+    type: "source_history.published"
+  };
+}
+
 describe("host event inspection helpers", () => {
   it("matches runtime recovery events by node id and type prefix", () => {
     const event = createRuntimeRecoveryRecordedEvent();
@@ -143,6 +166,12 @@ describe("host event inspection helpers", () => {
     ).toBe(true);
     expect(
       hostEventMatchesFilter(createSourceHistoryUpdatedEvent(), {
+        nodeId: "worker-it",
+        typePrefixes: [...runtimeTraceEventTypePrefixes]
+      })
+    ).toBe(true);
+    expect(
+      hostEventMatchesFilter(createSourceHistoryPublishedEvent(), {
         nodeId: "worker-it",
         typePrefixes: [...runtimeTraceEventTypePrefixes]
       })

@@ -7,9 +7,11 @@ Date: 2026-04-25.
 This slice advances Entangle Local L3 workstream B5 by turning an operator
 accepted source-change candidate into a durable local source-history entry.
 
-The implementation deliberately remains local and explicit. It does not publish
-the source commit to a remote git service, does not create downstream artifact
-handoffs, and does not bypass future policy or approval gates.
+The implementation deliberately remained local and explicit at the time of
+this slice. The later source-history publication slice adds a separate
+publication mutation for applied source-history records; candidate application
+still does not auto-publish source commits, create downstream handoffs, or
+bypass future policy or approval gates.
 
 ## Entry Audit
 
@@ -79,14 +81,16 @@ history entries for the selected runtime.
 
 ## Boundary Decisions
 
-This slice intentionally does not:
+This slice intentionally did not:
 
-- push source-history commits to a remote git service;
-- convert source-history commits into published artifacts;
 - emit `task.result` handoffs for applied source;
 - create resumable approval records before apply;
 - merge concurrent source changes;
 - expose runtime-local filesystem paths.
+
+Follow-up slice `references/202-source-history-publication-slice.md` added
+explicit source-history publication and source commit artifact records while
+preserving this slice's separation between application and publication.
 
 The mutation is host-mediated in Entangle Local because the active product
 surface already exposes local operator mutations through the host boundary.
@@ -96,13 +100,12 @@ executor behind a runner command without changing the host API contract.
 
 ## Remaining B5 Work
 
-The remaining B5 implementation should add:
+After the publication follow-up, the remaining B5 implementation should add:
 
 - policy checks and approval gates before source application or publication;
-- remote git publication for approved source-history commits;
-- artifact records for published source commits or branches;
+- richer publication retry semantics and target selection;
 - artifact history/diff APIs beyond report artifacts;
-- CLI and Studio source publication views;
+- richer CLI and Studio source publication history views;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff and file inspection, review, source-history
   application, remote publication, and downstream inspection.

@@ -13,6 +13,8 @@ export function projectRuntimeSourceHistorySummary(entry: SourceHistoryRecord) {
     label: formatRuntimeSourceHistoryLabel(entry),
     mode: entry.mode,
     nodeId: entry.nodeId,
+    publicationState: entry.publication?.publication.state ?? "not_requested",
+    publishedArtifactId: entry.publication?.artifactId,
     sourceHistoryId: entry.sourceHistoryId,
     turnId: entry.turnId
   };

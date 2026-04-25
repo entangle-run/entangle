@@ -8,7 +8,7 @@ export const gitRepositoryTargetSchema = z.object({
   provisioningMode: z.enum(["preexisting", "gitea_api"]),
   remoteUrl: nonEmptyStringSchema,
   repositoryName: identifierSchema,
-  transportKind: z.enum(["ssh", "https"])
+  transportKind: z.enum(["ssh", "https", "file"])
 });
 
 export type GitRepositoryTarget = z.infer<typeof gitRepositoryTargetSchema>;
