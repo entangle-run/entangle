@@ -116,6 +116,7 @@ describe("studio runtime session inspection helpers", () => {
             activeConversationIds: ["conv-worker"],
             graphId: "team-alpha",
             intent: "Review the latest patch set.",
+            lastMessageType: "task.result",
             openedAt: "2026-04-24T10:00:00.000Z",
             ownerNodeId: "worker-it",
             rootArtifactIds: ["artifact-worker"],
@@ -146,6 +147,12 @@ describe("studio runtime session inspection helpers", () => {
     expect(formatSessionInspectionNodeLabel(workerEntry!, "worker-it")).toBe(
       "worker-it · active · selected runtime"
     );
+    expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "active conversations 1"
+    );
     expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain("approvals 1");
+    expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "last message task.result"
+    );
   });
 });

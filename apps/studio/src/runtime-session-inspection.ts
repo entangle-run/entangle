@@ -83,8 +83,11 @@ export function formatSessionInspectionNodeDetail(
 ): string {
   return [
     `Runtime ${entry.runtime.desiredState}/${entry.runtime.observedState}`,
-    `conversations ${entry.session.activeConversationIds.length}`,
+    `active conversations ${entry.session.activeConversationIds.length}`,
     `approvals ${entry.session.waitingApprovalIds.length}`,
-    `root artifacts ${entry.session.rootArtifactIds.length}`
+    `root artifacts ${entry.session.rootArtifactIds.length}`,
+    ...(entry.session.lastMessageType
+      ? [`last message ${entry.session.lastMessageType}`]
+      : [])
   ].join(" · ");
 }
