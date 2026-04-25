@@ -155,6 +155,7 @@ This directory is the canonical design corpus for Entangle.
 149. [148-peer-runtime-route-identity-slice.md](148-peer-runtime-route-identity-slice.md)
 150. [149-runner-autonomous-handoff-slice.md](149-runner-autonomous-handoff-slice.md)
 151. [150-runner-session-active-conversation-reconciliation-slice.md](150-runner-session-active-conversation-reconciliation-slice.md)
+152. [151-host-session-activity-detail-slice.md](151-host-session-activity-detail-slice.md)
 
 ## Role of this corpus
 

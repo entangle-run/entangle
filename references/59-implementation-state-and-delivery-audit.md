@@ -135,7 +135,9 @@ This layer is strong and directionally correct. It is not a blocker.
 - host-owned session summary and session-detail inspection backed by persisted
   runner session state;
 - typed host-event persistence, HTTP event listing, and live WebSocket event
-  streaming through the same host boundary;
+  streaming through the same host boundary, with `session.updated` events now
+  carrying active conversation ids, root artifact ids, and last message type
+  for active-work diagnostics;
 - optional bootstrap operator-token enforcement through
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token support in the shared host
   client and local operator surfaces, plus typed
@@ -416,6 +418,9 @@ not modeling.
   generation, Studio renders those shared trace details in the selected-runtime
   panel, and the CLI can filter to runtime-trace events plus print structured
   trace summaries without inventing a separate event model.
+- a session-event detail widening where shared runtime-trace presentation now
+  renders active conversation count, root artifact count, and last message
+  type from host-derived `session.updated` events.
 - bounded tool-execution diagnostic messages that persist in normalized engine
   outcomes and surface through runner memory, shared runtime-trace detail
   lines, and Studio runner-turn detail.

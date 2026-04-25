@@ -28,12 +28,15 @@ function createRuntimeRecoveryRecordedEvent(): HostEventRecord {
 
 function createSessionEvent(): HostEventRecord {
   return {
+    activeConversationIds: ["conv-alpha"],
     category: "session",
     eventId: "evt-session-updated",
     graphId: "team-alpha",
+    lastMessageType: "task.request",
     message: "Session 'session-alpha' is now 'active'.",
     nodeId: "worker-it",
     ownerNodeId: "user-root",
+    rootArtifactIds: ["artifact-report"],
     schemaVersion: "1",
     sessionId: "session-alpha",
     status: "active",

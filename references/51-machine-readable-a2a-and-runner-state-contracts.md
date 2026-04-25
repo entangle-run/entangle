@@ -134,6 +134,12 @@ open-work set. After task results or explicit close messages, the runner
 reconciles that field from non-terminal `ConversationRecord` entries instead
 of leaving every seen conversation id in the session forever.
 
+Host-derived session activity records and `session.updated` events now preserve
+that same active-work signal, plus session root artifact ids and the last A2A
+message type. This keeps the host event surface aligned with runner-local
+session semantics instead of forcing runtime-trace clients to infer open work
+from status alone.
+
 ## Validator surfaces
 
 `packages/validator` now exposes validation entrypoints for:

@@ -47,6 +47,37 @@ describe("runtime trace helpers", () => {
     expect(collectRuntimeTraceEvents(events, "worker-it")).toHaveLength(1);
   });
 
+  it("describes session activity with bounded active-work details", () => {
+    const event: HostEventRecord = {
+      activeConversationIds: ["conv-alpha"],
+      category: "session",
+      eventId: "evt-session-updated",
+      graphId: "team-alpha",
+      lastMessageType: "task.result",
+      message: "Session 'session-alpha' on node 'worker-it' is now 'active'.",
+      nodeId: "worker-it",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: ["artifact-report-001", "artifact-report-002"],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      status: "active",
+      timestamp: "2026-04-24T11:00:03.000Z",
+      traceId: "trace-alpha",
+      type: "session.updated",
+      updatedAt: "2026-04-24T11:00:03.000Z"
+    };
+
+    expect(describeRuntimeTraceEvent(event)).toEqual({
+      detailLines: [
+        "Trace: trace-alpha",
+        "Active conversations: 1",
+        "Root artifacts: 2",
+        "Last message: task.result"
+      ],
+      label: "Session session-alpha moved to active"
+    });
+  });
+
   it("describes runner-turn engine outcome in a bounded way", () => {
     const event: HostEventRecord = {
       category: "runner",

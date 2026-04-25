@@ -99,13 +99,27 @@ function buildRunnerTurnDetailLines(
   return detailLines;
 }
 
+function buildSessionUpdatedDetailLines(
+  event: Extract<HostEventRecord, { type: "session.updated" }>
+): string[] {
+  const activeConversationIds = event.activeConversationIds ?? [];
+  const rootArtifactIds = event.rootArtifactIds ?? [];
+
+  return [
+    `Trace: ${event.traceId}`,
+    `Active conversations: ${activeConversationIds.length}`,
+    `Root artifacts: ${rootArtifactIds.length}`,
+    ...(event.lastMessageType ? [`Last message: ${event.lastMessageType}`] : [])
+  ];
+}
+
 export function describeRuntimeTraceEvent(
   event: HostEventRecord
 ): RuntimeTraceEventPresentation {
   switch (event.type) {
     case "session.updated":
       return {
-        detailLines: [`Trace: ${event.traceId}`],
+        detailLines: buildSessionUpdatedDetailLines(event),
         label: `Session ${event.sessionId} moved to ${event.status}`
       };
     case "conversation.trace.event":

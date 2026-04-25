@@ -3004,6 +3004,7 @@ describe("buildHostServer", () => {
           activeConversationIds: ["conv-alpha"],
           graphId: "team-alpha",
           intent: "Review the latest patch set.",
+          lastMessageType: "task.request",
           openedAt: "2026-04-24T10:00:00.000Z",
           ownerNodeId: "worker-it",
           rootArtifactIds: ["report-turn-001"],
@@ -3115,6 +3116,7 @@ describe("buildHostServer", () => {
           activeConversationIds: ["conv-alpha"],
           graphId: "team-alpha",
           intent: "Review the latest patch set.",
+          lastMessageType: "task.request",
           openedAt: "2026-04-24T10:00:00.000Z",
           ownerNodeId: "worker-it",
           rootArtifactIds: ["report-turn-001"],
@@ -3309,8 +3311,11 @@ describe("buildHostServer", () => {
             type: "artifact.trace.event"
           }),
           expect.objectContaining({
+            activeConversationIds: ["conv-alpha"],
             category: "session",
+            lastMessageType: "task.request",
             nodeId: "worker-it",
+            rootArtifactIds: ["report-turn-001"],
             sessionId: "session-alpha",
             status: "active",
             type: "session.updated"

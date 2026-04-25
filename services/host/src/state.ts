@@ -4370,10 +4370,15 @@ async function synchronizeSessionActivityObservation(input: {
     sessionRecord.sessionId
   );
   const nextRecord = observedSessionActivityRecordSchema.parse({
+    activeConversationIds: sessionRecord.activeConversationIds,
     fingerprint,
     graphId: sessionRecord.graphId,
+    ...(sessionRecord.lastMessageType
+      ? { lastMessageType: sessionRecord.lastMessageType }
+      : {}),
     nodeId: runtime.nodeId,
     ownerNodeId: sessionRecord.ownerNodeId,
+    rootArtifactIds: sessionRecord.rootArtifactIds,
     schemaVersion: "1",
     sessionId: sessionRecord.sessionId,
     status: sessionRecord.status,
@@ -4395,11 +4400,17 @@ async function synchronizeSessionActivityObservation(input: {
   await appendHostEvent({
     category: "session",
     graphId: sessionRecord.graphId,
+    activeConversationIds: sessionRecord.activeConversationIds,
+    ...(sessionRecord.lastMessageType
+      ? { lastMessageType: sessionRecord.lastMessageType }
+      : {}),
     message:
       `Session '${sessionRecord.sessionId}' on node '${runtime.nodeId}' is now ` +
-      `'${sessionRecord.status}'.`,
+      `'${sessionRecord.status}' with ${sessionRecord.activeConversationIds.length} ` +
+      `active conversation(s).`,
     nodeId: runtime.nodeId,
     ownerNodeId: sessionRecord.ownerNodeId,
+    rootArtifactIds: sessionRecord.rootArtifactIds,
     sessionId: sessionRecord.sessionId,
     status: sessionRecord.status,
     traceId: sessionRecord.traceId,

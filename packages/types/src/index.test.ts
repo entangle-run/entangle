@@ -608,12 +608,15 @@ describe("host event contracts", () => {
 
   it("accepts typed session and runner-turn activity events", () => {
     const sessionEvent = hostEventRecordSchema.parse({
+      activeConversationIds: ["conv-alpha"],
       category: "session",
       eventId: "session-worker-it-001",
       graphId: "graph-alpha",
+      lastMessageType: "task.result",
       message: "Session 'session-alpha' on node 'worker-it' is now 'active'.",
       nodeId: "worker-it",
       ownerNodeId: "worker-it",
+      rootArtifactIds: ["artifact-report-001"],
       schemaVersion: "1",
       sessionId: "session-alpha",
       status: "active",
@@ -679,6 +682,12 @@ describe("host event contracts", () => {
 
     expect(sessionEvent.type).toBe("session.updated");
     expect(sessionEvent.category).toBe("session");
+    if (sessionEvent.type !== "session.updated") {
+      throw new Error("Expected session.updated event");
+    }
+    expect(sessionEvent.activeConversationIds).toEqual(["conv-alpha"]);
+    expect(sessionEvent.rootArtifactIds).toEqual(["artifact-report-001"]);
+    expect(sessionEvent.lastMessageType).toBe("task.result");
     expect(runnerTurnEvent.type).toBe("runner.turn.updated");
     expect(runnerTurnEvent.category).toBe("runner");
     if (runnerTurnEvent.type !== "runner.turn.updated") {

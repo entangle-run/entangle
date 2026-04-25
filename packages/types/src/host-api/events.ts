@@ -23,6 +23,7 @@ import {
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema
 } from "../runtime/session-state.js";
+import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
 import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
@@ -214,10 +215,13 @@ export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend
 });
 
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
+  activeConversationIds: z.array(identifierSchema).default([]),
   category: z.literal("session"),
   graphId: identifierSchema,
+  lastMessageType: entangleA2AMessageTypeSchema.optional(),
   nodeId: identifierSchema,
   ownerNodeId: identifierSchema,
+  rootArtifactIds: z.array(identifierSchema).default([]),
   sessionId: identifierSchema,
   status: sessionLifecycleStateSchema,
   traceId: identifierSchema,

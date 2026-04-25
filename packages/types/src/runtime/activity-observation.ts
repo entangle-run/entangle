@@ -17,12 +17,16 @@ import {
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema
 } from "./session-state.js";
+import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
 
 export const observedSessionActivityRecordSchema = z.object({
+  activeConversationIds: z.array(identifierSchema).default([]),
   fingerprint: nonEmptyStringSchema,
   graphId: identifierSchema,
+  lastMessageType: entangleA2AMessageTypeSchema.optional(),
   nodeId: identifierSchema,
   ownerNodeId: identifierSchema,
+  rootArtifactIds: z.array(identifierSchema).default([]),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema,
   status: sessionLifecycleStateSchema,

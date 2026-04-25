@@ -1232,3 +1232,18 @@ history.
 
 Closed the implementation pass after widening runner service and builtin
 inspection tests, then rerunning targeted runner tests and typecheck.
+
+## [2026-04-25] implementation | Added active-work details to session events
+
+Closed the next host-surface diagnostics slice by widening host-derived
+`session.updated` events and observed session activity records with
+`activeConversationIds`, `rootArtifactIds`, and `lastMessageType`. Runtime
+trace consumers can now distinguish currently open work from historical
+session status without re-reading runner-local state directly.
+
+The shared host-client runtime-trace presentation now renders active
+conversation count, root artifact count, and the last message type for session
+events, and Studio consumes the same detail lines.
+
+Closed the pass after widening contract, host, host-client, and Studio tests,
+then rerunning targeted checks for those packages.

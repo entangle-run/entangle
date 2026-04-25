@@ -62,12 +62,14 @@ describe("studio runtime trace inspection helpers", () => {
         updatedAt: "2026-04-24T11:00:03.000Z"
       },
       {
+        activeConversationIds: ["conv-beta"],
         category: "session",
         eventId: "evt-session-foreign",
         graphId: "team-alpha",
         message: "Session 'session-beta' is now 'active'.",
         nodeId: "worker-marketing",
         ownerNodeId: "user-root",
+        rootArtifactIds: [],
         schemaVersion: "1",
         sessionId: "session-beta",
         status: "active",
@@ -172,6 +174,34 @@ describe("studio runtime trace inspection helpers", () => {
       "Tool executions: 2 total (1 success, 1 error)",
       "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_execution_failed)",
       "Memory synthesis: updated 6 summary pages"
+    ]);
+  });
+
+  it("surfaces session active-work detail lines", () => {
+    const detailLines = formatRuntimeTraceEventDetailLines({
+      activeConversationIds: ["conv-alpha"],
+      category: "session",
+      eventId: "evt-session-updated",
+      graphId: "team-alpha",
+      lastMessageType: "task.result",
+      message: "Session 'session-alpha' on node 'worker-it' is now 'active'.",
+      nodeId: "worker-it",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: ["artifact-report"],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      status: "active",
+      timestamp: "2026-04-24T11:00:03.000Z",
+      traceId: "trace-alpha",
+      type: "session.updated",
+      updatedAt: "2026-04-24T11:00:03.000Z"
+    });
+
+    expect(detailLines).toEqual([
+      "Trace: trace-alpha",
+      "Active conversations: 1",
+      "Root artifacts: 1",
+      "Last message: task.result"
     ]);
   });
 });

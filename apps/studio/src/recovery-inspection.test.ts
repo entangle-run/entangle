@@ -120,12 +120,14 @@ describe("studio recovery inspection helpers", () => {
   it("filters runtime recovery events for one runtime and formats labels", () => {
     const events: HostEventRecord[] = [
       {
+        activeConversationIds: ["conv-alpha"],
         category: "session",
         eventId: "evt-session",
         graphId: "team-alpha",
         message: "Session 'session-alpha' is now 'active'.",
         nodeId: "worker-it",
         ownerNodeId: "user-root",
+        rootArtifactIds: [],
         schemaVersion: "1",
         sessionId: "session-alpha",
         status: "active",
