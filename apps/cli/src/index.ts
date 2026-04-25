@@ -5,7 +5,9 @@ import {
   createHostClient,
   filterHostEvents,
   hostEventMatchesFilter,
+  sortGraphRevisions,
   sortHostSessionSummariesForPresentation,
+  sortNodeInspectionsForPresentation,
   sortRuntimeTurnsForPresentation
 } from "@entangle/host-client";
 import { createAgentPackageScaffold } from "@entangle/package-scaffold";
@@ -24,6 +26,13 @@ import {
   validatePackageDirectory
 } from "@entangle/validator";
 import { buildHostEventFilter } from "./host-event-inspection.js";
+import {
+  projectGraphRevisionInspectionSummary,
+  projectGraphRevisionSummary,
+  projectGraphSummary,
+  projectNodeInspectionSummary,
+  projectSortedGraphEdgeSummaries
+} from "./graph-output.js";
 import { buildCliMutationDryRun } from "./mutation-dry-run.js";
 import {
   buildPackageInitOptions,
@@ -598,10 +607,14 @@ const hostGraphCommand = hostCommand
 
 hostGraphCommand
   .command("get")
+  .option("--summary", "Print a compact operator-oriented graph summary.")
   .description("Print the active graph and revision metadata.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.getGraph());
+    const response = await client.getGraph();
+    printJson(
+      options.summary ? { graph: projectGraphSummary(response) } : response
+    );
   });
 
 const hostGraphRevisionsCommand = hostGraphCommand
@@ -610,19 +623,39 @@ const hostGraphRevisionsCommand = hostGraphCommand
 
 hostGraphRevisionsCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented graph revision summaries.")
   .description("List persisted graph revisions.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listGraphRevisions());
+    const response = await client.listGraphRevisions();
+    printJson(
+      options.summary
+        ? {
+            revisions: sortGraphRevisions(response.revisions).map(
+              projectGraphRevisionSummary
+            )
+          }
+        : response
+    );
   });
 
 hostGraphRevisionsCommand
   .command("get")
   .argument("<revisionId>", "Graph revision identifier.")
+  .option("--summary", "Print a compact operator-oriented graph revision summary.")
   .description("Inspect one persisted graph revision.")
-  .action(async (revisionId: string, _options, command: Command) => {
+  .action(async (
+    revisionId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getGraphRevision(revisionId));
+    const response = await client.getGraphRevision(revisionId);
+    printJson(
+      options.summary
+        ? { revision: projectGraphRevisionInspectionSummary(response) }
+        : response
+    );
   });
 
 hostGraphCommand
@@ -665,19 +698,39 @@ const hostNodesCommand = hostCommand
 
 hostNodesCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented node summaries.")
   .description("List applied non-user node bindings for the active graph.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listNodes());
+    const response = await client.listNodes();
+    printJson(
+      options.summary
+        ? {
+            nodes: sortNodeInspectionsForPresentation(response.nodes).map(
+              projectNodeInspectionSummary
+            )
+          }
+        : response
+    );
   });
 
 hostNodesCommand
   .command("get")
   .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--summary", "Print a compact operator-oriented node summary.")
   .description("Inspect one applied non-user node binding.")
-  .action(async (nodeId: string, _options, command: Command) => {
+  .action(async (
+    nodeId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
-    printJson(await client.getNode(nodeId));
+    const response = await client.getNode(nodeId);
+    printJson(
+      options.summary
+        ? { node: projectNodeInspectionSummary(response) }
+        : response
+    );
   });
 
 hostNodesCommand
@@ -780,10 +833,16 @@ const hostEdgesCommand = hostCommand
 
 hostEdgesCommand
   .command("list")
+  .option("--summary", "Print compact operator-oriented edge summaries.")
   .description("List applied edges for the active graph.")
-  .action(async (_options, command: Command) => {
+  .action(async (options: { summary?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.listEdges());
+    const response = await client.listEdges();
+    printJson(
+      options.summary
+        ? { edges: projectSortedGraphEdgeSummaries(response.edges) }
+        : response
+    );
   });
 
 hostEdgesCommand

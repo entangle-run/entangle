@@ -1,5 +1,4 @@
 import type {
-  GraphSpec,
   ManagedNodeKind,
   NodeBinding,
   NodeCreateRequest,
@@ -98,25 +97,8 @@ export function buildManagedNodeReplacementRequest(
   };
 }
 
-export function sortManagedGraphNodes(
-  graph: GraphSpec | undefined
-): NodeBinding[] {
-  const nodes = graph?.nodes ?? [];
-
-  return nodes
-    .filter((node) => node.nodeKind !== "user")
-    .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
-}
-
-export function formatManagedNodeLabel(node: NodeBinding): string {
-  return `${node.displayName} · ${node.nodeKind}`;
-}
-
-export function formatManagedNodeDetail(node: NodeBinding): string {
-  const relaySummary =
-    node.resourceBindings.relayProfileRefs.length > 0
-      ? `${node.resourceBindings.relayProfileRefs.length} relay refs`
-      : "graph relay defaults";
-
-  return `package ${node.packageSourceRef ?? "unbound"} · ${relaySummary} · initiate ${node.autonomy.canInitiateSessions ? "yes" : "no"}`;
-}
+export {
+  formatManagedNodeDetail,
+  formatManagedNodeLabel,
+  sortManagedGraphNodes
+} from "@entangle/host-client";

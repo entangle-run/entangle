@@ -109,20 +109,8 @@ export function buildEdgeReplacementRequest(
   };
 }
 
-export function sortGraphEdges(edges: Edge[]): Edge[] {
-  return [...edges].sort((left, right) => left.edgeId.localeCompare(right.edgeId));
-}
-
-export function formatGraphEdgeLabel(edge: Edge): string {
-  return `${edge.edgeId} · ${edge.relation}`;
-}
-
-export function formatGraphEdgeDetail(edge: Edge): string {
-  const state = edge.enabled ? "enabled" : "disabled";
-  const relaySummary =
-    edge.transportPolicy.relayProfileRefs.length > 0
-      ? `${edge.transportPolicy.relayProfileRefs.length} relay profile refs`
-      : "shared graph relay set";
-
-  return `${edge.fromNodeId} -> ${edge.toNodeId} · ${state} · channel ${edge.transportPolicy.channel} · ${relaySummary}`;
-}
+export {
+  formatGraphEdgeDetail,
+  formatGraphEdgeLabel,
+  sortGraphEdges
+} from "@entangle/host-client";

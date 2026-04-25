@@ -515,6 +515,10 @@ This repository currently contains:
   shared `host-client` artifact helpers, and `host runtimes artifact` plus
   `host runtimes artifacts` support `--summary` for compact headless
   inspection;
+- a shared graph-topology presentation slice where Studio now reuses
+  `host-client` helpers for graph revisions, managed nodes, and edges, while
+  the CLI exposes compact `--summary` output for active graph, graph revision,
+  applied node, and edge inspection;
 
 The highest-value remaining gaps are:
 

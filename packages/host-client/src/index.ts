@@ -761,6 +761,19 @@ export {
   type HostEventFilter
 } from "./event-inspection.js";
 export {
+  formatGraphEdgeDetail,
+  formatGraphEdgeLabel,
+  formatGraphRevisionDetail,
+  formatGraphRevisionInspectionSummary,
+  formatGraphRevisionLabel,
+  formatManagedNodeDetail,
+  formatManagedNodeLabel,
+  sortGraphEdges,
+  sortGraphRevisions,
+  sortManagedGraphNodes,
+  sortNodeInspectionsForPresentation
+} from "./graph-presentation.js";
+export {
   filterRuntimeArtifactsForPresentation,
   formatRuntimeArtifactDetailLines,
   formatRuntimeArtifactLabel,

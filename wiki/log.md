@@ -1299,3 +1299,15 @@ runtime recovery inspection surface. The ESLint project-service default-file
 cap was raised deliberately so type-aware lint continues to cover the growing
 CLI and host-client helper test suites instead of forcing lower-value test
 consolidation.
+
+## [2026-04-25] implementation | Added shared graph presentation and CLI summaries
+
+Closed the graph-topology presentation drift by moving graph revision,
+managed-node, node-inspection sorting, and edge presentation helpers into
+`packages/host-client`. Studio now consumes those helpers through thin local
+re-export boundaries instead of owning separate graph vocabulary.
+
+The CLI now supports compact operator-oriented `--summary` output for active
+graph inspection, graph revision list/detail, applied node list/detail, and
+applied edge list commands over the existing host-owned graph resource
+surfaces.

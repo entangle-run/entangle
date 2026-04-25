@@ -160,6 +160,7 @@ This directory is the canonical design corpus for Entangle.
 154. [153-shared-session-presentation-slice.md](153-shared-session-presentation-slice.md)
 155. [154-shared-artifact-presentation-slice.md](154-shared-artifact-presentation-slice.md)
 156. [155-shared-recovery-presentation-slice.md](155-shared-recovery-presentation-slice.md)
+157. [156-shared-graph-presentation-slice.md](156-shared-graph-presentation-slice.md)
 
 ## Role of this corpus
 

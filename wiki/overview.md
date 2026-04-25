@@ -411,6 +411,10 @@ The repository now also contains the first real implementation baseline:
   Studio consuming the same formatting and the CLI exposing compact
   `host runtimes artifact --summary` and `host runtimes artifacts --summary`
   output;
+- shared graph-topology presentation helpers in `packages/host-client`, with
+  Studio consuming the same graph revision, managed-node, and edge vocabulary
+  and the CLI exposing compact `--summary` output for active graph, graph
+  revision, node, and edge inspection;
 - a widening of the host event surface where `entangle-host` now derives
   `session.updated` plus `runner.turn.updated` records from persisted runner
   session and turn state, with `session.updated` now preserving
