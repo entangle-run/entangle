@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   validateA2AMessageDocument,
   validateConversationLifecycleTransition,
+  validateDeploymentResourceCatalogDocument,
   validateGraphDocument,
   validatePackageDirectory,
   validateRuntimeArtifactRefs,
@@ -74,6 +75,17 @@ function buildGraph(
 
 function buildRuntimeContext(): EffectiveRuntimeContext {
   return {
+    agentRuntimeContext: {
+      engineProfile: {
+        id: "local-opencode",
+        displayName: "Local OpenCode",
+        kind: "opencode_server",
+        executable: "opencode",
+        stateScope: "node"
+      },
+      engineProfileRef: "local-opencode",
+      mode: "coding_agent"
+    },
     artifactContext: {
       backends: ["git"],
       defaultNamespace: "team-alpha",
@@ -318,6 +330,36 @@ describe("validatePackageDirectory", () => {
   });
 });
 
+describe("validateDeploymentResourceCatalogDocument", () => {
+  it("rejects missing default agent engine profile refs", () => {
+    const report = validateDeploymentResourceCatalogDocument({
+      schemaVersion: "1",
+      catalogId: "local",
+      agentEngineProfiles: [
+        {
+          id: "local-opencode",
+          displayName: "Local OpenCode",
+          kind: "opencode_server",
+          executable: "opencode"
+        }
+      ],
+      defaults: {
+        relayProfileRefs: [],
+        agentEngineProfileRef: "missing-engine"
+      }
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "unknown_default_agent_engine_profile",
+          severity: "error"
+        })
+      ])
+    );
+  });
+});
+
 describe("validateGraphDocument", () => {
   it("does not invent missing host state when package-source ids were not provided", () => {
     const report = validateGraphDocument(buildGraph("worker-source"));
@@ -382,6 +424,80 @@ describe("validateGraphDocument", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: "unknown_external_principal_ref",
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects coding-agent nodes without an effective agent engine profile", () => {
+    const graph = buildGraph("worker-source");
+    graph.nodes[1] = {
+      ...graph.nodes[1]!,
+      agentRuntime: {
+        mode: "coding_agent"
+      }
+    };
+    const report = validateGraphDocument(graph, {
+      catalog: {
+        schemaVersion: "1",
+        catalogId: "local",
+        relays: [],
+        gitServices: [],
+        modelEndpoints: [],
+        agentEngineProfiles: [],
+        defaults: {
+          relayProfileRefs: []
+        }
+      },
+      packageSourceIds: ["worker-source"]
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "missing_effective_agent_engine_profile",
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects missing node agent engine profile refs", () => {
+    const graph = buildGraph("worker-source");
+    graph.nodes[1] = {
+      ...graph.nodes[1]!,
+      agentRuntime: {
+        engineProfileRef: "missing-engine",
+        mode: "coding_agent"
+      }
+    };
+    const report = validateGraphDocument(graph, {
+      catalog: {
+        schemaVersion: "1",
+        catalogId: "local",
+        relays: [],
+        gitServices: [],
+        modelEndpoints: [],
+        agentEngineProfiles: [
+          {
+            id: "local-opencode",
+            displayName: "Local OpenCode",
+            kind: "opencode_server",
+            executable: "opencode"
+          }
+        ],
+        defaults: {
+          relayProfileRefs: []
+        }
+      },
+      packageSourceIds: ["worker-source"]
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "unknown_agent_engine_profile",
           severity: "error"
         })
       ])

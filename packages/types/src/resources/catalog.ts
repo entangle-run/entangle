@@ -109,10 +109,62 @@ export const modelEndpointProfileSchema = z.object({
   defaultModel: nonEmptyStringSchema.optional()
 });
 
+export const agentEngineProfileKindSchema = z.enum([
+  "opencode_server",
+  "claude_agent_sdk",
+  "external_process",
+  "external_http"
+]);
+
+export const agentEngineProfileSchema = z
+  .object({
+    id: identifierSchema,
+    displayName: nonEmptyStringSchema,
+    kind: agentEngineProfileKindSchema,
+    version: nonEmptyStringSchema.optional(),
+    executable: nonEmptyStringSchema.optional(),
+    baseUrl: httpUrlSchema.optional(),
+    defaultAgent: identifierSchema.optional(),
+    stateScope: z.enum(["node", "shared"]).default("node")
+  })
+  .superRefine((value, context) => {
+    if (
+      value.kind === "opencode_server" ||
+      value.kind === "external_process"
+    ) {
+      if (!value.executable && !value.baseUrl) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Process-backed agent engine profiles must declare an executable or a base URL.",
+          path: ["executable"]
+        });
+      }
+    }
+
+    if (value.kind === "external_http" && !value.baseUrl) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "HTTP agent engine profiles must declare a base URL.",
+        path: ["baseUrl"]
+      });
+    }
+
+  });
+
+export const defaultOpenCodeAgentEngineProfile = {
+  id: "local-opencode",
+  displayName: "Local OpenCode",
+  kind: "opencode_server" as const,
+  executable: "opencode",
+  stateScope: "node" as const
+};
+
 export const deploymentResourceDefaultsSchema = z.object({
   relayProfileRefs: z.array(identifierSchema).default([]),
   gitServiceRef: identifierSchema.optional(),
-  modelEndpointRef: identifierSchema.optional()
+  modelEndpointRef: identifierSchema.optional(),
+  agentEngineProfileRef: identifierSchema.optional()
 });
 
 export const deploymentResourceCatalogSchema = z.object({
@@ -121,6 +173,10 @@ export const deploymentResourceCatalogSchema = z.object({
   relays: z.array(relayProfileSchema).default([]),
   gitServices: z.array(gitServiceProfileSchema).default([]),
   modelEndpoints: z.array(modelEndpointProfileSchema).default([]),
+  agentEngineProfiles: z
+    .array(agentEngineProfileSchema)
+    .min(1)
+    .default([defaultOpenCodeAgentEngineProfile]),
   defaults: deploymentResourceDefaultsSchema.default({
     relayProfileRefs: []
   })
@@ -136,6 +192,10 @@ export type ModelEndpointAdapterKind = z.infer<
   typeof modelEndpointAdapterKindSchema
 >;
 export type ModelEndpointProfile = z.infer<typeof modelEndpointProfileSchema>;
+export type AgentEngineProfileKind = z.infer<
+  typeof agentEngineProfileKindSchema
+>;
+export type AgentEngineProfile = z.infer<typeof agentEngineProfileSchema>;
 export type DeploymentResourceCatalog = z.infer<
   typeof deploymentResourceCatalogSchema
 >;

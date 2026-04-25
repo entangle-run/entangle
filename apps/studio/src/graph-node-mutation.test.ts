@@ -20,6 +20,7 @@ import {
 
 function createManagedNode(nodeId: string, displayName: string): NodeBinding {
   return {
+    agentRuntime: {},
     autonomy: {
       canInitiateSessions: false,
       canMutateGraph: false
@@ -43,6 +44,9 @@ const graph: GraphSpec = {
       gitServiceRefs: [],
       relayProfileRefs: []
     },
+    agentRuntime: {
+      mode: "coding_agent"
+    },
     runtimeProfile: "hackathon_local"
   },
   edges: [],
@@ -50,6 +54,7 @@ const graph: GraphSpec = {
   name: "Team Alpha",
   nodes: [
     {
+      agentRuntime: {},
       autonomy: {
         canInitiateSessions: false,
         canMutateGraph: false
@@ -138,6 +143,7 @@ describe("graph node mutation helpers", () => {
     node.resourceBindings.relayProfileRefs = ["relay-main"];
 
     expect(buildManagedNodeEditorDraft(node)).toEqual({
+      agentRuntime: {},
       autonomy: {
         canInitiateSessions: true,
         canMutateGraph: false

@@ -72,9 +72,12 @@ export async function createRuntimeFixture(input: {
   const remoteRepositoryPath = path.join(tempRoot, "graph-alpha.git");
   const secretsRoot = path.join(tempRoot, "secrets");
   const workspaceRoot = path.join(tempRoot, "workspace");
+  const engineStateRoot = path.join(workspaceRoot, "engine-state");
   const injectedRoot = path.join(workspaceRoot, "injected");
   const memoryRoot = path.join(workspaceRoot, "memory");
   const retrievalRoot = path.join(workspaceRoot, "retrieval");
+  const sourceWorkspaceRoot = path.join(workspaceRoot, "source");
+  const wikiRepositoryRoot = path.join(workspaceRoot, "wiki-repository");
 
   await Promise.all([
     mkdir(path.join(packageRoot, "prompts"), { recursive: true }),
@@ -83,7 +86,10 @@ export async function createRuntimeFixture(input: {
     mkdir(path.join(secretsRoot, "model"), { recursive: true }),
     mkdir(path.join(memoryRoot, "schema"), { recursive: true }),
     mkdir(path.join(memoryRoot, "wiki"), { recursive: true }),
+    mkdir(engineStateRoot, { recursive: true }),
     mkdir(retrievalRoot, { recursive: true }),
+    mkdir(sourceWorkspaceRoot, { recursive: true }),
+    mkdir(wikiRepositoryRoot, { recursive: true }),
     mkdir(path.join(workspaceRoot, "runtime"), { recursive: true }),
     mkdir(path.join(workspaceRoot, "workspace"), { recursive: true }),
     mkdir(injectedRoot, { recursive: true })
@@ -156,6 +162,19 @@ export async function createRuntimeFixture(input: {
       : undefined;
 
   const context: EffectiveRuntimeContext = {
+    agentRuntimeContext: {
+      defaultAgent: "general",
+      engineProfile: {
+        id: "local-opencode",
+        displayName: "Local OpenCode",
+        kind: "opencode_server",
+        executable: "opencode",
+        defaultAgent: "general",
+        stateScope: "node"
+      },
+      engineProfileRef: "local-opencode",
+      mode: "coding_agent"
+    },
     artifactContext: {
       backends: ["git"],
       defaultNamespace: "team-alpha",
@@ -217,6 +236,11 @@ export async function createRuntimeFixture(input: {
         nodeId: "worker-it",
         displayName: "Worker IT",
         nodeKind: "worker",
+        agentRuntime: {
+          defaultAgent: "general",
+          engineProfileRef: "local-opencode",
+          mode: "coding_agent"
+        },
         packageSourceRef: "worker-it-source",
         resourceBindings: {
           relayProfileRefs: ["local-relay"],
@@ -326,8 +350,11 @@ export async function createRuntimeFixture(input: {
       injectedRoot,
       memoryRoot,
       artifactWorkspaceRoot: path.join(workspaceRoot, "workspace"),
+      engineStateRoot,
       retrievalRoot,
-      runtimeRoot: path.join(workspaceRoot, "runtime")
+      runtimeRoot: path.join(workspaceRoot, "runtime"),
+      sourceWorkspaceRoot,
+      wikiRepositoryRoot
     }
   };
 

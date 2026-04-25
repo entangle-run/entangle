@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added OpenCode-first node agent runtime contracts
+
+Started the L3 Agentic Node Runtime foundation. Deployment catalogs now require
+at least one agent engine profile, graph and node bindings can select
+`agentRuntime`, effective runtime context exposes the resolved
+`agentRuntimeContext`, and the local host default is `local-opencode` with
+OpenCode as the node coding engine profile.
+
+The old one-turn model adapter is no longer exposed as a node runtime profile.
+It remains only as internal implementation code until the OpenCode adapter
+fully replaces the runner's current injected-engine boundary. The host also
+materializes per-node `source`, `engine-state`, and `wiki-repository` workspace
+roots for the upcoming coding-agent integration.
+
 ## [2026-04-25] release | Closed L2 Local Workbench
 
 Closed L2 as `v0.2-local-workbench`. The final L2 slice added read-only

@@ -161,7 +161,9 @@ Completed in the current repository state:
    internal engine boundary;
 3. provider-agnostic turn execution through the internal engine package;
 4. host-resolved model credential delivery into the effective runtime context;
-5. live runner entrypoints wired to the real engine path instead of the stub;
+5. live runner entrypoints validate the resolved per-node agent runtime and
+   require a coding-agent adapter boundary instead of falling back to a stub or
+   legacy one-turn model path;
 6. a bounded builtin tool surface that now includes deterministic
    artifact-input inspection, bounded memory-ref inspection, and bounded
    current-session state inspection through the runner-owned tool executor;
@@ -322,7 +324,8 @@ Remaining work in this phase:
 
 Acceptance for the phase:
 
-- live runner execution no longer depends on a stub engine;
+- live runner execution no longer falls back to a stub engine or a legacy
+  one-turn model path;
 - provider-native types do not leak into runner contracts;
 - the engine path is test-covered and reusable across runner scenarios;
 - bounded tool-loop behavior is added without collapsing provider logic into

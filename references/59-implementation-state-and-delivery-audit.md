@@ -207,8 +207,9 @@ and widening, not rethinking the boundary.
   allowing sessions with multiple outbound handoffs to remain active until the
   final delegated conversation resolves or closes and then complete with no
   stale active conversation ids;
-- live runner entrypoints wired to the real internal engine boundary instead of
-  the stub path;
+- live runner entrypoints now validate the resolved per-node agent runtime and
+  require a coding-agent adapter boundary instead of silently falling back to a
+  stub or legacy one-turn model path;
 - deterministic post-turn wiki maintenance that writes task pages, appends to
   `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent
   task memory back into future turn assembly.

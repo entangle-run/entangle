@@ -14,6 +14,7 @@ export const managedNodeKindOptions: ManagedNodeKind[] = [
 ];
 
 export type ManagedNodeEditorDraft = {
+  agentRuntime: NodeBinding["agentRuntime"];
   autonomy: NodeBinding["autonomy"];
   displayName: string;
   nodeId: string;
@@ -24,6 +25,7 @@ export type ManagedNodeEditorDraft = {
 
 export function createEmptyManagedNodeEditorDraft(): ManagedNodeEditorDraft {
   return {
+    agentRuntime: {},
     autonomy: {
       canInitiateSessions: false,
       canMutateGraph: false
@@ -63,6 +65,7 @@ export function buildManagedNodeEditorDraft(
   }
 
   return {
+    agentRuntime: node.agentRuntime,
     autonomy: node.autonomy,
     displayName: node.displayName,
     nodeId: node.nodeId,
@@ -76,6 +79,7 @@ export function buildManagedNodeCreateRequest(
   draft: ManagedNodeEditorDraft
 ): NodeCreateRequest {
   return {
+    agentRuntime: draft.agentRuntime,
     autonomy: draft.autonomy,
     displayName: draft.displayName,
     nodeId: draft.nodeId,
@@ -89,6 +93,7 @@ export function buildManagedNodeReplacementRequest(
   draft: ManagedNodeEditorDraft
 ): NodeReplacementRequest {
   return {
+    agentRuntime: draft.agentRuntime,
     autonomy: draft.autonomy,
     displayName: draft.displayName,
     nodeKind: draft.nodeKind,

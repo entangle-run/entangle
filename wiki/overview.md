@@ -140,6 +140,12 @@ The repository now also contains the first real implementation baseline:
   report-artifact preview through the host API, CLI, and Studio, and runtime
   memory page inspection plus bounded preview through the host API, CLI, and
   Studio;
+- a first L3 Agentic Node Runtime foundation where deployment catalogs must
+  carry at least one agent engine profile, graph and node bindings can select
+  an `agentRuntime`, effective runtime context exposes the resolved
+  `agentRuntimeContext`, the default local engine profile is OpenCode, and
+  per-node source, engine-state, and wiki-repository workspace roots now exist
+  for the future coding-agent adapter;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -147,8 +153,8 @@ The repository now also contains the first real implementation baseline:
 - a first real provider-backed `agent-engine` slice with an internal Anthropic
   adapter, official SDK wiring behind the stable engine boundary, normalized
   one-turn execution, explicit model auth-mode contracts with the correct
-  Anthropic local default, and live runner entrypoints no longer bound to the
-  stub path;
+  Anthropic local default, and an internal adapter path that is no longer the
+  public node-runtime profile;
 - a second provider-backed `agent-engine` slice with an OpenAI-compatible chat
   completions adapter behind the same internal engine boundary, preserving
   provider-agnostic runner contracts while supporting bearer-token auth,

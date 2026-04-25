@@ -22,6 +22,7 @@ import {
   isAllowedSessionLifecycleTransition,
   resolveEffectiveExternalPrincipals,
   resolveEffectiveExternalPrincipalRefs,
+  resolveEffectiveAgentEngineProfile,
   resolveEffectiveGitServiceRefs,
   resolveEffectiveModelEndpointProfileRef,
   resolveGitPrincipalBindingForService,
@@ -126,12 +127,19 @@ export function validateDeploymentResourceCatalogDocument(
     ...collectDuplicateFindings(
       catalog.modelEndpoints.map((endpoint) => endpoint.id),
       ["modelEndpoints"]
+    ),
+    ...collectDuplicateFindings(
+      catalog.agentEngineProfiles.map((profile) => profile.id),
+      ["agentEngineProfiles"]
     )
   );
 
   const relayIds = catalog.relays.map((relay) => relay.id);
   const gitServiceIds = catalog.gitServices.map((service) => service.id);
   const modelEndpointIds = catalog.modelEndpoints.map((endpoint) => endpoint.id);
+  const agentEngineProfileIds = catalog.agentEngineProfiles.map(
+    (profile) => profile.id
+  );
 
   for (const relayRef of catalog.defaults.relayProfileRefs) {
     if (!relayIds.includes(relayRef)) {
@@ -177,6 +185,23 @@ export function validateDeploymentResourceCatalogDocument(
     );
   }
 
+  if (
+    catalog.defaults.agentEngineProfileRef &&
+    !agentEngineProfileIds.includes(catalog.defaults.agentEngineProfileRef)
+  ) {
+    findings.push(
+      createFinding({
+        code: "unknown_default_agent_engine_profile",
+        severity: "error",
+        message: `Default agent engine profile '${catalog.defaults.agentEngineProfileRef}' does not exist in the catalog.`,
+        path: ["defaults", "agentEngineProfileRef"],
+        details: {
+          agentEngineProfileRef: catalog.defaults.agentEngineProfileRef
+        }
+      })
+    );
+  }
+
   return buildValidationReport(findings);
 }
 
@@ -198,6 +223,8 @@ function validateGraphSemantics(
   const gitServiceIds = catalog?.gitServices.map((service) => service.id) ?? [];
   const modelEndpointIds =
     catalog?.modelEndpoints.map((endpoint) => endpoint.id) ?? [];
+  const agentEngineProfileIds =
+    catalog?.agentEngineProfiles?.map((profile) => profile.id) ?? [];
 
   findings.push(
     ...collectDuplicateFindings(nodeIds, ["nodes"]),
@@ -301,6 +328,24 @@ function validateGraphSemantics(
     );
   }
 
+  if (
+    catalog &&
+    graph.defaults.agentRuntime.engineProfileRef &&
+    !agentEngineProfileIds.includes(graph.defaults.agentRuntime.engineProfileRef)
+  ) {
+    findings.push(
+      createFinding({
+        code: "unknown_graph_default_agent_engine_profile",
+        severity: "error",
+        message: `Graph defaults reference an unknown agent engine profile '${graph.defaults.agentRuntime.engineProfileRef}'.`,
+        path: ["defaults", "agentRuntime", "engineProfileRef"],
+        details: {
+          agentEngineProfileRef: graph.defaults.agentRuntime.engineProfileRef
+        }
+      })
+    );
+  }
+
   if (!graph.nodes.some((node) => node.nodeKind === "user")) {
     findings.push(
       createFinding({
@@ -367,6 +412,11 @@ function validateGraphSemantics(
       catalog
     );
     const resolvedModelEndpointRef = resolveEffectiveModelEndpointProfileRef(
+      node,
+      graph,
+      catalog
+    );
+    const resolvedAgentEngineProfile = resolveEffectiveAgentEngineProfile(
       node,
       graph,
       catalog
@@ -587,6 +637,38 @@ function validateGraphSemantics(
           message: `Node '${node.nodeId}' references an unknown model endpoint profile.`,
           path: ["nodes", node.nodeId, "resourceBindings", "modelEndpointProfileRef"],
           details: { modelEndpointProfileRef: resourceBindings.modelEndpointProfileRef }
+        })
+      );
+    }
+
+    if (
+      catalog &&
+      node.agentRuntime.engineProfileRef &&
+      !hasExistingId(agentEngineProfileIds, node.agentRuntime.engineProfileRef)
+    ) {
+      findings.push(
+        createFinding({
+          code: "unknown_agent_engine_profile",
+          severity: "error",
+          message: `Node '${node.nodeId}' references an unknown agent engine profile.`,
+          path: ["nodes", node.nodeId, "agentRuntime", "engineProfileRef"],
+          details: {
+            agentEngineProfileRef: node.agentRuntime.engineProfileRef
+          }
+        })
+      );
+    }
+
+    if (
+      catalog &&
+      !resolvedAgentEngineProfile
+    ) {
+      findings.push(
+        createFinding({
+          code: "missing_effective_agent_engine_profile",
+          severity: "error",
+          message: `Node '${node.nodeId}' has no effective agent engine profile.`,
+          path: ["nodes", node.nodeId, "agentRuntime", "engineProfileRef"]
         })
       );
     }

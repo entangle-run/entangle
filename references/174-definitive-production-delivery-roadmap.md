@@ -231,8 +231,9 @@ If yes, update this roadmap or add a decision record before continuing.
 | Local | L1 | Local Operator Baseline | Presentable local architecture proof. |
 | Local | L1.5 | Local Operator Preview | Usable local demo and technical preview. |
 | Local | L2 | Local Workbench | Productized local package, graph, session, and artifact workflows. |
-| Local | L3 | Local Reliability | Doctor, repair, backup, import/export, upgrade, and diagnostics. |
-| Local | L4 | Local GA | Complete local/developer product. |
+| Local | L3 | Agentic Node Runtime | Per-node coding-agent runtime selection, OpenCode integration path, policy bridge, git/wiki workspaces, and observability. |
+| Local | L4 | Local Reliability | Doctor, repair, backup, import/export, upgrade, and diagnostics. |
+| Local | L5 | Local GA | Complete local/developer product. |
 | Cloud | C0 | Cloud Start Gate | Confirm Local is complete and production work may begin. |
 | Cloud | C1 | Cloud Foundation | PostgreSQL, identity, tenancy, auth, audit, API discipline. |
 | Cloud | C2 | Governed Execution MVP | Production-style session launch, sandbox, artifact service, approvals. |
@@ -404,9 +405,78 @@ Exit criteria:
 - Studio and CLI remain clients of host APIs;
 - local workbench features do not require production tenancy.
 
-### L3: Local Reliability
+### L3: Agentic Node Runtime
 
-Target tag: `v0.3-local-reliability`.
+Target tag: `v0.3-local-agentic-node-runtime`.
+
+Target outcome: every non-user Entangle node can be configured as a real
+coding-agent entity while Entangle remains the graph, identity, policy,
+artifact, wiki, and communication runtime around that engine.
+
+This milestone is the approved post-L2 insertion before Local Reliability. It
+must not turn Entangle into an OpenCode or Claude Code fork. The coding engine
+is pluggable per node; Entangle owns node identity, graph topology, Nostr
+coordination, policy, artifact bindings, runtime context, and inspection.
+
+Incremental features:
+
+1. Runtime contracts:
+   - catalog-level agent engine profiles;
+   - graph and node-level agent runtime selection;
+   - effective runtime context that exposes the resolved engine profile;
+   - validator checks for unknown or contradictory runtime bindings.
+2. OpenCode adapter:
+   - first production-quality coding-agent adapter;
+   - per-node server/process lifecycle;
+   - session prompt injection from Entangle A2A messages;
+   - bounded event, status, diff, permission, and artifact harvesting;
+   - explicit failure evidence when OpenCode is unavailable or misconfigured.
+3. Policy bridge:
+   - Entangle policy decides which node may read, write, execute, publish,
+     request permissions, mutate graph state, or talk to peers;
+   - engine-native permission prompts are mapped into Entangle approvals where
+     possible;
+   - engine subagents remain internal implementation detail unless surfaced as
+     Entangle nodes by explicit configuration.
+4. Node workspace model:
+   - per-node source workspace;
+   - per-node engine state workspace;
+   - git artifact workspace and publication flow;
+   - wiki/memory repository workspace, with migration from file-backed memory
+     only when repository semantics are implemented safely.
+5. Node communication:
+   - inbound Entangle messages become engine prompts with graph, peer,
+     artifact, policy, and memory context;
+   - outbound engine results can create artifacts, commits, handoffs, approval
+     requests, and conversation lifecycle changes through runner-owned
+     boundaries;
+   - the host and Studio can inspect the node's runtime and conversation state
+     without owning engine internals.
+6. CLI and Studio visibility:
+   - show effective agent runtime mode/profile per node;
+   - expose OpenCode availability, last engine session, status, and failure
+     evidence;
+   - keep configuration editable through graph/node surfaces rather than
+     hidden environment-only state.
+
+Exit criteria:
+
+- a local graph can run at least one non-user node with OpenCode as its coding
+  engine and can explicitly disable or reconfigure other nodes without falling
+  back to legacy one-turn inference;
+- the OpenCode-backed node can receive an Entangle task, operate in its
+  per-node workspace, materialize an artifact, and emit a graph-valid response
+  or handoff;
+- policy and approval gates prevent unauthorized filesystem, git, publication,
+  and peer-communication actions;
+- Studio and CLI show which engine each node uses and enough runtime evidence
+  to debug failures;
+- provider-specific engine protocol details do not leak into graph, host API,
+  or A2A contracts.
+
+### L4: Local Reliability
+
+Target tag: `v0.4-local-reliability`.
 
 Target outcome: Entangle Local is robust enough for repeated technical use.
 
@@ -440,7 +510,7 @@ Exit criteria:
 - common local drift is diagnosed without reading raw files;
 - repair behavior is conservative and never silently destroys user work.
 
-### L4: Entangle Local GA
+### L5: Entangle Local GA
 
 Target tag: `v1.0-local`.
 
@@ -473,7 +543,7 @@ Local GA exit criteria:
 
 ## Product 2: Entangle Cloud
 
-Cloud work starts only after L4 is accepted.
+Cloud work starts only after L5 is accepted.
 
 ### C0: Cloud Start Gate
 
@@ -786,7 +856,7 @@ Evolution:
 - strongest feasible smoke passes or is explicitly deferred;
 - release note does not overclaim production readiness.
 
-### Gate L4: Local GA
+### Gate L5: Local GA
 
 - local install path is documented and repeatable;
 - demo assets work on a fresh machine;
@@ -828,8 +898,8 @@ Evolution:
 
 ## Immediate Plan
 
-L1 and L1.5 release closure are complete. The current target is L2 Local
-Workbench, not Local GA.
+L1, L1.5, and L2 release closure are complete. The current target is L3
+Agentic Node Runtime, not Local GA.
 
 L1.5 shipped:
 
@@ -843,15 +913,20 @@ L1.5 shipped:
 
 Remaining implementation sequence:
 
-1. Treat L2 Local Workbench as closed at `v0.2-local-workbench`.
-2. Run the post-L2 roadmap review before starting the next implementation
-   milestone.
-3. Decide how the proposed Autonomous Coding Runtime milestone fits before
-   Local Reliability without back-porting coding-runtime decisions into L2.
-4. Keep graph bundles, artifact history/diff, relay-publish retry, doctor,
-   repair, backup, restore, and upgrade work out of the L2 release claim.
-5. Run `pnpm verify`, strict preflight, preview demo, and disposable runtime
-   smoke before closing L2.
+1. Build L3 Agentic Node Runtime.
+   - Keep Entangle as the node/graph/policy/artifact/wiki runtime.
+   - Integrate OpenCode as the first serious coding-agent engine per node.
+   - Do not expose the old one-turn model adapter as a node runtime profile.
+2. Build L4 Local Reliability.
+   - Add local doctor.
+   - Add conservative repair.
+   - Add backup/restore and state-version checks.
+   - Add logs collection and repeated-use validation.
+3. Cut L5 Local GA.
+   - Run clean-state validation.
+   - Align docs, README, release notes, roadmap, and website claims.
+   - Make limitations explicit.
+   - Tag GA only after all gates pass.
 
 Correct L1 statement:
 
@@ -869,8 +944,9 @@ Assuming disciplined sequencing:
 | Local | L1 local operator baseline | late April 2026 |
 | Local | L1.5 local operator preview | early May 2026 |
 | Local | L2 local workbench | May 2026 |
-| Local | L3 local reliability | late May to June 2026 |
-| Local | L4 Local GA | June 2026 |
+| Local | L3 agentic node runtime | May to June 2026 |
+| Local | L4 local reliability | June 2026 |
+| Local | L5 Local GA | June to July 2026 |
 | Cloud | C1 cloud foundation | June to July 2026 |
 | Cloud | C2 governed execution MVP | July to August 2026 |
 | Cloud | C3 private beta | September 2026 |

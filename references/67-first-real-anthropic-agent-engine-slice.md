@@ -72,16 +72,22 @@ This is still intentionally a one-turn slice, but it means the first real
 provider-backed execution path is materially more useful than a simple string
 stub.
 
-### 4. Live runner entrypoints now use the real engine path
+### 4. Live runner entrypoints used the real engine path for this slice
 
-The live paths in `services/runner/src/index.ts` now create a real engine from
-the effective model runtime context unless a test explicitly injects an engine.
+At the time of this slice, the live paths in `services/runner/src/index.ts`
+created a real engine from the effective model runtime context unless a test
+explicitly injected an engine.
 
 This preserves:
 
 - a real product path;
 - deterministic test injection;
 - runner/provider separation.
+
+Current L3 agentic-node-runtime work supersedes that live wiring: the
+provider-backed one-turn adapter remains internal implementation code, while
+node runtime selection now resolves an `agentRuntimeContext` and defaults to an
+OpenCode-backed coding-agent profile.
 
 ## Intentional non-goals
 

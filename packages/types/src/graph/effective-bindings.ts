@@ -1,5 +1,6 @@
 import type { GraphSpec, NodeBinding } from "./graph-spec.js";
 import type {
+  AgentEngineProfile,
   DeploymentResourceCatalog,
   GitServiceProfile,
   ModelEndpointProfile,
@@ -14,6 +15,12 @@ import {
 function unique(values: string[]): string[] {
   return Array.from(new Set(values));
 }
+
+export type EffectiveAgentRuntime = {
+  mode: "disabled" | "coding_agent";
+  engineProfileRef?: string;
+  defaultAgent?: string;
+};
 
 export function intersectIdentifiers(
   values: string[],
@@ -88,6 +95,51 @@ export function resolveEffectiveModelEndpointProfileRef(
     node.resourceBindings.modelEndpointProfileRef ??
     graph.defaults.resourceBindings.modelEndpointProfileRef ??
     catalog?.defaults.modelEndpointRef
+  );
+}
+
+export function resolveEffectiveAgentRuntime(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): EffectiveAgentRuntime {
+  const nodeAgentRuntime = node.agentRuntime ?? {};
+  const graphAgentRuntime = graph.defaults.agentRuntime ?? {};
+  const engineProfileRef =
+    nodeAgentRuntime.engineProfileRef ??
+    graphAgentRuntime.engineProfileRef ??
+    catalog?.defaults.agentEngineProfileRef ??
+    catalog?.agentEngineProfiles?.[0]?.id;
+  const engineProfile = (catalog?.agentEngineProfiles ?? []).find(
+    (profile) => profile.id === engineProfileRef
+  );
+  const runtime: EffectiveAgentRuntime = {
+    mode: nodeAgentRuntime.mode ?? graphAgentRuntime.mode ?? "coding_agent"
+  };
+  const defaultAgent =
+    nodeAgentRuntime.defaultAgent ??
+    graphAgentRuntime.defaultAgent ??
+    engineProfile?.defaultAgent;
+
+  if (engineProfileRef) {
+    runtime.engineProfileRef = engineProfileRef;
+  }
+
+  if (defaultAgent) {
+    runtime.defaultAgent = defaultAgent;
+  }
+
+  return runtime;
+}
+
+export function resolveEffectiveAgentEngineProfile(
+  node: NodeBinding,
+  graph: GraphSpec,
+  catalog?: DeploymentResourceCatalog
+): AgentEngineProfile | undefined {
+  const runtime = resolveEffectiveAgentRuntime(node, graph, catalog);
+  return (catalog?.agentEngineProfiles ?? []).find(
+    (profile) => profile.id === runtime.engineProfileRef
   );
 }
 

@@ -43,6 +43,17 @@ function buildGraph(): GraphSpec {
 
 function buildRuntimeContext(): EffectiveRuntimeContext {
   return {
+    agentRuntimeContext: {
+      engineProfile: {
+        id: "local-opencode",
+        displayName: "Local OpenCode",
+        kind: "opencode_server",
+        executable: "opencode",
+        stateScope: "node"
+      },
+      engineProfileRef: "local-opencode",
+      mode: "coding_agent"
+    },
     artifactContext: {
       backends: ["git"],
       gitPrincipalBindings: [],

@@ -18,6 +18,9 @@ const graph: GraphSpec = {
       gitServiceRefs: [],
       relayProfileRefs: []
     },
+    agentRuntime: {
+      mode: "coding_agent"
+    },
     runtimeProfile: "hackathon_local"
   },
   edges: [],
@@ -25,6 +28,7 @@ const graph: GraphSpec = {
   name: "Team Alpha",
   nodes: [
     {
+      agentRuntime: {},
       autonomy: {
         canInitiateSessions: false,
         canMutateGraph: false
@@ -39,6 +43,7 @@ const graph: GraphSpec = {
       }
     },
     {
+      agentRuntime: {},
       autonomy: {
         canInitiateSessions: false,
         canMutateGraph: false

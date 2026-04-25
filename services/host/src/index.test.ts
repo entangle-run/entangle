@@ -1954,6 +1954,14 @@ describe("buildHostServer", () => {
         contextResponse.json()
       );
       expect(runtimeContext).toMatchObject({
+        agentRuntimeContext: {
+          engineProfile: {
+            id: "local-opencode",
+            kind: "opencode_server"
+          },
+          engineProfileRef: "local-opencode",
+          mode: "coding_agent"
+        },
         binding: {
           graphId: "team-alpha",
           node: {
@@ -4494,21 +4502,8 @@ describe("buildHostServer", () => {
 
   it("returns a structured 409 response when runtime context is unavailable", async () => {
     const server = await createTestServer({ includeModelEndpoint: false });
-    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {
-      const admitResponse = await server.inject({
-        method: "POST",
-        payload: {
-          sourceKind: "local_path",
-          absolutePath: packageDirectory
-        },
-        url: "/v1/package-sources/admit"
-      });
-      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
-        admitResponse.json()
-      ).packageSource.packageSourceId;
-
       await server.inject({
         method: "PUT",
         payload: {
@@ -4524,8 +4519,7 @@ describe("buildHostServer", () => {
             {
               nodeId: "worker-it",
               displayName: "Worker IT",
-              nodeKind: "worker",
-              packageSourceRef: admittedPackageSourceId
+              nodeKind: "worker"
             }
           ],
           edges: []
@@ -4547,7 +4541,7 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("treats a missing model secret as an unavailable runtime context", async () => {
+  it("does not block an OpenCode-backed runtime context on Entangle model secrets", async () => {
     const server = await createTestServer({
       includeModelEndpoint: true,
       includeModelSecret: false
@@ -4596,12 +4590,15 @@ describe("buildHostServer", () => {
         url: "/v1/runtimes/worker-it/context"
       });
 
-      expect(response.statusCode).toBe(409);
-      const parsedError = hostErrorResponseSchema.parse(response.json());
-      expect(parsedError.code).toBe("conflict");
-      expect(parsedError.message).toContain(
-        "effective model endpoint credential is unavailable"
+      expect(response.statusCode).toBe(200);
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        response.json()
       );
+      expect(runtimeContext.agentRuntimeContext).toMatchObject({
+        engineProfileRef: "local-opencode",
+        mode: "coding_agent"
+      });
+      expect(runtimeContext.modelContext.auth?.status).toBe("missing");
     } finally {
       await server.close();
     }
@@ -4745,21 +4742,8 @@ describe("buildHostServer", () => {
 
   it("returns a structured 409 response when runtime restart is requested without a realizable context", async () => {
     const server = await createTestServer({ includeModelEndpoint: false });
-    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {
-      const admitResponse = await server.inject({
-        method: "POST",
-        payload: {
-          sourceKind: "local_path",
-          absolutePath: packageDirectory
-        },
-        url: "/v1/package-sources/admit"
-      });
-      const admittedPackageSourceId = packageSourceInspectionResponseSchema.parse(
-        admitResponse.json()
-      ).packageSource.packageSourceId;
-
       await server.inject({
         method: "PUT",
         payload: {
@@ -4775,8 +4759,7 @@ describe("buildHostServer", () => {
             {
               nodeId: "worker-it",
               displayName: "Worker IT",
-              nodeKind: "worker",
-              packageSourceRef: admittedPackageSourceId
+              nodeKind: "worker"
             }
           ],
           edges: []
@@ -4868,13 +4851,29 @@ describe("buildHostServer", () => {
 
   it("reports degraded host status when a runtime has no realizable context", async () => {
     const server = await createTestServer({ includeModelEndpoint: false });
-    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
 
     try {
-      const packageSourceId = await admitPackageSource(server, packageDirectory);
-      await applySingleWorkerGraph({
-        packageSourceId,
-        server
+      await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker"
+            }
+          ],
+          edges: []
+        },
+        url: "/v1/graph"
       });
 
       const statusResponse = await server.inject({

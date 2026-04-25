@@ -1,12 +1,22 @@
 import { z } from "zod";
-import { gitServiceProfileSchema, modelEndpointProfileSchema, relayProfileSchema } from "../resources/catalog.js";
+import {
+  agentEngineProfileSchema,
+  gitServiceProfileSchema,
+  modelEndpointProfileSchema,
+  relayProfileSchema
+} from "../resources/catalog.js";
 import { externalPrincipalRecordSchema } from "../resources/external-principal.js";
 import { edgeRelationSchema, runtimeProfileSchema } from "../common/topology.js";
 import { nostrPublicKeySchema } from "../common/crypto.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { gitRepositoryTargetSchema } from "../artifacts/git-repository-target.js";
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
-import { nodeAutonomyProfileSchema, nodeBindingSchema, nodeResourceBindingsSchema } from "../graph/graph-spec.js";
+import {
+  nodeAgentRuntimeModeSchema,
+  nodeAutonomyProfileSchema,
+  nodeBindingSchema,
+  nodeResourceBindingsSchema
+} from "../graph/graph-spec.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
 import { runtimeIdentityContextSchema } from "./runtime-identity.js";
 import { resolvedSecretBindingSchema } from "./secret-delivery.js";
@@ -22,12 +32,15 @@ export const effectiveEdgeRouteSchema = z.object({
 
 export const workspaceLayoutSchema = z.object({
   artifactWorkspaceRoot: filesystemPathSchema,
+  engineStateRoot: filesystemPathSchema.optional(),
   injectedRoot: filesystemPathSchema,
   memoryRoot: filesystemPathSchema,
   packageRoot: filesystemPathSchema,
   retrievalRoot: filesystemPathSchema,
   root: filesystemPathSchema,
-  runtimeRoot: filesystemPathSchema
+  runtimeRoot: filesystemPathSchema,
+  sourceWorkspaceRoot: filesystemPathSchema.optional(),
+  wikiRepositoryRoot: filesystemPathSchema.optional()
 });
 
 export const effectiveNodeBindingSchema = z.object({
@@ -104,6 +117,22 @@ export const modelRuntimeContextSchema = z
     }
   });
 
+export const agentRuntimeContextSchema = z.object({
+  mode: nodeAgentRuntimeModeSchema.default("coding_agent"),
+  defaultAgent: identifierSchema.optional(),
+  engineProfile: agentEngineProfileSchema,
+  engineProfileRef: identifierSchema
+}).superRefine((value, context) => {
+  if (value.engineProfile.id !== value.engineProfileRef) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Agent runtime context engineProfileRef must match the resolved engine profile id.",
+      path: ["engineProfileRef"]
+    });
+  }
+});
+
 export const policyRuntimeContextSchema = z.object({
   autonomy: nodeAutonomyProfileSchema,
   notes: z.array(nonEmptyStringSchema).default([]),
@@ -111,6 +140,7 @@ export const policyRuntimeContextSchema = z.object({
 });
 
 export const effectiveRuntimeContextSchema = z.object({
+  agentRuntimeContext: agentRuntimeContextSchema,
   artifactContext: artifactRuntimeContextSchema,
   binding: effectiveNodeBindingSchema,
   generatedAt: nonEmptyStringSchema,
@@ -129,5 +159,6 @@ export type EffectiveNodeBinding = z.infer<typeof effectiveNodeBindingSchema>;
 export type RelayRuntimeContext = z.infer<typeof relayRuntimeContextSchema>;
 export type ArtifactRuntimeContext = z.infer<typeof artifactRuntimeContextSchema>;
 export type ModelRuntimeContext = z.infer<typeof modelRuntimeContextSchema>;
+export type AgentRuntimeContext = z.infer<typeof agentRuntimeContextSchema>;
 export type PolicyRuntimeContext = z.infer<typeof policyRuntimeContextSchema>;
 export type EffectiveRuntimeContext = z.infer<typeof effectiveRuntimeContextSchema>;

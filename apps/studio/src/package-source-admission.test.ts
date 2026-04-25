@@ -126,6 +126,9 @@ describe("package source admission helpers", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
+        agentRuntime: {
+          mode: "coding_agent"
+        },
         runtimeProfile: "hackathon_local"
       },
       edges: [],
@@ -133,6 +136,7 @@ describe("package source admission helpers", () => {
       name: "Demo",
       nodes: [
         {
+          agentRuntime: {},
           autonomy: {
             canInitiateSessions: false,
             canMutateGraph: false
@@ -148,6 +152,7 @@ describe("package source admission helpers", () => {
           }
         },
         {
+          agentRuntime: {},
           autonomy: {
             canInitiateSessions: false,
             canMutateGraph: false
@@ -163,6 +168,7 @@ describe("package source admission helpers", () => {
           }
         },
         {
+          agentRuntime: {},
           autonomy: {
             canInitiateSessions: false,
             canMutateGraph: false

@@ -55,6 +55,9 @@ describe("studio graph revision inspection helpers", () => {
             gitServiceRefs: [],
             relayProfileRefs: []
           },
+          agentRuntime: {
+            mode: "coding_agent"
+          },
           runtimeProfile: "hackathon_local"
         },
         edges: [],
@@ -62,6 +65,7 @@ describe("studio graph revision inspection helpers", () => {
         name: "Team Alpha",
         nodes: [
           {
+            agentRuntime: {},
             autonomy: {
               canInitiateSessions: false,
               canMutateGraph: false

@@ -20,6 +20,22 @@ export const nodeAutonomyProfileSchema = z.object({
   canMutateGraph: z.boolean().default(false)
 });
 
+export const nodeAgentRuntimeModeSchema = z.enum([
+  "disabled",
+  "coding_agent"
+]);
+
+export const nodeAgentRuntimeSchema = z.object({
+  mode: nodeAgentRuntimeModeSchema.optional(),
+  engineProfileRef: identifierSchema.optional(),
+  defaultAgent: identifierSchema.optional()
+});
+
+export const defaultNodeAgentRuntime = {};
+export const defaultGraphAgentRuntime = {
+  mode: "coding_agent" as const
+};
+
 export const nodeBindingSchema = z.object({
   nodeId: identifierSchema,
   displayName: nonEmptyStringSchema,
@@ -33,7 +49,8 @@ export const nodeBindingSchema = z.object({
   autonomy: nodeAutonomyProfileSchema.default({
     canInitiateSessions: false,
     canMutateGraph: false
-  })
+  }),
+  agentRuntime: nodeAgentRuntimeSchema.default(defaultNodeAgentRuntime)
 });
 
 export const edgeTransportPolicySchema = z.object({
@@ -61,7 +78,8 @@ export const graphDefaultsSchema = z.object({
     gitServiceRefs: [],
     externalPrincipalRefs: []
   }),
-  runtimeProfile: runtimeProfileSchema.default("hackathon_local")
+  runtimeProfile: runtimeProfileSchema.default("hackathon_local"),
+  agentRuntime: nodeAgentRuntimeSchema.default(defaultGraphAgentRuntime)
 });
 
 export const graphSpecSchema = z.object({
@@ -76,11 +94,14 @@ export const graphSpecSchema = z.object({
       gitServiceRefs: [],
       externalPrincipalRefs: []
     },
-    runtimeProfile: "hackathon_local"
+    runtimeProfile: "hackathon_local",
+    agentRuntime: defaultGraphAgentRuntime
   })
 });
 
 export type NodeResourceBindings = z.infer<typeof nodeResourceBindingsSchema>;
+export type NodeAgentRuntimeMode = z.infer<typeof nodeAgentRuntimeModeSchema>;
+export type NodeAgentRuntime = z.infer<typeof nodeAgentRuntimeSchema>;
 export type NodeBinding = z.infer<typeof nodeBindingSchema>;
 export type EdgeTransportPolicy = z.infer<typeof edgeTransportPolicySchema>;
 export type Edge = z.infer<typeof edgeSchema>;

@@ -91,6 +91,8 @@ import {
   type PackageSourceInspectionResponse,
   type PackageSourceRecord,
   type PackageSourceListResponse,
+  resolveEffectiveAgentEngineProfile,
+  resolveEffectiveAgentRuntime,
   resolveEffectiveGitDefaultNamespace,
   resolveEffectiveExternalPrincipals,
   resolveEffectiveExternalPrincipalRefs,
@@ -583,6 +585,32 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
   const gitRemoteBase =
     process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE ??
     (gitTransport === "https" ? gitBaseUrl : "ssh://git@gitea:22");
+  const agentEngineBaseUrl =
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL?.trim();
+  const requestedAgentEngineKind =
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND?.trim();
+  const agentEngineKind =
+    requestedAgentEngineKind === "opencode_server" ||
+    requestedAgentEngineKind === "claude_agent_sdk" ||
+    requestedAgentEngineKind === "external_process" ||
+    (requestedAgentEngineKind === "external_http" && agentEngineBaseUrl)
+      ? requestedAgentEngineKind
+      : "opencode_server";
+  const agentEngineId = sanitizeIdentifier(
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID ??
+      (agentEngineKind === "opencode_server"
+        ? "local-opencode"
+        : `local-${agentEngineKind}`)
+  );
+  const configuredAgentEngineExecutable =
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_EXECUTABLE?.trim();
+  const agentEngineExecutable =
+    configuredAgentEngineExecutable ||
+    (agentEngineKind === "opencode_server"
+      ? "opencode"
+      : agentEngineKind === "external_process"
+        ? "agent-engine"
+        : undefined);
 
   const modelEndpointId = process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID?.trim();
   const modelBaseUrl = process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL?.trim();
@@ -650,10 +678,28 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
       }
     ],
     modelEndpoints,
+    agentEngineProfiles: [
+      {
+        id: agentEngineId,
+        displayName:
+          process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME ??
+          (agentEngineKind === "opencode_server"
+            ? "Local OpenCode"
+            : "Local Agent Engine"),
+        kind: agentEngineKind,
+        executable: agentEngineExecutable,
+        baseUrl: agentEngineBaseUrl || undefined,
+        defaultAgent:
+          process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_AGENT?.trim() || undefined,
+        version:
+          process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION?.trim() || undefined
+      }
+    ],
     defaults: {
       relayProfileRefs: [relayId],
       gitServiceRef: gitServiceId,
-      modelEndpointRef: modelEndpoints[0]?.id
+      modelEndpointRef: modelEndpoints[0]?.id,
+      agentEngineProfileRef: agentEngineId
     }
   });
 }
@@ -1869,12 +1915,15 @@ function buildWorkspaceLayout(nodeId: string) {
   const root = path.join(workspacesRoot, nodeId);
   return {
     artifactWorkspaceRoot: path.join(root, "workspace"),
+    engineStateRoot: path.join(root, "engine-state"),
     injectedRoot: path.join(root, "injected"),
     memoryRoot: path.join(root, "memory"),
     packageRoot: path.join(root, "package"),
     retrievalRoot: path.join(root, "retrieval"),
     root,
-    runtimeRoot: path.join(root, "runtime")
+    runtimeRoot: path.join(root, "runtime"),
+    sourceWorkspaceRoot: path.join(root, "source"),
+    wikiRepositoryRoot: path.join(root, "wiki-repository")
   };
 }
 
@@ -3053,9 +3102,8 @@ export async function validateGraphCandidate(
 }
 
 function buildRuntimeIntentReasonForUnavailableContext(input: {
+  hasAgentEngineProfile: boolean;
   gitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
-  hasModelEndpoint: boolean;
-  hasModelEndpointAuth: boolean;
   node: NodeBinding;
   packageManifest: AgentPackageManifest | undefined;
   packageSource: PackageSourceRecord | undefined;
@@ -3077,15 +3125,8 @@ function buildRuntimeIntentReasonForUnavailableContext(input: {
     return `Node '${input.node.nodeId}' cannot start because its package manifest could not be resolved.`;
   }
 
-  if (!input.hasModelEndpoint) {
-    return `Node '${input.node.nodeId}' cannot start because it has no effective model endpoint binding.`;
-  }
-
-  if (!input.hasModelEndpointAuth) {
-    return (
-      `Node '${input.node.nodeId}' cannot start because its effective model endpoint ` +
-      `credential is unavailable.`
-    );
+  if (!input.hasAgentEngineProfile) {
+    return `Node '${input.node.nodeId}' cannot start because it has no effective agent engine profile.`;
   }
 
   if (input.gitRepositoryProvisioning?.state === "failed") {
@@ -3146,6 +3187,16 @@ async function buildRuntimeResolution(input: {
     graph,
     catalog
   );
+  const resolvedAgentRuntime = resolveEffectiveAgentRuntime(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedAgentEngineProfile = resolveEffectiveAgentEngineProfile(
+    node,
+    graph,
+    catalog
+  );
   const resolvedModelAuthBinding = resolvedModelEndpointProfile
     ? await resolveSecretBinding(resolvedModelEndpointProfile.secretRef)
     : undefined;
@@ -3201,8 +3252,7 @@ async function buildRuntimeResolution(input: {
     Boolean(sourcePackageRoot) &&
     packageSourcePathExists &&
     Boolean(packageManifest) &&
-    Boolean(resolvedModelEndpointProfile) &&
-    resolvedModelAuthBinding?.status === "available";
+    Boolean(resolvedAgentEngineProfile);
   const gitRepositoryProvisioningRecordId = resolvedPrimaryGitRepositoryTarget
     ? buildGitRepositoryTargetRecordId(resolvedPrimaryGitRepositoryTarget)
     : undefined;
@@ -3253,8 +3303,11 @@ async function buildRuntimeResolution(input: {
     ensureDirectory(workspace.injectedRoot),
     ensureDirectory(workspace.memoryRoot),
     ensureDirectory(workspace.artifactWorkspaceRoot),
+    ensureDirectory(workspace.engineStateRoot),
     ensureDirectory(workspace.retrievalRoot),
-    ensureDirectory(workspace.runtimeRoot)
+    ensureDirectory(workspace.runtimeRoot),
+    ensureDirectory(workspace.sourceWorkspaceRoot),
+    ensureDirectory(workspace.wikiRepositoryRoot)
   ]);
 
   let context: EffectiveRuntimeContext | undefined;
@@ -3338,6 +3391,12 @@ async function buildRuntimeResolution(input: {
     }
 
     const contextDraft = {
+      agentRuntimeContext: {
+        mode: resolvedAgentRuntime.mode,
+        defaultAgent: resolvedAgentRuntime.defaultAgent,
+        engineProfile: resolvedAgentEngineProfile,
+        engineProfileRef: resolvedAgentRuntime.engineProfileRef
+      },
       artifactContext: {
         backends: ["git"],
         defaultNamespace: resolvedDefaultNamespace,
@@ -3422,10 +3481,8 @@ async function buildRuntimeResolution(input: {
       ? context
         ? "stopped_by_operator"
         : buildRuntimeIntentReasonForUnavailableContext({
+            hasAgentEngineProfile: Boolean(resolvedAgentEngineProfile),
             gitRepositoryProvisioning,
-            hasModelEndpoint: Boolean(resolvedModelEndpointProfile),
-            hasModelEndpointAuth:
-              resolvedModelAuthBinding?.status === "available",
             node,
             packageManifest,
             packageSource,

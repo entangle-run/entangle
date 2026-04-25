@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  agentEngineProfileSchema,
   agentEngineTurnResultSchema,
   artifactRecordSchema,
   classifyRuntimeReconciliation,
+  deploymentResourceCatalogSchema,
   edgeCreateRequestSchema,
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
@@ -16,6 +18,7 @@ import {
   externalPrincipalDeletionResponseSchema,
   externalPrincipalRecordSchema,
   focusedRegisterStateSchema,
+  graphSpecSchema,
   graphRevisionInspectionResponseSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
@@ -43,6 +46,7 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  resolveEffectiveAgentRuntime,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
   resolvePrimaryGitRepositoryTarget,
@@ -1751,6 +1755,83 @@ describe("model runtime context contracts", () => {
         }
       }).success
     ).toBe(false);
+  });
+});
+
+describe("agent runtime contracts", () => {
+  it("accepts OpenCode as a process-backed agent engine profile", () => {
+    const result = agentEngineProfileSchema.parse({
+      id: "local-opencode",
+      displayName: "Local OpenCode",
+      kind: "opencode_server",
+      executable: "opencode",
+      defaultAgent: "build"
+    });
+
+    expect(result).toMatchObject({
+      id: "local-opencode",
+      kind: "opencode_server",
+      stateScope: "node"
+    });
+  });
+
+  it("rejects process-backed agent engine profiles without an endpoint", () => {
+    expect(
+      agentEngineProfileSchema.safeParse({
+        id: "local-opencode",
+        displayName: "Local OpenCode",
+        kind: "opencode_server"
+      }).success
+    ).toBe(false);
+  });
+
+  it("resolves node agent runtime from graph and catalog defaults", () => {
+    const catalog = deploymentResourceCatalogSchema.parse({
+      schemaVersion: "1",
+      catalogId: "local-catalog",
+      agentEngineProfiles: [
+        {
+          id: "local-opencode",
+          displayName: "Local OpenCode",
+          kind: "opencode_server",
+          executable: "opencode",
+          defaultAgent: "build"
+        }
+      ],
+      defaults: {
+        relayProfileRefs: [],
+        agentEngineProfileRef: "local-opencode"
+      }
+    });
+    const graph = graphSpecSchema.parse({
+      schemaVersion: "1",
+      graphId: "agentic-team",
+      name: "Agentic Team",
+      nodes: [
+        {
+          nodeId: "builder",
+          displayName: "Builder",
+          nodeKind: "worker"
+        }
+      ],
+      defaults: {
+        resourceBindings: {
+          externalPrincipalRefs: [],
+          gitServiceRefs: [],
+          relayProfileRefs: []
+        },
+        runtimeProfile: "hackathon_local",
+        agentRuntime: {
+          mode: "coding_agent"
+        }
+      }
+    });
+
+    expect(resolveEffectiveAgentRuntime(graph.nodes[0]!, graph, catalog)).toEqual({
+      mode: "coding_agent",
+      engineProfileRef: "local-opencode",
+      defaultAgent: "build"
+    });
   });
 });
 

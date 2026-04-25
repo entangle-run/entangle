@@ -1,8 +1,5 @@
 import { pathToFileURL } from "node:url";
-import {
-  type AgentEngine,
-  createAgentEngineForModelContext
-} from "@entangle/agent-engine";
+import { type AgentEngine } from "@entangle/agent-engine";
 import type {
   AgentEngineTurnResult,
   EffectiveRuntimeContext
@@ -18,7 +15,6 @@ import {
 } from "./runtime-context.js";
 import { createModelGuidedMemorySynthesizer } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
-import { createBuiltinToolExecutor } from "./tool-executor.js";
 import type { RunnerTransport } from "./transport.js";
 
 function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefined {
@@ -97,6 +93,26 @@ function createProcessAbortController(): AbortController {
   return controller;
 }
 
+function assertAgentRuntimeCanStart(input: {
+  injectedEngine: boolean;
+  runtimeContext: EffectiveRuntimeContext;
+}): void {
+  const { runtimeContext } = input;
+  const agentRuntime = runtimeContext.agentRuntimeContext;
+
+  if (agentRuntime.mode === "disabled") {
+    throw new Error(
+      `Runner for node '${runtimeContext.binding.node.nodeId}' cannot start because its agent runtime is disabled.`
+    );
+  }
+
+  if (!input.injectedEngine) {
+    throw new Error(
+      `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}' (${agentRuntime.engineProfile.kind}), but no coding-agent adapter is wired into this runner build yet.`
+    );
+  }
+}
+
 export async function createConfiguredRunnerService(
   runtimeContextPath?: string,
   input: {
@@ -127,16 +143,13 @@ export async function createConfiguredRunnerService(
     createModelGuidedMemorySynthesizer({
       context: runtimeContext
     });
+  assertAgentRuntimeCanStart({
+    injectedEngine: Boolean(input.engine),
+    runtimeContext
+  });
   const service = new RunnerService({
     context: runtimeContext,
-    engine:
-      input.engine ?? createAgentEngineForModelContext({
-        modelContext: runtimeContext.modelContext,
-        toolExecutor: createBuiltinToolExecutor({
-          context: runtimeContext,
-          toolCatalog: packageToolCatalog
-        })
-      }),
+    engine: input.engine!,
     memorySynthesizer,
     toolDefinitions,
     transport
@@ -169,15 +182,11 @@ export async function runRunnerOnce(input: {
   const turnRequest = await buildAgentEngineTurnRequest(runtimeContext, {
     toolDefinitions
   });
-  const engine =
-    input.engine ??
-    createAgentEngineForModelContext({
-      modelContext: runtimeContext.modelContext,
-      toolExecutor: createBuiltinToolExecutor({
-        context: runtimeContext,
-        toolCatalog: packageToolCatalog
-      })
-    });
+  assertAgentRuntimeCanStart({
+    injectedEngine: Boolean(input.engine),
+    runtimeContext
+  });
+  const engine = input.engine!;
   const { publicKey } = resolveRunnerIdentity(runtimeContext);
 
   const result = await engine.executeTurn(turnRequest);

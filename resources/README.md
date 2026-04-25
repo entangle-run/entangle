@@ -13,22 +13,29 @@ The cloned repositories in this directory are local research material. They shou
 
 ## Clone Status
 
-The reference repositories listed below are now materialized locally in this directory.
+The active repository keeps only this manifest under `resources/`. The local
+reference clones are currently materialized outside the active worktree at:
+
+`/Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources`
+
+They remain local research material and should not be committed into the root
+Entangle repository history as embedded repositories or submodules unless the
+project deliberately changes policy later.
 
 ## Reference Repository Manifest
 
 | Local Name | Remote | Purpose | Status | Commit |
 | --- | --- | --- | --- | --- |
-| `nips` | `https://github.com/nostr-protocol/nips.git` | Official Nostr protocol specifications and the normative base for message transport, private messaging, DVMs, and discovery. | Cloned | `0a25dd524389d642ec153d9009a16fb183eb23ce` |
-| `nostr-tools` | `https://github.com/nbd-wtf/nostr-tools.git` | Primary Nostr client/library candidate for Entangle runners and Studio. Lowest-friction TypeScript choice and the most established default in the JS ecosystem. | Cloned | `6b8c24228228f6a1eb49d5fe082388b5dc2034eb` |
-| `opencode` | `https://github.com/anomalyco/opencode.git` | Primary open-source coding-agent shell and the strongest candidate base for Entangle Studio UX or agent engine reuse. | Cloned | `0595c289046d7f45d82a563ad0c76b3ccfca050b` |
-| `open-claude-code` | `https://github.com/ruvnet/open-claude-code.git` | Clean-room rebuild inspired by Claude Code. Useful as a secondary architectural reference. | Cloned | `9aa326ee49182c15e776e989dcb2d2cf7fd7ca88` |
-| `openclaw` | `https://github.com/openclaw/openclaw.git` | Large open-source agent runtime with persistent memory, runtime services, and multi-agent operational patterns. | Cloned | `81ca7bc40b09dbb6386fc5c1cecf237c5f11004a` |
-| `a2a` | `https://github.com/a2aproject/A2A.git` | Secondary interoperability reference for agent-to-agent communication across opaque agentic systems. Useful for capability discovery, long-running task semantics, and future gateway design. | Cloned | `7ff10041597b9c8a736a477e1890d2c79173bbcf` |
-| `mcp` | `https://github.com/modelcontextprotocol/modelcontextprotocol.git` | Secondary protocol reference for tool/runtime boundaries, schema discipline, and external interoperability surfaces. Useful for understanding where Entangle should align with MCP and where it should remain separate. | Cloned | `8b266219b19cf5e85e44b6c45dd81733cb65f131` |
-| `strfry` | `https://github.com/hoytech/strfry.git` | Primary relay implementation candidate for the hackathon: mature, fast, and simple to run as a dedicated local or containerized relay. | Cloned | `825e325cf93be03718cca157298392cba27d102f` |
-| `khatru` | `https://github.com/fiatjaf/khatru.git` | Secondary relay-framework reference for future custom relay logic, AUTH policies, or programmable event acceptance. Upstream is in maintenance mode, so treat it as a reference rather than a foundation. | Cloned | `9f99b9827a6e030bbcefc48f7af68bfe7eea1a27` |
-| `qmd` | `https://github.com/tobi/qmd.git` | Optional markdown-native search engine for the Entangle wiki and future memory/search tooling. Not part of the core runtime. | Cloned | `e8de7cab0284c5d64bd64f5928b49d3a2d9a01f3` |
+| `nips` | `https://github.com/nostr-protocol/nips.git` | Official Nostr protocol specifications and the normative base for message transport, private messaging, DVMs, and discovery. | Cloned outside active worktree | `0a25dd524389d642ec153d9009a16fb183eb23ce` |
+| `nostr-tools` | `https://github.com/nbd-wtf/nostr-tools.git` | Primary Nostr client/library candidate for Entangle runners and Studio. Lowest-friction TypeScript choice and the most established default in the JS ecosystem. | Cloned outside active worktree | `6b8c24228228f6a1eb49d5fe082388b5dc2034eb` |
+| `opencode` | `https://github.com/anomalyco/opencode.git` | Primary open-source coding-agent shell and the default candidate for Entangle's per-node coding engine. | Cloned outside active worktree | `0595c289046d7f45d82a563ad0c76b3ccfca050b` |
+| `open-claude-code` | `https://github.com/ruvnet/open-claude-code.git` | Clean-room rebuild inspired by Claude Code. Useful as a secondary architectural reference. | Cloned outside active worktree | `9aa326ee49182c15e776e989dcb2d2cf7fd7ca88` |
+| `openclaw` | `https://github.com/openclaw/openclaw.git` | Large open-source agent runtime with persistent memory, runtime services, and multi-agent operational patterns. | Cloned outside active worktree | `81ca7bc40b09dbb6386fc5c1cecf237c5f11004a` |
+| `a2a` | `https://github.com/a2aproject/A2A.git` | Secondary interoperability reference for agent-to-agent communication across opaque agentic systems. Useful for capability discovery, long-running task semantics, and future gateway design. | Cloned outside active worktree | `7ff10041597b9c8a736a477e1890d2c79173bbcf` |
+| `mcp` | `https://github.com/modelcontextprotocol/modelcontextprotocol.git` | Secondary protocol reference for tool/runtime boundaries, schema discipline, and external interoperability surfaces. Useful for understanding where Entangle should align with MCP and where it should remain separate. | Cloned outside active worktree | `8b266219b19cf5e85e44b6c45dd81733cb65f131` |
+| `strfry` | `https://github.com/hoytech/strfry.git` | Primary relay implementation candidate for the hackathon: mature, fast, and simple to run as a dedicated local or containerized relay. | Cloned outside active worktree | `825e325cf93be03718cca157298392cba27d102f` |
+| `khatru` | `https://github.com/fiatjaf/khatru.git` | Secondary relay-framework reference for future custom relay logic, AUTH policies, or programmable event acceptance. Upstream is in maintenance mode, so treat it as a reference rather than a foundation. | Cloned outside active worktree | `9f99b9827a6e030bbcefc48f7af68bfe7eea1a27` |
+| `qmd` | `https://github.com/tobi/qmd.git` | Optional markdown-native search engine for the Entangle wiki and future memory/search tooling. Not part of the core runtime. | Cloned outside active worktree | `e8de7cab0284c5d64bd64f5928b49d3a2d9a01f3` |
 
 ## Explicit exclusions
 
@@ -45,22 +52,23 @@ Reason:
 When the corpus needs to be refreshed from origin, use:
 
 ```bash
-git clone https://github.com/nostr-protocol/nips.git resources/nips
-git clone https://github.com/nbd-wtf/nostr-tools.git resources/nostr-tools
-git clone https://github.com/anomalyco/opencode.git resources/opencode
-git clone https://github.com/ruvnet/open-claude-code.git resources/open-claude-code
-git clone https://github.com/openclaw/openclaw.git resources/openclaw
-git clone https://github.com/a2aproject/A2A.git resources/a2a
-git clone https://github.com/modelcontextprotocol/modelcontextprotocol.git resources/mcp
-git clone https://github.com/hoytech/strfry.git resources/strfry
-git clone https://github.com/fiatjaf/khatru.git resources/khatru
-git clone https://github.com/tobi/qmd.git resources/qmd
+mkdir -p /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources
+git clone https://github.com/nostr-protocol/nips.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/nips
+git clone https://github.com/nbd-wtf/nostr-tools.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/nostr-tools
+git clone https://github.com/anomalyco/opencode.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/opencode
+git clone https://github.com/ruvnet/open-claude-code.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/open-claude-code
+git clone https://github.com/openclaw/openclaw.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/openclaw
+git clone https://github.com/a2aproject/A2A.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/a2a
+git clone https://github.com/modelcontextprotocol/modelcontextprotocol.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/mcp
+git clone https://github.com/hoytech/strfry.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/strfry
+git clone https://github.com/fiatjaf/khatru.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/khatru
+git clone https://github.com/tobi/qmd.git /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/qmd
 ```
 
 If the directories already exist, update them with:
 
 ```bash
-for repo in resources/*; do
+for repo in /Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/*; do
   if [ -d "$repo/.git" ]; then
     git -C "$repo" pull --ff-only
   fi

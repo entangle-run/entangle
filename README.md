@@ -114,12 +114,16 @@ This repository currently contains:
   sessions to `waiting_approval`, clears already-approved waiting gates, and
   safely completes drained active or unblocked waiting sessions before new
   transport intake begins;
-- host-resolved model credential delivery in the effective runtime context,
-  so live runner execution now starts only when the bound model secret is
-  actually available instead of assuming endpoint presence is sufficient, with
-  explicit per-profile auth-mode selection rather than an unsafe implicit
-  default and with Anthropic local defaults now correctly resolving to
-  header-secret authentication;
+- host-resolved model credential delivery in the effective runtime context for
+  internal provider-backed engine code, with explicit per-profile auth-mode
+  selection rather than an unsafe implicit default and with Anthropic local
+  defaults now correctly resolving to header-secret authentication;
+- a first OpenCode-first per-node agent-runtime contract where deployment
+  catalogs carry `agentEngineProfiles`, graph and node bindings carry
+  `agentRuntime`, effective runtime context carries the resolved
+  `agentRuntimeContext`, local defaults point at `local-opencode`, and per-node
+  source, engine-state, and wiki-repository workspace roots are materialized
+  for the upcoming coding-agent adapter;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
@@ -272,11 +276,11 @@ This repository currently contains:
   baseline that sequence Entangle Local first, then Entangle Cloud, then
   Entangle Enterprise, while separating the presentable local baseline from
   later production persistence, tenancy, authorization, and compliance claims;
-- a first real provider-backed `agent-engine` slice with an internal
-  Anthropic adapter behind the stable engine boundary, typed error
-  normalization, live runner entrypoints wired to the real engine path, and
+- a first real provider-backed internal `agent-engine` slice with an Anthropic
+  adapter behind the stable engine boundary, typed error normalization, and
   tests that exercise request assembly, auth mapping, and provider-failure
-  semantics without relying on networked model calls;
+  semantics without relying on networked model calls; this one-turn adapter is
+  no longer exposed as a node runtime profile;
 - a second provider-backed `agent-engine` slice with an OpenAI-compatible chat
   completions adapter behind the same internal boundary, including bearer-token
   auth, prompt rendering, normalized usage/stop metadata, and bounded tool-call
