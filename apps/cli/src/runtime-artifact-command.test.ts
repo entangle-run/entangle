@@ -4,6 +4,7 @@ import type { ArtifactRecord } from "@entangle/types";
 
 import {
   filterRuntimeArtifactsForCli,
+  projectRuntimeArtifactPreviewSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -142,5 +143,36 @@ describe("runtime-artifact-command", () => {
         "published remote ssh://git@example.com/team/worker-it.git"
       ])
     );
+  });
+
+  it("projects artifact previews without duplicating full content in summary mode", () => {
+    const [artifact] = artifacts;
+
+    expect(artifact).toBeDefined();
+    expect(
+      projectRuntimeArtifactPreviewSummary({
+        artifact: artifact!,
+        preview: {
+          available: true,
+          bytesRead: 42,
+          content: "# Report\n\nFull preview content.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          sourcePath: "/tmp/worker-it/report.md",
+          truncated: false
+        }
+      })
+    ).toMatchObject({
+      artifact: {
+        artifactId: "artifact-report"
+      },
+      preview: {
+        available: true,
+        bytesRead: 42,
+        contentType: "text/markdown",
+        sourcePath: "/tmp/worker-it/report.md",
+        truncated: false
+      }
+    });
   });
 });

@@ -403,6 +403,30 @@ code {
   padding: 14px;
 }
 
+.artifact-preview-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.artifact-preview-content {
+  overflow: auto;
+  max-height: 320px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin: 0;
+  background: rgba(8, 10, 12, 0.68);
+  color: rgba(247, 241, 232, 0.9);
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .edge-list {
   display: grid;
   gap: 10px;

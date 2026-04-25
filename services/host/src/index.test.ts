@@ -40,6 +40,7 @@ import {
   runtimeApprovalListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
+  runtimeArtifactPreviewResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
@@ -2805,38 +2806,41 @@ describe("buildHostServer", () => {
           })
         ).json()
       );
-        const artifactRecord = artifactRecordSchema.parse({
-          createdAt: "2026-04-22T00:00:00.000Z",
-          materialization: {
-            localPath: path.join(
-              runtimeContext.workspace.artifactWorkspaceRoot,
-              "reports",
-              "session-alpha",
-              "turn-001.md"
-            ),
-            repoPath: runtimeContext.workspace.artifactWorkspaceRoot
-          },
-          ref: {
-            artifactId: "report-turn-001",
-            artifactKind: "report_file",
+      const reportPath = path.join(
+        runtimeContext.workspace.artifactWorkspaceRoot,
+        "reports",
+        "session-alpha",
+        "turn-001.md"
+      );
+      const artifactRecord = artifactRecordSchema.parse({
+        createdAt: "2026-04-22T00:00:00.000Z",
+        materialization: {
+          localPath: reportPath,
+          repoPath: runtimeContext.workspace.artifactWorkspaceRoot
+        },
+        ref: {
+          artifactId: "report-turn-001",
+          artifactKind: "report_file",
           backend: "git",
           contentSummary: "Turn report",
           conversationId: "conv-alpha",
           createdByNodeId: "worker-it",
           locator: {
             branch: "worker-it/session-alpha/review-patch",
-              commit: "abc123",
-              gitServiceRef: "local-gitea",
-              namespace: "team-alpha",
-              path: "reports/session-alpha/turn-001.md"
-            },
-            preferred: true,
-            sessionId: "session-alpha",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            path: "reports/session-alpha/turn-001.md"
+          },
+          preferred: true,
+          sessionId: "session-alpha",
           status: "materialized"
         },
         turnId: "turn-001",
         updatedAt: "2026-04-22T00:00:00.000Z"
       });
+      await mkdir(path.dirname(reportPath), { recursive: true });
+      await writeFile(reportPath, "# Turn Report\n\nPrepared the report.\n", "utf8");
       await mkdir(path.join(runtimeContext.workspace.runtimeRoot, "artifacts"), {
         recursive: true
       });
@@ -2870,6 +2874,28 @@ describe("buildHostServer", () => {
         runtimeArtifactInspectionResponseSchema.parse(artifactResponse.json())
       ).toEqual({
         artifact: artifactRecord
+      });
+
+      const previewResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/report-turn-001/preview"
+      });
+
+      expect(previewResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactPreviewResponseSchema.parse(previewResponse.json())
+      ).toMatchObject({
+        artifact: {
+          ref: {
+            artifactId: "report-turn-001"
+          }
+        },
+        preview: {
+          available: true,
+          content: "# Turn Report\n\nPrepared the report.\n",
+          contentType: "text/markdown",
+          truncated: false
+        }
       });
 
       const missingArtifactResponse = await server.inject({

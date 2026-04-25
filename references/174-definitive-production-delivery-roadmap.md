@@ -386,7 +386,7 @@ Incremental features:
    - show launch result as a navigable session.
 4. Artifact workbench:
    - artifact list/detail improvements;
-   - markdown/text preview;
+   - bounded markdown/text preview through the host boundary;
    - git commit and remote publication summary;
    - basic diff/history for report artifacts.
 5. Memory workbench:
@@ -847,7 +847,8 @@ Remaining implementation sequence:
    workflows where they fit the current host boundary.
 3. Deepen the new host-backed Studio and CLI session launch flow with clearer
    wait/retry and navigation ergonomics where it can remain host-owned.
-4. Add artifact and memory workbench surfaces over existing host/runner truth.
+4. Add artifact history/diff and memory workbench surfaces over existing
+   host/runner truth.
 5. Run `pnpm verify`, strict preflight, preview demo, and disposable runtime
    smoke before closing L2.
 

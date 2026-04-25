@@ -1,5 +1,25 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added bounded artifact preview
+
+Closed the first L2 artifact preview slice by adding a bounded host-owned
+preview response for locally materialized text artifacts. The host now exposes
+`GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/preview`, reading only files
+inside the runtime artifact workspace or retrieval cache and returning an
+explicit unavailable reason when preview is unsafe or unsupported.
+
+The shared host client, CLI, and Studio consume the same contract. CLI users
+can run `entangle host runtimes artifact <nodeId> <artifactId> --preview`, and
+Studio now shows the selected artifact's bounded preview in the runtime
+artifact detail panel.
+
+This is intentionally not artifact history, restore, arbitrary filesystem
+read, binary preview, object-storage preview, or Cloud/Enterprise artifact
+service work.
+
+Verification passed for focused types, host-client, host, CLI, and Studio
+test/typecheck/lint commands.
+
 ## [2026-04-25] implementation | Added CLI graph template export
 
 Closed the first L2 graph-template workflow by adding

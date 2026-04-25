@@ -66,6 +66,27 @@ export const runtimeArtifactInspectionResponseSchema = z.object({
   artifact: artifactRecordSchema
 });
 
+export const runtimeArtifactPreviewSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    bytesRead: z.number().int().nonnegative(),
+    content: z.string(),
+    contentEncoding: z.literal("utf8"),
+    contentType: z.enum(["text/markdown", "text/plain"]),
+    sourcePath: filesystemPathSchema,
+    truncated: z.boolean()
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: nonEmptyStringSchema
+  })
+]);
+
+export const runtimeArtifactPreviewResponseSchema = z.object({
+  artifact: artifactRecordSchema,
+  preview: runtimeArtifactPreviewSchema
+});
+
 export const runtimeApprovalListResponseSchema = z.object({
   approvals: z.array(approvalRecordSchema)
 });
@@ -88,6 +109,8 @@ export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationR
 export type RuntimeContextInspectionResponse = z.infer<typeof runtimeContextInspectionResponseSchema>;
 export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResponseSchema>;
 export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;
+export type RuntimeArtifactPreview = z.infer<typeof runtimeArtifactPreviewSchema>;
+export type RuntimeArtifactPreviewResponse = z.infer<typeof runtimeArtifactPreviewResponseSchema>;
 export type RuntimeApprovalListResponse = z.infer<typeof runtimeApprovalListResponseSchema>;
 export type RuntimeApprovalInspectionResponse = z.infer<typeof runtimeApprovalInspectionResponseSchema>;
 export type RuntimeTurnListResponse = z.infer<typeof runtimeTurnListResponseSchema>;

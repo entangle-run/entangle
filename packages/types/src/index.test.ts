@@ -37,6 +37,7 @@ import {
   runtimeApprovalListResponseSchema,
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
+  runtimeArtifactPreviewResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
@@ -93,6 +94,42 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.artifact.ref.artifactId).toBe("report-turn-001");
+  });
+
+  it("accepts a bounded runtime artifact preview response", () => {
+    const result = runtimeArtifactPreviewResponseSchema.parse({
+      artifact: {
+        createdAt: "2026-04-24T00:00:00.000Z",
+        materialization: {
+          localPath: "/tmp/entangle-runner/reports/turn-001.md",
+          repoPath: "/tmp/entangle-runner"
+        },
+        ref: {
+          artifactId: "report-turn-001",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            path: "reports/turn-001.md"
+          },
+          preferred: true,
+          status: "materialized"
+        },
+        updatedAt: "2026-04-24T00:00:00.000Z"
+      },
+      preview: {
+        available: true,
+        bytesRead: 24,
+        content: "# Turn Report\n\nComplete.",
+        contentEncoding: "utf8",
+        contentType: "text/markdown",
+        sourcePath: "/tmp/entangle-runner/reports/turn-001.md",
+        truncated: false
+      }
+    });
+
+    expect(result.preview.available).toBe(true);
   });
 });
 

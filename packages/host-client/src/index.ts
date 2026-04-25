@@ -31,6 +31,7 @@ import {
   runtimeApprovalListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
+  runtimeArtifactPreviewResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
@@ -73,6 +74,7 @@ import {
   type RuntimeApprovalListResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
+  type RuntimeArtifactPreviewResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
   type RuntimeRecoveryInspectionResponse,
@@ -645,6 +647,18 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}`),
         runtimeArtifactInspectionResponseSchema
+      );
+    },
+
+    async getRuntimeArtifactPreview(
+      nodeId: string,
+      artifactId: string
+    ): Promise<RuntimeArtifactPreviewResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/preview`
+        ),
+        runtimeArtifactPreviewResponseSchema
       );
     },
 

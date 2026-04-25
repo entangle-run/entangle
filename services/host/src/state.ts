@@ -2,6 +2,7 @@ import {
   cp,
   lstat,
   mkdir,
+  open,
   readFile,
   readlink,
   readdir,
@@ -124,11 +125,13 @@ import {
   type RuntimeRecoveryPolicyRecord,
   type RuntimeInspectionResponse,
   runtimeArtifactInspectionResponseSchema,
+  runtimeArtifactPreviewResponseSchema,
   runtimeIntentRecordSchema,
   type RuntimeApprovalInspectionResponse,
   type RuntimeApprovalListResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
+  type RuntimeArtifactPreviewResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   runtimeTurnInspectionResponseSchema,
@@ -230,6 +233,7 @@ const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
+const artifactPreviewMaxBytes = 16 * 1024;
 const packageStoreMetadataFileName = ".package-store.json";
 const gunzipAsync = promisify(gunzip);
 
@@ -4194,6 +4198,176 @@ export async function getRuntimeArtifactInspection(input: {
   return artifact
     ? runtimeArtifactInspectionResponseSchema.parse({ artifact })
     : null;
+}
+
+function isPathInsideRoot(input: {
+  candidatePath: string;
+  rootPath: string;
+}): boolean {
+  const candidatePath = path.resolve(input.candidatePath);
+  const rootPath = path.resolve(input.rootPath);
+  const relativePath = path.relative(rootPath, candidatePath);
+
+  return (
+    relativePath.length === 0 ||
+    (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
+}
+
+function resolveArtifactPreviewPath(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+}): { filePath: string } | { reason: string } {
+  const candidatePaths = [
+    input.artifact.materialization?.localPath,
+    input.artifact.materialization?.repoPath && input.artifact.ref.backend === "git"
+      ? path.join(input.artifact.materialization.repoPath, input.artifact.ref.locator.path)
+      : undefined,
+    input.artifact.ref.backend === "local_file"
+      ? input.artifact.ref.locator.path
+      : undefined
+  ].filter((candidatePath): candidatePath is string => Boolean(candidatePath));
+
+  if (candidatePaths.length === 0) {
+    return {
+      reason:
+        "Artifact preview is unavailable because the artifact has no local materialized file path."
+    };
+  }
+
+  const allowedRoots = [
+    input.context.workspace.artifactWorkspaceRoot,
+    input.context.workspace.retrievalRoot
+  ];
+
+  for (const candidatePath of candidatePaths) {
+    if (
+      allowedRoots.some((rootPath) =>
+        isPathInsideRoot({ candidatePath, rootPath })
+      )
+    ) {
+      return { filePath: path.resolve(candidatePath) };
+    }
+  }
+
+  return {
+    reason:
+      "Artifact preview is unavailable because the artifact file is outside the runtime artifact workspace."
+  };
+}
+
+function inferArtifactPreviewContentType(input: {
+  artifact: ArtifactRecord;
+  filePath: string;
+}): "text/markdown" | "text/plain" {
+  const extension = path.extname(input.filePath).toLowerCase();
+
+  if (
+    extension === ".md" ||
+    extension === ".markdown" ||
+    input.artifact.ref.artifactKind === "report_file" ||
+    input.artifact.ref.artifactKind === "wiki_page"
+  ) {
+    return "text/markdown";
+  }
+
+  return "text/plain";
+}
+
+async function readArtifactPreview(input: {
+  artifact: ArtifactRecord;
+  filePath: string;
+}): Promise<RuntimeArtifactPreviewResponse["preview"]> {
+  if (!(await pathExists(input.filePath))) {
+    return {
+      available: false,
+      reason: "Artifact preview is unavailable because the artifact file is missing."
+    };
+  }
+
+  if (!(await stat(input.filePath)).isFile()) {
+    return {
+      available: false,
+      reason: "Artifact preview is unavailable because the artifact path is not a file."
+    };
+  }
+
+  const file = await open(input.filePath, "r");
+
+  try {
+    const buffer = Buffer.alloc(artifactPreviewMaxBytes + 1);
+    const { bytesRead } = await file.read(
+      buffer,
+      0,
+      artifactPreviewMaxBytes + 1,
+      0
+    );
+    const truncated = bytesRead > artifactPreviewMaxBytes;
+    const previewBuffer = buffer.subarray(
+      0,
+      Math.min(bytesRead, artifactPreviewMaxBytes)
+    );
+
+    if (previewBuffer.includes(0)) {
+      return {
+        available: false,
+        reason:
+          "Artifact preview is unavailable because the artifact file is not text."
+      };
+    }
+
+    return {
+      available: true,
+      bytesRead: previewBuffer.length,
+      content: previewBuffer.toString("utf8"),
+      contentEncoding: "utf8",
+      contentType: inferArtifactPreviewContentType(input),
+      sourcePath: input.filePath,
+      truncated
+    };
+  } finally {
+    await file.close();
+  }
+}
+
+export async function getRuntimeArtifactPreview(input: {
+  artifactId: string;
+  nodeId: string;
+}): Promise<RuntimeArtifactPreviewResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+  const artifact = artifacts.find(
+    (candidate) => candidate.ref.artifactId === input.artifactId
+  );
+
+  if (!artifact) {
+    return null;
+  }
+
+  const resolvedPath = resolveArtifactPreviewPath({ artifact, context });
+
+  if ("reason" in resolvedPath) {
+    return runtimeArtifactPreviewResponseSchema.parse({
+      artifact,
+      preview: {
+        available: false,
+        reason: resolvedPath.reason
+      }
+    });
+  }
+
+  return runtimeArtifactPreviewResponseSchema.parse({
+    artifact,
+    preview: await readArtifactPreview({
+      artifact,
+      filePath: resolvedPath.filePath
+    })
+  });
 }
 
 export async function listRuntimeApprovals(

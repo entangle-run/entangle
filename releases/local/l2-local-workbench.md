@@ -33,14 +33,18 @@ Included in the current implementation slice:
   revisions;
 - graph template listing and export through `entangle graph templates list`
   and `entangle graph templates export local-preview <file>`;
-- artifact list filtering by `--session-id`.
+- artifact list filtering by `--session-id`;
+- bounded local report-artifact preview through
+  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/preview`,
+  `entangle host runtimes artifact <nodeId> <artifactId> --preview`, and the
+  Studio selected-artifact detail panel.
 
 Still required before the L2 release tag:
 
 - Studio workbench affordances for graph validation;
 - graph import/export workflow beyond direct graph JSON apply/get and template
   export;
-- artifact preview/history for report artifacts;
+- artifact history/diff workflow for report artifacts;
 - memory workbench inspection for focused registers and task pages;
 - full local verification gate, including Docker-backed smokes, on the final
   L2 release candidate.
@@ -61,6 +65,7 @@ pnpm --filter @entangle/cli dev package inspect examples/local-preview/agent-pac
 pnpm --filter @entangle/cli dev graph diff examples/local-preview/graph.json examples/local-preview/graph.json
 pnpm --filter @entangle/cli dev host sessions launch local-preview-planner "Prepare a local workbench report."
 pnpm --filter @entangle/cli dev host runtimes artifacts local-preview-planner --session-id <session-id> --summary
+pnpm --filter @entangle/cli dev host runtimes artifact local-preview-planner <artifact-id> --preview
 ```
 
 `host sessions launch` requires a running local host, a realizable target
@@ -83,6 +88,9 @@ pnpm --filter @entangle/validator typecheck
 pnpm --filter @entangle/host-client test
 pnpm --filter @entangle/host-client lint
 pnpm --filter @entangle/host-client typecheck
+pnpm --filter @entangle/host test
+pnpm --filter @entangle/host lint
+pnpm --filter @entangle/host typecheck
 pnpm --filter @entangle/cli test
 pnpm --filter @entangle/cli lint
 pnpm --filter @entangle/cli typecheck
@@ -96,6 +104,7 @@ pnpm --filter @entangle/cli dev graph templates export local-preview /tmp/entang
 pnpm --filter @entangle/cli dev graph inspect /tmp/entangle-local-preview-graph.json
 pnpm --filter @entangle/cli dev validate package examples/local-preview/agent-package
 pnpm --filter @entangle/cli dev host sessions launch --help
+pnpm --filter @entangle/cli dev host runtimes artifact --help
 pnpm verify
 pnpm build
 pnpm ops:check-local:strict
@@ -128,5 +137,5 @@ must pass the repository-level and Docker-backed gates before tagging.
   editor, graph import/export bundle format, or host-owned template registry.
 - Package inspection validates the manifest and tool catalog, but package
   import/export archives are still pending.
-- Artifact session filtering helps navigation, but report preview and history
-  are still pending.
+- Artifact session filtering and bounded local text preview help navigation,
+  but report history/diff is still pending.

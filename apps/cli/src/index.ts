@@ -59,6 +59,7 @@ import {
 } from "./resource-inventory-output.js";
 import {
   filterRuntimeArtifactsForCli,
+  projectRuntimeArtifactPreviewSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -1149,16 +1150,27 @@ hostRuntimesCommand
   .command("artifact")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<artifactId>", "Artifact identifier to inspect.")
+  .option("--preview", "Include the bounded text preview when available.")
   .option("--summary", "Print a compact operator-oriented artifact summary.")
   .description("Inspect one persisted runtime artifact.")
   .action(
     async (
       nodeId: string,
       artifactId: string,
-      options: { summary?: boolean },
+      options: { preview?: boolean; summary?: boolean },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      if (options.preview) {
+        const response = await client.getRuntimeArtifactPreview(nodeId, artifactId);
+        printJson(
+          options.summary
+            ? projectRuntimeArtifactPreviewSummary(response)
+            : response
+        );
+        return;
+      }
+
       const response = await client.getRuntimeArtifact(nodeId, artifactId);
       printJson(
         options.summary

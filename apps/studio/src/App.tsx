@@ -34,6 +34,7 @@ import type {
   PackageSourceInspectionResponse,
   RuntimeApprovalInspectionResponse,
   RuntimeArtifactInspectionResponse,
+  RuntimeArtifactPreviewResponse,
   RuntimeInspectionResponse,
   RuntimeRecoveryInspectionResponse,
   RuntimeTurnInspectionResponse,
@@ -416,6 +417,8 @@ export function App() {
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [selectedArtifactInspection, setSelectedArtifactInspection] =
     useState<RuntimeArtifactInspectionResponse | null>(null);
+  const [selectedArtifactPreview, setSelectedArtifactPreview] =
+    useState<RuntimeArtifactPreviewResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
   const [selectedTurns, setSelectedTurns] = useState<RunnerTurnRecord[]>([]);
@@ -682,7 +685,10 @@ export function App() {
   const loadSelectedArtifactInspection = useCallback(
     async (nodeId: string, artifactId: string) => {
       try {
-        const inspection = await client.getRuntimeArtifact(nodeId, artifactId);
+        const [inspection, preview] = await Promise.all([
+          client.getRuntimeArtifact(nodeId, artifactId),
+          client.getRuntimeArtifactPreview(nodeId, artifactId)
+        ]);
 
         if (
           selectedRuntimeIdRef.current !== nodeId ||
@@ -693,6 +699,7 @@ export function App() {
 
         startTransition(() => {
           setSelectedArtifactInspection(inspection);
+          setSelectedArtifactPreview(preview);
           setArtifactDetailError(null);
         });
       } catch (caught: unknown) {
@@ -705,6 +712,7 @@ export function App() {
 
         startTransition(() => {
           setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
           setArtifactDetailError(
             normalizeError(caught, "Unknown error while loading artifact detail.")
           );
@@ -803,13 +811,16 @@ export function App() {
       nextSelectedArtifacts.some(
         (artifact) => artifact.ref.artifactId === currentSelectedArtifactId
       );
-    const selectedArtifactResult = shouldRefreshSelectedArtifact
+    const selectedArtifactResults = shouldRefreshSelectedArtifact
       ? (
           await Promise.allSettled([
-            client.getRuntimeArtifact(nodeId, currentSelectedArtifactId)
+            client.getRuntimeArtifact(nodeId, currentSelectedArtifactId),
+            client.getRuntimeArtifactPreview(nodeId, currentSelectedArtifactId)
           ])
-        )[0]
+        )
       : null;
+    const selectedArtifactResult = selectedArtifactResults?.[0] ?? null;
+    const selectedArtifactPreviewResult = selectedArtifactResults?.[1] ?? null;
     const currentSelectedTurnId = selectedTurnId;
     const shouldRefreshSelectedTurn =
       currentSelectedTurnId !== null &&
@@ -914,20 +925,36 @@ export function App() {
 
         if (!selectedArtifactId) {
           setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
           setArtifactDetailError(null);
         } else if (!shouldRefreshSelectedArtifact) {
           setSelectedArtifactId(null);
           setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
           setArtifactDetailError(null);
-        } else if (selectedArtifactResult?.status === "fulfilled") {
+        } else if (
+          selectedArtifactResult?.status === "fulfilled" &&
+          selectedArtifactPreviewResult?.status === "fulfilled"
+        ) {
           setSelectedArtifactInspection(selectedArtifactResult.value);
+          setSelectedArtifactPreview(selectedArtifactPreviewResult.value);
           setArtifactDetailError(null);
         } else if (selectedArtifactResult?.status === "rejected") {
           setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactResult.reason,
               "Unknown error while loading artifact detail."
+            )
+          );
+        } else if (selectedArtifactPreviewResult?.status === "rejected") {
+          setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
+          setArtifactDetailError(
+            normalizeError(
+              selectedArtifactPreviewResult.reason,
+              "Unknown error while loading artifact preview."
             )
           );
         }
@@ -941,6 +968,7 @@ export function App() {
         );
         setSelectedArtifactId(null);
         setSelectedArtifactInspection(null);
+        setSelectedArtifactPreview(null);
         setArtifactDetailError(null);
       }
 
@@ -1144,6 +1172,7 @@ export function App() {
 
       setSelectedArtifactId(artifactId);
       setSelectedArtifactInspection(null);
+      setSelectedArtifactPreview(null);
       setArtifactDetailError(null);
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
@@ -1534,6 +1563,7 @@ export function App() {
       setSelectedArtifacts([]);
       setSelectedArtifactId(null);
       setSelectedArtifactInspection(null);
+      setSelectedArtifactPreview(null);
       setArtifactDetailError(null);
       setTurnError(null);
       setSelectedTurns([]);
@@ -1565,6 +1595,7 @@ export function App() {
     setSelectedArtifacts([]);
     setSelectedArtifactId(null);
     setSelectedArtifactInspection(null);
+    setSelectedArtifactPreview(null);
     setArtifactDetailError(null);
     setTurnError(null);
     setSelectedTurns([]);
@@ -3524,6 +3555,33 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        <div className="artifact-preview-panel">
+                          <div className="section-header">
+                            <h3>Artifact Preview</h3>
+                            <span className="panel-caption">
+                              {selectedArtifactPreview?.preview.available
+                                ? selectedArtifactPreview.preview.contentType
+                                : "unavailable"}
+                            </span>
+                          </div>
+
+                          {selectedArtifactPreview ? (
+                            selectedArtifactPreview.preview.available ? (
+                              <pre className="artifact-preview-content">
+                                {selectedArtifactPreview.preview.content}
+                              </pre>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>{selectedArtifactPreview.preview.reason}</p>
+                              </div>
+                            )
+                          ) : (
+                            <div className="inline-empty-state">
+                              <p>Loading artifact preview...</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : selectedArtifactId ? (
                       <div className="inline-empty-state">
