@@ -11,14 +11,15 @@ and the L1/R1 ledger in
 
 - [L1 Local Operator Baseline](l1-local-operator-baseline.md) —
   `v0.1-local-operator-baseline`
+- [L1.5 Local Operator Preview](l1.5-local-operator-preview.md) —
+  `v0.1.5-local-operator-preview`
 
 ## Next Release
 
-- L1.5 Local Operator Preview
+- L2 Local Workbench
 
 ## Planned Release Train
 
-- L1.5 Local Operator Preview;
 - L2 Local Workbench;
 - L3 Local Reliability;
 - L4 Entangle Local GA.

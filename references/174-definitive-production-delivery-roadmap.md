@@ -259,7 +259,7 @@ Scope:
 - audit the working tree;
 - finish or explicitly defer active approval/session/runtime slices;
 - preserve user changes;
-- keep the active R1 ledger current;
+- keep the R1 ledger current;
 - keep docs honest about local versus production claims.
 
 Acceptance criteria:
@@ -272,7 +272,7 @@ Acceptance criteria:
 
 ### L1: Local Operator Baseline
 
-Target tag: `v0.1-local-operator-baseline`.
+Status: released as `v0.1-local-operator-baseline`.
 
 Target outcome: Entangle can be presented as a serious local graph-native
 operator runtime.
@@ -312,7 +312,7 @@ Not included:
 
 Exit criteria:
 
-- the active R1 ledger is complete;
+- the R1 ledger is complete;
 - `pnpm verify` passes;
 - `pnpm ops:check-local:strict` passes or a local blocker is recorded;
 - the strongest feasible local smoke passes or is explicitly deferred;
@@ -320,7 +320,7 @@ Exit criteria:
 
 ### L1.5: Local Operator Preview
 
-Target tag: `v0.1.5-local-operator-preview`.
+Status: released as `v0.1.5-local-operator-preview`.
 
 Target outcome: a technical user can try Entangle locally without knowing the
 whole codebase.
@@ -826,22 +826,30 @@ Evolution:
 
 ## Immediate Plan
 
-L1 release closure is complete. The current target is L1.5 Local Operator
-Preview, not Local GA.
+L1 and L1.5 release closure are complete. The current target is L2 Local
+Workbench, not Local GA.
 
-Next implementation sequence:
+L1.5 shipped:
 
-1. Freeze L1.5 scope around a usable local operator preview.
-2. Add canonical demo assets: package, graph, and deterministic model-stub
-   path.
-3. Add a near-one-command local demo flow that reuses the same host boundary
-   and smoke primitives instead of bypassing the product.
-4. Document the happy path from install to completed local session.
-5. Add troubleshooting for Docker daemon, stale Gitea volume, missing model
-   secret, relay unreachable, and runner degraded states.
-6. Improve first-run operator guidance in Studio and CLI examples.
-7. Run `pnpm verify`, strict preflight, and disposable runtime smoke before
-   closing L1.5.
+- canonical demo package, graph, and model-stub catalog assets now live under
+  `examples/local-preview/`;
+- `pnpm ops:demo-local-preview` starts the Local profile and runs the preview
+  runtime path through the same host, runner, relay, model-stub, and
+  Gitea/git-backed artifact flow as the runtime smoke;
+- `pnpm ops:demo-local-preview:reset` is the explicit reset path for preview
+  state.
+
+Remaining implementation sequence:
+
+1. Freeze L2 scope around a real Local workbench rather than another demo
+   proof path.
+2. Add package inspect/import depth and graph template/import/export/diff
+   workflows where they fit the current host boundary.
+3. Add host-backed session launch from Studio and CLI if it can be supported
+   without bypassing the graph/runtime contracts.
+4. Add artifact and memory workbench surfaces over existing host/runner truth.
+5. Run `pnpm verify`, strict preflight, preview demo, and disposable runtime
+   smoke before closing L2.
 
 Correct L1 statement:
 

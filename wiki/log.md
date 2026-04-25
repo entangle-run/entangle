@@ -1,5 +1,29 @@
 # Entangle Wiki Log
 
+## [2026-04-25] release | Closed L1.5 Local Operator Preview
+
+Closed L1.5 as `v0.1.5-local-operator-preview`. The release adds canonical
+Local Preview assets, `pnpm ops:demo-local-preview`, reset guidance, CLI
+inspection evidence, and a release packet under
+`releases/local/l1.5-local-operator-preview.md`.
+
+The preview command was verified from reset local state and proved the Local
+host, runner lifecycle, local relay, model-stub execution, Gitea/git-backed
+artifact publication, downstream artifact retrieval, Studio HTTP load, and CLI
+inspection path. The release remains Local-only and does not claim Local GA,
+Cloud, Enterprise, or production readiness.
+
+## [2026-04-25] implementation | Started L1.5 Local Operator Preview
+
+Added canonical Local Preview assets under `examples/local-preview/`, including
+an inspectable AgentPackage, graph, and model-stub catalog example. Added
+`pnpm ops:demo-local-preview` and `pnpm ops:demo-local-preview:reset` as the
+near-one-command demo and reset paths for the L1.5 release packet.
+
+The preview path reuses the same host, runner, local relay, model-stub, and
+Gitea/git-backed artifact flow as the runtime smoke. It remains an Entangle
+Local preview path, not Local GA and not a Cloud or Enterprise implementation.
+
 ## [2026-04-25] release | Closed R1/L1 Local Operator Baseline
 
 Closed the historical R1 milestone as the canonical L1 Local Operator Baseline

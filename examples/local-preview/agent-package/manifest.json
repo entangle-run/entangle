@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1",
+  "packageId": "local-preview-agent-package",
+  "name": "Local Preview Agent Package",
+  "version": "0.1.0",
+  "packageKind": "template",
+  "defaultNodeKind": "worker",
+  "capabilities": [],
+  "entryPrompts": {
+    "system": "prompts/system.md",
+    "interaction": "prompts/interaction.md"
+  },
+  "memoryProfile": {
+    "wikiSeedPath": "memory/seed/wiki",
+    "schemaPath": "memory/schema/AGENTS.md"
+  },
+  "runtime": {
+    "configPath": "runtime/config.json",
+    "capabilitiesPath": "runtime/capabilities.json",
+    "toolsPath": "runtime/tools.json"
+  },
+  "metadata": {
+    "description": "Canonical package used by the Entangle Local Preview demo.",
+    "tags": [
+      "local",
+      "preview"
+    ]
+  }
+}

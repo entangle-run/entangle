@@ -20,6 +20,9 @@ architecture discovery.
 - `packages/`
   Shared internal packages. The first scaffold includes `types/`, `validator/`,
   `host-client/`, `agent-engine/`, and `package-scaffold/`.
+- `examples/`
+  Product-line examples. The active Local Preview assets live under
+  `examples/local-preview/`.
 - `deploy/`
   Deployment profiles. The active profile is `deploy/local/`; future Cloud and
   Enterprise deployment material should be added only when the roadmap reaches
@@ -235,6 +238,12 @@ This repository currently contains:
   session and runner-turn state, verifies published git-backed artifact
   materialization, verifies downstream retrieval of the upstream artifact by
   `ArtifactRef`, and stops both runtimes;
+- a released Local Preview demo path through `pnpm ops:demo-local-preview` that
+  starts the Local Compose profile, verifies local services, runs the runtime
+  path through canonical `examples/local-preview/` package assets, publishes
+  through the local relay, writes git-backed artifacts to local Gitea, and
+  leaves the profile running for Studio and CLI inspection, with
+  `pnpm ops:demo-local-preview:reset` as the reset path;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;

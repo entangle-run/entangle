@@ -25,30 +25,69 @@ const defaultPollIntervalMs = 2_000;
 const entangleNostrRumorKind = 24159;
 
 const args = process.argv.slice(2);
-const suffix = Date.now().toString(36);
-const packageId = `runtime-smoke-package-${suffix}`;
-const packageSourceId = `runtime-smoke-source-${suffix}`;
-const graphId = `runtime-smoke-graph-${suffix}`;
-const userNodeId = `runtime-smoke-user-${suffix}`;
-const workerNodeId = `runtime-smoke-worker-${suffix}`;
-const downstreamNodeId = `runtime-smoke-downstream-${suffix}`;
-const edgeId = `runtime-smoke-edge-${suffix}`;
-const downstreamEdgeId = `runtime-smoke-downstream-edge-${suffix}`;
-const modelEndpointId = `runtime-smoke-model-${suffix}`;
-const modelStubContainerName = `entangle-runtime-smoke-model-${suffix}`;
-const secretRef = `secret://local/runtime-smoke-model-${suffix}`;
-const gitPrincipalId = `runtime-smoke-git-${suffix}`;
-const gitProvisioningSecretRef = `secret://git-services/runtime-smoke-${suffix}/provisioning`;
-const gitPrincipalSecretRef = `secret://git/runtime-smoke-${suffix}/https-token`;
-const giteaUsername = `runtime-smoke-${suffix}`;
-const giteaPassword = `runtime-smoke-password-${suffix}`;
-const hostPackagePath = `/tmp/${packageSourceId}`;
-const smokeSecret = `runtime-smoke-secret-${suffix}`;
-const smokeSessionId = `runtime-smoke-session-${suffix}`;
-const smokeConversationId = `runtime-smoke-conversation-${suffix}`;
-const downstreamConversationId = `runtime-smoke-downstream-conversation-${suffix}`;
-const smokeTurnId = `runtime-smoke-turn-${suffix}`;
-const downstreamTurnId = `runtime-smoke-downstream-turn-${suffix}`;
+const previewDemo = args.includes("--preview-demo");
+const keepState = previewDemo || args.includes("--keep-state");
+const runSuffix = Date.now().toString(36);
+const outputPrefix = previewDemo ? "local-preview" : "runtime-smoke";
+const packageId = previewDemo
+  ? "local-preview-agent-package"
+  : `runtime-smoke-package-${runSuffix}`;
+const packageSourceId = previewDemo
+  ? "local-preview-package-source"
+  : `runtime-smoke-source-${runSuffix}`;
+const graphId = previewDemo
+  ? "local-preview-graph"
+  : `runtime-smoke-graph-${runSuffix}`;
+const userNodeId = previewDemo
+  ? "local-preview-user"
+  : `runtime-smoke-user-${runSuffix}`;
+const workerNodeId = previewDemo
+  ? "local-preview-planner"
+  : `runtime-smoke-worker-${runSuffix}`;
+const downstreamNodeId = previewDemo
+  ? "local-preview-builder"
+  : `runtime-smoke-downstream-${runSuffix}`;
+const edgeId = previewDemo
+  ? "local-preview-user-to-planner"
+  : `runtime-smoke-edge-${runSuffix}`;
+const downstreamEdgeId = previewDemo
+  ? "local-preview-user-to-builder"
+  : `runtime-smoke-downstream-edge-${runSuffix}`;
+const modelEndpointId = previewDemo
+  ? "local-preview-model"
+  : `runtime-smoke-model-${runSuffix}`;
+const modelStubContainerName = previewDemo
+  ? "entangle-local-preview-model"
+  : `entangle-runtime-smoke-model-${runSuffix}`;
+const secretRef = `secret://local/${modelEndpointId}`;
+const gitPrincipalId = previewDemo
+  ? "local-preview-git"
+  : `runtime-smoke-git-${runSuffix}`;
+const gitProvisioningSecretRef = previewDemo
+  ? "secret://git-services/local-preview/provisioning"
+  : `secret://git-services/runtime-smoke-${runSuffix}/provisioning`;
+const gitPrincipalSecretRef = previewDemo
+  ? "secret://git/local-preview/https-token"
+  : `secret://git/runtime-smoke-${runSuffix}/https-token`;
+const giteaUsername = previewDemo
+  ? `local-preview-${runSuffix}`
+  : `runtime-smoke-${runSuffix}`;
+const giteaPassword = `${giteaUsername}-password`;
+const hostPackagePath = previewDemo
+  ? "/tmp/entangle-local-preview-package"
+  : `/tmp/${packageSourceId}`;
+const smokeSecret = `${outputPrefix}-secret-${runSuffix}`;
+const smokeSessionId = `${outputPrefix}-session-${runSuffix}`;
+const smokeConversationId = `${outputPrefix}-conversation-${runSuffix}`;
+const downstreamConversationId = `${outputPrefix}-downstream-conversation-${runSuffix}`;
+const smokeTurnId = `${outputPrefix}-turn-${runSuffix}`;
+const downstreamTurnId = `${outputPrefix}-downstream-turn-${runSuffix}`;
+const previewPackageRoot = path.join(
+  repositoryRoot,
+  "examples",
+  "local-preview",
+  "agent-package"
+);
 
 function readFlagValue(name) {
   const inlinePrefix = `${name}=`;
@@ -176,6 +215,14 @@ async function writeJsonFile(filePath, value) {
 
 function buildModelStubServerSource() {
   const expectedToken = JSON.stringify(smokeSecret);
+  const runLabel = previewDemo ? "Local preview" : "Runtime smoke";
+  const focus = previewDemo
+    ? "Validate the Local Preview operator path."
+    : "Validate the local Entangle runtime message path.";
+  const stableFact = previewDemo
+    ? "The Local Preview demo uses canonical package assets with a local model stub."
+    : "The local runtime smoke uses a disposable model endpoint and package source.";
+  const summary = `The ${previewDemo ? "Local Preview demo" : "local runtime smoke"} exercised message intake, model execution, artifact materialization, and memory synthesis.`;
 
   return `
 const http = require("node:http");
@@ -202,22 +249,22 @@ function sendJson(response, statusCode, payload) {
 
 function buildMemorySummaryArguments() {
   return {
-    artifactInsights: ["Runtime smoke produced a git-backed report artifact."],
+    artifactInsights: [${JSON.stringify(`${runLabel} produced a git-backed report artifact.`)}],
     closedOpenQuestions: [],
     completedNextActions: [],
     consolidatedNextActions: [],
     consolidatedOpenQuestions: [],
-    decisions: ["Runtime smoke completed through the OpenAI-compatible adapter."],
+    decisions: [${JSON.stringify(`${runLabel} completed through the OpenAI-compatible adapter.`)}],
     executionInsights: ["Provider-backed execution and memory synthesis completed against the local model stub."],
-    focus: "Validate the local Entangle runtime message path.",
+    focus: ${JSON.stringify(focus)},
     nextActions: [],
     openQuestions: [],
     replacedNextActions: [],
     replacedOpenQuestions: [],
-    resolutions: ["The local smoke task completed successfully."],
-    sessionInsights: ["The runner processed a NIP-59 task request for the smoke session."],
-    stableFacts: ["The local runtime smoke uses a disposable model endpoint and package source."],
-    summary: "The local runtime smoke exercised message intake, model execution, artifact materialization, and memory synthesis."
+    resolutions: [${JSON.stringify(`The ${previewDemo ? "local preview" : "local smoke"} task completed successfully.`)}],
+    sessionInsights: ["The runner processed a NIP-59 task request for the session."],
+    stableFacts: [${JSON.stringify(stableFact)}],
+    summary: ${JSON.stringify(summary)}
   };
 }
 
@@ -272,7 +319,7 @@ function buildCompletionResponse(request) {
         finish_reason: "stop",
         index: 0,
         message: {
-          content: "Runtime smoke model completed the requested Entangle task.",
+          content: ${JSON.stringify(`${runLabel} model completed the requested Entangle task.`)},
           role: "assistant"
         }
       }
@@ -427,7 +474,7 @@ async function bootstrapGiteaCollaboration() {
       "--admin",
       "--must-change-password=false",
       "--access-token",
-      `--access-token-name ${shellQuote(`entangle-${suffix}`)}`,
+      `--access-token-name ${shellQuote(`entangle-${runSuffix}`)}`,
       "--access-token-scopes all"
     ].join(" ")
   ]);
@@ -577,7 +624,7 @@ function buildSmokeCatalog(catalog) {
     authMode: "https_token",
     baseUrl: "http://gitea:3000",
     defaultNamespace: giteaUsername,
-    displayName: "Runtime Smoke Gitea",
+    displayName: previewDemo ? "Local Preview Gitea" : "Runtime Smoke Gitea",
     id: gitServiceRef,
     provisioning: {
       apiBaseUrl: "http://gitea:3000/api/v1",
@@ -600,12 +647,14 @@ function buildSmokeCatalog(catalog) {
       ),
       {
         id: modelEndpointId,
-        displayName: "Runtime Smoke Model Endpoint",
+        displayName: previewDemo
+          ? "Local Preview Model Stub"
+          : "Runtime Smoke Model Endpoint",
         adapterKind: "openai_compatible",
         baseUrl: `http://${modelStubContainerName}:8080/v1`,
         authMode: "api_key_bearer",
         secretRef,
-        defaultModel: "runtime-smoke-model"
+        defaultModel: previewDemo ? "local-preview-model" : "runtime-smoke-model"
       }
     ],
     defaults: {
@@ -629,57 +678,94 @@ function buildSmokeGraph(catalog) {
     externalPrincipalRefs: [gitPrincipalId]
   };
 
+  const edges = [
+    {
+      edgeId,
+      fromNodeId: userNodeId,
+      toNodeId: workerNodeId,
+      relation: "delegates_to",
+      enabled: true,
+      transportPolicy: {
+        mode: "bidirectional_shared_set",
+        relayProfileRefs,
+        channel: previewDemo ? "local-preview" : "runtime-smoke"
+      }
+    },
+    {
+      edgeId: downstreamEdgeId,
+      fromNodeId: userNodeId,
+      toNodeId: downstreamNodeId,
+      relation: "delegates_to",
+      enabled: true,
+      transportPolicy: {
+        mode: "bidirectional_shared_set",
+        relayProfileRefs,
+        channel: previewDemo
+          ? "local-preview-handoff"
+          : "runtime-smoke-handoff"
+      }
+    }
+  ];
+
+  if (previewDemo) {
+    edges.push(
+      {
+        edgeId: "local-preview-planner-to-builder",
+        fromNodeId: workerNodeId,
+        toNodeId: downstreamNodeId,
+        relation: "routes_to",
+        enabled: true,
+        transportPolicy: {
+          mode: "bidirectional_shared_set",
+          relayProfileRefs,
+          channel: "local-preview-artifact-handoff"
+        }
+      },
+      {
+        edgeId: "local-preview-builder-review",
+        fromNodeId: downstreamNodeId,
+        toNodeId: workerNodeId,
+        relation: "reviews",
+        enabled: true,
+        transportPolicy: {
+          mode: "bidirectional_shared_set",
+          relayProfileRefs,
+          channel: "local-preview-review"
+        }
+      }
+    );
+  }
+
   return {
     schemaVersion: "1",
     graphId,
-    name: "Runtime Smoke Graph",
+    name: previewDemo ? "Local Preview Graph" : "Runtime Smoke Graph",
     nodes: [
       {
         nodeId: userNodeId,
-        displayName: "Runtime Smoke User",
+        displayName: previewDemo ? "Local Preview User" : "Runtime Smoke User",
         nodeKind: "user"
       },
       {
         nodeId: workerNodeId,
-        displayName: "Runtime Smoke Worker",
+        displayName: previewDemo
+          ? "Local Preview Planner"
+          : "Runtime Smoke Worker",
         nodeKind: "worker",
         packageSourceRef: packageSourceId,
         resourceBindings: sharedResourceBindings
       },
       {
         nodeId: downstreamNodeId,
-        displayName: "Runtime Smoke Downstream Worker",
+        displayName: previewDemo
+          ? "Local Preview Builder"
+          : "Runtime Smoke Downstream Worker",
         nodeKind: "worker",
         packageSourceRef: packageSourceId,
         resourceBindings: sharedResourceBindings
       }
     ],
-    edges: [
-      {
-        edgeId,
-        fromNodeId: userNodeId,
-        toNodeId: workerNodeId,
-        relation: "delegates_to",
-        enabled: true,
-        transportPolicy: {
-          mode: "bidirectional_shared_set",
-          relayProfileRefs,
-          channel: "runtime-smoke"
-        }
-      },
-      {
-        edgeId: downstreamEdgeId,
-        fromNodeId: userNodeId,
-        toNodeId: downstreamNodeId,
-        relation: "delegates_to",
-        enabled: true,
-        transportPolicy: {
-          mode: "bidirectional_shared_set",
-          relayProfileRefs,
-          channel: "runtime-smoke-handoff"
-        }
-      }
-    ],
+    edges,
     defaults: {
       resourceBindings: sharedResourceBindings,
       runtimeProfile: "hackathon_local"
@@ -693,14 +779,14 @@ async function upsertSmokeGitPrincipal(gitServiceRef) {
     `/v1/external-principals/${gitPrincipalId}`,
     {
       principalId: gitPrincipalId,
-      displayName: "Runtime Smoke Git Principal",
+      displayName: previewDemo ? "Local Preview Git Principal" : "Runtime Smoke Git Principal",
       systemKind: "git",
       gitServiceRef,
       subject: giteaUsername,
       transportAuthMode: "https_token",
       secretRef: gitPrincipalSecretRef,
       attribution: {
-        displayName: "Runtime Smoke Git Principal",
+        displayName: previewDemo ? "Local Preview Git Principal" : "Runtime Smoke Git Principal",
         email: `${giteaUsername}@entangle.invalid`
       },
       signing: {
@@ -896,7 +982,7 @@ async function waitForMessageCompletion(input) {
 }
 
 function printPass(name, detail) {
-  console.log(`PASS ${name}: ${detail}`);
+  console.log(`PASS ${name.replace("runtime-smoke", outputPrefix)}: ${detail}`);
 }
 
 async function assertRestartEvent(nodeId, restartGeneration) {
@@ -924,9 +1010,13 @@ async function main() {
   let tempRoot;
 
   try {
-    tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-runtime-smoke-"));
-    const packageRoot = path.join(tempRoot, packageId);
-    await writeSmokePackage(packageRoot);
+    let packageRoot = previewPackageRoot;
+
+    if (!previewDemo) {
+      tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-runtime-smoke-"));
+      packageRoot = path.join(tempRoot, packageId);
+      await writeSmokePackage(packageRoot);
+    }
     await startModelStubContainer();
     const giteaToken = await bootstrapGiteaCollaboration();
 
@@ -1149,10 +1239,33 @@ async function main() {
       `node=${workerNodeId}; observed=${stoppedInspection.observedState}; generation=${stoppedInspection.restartGeneration}`
     );
 
-    console.log("Local runtime lifecycle, message, and git handoff smoke passed.");
+    if (previewDemo) {
+      console.log(
+        [
+          "Local Preview demo completed.",
+          `Session: ${smokeSessionId}`,
+          `Planner node: ${workerNodeId}`,
+          `Builder node: ${downstreamNodeId}`,
+          "Studio: http://localhost:3000",
+          "CLI examples:",
+          "  pnpm --filter @entangle/cli dev host sessions list --summary",
+          `  pnpm --filter @entangle/cli dev host sessions get ${smokeSessionId} --summary`,
+          `  pnpm --filter @entangle/cli dev host runtimes artifacts ${workerNodeId} --summary`,
+          `  pnpm --filter @entangle/cli dev host runtimes artifacts ${downstreamNodeId} --summary`,
+          "Reset when finished:",
+          "  pnpm ops:demo-local-preview:reset"
+        ].join("\n")
+      );
+    } else {
+      console.log("Local runtime lifecycle, message, and git handoff smoke passed.");
+    }
   } finally {
     if (tempRoot) {
       await rm(tempRoot, { force: true, recursive: true });
+    }
+
+    if (keepState) {
+      return;
     }
 
     await tryHostRequest("POST", `/v1/runtimes/${downstreamNodeId}/stop`);

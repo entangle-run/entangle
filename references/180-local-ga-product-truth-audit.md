@@ -86,7 +86,7 @@ known Vite chunk-size warning for the current bundle.
 | Milestone | Current truth | Evidence | Primary blockers |
 | --- | --- | --- | --- |
 | R1 / L1 Local Operator Baseline | Released as `v0.1-local-operator-baseline`. | Host, runner, Studio, CLI, local Compose, active/disposable/runtime smokes all passed in this audit and the final release packet records the release boundary. | None for R1/L1; next work moves to L1.5. |
-| R1.1 / L1.5 Local Operator Preview | Partially planned, not productized. | Core runtime path is usable through smoke scripts and host clients. | Canonical demo assets, near-one-command demo, documented happy path, troubleshooting, clearer first-run operator UX. |
+| R1.1 / L1.5 Local Operator Preview | Released as `v0.1.5-local-operator-preview`. | Canonical preview assets and a near-one-command demo path reuse the same host, runner, local relay, model-stub, and Gitea/git-backed artifact flow as the runtime smoke. | None for L1.5; next work moves to L2 Local Workbench. |
 | R1.2 / L2 Local Workbench | Partially implemented below the final workbench bar. | Package scaffold/admission, graph/node/edge mutation, runtime/session/artifact/turn/approval inspection exist. | Session launch flow, graph templates, graph import/export/diff, artifact preview/history, memory workbench, CLI parity for launch/export workflows. |
 | R1.3 / L3 Local Reliability | Early reliability foundation exists, but reliability product is incomplete. | Strict preflight, active smoke, disposable smoke, runtime smoke, reset through Compose volume teardown. | Doctor command, repair flow, backup/restore, local state versioning, upgrade checks, logs bundle, conservative drift repair. |
 | L4 Entangle Local GA | Not ready and must not be claimed. | Core local runtime works, but workbench/reliability/onboarding/release-discipline gaps remain. | Complete Local docs, install/demo path, workbench workflows, repair/backup/upgrade, release notes, website claim audit, GA tag only after all gates pass. |
@@ -159,22 +159,17 @@ failure.
 
 ## Execution Plan
 
-1. Build R1.1/L1.5 Local Operator Preview.
-   - Add demo package and graph.
-   - Add near-one-command demo path.
-   - Document happy path and troubleshooting.
-   - Keep disposable runtime smoke as the proof path.
-2. Build R1.2/L2 Local Workbench.
+1. Build R1.2/L2 Local Workbench.
    - Add package validate/import/inspect depth.
    - Add graph templates/import/export/diff.
    - Add host-backed session launch from Studio and CLI.
    - Add artifact and memory workbench surfaces.
-3. Build R1.3/L3 Local Reliability.
+2. Build R1.3/L3 Local Reliability.
    - Add local doctor.
    - Add conservative repair.
    - Add backup/restore and state-version checks.
    - Add logs collection and repeated-use validation.
-4. Cut L4 Local GA.
+3. Cut L4 Local GA.
    - Run clean-state validation.
    - Align docs, README, release notes, roadmap, and website claims.
    - Make limitations explicit.
