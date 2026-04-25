@@ -1,4 +1,4 @@
-import type { RunnerTurnRecord } from "@entangle/types";
+import type { RunnerTurnRecord, SourceChangeSummary } from "@entangle/types";
 
 export function sortRuntimeTurnsForPresentation(
   turns: RunnerTurnRecord[]
@@ -17,8 +17,9 @@ export function formatRuntimeTurnLabel(turn: RunnerTurnRecord): string {
 export function formatRuntimeTurnStatus(turn: RunnerTurnRecord): string {
   const engineStatus = turn.engineOutcome?.stopReason ?? "pending";
   const memoryStatus = turn.memorySynthesisOutcome?.status ?? "not_run";
+  const sourceStatus = turn.sourceChangeSummary?.status ?? "not_checked";
 
-  return `Trigger ${turn.triggerKind} · engine ${engineStatus} · memory ${memoryStatus}`;
+  return `Trigger ${turn.triggerKind} · engine ${engineStatus} · memory ${memoryStatus} · source ${sourceStatus}`;
 }
 
 export function formatRuntimeTurnArtifactSummary(
@@ -31,6 +32,32 @@ export function formatRuntimeTurnArtifactSummary(
     `produced ${turn.producedArtifactIds.length} · ` +
     `handoffs ${handoffMessageIds.length}`
   );
+}
+
+export function formatSourceChangeSummary(
+  summary: SourceChangeSummary | undefined
+): string {
+  if (!summary) {
+    return "not checked";
+  }
+
+  if (summary.status === "changed") {
+    const fileLabel = summary.fileCount === 1 ? "file" : "files";
+
+    return `${summary.fileCount} ${fileLabel} (+${summary.additions}/-${summary.deletions})${
+      summary.truncated ? " · truncated" : ""
+    }`;
+  }
+
+  if (summary.status === "failed") {
+    return `failed${summary.failureReason ? ` · ${summary.failureReason}` : ""}`;
+  }
+
+  if (summary.status === "not_configured") {
+    return "not configured";
+  }
+
+  return "unchanged";
 }
 
 export function formatRuntimeTurnDetailLines(
@@ -61,8 +88,22 @@ export function formatRuntimeTurnDetailLines(
   lines.push(
     `consumed artifacts ${formatIdList(turn.consumedArtifactIds)}`,
     `produced artifacts ${formatIdList(turn.producedArtifactIds)}`,
-    `handoff messages ${formatIdList(handoffMessageIds)}`
+    `handoff messages ${formatIdList(handoffMessageIds)}`,
+    `source changes ${formatSourceChangeSummary(turn.sourceChangeSummary)}`
   );
+
+  if (turn.sourceChangeSummary?.files.length) {
+    lines.push(
+      ...turn.sourceChangeSummary.files.slice(0, 5).map((file) => {
+        const churn =
+          file.additions > 0 || file.deletions > 0
+            ? ` (+${file.additions}/-${file.deletions})`
+            : "";
+
+        return `source file ${file.status} ${file.path}${churn}`;
+      })
+    );
+  }
 
   if (turn.engineOutcome) {
     const provider = turn.engineOutcome.providerMetadata;

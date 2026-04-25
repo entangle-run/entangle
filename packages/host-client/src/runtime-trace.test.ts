@@ -169,6 +169,14 @@ describe("runtime trace helpers", () => {
       phase: "emitting",
       producedArtifactIds: [],
       schemaVersion: "1",
+      sourceChangeSummary: {
+        additions: 7,
+        checkedAt: "2026-04-24T11:00:04.000Z",
+        deletions: 3,
+        fileCount: 2,
+        files: [],
+        status: "changed"
+      },
       startedAt: "2026-04-24T11:00:03.000Z",
       timestamp: "2026-04-24T11:00:04.000Z",
       triggerKind: "message",
@@ -188,7 +196,8 @@ describe("runtime trace helpers", () => {
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
         "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error) - Tool 'inspect_memory_ref' returned an error result.",
-        "Memory synthesis: updated 6 summary pages"
+        "Memory synthesis: updated 6 summary pages",
+        "Source changes: 2 files (+7/-3)"
       ],
       label: "Turn turn-alpha is emitting"
     });

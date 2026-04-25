@@ -1,4 +1,5 @@
 import type { RuntimeInspectionResponse } from "@entangle/types";
+import { formatSourceChangeSummary } from "./runtime-turn.js";
 
 export function sortRuntimeInspectionsForPresentation(
   runtimes: RuntimeInspectionResponse[]
@@ -118,6 +119,12 @@ export function formatRuntimeInspectionDetailLines(
     if (runtime.agentRuntime.lastTurnId) {
       detailLines.push(
         `last engine turn ${runtime.agentRuntime.lastTurnId} updated ${runtime.agentRuntime.lastTurnUpdatedAt ?? "unknown"}`
+      );
+    }
+
+    if (runtime.agentRuntime.lastSourceChangeSummary) {
+      detailLines.push(
+        `last source changes ${formatSourceChangeSummary(runtime.agentRuntime.lastSourceChangeSummary)}`
       );
     }
 

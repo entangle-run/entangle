@@ -72,6 +72,27 @@ function createTurn(
     phase: "emitting",
     producedArtifactIds: ["artifact-report"],
     sessionId: "session-alpha",
+    sourceChangeSummary: {
+      additions: 8,
+      checkedAt: "2026-04-24T11:00:00.000Z",
+      deletions: 2,
+      fileCount: 2,
+      files: [
+        {
+          additions: 6,
+          deletions: 1,
+          path: "src/worker.ts",
+          status: "modified"
+        },
+        {
+          additions: 2,
+          deletions: 1,
+          path: "tests/worker.test.ts",
+          status: "added"
+        }
+      ],
+      status: "changed"
+    },
     startedAt: "2026-04-24T10:00:00.000Z",
     triggerKind: "message",
     turnId,
@@ -96,7 +117,7 @@ describe("runtime turn presentation helpers", () => {
       "turn-alpha · emitting · session-alpha"
     );
     expect(formatRuntimeTurnStatus(turn)).toBe(
-      "Trigger message · engine completed · memory succeeded"
+      "Trigger message · engine completed · memory succeeded · source changed"
     );
     expect(formatRuntimeTurnArtifactSummary(turn)).toBe(
       "Artifacts consumed 1 · produced 1 · handoffs 1"
@@ -104,6 +125,9 @@ describe("runtime turn presentation helpers", () => {
     expect(formatRuntimeTurnDetailLines(turn)).toEqual(
       expect.arrayContaining([
         "handoff messages aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source changes 2 files (+8/-2)",
+        "source file modified src/worker.ts (+6/-1)",
+        "source file added tests/worker.test.ts (+2/-1)",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
         "engine session engine-session-alpha",

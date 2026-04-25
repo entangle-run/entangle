@@ -3937,6 +3937,22 @@ describe("buildHostServer", () => {
           phase: "persisting",
           producedArtifactIds: ["report-turn-001"],
           sessionId: "session-alpha",
+          sourceChangeSummary: {
+            additions: 2,
+            checkedAt: "2026-04-24T10:05:00.000Z",
+            deletions: 0,
+            fileCount: 1,
+            files: [
+              {
+                additions: 2,
+                deletions: 0,
+                path: "src/worker.ts",
+                status: "modified"
+              }
+            ],
+            status: "changed",
+            truncated: false
+          },
           startedAt: "2026-04-24T10:00:00.000Z",
           triggerKind: "message",
           turnId: "turn-alpha",
@@ -4041,6 +4057,22 @@ describe("buildHostServer", () => {
             nodeId: "worker-it",
             phase: "persisting",
             sessionId: "session-alpha",
+            sourceChangeSummary: {
+              additions: 2,
+              checkedAt: "2026-04-24T10:05:00.000Z",
+              deletions: 0,
+              fileCount: 1,
+              files: [
+                {
+                  additions: 2,
+                  deletions: 0,
+                  path: "src/worker.ts",
+                  status: "modified"
+                }
+              ],
+              status: "changed",
+              truncated: false
+            },
             memorySynthesisOutcome: {
               status: "succeeded",
               updatedAt: "2026-04-24T10:05:30.000Z",

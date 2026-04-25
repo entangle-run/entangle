@@ -47,6 +47,9 @@ The latest implementation state includes:
 - generic runtime workspace-health inspection for the Local node workspace
   layout, including source, artifact, engine-state, and wiki-repository
   surfaces;
+- runner-owned source workspace change harvesting with bounded changed-file
+  and diff summaries on runner turns, host events, runtime inspection, CLI
+  output, and Studio details;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -58,10 +61,10 @@ terminate overlong OpenCode probe/run processes with classified failure
 evidence, and report OpenCode one-shot permission auto-rejections as generic
  `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
-policy bridge, resumable permission approval mapping, artifact/diff harvesting,
-git/wiki workflow, external cancellation bridge, doctor-backed workspace health
-checks, and full CLI/Studio configuration and observability surface required
-for L3 acceptance.
+policy bridge, resumable permission approval mapping, commit-candidate and
+artifact history/diff workflow, git/wiki workflow, external cancellation
+bridge, doctor-backed workspace health checks, and full CLI/Studio
+configuration and observability surface required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -410,8 +413,8 @@ Current partial implementation:
   run process, sends `SIGTERM` on timeout, and records classified
   `provider_unavailable` evidence;
 - this does not yet complete external cancellation, permission mapping, full
-  degraded-runtime status DTOs, attached server lifecycle, or source
-  workspace diff/artifact harvesting.
+  degraded-runtime status DTOs, attached server lifecycle, or commit-candidate
+  and artifact publication/history workflow.
 
 Acceptance:
 
@@ -525,6 +528,25 @@ Constraints:
 - Engine-generated files are not automatically trusted as published artifacts.
 - Publication must respect node git principal and policy.
 
+Current partial implementation:
+
+- runner turns now carry an optional generic `sourceChangeSummary`;
+- the runner prepares a source baseline immediately before engine execution and
+  harvests changes after success or failure, so partial engine writes are still
+  inspectable;
+- source harvesting uses a runner-owned shadow git directory under
+  `runtime/source-snapshot.git` and does not create `.git` inside the node
+  `source/` workspace;
+- changed-file counts, additions/deletions, changed-file summaries, bounded
+  diff excerpts, truncation state, and bounded failure reasons are persisted
+  without exposing runtime-local workspace paths in protocol-facing locators;
+- host observed runner-turn activity, `runner.turn.updated` events, and runtime
+  inspection now carry the latest source-change summary;
+- shared host-client helpers, CLI output, and Studio runtime details now expose
+  the same source-change summary;
+- commit-candidate records, approval flow, source-history/diff APIs,
+  artifact publication, and remote git workflow remain open.
+
 Acceptance:
 
 - An OpenCode-backed node can modify its workspace, produce an artifact, and
@@ -596,9 +618,11 @@ Current partial implementation:
 
 - CLI and Studio now show effective agent-runtime mode/profile and the last
   engine version/session when host runtime inspection reports them;
+- CLI and Studio now also show the latest runner-owned source workspace change
+  summary when host runtime inspection or runtime-turn records report it;
 - graph/node editing support for agent-runtime selection, OpenCode availability
-  probing, approval blockers, changed files, produced artifacts, and recent
-  engine-event panels remain open.
+  probing, approval blockers, produced artifacts, source diff/history views,
+  and recent engine-event panels remain open.
 
 Acceptance:
 

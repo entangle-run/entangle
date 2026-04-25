@@ -146,6 +146,7 @@ import {
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
 import {
+  formatSourceChangeSummary,
   formatRuntimeTurnArtifactSummary,
   formatRuntimeTurnDetailLines,
   formatRuntimeTurnLabel,
@@ -3174,6 +3175,18 @@ export function App() {
                     <dd>
                       {selectedRuntime?.agentRuntime?.lastEngineSessionId ??
                         "none"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Source changes</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime
+                        ? formatSourceChangeSummary(
+                            selectedRuntime.agentRuntime.lastSourceChangeSummary
+                          )
+                        : selectedRuntime
+                          ? "not reported"
+                          : "loading"}
                     </dd>
                   </div>
                   <div>

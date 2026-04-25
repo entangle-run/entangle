@@ -2628,6 +2628,9 @@ async function buildRuntimeAgentRuntimeInspection(
             : {})
         }
       : {}),
+    ...(latestEngineTurn?.sourceChangeSummary
+      ? { lastSourceChangeSummary: latestEngineTurn.sourceChangeSummary }
+      : {}),
     ...(latestEngineTurn
       ? {
           lastTurnId: latestEngineTurn.turnId,
@@ -5309,6 +5312,9 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     producedArtifactIds: turnRecord.producedArtifactIds,
     schemaVersion: "1",
     sessionId: turnRecord.sessionId,
+    ...(turnRecord.sourceChangeSummary
+      ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
+      : {}),
     startedAt: turnRecord.startedAt,
     triggerKind: turnRecord.triggerKind,
     turnId: turnRecord.turnId,
@@ -5343,6 +5349,9 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     phase: turnRecord.phase,
     producedArtifactIds: turnRecord.producedArtifactIds,
     sessionId: turnRecord.sessionId,
+    ...(turnRecord.sourceChangeSummary
+      ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
+      : {}),
     startedAt: turnRecord.startedAt,
     triggerKind: turnRecord.triggerKind,
     turnId: turnRecord.turnId,

@@ -83,6 +83,21 @@ describe("runtime inspection host API contracts", () => {
         lastPermissionOperation: "command_execution",
         lastPermissionReason:
           "OpenCode one-shot CLI auto-rejected the permission request.",
+        lastSourceChangeSummary: {
+          additions: 4,
+          checkedAt: "2026-04-25T08:05:00.000Z",
+          deletions: 1,
+          fileCount: 1,
+          files: [
+            {
+              additions: 4,
+              deletions: 1,
+              path: "src/index.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed"
+        },
         lastTurnId: "turn-alpha",
         lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
         mode: "coding_agent",
@@ -117,6 +132,7 @@ describe("runtime inspection host API contracts", () => {
     );
     expect(result.agentRuntime?.lastEngineVersion).toBe("0.10.0");
     expect(result.agentRuntime?.lastPermissionDecision).toBe("rejected");
+    expect(result.agentRuntime?.lastSourceChangeSummary?.fileCount).toBe(1);
     expect(result.workspaceHealth?.status).toBe("ready");
   });
 });
@@ -959,6 +975,21 @@ describe("host event contracts", () => {
       producedArtifactIds: ["artifact-report-001"],
       schemaVersion: "1",
       sessionId: "session-alpha",
+      sourceChangeSummary: {
+        additions: 9,
+        checkedAt: "2026-04-24T00:00:01.000Z",
+        deletions: 2,
+        fileCount: 1,
+        files: [
+          {
+            additions: 9,
+            deletions: 2,
+            path: "src/worker.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed"
+      },
       startedAt: "2026-04-24T00:00:00.000Z",
       timestamp: "2026-04-24T00:00:01.000Z",
       triggerKind: "message",
@@ -991,6 +1022,7 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.memorySynthesisOutcome?.updatedSummaryPagePaths).toHaveLength(
       6
     );
+    expect(runnerTurnEvent.sourceChangeSummary?.fileCount).toBe(1);
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

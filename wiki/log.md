@@ -1,5 +1,23 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added source workspace change harvesting
+
+Advanced Entangle Local L3 workstream B5. Runner turns now record a generic
+`sourceChangeSummary` after engine execution, including bounded changed-file
+summaries, additions/deletions, optional diff excerpts, truncation state, and
+bounded failure evidence. The runner prepares a baseline before the engine turn
+and harvests after success or failure, so partial engine writes remain
+inspectable.
+
+The implementation uses runner-owned shadow git state at
+`runtime/source-snapshot.git` and does not create `.git` inside the node
+`source/` workspace. Host observed turn activity, `runner.turn.updated` events,
+runtime inspection, shared host-client presentation, CLI output, and Studio
+details now expose the same source-change summary. Added
+`references/196-source-workspace-change-harvesting-slice.md`. Commit
+candidates, approval/policy flow, artifact history/diff APIs, and publication
+remain open B5 work.
+
 ## [2026-04-25] implementation | Added node workspace health inspection
 
 Advanced Entangle Local L3 workstream B4. Runtime inspection now carries a

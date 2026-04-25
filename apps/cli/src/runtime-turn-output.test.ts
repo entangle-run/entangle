@@ -35,6 +35,21 @@ describe("runtime turn CLI output", () => {
       phase: "persisting",
       producedArtifactIds: ["artifact-report"],
       sessionId: "session-alpha",
+      sourceChangeSummary: {
+        additions: 3,
+        checkedAt: "2026-04-24T10:01:00.000Z",
+        deletions: 1,
+        fileCount: 1,
+        files: [
+          {
+            additions: 3,
+            deletions: 1,
+            path: "src/index.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed"
+      },
       startedAt: "2026-04-24T10:00:00.000Z",
       triggerKind: "message",
       turnId: "turn-alpha",
@@ -48,13 +63,14 @@ describe("runtime turn CLI output", () => {
       label: "turn-alpha · persisting · session-alpha",
       phase: "persisting",
       sessionId: "session-alpha",
-      status: "Trigger message · engine completed · memory not_run",
+      status: "Trigger message · engine completed · memory not_run · source changed",
       turnId: "turn-alpha",
       updatedAt: "2026-04-24T10:01:00.000Z"
     });
     expect(summary.detailLines).toEqual(
       expect.arrayContaining([
         "handoff messages none",
+        "source changes 1 file (+3/-1)",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "tool error #1 inspect_memory_ref: tool_result_error - Tool 'inspect_memory_ref' returned an error result."
       ])

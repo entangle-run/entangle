@@ -79,6 +79,35 @@ export const memorySynthesisOutcomeSchema = z.discriminatedUnion("status", [
   memorySynthesisFailureOutcomeSchema
 ]);
 
+export const sourceChangeFileStatusSchema = z.enum([
+  "added",
+  "modified",
+  "deleted",
+  "renamed",
+  "copied",
+  "type_changed",
+  "unknown"
+]);
+
+export const sourceChangeFileSummarySchema = z.object({
+  additions: z.number().int().nonnegative().default(0),
+  deletions: z.number().int().nonnegative().default(0),
+  path: nonEmptyStringSchema,
+  status: sourceChangeFileStatusSchema
+});
+
+export const sourceChangeSummarySchema = z.object({
+  additions: z.number().int().nonnegative().default(0),
+  checkedAt: nonEmptyStringSchema,
+  deletions: z.number().int().nonnegative().default(0),
+  diffExcerpt: nonEmptyStringSchema.optional(),
+  failureReason: nonEmptyStringSchema.optional(),
+  fileCount: z.number().int().nonnegative(),
+  files: z.array(sourceChangeFileSummarySchema).default([]),
+  status: z.enum(["not_configured", "unchanged", "changed", "failed"]),
+  truncated: z.boolean().default(false)
+});
+
 export const sessionRecordSchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
   entrypointNodeId: identifierSchema.optional(),
@@ -142,6 +171,7 @@ export const runnerTurnRecordSchema = z.object({
   phase: runnerPhaseSchema,
   producedArtifactIds: z.array(identifierSchema).default([]),
   sessionId: identifierSchema.optional(),
+  sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,
   turnId: identifierSchema,
@@ -236,6 +266,13 @@ export type RunnerTriggerKind = z.infer<typeof runnerTriggerKindSchema>;
 export type MemorySynthesisOutcome = z.infer<
   typeof memorySynthesisOutcomeSchema
 >;
+export type SourceChangeFileStatus = z.infer<
+  typeof sourceChangeFileStatusSchema
+>;
+export type SourceChangeFileSummary = z.infer<
+  typeof sourceChangeFileSummarySchema
+>;
+export type SourceChangeSummary = z.infer<typeof sourceChangeSummarySchema>;
 export type SessionRecord = z.infer<typeof sessionRecordSchema>;
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ApprovalRecord = z.infer<typeof approvalRecordSchema>;

@@ -13,6 +13,21 @@ function createRuntime(): RuntimeInspectionResponse {
       lastPermissionOperation: "command_execution",
       lastPermissionReason:
         "OpenCode one-shot CLI auto-rejected the permission request.",
+      lastSourceChangeSummary: {
+        additions: 4,
+        checkedAt: "2026-04-25T08:05:00.000Z",
+        deletions: 0,
+        fileCount: 1,
+        files: [
+          {
+            additions: 4,
+            deletions: 0,
+            path: "README.md",
+            status: "modified"
+          }
+        ],
+        status: "changed"
+      },
       mode: "coding_agent",
       stateScope: "node"
     },
@@ -74,6 +89,9 @@ describe("runtime inspection CLI summary projection", () => {
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "last permission rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request."
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "last source changes 1 file (+4/-0)"
     );
   });
 });

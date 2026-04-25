@@ -59,6 +59,22 @@ function createTurn(
     phase: "emitting",
     producedArtifactIds: ["artifact-report"],
     sessionId: "session-alpha",
+    sourceChangeSummary: {
+      additions: 2,
+      checkedAt: "2026-04-24T11:00:00.000Z",
+      deletions: 0,
+      fileCount: 1,
+      files: [
+        {
+          additions: 2,
+          deletions: 0,
+          path: "src/index.ts",
+          status: "modified"
+        }
+      ],
+      status: "changed",
+      truncated: false
+    },
     startedAt: "2026-04-24T10:00:00.000Z",
     triggerKind: "message",
     turnId,
@@ -84,7 +100,7 @@ describe("studio runtime turn inspection helpers", () => {
       "turn-alpha · emitting · session-alpha"
     );
     expect(formatRuntimeTurnStatus(turn)).toBe(
-      "Trigger message · engine completed · memory succeeded"
+      "Trigger message · engine completed · memory succeeded · source changed"
     );
     expect(formatRuntimeTurnArtifactSummary(turn)).toBe(
       "Artifacts consumed 1 · produced 1 · handoffs 0"
@@ -92,6 +108,7 @@ describe("studio runtime turn inspection helpers", () => {
     expect(formatRuntimeTurnDetailLines(turn)).toEqual(
       expect.arrayContaining([
         "handoff messages none",
+        "source changes 1 file (+2/-0)",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
         "provider stop end_turn",

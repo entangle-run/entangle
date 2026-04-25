@@ -1,4 +1,5 @@
 export {
+  formatSourceChangeSummary,
   formatRuntimeTurnArtifactSummary,
   formatRuntimeTurnDetailLines,
   formatRuntimeTurnLabel,

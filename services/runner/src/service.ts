@@ -66,6 +66,10 @@ import {
   buildArtifactInputsFromMaterializedRecords,
   type RunnerMemorySynthesizer
 } from "./memory-synthesizer.js";
+import {
+  harvestSourceChanges,
+  prepareSourceChangeHarvest
+} from "./source-change-harvester.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -1848,6 +1852,7 @@ export class RunnerService {
       });
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
+      const sourceChangeBaseline = await prepareSourceChangeHarvest(this.context);
       let result: AgentEngineTurnResult;
       let handoffPlans: ResolvedHandoffPlan[] = [];
 
@@ -1855,18 +1860,28 @@ export class RunnerService {
         result = parseEngineTurnResult(await this.engine.executeTurn(turnRequest));
         handoffPlans = resolveHandoffPlans(this.context, result.handoffDirectives);
       } catch (error) {
+        const sourceChangeSummary = await harvestSourceChanges(
+          this.context,
+          sourceChangeBaseline
+        );
         turnRecord = {
           ...turnRecord,
           engineOutcome: buildFailedEngineTurnOutcome(this.context, error),
+          sourceChangeSummary,
           updatedAt: nowIsoString()
         };
         await writeRunnerTurnRecord(statePaths, turnRecord);
         throw error;
       }
 
+      const sourceChangeSummary = await harvestSourceChanges(
+        this.context,
+        sourceChangeBaseline
+      );
       turnRecord = {
         ...turnRecord,
         engineOutcome: buildEngineTurnOutcome(result, this.context),
+        sourceChangeSummary,
         updatedAt: nowIsoString()
       };
       await writeRunnerTurnRecord(statePaths, turnRecord);

@@ -25,6 +25,21 @@ function createRuntime(
       lastPermissionOperation: "command_execution",
       lastPermissionReason:
         "OpenCode one-shot CLI auto-rejected the permission request.",
+      lastSourceChangeSummary: {
+        additions: 5,
+        checkedAt: "2026-04-25T08:05:00.000Z",
+        deletions: 1,
+        fileCount: 1,
+        files: [
+          {
+            additions: 5,
+            deletions: 1,
+            path: "src/agent.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed"
+      },
       lastTurnId: "turn-alpha",
       lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
       mode: "coding_agent",
@@ -120,6 +135,9 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last permission rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request."
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "last source changes 1 file (+5/-1)"
     );
     expect(formatRuntimeWorkspaceHealthSummary(runtime)).toBe(
       "ready · 2 surfaces"

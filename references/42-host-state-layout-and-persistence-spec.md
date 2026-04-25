@@ -223,6 +223,13 @@ For the L3 agentic node runtime, `source/` is the coding-engine worktree,
 active memory source of truth remains `memory/wiki` until migration and
 rollback semantics are implemented.
 
+The runner may keep internal source-change harvesting state under
+`runtime/source-snapshot.git`. That shadow git directory is runner-owned
+runtime state, not a protocol artifact, not an artifact backend repository, and
+not a `.git` directory inside the node `source/` workspace. It exists only to
+compare the source workspace before and after engine turns until commit
+candidate, publication, and policy workflows are implemented.
+
 ## 9. What should be tracked in git versus ignored
 
 Tracked:

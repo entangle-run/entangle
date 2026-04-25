@@ -1,4 +1,4 @@
-import { readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
@@ -116,6 +116,74 @@ function buildHttpsRuntimeContext(input: {
 }
 
 describe("RunnerService", () => {
+  it("records source workspace changes made during an engine turn", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context,
+      engine: {
+        async executeTurn() {
+          const sourceRoot = context.workspace.sourceWorkspaceRoot;
+
+          if (!sourceRoot) {
+            throw new Error("Expected a source workspace root in the fixture.");
+          }
+
+          const generatedPath = path.join(sourceRoot, "src", "generated.ts");
+          await mkdir(path.dirname(generatedPath), { recursive: true });
+          await writeFile(
+            generatedPath,
+            "export const generated = true;\n",
+            "utf8"
+          );
+
+          return {
+            assistantMessages: ["Generated a source file."],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: []
+          };
+        }
+      },
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        conversationId: "source-change-conv",
+        intent: "generate_source_file",
+        sessionId: "source-change-session",
+        summary: "Generate one source file.",
+        turnId: "source-change-turn-001"
+      })
+    );
+
+    expect(result.handled).toBe(true);
+
+    const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
+    const [turn] = await listRunnerTurnRecords(statePaths);
+
+    expect(turn?.sourceChangeSummary).toMatchObject({
+      additions: 1,
+      deletions: 0,
+      fileCount: 1,
+      status: "changed"
+    });
+    expect(turn?.sourceChangeSummary?.files).toEqual([
+      {
+        additions: 1,
+        deletions: 0,
+        path: "src/generated.ts",
+        status: "added"
+      }
+    ]);
+    expect(turn?.sourceChangeSummary?.diffExcerpt).toContain(
+      "export const generated = true;"
+    );
+  });
+
   it("hands off a published git artifact from one node to a downstream node", async () => {
     const upstreamFixture = await createRuntimeFixture({
       remotePublication: "bare_repo"

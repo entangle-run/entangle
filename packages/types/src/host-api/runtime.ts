@@ -23,7 +23,8 @@ import {
 } from "../runtime/runtime-state.js";
 import {
   approvalRecordSchema,
-  runnerTurnRecordSchema
+  runnerTurnRecordSchema,
+  sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 
 export const runtimeAgentRuntimeInspectionSchema = z.object({
@@ -40,6 +41,7 @@ export const runtimeAgentRuntimeInspectionSchema = z.object({
   lastPermissionDecision: enginePermissionDecisionSchema.optional(),
   lastPermissionOperation: enginePolicyOperationSchema.optional(),
   lastPermissionReason: nonEmptyStringSchema.optional(),
+  lastSourceChangeSummary: sourceChangeSummarySchema.optional(),
   lastTurnId: identifierSchema.optional(),
   lastTurnUpdatedAt: nonEmptyStringSchema.optional(),
   mode: nodeAgentRuntimeModeSchema,

@@ -946,6 +946,7 @@ export {
   sortHostSessionSummariesForPresentation
 } from "./runtime-session.js";
 export {
+  formatSourceChangeSummary,
   formatRuntimeTurnArtifactSummary,
   formatRuntimeTurnDetailLines,
   formatRuntimeTurnLabel,

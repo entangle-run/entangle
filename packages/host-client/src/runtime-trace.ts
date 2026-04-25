@@ -6,6 +6,7 @@ import {
   formatHostSessionApprovalStatusSummary,
   formatHostSessionConversationStatusSummary
 } from "./runtime-session.js";
+import { formatSourceChangeSummary } from "./runtime-turn.js";
 
 export interface RuntimeTraceEventPresentation {
   detailLines: string[];
@@ -118,6 +119,12 @@ function buildRunnerTurnDetailLines(
               : "s"
           }`
         : `Memory synthesis: failed — ${event.memorySynthesisOutcome.errorMessage}`
+    );
+  }
+
+  if (event.sourceChangeSummary) {
+    detailLines.push(
+      `Source changes: ${formatSourceChangeSummary(event.sourceChangeSummary)}`
     );
   }
 

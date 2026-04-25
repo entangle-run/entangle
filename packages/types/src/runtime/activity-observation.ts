@@ -15,7 +15,8 @@ import {
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
-  sessionLifecycleStateSchema
+  sessionLifecycleStateSchema,
+  sourceChangeSummarySchema
 } from "./session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
 
@@ -47,6 +48,7 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   producedArtifactIds: z.array(identifierSchema).default([]),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema.optional(),
+  sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,
   turnId: identifierSchema,

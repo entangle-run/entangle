@@ -153,7 +153,10 @@ The repository now also contains the first real implementation baseline:
   including `policy_denied` results when OpenCode one-shot CLI auto-rejects a
   permission request, while host runtime inspection now carries a generic
   agent-runtime summary plus workspace-health status consumed by the shared
-  host-client, CLI, and Studio;
+  host-client, CLI, and Studio, and runner-owned source workspace change
+  harvesting now records bounded changed-file and diff summaries on turns,
+  host events, runtime inspection, CLI output, and Studio details without
+  auto-committing or publishing engine-generated files;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

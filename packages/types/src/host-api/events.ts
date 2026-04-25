@@ -21,7 +21,8 @@ import {
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
-  sessionLifecycleStateSchema
+  sessionLifecycleStateSchema,
+  sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
 import {
@@ -252,6 +253,7 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   phase: runnerPhaseSchema,
   producedArtifactIds: z.array(identifierSchema),
   sessionId: identifierSchema.optional(),
+  sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,
   turnId: identifierSchema,

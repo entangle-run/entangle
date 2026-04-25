@@ -135,7 +135,10 @@ This repository currently contains:
   profile, state scope, last engine version/session, last permission decision,
   last turn, bounded failure evidence, and generic workspace-health status for
   source/artifact/engine-state/wiki surfaces through the shared host-client,
-  CLI, and Studio surfaces;
+  CLI, and Studio surfaces, with runner-owned source workspace change
+  harvesting now recording bounded changed-file and diff summaries on turns,
+  host events, runtime inspection, CLI output, and Studio details without
+  auto-committing or publishing those engine-generated files;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
