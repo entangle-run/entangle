@@ -33,8 +33,16 @@ export function formatRuntimeSessionDetail(
 
   const traceSummary =
     session.traceIds.length > 0 ? session.traceIds.join(", ") : "no trace ids";
+  const activeWorkSummary = [
+    `active conversations ${session.activeConversationIds.length}`,
+    `approvals ${session.waitingApprovalIds.length}`,
+    `root artifacts ${session.rootArtifactIds.length}`,
+    ...(session.latestMessageType
+      ? [`latest message ${session.latestMessageType}`]
+      : [])
+  ].join(" · ");
 
-  return `Nodes ${nodeSummary} · traces ${traceSummary}`;
+  return `Nodes ${nodeSummary} · ${activeWorkSummary} · traces ${traceSummary}`;
 }
 
 export function sessionInspectionReferencesRuntime(

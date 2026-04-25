@@ -711,7 +711,9 @@ describe("createHostClient", () => {
         body: JSON.stringify({
           sessions: [
             {
+              activeConversationIds: ["conv-alpha"],
               graphId: "team-alpha",
+              latestMessageType: "task.request",
               nodeIds: ["worker-it"],
               nodeStatuses: [
                 {
@@ -719,8 +721,10 @@ describe("createHostClient", () => {
                   status: "active"
                 }
               ],
+              rootArtifactIds: ["artifact-alpha"],
               sessionId: "session-alpha",
               traceIds: ["trace-alpha"],
+              waitingApprovalIds: ["approval-alpha"],
               updatedAt: "2026-04-24T10:05:00.000Z"
             }
           ]
@@ -774,8 +778,12 @@ describe("createHostClient", () => {
     await expect(client.listSessions()).resolves.toMatchObject({
       sessions: [
         {
+          activeConversationIds: ["conv-alpha"],
           graphId: "team-alpha",
+          latestMessageType: "task.request",
           nodeIds: ["worker-it"],
+          rootArtifactIds: ["artifact-alpha"],
+          waitingApprovalIds: ["approval-alpha"],
           sessionId: "session-alpha"
         }
       ]

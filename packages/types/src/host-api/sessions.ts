@@ -4,6 +4,7 @@ import {
   sessionLifecycleStateSchema,
   sessionRecordSchema
 } from "../runtime/session-state.js";
+import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
 import { runtimeInspectionResponseSchema } from "./runtime.js";
 
 export const hostSessionNodeStatusSchema = z.object({
@@ -12,11 +13,15 @@ export const hostSessionNodeStatusSchema = z.object({
 });
 
 export const hostSessionSummarySchema = z.object({
+  activeConversationIds: z.array(identifierSchema).default([]),
   graphId: identifierSchema,
+  latestMessageType: entangleA2AMessageTypeSchema.optional(),
   nodeIds: z.array(identifierSchema),
   nodeStatuses: z.array(hostSessionNodeStatusSchema),
+  rootArtifactIds: z.array(identifierSchema).default([]),
   sessionId: identifierSchema,
   traceIds: z.array(identifierSchema),
+  waitingApprovalIds: z.array(identifierSchema).default([]),
   updatedAt: nonEmptyStringSchema
 });
 

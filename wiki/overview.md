@@ -102,7 +102,9 @@ The repository now also contains the first real implementation baseline:
   before the runner emits `task.handoff`, with emitted handoff ids carried
   through runner-turn, host-event, and client presentation contracts, and with
   runner-owned active-conversation reconciliation now keeping multi-handoff
-  sessions active only while real delegated conversations remain open;
+  sessions active only while real delegated conversations remain open, with
+  host-owned session summaries now exposing aggregate active-work ids for
+  list-level operator inspection;
 - a runtime-backend abstraction with a memory backend used in tests and a
   first Docker backend for the local operator profile, now mediated through a
   first-party Docker Engine API client rather than `docker` CLI shell-outs,
@@ -385,8 +387,10 @@ The repository now also contains the first real implementation baseline:
 - a host-owned session inspection surface where `entangle-host` now exposes
   `GET /v1/sessions` plus `GET /v1/sessions/{sessionId}`, aggregates persisted
   runner session records across the current host runtime set, and shares the
-  same boundary through `packages/host-client` and the CLI so future event
-  widening can build on a stable read model instead of event-only logic;
+  same boundary through `packages/host-client` and the CLI, with aggregate
+  active-conversation ids, waiting approval ids, root artifact ids, and latest
+  message type on list summaries so event traces and session inspection share
+  the same active-work vocabulary;
 - a host-owned runner-turn inspection surface where `entangle-host` now exposes
   `GET /v1/runtimes/{nodeId}/turns` plus
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary

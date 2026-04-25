@@ -35,11 +35,15 @@ the current host runtime set.
 
 Each summary includes:
 
+- `activeConversationIds`
 - `graphId`
+- `latestMessageType`
 - `sessionId`
 - `nodeIds`
 - `nodeStatuses`
+- `rootArtifactIds`
 - `traceIds`
+- `waitingApprovalIds`
 - `updatedAt`
 
 `GET /v1/sessions/{sessionId}` returns the node-owned session entries that

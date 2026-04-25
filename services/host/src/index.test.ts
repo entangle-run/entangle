@@ -3027,7 +3027,9 @@ describe("buildHostServer", () => {
       ).toEqual({
         sessions: [
           {
+            activeConversationIds: ["conv-alpha"],
             graphId: "team-alpha",
+            latestMessageType: "task.request",
             nodeIds: ["worker-it"],
             nodeStatuses: [
               {
@@ -3035,8 +3037,10 @@ describe("buildHostServer", () => {
                 status: "active"
               }
             ],
+            rootArtifactIds: ["report-turn-001"],
             sessionId: "session-alpha",
             traceIds: ["trace-alpha"],
+            waitingApprovalIds: [],
             updatedAt: "2026-04-24T10:05:00.000Z"
           }
         ]

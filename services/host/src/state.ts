@@ -5067,25 +5067,59 @@ function buildSessionSummary(
     );
   }
 
-  const traceIds = new Set<string>();
+  const activeConversationIds = uniqueSortedIdentifiers(
+    nodes.flatMap((entry) => entry.session.activeConversationIds)
+  );
+  const rootArtifactIds = uniqueSortedIdentifiers(
+    nodes.flatMap((entry) => entry.session.rootArtifactIds)
+  );
+  const traceIds = uniqueSortedIdentifiers(
+    nodes.map((entry) => entry.session.traceId)
+  );
+  const waitingApprovalIds = uniqueSortedIdentifiers(
+    nodes.flatMap((entry) => entry.session.waitingApprovalIds)
+  );
+  const latestMessageType = resolveLatestSessionMessageType(nodes);
 
-  for (const entry of nodes) {
-    traceIds.add(entry.session.traceId);
-  }
-
-  return hostSessionSummarySchema.parse({
+  const summaryInput = {
+    activeConversationIds,
     graphId: firstNode.session.graphId,
     nodeIds: nodes.map((entry) => entry.nodeId),
     nodeStatuses: nodes.map((entry) => ({
       nodeId: entry.nodeId,
       status: entry.session.status
     })),
+    rootArtifactIds,
     sessionId,
-    traceIds: Array.from(traceIds).sort(),
+    traceIds,
+    waitingApprovalIds,
     updatedAt: nodes
       .map((entry) => entry.session.updatedAt)
       .sort((left, right) => right.localeCompare(left))[0]
-  });
+  };
+
+  return hostSessionSummarySchema.parse(
+    latestMessageType
+      ? {
+          ...summaryInput,
+          latestMessageType
+        }
+      : summaryInput
+  );
+}
+
+function uniqueSortedIdentifiers(values: string[]): string[] {
+  return Array.from(new Set(values)).sort();
+}
+
+function resolveLatestSessionMessageType(
+  nodes: SessionInspectionResponse["nodes"]
+): SessionRecord["lastMessageType"] {
+  return [...nodes]
+    .filter((entry) => entry.session.lastMessageType)
+    .sort((left, right) =>
+      right.session.updatedAt.localeCompare(left.session.updatedAt)
+    )[0]?.session.lastMessageType;
 }
 
 export async function listSessions(): Promise<SessionListResponse> {

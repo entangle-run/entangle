@@ -20,11 +20,14 @@ function createSession(
   nodeStatus: HostSessionSummary["nodeStatuses"]
 ): HostSessionSummary {
   return {
+    activeConversationIds: [],
     graphId: "team-alpha",
     nodeIds: nodeStatus.map((entry) => entry.nodeId),
     nodeStatuses: nodeStatus,
+    rootArtifactIds: [],
     sessionId,
     traceIds: [`trace-${sessionId}`],
+    waitingApprovalIds: [],
     updatedAt
   };
 }
@@ -54,11 +57,23 @@ describe("studio runtime session inspection helpers", () => {
       { nodeId: "worker-it", status: "active" },
       { nodeId: "lead-it", status: "planning" }
     ]);
+    session.activeConversationIds = ["conv-alpha"];
+    session.latestMessageType = "task.result";
+    session.rootArtifactIds = ["artifact-alpha"];
+    session.waitingApprovalIds = ["approval-alpha"];
 
     expect(formatRuntimeSessionLabel(session, "worker-it")).toBe(
       "session-alpha · active"
     );
     expect(formatRuntimeSessionDetail(session)).toContain("lead-it:planning");
+    expect(formatRuntimeSessionDetail(session)).toContain(
+      "active conversations 1"
+    );
+    expect(formatRuntimeSessionDetail(session)).toContain("approvals 1");
+    expect(formatRuntimeSessionDetail(session)).toContain("root artifacts 1");
+    expect(formatRuntimeSessionDetail(session)).toContain(
+      "latest message task.result"
+    );
     expect(formatRuntimeSessionDetail(session)).toContain("trace-session-alpha");
   });
 

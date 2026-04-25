@@ -163,7 +163,9 @@ This repository currently contains:
 - a host-owned session inspection surface through `GET /v1/sessions` and
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
-  `packages/host-client` and the CLI;
+  `packages/host-client` and the CLI, with list summaries now carrying
+  aggregate active-conversation ids, waiting approval ids, root artifact ids,
+  and the latest observed A2A message type across participating nodes;
 - a widening of the host event surface where `entangle-host` now derives and
   persists `session.updated` plus `runner.turn.updated` events from persisted
   runner session and turn state, with `session.updated` now carrying

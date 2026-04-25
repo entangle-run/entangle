@@ -1247,3 +1247,16 @@ events, and Studio consumes the same detail lines.
 
 Closed the pass after widening contract, host, host-client, and Studio tests,
 then rerunning targeted checks for those packages.
+
+## [2026-04-25] implementation | Added active-work fields to session summaries
+
+Closed the matching session-inspection read-model gap by widening
+`HostSessionSummary` with aggregate `activeConversationIds`,
+`waitingApprovalIds`, `rootArtifactIds`, and optional `latestMessageType`
+derived from the node-owned `SessionRecord` entries contributing to each
+host session summary.
+
+The host now computes deterministic unique aggregate ids across participating
+node records, the shared host client parses the widened contract, and Studio
+session summaries render the aggregate active-work counts before operators
+open per-node session detail.
