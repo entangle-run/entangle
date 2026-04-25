@@ -566,6 +566,12 @@ The repository now also contains the first real implementation baseline:
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for local profile files, Node/pnpm, Docker, Docker Compose, daemon access,
   and Compose config validity;
+- a first Local reliability doctor through `entangle local doctor`, with
+  read-only human-readable and JSON diagnostics for Local profile files,
+  Node/pnpm/Docker/Compose, the runner image, OpenCode availability,
+  `.entangle/host`, live host status, host-reported runtime workspace health,
+  git principals, Studio, Gitea, and the local relay, plus strict and
+  offline modes;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket

@@ -737,6 +737,21 @@ Constraints:
 - Doctor must inspect and report; it must not mutate state by default.
 - Checks must distinguish warnings from blockers.
 
+Current partial implementation:
+
+- `entangle local doctor` now provides a read-only operator diagnostic with
+  human-readable and JSON output;
+- the first doctor checks required Local profile files, Node 22+, `pnpm`,
+  Docker CLI, Docker Compose, Docker daemon, Local Compose config, the local
+  runner image, OpenCode availability, `.entangle/host`, live host status,
+  host-reported runtime workspace health, host-managed git principals, Studio,
+  Gitea, and the local relay;
+- default mode reports optional local infrastructure gaps as warnings, while
+  `--strict` escalates those gaps to failures for release and smoke
+  preparation;
+- `--skip-live` keeps the command offline/read-only against local files and
+  local command availability.
+
 Acceptance:
 
 - A user can diagnose the common Local failure modes without reading source

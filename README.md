@@ -612,6 +612,11 @@ This repository currently contains:
   approval-gated by default, and CLI/Studio/shared presentation surfaces expose
   the persisted source approval evidence, including approval operation and
   resource scope;
+- the first Local reliability diagnostic slice where `entangle local doctor`
+  performs read-only checks over Local profile files, Node/pnpm/Docker/Compose,
+  the runner image, OpenCode availability, `.entangle/host`, host status,
+  runtime workspace health, git principals, Studio, Gitea, and the local relay,
+  with human-readable and JSON output plus strict/offline modes;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

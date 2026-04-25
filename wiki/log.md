@@ -1,5 +1,23 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added Local doctor foundation
+
+Started Entangle Local L4 reliability workstream C1 with a read-only
+`entangle local doctor` command. The command reports severity-ranked Local
+profile diagnostics in human-readable or JSON form and supports `--strict` for
+release/smoke preparation plus `--skip-live` for offline checks.
+
+The first doctor checks required Local profile files, Node 22+, `pnpm`, Docker,
+Docker Compose, Docker daemon, Local Compose config, `entangle-runner:local`,
+OpenCode availability, `.entangle/host`, live host status, host-reported
+runtime workspace health, git principal records, Studio, Gitea, and the local
+relay. Added `references/207-local-doctor-foundation-slice.md`.
+
+Focused CLI typecheck, lint, doctor tests, and offline JSON command execution
+passed. `git diff --check`, focused CLI build, full `pnpm build`, and
+`CI=1 TURBO_DAEMON=false pnpm verify` also passed; build still reports only the
+known Studio chunk-size warning.
+
 ## [2026-04-25] implementation | Scoped approvals to operations and resources
 
 Tightened Entangle Local L3 approval evidence for source mutations. Approval
