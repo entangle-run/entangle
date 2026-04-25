@@ -46,7 +46,9 @@ presence or absence of `conversationId`.
 
 ## Boundary Decisions
 
-- The finding is diagnostic only. It does not complete the active session.
+- The host finding is diagnostic only. Runner startup repair may complete the
+  active session later when no open work, no waiting approvals, and known last
+  message context make the lifecycle transition safe.
 - The runner remains responsible for lifecycle transitions and repair.
 - The host does not infer which message should close the session.
 - The API change is additive inside the current internal contract: existing

@@ -40,17 +40,18 @@ For each session:
 - unchanged records are left untouched;
 - repaired records receive a fresh `updatedAt` timestamp.
 
-The repair pass intentionally does not synthesize lifecycle transitions. It
-does not mark an `active` session as `completed` just because no open
-conversation remains; that future behavior needs explicit policy and operator
-visibility.
+The repair pass now also completes a drained `active` session when the runner
+has enough durable context to do so safely: no active conversations, no open
+conversation records, no waiting approvals, and a known last message id/type.
+Sessions missing that context remain diagnostic-only.
 
 ## Boundary Decisions
 
 - Runner state remains authoritative for session and conversation truth.
 - Host diagnostics remain read-only and never rewrite runner state.
-- Startup repair is bounded to `activeConversationIds`; it does not invent
-  messages, approvals, artifacts, or lifecycle history.
+- Startup repair is bounded to derived active work and safe drained-session
+  completion; it does not invent messages, approvals, artifacts, or lifecycle
+  history.
 - The repair runs before transport subscription so new inbound work starts from
   a coherent active-work baseline.
 
@@ -60,16 +61,15 @@ Coverage now asserts that runner startup:
 
 - removes stale active ids for terminal or missing conversations;
 - adds durable open conversations that were missing from the active set;
-- preserves the session lifecycle status and last message type while repairing
-  the derived active-work set.
+- preserves active session lifecycle status when open work remains;
+- completes drained active sessions when the last message context is available.
 
 ## Follow-On Work
 
 The next delegated-session runtime steps should be explicit, not implicit:
 
-- operator-visible repair commands for session lifecycle mismatches;
-- explicit lifecycle repair policy for active sessions with no open
-  conversation records;
+- operator-visible repair commands for lifecycle mismatches that require human
+  confirmation or lack last-message context;
 - cross-runtime owner-level synthesis that distinguishes upstream session
   ownership from downstream delegated work;
 - host event emission that makes runner-owned repair activity observable

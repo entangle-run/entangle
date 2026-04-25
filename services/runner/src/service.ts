@@ -706,6 +706,30 @@ async function repairSessionActiveConversationIds(
             conversationRecords,
             sessionId: sessionRecord.sessionId
           });
+      const repairedSession: SessionRecord = {
+        ...sessionRecord,
+        activeConversationIds,
+        updatedAt: areIdentifierListsEqual(
+          sessionRecord.activeConversationIds,
+          activeConversationIds
+        )
+          ? sessionRecord.updatedAt
+          : nowIsoString()
+      };
+
+      if (
+        repairedSession.status === "active" &&
+        repairedSession.activeConversationIds.length === 0 &&
+        repairedSession.waitingApprovalIds.length === 0 &&
+        repairedSession.lastMessageId &&
+        repairedSession.lastMessageType
+      ) {
+        await completeSession(statePaths, repairedSession, {
+          lastMessageId: repairedSession.lastMessageId,
+          lastMessageType: repairedSession.lastMessageType
+        });
+        return;
+      }
 
       if (
         areIdentifierListsEqual(
@@ -716,11 +740,7 @@ async function repairSessionActiveConversationIds(
         return;
       }
 
-      await writeSessionRecord(statePaths, {
-        ...sessionRecord,
-        activeConversationIds,
-        updatedAt: nowIsoString()
-      });
+      await writeSessionRecord(statePaths, repairedSession);
     })
   );
 }

@@ -1448,3 +1448,15 @@ Extended delegated-session diagnostics beyond conversation-id-specific drift.
 The finding contributes to session inspection, top-level host degradation, and
 shared CLI/Studio presentation without inventing a synthetic conversation id or
 mutating runner-owned session lifecycle state.
+
+## [2026-04-25] implementation | Completed drained sessions during runner startup repair
+
+Extended runner-owned startup repair from active-id reconciliation into bounded
+lifecycle repair. When a runner starts and finds an `active` session with no
+derived active conversations, no waiting approvals, and known last-message
+context, it now completes the session through the canonical
+`active -> synthesizing -> completed` transition path before subscribing to
+transport intake.
+
+The host diagnostic remains read-only; the lifecycle mutation stays inside the
+runner and does not invent message, approval, artifact, or history records.
