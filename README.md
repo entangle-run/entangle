@@ -165,7 +165,8 @@ This repository currently contains:
   across the current host runtime set and exposing the same boundary through
   `packages/host-client` and the CLI, with list summaries now carrying
   aggregate active-conversation ids, waiting approval ids, root artifact ids,
-  and the latest observed A2A message type across participating nodes;
+  host-derived conversation lifecycle status counts, and the latest observed
+  A2A message type across participating nodes;
 - a widening of the host event surface where `entangle-host` now derives and
   persists `session.updated` plus `runner.turn.updated` events from persisted
   runner session and turn state, with `session.updated` now carrying
@@ -430,7 +431,8 @@ This repository currently contains:
   degrades partially under sub-read failures instead of failing wholesale;
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
-  including per-node session status and trace ids;
+  including per-node session status, trace ids, and host-derived conversation
+  lifecycle status counts;
 - a deeper Studio runtime-turn inspection slice where visual operators can
   select persisted runner turns, inspect host-backed turn detail, and see
   engine outcome, artifact linkage, trigger, phase, and memory-synthesis
@@ -510,7 +512,8 @@ This repository currently contains:
 - the matching headless session-inspection slice where `host sessions list`
   and `host sessions get` now support `--summary` over shared `host-client`
   session presentation helpers, keeping Studio and CLI active-work summaries
-  aligned;
+  aligned over node status, trace, active-conversation, conversation
+  lifecycle, approval, root artifact, and latest-message signals;
 - the matching artifact-presentation slice where Studio and CLI now consume
   shared `host-client` artifact helpers, and `host runtimes artifact` plus
   `host runtimes artifacts` support `--summary` for compact headless
@@ -541,7 +544,7 @@ The highest-value remaining gaps are:
   execution-insight-carrying bounded runtime inspection surface;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
-  especially cross-runtime owner-level synthesis and diagnostics;
+  especially cross-runtime owner-level synthesis and repair diagnostics;
 - advanced git widening beyond the current locator-specific handoff model,
   especially non-primary target provisioning and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

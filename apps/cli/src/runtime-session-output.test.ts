@@ -8,10 +8,30 @@ import {
   projectHostSessionSummary
 } from "./runtime-session-output.js";
 
+function createConversationStatusCounts(
+  overrides: Partial<NonNullable<HostSessionSummary["conversationStatusCounts"]>>
+): NonNullable<HostSessionSummary["conversationStatusCounts"]> {
+  return {
+    acknowledged: 0,
+    awaiting_approval: 0,
+    blocked: 0,
+    closed: 0,
+    expired: 0,
+    opened: 0,
+    rejected: 0,
+    resolved: 0,
+    working: 0,
+    ...overrides
+  };
+}
+
 describe("runtime session CLI output", () => {
   it("projects aggregated session summaries into compact active-work records", () => {
     const session: HostSessionSummary = {
       activeConversationIds: ["conv-alpha"],
+      conversationStatusCounts: createConversationStatusCounts({
+        working: 1
+      }),
       graphId: "team-alpha",
       latestMessageType: "task.result",
       nodeIds: ["worker-it", "lead-it"],
@@ -28,9 +48,13 @@ describe("runtime session CLI output", () => {
 
     expect(projectHostSessionSummary(session)).toMatchObject({
       activeConversationCount: 1,
+      conversationStatusCounts: createConversationStatusCounts({
+        working: 1
+      }),
       graphId: "team-alpha",
       label: "session-alpha · worker-it:active, lead-it:planning",
       latestMessageType: "task.result",
+      recordedConversationCount: 1,
       rootArtifactCount: 1,
       sessionId: "session-alpha",
       traceIds: ["trace-alpha"],
@@ -46,6 +70,10 @@ describe("runtime session CLI output", () => {
       graphId: "team-alpha",
       nodes: [
         {
+          conversationStatusCounts: createConversationStatusCounts({
+            closed: 1,
+            working: 1
+          }),
           nodeId: "worker-it",
           runtime: {
             backendKind: "docker",
@@ -81,8 +109,13 @@ describe("runtime session CLI output", () => {
       nodes: [
         {
           activeConversationCount: 1,
+          conversationStatusCounts: createConversationStatusCounts({
+            closed: 1,
+            working: 1
+          }),
           label: "worker-it · active",
           nodeId: "worker-it",
+          recordedConversationCount: 2,
           rootArtifactCount: 1,
           runtimeState: "running/running",
           status: "active",
@@ -95,6 +128,9 @@ describe("runtime session CLI output", () => {
     });
     expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
       "last message task.result"
+    );
+    expect(projectHostSessionInspectionSummary(inspection).nodes[0]?.detail).toContain(
+      "conversation statuses working 1, closed 1"
     );
   });
 });

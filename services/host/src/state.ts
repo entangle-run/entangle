@@ -18,7 +18,9 @@ import {
   activeGraphRevisionRecordSchema,
   artifactRecordSchema,
   approvalRecordSchema,
+  conversationLifecycleStateSchema,
   conversationRecordSchema,
+  conversationStatusCountsSchema,
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
   edgeMutationResponseSchema,
@@ -129,6 +131,7 @@ import {
   type ApprovalRecord,
   type ArtifactRecord,
   type ConversationRecord,
+  type ConversationStatusCounts,
   type SessionInspectionResponse,
   type SessionListResponse,
   type SessionRecord,
@@ -5011,6 +5014,58 @@ function didRuntimeRecoveryControllerChange(
   return JSON.stringify(comparablePrevious) !== JSON.stringify(comparableNext);
 }
 
+function buildEmptyConversationStatusCounts(): ConversationStatusCounts {
+  return conversationStatusCountsSchema.parse(
+    Object.fromEntries(
+      conversationLifecycleStateSchema.options.map((status) => [status, 0])
+    )
+  );
+}
+
+function countConversationStatuses(
+  conversationRecords: ConversationRecord[]
+): ConversationStatusCounts {
+  const counts = buildEmptyConversationStatusCounts();
+
+  for (const conversationRecord of conversationRecords) {
+    counts[conversationRecord.status] += 1;
+  }
+
+  return conversationStatusCountsSchema.parse(counts);
+}
+
+function mergeConversationStatusCounts(
+  statusCounts: Array<ConversationStatusCounts | undefined>
+): ConversationStatusCounts {
+  const mergedCounts = buildEmptyConversationStatusCounts();
+
+  for (const counts of statusCounts) {
+    if (!counts) {
+      continue;
+    }
+
+    for (const status of conversationLifecycleStateSchema.options) {
+      mergedCounts[status] += counts[status];
+    }
+  }
+
+  return conversationStatusCountsSchema.parse(mergedCounts);
+}
+
+function groupConversationRecordsBySessionId(
+  conversationRecords: ConversationRecord[]
+): Map<string, ConversationRecord[]> {
+  const recordsBySessionId = new Map<string, ConversationRecord[]>();
+
+  for (const conversationRecord of conversationRecords) {
+    const records = recordsBySessionId.get(conversationRecord.sessionId) ?? [];
+    records.push(conversationRecord);
+    recordsBySessionId.set(conversationRecord.sessionId, records);
+  }
+
+  return recordsBySessionId;
+}
+
 async function collectSessionInspectionNodes(): Promise<
   Map<string, SessionInspectionResponse["nodes"]>
 > {
@@ -5028,10 +5083,16 @@ async function collectSessionInspectionNodes(): Promise<
     const sessionRecords = await listRuntimeSessionRecords(
       context.workspace.runtimeRoot
     );
+    const conversationRecordsBySessionId = groupConversationRecordsBySessionId(
+      await listRuntimeConversationRecords(context.workspace.runtimeRoot)
+    );
 
     for (const sessionRecord of sessionRecords) {
       const entries = sessions.get(sessionRecord.sessionId) ?? [];
       entries.push({
+        conversationStatusCounts: countConversationStatuses(
+          conversationRecordsBySessionId.get(sessionRecord.sessionId) ?? []
+        ),
         nodeId: runtime.nodeId,
         runtime,
         session: sessionRecord
@@ -5080,9 +5141,13 @@ function buildSessionSummary(
     nodes.flatMap((entry) => entry.session.waitingApprovalIds)
   );
   const latestMessageType = resolveLatestSessionMessageType(nodes);
+  const conversationStatusCounts = mergeConversationStatusCounts(
+    nodes.map((entry) => entry.conversationStatusCounts)
+  );
 
   const summaryInput = {
     activeConversationIds,
+    conversationStatusCounts,
     graphId: firstNode.session.graphId,
     nodeIds: nodes.map((entry) => entry.nodeId),
     nodeStatuses: nodes.map((entry) => ({

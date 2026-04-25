@@ -1,8 +1,33 @@
 import type {
+  ConversationStatusCounts,
   HostSessionNodeInspection,
   HostSessionSummary,
   SessionInspectionResponse
 } from "@entangle/types";
+
+const conversationStatusOrder: Array<keyof ConversationStatusCounts> = [
+  "opened",
+  "acknowledged",
+  "working",
+  "blocked",
+  "awaiting_approval",
+  "resolved",
+  "rejected",
+  "closed",
+  "expired"
+];
+
+const emptyConversationStatusCounts: ConversationStatusCounts = {
+  acknowledged: 0,
+  awaiting_approval: 0,
+  blocked: 0,
+  closed: 0,
+  expired: 0,
+  opened: 0,
+  rejected: 0,
+  resolved: 0,
+  working: 0
+};
 
 export function sortHostSessionSummariesForPresentation(
   sessions: HostSessionSummary[]
@@ -46,6 +71,39 @@ export function formatHostSessionLabel(
   return `${session.sessionId} · ${statusSummary}`;
 }
 
+export function resolveHostSessionConversationStatusCounts(
+  counts?: ConversationStatusCounts
+): ConversationStatusCounts {
+  return {
+    ...emptyConversationStatusCounts,
+    ...(counts ?? {})
+  };
+}
+
+export function countHostSessionConversationStatusRecords(
+  counts?: ConversationStatusCounts
+): number {
+  const normalizedCounts = resolveHostSessionConversationStatusCounts(counts);
+
+  return conversationStatusOrder.reduce(
+    (total, status) => total + normalizedCounts[status],
+    0
+  );
+}
+
+export function formatHostSessionConversationStatusDetail(
+  counts?: ConversationStatusCounts
+): string {
+  const normalizedCounts = resolveHostSessionConversationStatusCounts(counts);
+  const statusParts = conversationStatusOrder
+    .filter((status) => normalizedCounts[status] > 0)
+    .map((status) => `${status} ${normalizedCounts[status]}`);
+
+  return statusParts.length > 0
+    ? `conversation statuses ${statusParts.join(", ")}`
+    : "conversation statuses none";
+}
+
 export function formatHostSessionDetail(
   session: HostSessionSummary
 ): string {
@@ -55,8 +113,19 @@ export function formatHostSessionDetail(
 
   const traceSummary =
     session.traceIds.length > 0 ? session.traceIds.join(", ") : "no trace ids";
+  const conversationRecordCount = countHostSessionConversationStatusRecords(
+    session.conversationStatusCounts
+  );
   const activeWorkSummary = [
     `active conversations ${session.activeConversationIds.length}`,
+    `recorded conversations ${conversationRecordCount}`,
+    ...(conversationRecordCount > 0
+      ? [
+          formatHostSessionConversationStatusDetail(
+            session.conversationStatusCounts
+          )
+        ]
+      : []),
     `approvals ${session.waitingApprovalIds.length}`,
     `root artifacts ${session.rootArtifactIds.length}`,
     ...(session.latestMessageType
@@ -115,9 +184,21 @@ export function formatHostSessionInspectionNodeLabel(
 export function formatHostSessionInspectionNodeDetail(
   entry: HostSessionNodeInspection
 ): string {
+  const conversationRecordCount = countHostSessionConversationStatusRecords(
+    entry.conversationStatusCounts
+  );
+
   return [
     `Runtime ${entry.runtime.desiredState}/${entry.runtime.observedState}`,
     `active conversations ${entry.session.activeConversationIds.length}`,
+    `recorded conversations ${conversationRecordCount}`,
+    ...(conversationRecordCount > 0
+      ? [
+          formatHostSessionConversationStatusDetail(
+            entry.conversationStatusCounts
+          )
+        ]
+      : []),
     `approvals ${entry.session.waitingApprovalIds.length}`,
     `root artifacts ${entry.session.rootArtifactIds.length}`,
     ...(entry.session.lastMessageType

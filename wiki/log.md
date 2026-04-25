@@ -1349,3 +1349,17 @@ backend, and last reconciliation time.
 The CLI now supports compact operator-oriented `host status --summary` output
 over the existing host-owned `HostStatusResponse` contract while keeping raw
 `host status` output unchanged.
+
+## [2026-04-25] implementation | Added session conversation lifecycle diagnostics
+
+Narrowed the delegated-session diagnostics gap by extending the host session
+read model with conversation lifecycle status counts derived from
+runner-owned conversation records. `GET /v1/sessions` now carries aggregate
+counts across participating runtime records, and `GET /v1/sessions/{sessionId}`
+now carries the same diagnostic per node without moving conversation
+ownership into the host.
+
+Shared `packages/host-client` presentation helpers, Studio's selected-runtime
+session panel, and CLI `host sessions ... --summary` output now expose recorded
+conversation counts and lifecycle-state summaries alongside active
+conversation ids, approvals, root artifacts, traces, and latest message type.

@@ -3015,6 +3015,37 @@ describe("buildHostServer", () => {
           waitingApprovalIds: []
         }
       );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "conversations",
+          "conv-alpha.json"
+        ),
+        {
+          artifactIds: ["report-turn-001"],
+          conversationId: "conv-alpha",
+          followupCount: 1,
+          graphId: "team-alpha",
+          initiator: "remote",
+          lastInboundMessageId:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          lastMessageType: "task.request",
+          localNodeId: "worker-it",
+          localPubkey: runtimeContext.identityContext.publicKey,
+          openedAt: "2026-04-24T10:00:00.000Z",
+          peerNodeId: "supervisor-it",
+          peerPubkey:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          responsePolicy: {
+            closeOnResult: true,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: "session-alpha",
+          status: "working",
+          updatedAt: "2026-04-24T10:05:00.000Z"
+        }
+      );
 
       const listedSessionsResponse = await server.inject({
         method: "GET",
@@ -3028,6 +3059,17 @@ describe("buildHostServer", () => {
         sessions: [
           {
             activeConversationIds: ["conv-alpha"],
+            conversationStatusCounts: {
+              acknowledged: 0,
+              awaiting_approval: 0,
+              blocked: 0,
+              closed: 0,
+              expired: 0,
+              opened: 0,
+              rejected: 0,
+              resolved: 0,
+              working: 1
+            },
             graphId: "team-alpha",
             latestMessageType: "task.request",
             nodeIds: ["worker-it"],
@@ -3058,6 +3100,9 @@ describe("buildHostServer", () => {
         graphId: "team-alpha",
         nodes: [
           {
+            conversationStatusCounts: {
+              working: 1
+            },
             nodeId: "worker-it",
             runtime: {
               nodeId: "worker-it",

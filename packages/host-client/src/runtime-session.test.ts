@@ -33,6 +33,23 @@ function createSession(
   };
 }
 
+function createConversationStatusCounts(
+  overrides: Partial<NonNullable<HostSessionSummary["conversationStatusCounts"]>>
+): NonNullable<HostSessionSummary["conversationStatusCounts"]> {
+  return {
+    acknowledged: 0,
+    awaiting_approval: 0,
+    blocked: 0,
+    closed: 0,
+    expired: 0,
+    opened: 0,
+    rejected: 0,
+    resolved: 0,
+    working: 0,
+    ...overrides
+  };
+}
+
 describe("host session presentation helpers", () => {
   it("sorts and filters session summaries for operator presentation", () => {
     const sessions = [
@@ -65,6 +82,9 @@ describe("host session presentation helpers", () => {
       { nodeId: "lead-it", status: "planning" }
     ]);
     session.activeConversationIds = ["conv-alpha"];
+    session.conversationStatusCounts = createConversationStatusCounts({
+      working: 1
+    });
     session.latestMessageType = "task.result";
     session.rootArtifactIds = ["artifact-alpha"];
     session.waitingApprovalIds = ["approval-alpha"];
@@ -78,6 +98,12 @@ describe("host session presentation helpers", () => {
     expect(formatHostSessionDetail(session)).toContain("lead-it:planning");
     expect(formatHostSessionDetail(session)).toContain(
       "active conversations 1"
+    );
+    expect(formatHostSessionDetail(session)).toContain(
+      "recorded conversations 1"
+    );
+    expect(formatHostSessionDetail(session)).toContain(
+      "conversation statuses working 1"
     );
     expect(formatHostSessionDetail(session)).toContain("approvals 1");
     expect(formatHostSessionDetail(session)).toContain("root artifacts 1");
@@ -93,6 +119,9 @@ describe("host session presentation helpers", () => {
       nodes: [
         {
           nodeId: "lead-it",
+          conversationStatusCounts: createConversationStatusCounts({
+            resolved: 1
+          }),
           runtime: {
             backendKind: "docker",
             contextAvailable: true,
@@ -123,6 +152,10 @@ describe("host session presentation helpers", () => {
         },
         {
           nodeId: "worker-it",
+          conversationStatusCounts: createConversationStatusCounts({
+            awaiting_approval: 1,
+            working: 1
+          }),
           runtime: {
             backendKind: "docker",
             contextAvailable: true,
@@ -182,6 +215,12 @@ describe("host session presentation helpers", () => {
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "active conversations 1"
+    );
+    expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "recorded conversations 2"
+    );
+    expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
+      "conversation statuses working 1, awaiting_approval 1"
     );
     expect(formatHostSessionInspectionNodeDetail(workerEntry!)).toContain(
       "approvals 1"

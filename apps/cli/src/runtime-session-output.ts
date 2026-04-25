@@ -1,5 +1,6 @@
 import {
   collectHostSessionInspectionTraceIds,
+  countHostSessionConversationStatusRecords,
   formatHostSessionDetail,
   formatHostSessionInspectionNodeDetail,
   formatHostSessionInspectionNodeLabel,
@@ -7,17 +8,20 @@ import {
   sortHostSessionInspectionNodes
 } from "@entangle/host-client";
 import type {
+  ConversationStatusCounts,
   HostSessionSummary,
   SessionInspectionResponse
 } from "@entangle/types";
 
 export interface HostSessionCliSummaryRecord {
   activeConversationCount: number;
+  conversationStatusCounts?: ConversationStatusCounts;
   detail: string;
   graphId: string;
   label: string;
   latestMessageType?: HostSessionSummary["latestMessageType"];
   nodeIds: string[];
+  recordedConversationCount: number;
   rootArtifactCount: number;
   sessionId: string;
   statusByNode: HostSessionSummary["nodeStatuses"];
@@ -28,9 +32,11 @@ export interface HostSessionCliSummaryRecord {
 
 export interface HostSessionInspectionCliNodeRecord {
   activeConversationCount: number;
+  conversationStatusCounts?: ConversationStatusCounts;
   detail: string;
   label: string;
   nodeId: string;
+  recordedConversationCount: number;
   rootArtifactCount: number;
   runtimeState: string;
   status: HostSessionSummary["nodeStatuses"][number]["status"];
@@ -51,6 +57,9 @@ export function projectHostSessionSummary(
 ): HostSessionCliSummaryRecord {
   return {
     activeConversationCount: session.activeConversationIds.length,
+    ...(session.conversationStatusCounts
+      ? { conversationStatusCounts: session.conversationStatusCounts }
+      : {}),
     detail: formatHostSessionDetail(session),
     graphId: session.graphId,
     label: formatHostSessionLabel(session),
@@ -58,6 +67,9 @@ export function projectHostSessionSummary(
       ? { latestMessageType: session.latestMessageType }
       : {}),
     nodeIds: session.nodeIds,
+    recordedConversationCount: countHostSessionConversationStatusRecords(
+      session.conversationStatusCounts
+    ),
     rootArtifactCount: session.rootArtifactIds.length,
     sessionId: session.sessionId,
     statusByNode: session.nodeStatuses,
@@ -74,9 +86,15 @@ export function projectHostSessionInspectionSummary(
     graphId: inspection.graphId,
     nodes: sortHostSessionInspectionNodes(inspection).map((entry) => ({
       activeConversationCount: entry.session.activeConversationIds.length,
+      ...(entry.conversationStatusCounts
+        ? { conversationStatusCounts: entry.conversationStatusCounts }
+        : {}),
       detail: formatHostSessionInspectionNodeDetail(entry),
       label: formatHostSessionInspectionNodeLabel(entry),
       nodeId: entry.nodeId,
+      recordedConversationCount: countHostSessionConversationStatusRecords(
+        entry.conversationStatusCounts
+      ),
       rootArtifactCount: entry.session.rootArtifactIds.length,
       runtimeState: `${entry.runtime.desiredState}/${entry.runtime.observedState}`,
       status: entry.session.status,
