@@ -38,6 +38,8 @@ import type {
   HostStatusResponse,
   PackageSourceInspectionResponse,
   RuntimeApprovalInspectionResponse,
+  RuntimeArtifactDiffResponse,
+  RuntimeArtifactHistoryResponse,
   RuntimeArtifactInspectionResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeInspectionResponse,
@@ -147,6 +149,9 @@ import {
 } from "./runtime-approval-inspection.js";
 import {
   formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactDiffStatus,
+  formatRuntimeArtifactHistoryLines,
+  formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,
@@ -457,6 +462,10 @@ export function App() {
     useState<RuntimeArtifactInspectionResponse | null>(null);
   const [selectedArtifactPreview, setSelectedArtifactPreview] =
     useState<RuntimeArtifactPreviewResponse | null>(null);
+  const [selectedArtifactHistory, setSelectedArtifactHistory] =
+    useState<RuntimeArtifactHistoryResponse | null>(null);
+  const [selectedArtifactDiff, setSelectedArtifactDiff] =
+    useState<RuntimeArtifactDiffResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
   const [selectedMemory, setSelectedMemory] =
@@ -798,9 +807,11 @@ export function App() {
   const loadSelectedArtifactInspection = useCallback(
     async (nodeId: string, artifactId: string) => {
       try {
-        const [inspection, preview] = await Promise.all([
+        const [inspection, preview, history, diff] = await Promise.all([
           client.getRuntimeArtifact(nodeId, artifactId),
-          client.getRuntimeArtifactPreview(nodeId, artifactId)
+          client.getRuntimeArtifactPreview(nodeId, artifactId),
+          client.getRuntimeArtifactHistory(nodeId, artifactId, { limit: 8 }),
+          client.getRuntimeArtifactDiff(nodeId, artifactId)
         ]);
 
         if (
@@ -813,6 +824,8 @@ export function App() {
         startTransition(() => {
           setSelectedArtifactInspection(inspection);
           setSelectedArtifactPreview(preview);
+          setSelectedArtifactHistory(history);
+          setSelectedArtifactDiff(diff);
           setArtifactDetailError(null);
         });
       } catch (caught: unknown) {
@@ -826,6 +839,8 @@ export function App() {
         startTransition(() => {
           setSelectedArtifactInspection(null);
           setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
           setArtifactDetailError(
             normalizeError(caught, "Unknown error while loading artifact detail.")
           );
@@ -1095,12 +1110,18 @@ export function App() {
       ? (
           await Promise.allSettled([
             client.getRuntimeArtifact(nodeId, currentSelectedArtifactId),
-            client.getRuntimeArtifactPreview(nodeId, currentSelectedArtifactId)
+            client.getRuntimeArtifactPreview(nodeId, currentSelectedArtifactId),
+            client.getRuntimeArtifactHistory(nodeId, currentSelectedArtifactId, {
+              limit: 8
+            }),
+            client.getRuntimeArtifactDiff(nodeId, currentSelectedArtifactId)
           ])
         )
       : null;
     const selectedArtifactResult = selectedArtifactResults?.[0] ?? null;
     const selectedArtifactPreviewResult = selectedArtifactResults?.[1] ?? null;
+    const selectedArtifactHistoryResult = selectedArtifactResults?.[2] ?? null;
+    const selectedArtifactDiffResult = selectedArtifactResults?.[3] ?? null;
     const currentSelectedTurnId = selectedTurnId;
     const shouldRefreshSelectedTurn =
       currentSelectedTurnId !== null &&
@@ -1270,22 +1291,32 @@ export function App() {
         if (!selectedArtifactId) {
           setSelectedArtifactInspection(null);
           setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
           setArtifactDetailError(null);
         } else if (!shouldRefreshSelectedArtifact) {
           setSelectedArtifactId(null);
           setSelectedArtifactInspection(null);
           setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
           setArtifactDetailError(null);
         } else if (
           selectedArtifactResult?.status === "fulfilled" &&
-          selectedArtifactPreviewResult?.status === "fulfilled"
+          selectedArtifactPreviewResult?.status === "fulfilled" &&
+          selectedArtifactHistoryResult?.status === "fulfilled" &&
+          selectedArtifactDiffResult?.status === "fulfilled"
         ) {
           setSelectedArtifactInspection(selectedArtifactResult.value);
           setSelectedArtifactPreview(selectedArtifactPreviewResult.value);
+          setSelectedArtifactHistory(selectedArtifactHistoryResult.value);
+          setSelectedArtifactDiff(selectedArtifactDiffResult.value);
           setArtifactDetailError(null);
         } else if (selectedArtifactResult?.status === "rejected") {
           setSelectedArtifactInspection(null);
           setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactResult.reason,
@@ -1295,10 +1326,34 @@ export function App() {
         } else if (selectedArtifactPreviewResult?.status === "rejected") {
           setSelectedArtifactInspection(null);
           setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactPreviewResult.reason,
               "Unknown error while loading artifact preview."
+            )
+          );
+        } else if (selectedArtifactHistoryResult?.status === "rejected") {
+          setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
+          setArtifactDetailError(
+            normalizeError(
+              selectedArtifactHistoryResult.reason,
+              "Unknown error while loading artifact history."
+            )
+          );
+        } else if (selectedArtifactDiffResult?.status === "rejected") {
+          setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
+          setArtifactDetailError(
+            normalizeError(
+              selectedArtifactDiffResult.reason,
+              "Unknown error while loading artifact diff."
             )
           );
         }
@@ -1313,6 +1368,8 @@ export function App() {
         setSelectedArtifactId(null);
         setSelectedArtifactInspection(null);
         setSelectedArtifactPreview(null);
+        setSelectedArtifactHistory(null);
+        setSelectedArtifactDiff(null);
         setArtifactDetailError(null);
       }
 
@@ -1682,6 +1739,8 @@ export function App() {
       setSelectedArtifactId(artifactId);
       setSelectedArtifactInspection(null);
       setSelectedArtifactPreview(null);
+      setSelectedArtifactHistory(null);
+      setSelectedArtifactDiff(null);
       setArtifactDetailError(null);
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
@@ -1947,6 +2006,8 @@ export function App() {
         setSelectedArtifactId(response.artifact.ref.artifactId);
         setSelectedArtifactInspection({ artifact: response.artifact });
         setSelectedArtifactPreview(null);
+        setSelectedArtifactHistory(null);
+        setSelectedArtifactDiff(null);
         setArtifactError(null);
         setArtifactDetailError(null);
       });
@@ -2347,6 +2408,8 @@ export function App() {
       setSelectedArtifactId(null);
       setSelectedArtifactInspection(null);
       setSelectedArtifactPreview(null);
+      setSelectedArtifactHistory(null);
+      setSelectedArtifactDiff(null);
       setArtifactDetailError(null);
       setTurnError(null);
       setSelectedTurns([]);
@@ -2394,6 +2457,8 @@ export function App() {
     setSelectedArtifactId(null);
     setSelectedArtifactInspection(null);
     setSelectedArtifactPreview(null);
+    setSelectedArtifactHistory(null);
+    setSelectedArtifactDiff(null);
     setArtifactDetailError(null);
     setTurnError(null);
     setSelectedTurns([]);
@@ -5138,6 +5203,68 @@ export function App() {
                           ) : (
                             <div className="inline-empty-state">
                               <p>Loading artifact preview...</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="artifact-preview-panel">
+                          <div className="section-header">
+                            <h3>Artifact History</h3>
+                            <span className="panel-caption">
+                              {selectedArtifactHistory
+                                ? formatRuntimeArtifactHistoryStatus(
+                                    selectedArtifactHistory.history
+                                  )
+                                : "loading"}
+                            </span>
+                          </div>
+
+                          {selectedArtifactHistory ? (
+                            selectedArtifactHistory.history.available ? (
+                              <ul className="detail-list">
+                                {formatRuntimeArtifactHistoryLines(
+                                  selectedArtifactHistory.history
+                                ).map((line) => (
+                                  <li key={line}>{line}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>{selectedArtifactHistory.history.reason}</p>
+                              </div>
+                            )
+                          ) : (
+                            <div className="inline-empty-state">
+                              <p>Loading artifact history...</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="artifact-preview-panel">
+                          <div className="section-header">
+                            <h3>Artifact Diff</h3>
+                            <span className="panel-caption">
+                              {selectedArtifactDiff
+                                ? formatRuntimeArtifactDiffStatus(
+                                    selectedArtifactDiff.diff
+                                  )
+                                : "loading"}
+                            </span>
+                          </div>
+
+                          {selectedArtifactDiff ? (
+                            selectedArtifactDiff.diff.available ? (
+                              <pre className="artifact-preview-content">
+                                {selectedArtifactDiff.diff.content}
+                              </pre>
+                            ) : (
+                              <div className="inline-empty-state">
+                                <p>{selectedArtifactDiff.diff.reason}</p>
+                              </div>
+                            )
+                          ) : (
+                            <div className="inline-empty-state">
+                              <p>Loading artifact diff...</p>
                             </div>
                           )}
                         </div>

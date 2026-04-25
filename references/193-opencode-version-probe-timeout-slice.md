@@ -71,8 +71,8 @@ classified as `provider_unavailable`.
   approval records.
 - External cancellation and attached lifecycle management.
 - Runtime availability/degraded-status DTOs beyond last failure evidence.
-- Source workspace diff harvesting, commit proposal, artifact history/diff,
-  and publication policy.
+- Richer source publication policy, retry/target controls, and artifact
+  restore/replay semantics.
 - Wiki-repository behavior and memory-as-repo migration semantics.
 - OpenCode-backed disposable runtime smoke coverage.
 

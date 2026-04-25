@@ -479,12 +479,15 @@ artifact path:
   reference emitted over the protocol;
 - session, conversation, and turn records now keep stable artifact-id links to
   the produced records;
-- the host exposes a first read-only artifact inspection route through
+- the host exposes read-only artifact list, item, bounded preview, bounded git
+  history, and bounded git diff inspection routes under
   `GET /v1/runtimes/{nodeId}/artifacts`.
 
 What still remains outside this implemented slice:
 
-- publication to a remote shared git service;
-- branch/commit/patch artifact kinds beyond report files;
+- richer policy-gated publication retry and target-selection controls;
+- artifact restore/replay semantics;
+- broader branch/patch artifact workflows beyond report and source commit
+  artifact records;
 - artifact supersession policy;
-- Studio artifact inspection surfaces.
+- remote-node artifact federation.

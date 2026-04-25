@@ -145,6 +145,8 @@ import {
   type RuntimeAgentRuntimeInspection,
   type RuntimeInspectionResponse,
   type RuntimeWorkspaceHealth,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeIntentRecordSchema,
@@ -152,6 +154,8 @@ import {
   type RuntimeApprovalListResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
+  type RuntimeArtifactDiffResponse,
+  type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactPreviewResponse,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
@@ -273,6 +277,7 @@ const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
 const runtimeContextFileName = "effective-runtime-context.json";
 const artifactPreviewMaxBytes = 16 * 1024;
+const artifactDiffMaxBytes = 64 * 1024;
 const memoryPreviewMaxBytes = 16 * 1024;
 const sourceCandidateDiffMaxBytes = 64 * 1024;
 const sourceCandidateFilePreviewMaxBytes = 16 * 1024;
@@ -5042,6 +5047,406 @@ export async function getRuntimeArtifactPreview(input: {
     preview: await readArtifactPreview({
       artifact,
       filePath: resolvedPath.filePath
+    })
+  });
+}
+
+function normalizeGitArtifactPath(
+  artifact: Extract<ArtifactRecord["ref"], { backend: "git" }>
+): { path: string } | { reason: string } {
+  const normalizedPath = path.posix.normalize(
+    artifact.locator.path.replace(/\\/g, "/")
+  );
+
+  if (
+    normalizedPath === ".." ||
+    normalizedPath.startsWith("../") ||
+    path.posix.isAbsolute(normalizedPath)
+  ) {
+    return {
+      reason:
+        "Artifact git history is unavailable because the artifact locator path is unsafe."
+    };
+  }
+
+  return {
+    path:
+      normalizedPath === "."
+        ? "."
+        : normalizedPath.replace(/^\.\//, "")
+  };
+}
+
+async function resolveArtifactGitInspectionTarget(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+}): Promise<
+  | {
+      artifactPath: string;
+      repoPath: string;
+    }
+  | { reason: string }
+> {
+  if (input.artifact.ref.backend !== "git") {
+    return {
+      reason:
+        "Artifact git history is unavailable because the artifact is not git-backed."
+    };
+  }
+
+  if (!input.artifact.materialization?.repoPath) {
+    return {
+      reason:
+        "Artifact git history is unavailable because the artifact has no local repository materialization."
+    };
+  }
+
+  const repoPath = path.resolve(input.artifact.materialization.repoPath);
+  const allowedRoots = [
+    input.context.workspace.artifactWorkspaceRoot,
+    input.context.workspace.retrievalRoot
+  ];
+
+  if (
+    !allowedRoots.some((rootPath) =>
+      isPathInsideRoot({ candidatePath: repoPath, rootPath })
+    )
+  ) {
+    return {
+      reason:
+        "Artifact git history is unavailable because the artifact repository is outside the runtime artifact workspace."
+    };
+  }
+
+  if (!(await pathExists(path.join(repoPath, ".git")))) {
+    return {
+      reason:
+        "Artifact git history is unavailable because the local materialization repository is missing."
+    };
+  }
+
+  const normalizedPath = normalizeGitArtifactPath(input.artifact.ref);
+
+  if ("reason" in normalizedPath) {
+    return normalizedPath;
+  }
+
+  return {
+    artifactPath: normalizedPath.path,
+    repoPath
+  };
+}
+
+function sanitizeArtifactGitInspectionReason(input: {
+  context: EffectiveRuntimeContext;
+  reason: string;
+  repoPath?: string | undefined;
+}): string {
+  let reason = input.reason;
+
+  for (const [targetPath, placeholder] of [
+    [input.repoPath, "<artifact_repo>"],
+    [input.context.workspace.artifactWorkspaceRoot, "<artifact_workspace>"],
+    [input.context.workspace.retrievalRoot, "<retrieval_cache>"],
+    [input.context.workspace.runtimeRoot, "<runtime_state>"]
+  ] as Array<[string | undefined, string]>) {
+    if (targetPath) {
+      reason = reason.replaceAll(targetPath, placeholder);
+    }
+  }
+
+  return reason;
+}
+
+async function readArtifactGitHistory(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  limit: number;
+}): Promise<RuntimeArtifactHistoryResponse["history"]> {
+  const target = await resolveArtifactGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      available: false,
+      reason: target.reason
+    };
+  }
+
+  const artifactRef = input.artifact.ref;
+
+  if (artifactRef.backend !== "git") {
+    return {
+      available: false,
+      reason:
+        "Artifact git history is unavailable because the artifact is not git-backed."
+    };
+  }
+
+  const sanitizeReason = (reason: string): string =>
+    sanitizeArtifactGitInspectionReason({
+      context: input.context,
+      reason,
+      repoPath: target.repoPath
+    });
+
+  try {
+    await runSourceHistoryGitCommand(target.repoPath, [
+      "cat-file",
+      "-e",
+      `${artifactRef.locator.commit}^{commit}`
+    ]);
+    const output = await runSourceHistoryGitCommand(target.repoPath, [
+      "log",
+      `--max-count=${input.limit + 1}`,
+      "--format=%H%x1f%h%x1f%cI%x1f%an%x1f%ae%x1f%s",
+      artifactRef.locator.commit,
+      "--",
+      target.artifactPath
+    ]);
+    const lines = output.split("\n").filter((line) => line.trim().length > 0);
+    const commits = lines.slice(0, input.limit).map((line) => {
+      const [commit, abbreviatedCommit, committedAt, authorName, authorEmail, subject] =
+        line.split("\x1f");
+
+      return {
+        abbreviatedCommit: abbreviatedCommit ?? commit?.slice(0, 12) ?? "unknown",
+        ...(authorEmail ? { authorEmail } : {}),
+        ...(authorName ? { authorName } : {}),
+        commit: commit ?? "unknown",
+        committedAt: committedAt ?? "",
+        subject: subject ?? ""
+      };
+    });
+
+    return {
+      available: true,
+      commits,
+      inspectedPath: target.artifactPath,
+      truncated: lines.length > input.limit
+    };
+  } catch (error) {
+    return {
+      available: false,
+      reason: `Artifact git history is unavailable: ${sanitizeReason(
+        formatUnknownError(error)
+      )}`
+    };
+  }
+}
+
+async function resolveArtifactDiffBaseCommit(input: {
+  fromCommit?: string | undefined;
+  repoPath: string;
+  toCommit: string;
+}): Promise<string> {
+  if (input.fromCommit) {
+    await runSourceHistoryGitCommand(input.repoPath, [
+      "cat-file",
+      "-e",
+      `${input.fromCommit}^{commit}`
+    ]);
+    return input.fromCommit;
+  }
+
+  const revisionLine = await runSourceHistoryGitCommand(input.repoPath, [
+    "rev-list",
+    "--parents",
+    "-n",
+    "1",
+    input.toCommit
+  ]);
+  const [, firstParent] = revisionLine.split(/\s+/);
+
+  return firstParent ?? gitEmptyTreeHash;
+}
+
+async function readArtifactGitDiff(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  fromCommit?: string | undefined;
+}): Promise<RuntimeArtifactDiffResponse["diff"]> {
+  const target = await resolveArtifactGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      available: false,
+      reason: target.reason.replace("history", "diff")
+    };
+  }
+
+  const artifactRef = input.artifact.ref;
+
+  if (artifactRef.backend !== "git") {
+    return {
+      available: false,
+      reason:
+        "Artifact git diff is unavailable because the artifact is not git-backed."
+    };
+  }
+
+  const sanitizeReason = (reason: string): string =>
+    sanitizeArtifactGitInspectionReason({
+      context: input.context,
+      reason,
+      repoPath: target.repoPath
+    });
+
+  let fromCommit: string;
+
+  try {
+    await runSourceHistoryGitCommand(target.repoPath, [
+      "cat-file",
+      "-e",
+      `${artifactRef.locator.commit}^{commit}`
+    ]);
+    fromCommit = await resolveArtifactDiffBaseCommit({
+      fromCommit: input.fromCommit,
+      repoPath: target.repoPath,
+      toCommit: artifactRef.locator.commit
+    });
+  } catch (error) {
+    return {
+      available: false,
+      reason: `Artifact git diff is unavailable: ${sanitizeReason(
+        formatUnknownError(error)
+      )}`
+    };
+  }
+
+  return new Promise((resolve) => {
+    const child = spawn(
+      "git",
+      [
+        "diff",
+        "--no-ext-diff",
+        "--no-color",
+        fromCommit,
+        artifactRef.locator.commit,
+        "--",
+        target.artifactPath
+      ],
+      {
+        cwd: target.repoPath,
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let stdoutBytes = 0;
+    let stdoutKeptBytes = 0;
+    let stderrKeptBytes = 0;
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      stdoutBytes += buffer.length;
+
+      if (stdoutKeptBytes < artifactDiffMaxBytes) {
+        const remaining = artifactDiffMaxBytes - stdoutKeptBytes;
+        stdoutChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stdoutKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
+      if (stderrKeptBytes < 1_000) {
+        const remaining = 1_000 - stderrKeptBytes;
+        stderrChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stderrKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.on("error", (error) => {
+      resolve({
+        available: false,
+        reason: `Artifact git diff is unavailable: ${sanitizeReason(
+          formatUnknownError(error)
+        )}`
+      });
+    });
+    child.on("close", (code) => {
+      if (code !== 0) {
+        const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+        const reason = stderr || `git diff exited with code ${code ?? "unknown"}`;
+
+        resolve({
+          available: false,
+          reason: `Artifact git diff is unavailable: ${sanitizeReason(reason)}`
+        });
+        return;
+      }
+
+      const content = Buffer.concat(stdoutChunks).toString("utf8");
+
+      resolve({
+        available: true,
+        bytesRead: Buffer.byteLength(content),
+        content,
+        contentEncoding: "utf8",
+        contentType: "text/x-diff",
+        fromCommit,
+        toCommit: artifactRef.locator.commit,
+        truncated: stdoutBytes > artifactDiffMaxBytes
+      });
+    });
+  });
+}
+
+export async function getRuntimeArtifactHistory(input: {
+  artifactId: string;
+  limit: number;
+  nodeId: string;
+}): Promise<RuntimeArtifactHistoryResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+  const artifact = artifacts.find(
+    (candidate) => candidate.ref.artifactId === input.artifactId
+  );
+
+  if (!artifact) {
+    return null;
+  }
+
+  return runtimeArtifactHistoryResponseSchema.parse({
+    artifact,
+    history: await readArtifactGitHistory({
+      artifact,
+      context,
+      limit: input.limit
+    })
+  });
+}
+
+export async function getRuntimeArtifactDiff(input: {
+  artifactId: string;
+  fromCommit?: string | undefined;
+  nodeId: string;
+}): Promise<RuntimeArtifactDiffResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+  const artifact = artifacts.find(
+    (candidate) => candidate.ref.artifactId === input.artifactId
+  );
+
+  if (!artifact) {
+    return null;
+  }
+
+  return runtimeArtifactDiffResponseSchema.parse({
+    artifact,
+    diff: await readArtifactGitDiff({
+      artifact,
+      context,
+      fromCommit: input.fromCommit
     })
   });
 }

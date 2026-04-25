@@ -1,13 +1,21 @@
 import {
   filterRuntimeArtifactsForPresentation,
   formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactDiffStatus,
+  formatRuntimeArtifactHistoryLines,
+  formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation,
   type RuntimeArtifactPresentationFilterOptions
 } from "@entangle/host-client";
-import type { ArtifactRecord, RuntimeArtifactPreviewResponse } from "@entangle/types";
+import type {
+  ArtifactRecord,
+  RuntimeArtifactDiffResponse,
+  RuntimeArtifactHistoryResponse,
+  RuntimeArtifactPreviewResponse
+} from "@entangle/types";
 
 export type RuntimeArtifactCliFilterOptions =
   RuntimeArtifactPresentationFilterOptions;
@@ -91,6 +99,99 @@ export function projectRuntimeArtifactPreviewSummary(
       : {
           available: false,
           reason: response.preview.reason
+        }
+  };
+}
+
+export interface RuntimeArtifactCliHistorySummaryRecord {
+  artifact: RuntimeArtifactCliSummaryRecord;
+  history:
+    | {
+        available: true;
+        commits: Array<{
+          abbreviatedCommit: string;
+          committedAt: string;
+          subject: string;
+        }>;
+        inspectedPath: string;
+        lines: string[];
+        status: string;
+        truncated: boolean;
+      }
+    | {
+        available: false;
+        reason: string;
+        status: string;
+      };
+}
+
+export function projectRuntimeArtifactHistorySummary(
+  response: RuntimeArtifactHistoryResponse
+): RuntimeArtifactCliHistorySummaryRecord {
+  return {
+    artifact: projectRuntimeArtifactSummary(response.artifact),
+    history: response.history.available
+      ? {
+          available: true,
+          commits: response.history.commits.map((commit) => ({
+            abbreviatedCommit: commit.abbreviatedCommit,
+            committedAt: commit.committedAt,
+            subject: commit.subject
+          })),
+          inspectedPath: response.history.inspectedPath,
+          lines: formatRuntimeArtifactHistoryLines(response.history),
+          status: formatRuntimeArtifactHistoryStatus(response.history),
+          truncated: response.history.truncated
+        }
+      : {
+          available: false,
+          reason: response.history.reason,
+          status: formatRuntimeArtifactHistoryStatus(response.history)
+        }
+  };
+}
+
+export interface RuntimeArtifactCliDiffSummaryRecord {
+  artifact: RuntimeArtifactCliSummaryRecord;
+  diff:
+    | {
+        available: true;
+        bytesRead: number;
+        contentType: Extract<
+          RuntimeArtifactDiffResponse["diff"],
+          { available: true }
+        >["contentType"];
+        fromCommit: string;
+        status: string;
+        toCommit: string;
+        truncated: boolean;
+      }
+    | {
+        available: false;
+        reason: string;
+        status: string;
+      };
+}
+
+export function projectRuntimeArtifactDiffSummary(
+  response: RuntimeArtifactDiffResponse
+): RuntimeArtifactCliDiffSummaryRecord {
+  return {
+    artifact: projectRuntimeArtifactSummary(response.artifact),
+    diff: response.diff.available
+      ? {
+          available: true,
+          bytesRead: response.diff.bytesRead,
+          contentType: response.diff.contentType,
+          fromCommit: response.diff.fromCommit,
+          status: formatRuntimeArtifactDiffStatus(response.diff),
+          toCommit: response.diff.toCommit,
+          truncated: response.diff.truncated
+        }
+      : {
+          available: false,
+          reason: response.diff.reason,
+          status: formatRuntimeArtifactDiffStatus(response.diff)
         }
   };
 }

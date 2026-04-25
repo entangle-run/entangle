@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { ArtifactRecord } from "@entangle/types";
+import type {
+  ArtifactRecord,
+  RuntimeArtifactDiffResponse,
+  RuntimeArtifactHistoryResponse
+} from "@entangle/types";
 import {
   filterRuntimeArtifactsForPresentation,
   formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactDiffStatus,
+  formatRuntimeArtifactHistoryLines,
+  formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,
@@ -139,6 +146,41 @@ describe("runtime artifact presentation helpers", () => {
         "publication published",
         "published remote ssh://git@example.com/team/worker-it.git"
       ])
+    );
+  });
+
+  it("formats artifact history and diff inspection summaries", () => {
+    const history: RuntimeArtifactHistoryResponse["history"] = {
+      available: true,
+      commits: [
+        {
+          abbreviatedCommit: "0123456",
+          authorName: "worker-it",
+          commit: "0123456789abcdef",
+          committedAt: "2026-04-24T10:00:00.000Z",
+          subject: "Materialize report artifact"
+        }
+      ],
+      inspectedPath: "reports/report.md",
+      truncated: false
+    };
+    const diff: RuntimeArtifactDiffResponse["diff"] = {
+      available: true,
+      bytesRead: 42,
+      content: "diff --git a/report.md b/report.md\n",
+      contentEncoding: "utf8",
+      contentType: "text/x-diff",
+      fromCommit: "0000000000000000000000000000000000000000",
+      toCommit: "0123456789abcdef0123456789abcdef01234567",
+      truncated: false
+    };
+
+    expect(formatRuntimeArtifactHistoryStatus(history)).toBe("1 commits");
+    expect(formatRuntimeArtifactHistoryLines(history)).toEqual([
+      "0123456 · 2026-04-24T10:00:00.000Z · worker-it · Materialize report artifact"
+    ]);
+    expect(formatRuntimeArtifactDiffStatus(diff)).toBe(
+      "000000000000..0123456789ab · 42 bytes"
     );
   });
 });

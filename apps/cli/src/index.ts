@@ -66,6 +66,8 @@ import {
 } from "./resource-inventory-output.js";
 import {
   filterRuntimeArtifactsForCli,
+  projectRuntimeArtifactDiffSummary,
+  projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
@@ -1312,6 +1314,10 @@ hostRuntimesCommand
   .command("artifact")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<artifactId>", "Artifact identifier to inspect.")
+  .option("--diff", "Include the bounded git diff when available.")
+  .option("--from <commit>", "Base commit for --diff; defaults to the first parent.")
+  .option("--history", "Include bounded git history when available.")
+  .option("--limit <limit>", "Maximum history commits to return.", "20")
   .option("--preview", "Include the bounded text preview when available.")
   .option("--summary", "Print a compact operator-oriented artifact summary.")
   .description("Inspect one persisted runtime artifact.")
@@ -1319,16 +1325,63 @@ hostRuntimesCommand
     async (
       nodeId: string,
       artifactId: string,
-      options: { preview?: boolean; summary?: boolean },
+      options: {
+        diff?: boolean;
+        from?: string;
+        history?: boolean;
+        limit: string;
+        preview?: boolean;
+        summary?: boolean;
+      },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      const selectedInspectionModes = [
+        options.preview,
+        options.history,
+        options.diff
+      ].filter(Boolean).length;
+
+      if (selectedInspectionModes > 1) {
+        throw new Error("Choose only one of --preview, --history, or --diff.");
+      }
+
+      if (options.from && !options.diff) {
+        throw new Error("--from can only be used with --diff.");
+      }
+
+      if (!options.history && options.limit !== "20") {
+        throw new Error("--limit can only be used with --history.");
+      }
+
       if (options.preview) {
         const response = await client.getRuntimeArtifactPreview(nodeId, artifactId);
         printJson(
           options.summary
             ? projectRuntimeArtifactPreviewSummary(response)
             : response
+        );
+        return;
+      }
+
+      if (options.history) {
+        const response = await client.getRuntimeArtifactHistory(nodeId, artifactId, {
+          limit: parsePositiveIntegerOption(options.limit, "--limit")
+        });
+        printJson(
+          options.summary
+            ? projectRuntimeArtifactHistorySummary(response)
+            : response
+        );
+        return;
+      }
+
+      if (options.diff) {
+        const response = await client.getRuntimeArtifactDiff(nodeId, artifactId, {
+          fromCommit: options.from
+        });
+        printJson(
+          options.summary ? projectRuntimeArtifactDiffSummary(response) : response
         );
         return;
       }

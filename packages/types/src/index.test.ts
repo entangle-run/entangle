@@ -38,6 +38,8 @@ import {
   reconciliationSnapshotSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryResponseSchema,
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
@@ -217,6 +219,63 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.preview.available).toBe(true);
+  });
+
+  it("accepts bounded runtime artifact history and diff responses", () => {
+    const artifact = {
+      createdAt: "2026-04-24T00:00:00.000Z",
+      materialization: {
+        repoPath: "/tmp/entangle-runner"
+      },
+      ref: {
+        artifactId: "report-turn-001",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "worker-it/session-alpha/review",
+          commit: "abc123",
+          path: "reports/turn-001.md"
+        },
+        preferred: true,
+        status: "materialized"
+      },
+      updatedAt: "2026-04-24T00:00:00.000Z"
+    };
+
+    const history = runtimeArtifactHistoryResponseSchema.parse({
+      artifact,
+      history: {
+        available: true,
+        commits: [
+          {
+            abbreviatedCommit: "abc123",
+            authorEmail: "worker@example.test",
+            authorName: "worker-it",
+            commit: "abc123",
+            committedAt: "2026-04-24T00:00:00.000Z",
+            subject: "Materialize report"
+          }
+        ],
+        inspectedPath: "reports/turn-001.md",
+        truncated: false
+      }
+    });
+    const diff = runtimeArtifactDiffResponseSchema.parse({
+      artifact,
+      diff: {
+        available: true,
+        bytesRead: 31,
+        content: "diff --git a/report.md b/report.md\n",
+        contentEncoding: "utf8",
+        contentType: "text/x-diff",
+        fromCommit: "base123",
+        toCommit: "abc123",
+        truncated: false
+      }
+    });
+
+    expect(history.history.available).toBe(true);
+    expect(diff.diff.available).toBe(true);
   });
 });
 

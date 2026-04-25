@@ -40,6 +40,8 @@ import {
   packageSourceListResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
@@ -3571,11 +3573,63 @@ describe("buildHostServer", () => {
       });
 
       expect(sourceArtifactResponse.statusCode).toBe(200);
-      expect(
+      const sourceArtifactInspection =
         runtimeArtifactInspectionResponseSchema.parse(
           sourceArtifactResponse.json()
-        ).artifact.publication?.state
-      ).toBe("published");
+        );
+      expect(sourceArtifactInspection.artifact.publication?.state).toBe(
+        "published"
+      );
+      expect(sourceArtifactInspection.artifact.ref.backend).toBe("git");
+      if (sourceArtifactInspection.artifact.ref.backend !== "git") {
+        throw new Error("Expected the published source artifact to be git-backed.");
+      }
+      const sourceArtifactCommit =
+        sourceArtifactInspection.artifact.ref.locator.commit;
+
+      const sourceArtifactHistoryResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/history?limit=5"
+      });
+
+      expect(sourceArtifactHistoryResponse.statusCode).toBe(200);
+      const sourceArtifactHistory =
+        runtimeArtifactHistoryResponseSchema.parse(
+          sourceArtifactHistoryResponse.json()
+        );
+      expect(sourceArtifactHistory.history).toMatchObject({
+        available: true,
+        inspectedPath: ".",
+        truncated: false
+      });
+      expect(
+        sourceArtifactHistory.history.available
+          ? sourceArtifactHistory.history.commits[0]?.commit
+          : undefined
+      ).toBe(sourceArtifactCommit);
+
+      const sourceArtifactDiffResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/diff"
+      });
+
+      expect(sourceArtifactDiffResponse.statusCode).toBe(200);
+      const sourceArtifactDiff = runtimeArtifactDiffResponseSchema.parse(
+        sourceArtifactDiffResponse.json()
+      );
+      expect(sourceArtifactDiff.diff).toMatchObject({
+        available: true,
+        contentType: "text/x-diff",
+        toCommit: sourceArtifactCommit,
+        truncated: false
+      });
+      expect(
+        sourceArtifactDiff.diff.available
+          ? sourceArtifactDiff.diff.content
+          : undefined
+      ).toContain("generated = true");
 
       const repeatedPublishResponse = await server.inject({
         method: "POST",

@@ -194,8 +194,9 @@ This repository currently contains:
   context from the same remote;
 - host read surfaces for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts` and
-  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, plus matching
-  host-client coverage;
+  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, with bounded preview,
+  git history, and git diff inspection for supported materialized artifacts,
+  plus matching host-client, CLI, and Studio coverage;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -628,7 +629,8 @@ This repository currently contains:
 - the matching artifact-presentation slice where Studio and CLI now consume
   shared `host-client` artifact helpers, and `host runtimes artifact` plus
   `host runtimes artifacts` support `--summary` for compact headless
-  inspection;
+  inspection, with selected artifact preview, history, and diff views sharing
+  the same host/client contracts;
 - a shared graph-topology presentation slice where Studio now reuses
   `host-client` helpers for graph revisions, managed nodes, and edges, while
   the CLI exposes compact `--summary` output for active graph, graph revision,
@@ -661,8 +663,8 @@ The highest-value remaining gaps are:
   workflows;
 - advanced git widening beyond the current locator-specific handoff and
   source-history publication model, especially policy-gated publication
-  controls, artifact history/diff APIs, non-primary target provisioning, and
-  replicated fallback paths;
+  controls, artifact restore/replay semantics, non-primary target
+  provisioning, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

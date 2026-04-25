@@ -161,7 +161,8 @@ The repository now also contains the first real implementation baseline:
   review lifecycle mutations plus runtime-local source-history application for
   accepted candidates, and a separate source-history publication mutation that
   turns applied source-history commits into git commit artifacts with durable
-  publication metadata;
+  publication metadata, with bounded host/CLI/Studio history and diff
+  inspection for supported materialized git artifacts;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -487,7 +488,8 @@ The repository now also contains the first real implementation baseline:
 - shared runtime-artifact presentation helpers in `packages/host-client`, with
   Studio consuming the same formatting and the CLI exposing compact
   `host runtimes artifact --summary` and `host runtimes artifacts --summary`
-  output;
+  output, including shared selected-artifact preview, history, and diff
+  status formatting;
 - shared graph-topology presentation helpers in `packages/host-client`, with
   Studio consuming the same graph revision, managed-node, and edge vocabulary
   and the CLI exposing compact `--summary` output for active graph, graph
@@ -671,8 +673,9 @@ The current implementation-truth audit now lives in
   provisioning record model, the publication/retrieval-state record model, and
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
-  source-history commit artifact publication; the next git gaps are
-  policy-gated publication controls, artifact history/diff workflow, and
+  source-history commit artifact publication plus bounded artifact history/diff
+  inspection for materialized git artifacts; the next git gaps are
+  policy-gated publication controls, artifact restore/replay semantics, and
   non-primary target/fallback behavior, while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea
   volumes;

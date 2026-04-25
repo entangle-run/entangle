@@ -104,11 +104,13 @@ After the publication follow-up, the remaining B5 implementation should add:
 
 - policy checks and approval gates before source application or publication;
 - richer publication retry semantics and target selection;
-- artifact history/diff APIs beyond report artifacts;
 - richer CLI and Studio source publication history views;
+- artifact restore/replay semantics only after rollback and policy behavior are
+  specified;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff and file inspection, review, source-history
-  application, remote publication, and downstream inspection.
+  application, remote publication, artifact history/diff inspection, and
+  downstream inspection.
 
 ## Verification
 

@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added runtime artifact history and diff inspection
+
+Advanced Entangle Local L3 workstream B5. Materialized git-backed runtime
+artifacts now expose bounded history and diff inspection through the host
+boundary. The host validates runtime context, keeps inspection inside the
+runtime artifact/retrieval workspaces, rejects unsafe locator paths, bounds git
+history and diff output, and returns unavailable reasons for unsupported
+artifact backends or missing local git state instead of widening filesystem
+access.
+
+The shared host client, CLI, and Studio now consume the new artifact
+history/diff contracts. Added
+`references/203-artifact-history-diff-slice.md`. Richer publication retry/target
+controls, artifact restore/replay semantics, policy gates, and end-to-end
+OpenCode-backed source-publication smoke coverage remain open.
+
 ## [2026-04-25] implementation | Added source history publication
 
 Advanced Entangle Local L3 workstream B5. Applied source-history entries can
@@ -13,7 +29,7 @@ and exposes the flow through the shared host client, CLI, and Studio.
 The shared git service contract now also supports local `file://` remotes via
 `transportKind: "file"` so Entangle Local can exercise real git pushes against
 bare repositories without network access. Policy approval, richer publication
-retry/target controls, artifact history/diff APIs, and end-to-end
+retry/target controls, artifact restore/replay semantics, and end-to-end
 OpenCode-backed source-publication smoke coverage remain open.
 
 ## [2026-04-25] implementation | Added local source history application

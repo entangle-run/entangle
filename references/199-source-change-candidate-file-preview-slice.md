@@ -96,13 +96,14 @@ The remaining B5 implementation should add:
 
 - Entangle policy checks before candidate source application or publication;
 - approval records for policy-gated source application or publication;
-- remote publication of source-history commits;
-- source commit or branch artifact records;
-- artifact history/diff APIs;
-- publication rules tied to the node git principal and repository target;
+- richer publication retry and target-selection controls tied to the node git
+  principal and repository target;
+- artifact restore/replay semantics only after rollback and policy behavior are
+  specified;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff and file inspection, candidate review, source
-  history, publication, and downstream inspection.
+  history, publication, artifact history/diff inspection, and downstream
+  inspection.
 
 ## Verification
 

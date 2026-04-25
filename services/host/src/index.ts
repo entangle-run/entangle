@@ -36,6 +36,10 @@ import {
   packageSourceListResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeArtifactDiffQuerySchema,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryQuerySchema,
+  runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
@@ -112,6 +116,8 @@ import {
   listRuntimeInspections,
   listSessions,
   listPackageSources,
+  getRuntimeArtifactDiff,
+  getRuntimeArtifactHistory,
   getRuntimeArtifactPreview,
   restartRuntime,
   replaceEdge,
@@ -1086,6 +1092,108 @@ export async function buildHostServer() {
       }
 
       return runtimeArtifactPreviewResponseSchema.parse(artifactPreview);
+    }
+  );
+
+  server.get(
+    "/v1/runtimes/:nodeId/artifacts/:artifactId/history",
+    async (request, reply) => {
+      const params = request.params as { artifactId: string; nodeId: string };
+      const query = parseRequestInput(
+        runtimeArtifactHistoryQuerySchema,
+        request.query,
+        {
+          detailsKey: "queryIssues",
+          message: "Request query did not match the expected schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const artifactHistory = await getRuntimeArtifactHistory({
+        artifactId: params.artifactId,
+        limit: query.limit,
+        nodeId: params.nodeId
+      });
+
+      if (!artifactHistory) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeArtifactHistoryResponseSchema.parse(artifactHistory);
+    }
+  );
+
+  server.get(
+    "/v1/runtimes/:nodeId/artifacts/:artifactId/diff",
+    async (request, reply) => {
+      const params = request.params as { artifactId: string; nodeId: string };
+      const query = parseRequestInput(runtimeArtifactDiffQuerySchema, request.query, {
+        detailsKey: "queryIssues",
+        message: "Request query did not match the expected schema."
+      });
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const artifactDiff = await getRuntimeArtifactDiff({
+        artifactId: params.artifactId,
+        fromCommit: query.fromCommit,
+        nodeId: params.nodeId
+      });
+
+      if (!artifactDiff) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeArtifactDiffResponseSchema.parse(artifactDiff);
     }
   );
 

@@ -55,7 +55,9 @@ The latest implementation state includes:
   bounded diff inspection for candidates with shadow-git tree snapshots and
   bounded preview for changed files listed on the candidate plus audited
   accepted/rejected/superseded review mutation and explicit runtime-local
-  source-history application for accepted candidates;
+  source-history application for accepted candidates, source-history
+  publication as git commit artifacts, and bounded artifact history/diff
+  inspection for supported materialized git artifacts;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -68,7 +70,7 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary, but Entangle Local still lacks the complete
 policy bridge, resumable permission approval mapping, candidate
-policy-gated publication workflow, artifact history/diff workflow, git/wiki
+policy-gated publication workflow, artifact restore/replay workflow, git/wiki
 workflow, external cancellation bridge,
 doctor-backed workspace health checks, and full CLI/Studio configuration and
 observability surface required for L3 acceptance.
@@ -421,7 +423,7 @@ Current partial implementation:
   `provider_unavailable` evidence;
 - this does not yet complete external cancellation, permission mapping, full
   degraded-runtime status DTOs, attached server lifecycle, policy-gated source
-  publication, or artifact history/diff workflow.
+  publication, or artifact restore/replay workflow.
 
 Acceptance:
 
@@ -581,8 +583,10 @@ Current partial implementation:
   metadata on both the source-history entry and artifact, emits
   `source_history.published`, and exposes host-client, CLI, and Studio publish
   surfaces;
+- materialized git artifacts now have bounded host-owned history and diff
+  inspection through host API, host-client, CLI, and Studio surfaces;
 - approval flow, richer policy-gated publication controls, retry/target
-  selection, and artifact history/diff workflow remain open.
+  selection, and artifact restore/replay workflow remain open.
 
 Acceptance:
 

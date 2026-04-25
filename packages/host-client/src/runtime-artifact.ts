@@ -4,7 +4,9 @@ import type {
   ArtifactLifecycleState,
   ArtifactPublicationState,
   ArtifactRecord,
-  ArtifactRetrievalState
+  ArtifactRetrievalState,
+  RuntimeArtifactDiffResponse,
+  RuntimeArtifactHistoryResponse
 } from "@entangle/types";
 
 export type RuntimeArtifactPresentationFilterOptions = {
@@ -147,4 +149,51 @@ export function formatRuntimeArtifactDetailLines(
   }
 
   return lines;
+}
+
+function formatCommitRangeEndpoint(commit: string): string {
+  return commit.slice(0, 12);
+}
+
+export function formatRuntimeArtifactHistoryStatus(
+  history: RuntimeArtifactHistoryResponse["history"]
+): string {
+  if (!history.available) {
+    return "unavailable";
+  }
+
+  return `${history.commits.length}${history.truncated ? "+" : ""} commits`;
+}
+
+export function formatRuntimeArtifactHistoryLines(
+  history: RuntimeArtifactHistoryResponse["history"]
+): string[] {
+  if (!history.available) {
+    return [history.reason];
+  }
+
+  if (history.commits.length === 0) {
+    return [`No commits found for ${history.inspectedPath}.`];
+  }
+
+  return history.commits.map((commit) => {
+    const subject = commit.subject.trim();
+    const author = commit.authorName ? ` · ${commit.authorName}` : "";
+    const summary = subject.length > 0 ? subject : "(no subject)";
+
+    return `${commit.abbreviatedCommit} · ${commit.committedAt}${author} · ${summary}`;
+  });
+}
+
+export function formatRuntimeArtifactDiffStatus(
+  diff: RuntimeArtifactDiffResponse["diff"]
+): string {
+  if (!diff.available) {
+    return "unavailable";
+  }
+
+  const range = `${formatCommitRangeEndpoint(diff.fromCommit)}..${formatCommitRangeEndpoint(diff.toCommit)}`;
+  const truncated = diff.truncated ? " · truncated" : "";
+
+  return `${range} · ${diff.bytesRead} bytes${truncated}`;
 }

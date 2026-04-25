@@ -161,6 +161,63 @@ export const runtimeArtifactPreviewResponseSchema = z.object({
   preview: runtimeArtifactPreviewSchema
 });
 
+export const runtimeArtifactHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20)
+});
+
+export const runtimeArtifactHistoryCommitSchema = z.object({
+  abbreviatedCommit: nonEmptyStringSchema,
+  authorEmail: nonEmptyStringSchema.optional(),
+  authorName: nonEmptyStringSchema.optional(),
+  commit: nonEmptyStringSchema,
+  committedAt: nonEmptyStringSchema,
+  subject: z.string()
+});
+
+export const runtimeArtifactHistorySchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    commits: z.array(runtimeArtifactHistoryCommitSchema),
+    inspectedPath: nonEmptyStringSchema,
+    truncated: z.boolean()
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: nonEmptyStringSchema
+  })
+]);
+
+export const runtimeArtifactHistoryResponseSchema = z.object({
+  artifact: artifactRecordSchema,
+  history: runtimeArtifactHistorySchema
+});
+
+export const runtimeArtifactDiffQuerySchema = z.object({
+  fromCommit: nonEmptyStringSchema.optional()
+});
+
+export const runtimeArtifactDiffSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    bytesRead: z.number().int().nonnegative(),
+    content: z.string(),
+    contentEncoding: z.literal("utf8"),
+    contentType: z.literal("text/x-diff"),
+    fromCommit: nonEmptyStringSchema,
+    toCommit: nonEmptyStringSchema,
+    truncated: z.boolean()
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: nonEmptyStringSchema
+  })
+]);
+
+export const runtimeArtifactDiffResponseSchema = z.object({
+  artifact: artifactRecordSchema,
+  diff: runtimeArtifactDiffSchema
+});
+
 export const runtimeMemoryPageKindSchema = z.enum([
   "schema",
   "summary",
@@ -360,6 +417,25 @@ export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResp
 export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;
 export type RuntimeArtifactPreview = z.infer<typeof runtimeArtifactPreviewSchema>;
 export type RuntimeArtifactPreviewResponse = z.infer<typeof runtimeArtifactPreviewResponseSchema>;
+export type RuntimeArtifactHistoryQuery = z.infer<
+  typeof runtimeArtifactHistoryQuerySchema
+>;
+export type RuntimeArtifactHistoryCommit = z.infer<
+  typeof runtimeArtifactHistoryCommitSchema
+>;
+export type RuntimeArtifactHistory = z.infer<
+  typeof runtimeArtifactHistorySchema
+>;
+export type RuntimeArtifactHistoryResponse = z.infer<
+  typeof runtimeArtifactHistoryResponseSchema
+>;
+export type RuntimeArtifactDiffQuery = z.infer<
+  typeof runtimeArtifactDiffQuerySchema
+>;
+export type RuntimeArtifactDiff = z.infer<typeof runtimeArtifactDiffSchema>;
+export type RuntimeArtifactDiffResponse = z.infer<
+  typeof runtimeArtifactDiffResponseSchema
+>;
 export type RuntimeMemoryPageKind = z.infer<typeof runtimeMemoryPageKindSchema>;
 export type RuntimeMemoryPageSummary = z.infer<typeof runtimeMemoryPageSummarySchema>;
 export type RuntimeMemoryInspectionResponse = z.infer<

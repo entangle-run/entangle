@@ -1288,6 +1288,140 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses runtime artifact history responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-22T00:00:00.000Z",
+                materialization: {
+                  repoPath: "/tmp/entangle-runner/workspace"
+                },
+                ref: {
+                  artifactId: "report-turn-001",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  locator: {
+                    branch: "worker-it/session-alpha/review-patch",
+                    commit: "abc123",
+                    path: "reports/session-alpha/turn-001.md"
+                  },
+                  preferred: true,
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-22T00:00:00.000Z"
+              },
+              history: {
+                available: true,
+                commits: [
+                  {
+                    abbreviatedCommit: "abc123",
+                    authorEmail: "worker@example.test",
+                    authorName: "worker-it",
+                    commit: "abc123",
+                    committedAt: "2026-04-22T00:00:00.000Z",
+                    subject: "Materialize runtime artifact"
+                  }
+                ],
+                inspectedPath: "reports/session-alpha/turn-001.md",
+                truncated: false
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.getRuntimeArtifactHistory("worker-it", "report-turn-001", {
+        limit: 5
+      })
+    ).resolves.toMatchObject({
+      history: {
+        available: true,
+        commits: [
+          {
+            abbreviatedCommit: "abc123"
+          }
+        ]
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/history?limit=5"
+    ]);
+  });
+
+  it("parses runtime artifact diff responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-22T00:00:00.000Z",
+                materialization: {
+                  repoPath: "/tmp/entangle-runner/workspace"
+                },
+                ref: {
+                  artifactId: "report-turn-001",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  locator: {
+                    branch: "worker-it/session-alpha/review-patch",
+                    commit: "abc123",
+                    path: "reports/session-alpha/turn-001.md"
+                  },
+                  preferred: true,
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-22T00:00:00.000Z"
+              },
+              diff: {
+                available: true,
+                bytesRead: 43,
+                content: "diff --git a/report.md b/report.md\n",
+                contentEncoding: "utf8",
+                contentType: "text/x-diff",
+                fromCommit: "base123",
+                toCommit: "abc123",
+                truncated: false
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.getRuntimeArtifactDiff("worker-it", "report-turn-001", {
+        fromCommit: "base123"
+      })
+    ).resolves.toMatchObject({
+      diff: {
+        available: true,
+        fromCommit: "base123",
+        toCommit: "abc123"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/diff?fromCommit=base123"
+    ]);
+  });
+
   it("parses runtime memory list and page responses from the host surface", async () => {
     const requests: string[] = [];
     const client = createHostClient({

@@ -94,7 +94,7 @@ This slice intentionally does not:
 - auto-publish engine-generated source merely because a candidate was accepted;
 - bypass future policy or approval gates;
 - emit peer handoff messages for source publications;
-- implement artifact history/diff APIs for arbitrary artifacts;
+- implement artifact restore/replay APIs or remote-only artifact inspection;
 - implement non-primary target selection or fallback replication;
 - treat failed remote publication as loss of local artifact truth.
 
@@ -109,12 +109,14 @@ The remaining B5 implementation should add:
 - policy checks and approval gates before source application or publication;
 - richer remote publication controls, including retry semantics and target
   selection;
-- artifact history/diff APIs beyond report and source commit records;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;
+- artifact restore/replay semantics only after rollback and policy behavior are
+  specified;
 - end-to-end OpenCode-backed smoke coverage proving source modification,
   candidate creation, diff and file inspection, review, source-history
-  application, publication, and downstream inspection.
+  application, publication, artifact history/diff inspection, and downstream
+  inspection.
 
 ## Verification
 

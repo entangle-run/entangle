@@ -1,5 +1,8 @@
 export {
   formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactDiffStatus,
+  formatRuntimeArtifactHistoryLines,
+  formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,

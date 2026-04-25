@@ -29,6 +29,10 @@ import {
   packageSourceListResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeArtifactDiffQuerySchema,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryQuerySchema,
+  runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
@@ -84,6 +88,10 @@ import {
   type PackageSourceListResponse,
   type RuntimeApprovalInspectionResponse,
   type RuntimeApprovalListResponse,
+  type RuntimeArtifactDiffQuery,
+  type RuntimeArtifactDiffResponse,
+  type RuntimeArtifactHistoryQuery,
+  type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeArtifactPreviewResponse,
@@ -686,6 +694,43 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async getRuntimeArtifactHistory(
+      nodeId: string,
+      artifactId: string,
+      query: Partial<RuntimeArtifactHistoryQuery> = {}
+    ): Promise<RuntimeArtifactHistoryResponse> {
+      const request = runtimeArtifactHistoryQuerySchema.parse(query);
+      const url = new URL(
+        `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/history`
+      );
+      url.searchParams.set("limit", String(request.limit));
+
+      return parseResponse(
+        await hostFetch(url.toString()),
+        runtimeArtifactHistoryResponseSchema
+      );
+    },
+
+    async getRuntimeArtifactDiff(
+      nodeId: string,
+      artifactId: string,
+      query: RuntimeArtifactDiffQuery = {}
+    ): Promise<RuntimeArtifactDiffResponse> {
+      const request = runtimeArtifactDiffQuerySchema.parse(query);
+      const url = new URL(
+        `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/diff`
+      );
+
+      if (request.fromCommit) {
+        url.searchParams.set("fromCommit", request.fromCommit);
+      }
+
+      return parseResponse(
+        await hostFetch(url.toString()),
+        runtimeArtifactDiffResponseSchema
+      );
+    },
+
     async getRuntimeMemory(
       nodeId: string
     ): Promise<RuntimeMemoryInspectionResponse> {
@@ -1039,6 +1084,9 @@ export {
 export {
   filterRuntimeArtifactsForPresentation,
   formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactDiffStatus,
+  formatRuntimeArtifactHistoryLines,
+  formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
   formatRuntimeArtifactStatus,

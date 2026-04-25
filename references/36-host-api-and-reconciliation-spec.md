@@ -336,6 +336,9 @@ The current implementation now covers both routes in this subsection.
 - `GET /v1/runtimes/{nodeId}/turns/{turnId}`
 - `GET /v1/runtimes/{nodeId}/artifacts`
 - `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/preview`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/history`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/diff`
 - `POST /v1/runtimes/{nodeId}/start`
 - `POST /v1/runtimes/{nodeId}/stop`
 - `POST /v1/runtimes/{nodeId}/restart`
@@ -377,6 +380,9 @@ The current repository implementation now concretely includes:
 - `GET /v1/runtimes/{nodeId}/turns/{turnId}`
 - `GET /v1/runtimes/{nodeId}/artifacts`
 - `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/preview`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/history`
+- `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/diff`
 - `GET /v1/runtimes/{nodeId}/recovery`
 - `PUT /v1/runtimes/{nodeId}/recovery-policy`
 - `GET /v1/events`
@@ -404,8 +410,8 @@ The current implementation also exposes:
   `runtime.restart.requested` events;
 - read-only persisted runner-turn collection and item inspection for active
   runtimes;
-- read-only persisted artifact collection and item inspection for active
-  runtimes;
+- read-only persisted artifact collection, item, bounded preview, bounded git
+  history, and bounded git diff inspection for active runtimes;
 - read-only persisted runtime recovery-history inspection through
   `GET /v1/runtimes/{nodeId}/recovery`, with durable per-node records and
   canonicalized fingerprint-based deduplication;
