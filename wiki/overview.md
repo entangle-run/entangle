@@ -167,8 +167,9 @@ The repository now also contains the first real implementation baseline:
 - a first approval-message handling slice where `approval.request` and
   `approval.response` now have explicit A2A metadata contracts and the runner
   materializes pending approval gates, applies approved decisions, closes
-  approved approval conversations when policy allows, and completes unblocked
-  waiting sessions;
+  approved approval conversations when policy allows, completes unblocked
+  waiting sessions, and relies on the canonical A2A validator to reject
+  malformed approval metadata before local lifecycle state is written;
 - an artifact-aware refinement of that same synthesis path where the runner now
   passes explicit retrieved and produced artifact context into working-context
   synthesis, instead of leaving work-product visibility trapped in the main

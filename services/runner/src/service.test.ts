@@ -16,6 +16,7 @@ import { RunnerService } from "./service.js";
 import {
   buildRunnerStatePaths,
   listArtifactRecords,
+  listApprovalRecords,
   listRunnerTurnRecords,
   readApprovalRecord,
   readConversationRecord,
@@ -988,6 +989,67 @@ describe("RunnerService", () => {
     expect(conversationRecord?.status).toBe("awaiting_approval");
     expect(sessionRecord?.status).toBe("waiting_approval");
     expect(sessionRecord?.waitingApprovalIds).toEqual(["approval-request-alpha"]);
+  });
+
+  it("rejects malformed approval requests before writing local lifecycle state", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const invalidApprovalRequestMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-invalid-approval-request",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Approve publication.",
+      messageType: "approval.request",
+      parentMessageId:
+        "abababababababababababababababababababababababababababababababab",
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-invalid-approval-request",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "invalid-approval-request-turn",
+      work: {
+        artifactRefs: [],
+        metadata: {},
+        summary: "Approval is required before publication."
+      }
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+    const result = await service.handleInboundEnvelope({
+      eventId:
+        "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+      message: invalidApprovalRequestMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [approvalRecords, conversationRecord, sessionRecord] = await Promise.all([
+      listApprovalRecords(statePaths),
+      readConversationRecord(statePaths, "conv-invalid-approval-request"),
+      readSessionRecord(statePaths, "session-invalid-approval-request")
+    ]);
+
+    expect(result).toEqual({
+      handled: false,
+      reason: "invalid_message"
+    });
+    expect(approvalRecords).toEqual([]);
+    expect(conversationRecord).toBeUndefined();
+    expect(sessionRecord).toBeUndefined();
   });
 
   it("applies approved approval responses and completes unblocked waiting sessions", async () => {

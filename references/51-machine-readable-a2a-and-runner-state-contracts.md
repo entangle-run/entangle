@@ -151,6 +151,11 @@ from status alone.
 - `validateRunnerTurnRecordDocument(...)`
 - lifecycle transition validation for session, conversation, and approval states
 
+`validateA2AMessageDocument(...)` also enforces message-type-specific approval
+metadata contracts for `approval.request` and `approval.response`, so malformed
+approval lifecycle messages are rejected before runner-local lifecycle state can
+be written.
+
 This keeps semantic rejection logic out of ad hoc caller code.
 
 ## Remaining gap after this slice

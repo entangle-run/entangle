@@ -8,7 +8,10 @@ import {
   conversationRecordSchema,
   type DeploymentResourceCatalog,
   deploymentResourceCatalogSchema,
+  entangleA2AApprovalRequestMetadataSchema,
+  entangleA2AApprovalResponseMetadataSchema,
   entangleA2AMessageSchema,
+  type EntangleA2AMessage,
   type EffectiveRuntimeContext,
   type ExternalPrincipalRecord,
   type GraphSpec,
@@ -725,6 +728,46 @@ export function validateGraphDocument(
   );
 }
 
+function validateA2AApprovalMetadata(
+  message: EntangleA2AMessage
+): ValidationFinding[] {
+  if (message.messageType === "approval.request") {
+    const parseResult = entangleA2AApprovalRequestMetadataSchema.safeParse(
+      message.work.metadata
+    );
+
+    if (!parseResult.success) {
+      return parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "a2a_approval_request_metadata_invalid",
+          severity: "error",
+          message: `Invalid approval.request metadata: ${issue.message}`,
+          path: ["work", "metadata", ...issue.path.map(String)]
+        })
+      );
+    }
+  }
+
+  if (message.messageType === "approval.response") {
+    const parseResult = entangleA2AApprovalResponseMetadataSchema.safeParse(
+      message.work.metadata
+    );
+
+    if (!parseResult.success) {
+      return parseResult.error.issues.map((issue) =>
+        createFinding({
+          code: "a2a_approval_response_metadata_invalid",
+          severity: "error",
+          message: `Invalid approval.response metadata: ${issue.message}`,
+          path: ["work", "metadata", ...issue.path.map(String)]
+        })
+      );
+    }
+  }
+
+  return [];
+}
+
 export function validateA2AMessageDocument(input: unknown): ValidationReport {
   const parseResult = entangleA2AMessageSchema.safeParse(input);
 
@@ -741,7 +784,7 @@ export function validateA2AMessageDocument(input: unknown): ValidationReport {
     );
   }
 
-  return buildValidationReport([]);
+  return buildValidationReport(validateA2AApprovalMetadata(parseResult.data));
 }
 
 export function validateRuntimeArtifactRefs(input: {

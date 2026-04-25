@@ -175,6 +175,43 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
   };
 }
 
+function buildA2AMessageDocument(
+  overrides: Record<string, unknown> & { work?: Record<string, unknown> } = {}
+): Record<string, unknown> {
+  const { work, ...messageOverrides } = overrides;
+
+  return {
+    constraints: {
+      approvalRequiredBeforeAction: false
+    },
+    conversationId: "conv-alpha",
+    fromNodeId: "reviewer-it",
+    fromPubkey:
+      "1111111111111111111111111111111111111111111111111111111111111111",
+    graphId: "graph-alpha",
+    intent: "Review the patch.",
+    messageType: "task.request",
+    protocol: "entangle.a2a.v1",
+    responsePolicy: {
+      closeOnResult: true,
+      maxFollowups: 1,
+      responseRequired: true
+    },
+    sessionId: "session-alpha",
+    toNodeId: "worker-it",
+    toPubkey:
+      "2222222222222222222222222222222222222222222222222222222222222222",
+    turnId: "turn-001",
+    work: {
+      artifactRefs: [],
+      metadata: {},
+      summary: "Review the patch.",
+      ...work
+    },
+    ...messageOverrides
+  };
+}
+
 describe("validateGraphDocument", () => {
   it("does not invent missing host state when package-source ids were not provided", () => {
     const report = validateGraphDocument(buildGraph("worker-source"));
@@ -397,6 +434,112 @@ describe("validateA2AMessageDocument", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: "a2a_message_invalid",
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("accepts approval request metadata that matches the contract", () => {
+    const report = validateA2AMessageDocument(
+      buildA2AMessageDocument({
+        messageType: "approval.request",
+        parentMessageId:
+          "abababababababababababababababababababababababababababababababab",
+        work: {
+          metadata: {
+            approval: {
+              approvalId: "approval-alpha",
+              approverNodeIds: ["worker-lead"],
+              reason: "Approve publication before the session can complete."
+            }
+          },
+          summary: "Approval is required before publication."
+        }
+      })
+    );
+
+    expect(report.ok).toBe(true);
+  });
+
+  it("rejects approval request messages without approval metadata", () => {
+    const report = validateA2AMessageDocument(
+      buildA2AMessageDocument({
+        messageType: "approval.request",
+        parentMessageId:
+          "abababababababababababababababababababababababababababababababab",
+        work: {
+          metadata: {},
+          summary: "Approval is required before publication."
+        }
+      })
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "a2a_approval_request_metadata_invalid",
+          path: ["work", "metadata", "approval"],
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("accepts approval response metadata that matches the contract", () => {
+    const report = validateA2AMessageDocument(
+      buildA2AMessageDocument({
+        messageType: "approval.response",
+        parentMessageId:
+          "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        work: {
+          metadata: {
+            approval: {
+              approvalId: "approval-alpha",
+              decision: "approved"
+            }
+          },
+          summary: "Approval is granted."
+        }
+      })
+    );
+
+    expect(report.ok).toBe(true);
+  });
+
+  it("rejects approval response messages with invalid decisions", () => {
+    const report = validateA2AMessageDocument(
+      buildA2AMessageDocument({
+        messageType: "approval.response",
+        parentMessageId:
+          "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        work: {
+          metadata: {
+            approval: {
+              approvalId: "approval-alpha",
+              decision: "queued"
+            }
+          },
+          summary: "Approval is queued."
+        }
+      })
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "a2a_approval_response_metadata_invalid",
+          path: ["work", "metadata", "approval", "decision"],
           severity: "error"
         })
       ])

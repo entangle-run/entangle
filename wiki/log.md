@@ -1583,3 +1583,14 @@ Rejected approval responses now also have explicit coverage: the runner marks
 the approval rejected, closes the approval conversation when policy allows,
 clears active waiting gates, and moves the blocked session to `failed` when the
 session lifecycle allows it.
+
+## [2026-04-25] implementation | Validated approval message metadata
+
+Closed the approval-message contract gap in the canonical A2A validator.
+`validateA2AMessageDocument(...)` now rejects malformed `approval.request` and
+`approval.response` metadata through message-type-specific findings before the
+runner can write session, conversation, or approval state.
+
+This keeps approval mutation authority inside the runner while moving malformed
+approval lifecycle intent out of the "coordination no-op" path and into the
+protocol validation boundary.

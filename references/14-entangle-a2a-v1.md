@@ -122,6 +122,12 @@ The current machine-readable metadata contract is:
 
 The allowed response decisions are `approved` and `rejected`.
 
+`validateA2AMessageDocument(...)` treats both approval message types as
+metadata-bearing protocol messages. `approval.request` must carry metadata that
+matches the request contract, and `approval.response` must carry metadata that
+matches the response contract. Malformed approval metadata is a protocol
+validation error, not a runner-local lifecycle no-op.
+
 ### `conversation.close`
 
 Declare that no more followup is expected for this conversation.
@@ -154,4 +160,5 @@ Use public custom events only for:
   and authoritative pubkey;
 - every message must belong to a graph and session context;
 - every response-required message must allow at least one follow-up;
+- approval request and response messages must carry valid approval metadata;
 - every message must carry enough control metadata to avoid infinite ping-pong loops.

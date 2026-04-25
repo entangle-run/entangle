@@ -52,8 +52,8 @@ allows it.
 
 - Approval mutation remains runner-owned.
 - The host stays read-only for approval records in this slice.
-- Invalid or missing approval metadata does not crash the runner; the message
-  remains a coordination observation but does not mutate approval lifecycle.
+- Invalid or missing approval metadata is now rejected by the canonical A2A
+  validator before the runner writes session, conversation, or approval state.
 - A response for an unknown approval id does not synthesize a new approval
   record. Missing records remain visible through existing consistency
   diagnostics.
@@ -74,6 +74,8 @@ Coverage now asserts that:
 - inbound rejected `approval.response` updates the approval record, closes the
   approval conversation when policy allows, clears active waiting gates, and
   fails the blocked session.
+- malformed approval metadata is rejected at the A2A validator boundary before
+  runner-local lifecycle state is written.
 
 ## Result
 
