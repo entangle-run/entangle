@@ -27,6 +27,7 @@ import {
   packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeArtifactDiffQuerySchema,
@@ -86,6 +87,7 @@ import {
   type PackageSourceDeletionResponse,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
+  type RuntimeApprovalDecisionMutationRequest,
   type RuntimeApprovalInspectionResponse,
   type RuntimeApprovalListResponse,
   type RuntimeArtifactDiffQuery,
@@ -766,6 +768,25 @@ export function createHostClient(options: HostClientOptions) {
     ): Promise<RuntimeApprovalInspectionResponse> {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals/${approvalId}`),
+        runtimeApprovalInspectionResponseSchema
+      );
+    },
+
+    async recordRuntimeApprovalDecision(
+      nodeId: string,
+      decision: RuntimeApprovalDecisionMutationRequest
+    ): Promise<RuntimeApprovalInspectionResponse> {
+      const request =
+        runtimeApprovalDecisionMutationRequestSchema.parse(decision);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(request)
+        }),
         runtimeApprovalInspectionResponseSchema
       );
     },

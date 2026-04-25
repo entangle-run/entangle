@@ -120,8 +120,8 @@ The remaining policy and source workflow implementation should add:
 - durable approval records from live OpenCode permission requests where the
   engine lifecycle can be mapped safely;
 - resumable approval-decision feedback into the coding-agent lifecycle;
-- operator-facing approval request creation flows for source mutation scopes
-  instead of test-seeded approval records;
+- richer operator-facing approval workflows beyond the first scoped decision
+  mutation added in `references/208-operator-scoped-approval-decisions-slice.md`;
 - non-primary git repository provisioning and fallback/replication behavior;
 - source publication views that expose remote branch/history context, not only
   the produced artifact record;

@@ -37,6 +37,7 @@ import {
   nodeInspectionResponseSchema,
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
+  runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeArtifactDiffResponseSchema,
@@ -356,6 +357,30 @@ describe("runtime approval host API contracts", () => {
       runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.resource
         ?.kind
     ).toBe("source_history_publication");
+  });
+
+  it("accepts scoped runtime approval decision mutations", () => {
+    const decision = runtimeApprovalDecisionMutationRequestSchema.parse({
+      operation: "source_application",
+      reason: "Approve source application.",
+      resource: {
+        id: "source-change-alpha",
+        kind: "source_change_candidate",
+        label: "source-change-alpha"
+      },
+      sessionId: "session-alpha"
+    });
+
+    expect(decision).toMatchObject({
+      approverNodeIds: ["user"],
+      operation: "source_application",
+      resource: {
+        id: "source-change-alpha",
+        kind: "source_change_candidate"
+      },
+      sessionId: "session-alpha",
+      status: "approved"
+    });
   });
 });
 

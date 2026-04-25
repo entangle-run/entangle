@@ -80,6 +80,7 @@ import {
   type GraphSpec,
   type GraphMutationResponse,
   graphSpecSchema,
+  isAllowedApprovalLifecycleTransition,
   defaultNodeSourceMutationPolicy,
   buildGitRepositoryTarget,
   type GitRepositoryTarget,
@@ -123,6 +124,7 @@ import {
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
   runtimeAgentRuntimeInspectionSchema,
+  runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   type RuntimeIdentityRecord,
@@ -147,6 +149,7 @@ import {
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
   type RuntimeAgentRuntimeInspection,
+  type RuntimeApprovalDecisionMutationRequest,
   type RuntimeInspectionResponse,
   type RuntimeWorkspaceHealth,
   runtimeArtifactDiffResponseSchema,
@@ -5492,6 +5495,213 @@ export async function getRuntimeApprovalInspection(input: {
     : null;
 }
 
+export type RuntimeApprovalDecisionMutationResult =
+  | {
+      inspection: RuntimeApprovalInspectionResponse;
+      ok: true;
+    }
+  | {
+      code: "conflict";
+      message: string;
+      ok: false;
+    };
+
+function buildRuntimeApprovalDecisionId(input: {
+  nodeId: string;
+  operation: PolicyOperation;
+  resource: PolicyResourceScope;
+  status: "approved" | "rejected";
+}): string {
+  const prefix = sanitizeIdentifier(
+    [
+      "approval",
+      input.status,
+      input.nodeId,
+      input.operation,
+      input.resource.kind
+    ].join("-")
+  )
+    .slice(0, 58)
+    .replace(/[._-]+$/u, "");
+
+  return `${prefix}-${randomUUID()}`;
+}
+
+function approvalScopeConflictMessage(input: {
+  approval: ApprovalRecord;
+  requested: RuntimeApprovalDecisionMutationRequest;
+}): string | undefined {
+  const { approval, requested } = input;
+
+  if (requested.sessionId && requested.sessionId !== approval.sessionId) {
+    return (
+      `Approval '${approval.approvalId}' belongs to session ` +
+      `'${approval.sessionId}', not '${requested.sessionId}'.`
+    );
+  }
+
+  if (requested.operation && requested.operation !== approval.operation) {
+    return (
+      `Approval '${approval.approvalId}' is scoped to operation ` +
+      `'${approval.operation ?? "unspecified"}', not '${requested.operation}'.`
+    );
+  }
+
+  if (
+    requested.resource &&
+    !policyResourceScopeMatches(approval.resource, requested.resource)
+  ) {
+    return (
+      `Approval '${approval.approvalId}' is scoped to resource ` +
+      `'${formatPolicyResourceScope(approval.resource)}', not ` +
+      `'${formatPolicyResourceScope(requested.resource)}'.`
+    );
+  }
+
+  return undefined;
+}
+
+export async function recordRuntimeApprovalDecision(input: {
+  decision: RuntimeApprovalDecisionMutationRequest;
+  nodeId: string;
+}): Promise<RuntimeApprovalDecisionMutationResult | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const decision = runtimeApprovalDecisionMutationRequestSchema.parse(
+    input.decision
+  );
+  const approvals = await listRuntimeApprovalRecords(context.workspace.runtimeRoot);
+  const existingApproval = decision.approvalId
+    ? approvals.find((approval) => approval.approvalId === decision.approvalId)
+    : undefined;
+
+  if (existingApproval) {
+    if (existingApproval.graphId !== context.binding.graphId) {
+      return {
+        code: "conflict",
+        message:
+          `Approval '${existingApproval.approvalId}' belongs to graph ` +
+          `'${existingApproval.graphId}', not '${context.binding.graphId}'.`,
+        ok: false
+      };
+    }
+
+    if (existingApproval.requestedByNodeId !== input.nodeId) {
+      return {
+        code: "conflict",
+        message:
+          `Approval '${existingApproval.approvalId}' was requested by node ` +
+          `'${existingApproval.requestedByNodeId}', not '${input.nodeId}'.`,
+        ok: false
+      };
+    }
+
+    const scopeConflict = approvalScopeConflictMessage({
+      approval: existingApproval,
+      requested: decision
+    });
+
+    if (scopeConflict) {
+      return {
+        code: "conflict",
+        message: scopeConflict,
+        ok: false
+      };
+    }
+
+    if (existingApproval.status === decision.status) {
+      return {
+        inspection: runtimeApprovalInspectionResponseSchema.parse({
+          approval: existingApproval
+        }),
+        ok: true
+      };
+    }
+
+    if (
+      !isAllowedApprovalLifecycleTransition(
+        existingApproval.status,
+        decision.status
+      )
+    ) {
+      return {
+        code: "conflict",
+        message:
+          `Approval '${existingApproval.approvalId}' is '${existingApproval.status}' ` +
+          `and cannot transition to '${decision.status}'.`,
+        ok: false
+      };
+    }
+  }
+
+  const operation = decision.operation ?? existingApproval?.operation;
+  const resource = decision.resource ?? existingApproval?.resource;
+  const sessionId = decision.sessionId ?? existingApproval?.sessionId;
+
+  if (!operation || !resource || !sessionId) {
+    return {
+      code: "conflict",
+      message:
+        "New runtime approval decisions require sessionId, operation, and resource scope.",
+      ok: false
+    };
+  }
+
+  const decidedAt = nowIsoString();
+  const approvalId =
+    existingApproval?.approvalId ??
+    decision.approvalId ??
+    buildRuntimeApprovalDecisionId({
+      nodeId: input.nodeId,
+      operation,
+      resource,
+      status: decision.status
+    });
+  const nextApproval = approvalRecordSchema.parse({
+    ...(existingApproval ?? {}),
+    approvalId,
+    approverNodeIds: uniqueSortedIdentifiers([
+      ...(existingApproval?.approverNodeIds ?? []),
+      ...decision.approverNodeIds
+    ]),
+    graphId: context.binding.graphId,
+    operation,
+    ...(decision.reason || existingApproval?.reason
+      ? { reason: decision.reason ?? existingApproval?.reason }
+      : {}),
+    requestedAt: existingApproval?.requestedAt ?? decidedAt,
+    requestedByNodeId: input.nodeId,
+    resource,
+    sessionId,
+    status: decision.status,
+    updatedAt: decidedAt
+  });
+
+  await writeJsonFile(
+    runtimeApprovalRecordPath(context.workspace.runtimeRoot, approvalId),
+    nextApproval
+  );
+
+  const runtimeInspection = await getRuntimeInspection(input.nodeId);
+  if (runtimeInspection) {
+    await synchronizeApprovalActivityObservation({
+      approvalRecord: nextApproval,
+      runtime: runtimeInspection
+    });
+  }
+
+  return {
+    inspection: runtimeApprovalInspectionResponseSchema.parse({
+      approval: nextApproval
+    }),
+    ok: true
+  };
+}
+
 export async function listRuntimeSourceChangeCandidates(
   nodeId: string
 ): Promise<RuntimeSourceChangeCandidateListResponse | null> {
@@ -7645,6 +7855,13 @@ async function listRuntimeApprovalRecords(
       )
     )
   );
+}
+
+function runtimeApprovalRecordPath(
+  runtimeRoot: string,
+  approvalId: string
+): string {
+  return path.join(runtimeRoot, "approvals", `${approvalId}.json`);
 }
 
 async function listRuntimeTurnRecords(

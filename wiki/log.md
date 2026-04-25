@@ -1,5 +1,27 @@
 # Entangle Wiki Log
 
+## [2026-04-25] implementation | Added operator scoped approval decisions
+
+Advanced Entangle Local L3 approval governance with an explicit host mutation
+for runtime approval decisions. `POST /v1/runtimes/{nodeId}/approvals` can now
+create a new operation/resource-scoped approval decision for source mutation
+workflows or decide an existing pending approval without respecifying its
+scope. The mutation writes the runtime approval record, synchronizes observed
+approval activity, and emits `approval.trace.event`.
+
+The shared host client now exposes `recordRuntimeApprovalDecision`, the CLI
+adds `entangle host runtimes approval-decision`, and Studio can approve or
+reject a selected pending approval from the runtime detail panel. Added
+`references/208-operator-scoped-approval-decisions-slice.md`.
+
+Focused typecheck passed for types, host, host-client, CLI, and Studio. Focused
+contract, host-client, host approval-decision, CLI approval, and Studio approval
+tests passed, followed by full touched-package tests and lint. `git diff
+--check`, `pnpm build`, and `CI=1 TURBO_DAEMON=false pnpm verify` also passed;
+build still reports only the known Studio chunk-size warning. A first host run
+found an invalid generated approval id edge case; approval ids now use a
+bounded prefix plus UUID.
+
 ## [2026-04-25] implementation | Added Local doctor foundation
 
 Started Entangle Local L4 reliability workstream C1 with a read-only

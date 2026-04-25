@@ -166,8 +166,10 @@ The repository now also contains the first real implementation baseline:
   require approved runtime approval ids before source application, before any
   source-history publication, or before non-primary publication targets by
   default, while validating approval operation and concrete resource scope
-  before accepting a supplied approval id, and with bounded host/CLI/Studio
-  history and diff inspection for supported materialized git artifacts;
+  before accepting a supplied approval id, with a host/CLI/Studio operator
+  decision path for creating scoped approvals or deciding pending approvals,
+  and with bounded host/CLI/Studio history and diff inspection for supported
+  materialized git artifacts;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
@@ -473,9 +475,10 @@ The repository now also contains the first real implementation baseline:
   active-work and approval-gate vocabulary;
 - a host-owned runtime approval inspection surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/approvals` plus
-  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}` and shares the same
-  boundary through `packages/host-client`, CLI summaries/filters, and Studio
-  selected-runtime drilldown without moving approval decisions into the host;
+  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}` and an explicit
+  `POST /v1/runtimes/{nodeId}/approvals` operator decision mutation, sharing
+  the same boundary through `packages/host-client`, CLI summaries/filters,
+  CLI approval decisions, and Studio selected-runtime drilldown;
 - a host-owned runner-turn inspection surface where `entangle-host` now exposes
   `GET /v1/runtimes/{nodeId}/turns` plus
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary

@@ -35,6 +35,7 @@ import {
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
   runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalListResponseSchema,
   runtimeArtifactDiffQuerySchema,
   runtimeArtifactDiffResponseSchema,
@@ -87,6 +88,7 @@ import {
   getRuntimeContext,
   getRuntimeInspection,
   getRuntimeApprovalInspection,
+  recordRuntimeApprovalDecision,
   getRuntimeRecoveryInspection,
   getRuntimeSourceChangeCandidateDiff,
   getRuntimeSourceChangeCandidateFilePreview,
@@ -1370,6 +1372,66 @@ export async function buildHostServer() {
     }
 
     return runtimeApprovalListResponseSchema.parse(approvals);
+  });
+
+  server.post("/v1/runtimes/:nodeId/approvals", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const decision = parseRequestInput(
+      runtimeApprovalDecisionMutationRequestSchema,
+      request.body ?? {},
+      {
+        detailsKey: "bodyIssues",
+        message:
+          "Request body did not match the expected runtime approval decision schema."
+      }
+    );
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const decisionResult = await recordRuntimeApprovalDecision({
+      decision,
+      nodeId: params.nodeId
+    });
+
+    if (!decisionResult) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!decisionResult.ok) {
+      throw new HostHttpError({
+        code: decisionResult.code,
+        message: decisionResult.message,
+        statusCode: 409
+      });
+    }
+
+    return runtimeApprovalInspectionResponseSchema.parse(
+      decisionResult.inspection
+    );
   });
 
   server.get(

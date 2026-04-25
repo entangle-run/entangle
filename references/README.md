@@ -212,6 +212,7 @@ This directory is the canonical design corpus for Entangle.
 206. [205-source-mutation-policy-gates-slice.md](205-source-mutation-policy-gates-slice.md)
 207. [206-operation-resource-scoped-approvals-slice.md](206-operation-resource-scoped-approvals-slice.md)
 208. [207-local-doctor-foundation-slice.md](207-local-doctor-foundation-slice.md)
+209. [208-operator-scoped-approval-decisions-slice.md](208-operator-scoped-approval-decisions-slice.md)
 
 ## Role of this corpus
 

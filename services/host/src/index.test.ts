@@ -4162,6 +4162,179 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("records scoped runtime approval decisions through the host surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const decisionResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approverNodeIds: ["operator-alpha"],
+          operation: "source_application",
+          reason: "Approve source application from host API.",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "source-change-alpha"
+          },
+          sessionId: "session-alpha",
+          status: "approved"
+        },
+        url: "/v1/runtimes/worker-it/approvals"
+      });
+
+      expect(decisionResponse.statusCode).toBe(200);
+      const decision = runtimeApprovalInspectionResponseSchema.parse(
+        decisionResponse.json()
+      );
+      expect(decision.approval).toMatchObject({
+        approverNodeIds: ["operator-alpha"],
+        graphId: "team-alpha",
+        operation: "source_application",
+        requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-change-alpha",
+          kind: "source_change_candidate",
+          label: "source-change-alpha"
+        },
+        sessionId: "session-alpha",
+        status: "approved"
+      });
+
+      const approvalResponse = await server.inject({
+        method: "GET",
+        url: `/v1/runtimes/worker-it/approvals/${decision.approval.approvalId}`
+      });
+
+      expect(approvalResponse.statusCode).toBe(200);
+      expect(
+        runtimeApprovalInspectionResponseSchema.parse(approvalResponse.json())
+          .approval
+      ).toMatchObject({
+        approvalId: decision.approval.approvalId,
+        operation: "source_application",
+        status: "approved"
+      });
+
+      const eventsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      const approvalEvents = hostEventListResponseSchema
+        .parse(eventsResponse.json())
+        .events.filter(
+          (event) =>
+            event.type === "approval.trace.event" &&
+            event.approvalId === decision.approval.approvalId
+        );
+
+      expect(approvalEvents).toHaveLength(1);
+      expect(approvalEvents[0]).toMatchObject({
+        operation: "source_application",
+        resource: {
+          id: "source-change-alpha",
+          kind: "source_change_candidate"
+        },
+        status: "approved"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("decides an existing pending runtime approval without changing its scope", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-pending-alpha.json"
+        ),
+        {
+          approvalId: "approval-pending-alpha",
+          approverNodeIds: [],
+          graphId: runtimeContext.binding.graphId,
+          operation: "source_application",
+          requestedAt: "2026-04-24T10:00:00.000Z",
+          requestedByNodeId: "worker-it",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "source-change-alpha"
+          },
+          sessionId: "session-alpha",
+          status: "pending",
+          updatedAt: "2026-04-24T10:00:00.000Z"
+        }
+      );
+
+      const decisionResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-pending-alpha",
+          approverNodeIds: ["operator-alpha"],
+          status: "rejected"
+        },
+        url: "/v1/runtimes/worker-it/approvals"
+      });
+
+      expect(decisionResponse.statusCode).toBe(200);
+      expect(
+        runtimeApprovalInspectionResponseSchema.parse(decisionResponse.json())
+          .approval
+      ).toMatchObject({
+        approvalId: "approval-pending-alpha",
+        approverNodeIds: ["operator-alpha"],
+        operation: "source_application",
+        resource: {
+          id: "source-change-alpha",
+          kind: "source_change_candidate"
+        },
+        status: "rejected"
+      });
+
+      const staleDecisionResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-pending-alpha",
+          status: "approved"
+        },
+        url: "/v1/runtimes/worker-it/approvals"
+      });
+
+      expect(staleDecisionResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(staleDecisionResponse.json()).message).toContain(
+        "cannot transition"
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
   it("lists and inspects persisted runtime sessions through the host surface", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);

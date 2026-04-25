@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { artifactRecordSchema } from "../artifacts/artifact-ref.js";
 import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
+import {
+  policyOperationSchema,
+  policyResourceScopeSchema
+} from "../common/policy.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   agentEngineFailureClassificationSchema,
@@ -276,6 +280,16 @@ export const runtimeApprovalInspectionResponseSchema = z.object({
   approval: approvalRecordSchema
 });
 
+export const runtimeApprovalDecisionMutationRequestSchema = z.object({
+  approvalId: identifierSchema.optional(),
+  approverNodeIds: z.array(identifierSchema).min(1).default(["user"]),
+  operation: policyOperationSchema.optional(),
+  reason: nonEmptyStringSchema.optional(),
+  resource: policyResourceScopeSchema.optional(),
+  sessionId: identifierSchema.optional(),
+  status: z.enum(["approved", "rejected"]).default("approved")
+});
+
 export const runtimeSourceChangeCandidateListResponseSchema = z.object({
   candidates: z.array(sourceChangeCandidateRecordSchema)
 });
@@ -456,6 +470,9 @@ export type RuntimeMemoryPageInspectionResponse = z.infer<
 >;
 export type RuntimeApprovalListResponse = z.infer<typeof runtimeApprovalListResponseSchema>;
 export type RuntimeApprovalInspectionResponse = z.infer<typeof runtimeApprovalInspectionResponseSchema>;
+export type RuntimeApprovalDecisionMutationRequest = z.infer<
+  typeof runtimeApprovalDecisionMutationRequestSchema
+>;
 export type RuntimeSourceChangeCandidateListResponse = z.infer<
   typeof runtimeSourceChangeCandidateListResponseSchema
 >;

@@ -57,8 +57,9 @@ The latest implementation state includes:
   accepted/rejected/superseded review mutation and explicit runtime-local
   source-history application for accepted candidates, source-history
   publication as git commit artifacts with explicit retry and target-selection
-  controls, node-configured source mutation approval gates, and bounded
-  artifact history/diff inspection for supported materialized git artifacts;
+  controls, node-configured source mutation approval gates, host-scoped
+  operator approval decisions, and bounded artifact history/diff inspection
+  for supported materialized git artifacts;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -72,7 +73,7 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 agent-runtime status summary, but Entangle Local still lacks the complete
 policy bridge, live OpenCode permission approval mapping, artifact
 restore/replay workflow, git/wiki workflow, external cancellation bridge,
-doctor-backed workspace health checks, and full CLI/Studio configuration and
+doctor-backed workspace health checks, and full runtime configuration and
 observability surface required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
@@ -475,6 +476,11 @@ Current partial implementation:
   approval trace events now carry optional operation and resource scope, and
   host source mutation gates require exact operation/resource matches before
   accepting a supplied approval id;
+- the host can now record an explicit operator approval decision through
+  `POST /v1/runtimes/{nodeId}/approvals`, creating exact scoped approvals for
+  source mutation workflows or deciding an existing pending approval without
+  respecifying its scope; the shared host client, CLI, and Studio consume the
+  same mutation path;
 - this does not yet create durable approval records from live OpenCode
   permission requests or feed approval decisions back into OpenCode because the
   current one-shot `opencode run` lifecycle auto-rejects unless unsafe bypass
@@ -603,9 +609,9 @@ Current partial implementation:
   `source_publication` plus the concrete source-history and git target tuple;
 - materialized git artifacts now have bounded host-owned history and diff
   inspection through host API, host-client, CLI, and Studio surfaces;
-- live OpenCode permission-to-approval flow, operator-facing scoped approval
-  request creation, non-primary target provisioning/fallback behavior, and
-  artifact restore/replay workflow remain open.
+- live OpenCode permission-to-approval flow, non-primary target
+  provisioning/fallback behavior, and artifact restore/replay workflow remain
+  open.
 
 Acceptance:
 
@@ -686,6 +692,9 @@ Current partial implementation:
   available, while also recording accepted/rejected/superseded candidate review
   decisions, source-history application, and source-history publication through
   the host boundary;
+- CLI now records scoped runtime approval decisions, while Studio can
+  approve/reject selected pending approvals through the shared host-client
+  mutation;
 - graph/node editing support for agent-runtime selection, OpenCode availability
 probing, approval blockers, produced artifacts, richer source publication
 history views, and recent engine-event panels remain open.

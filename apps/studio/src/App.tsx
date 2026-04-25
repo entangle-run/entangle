@@ -210,6 +210,7 @@ type FlowProjection = {
 type EventStreamState = "connecting" | "live" | "closed" | "error";
 type EdgeMutationAction = "create" | "delete" | "replace";
 type NodeMutationAction = "create" | "delete" | "replace";
+type ApprovalDecisionAction = "approved" | "rejected";
 
 function normalizeError(
   caught: unknown,
@@ -456,6 +457,8 @@ export function App() {
   const [approvalDetailError, setApprovalDetailError] = useState<string | null>(
     null
   );
+  const [pendingApprovalDecision, setPendingApprovalDecision] =
+    useState<ApprovalDecisionAction | null>(null);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [selectedArtifactInspection, setSelectedArtifactInspection] =
@@ -1728,6 +1731,55 @@ export function App() {
       await loadSelectedApprovalInspection(selectedRuntimeId, approvalId);
     },
     [loadSelectedApprovalInspection, selectedRuntimeId]
+  );
+
+  const decideSelectedApproval = useCallback(
+    async (status: ApprovalDecisionAction) => {
+      if (!selectedRuntimeId || !selectedApprovalInspection) {
+        return;
+      }
+
+      const { approval } = selectedApprovalInspection;
+      setPendingApprovalDecision(status);
+      setApprovalDetailError(null);
+
+      try {
+        const response = await client.recordRuntimeApprovalDecision(
+          selectedRuntimeId,
+          {
+            approvalId: approval.approvalId,
+            approverNodeIds: ["user"],
+            reason:
+              status === "approved"
+                ? "Approved from Entangle Studio."
+                : "Rejected from Entangle Studio.",
+            status
+          }
+        );
+
+        startTransition(() => {
+          setSelectedApprovalInspection(response);
+        });
+        await refreshSelectedRuntimeDetails(selectedRuntimeId);
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setApprovalDetailError(
+            normalizeError(
+              caught,
+              "Unknown error while recording approval decision."
+            )
+          );
+        });
+      } finally {
+        setPendingApprovalDecision(null);
+      }
+    },
+    [
+      client,
+      refreshSelectedRuntimeDetails,
+      selectedApprovalInspection,
+      selectedRuntimeId
+    ]
   );
 
   const selectRuntimeArtifact = useCallback(
@@ -4401,6 +4453,36 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        {selectedApprovalInspection.approval.status ===
+                        "pending" ? (
+                          <div className="action-row">
+                            <button
+                              className="action-button"
+                              disabled={pendingApprovalDecision !== null}
+                              onClick={() => {
+                                void decideSelectedApproval("approved");
+                              }}
+                              type="button"
+                            >
+                              {pendingApprovalDecision === "approved"
+                                ? "Approving..."
+                                : "Approve"}
+                            </button>
+                            <button
+                              className="action-button"
+                              disabled={pendingApprovalDecision !== null}
+                              onClick={() => {
+                                void decideSelectedApproval("rejected");
+                              }}
+                              type="button"
+                            >
+                              {pendingApprovalDecision === "rejected"
+                                ? "Rejecting..."
+                                : "Reject"}
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     ) : selectedApprovalId ? (
                       <div className="inline-empty-state">

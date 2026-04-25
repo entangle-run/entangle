@@ -1518,7 +1518,7 @@ describe("createHostClient", () => {
   });
 
   it("parses runtime approval list and inspection responses from the host surface", async () => {
-    const requests: string[] = [];
+    const requests: Array<{ body?: string; method?: string; url: string }> = [];
     const approval = {
       approvalId: "approval-alpha",
       approverNodeIds: ["supervisor-it"],
@@ -1533,13 +1533,25 @@ describe("createHostClient", () => {
     };
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
-      fetchImpl: (url) => {
-        requests.push(url);
+      fetchImpl: (url, init) => {
+        requests.push({
+          ...(init?.body ? { body: init.body } : {}),
+          ...(init?.method ? { method: init.method } : {}),
+          url
+        });
 
         return Promise.resolve(
           createMockResponse({
             body: JSON.stringify(
-              url.endsWith("/approval-alpha")
+              init?.method === "POST"
+                ? {
+                    approval: {
+                      ...approval,
+                      status: "approved",
+                      updatedAt: "2026-04-24T00:02:00.000Z"
+                    }
+                  }
+                : url.endsWith("/approval-alpha")
                 ? { approval }
                 : { approvals: [approval] }
             ),
@@ -1566,9 +1578,33 @@ describe("createHostClient", () => {
         status: "pending"
       }
     });
+    await expect(
+      client.recordRuntimeApprovalDecision("worker-it", {
+        approvalId: "approval-alpha",
+        status: "approved"
+      })
+    ).resolves.toMatchObject({
+      approval: {
+        approvalId: "approval-alpha",
+        status: "approved"
+      }
+    });
     expect(requests).toEqual([
-      "http://entangle-host.test/v1/runtimes/worker-it/approvals",
-      "http://entangle-host.test/v1/runtimes/worker-it/approvals/approval-alpha"
+      {
+        url: "http://entangle-host.test/v1/runtimes/worker-it/approvals"
+      },
+      {
+        url: "http://entangle-host.test/v1/runtimes/worker-it/approvals/approval-alpha"
+      },
+      {
+        body: JSON.stringify({
+          approvalId: "approval-alpha",
+          approverNodeIds: ["user"],
+          status: "approved"
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/approvals"
+      }
     ]);
   });
 

@@ -153,7 +153,9 @@ This repository currently contains:
   any source-history publication, or before non-primary publication targets by
   default, and with accepted approval ids persisted on source records and
   source history events after validating approval operation and concrete
-  resource scope;
+  resource scope, plus a host/CLI/Studio operator decision surface that can
+  create scoped source-mutation approvals or decide existing pending approvals
+  through the same host boundary;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package
@@ -210,9 +212,10 @@ This repository currently contains:
   coverage for deeper runtime auditability;
 - host read surfaces for persisted runner approval records through
   `GET /v1/runtimes/{nodeId}/approvals` and
-  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}`, plus shared
-  host-client, CLI, and Studio coverage for approval-gate auditability without
-  moving approval mutation authority out of the runner boundary;
+  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}`, plus an explicit
+  operator decision mutation through `POST /v1/runtimes/{nodeId}/approvals`
+  for scoped approval creation or pending approval decisions, with shared
+  host-client, CLI, and Studio coverage for approval-gate auditability;
 - a host-owned session inspection surface through `GET /v1/sessions` and
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
@@ -612,6 +615,9 @@ This repository currently contains:
   approval-gated by default, and CLI/Studio/shared presentation surfaces expose
   the persisted source approval evidence, including approval operation and
   resource scope;
+- the operator scoped approval decision slice where headless and visual
+  operators can create exact operation/resource-scoped approval decisions or
+  approve/reject pending approval records through the shared host boundary;
 - the first Local reliability diagnostic slice where `entangle local doctor`
   performs read-only checks over Local profile files, Node/pnpm/Docker/Compose,
   the runner image, OpenCode availability, `.entangle/host`, host status,

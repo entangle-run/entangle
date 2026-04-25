@@ -25,6 +25,7 @@ import {
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
+  runtimeApprovalDecisionMutationRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
@@ -1651,6 +1652,86 @@ hostRuntimesCommand
           ? approvals.map(projectRuntimeApprovalSummary)
           : approvals
       });
+    }
+  );
+
+hostRuntimesCommand
+  .command("approval-decision")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--approval-id <approvalId>", "Existing approval id to decide.")
+  .option("--approver <approverNodeId>", "Approver node id.", "user")
+  .option("--operation <operation>", "Policy operation for a new scoped approval.")
+  .option("--reason <reason>", "Decision reason.")
+  .option("--resource-id <resourceId>", "Policy resource id for a new scoped approval.")
+  .option(
+    "--resource-kind <resourceKind>",
+    "Policy resource kind for a new scoped approval."
+  )
+  .option("--resource-label <resourceLabel>", "Human-readable resource label.")
+  .option("--session-id <sessionId>", "Session id for a new scoped approval.")
+  .option(
+    "--status <status>",
+    "Decision status: approved or rejected.",
+    "approved"
+  )
+  .option("--summary", "Print a compact operator-oriented approval summary.")
+  .description("Record an operator decision for a scoped runtime approval.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        approvalId?: string;
+        approver: string;
+        operation?: string;
+        reason?: string;
+        resourceId?: string;
+        resourceKind?: string;
+        resourceLabel?: string;
+        sessionId?: string;
+        status: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      if (
+        (options.resourceId || options.resourceKind || options.resourceLabel) &&
+        (!options.resourceId || !options.resourceKind)
+      ) {
+        throw new Error(
+          "Use --resource-id and --resource-kind together when setting approval scope."
+        );
+      }
+
+      const decision = runtimeApprovalDecisionMutationRequestSchema.parse({
+        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
+        approverNodeIds: [options.approver],
+        ...(options.operation ? { operation: options.operation } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.resourceId && options.resourceKind
+          ? {
+              resource: {
+                id: options.resourceId,
+                kind: options.resourceKind,
+                ...(options.resourceLabel
+                  ? { label: options.resourceLabel }
+                  : {})
+              }
+            }
+          : {}),
+        ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+        status: options.status
+      });
+      const client = createCliHostClient(command);
+      const response = await client.recordRuntimeApprovalDecision(
+        nodeId,
+        decision
+      );
+
+      printJson(
+        options.summary
+          ? { approval: projectRuntimeApprovalSummary(response.approval) }
+          : response
+      );
     }
   );
 
