@@ -486,6 +486,39 @@ describe("validateA2AMessageDocument", () => {
     );
   });
 
+  it("rejects approval request messages that do not require a response", () => {
+    const report = validateA2AMessageDocument(
+      buildA2AMessageDocument({
+        messageType: "approval.request",
+        parentMessageId:
+          "abababababababababababababababababababababababababababababababab",
+        responsePolicy: {
+          closeOnResult: false,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        work: {
+          metadata: {
+            approval: {
+              approvalId: "approval-alpha"
+            }
+          },
+          summary: "Approval is required before publication."
+        }
+      })
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "a2a_approval_request_response_policy_invalid",
+          path: ["responsePolicy", "responseRequired"],
+          severity: "error"
+        })
+      ])
+    );
+  });
+
   it("accepts approval response metadata that matches the contract", () => {
     const report = validateA2AMessageDocument(
       buildA2AMessageDocument({
@@ -540,6 +573,45 @@ describe("validateA2AMessageDocument", () => {
         expect.objectContaining({
           code: "a2a_approval_response_metadata_invalid",
           path: ["work", "metadata", "approval", "decision"],
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects approval response messages that request follow-ups", () => {
+    const report = validateA2AMessageDocument(
+      buildA2AMessageDocument({
+        messageType: "approval.response",
+        parentMessageId:
+          "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 1,
+          responseRequired: true
+        },
+        work: {
+          metadata: {
+            approval: {
+              approvalId: "approval-alpha",
+              decision: "approved"
+            }
+          },
+          summary: "Approval is granted."
+        }
+      })
+    );
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "a2a_approval_response_policy_invalid",
+          path: ["responsePolicy", "responseRequired"],
+          severity: "error"
+        }),
+        expect.objectContaining({
+          code: "a2a_approval_response_policy_invalid",
+          path: ["responsePolicy", "maxFollowups"],
           severity: "error"
         })
       ])

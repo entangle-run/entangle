@@ -768,6 +768,52 @@ function validateA2AApprovalMetadata(
   return [];
 }
 
+function validateA2AApprovalResponsePolicy(
+  message: EntangleA2AMessage
+): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+
+  if (
+    message.messageType === "approval.request" &&
+    !message.responsePolicy.responseRequired
+  ) {
+    findings.push(
+      createFinding({
+        code: "a2a_approval_request_response_policy_invalid",
+        severity: "error",
+        message: "approval.request messages must require an approval response.",
+        path: ["responsePolicy", "responseRequired"]
+      })
+    );
+  }
+
+  if (message.messageType === "approval.response") {
+    if (message.responsePolicy.responseRequired) {
+      findings.push(
+        createFinding({
+          code: "a2a_approval_response_policy_invalid",
+          severity: "error",
+          message: "approval.response messages must not request a follow-up.",
+          path: ["responsePolicy", "responseRequired"]
+        })
+      );
+    }
+
+    if (message.responsePolicy.maxFollowups !== 0) {
+      findings.push(
+        createFinding({
+          code: "a2a_approval_response_policy_invalid",
+          severity: "error",
+          message: "approval.response messages must have maxFollowups set to 0.",
+          path: ["responsePolicy", "maxFollowups"]
+        })
+      );
+    }
+  }
+
+  return findings;
+}
+
 export function validateA2AMessageDocument(input: unknown): ValidationReport {
   const parseResult = entangleA2AMessageSchema.safeParse(input);
 
@@ -784,7 +830,10 @@ export function validateA2AMessageDocument(input: unknown): ValidationReport {
     );
   }
 
-  return buildValidationReport(validateA2AApprovalMetadata(parseResult.data));
+  return buildValidationReport([
+    ...validateA2AApprovalMetadata(parseResult.data),
+    ...validateA2AApprovalResponsePolicy(parseResult.data)
+  ]);
 }
 
 export function validateRuntimeArtifactRefs(input: {

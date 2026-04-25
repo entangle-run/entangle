@@ -27,11 +27,16 @@ top of the generic `entangleA2AMessageSchema`:
 - `approval.response` must carry `work.metadata.approval.approvalId`;
 - `approval.response` must carry a valid `decision` of `approved` or
   `rejected`.
+- `approval.request` must use a response policy with `responseRequired: true`;
+- `approval.response` must use a terminal response policy with
+  `responseRequired: false` and `maxFollowups: 0`.
 
 The validator emits bounded semantic findings:
 
 - `a2a_approval_request_metadata_invalid`;
 - `a2a_approval_response_metadata_invalid`.
+- `a2a_approval_request_response_policy_invalid`;
+- `a2a_approval_response_policy_invalid`.
 
 The finding path is rooted under `work.metadata`, which keeps validation output
 aligned with the actual message field that needs correction.

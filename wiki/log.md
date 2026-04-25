@@ -1620,3 +1620,13 @@ instead of creating a phantom active session and opened conversation.
 This keeps unknown approval ids as a runner-local lifecycle concern while
 preventing stale or irrelevant approval responses from manufacturing active
 work.
+
+## [2026-04-25] implementation | Validated approval response policies
+
+Closed the approval-message loop-control gap in the canonical A2A validator.
+`approval.request` messages must now require a response, while
+`approval.response` messages must be terminal with `responseRequired: false`
+and `maxFollowups: 0`.
+
+This keeps approval coordination from turning into a protocol ping-pong while
+leaving approval mutation authority inside the runner lifecycle boundary.

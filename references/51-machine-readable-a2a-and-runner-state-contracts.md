@@ -154,7 +154,9 @@ from status alone.
 `validateA2AMessageDocument(...)` also enforces message-type-specific approval
 metadata contracts for `approval.request` and `approval.response`, so malformed
 approval lifecycle messages are rejected before runner-local lifecycle state can
-be written.
+be written. It also enforces approval-specific response-policy semantics:
+approval requests must require a response, while approval responses must be
+terminal and have zero follow-up budget.
 
 This keeps semantic rejection logic out of ad hoc caller code.
 

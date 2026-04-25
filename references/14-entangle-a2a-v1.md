@@ -105,6 +105,10 @@ The current machine-readable metadata contract is:
 runner may interpret an empty list as the message recipient when it materializes
 a local approval gate.
 
+Approval requests must use a response policy that requires a response. An
+approval request that does not require a response cannot materialize a useful
+approval gate and is rejected by the semantic validator.
+
 ### `approval.response`
 
 Approve or reject the requested transition.
@@ -127,6 +131,9 @@ metadata-bearing protocol messages. `approval.request` must carry metadata that
 matches the request contract, and `approval.response` must carry metadata that
 matches the response contract. Malformed approval metadata is a protocol
 validation error, not a runner-local lifecycle no-op.
+
+Approval responses are terminal for the approval decision exchange. They must
+not request a follow-up response, and their `maxFollowups` value must be `0`.
 
 ### `conversation.close`
 
@@ -161,4 +168,6 @@ Use public custom events only for:
 - every message must belong to a graph and session context;
 - every response-required message must allow at least one follow-up;
 - approval request and response messages must carry valid approval metadata;
+- approval requests must require a response, while approval responses must not
+  request follow-up responses;
 - every message must carry enough control metadata to avoid infinite ping-pong loops.

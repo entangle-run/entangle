@@ -284,9 +284,10 @@ This repository currently contains:
   materializes pending approval gates, applies approved decisions, closes
   approved approval conversations when policy allows, completes unblocked
   waiting sessions, and relies on the canonical A2A validator to reject
-  malformed approval metadata before local lifecycle state is written, while
-  orphan approval responses that match no local session, conversation, or
-  approval record are absorbed without creating phantom active work;
+  malformed approval metadata plus approval-specific response-policy loops
+  before local lifecycle state is written, while orphan approval responses that
+  match no local session, conversation, or approval record are absorbed without
+  creating phantom active work;
 - an artifact-aware refinement of that same synthesis path where the runner now
   passes explicit retrieved and produced artifact context into working-context
   synthesis, so durable memory maintenance can see the turn's real work
