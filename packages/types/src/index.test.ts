@@ -4,6 +4,8 @@ import {
   artifactRecordSchema,
   classifyRuntimeReconciliation,
   edgeCreateRequestSchema,
+  entangleA2AApprovalRequestMetadataSchema,
+  entangleA2AApprovalResponseMetadataSchema,
   entangleA2AMessageSchema,
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
@@ -228,6 +230,33 @@ describe("Entangle A2A machine-readable contracts", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts approval request and response metadata contracts", () => {
+    expect(
+      entangleA2AApprovalRequestMetadataSchema.parse({
+        approval: {
+          approvalId: "approval-alpha",
+          approverNodeIds: ["lead-it"],
+          reason: "Approve publication before the session can complete."
+        }
+      })
+    ).toEqual({
+      approval: {
+        approvalId: "approval-alpha",
+        approverNodeIds: ["lead-it"],
+        reason: "Approve publication before the session can complete."
+      }
+    });
+
+    expect(
+      entangleA2AApprovalResponseMetadataSchema.parse({
+        approval: {
+          approvalId: "approval-alpha",
+          decision: "approved"
+        }
+      }).approval.decision
+    ).toBe("approved");
   });
 });
 

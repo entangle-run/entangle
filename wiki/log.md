@@ -1563,3 +1563,18 @@ This keeps exact approval-gate state visible to future turns even when
 model-written session insights are compressed or focused elsewhere, while
 leaving approval mutation authority in runner lifecycle paths and full approval
 record inspection on the existing host read surface.
+
+## [2026-04-25] implementation | Handled approval request and response messages
+
+Added explicit A2A metadata contracts for `approval.request` and
+`approval.response`, then wired the runner to materialize approval lifecycle
+state from those coordination messages. Inbound approval requests now create or
+refresh pending runner-local approval records, add waiting approval ids, move
+conversations to `awaiting_approval`, and move sessions to `waiting_approval`
+when allowed.
+
+Inbound approved approval responses now update the matching approval record,
+attribute the responding approver, close the approval conversation when policy
+allows, and reuse the existing no-open-work completion path so unblocked
+waiting sessions can complete. Unknown or malformed approval metadata remains
+non-fatal and does not synthesize approval truth.

@@ -17,6 +17,7 @@ import {
   buildRunnerStatePaths,
   listArtifactRecords,
   listRunnerTurnRecords,
+  readApprovalRecord,
   readConversationRecord,
   readRunnerTurnRecord,
   readSessionRecord,
@@ -912,6 +913,201 @@ describe("RunnerService", () => {
     expect(sessionRecord?.waitingApprovalIds).toEqual(["approval-alpha"]);
     expect(sessionRecord?.lastMessageId).toBe(resultMessageId);
     expect(sessionRecord?.lastMessageType).toBe("task.result");
+  });
+
+  it("persists inbound approval requests as pending runner gates", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const parentMessageId =
+      "abababababababababababababababababababababababababababababababab";
+    const approvalRequestMessageId =
+      "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd";
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+    const approvalRequestMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-approval-request",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Approve publication.",
+      messageType: "approval.request",
+      parentMessageId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-approval-request",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "approval-request-turn",
+      work: {
+        artifactRefs: [],
+        metadata: {
+          approval: {
+            approvalId: "approval-request-alpha",
+            approverNodeIds: ["worker-it"],
+            reason: "Approve the proposed publication."
+          }
+        },
+        summary: "Approval is required before publication."
+      }
+    });
+
+    const result = await service.handleInboundEnvelope({
+      eventId: approvalRequestMessageId,
+      message: approvalRequestMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [approvalRecord, conversationRecord, sessionRecord] = await Promise.all([
+      readApprovalRecord(statePaths, "approval-request-alpha"),
+      readConversationRecord(statePaths, "conv-approval-request"),
+      readSessionRecord(statePaths, "session-approval-request")
+    ]);
+
+    expect(result.handled).toBe(true);
+    expect(approvalRecord).toMatchObject({
+      approvalId: "approval-request-alpha",
+      approverNodeIds: ["worker-it"],
+      conversationId: "conv-approval-request",
+      reason: "Approve the proposed publication.",
+      requestedByNodeId: "reviewer-it",
+      sessionId: "session-approval-request",
+      status: "pending"
+    });
+    expect(conversationRecord?.status).toBe("awaiting_approval");
+    expect(sessionRecord?.status).toBe("waiting_approval");
+    expect(sessionRecord?.waitingApprovalIds).toEqual(["approval-request-alpha"]);
+  });
+
+  it("applies approved approval responses and completes unblocked waiting sessions", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const approvalRequestMessageId =
+      "fafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafa";
+    const approvalResponseMessageId =
+      "edededededededededededededededededededededededededededededededed";
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-approval-response"],
+      graphId: "graph-alpha",
+      intent: "Complete after approval.",
+      lastMessageId: approvalRequestMessageId,
+      lastMessageType: "approval.request",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-approval-response",
+      status: "waiting_approval",
+      traceId: "session-approval-response",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: ["approval-response-alpha"]
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-approval-response",
+      followupCount: 0,
+      graphId: "graph-alpha",
+      initiator: "local",
+      lastOutboundMessageId: approvalRequestMessageId,
+      lastMessageType: "approval.request",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-approval-response",
+      status: "awaiting_approval",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-response-alpha",
+      approverNodeIds: ["reviewer-it"],
+      conversationId: "conv-approval-response",
+      graphId: "graph-alpha",
+      reason: "Approve publication before completing the session.",
+      requestedAt: "2026-04-24T10:03:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-approval-response",
+      status: "pending",
+      updatedAt: "2026-04-24T10:03:00.000Z"
+    });
+
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport: new InMemoryRunnerTransport()
+    });
+    const approvalResponseMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-approval-response",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Complete after approval.",
+      messageType: "approval.response",
+      parentMessageId: approvalRequestMessageId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-approval-response",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "approval-response-turn",
+      work: {
+        artifactRefs: [],
+        metadata: {
+          approval: {
+            approvalId: "approval-response-alpha",
+            decision: "approved"
+          }
+        },
+        summary: "Approval is granted."
+      }
+    });
+
+    const result = await service.handleInboundEnvelope({
+      eventId: approvalResponseMessageId,
+      message: approvalResponseMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [approvalRecord, conversationRecord, sessionRecord] = await Promise.all([
+      readApprovalRecord(statePaths, "approval-response-alpha"),
+      readConversationRecord(statePaths, "conv-approval-response"),
+      readSessionRecord(statePaths, "session-approval-response")
+    ]);
+
+    expect(result.handled).toBe(true);
+    expect(approvalRecord?.status).toBe("approved");
+    expect(conversationRecord?.status).toBe("closed");
+    expect(sessionRecord?.status).toBe("completed");
+    expect(sessionRecord?.activeConversationIds).toEqual([]);
+    expect(sessionRecord?.waitingApprovalIds).toEqual([]);
+    expect(sessionRecord?.lastMessageId).toBe(approvalResponseMessageId);
+    expect(sessionRecord?.lastMessageType).toBe("approval.response");
   });
 
   it("completes drained sessions when waiting approvals were already approved", async () => {

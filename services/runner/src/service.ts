@@ -22,7 +22,10 @@ import type {
 } from "@entangle/types";
 import {
   agentEngineTurnResultSchema,
+  entangleA2AApprovalRequestMetadataSchema,
+  entangleA2AApprovalResponseMetadataSchema,
   engineTurnOutcomeSchema,
+  isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition
 } from "@entangle/types";
@@ -44,8 +47,10 @@ import {
   listApprovalRecords,
   listConversationRecords,
   listSessionRecords,
+  readApprovalRecord,
   readConversationRecord,
   readSessionRecord,
+  writeApprovalRecord,
   writeArtifactRecord,
   writeConversationRecord,
   writeRunnerTurnRecord,
@@ -697,6 +702,36 @@ function listUnapprovedWaitingApprovalIds(input: {
   );
 }
 
+async function transitionApprovalStatus(
+  statePaths: RunnerStatePaths,
+  record: ApprovalRecord,
+  nextStatus: ApprovalRecord["status"],
+  input: {
+    approverNodeId?: string;
+    updatedAt: string;
+  }
+): Promise<ApprovalRecord> {
+  if (
+    record.status !== nextStatus &&
+    !isAllowedApprovalLifecycleTransition(record.status, nextStatus)
+  ) {
+    return record;
+  }
+
+  const nextApproverNodeIds = input.approverNodeId
+    ? mergeIdentifierLists(record.approverNodeIds, [input.approverNodeId])
+    : record.approverNodeIds;
+  const nextRecord: ApprovalRecord = {
+    ...record,
+    approverNodeIds: nextApproverNodeIds,
+    status: nextStatus,
+    updatedAt: input.updatedAt
+  };
+
+  await writeApprovalRecord(statePaths, nextRecord);
+  return nextRecord;
+}
+
 function isTerminalSessionStatus(status: SessionLifecycleState): boolean {
   return ["cancelled", "completed", "failed", "timed_out"].includes(status);
 }
@@ -1014,6 +1049,135 @@ export class RunnerService {
     return currentConversation;
   }
 
+  private async transitionConversationToAwaitingApproval(input: {
+    conversation: ConversationRecord;
+    lastInboundMessageId?: string;
+    lastMessageType: EntangleA2AMessage["messageType"];
+    statePaths: RunnerStatePaths;
+  }): Promise<ConversationRecord> {
+    let currentConversation = input.conversation;
+    const transitionInput = buildConversationTransitionInput({
+      lastInboundMessageId: input.lastInboundMessageId,
+      lastMessageType: input.lastMessageType
+    });
+
+    if (["closed", "expired", "rejected"].includes(currentConversation.status)) {
+      return currentConversation;
+    }
+
+    if (currentConversation.status === "opened") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "acknowledged",
+        transitionInput
+      );
+    }
+
+    if (
+      currentConversation.status === "acknowledged" ||
+      currentConversation.status === "blocked"
+    ) {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "working",
+        transitionInput
+      );
+    }
+
+    if (currentConversation.status === "working") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "awaiting_approval",
+        transitionInput
+      );
+    }
+
+    return currentConversation;
+  }
+
+  private async transitionConversationAfterApprovalResponse(input: {
+    closeOnResult: boolean;
+    conversation: ConversationRecord;
+    decision: "approved" | "rejected";
+    lastInboundMessageId: string;
+    lastMessageType: EntangleA2AMessage["messageType"];
+    statePaths: RunnerStatePaths;
+  }): Promise<ConversationRecord> {
+    let currentConversation = input.conversation;
+
+    if (["closed", "expired"].includes(currentConversation.status)) {
+      return currentConversation;
+    }
+
+    if (input.decision === "rejected") {
+      currentConversation = await this.transitionConversationToAwaitingApproval({
+        conversation: currentConversation,
+        lastInboundMessageId: input.lastInboundMessageId,
+        lastMessageType: input.lastMessageType,
+        statePaths: input.statePaths
+      });
+
+      if (currentConversation.status === "awaiting_approval") {
+        currentConversation = await transitionConversationStatus(
+          input.statePaths,
+          currentConversation,
+          "rejected",
+          buildConversationTransitionInput({
+            lastInboundMessageId: input.lastInboundMessageId,
+            lastMessageType: input.lastMessageType
+          })
+        );
+      }
+
+      if (input.closeOnResult && currentConversation.status === "rejected") {
+        return transitionConversationStatus(
+          input.statePaths,
+          currentConversation,
+          "closed",
+          buildConversationTransitionInput({
+            lastInboundMessageId: input.lastInboundMessageId,
+            lastMessageType: input.lastMessageType
+          })
+        );
+      }
+
+      return currentConversation;
+    }
+
+    if (currentConversation.status === "awaiting_approval") {
+      currentConversation = await transitionConversationStatus(
+        input.statePaths,
+        currentConversation,
+        "working",
+        buildConversationTransitionInput({
+          lastInboundMessageId: input.lastInboundMessageId,
+          lastMessageType: input.lastMessageType
+        })
+      );
+    } else if (currentConversation.status !== "working") {
+      currentConversation = await advanceConversationToWorking(
+        input.statePaths,
+        currentConversation,
+        {
+          lastInboundMessageId: input.lastInboundMessageId,
+          lastMessageType: input.lastMessageType
+        }
+      );
+    }
+
+    return input.closeOnResult
+      ? this.transitionConversationToClosed({
+          conversation: currentConversation,
+          lastInboundMessageId: input.lastInboundMessageId,
+          lastMessageType: input.lastMessageType,
+          statePaths: input.statePaths
+        })
+      : currentConversation;
+  }
+
   private async completeSessionIfNoOpenConversations(input: {
     lastMessageId: string;
     lastMessageType: EntangleA2AMessage["messageType"];
@@ -1166,6 +1330,172 @@ export class RunnerService {
     return publishedEnvelopes;
   }
 
+  private async handleApprovalRequestEnvelope(input: {
+    conversation: ConversationRecord;
+    envelope: RunnerInboundEnvelope;
+    session: SessionRecord;
+    statePaths: RunnerStatePaths;
+  }): Promise<{
+    conversation: ConversationRecord;
+    session: SessionRecord;
+  }> {
+    const metadata = entangleA2AApprovalRequestMetadataSchema.safeParse(
+      input.envelope.message.work.metadata
+    );
+
+    if (!metadata.success) {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
+    const { approval } = metadata.data;
+    const approverNodeIds =
+      approval.approverNodeIds.length > 0
+        ? approval.approverNodeIds
+        : [input.envelope.message.toNodeId];
+    const existingApproval = await readApprovalRecord(
+      input.statePaths,
+      approval.approvalId
+    );
+
+    if (!existingApproval || existingApproval.status === "pending") {
+      await writeApprovalRecord(input.statePaths, {
+        approvalId: approval.approvalId,
+        approverNodeIds: existingApproval
+          ? mergeIdentifierLists(existingApproval.approverNodeIds, approverNodeIds)
+          : approverNodeIds,
+        conversationId: input.envelope.message.conversationId,
+        graphId: input.envelope.message.graphId,
+        reason: approval.reason ?? input.envelope.message.work.summary,
+        requestedAt: existingApproval?.requestedAt ?? input.envelope.receivedAt,
+        requestedByNodeId: input.envelope.message.fromNodeId,
+        sessionId: input.envelope.message.sessionId,
+        status: "pending",
+        updatedAt: input.envelope.receivedAt
+      });
+    }
+
+    const waitingSession: SessionRecord = {
+      ...input.session,
+      waitingApprovalIds: mergeIdentifierLists(input.session.waitingApprovalIds, [
+        approval.approvalId
+      ])
+    };
+    await writeSessionRecord(input.statePaths, waitingSession);
+    const nextSession = isAllowedSessionLifecycleTransition(
+      waitingSession.status,
+      "waiting_approval"
+    )
+      ? await transitionSessionStatus(input.statePaths, waitingSession, "waiting_approval", {
+          lastMessageId: input.envelope.eventId,
+          lastMessageType: input.envelope.message.messageType
+        })
+      : waitingSession;
+    const nextConversation = await this.transitionConversationToAwaitingApproval({
+      conversation: input.conversation,
+      lastInboundMessageId: input.envelope.eventId,
+      lastMessageType: input.envelope.message.messageType,
+      statePaths: input.statePaths
+    });
+
+    return {
+      conversation: nextConversation,
+      session: nextSession
+    };
+  }
+
+  private async handleApprovalResponseEnvelope(input: {
+    conversation: ConversationRecord;
+    envelope: RunnerInboundEnvelope;
+    session: SessionRecord;
+    statePaths: RunnerStatePaths;
+  }): Promise<{
+    conversation: ConversationRecord;
+    session: SessionRecord;
+  }> {
+    const metadata = entangleA2AApprovalResponseMetadataSchema.safeParse(
+      input.envelope.message.work.metadata
+    );
+
+    if (!metadata.success) {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
+    const { approval } = metadata.data;
+    const approvalRecord = await readApprovalRecord(
+      input.statePaths,
+      approval.approvalId
+    );
+
+    if (!approvalRecord) {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
+    const nextApprovalStatus = approval.decision;
+    const nextApprovalRecord = await transitionApprovalStatus(
+      input.statePaths,
+      approvalRecord,
+      nextApprovalStatus,
+      {
+        approverNodeId: input.envelope.message.fromNodeId,
+        updatedAt: input.envelope.receivedAt
+      }
+    );
+
+    if (nextApprovalRecord.status !== nextApprovalStatus) {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
+    const nextConversation = await this.transitionConversationAfterApprovalResponse({
+      closeOnResult: input.envelope.message.responsePolicy.closeOnResult,
+      conversation: input.conversation,
+      decision: approval.decision,
+      lastInboundMessageId: input.envelope.eventId,
+      lastMessageType: input.envelope.message.messageType,
+      statePaths: input.statePaths
+    });
+
+    if (approval.decision === "rejected") {
+      const failedSession = isAllowedSessionLifecycleTransition(
+        input.session.status,
+        "failed"
+      )
+        ? await transitionSessionStatus(input.statePaths, input.session, "failed", {
+            lastMessageId: input.envelope.eventId,
+            lastMessageType: input.envelope.message.messageType
+          })
+        : input.session;
+
+      return {
+        conversation: nextConversation,
+        session: failedSession
+      };
+    }
+
+    const nextSession = await this.completeSessionIfNoOpenConversations({
+      lastMessageId: input.envelope.eventId,
+      lastMessageType: input.envelope.message.messageType,
+      session: input.session,
+      statePaths: input.statePaths
+    });
+
+    return {
+      conversation: nextConversation,
+      session: nextSession
+    };
+  }
+
   private async handleCoordinationEnvelope(
     envelope: RunnerInboundEnvelope
   ): Promise<RunnerServiceHandleResult> {
@@ -1228,7 +1558,21 @@ export class RunnerService {
     };
     await writeConversationRecord(statePaths, currentConversation);
 
-    if (envelope.message.messageType === "task.result") {
+    if (envelope.message.messageType === "approval.request") {
+      await this.handleApprovalRequestEnvelope({
+        conversation: currentConversation,
+        envelope,
+        session: currentSession,
+        statePaths
+      });
+    } else if (envelope.message.messageType === "approval.response") {
+      await this.handleApprovalResponseEnvelope({
+        conversation: currentConversation,
+        envelope,
+        session: currentSession,
+        statePaths
+      });
+    } else if (envelope.message.messageType === "task.result") {
       if (envelope.message.responsePolicy.closeOnResult) {
         await this.transitionConversationToClosed({
           conversation: currentConversation,

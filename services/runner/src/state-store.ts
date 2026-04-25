@@ -210,6 +210,19 @@ export async function writeApprovalRecord(
   );
 }
 
+export async function readApprovalRecord(
+  statePaths: RunnerStatePaths,
+  approvalId: string
+): Promise<ApprovalRecord | undefined> {
+  const filePath = approvalRecordPath(statePaths, approvalId);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return approvalRecordSchema.parse(await readJsonFile(filePath));
+}
+
 export async function listApprovalRecords(
   statePaths: RunnerStatePaths
 ): Promise<ApprovalRecord[]> {

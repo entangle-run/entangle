@@ -164,6 +164,11 @@ The repository now also contains the first real implementation baseline:
   `working-context.md` page now preserves deterministic waiting approval ids
   and bounded approval-record summaries instead of relying only on model prose
   to keep approval blockers visible to later turns;
+- a first approval-message handling slice where `approval.request` and
+  `approval.response` now have explicit A2A metadata contracts and the runner
+  materializes pending approval gates, applies approved decisions, closes
+  approved approval conversations when policy allows, and completes unblocked
+  waiting sessions;
 - an artifact-aware refinement of that same synthesis path where the runner now
   passes explicit retrieved and produced artifact context into working-context
   synthesis, instead of leaving work-product visibility trapped in the main

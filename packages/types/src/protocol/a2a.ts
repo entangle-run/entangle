@@ -37,6 +37,26 @@ export const entangleA2AWorkSchema = z.object({
   summary: nonEmptyStringSchema
 });
 
+export const entangleA2AApprovalRequestMetadataSchema = z.object({
+  approval: z.object({
+    approvalId: identifierSchema,
+    approverNodeIds: z.array(identifierSchema).default([]),
+    reason: nonEmptyStringSchema.optional()
+  })
+});
+
+export const entangleA2AApprovalResponseDecisionSchema = z.enum([
+  "approved",
+  "rejected"
+]);
+
+export const entangleA2AApprovalResponseMetadataSchema = z.object({
+  approval: z.object({
+    approvalId: identifierSchema,
+    decision: entangleA2AApprovalResponseDecisionSchema
+  })
+});
+
 function requiresParentMessage(
   messageType: z.infer<typeof entangleA2AMessageTypeSchema>
 ): boolean {
@@ -136,5 +156,14 @@ export type EntangleA2AResponsePolicy = z.infer<
   typeof entangleA2AResponsePolicySchema
 >;
 export type EntangleA2AConstraints = z.infer<typeof entangleA2AConstraintsSchema>;
+export type EntangleA2AApprovalRequestMetadata = z.infer<
+  typeof entangleA2AApprovalRequestMetadataSchema
+>;
+export type EntangleA2AApprovalResponseDecision = z.infer<
+  typeof entangleA2AApprovalResponseDecisionSchema
+>;
+export type EntangleA2AApprovalResponseMetadata = z.infer<
+  typeof entangleA2AApprovalResponseMetadataSchema
+>;
 export type EntangleA2AWork = z.infer<typeof entangleA2AWorkSchema>;
 export type EntangleA2AMessage = z.infer<typeof entangleA2AMessageSchema>;

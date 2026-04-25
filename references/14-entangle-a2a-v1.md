@@ -89,9 +89,38 @@ Reference to durable work product independent of task finality.
 
 Request approval before continuing or before publishing a response.
 
+The current machine-readable metadata contract is:
+
+```json
+{
+  "approval": {
+    "approvalId": "approval-alpha",
+    "approverNodeIds": ["lead-it"],
+    "reason": "Approve publication before the session can complete."
+  }
+}
+```
+
+`approverNodeIds` defaults to an empty list at the schema level. A receiving
+runner may interpret an empty list as the message recipient when it materializes
+a local approval gate.
+
 ### `approval.response`
 
 Approve or reject the requested transition.
+
+The current machine-readable metadata contract is:
+
+```json
+{
+  "approval": {
+    "approvalId": "approval-alpha",
+    "decision": "approved"
+  }
+}
+```
+
+The allowed response decisions are `approved` and `rejected`.
 
 ### `conversation.close`
 
