@@ -382,6 +382,7 @@ code {
 }
 
 .session-detail-card,
+.approval-detail-card,
 .artifact-detail-card,
 .turn-detail-card {
   display: grid;

@@ -1493,3 +1493,16 @@ session trace event even when the session record itself is otherwise stable.
 
 Shared runtime-trace presentation now renders recorded approval count and
 approval lifecycle summaries, with Studio consuming the same helper output.
+
+## [2026-04-25] implementation | Added runtime approval inspection
+
+Closed the drilldown gap behind session approval counters. `entangle-host` now
+exposes `GET /v1/runtimes/{nodeId}/approvals` and
+`GET /v1/runtimes/{nodeId}/approvals/{approvalId}` over validated
+runner-local `ApprovalRecord` files, keeping the surface read-only and leaving
+approval decision authority inside the runner boundary.
+
+Shared host-client helpers now own approval sorting, filtering, labels, status
+text, and bounded detail lines. The CLI can list, filter, summarize, and
+inspect runtime approvals, and Studio now exposes a selected-runtime approval
+panel with host-backed item detail.

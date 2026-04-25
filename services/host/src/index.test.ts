@@ -36,6 +36,8 @@ import {
   packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -2968,6 +2970,83 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(missingTurnResponse.json())).toEqual({
         code: "not_found",
         message: "Turn 'missing-turn' was not found for runtime 'worker-it'."
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists and inspects persisted runtime approvals through the host surface", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      const approvalRecord = {
+        approvalId: "approval-alpha",
+        approverNodeIds: ["supervisor-it"],
+        conversationId: "conv-alpha",
+        graphId: "team-alpha",
+        reason: "Supervisor approval is required before final publication.",
+        requestedAt: "2026-04-24T10:00:00.000Z",
+        requestedByNodeId: "worker-it",
+        sessionId: "session-alpha",
+        status: "pending",
+        updatedAt: "2026-04-24T10:05:00.000Z"
+      };
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-alpha.json"
+        ),
+        approvalRecord
+      );
+
+      const approvalsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/approvals"
+      });
+
+      expect(approvalsResponse.statusCode).toBe(200);
+      expect(runtimeApprovalListResponseSchema.parse(approvalsResponse.json())).toEqual({
+        approvals: [approvalRecord]
+      });
+
+      const approvalResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/approvals/approval-alpha"
+      });
+
+      expect(approvalResponse.statusCode).toBe(200);
+      expect(
+        runtimeApprovalInspectionResponseSchema.parse(approvalResponse.json())
+      ).toEqual({
+        approval: approvalRecord
+      });
+
+      const missingApprovalResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/approvals/missing-approval"
+      });
+
+      expect(missingApprovalResponse.statusCode).toBe(404);
+      expect(hostErrorResponseSchema.parse(missingApprovalResponse.json())).toEqual({
+        code: "not_found",
+        message: "Approval 'missing-approval' was not found for runtime 'worker-it'."
       });
     } finally {
       await server.close();

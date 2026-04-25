@@ -109,6 +109,8 @@ import {
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sessionRecordSchema,
+  runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalListResponseSchema,
   type RuntimeIdentityRecord,
   runtimeIdentityRecordSchema,
   runtimeArtifactListResponseSchema,
@@ -123,6 +125,8 @@ import {
   type RuntimeInspectionResponse,
   runtimeArtifactInspectionResponseSchema,
   runtimeIntentRecordSchema,
+  type RuntimeApprovalInspectionResponse,
+  type RuntimeApprovalListResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeTurnInspectionResponse,
@@ -4189,6 +4193,39 @@ export async function getRuntimeArtifactInspection(input: {
 
   return artifact
     ? runtimeArtifactInspectionResponseSchema.parse({ artifact })
+    : null;
+}
+
+export async function listRuntimeApprovals(
+  nodeId: string
+): Promise<RuntimeApprovalListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeApprovalListResponseSchema.parse({
+    approvals: await listRuntimeApprovalRecords(context.workspace.runtimeRoot)
+  });
+}
+
+export async function getRuntimeApprovalInspection(input: {
+  approvalId: string;
+  nodeId: string;
+}): Promise<RuntimeApprovalInspectionResponse | null> {
+  const approvals = await listRuntimeApprovals(input.nodeId);
+
+  if (!approvals) {
+    return null;
+  }
+
+  const approval = approvals.approvals.find(
+    (candidate) => candidate.approvalId === input.approvalId
+  );
+
+  return approval
+    ? runtimeApprovalInspectionResponseSchema.parse({ approval })
     : null;
 }
 

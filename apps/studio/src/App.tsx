@@ -20,6 +20,7 @@ import {
   formatHostStatusSessionDiagnosticsSummary
 } from "@entangle/host-client";
 import type {
+  ApprovalRecord,
   ArtifactRecord,
   ExternalPrincipalInspectionResponse,
   GraphInspectionResponse,
@@ -31,6 +32,7 @@ import type {
   HostSessionSummary,
   HostStatusResponse,
   PackageSourceInspectionResponse,
+  RuntimeApprovalInspectionResponse,
   RuntimeArtifactInspectionResponse,
   RuntimeInspectionResponse,
   RuntimeRecoveryInspectionResponse,
@@ -108,6 +110,12 @@ import {
   formatRuntimeTraceEventDetailLines,
   formatRuntimeTraceEventLabel
 } from "./runtime-trace-inspection.js";
+import {
+  formatRuntimeApprovalDetailLines,
+  formatRuntimeApprovalLabel,
+  formatRuntimeApprovalStatus,
+  sortRuntimeApprovals
+} from "./runtime-approval-inspection.js";
 import {
   formatRuntimeArtifactDetailLines,
   formatRuntimeArtifactLabel,
@@ -380,6 +388,14 @@ export function App() {
   const [recoveryPolicyError, setRecoveryPolicyError] = useState<string | null>(null);
   const [pendingRecoveryPolicyMutation, setPendingRecoveryPolicyMutation] =
     useState(false);
+  const [selectedApprovals, setSelectedApprovals] = useState<ApprovalRecord[]>([]);
+  const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null);
+  const [selectedApprovalInspection, setSelectedApprovalInspection] =
+    useState<RuntimeApprovalInspectionResponse | null>(null);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [approvalDetailError, setApprovalDetailError] = useState<string | null>(
+    null
+  );
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [selectedArtifactInspection, setSelectedArtifactInspection] =
@@ -409,6 +425,7 @@ export function App() {
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
   const selectedGraphRevisionIdRef = useRef<string | null>(null);
   const selectedRuntimeIdRef = useRef<string | null>(null);
+  const selectedApprovalIdRef = useRef<string | null>(null);
   const selectedArtifactIdRef = useRef<string | null>(null);
   const selectedTurnIdRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
@@ -416,6 +433,7 @@ export function App() {
 
   selectedGraphRevisionIdRef.current = selectedGraphRevisionId;
   selectedRuntimeIdRef.current = selectedRuntimeId;
+  selectedApprovalIdRef.current = selectedApprovalId;
   selectedArtifactIdRef.current = selectedArtifactId;
   selectedTurnIdRef.current = selectedTurnId;
   selectedSessionIdRef.current = selectedSessionId;
@@ -603,6 +621,41 @@ export function App() {
     [client]
   );
 
+  const loadSelectedApprovalInspection = useCallback(
+    async (nodeId: string, approvalId: string) => {
+      try {
+        const inspection = await client.getRuntimeApproval(nodeId, approvalId);
+
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedApprovalIdRef.current !== approvalId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedApprovalInspection(inspection);
+          setApprovalDetailError(null);
+        });
+      } catch (caught: unknown) {
+        if (
+          selectedRuntimeIdRef.current !== nodeId ||
+          selectedApprovalIdRef.current !== approvalId
+        ) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedApprovalInspection(null);
+          setApprovalDetailError(
+            normalizeError(caught, "Unknown error while loading approval detail.")
+          );
+        });
+      }
+    },
+    [client]
+  );
+
   const loadSelectedArtifactInspection = useCallback(
     async (nodeId: string, artifactId: string) => {
       try {
@@ -678,6 +731,7 @@ export function App() {
       statusResult,
       runtimeListResult,
       recoveryResult,
+      approvalResult,
       artifactResult,
       turnResult,
       sessionResult
@@ -686,14 +740,32 @@ export function App() {
         client.getHostStatus(),
         client.listRuntimes(),
         client.getRuntimeRecovery(nodeId, 20),
+        client.listRuntimeApprovals(nodeId),
         client.listRuntimeArtifacts(nodeId),
         client.listRuntimeTurns(nodeId),
         client.listSessions()
       ]);
+    const nextSelectedApprovals =
+      approvalResult.status === "fulfilled"
+        ? sortRuntimeApprovals(approvalResult.value.approvals)
+        : [];
     const nextSelectedSessions =
       sessionResult.status === "fulfilled"
         ? filterRuntimeSessions(sessionResult.value.sessions, nodeId)
         : [];
+    const currentSelectedApprovalId = selectedApprovalId;
+    const shouldRefreshSelectedApproval =
+      currentSelectedApprovalId !== null &&
+      nextSelectedApprovals.some(
+        (approval) => approval.approvalId === currentSelectedApprovalId
+      );
+    const selectedApprovalResult = shouldRefreshSelectedApproval
+      ? (
+          await Promise.allSettled([
+            client.getRuntimeApproval(nodeId, currentSelectedApprovalId)
+          ])
+        )[0]
+      : null;
     const nextSelectedArtifacts =
       artifactResult.status === "fulfilled"
         ? sortRuntimeArtifacts(artifactResult.value.artifacts)
@@ -775,6 +847,42 @@ export function App() {
             "Unknown error while loading runtime recovery."
           )
         );
+      }
+
+      if (approvalResult.status === "fulfilled") {
+        setSelectedApprovals(nextSelectedApprovals);
+        setApprovalError(null);
+
+        if (!selectedApprovalId) {
+          setSelectedApprovalInspection(null);
+          setApprovalDetailError(null);
+        } else if (!shouldRefreshSelectedApproval) {
+          setSelectedApprovalId(null);
+          setSelectedApprovalInspection(null);
+          setApprovalDetailError(null);
+        } else if (selectedApprovalResult?.status === "fulfilled") {
+          setSelectedApprovalInspection(selectedApprovalResult.value);
+          setApprovalDetailError(null);
+        } else if (selectedApprovalResult?.status === "rejected") {
+          setSelectedApprovalInspection(null);
+          setApprovalDetailError(
+            normalizeError(
+              selectedApprovalResult.reason,
+              "Unknown error while loading approval detail."
+            )
+          );
+        }
+      } else {
+        setSelectedApprovals([]);
+        setApprovalError(
+          normalizeError(
+            approvalResult.reason,
+            "Unknown error while loading runtime approvals."
+          )
+        );
+        setSelectedApprovalId(null);
+        setSelectedApprovalInspection(null);
+        setApprovalDetailError(null);
       }
 
       if (artifactResult.status === "fulfilled") {
@@ -890,7 +998,13 @@ export function App() {
         setSessionDetailError(null);
       }
     });
-  }, [client, selectedArtifactId, selectedSessionId, selectedTurnId]);
+  }, [
+    client,
+    selectedApprovalId,
+    selectedArtifactId,
+    selectedSessionId,
+    selectedTurnId
+  ]);
 
   const mutateSelectedRuntime = useCallback(
     async (action: RuntimeLifecycleAction) => {
@@ -983,6 +1097,20 @@ export function App() {
       await loadSelectedSessionInspection(selectedRuntimeId, sessionId);
     },
     [loadSelectedSessionInspection, selectedRuntimeId]
+  );
+
+  const selectRuntimeApproval = useCallback(
+    async (approvalId: string) => {
+      if (!selectedRuntimeId) {
+        return;
+      }
+
+      setSelectedApprovalId(approvalId);
+      setSelectedApprovalInspection(null);
+      setApprovalDetailError(null);
+      await loadSelectedApprovalInspection(selectedRuntimeId, approvalId);
+    },
+    [loadSelectedApprovalInspection, selectedRuntimeId]
   );
 
   const selectRuntimeArtifact = useCallback(
@@ -1374,6 +1502,11 @@ export function App() {
 
   useEffect(() => {
     if (!selectedRuntimeId) {
+      setApprovalError(null);
+      setSelectedApprovals([]);
+      setSelectedApprovalId(null);
+      setSelectedApprovalInspection(null);
+      setApprovalDetailError(null);
       setArtifactError(null);
       setSelectedArtifacts([]);
       setSelectedArtifactId(null);
@@ -1397,6 +1530,11 @@ export function App() {
       return;
     }
 
+    setApprovalError(null);
+    setSelectedApprovals([]);
+    setSelectedApprovalId(null);
+    setSelectedApprovalInspection(null);
+    setApprovalDetailError(null);
     setArtifactError(null);
     setSelectedArtifacts([]);
     setSelectedArtifactId(null);
@@ -2528,6 +2666,7 @@ export function App() {
                 </dl>
 
                 {recoveryError ? <p className="error-box">{recoveryError}</p> : null}
+                {approvalError ? <p className="error-box">{approvalError}</p> : null}
                 {artifactError ? <p className="error-box">{artifactError}</p> : null}
                 {turnError ? <p className="error-box">{turnError}</p> : null}
                 {sessionError ? <p className="error-box">{sessionError}</p> : null}
@@ -2822,6 +2961,105 @@ export function App() {
                     ) : selectedSessions.length > 0 ? (
                       <div className="inline-empty-state">
                         <p>Select one session summary to inspect per-node detail.</p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="subpanel">
+                    <div className="section-header">
+                      <h3>Runtime Approvals</h3>
+                      <span className="panel-caption">
+                        {selectedApprovals.length} records
+                      </span>
+                    </div>
+
+                    {selectedApprovals.length > 0 ? (
+                      <ul className="timeline-list">
+                        {selectedApprovals.slice(0, 8).map((approval) => (
+                          <li key={approval.approvalId} className="timeline-item">
+                            <button
+                              className={`timeline-button ${selectedApprovalId === approval.approvalId ? "is-selected" : ""}`}
+                              onClick={() => {
+                                void selectRuntimeApproval(approval.approvalId);
+                              }}
+                              type="button"
+                            >
+                              <div className="timeline-row">
+                                <strong>
+                                  {formatRuntimeApprovalLabel(approval)}
+                                </strong>
+                                <span>{approval.updatedAt}</span>
+                              </div>
+                              <p>{formatRuntimeApprovalStatus(approval)}</p>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="inline-empty-state">
+                        <p>No persisted runtime approvals are visible for this runtime yet.</p>
+                      </div>
+                    )}
+
+                    {approvalDetailError ? (
+                      <p className="error-box">{approvalDetailError}</p>
+                    ) : null}
+
+                    {selectedApprovalInspection ? (
+                      <div className="approval-detail-card">
+                        <div className="section-header">
+                          <h3>Selected Approval Detail</h3>
+                          <span className="panel-caption">
+                            {selectedApprovalInspection.approval.approvalId}
+                          </span>
+                        </div>
+
+                        <dl className="status-list compact-list">
+                          <div>
+                            <dt>Approval</dt>
+                            <dd>{selectedApprovalInspection.approval.approvalId}</dd>
+                          </div>
+                          <div>
+                            <dt>Status</dt>
+                            <dd>{selectedApprovalInspection.approval.status}</dd>
+                          </div>
+                          <div>
+                            <dt>Requested by</dt>
+                            <dd>
+                              {
+                                selectedApprovalInspection.approval
+                                  .requestedByNodeId
+                              }
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Approvers</dt>
+                            <dd>
+                              {selectedApprovalInspection.approval.approverNodeIds
+                                .length > 0
+                                ? selectedApprovalInspection.approval.approverNodeIds.join(
+                                    ", "
+                                  )
+                                : "none"}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <ul className="detail-list">
+                          {formatRuntimeApprovalDetailLines(
+                            selectedApprovalInspection.approval
+                          ).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : selectedApprovalId ? (
+                      <div className="inline-empty-state">
+                        <p>Loading selected approval detail...</p>
+                      </div>
+                    ) : selectedApprovals.length > 0 ? (
+                      <div className="inline-empty-state">
+                        <p>Select one approval to inspect its host-backed detail.</p>
                       </div>
                     ) : null}
                   </div>

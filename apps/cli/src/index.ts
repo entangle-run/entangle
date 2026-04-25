@@ -53,6 +53,11 @@ import {
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
 import {
+  filterRuntimeApprovalsForCli,
+  projectRuntimeApprovalSummary,
+  sortRuntimeApprovalsForCli
+} from "./runtime-approval-output.js";
+import {
   projectHostSessionInspectionSummary,
   projectHostSessionSummary
 } from "./runtime-session-output.js";
@@ -1177,6 +1182,92 @@ hostRuntimesCommand
         artifacts: options.summary
           ? artifacts.map(projectRuntimeArtifactSummary)
           : artifacts
+      });
+    }
+  );
+
+hostRuntimesCommand
+  .command("approval")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<approvalId>", "Approval identifier to inspect.")
+  .option("--summary", "Print a compact operator-oriented approval summary.")
+  .description("Inspect one persisted runtime approval record.")
+  .action(
+    async (
+      nodeId: string,
+      approvalId: string,
+      options: { summary?: boolean },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.getRuntimeApproval(nodeId, approvalId);
+      printJson(
+        options.summary
+          ? { approval: projectRuntimeApprovalSummary(response.approval) }
+          : response
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("approvals")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--status <status>",
+    "Filter approvals by lifecycle status."
+  )
+  .option("--session-id <sessionId>", "Filter approvals by session id.")
+  .option(
+    "--conversation-id <conversationId>",
+    "Filter approvals by conversation id."
+  )
+  .option(
+    "--requested-by <requestedByNodeId>",
+    "Filter approvals by requesting node id."
+  )
+  .option("--approver <approverNodeId>", "Filter approvals by approver node id.")
+  .option("--summary", "Print compact operator-oriented approval summaries.")
+  .description("Inspect persisted runtime approval records for one runtime.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        approver?: string;
+        conversationId?: string;
+        requestedBy?: string;
+        sessionId?: string;
+        status?:
+          | "approved"
+          | "expired"
+          | "not_required"
+          | "pending"
+          | "rejected"
+          | "withdrawn";
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.listRuntimeApprovals(nodeId);
+      const approvals = filterRuntimeApprovalsForCli(
+        sortRuntimeApprovalsForCli(response.approvals),
+        {
+          ...(options.approver ? { approverNodeId: options.approver } : {}),
+          ...(options.conversationId
+            ? { conversationId: options.conversationId }
+            : {}),
+          ...(options.requestedBy
+            ? { requestedByNodeId: options.requestedBy }
+            : {}),
+          ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+          ...(options.status ? { status: options.status } : {})
+        }
+      );
+
+      printJson({
+        approvals: options.summary
+          ? approvals.map(projectRuntimeApprovalSummary)
+          : approvals
       });
     }
   );

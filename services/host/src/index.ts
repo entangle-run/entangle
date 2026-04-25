@@ -34,6 +34,8 @@ import {
   packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -62,10 +64,12 @@ import {
   getNodeInspection,
   getRuntimeContext,
   getRuntimeInspection,
+  getRuntimeApprovalInspection,
   getRuntimeRecoveryInspection,
   getRuntimeTurnInspection,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
+  listRuntimeApprovals,
   listRuntimeTurns,
   listHostEvents,
   getCatalogInspection,
@@ -1052,6 +1056,93 @@ export async function buildHostServer() {
       }
 
       return runtimeArtifactInspectionResponseSchema.parse(artifactInspection);
+    }
+  );
+
+  server.get("/v1/runtimes/:nodeId/approvals", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const approvals = await listRuntimeApprovals(params.nodeId);
+
+    if (!approvals) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeApprovalListResponseSchema.parse(approvals);
+  });
+
+  server.get(
+    "/v1/runtimes/:nodeId/approvals/:approvalId",
+    async (request, reply) => {
+      const params = request.params as { approvalId: string; nodeId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const approvalInspection = await getRuntimeApprovalInspection({
+        approvalId: params.approvalId,
+        nodeId: params.nodeId
+      });
+
+      if (!approvalInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Approval '${params.approvalId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeApprovalInspectionResponseSchema.parse(approvalInspection);
     }
   );
 

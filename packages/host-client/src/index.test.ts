@@ -1167,6 +1167,61 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses runtime approval list and inspection responses from the host surface", async () => {
+    const requests: string[] = [];
+    const approval = {
+      approvalId: "approval-alpha",
+      approverNodeIds: ["supervisor-it"],
+      conversationId: "conv-alpha",
+      graphId: "team-alpha",
+      reason: "Supervisor approval is required before final publication.",
+      requestedAt: "2026-04-24T00:00:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "pending",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(
+              url.endsWith("/approval-alpha")
+                ? { approval }
+                : { approvals: [approval] }
+            ),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.listRuntimeApprovals("worker-it")).resolves.toMatchObject({
+      approvals: [
+        {
+          approvalId: "approval-alpha",
+          status: "pending"
+        }
+      ]
+    });
+    await expect(
+      client.getRuntimeApproval("worker-it", "approval-alpha")
+    ).resolves.toMatchObject({
+      approval: {
+        approvalId: "approval-alpha",
+        status: "pending"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/approvals",
+      "http://entangle-host.test/v1/runtimes/worker-it/approvals/approval-alpha"
+    ]);
+  });
+
   it("parses runtime turn list and inspection responses from the host surface", async () => {
     const requests: string[] = [];
     const turn = {

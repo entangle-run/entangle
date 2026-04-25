@@ -31,6 +31,8 @@ import {
   nodeInspectionResponseSchema,
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
+  runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalListResponseSchema,
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
@@ -89,6 +91,30 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.artifact.ref.artifactId).toBe("report-turn-001");
+  });
+});
+
+describe("runtime approval host API contracts", () => {
+  it("accepts runtime approval list and inspection responses", () => {
+    const approval = {
+      approvalId: "approval-alpha",
+      approverNodeIds: ["supervisor-it"],
+      conversationId: "conv-alpha",
+      graphId: "team-alpha",
+      reason: "Supervisor approval is required before publication.",
+      requestedAt: "2026-04-24T00:00:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "pending",
+      updatedAt: "2026-04-24T00:01:00.000Z"
+    };
+
+    expect(
+      runtimeApprovalListResponseSchema.parse({ approvals: [approval] }).approvals
+    ).toHaveLength(1);
+    expect(
+      runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.status
+    ).toBe("pending");
   });
 });
 

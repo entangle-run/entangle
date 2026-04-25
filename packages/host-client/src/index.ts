@@ -27,6 +27,8 @@ import {
   packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalListResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -65,6 +67,8 @@ import {
   type PackageSourceDeletionResponse,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
+  type RuntimeApprovalInspectionResponse,
+  type RuntimeApprovalListResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeContextInspectionResponse,
@@ -640,6 +644,23 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async listRuntimeApprovals(nodeId: string): Promise<RuntimeApprovalListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals`),
+        runtimeApprovalListResponseSchema
+      );
+    },
+
+    async getRuntimeApproval(
+      nodeId: string,
+      approvalId: string
+    ): Promise<RuntimeApprovalInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals/${approvalId}`),
+        runtimeApprovalInspectionResponseSchema
+      );
+    },
+
     async getRuntimeRecovery(
       nodeId: string,
       limit = 50
@@ -779,6 +800,14 @@ export {
   sortManagedGraphNodes,
   sortNodeInspectionsForPresentation
 } from "./graph-presentation.js";
+export {
+  filterRuntimeApprovalsForPresentation,
+  formatRuntimeApprovalDetailLines,
+  formatRuntimeApprovalLabel,
+  formatRuntimeApprovalStatus,
+  sortRuntimeApprovalsForPresentation,
+  type RuntimeApprovalPresentationFilterOptions
+} from "./runtime-approval.js";
 export {
   filterRuntimeArtifactsForPresentation,
   formatRuntimeArtifactDetailLines,

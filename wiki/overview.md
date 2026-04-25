@@ -327,6 +327,9 @@ The repository now also contains the first real implementation baseline:
 - a deeper Studio runtime-session inspection slice where the selected-runtime
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status and trace ids;
+- a deeper Studio runtime-approval inspection slice where the selected-runtime
+  surface now exposes persisted approval records from the host read model,
+  including deterministic sorting and host-backed selected-approval detail;
 - a deeper Studio runtime-turn inspection slice where the selected-runtime
   surface now lists persisted runner turns and expands one selected turn into
   host-backed detail, including engine outcome, artifact linkage, trigger,
@@ -399,6 +402,11 @@ The repository now also contains the first real implementation baseline:
   waiting approval ids, root artifact ids, optional conversation-level and
   session-level consistency findings, and latest message type on list summaries
   so event traces and session inspection share the same active-work vocabulary;
+- a host-owned runtime approval inspection surface where `entangle-host` now
+  exposes `GET /v1/runtimes/{nodeId}/approvals` plus
+  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}` and shares the same
+  boundary through `packages/host-client`, CLI summaries/filters, and Studio
+  selected-runtime drilldown without moving approval decisions into the host;
 - a host-owned runner-turn inspection surface where `entangle-host` now exposes
   `GET /v1/runtimes/{nodeId}/turns` plus
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary

@@ -164,6 +164,11 @@ This repository currently contains:
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
   coverage for deeper runtime auditability;
+- host read surfaces for persisted runner approval records through
+  `GET /v1/runtimes/{nodeId}/approvals` and
+  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}`, plus shared
+  host-client, CLI, and Studio coverage for approval-gate auditability without
+  moving approval mutation authority out of the runner boundary;
 - a host-owned session inspection surface through `GET /v1/sessions` and
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
@@ -441,6 +446,10 @@ This repository currently contains:
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status, trace ids, and host-derived conversation
   lifecycle status counts plus session consistency findings;
+- a deeper Studio runtime-approval inspection slice where the selected-runtime
+  surface now exposes persisted approval records, sorts them by recency, and
+  expands one selected approval into host-backed detail without introducing
+  Studio-owned approval truth;
 - a deeper Studio runtime-turn inspection slice where visual operators can
   select persisted runner turns, inspect host-backed turn detail, and see
   engine outcome, artifact linkage, trigger, phase, and memory-synthesis
@@ -496,6 +505,10 @@ This repository currently contains:
 - the matching Studio artifact-detail slice where visual operators can select
   one runtime artifact and inspect its host-backed item record without
   introducing client-owned artifact truth;
+- the next approval-governance slice where headless and visual operators can
+  list, filter, and inspect runner-local approval records through the shared
+  host boundary instead of inferring blocking gates from session counters
+  alone;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
