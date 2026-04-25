@@ -217,6 +217,7 @@ function resolveRequestedSessionStateInput(
       ok: true;
       resolvedSessionId: string;
       maxArtifacts: number;
+      maxApprovals: number;
       maxRecentTurns: number;
     }
   | {
@@ -265,10 +266,24 @@ function resolveRequestedSessionStateInput(
     return maxArtifactsResult;
   }
 
+  const maxApprovalsResult = coerceBoundedPositiveInteger(
+    request.input.maxApprovals,
+    {
+      defaultValue: 10,
+      fieldName: "maxApprovals",
+      maxValue: 20
+    }
+  );
+
+  if (!maxApprovalsResult.ok) {
+    return maxApprovalsResult;
+  }
+
   return {
     ok: true,
     resolvedSessionId: request.sessionId,
     maxArtifacts: maxArtifactsResult.value,
+    maxApprovals: maxApprovalsResult.value,
     maxRecentTurns: maxRecentTurnsResult.value
   };
 }
@@ -360,6 +375,7 @@ const builtinToolHandlers: Record<BuiltinToolId, RunnerBuiltinToolHandler> = {
     const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
     const snapshot = await buildRunnerSessionStateSnapshot({
       maxArtifacts: resolvedInput.maxArtifacts,
+      maxApprovals: resolvedInput.maxApprovals,
       maxRecentTurns: resolvedInput.maxRecentTurns,
       sessionId: resolvedInput.resolvedSessionId,
       statePaths

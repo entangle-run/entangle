@@ -1536,3 +1536,17 @@ The change keeps approval mutation authority inside the runner boundary:
 runner performs the lifecycle transition through canonical
 `waiting_approval -> active -> synthesizing -> completed` paths only when
 durable message context exists.
+
+## [2026-04-25] implementation | Added approval context to session snapshots
+
+Closed the runtime-context gap between approval lifecycle state and the bounded
+session snapshot used by runner turns. `inspect_session_state` now returns
+bounded approval summaries, recorded approval count, and waiting-gate count for
+the current session, with a bounded `maxApprovals` input alongside the existing
+turn and artifact limits.
+
+Model-guided memory synthesis now consumes the same approval-aware snapshot and
+renders compact approval status context in its deterministic session lines. The
+change keeps approval mutation authority inside runner lifecycle paths while
+making approval evidence visible to runtime inspection and durable memory
+synthesis.

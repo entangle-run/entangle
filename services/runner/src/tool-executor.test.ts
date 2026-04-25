@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { loadRuntimeContext } from "./runtime-context.js";
 import {
   ensureRunnerStatePaths,
+  writeApprovalRecord,
   writeArtifactRecord,
   writeConversationRecord,
   writeRunnerTurnRecord,
@@ -610,6 +611,9 @@ describe("runner builtin tool executor", () => {
                 maxArtifacts: {
                   type: "integer"
                 },
+                maxApprovals: {
+                  type: "integer"
+                },
                 maxRecentTurns: {
                   type: "integer"
                 }
@@ -639,7 +643,19 @@ describe("runner builtin tool executor", () => {
       status: "active",
       traceId: "trace-alpha",
       updatedAt: "2026-04-24T10:07:00.000Z",
-      waitingApprovalIds: []
+      waitingApprovalIds: ["approval-alpha"]
+    });
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-alpha",
+      approverNodeIds: ["lead-it"],
+      conversationId: "conv-beta",
+      graphId: "graph-alpha",
+      reason: "Approve the blocked planner handoff.",
+      requestedAt: "2026-04-24T10:05:30.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "pending",
+      updatedAt: "2026-04-24T10:06:15.000Z"
     });
     await Promise.all([
       writeConversationRecord(statePaths, {
@@ -837,6 +853,7 @@ describe("runner builtin tool executor", () => {
       artifactInputs: [],
       input: {
         maxArtifacts: 2,
+        maxApprovals: 1,
         maxRecentTurns: 1
       },
       memoryRefs: [],
@@ -862,20 +879,33 @@ describe("runner builtin tool executor", () => {
     const content = result.content;
     const counts = content.counts;
     const session = content.session;
+    const approvals = content.approvals;
     const conversations = content.conversations;
     const recentTurns = content.recentTurns;
     const artifacts = content.artifacts;
 
     expect(counts).toEqual({
       activeConversationCount: 2,
+      approvalCount: 1,
       artifactCount: 3,
       conversationCount: 2,
-      recentTurnCount: 1
+      recentTurnCount: 1,
+      waitingApprovalCount: 1
     });
     expect(session).toMatchObject({
       activeConversationIds: ["conv-alpha", "conv-beta"],
       sessionId: "session-alpha",
-      status: "active"
+      status: "active",
+      waitingApprovalIds: ["approval-alpha"]
+    });
+    expect(approvals).toHaveLength(1);
+    expect(approvals[0]).toMatchObject({
+      approvalId: "approval-alpha",
+      approverNodeIds: ["lead-it"],
+      conversationId: "conv-beta",
+      reason: "Approve the blocked planner handoff.",
+      requestedByNodeId: "worker-it",
+      status: "pending"
     });
     expect(conversations).toHaveLength(2);
     expect(conversations[0]).toMatchObject({
@@ -1035,6 +1065,23 @@ describe("runner builtin tool executor", () => {
       },
       toolCallId: "toolu_01sessionstatebadlimit"
     });
+    const approvalLimitResult = await executor.executeToolCall({
+      artifactInputs: [],
+      input: {
+        maxApprovals: 21
+      },
+      memoryRefs: [],
+      nodeId: "worker-it",
+      sessionId: "session-alpha",
+      tool: {
+        id: "inspect_session_state",
+        description: "Inspect bounded local state for the current session.",
+        inputSchema: {
+          type: "object"
+        }
+      },
+      toolCallId: "toolu_01sessionstatebadapprovallimit"
+    });
 
     expect(result.isError).toBe(true);
     expect(result.content).toEqual(
@@ -1042,6 +1089,14 @@ describe("runner builtin tool executor", () => {
         error: "invalid_input",
         fieldName: "maxRecentTurns",
         maxValue: 10
+      })
+    );
+    expect(approvalLimitResult.isError).toBe(true);
+    expect(approvalLimitResult.content).toEqual(
+      expect.objectContaining({
+        error: "invalid_input",
+        fieldName: "maxApprovals",
+        maxValue: 20
       })
     );
   });

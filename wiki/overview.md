@@ -156,6 +156,10 @@ The repository now also contains the first real implementation baseline:
   model-guided summary now also consumes the same bounded current-session
   snapshot exposed through `inspect_session_state`, instead of leaving session
   reasoning trapped in the builtin tool path alone;
+- an approval-aware refinement of that session snapshot where
+  `inspect_session_state` and model-guided memory synthesis now carry bounded
+  approval summaries, waiting-gate counts, and recorded approval status context
+  alongside conversation, turn, and artifact context;
 - an artifact-aware refinement of that same synthesis path where the runner now
   passes explicit retrieved and produced artifact context into working-context
   synthesis, instead of leaving work-product visibility trapped in the main

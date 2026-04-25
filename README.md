@@ -271,6 +271,10 @@ This repository currently contains:
   snapshot exposed through `inspect_session_state`, giving synthesis a stronger
   view of live session progress without widening the tool catalog or the wiki
   write contract;
+- an approval-aware refinement of the same session snapshot where
+  `inspect_session_state` and model-guided memory synthesis now see bounded
+  runner-local approval summaries, waiting-gate counts, and recorded approval
+  status context alongside conversations, turns, and artifacts;
 - an artifact-aware refinement of that same synthesis path where the runner now
   passes explicit retrieved and produced artifact context into working-context
   synthesis, so durable memory maintenance can see the turn's real work
@@ -521,7 +525,7 @@ This repository currently contains:
   intents without mutating the host;
 - the next bounded runtime-deepening slice where the builtin tool surface now
   includes deterministic bounded current-session inspection over runner-local
-  session, conversation, turn, and related artifact state through
+  session, approval, conversation, turn, and related artifact state through
   `inspect_session_state`, without widening the host or filesystem boundary;
 - the next bounded runtime-deepening slice where runner-owned memory
   maintenance now rebuilds a derived recent-work summary page from canonical

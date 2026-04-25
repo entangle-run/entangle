@@ -174,6 +174,7 @@ This directory is the canonical design corpus for Entangle.
 168. [167-runtime-approval-inspection-slice.md](167-runtime-approval-inspection-slice.md)
 169. [168-session-approval-consistency-diagnostics-slice.md](168-session-approval-consistency-diagnostics-slice.md)
 170. [169-runner-approved-approval-gate-repair-slice.md](169-runner-approved-approval-gate-repair-slice.md)
+171. [170-session-snapshot-approval-context-slice.md](170-session-snapshot-approval-context-slice.md)
 
 ## Role of this corpus
 

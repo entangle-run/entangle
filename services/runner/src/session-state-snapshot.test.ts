@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   ensureRunnerStatePaths,
+  writeApprovalRecord,
   writeArtifactRecord,
   writeConversationRecord,
   writeRunnerTurnRecord,
@@ -38,6 +39,41 @@ async function seedSessionState(runtimeRoot: string): Promise<void> {
     updatedAt: "2026-04-24T11:10:00.000Z",
     waitingApprovalIds: ["approval-1"]
   });
+
+  await Promise.all([
+    writeApprovalRecord(statePaths, {
+      approvalId: "approval-1",
+      approverNodeIds: ["lead-it"],
+      conversationId: "conv-alpha",
+      graphId: "graph-alpha",
+      reason: "Confirm the relay recovery plan before handoff.",
+      requestedAt: "2026-04-24T11:05:30.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "pending",
+      updatedAt: "2026-04-24T11:07:00.000Z"
+    }),
+    writeApprovalRecord(statePaths, {
+      approvalId: "approval-2",
+      approverNodeIds: ["reviewer-it"],
+      graphId: "graph-alpha",
+      requestedAt: "2026-04-24T11:04:30.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-alpha",
+      status: "approved",
+      updatedAt: "2026-04-24T11:06:00.000Z"
+    }),
+    writeApprovalRecord(statePaths, {
+      approvalId: "approval-other",
+      approverNodeIds: ["lead-it"],
+      graphId: "graph-alpha",
+      requestedAt: "2026-04-24T10:04:30.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-other",
+      status: "pending",
+      updatedAt: "2026-04-24T11:09:00.000Z"
+    })
+  ]);
 
   await Promise.all([
     writeConversationRecord(statePaths, {
@@ -227,6 +263,7 @@ describe("session state snapshot", () => {
 
     const snapshot = await buildRunnerSessionStateSnapshot({
       maxArtifacts: 2,
+      maxApprovals: 2,
       maxRecentTurns: 1,
       sessionId: "session-alpha",
       statePaths: await ensureRunnerStatePaths(fixture.context.workspace.runtimeRoot)
@@ -240,9 +277,23 @@ describe("session state snapshot", () => {
 
     expect(snapshot.counts).toEqual({
       activeConversationCount: 2,
+      approvalCount: 2,
       artifactCount: 4,
       conversationCount: 2,
-      recentTurnCount: 1
+      recentTurnCount: 1,
+      waitingApprovalCount: 1
+    });
+    expect(snapshot.approvals.map((approval) => approval.approvalId)).toEqual([
+      "approval-1",
+      "approval-2"
+    ]);
+    expect(snapshot.approvals[0]).toMatchObject({
+      approvalId: "approval-1",
+      approverNodeIds: ["lead-it"],
+      conversationId: "conv-alpha",
+      reason: "Confirm the relay recovery plan before handoff.",
+      requestedByNodeId: "worker-it",
+      status: "pending"
     });
     expect(snapshot.conversations.map((conversation) => conversation.conversationId)).toEqual([
       "conv-alpha",
@@ -259,6 +310,11 @@ describe("session state snapshot", () => {
     expect(rendered).toContain("Current session snapshot:");
     expect(rendered).toContain("Session status: `active`");
     expect(rendered).toContain("Active conversations: 2");
+    expect(rendered).toContain("Waiting approvals: 1");
+    expect(rendered).toContain("Recorded approvals: 2");
+    expect(rendered).toContain(
+      "approval-1 [pending] requestedBy=worker-it approvers=1 conversation=conv-alpha"
+    );
     expect(rendered).toContain("Conversations observed: 2");
     expect(rendered).toContain("conv-alpha with lead-it [acknowledged] followups=2");
     expect(rendered).toContain(
@@ -272,6 +328,7 @@ describe("session state snapshot", () => {
 
     const snapshot = await buildRunnerSessionStateSnapshot({
       maxArtifacts: 2,
+      maxApprovals: 2,
       maxRecentTurns: 2,
       sessionId: "missing-session",
       statePaths: await ensureRunnerStatePaths(fixture.context.workspace.runtimeRoot)

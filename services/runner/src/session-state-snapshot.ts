@@ -3,12 +3,14 @@ import type {
   ArtifactLifecycleState,
   ArtifactPublicationState,
   ArtifactRetrievalState,
+  ApprovalRecord,
   ConversationRecord,
   RunnerTurnRecord,
   SessionRecord
 } from "@entangle/types";
 import {
   listArtifactRecords,
+  listApprovalRecords,
   listConversationRecords,
   listRunnerTurnRecords,
   readSessionRecord,
@@ -35,6 +37,16 @@ export type RunnerSessionConversationSummary = {
   peerNodeId: string;
   responsePolicy: ConversationRecord["responsePolicy"];
   status: ConversationRecord["status"];
+  updatedAt: string;
+};
+
+export type RunnerSessionApprovalSummary = {
+  approvalId: string;
+  approverNodeIds: string[];
+  conversationId?: string;
+  reason?: string;
+  requestedByNodeId: string;
+  status: ApprovalRecord["status"];
   updatedAt: string;
 };
 
@@ -76,13 +88,16 @@ export type RunnerSessionSummary = {
 };
 
 export type RunnerSessionStateSnapshot = {
+  approvals: RunnerSessionApprovalSummary[];
   artifacts: RunnerSessionArtifactSummary[];
   conversations: RunnerSessionConversationSummary[];
   counts: {
     activeConversationCount: number;
+    approvalCount: number;
     artifactCount: number;
     conversationCount: number;
     recentTurnCount: number;
+    waitingApprovalCount: number;
   };
   recentTurns: RunnerSessionTurnSummary[];
   session: RunnerSessionSummary;
@@ -134,6 +149,7 @@ function summarizeTurnOutcome(
 
 export async function buildRunnerSessionStateSnapshot(input: {
   maxArtifacts: number;
+  maxApprovals: number;
   maxRecentTurns: number;
   sessionId: string;
   statePaths: RunnerStatePaths;
@@ -144,15 +160,22 @@ export async function buildRunnerSessionStateSnapshot(input: {
     return undefined;
   }
 
-  const [conversationRecords, turnRecords, artifactRecords] = await Promise.all([
-    listConversationRecords(input.statePaths),
-    listRunnerTurnRecords(input.statePaths),
-    listArtifactRecords(input.statePaths)
-  ]);
+  const [approvalRecords, conversationRecords, turnRecords, artifactRecords] =
+    await Promise.all([
+      listApprovalRecords(input.statePaths),
+      listConversationRecords(input.statePaths),
+      listRunnerTurnRecords(input.statePaths),
+      listArtifactRecords(input.statePaths)
+    ]);
   const sessionConversations = conversationRecords
     .filter((candidate) => candidate.sessionId === sessionRecord.sessionId)
     .sort((left, right) =>
       compareByUpdatedAtDesc(left, right, (value) => value.conversationId)
+    );
+  const sessionApprovals = approvalRecords
+    .filter((candidate) => candidate.sessionId === sessionRecord.sessionId)
+    .sort((left, right) =>
+      compareByUpdatedAtDesc(left, right, (value) => value.approvalId)
     );
   const sessionTurns = turnRecords
     .filter((candidate) => candidate.sessionId === sessionRecord.sessionId)
@@ -185,6 +208,25 @@ export async function buildRunnerSessionStateSnapshot(input: {
     .slice(0, input.maxArtifacts);
 
   return {
+    approvals: sessionApprovals
+      .slice(0, input.maxApprovals)
+      .map((approvalRecord) => ({
+        approvalId: approvalRecord.approvalId,
+        approverNodeIds: approvalRecord.approverNodeIds,
+        ...(approvalRecord.conversationId
+          ? {
+              conversationId: approvalRecord.conversationId
+            }
+          : {}),
+        ...(approvalRecord.reason
+          ? {
+              reason: approvalRecord.reason
+            }
+          : {}),
+        requestedByNodeId: approvalRecord.requestedByNodeId,
+        status: approvalRecord.status,
+        updatedAt: approvalRecord.updatedAt
+      })),
     artifacts: relatedArtifacts.map((artifactRecord) => ({
       artifactId: artifactRecord.ref.artifactId,
       artifactKind: artifactRecord.ref.artifactKind,
@@ -228,9 +270,11 @@ export async function buildRunnerSessionStateSnapshot(input: {
     })),
     counts: {
       activeConversationCount: sessionRecord.activeConversationIds.length,
+      approvalCount: sessionApprovals.length,
       artifactCount: relatedArtifactIds.size,
       conversationCount: sessionConversations.length,
-      recentTurnCount: Math.min(sessionTurns.length, input.maxRecentTurns)
+      recentTurnCount: Math.min(sessionTurns.length, input.maxRecentTurns),
+      waitingApprovalCount: sessionRecord.waitingApprovalIds.length
     },
     recentTurns: sessionTurns.slice(0, input.maxRecentTurns).map((turnRecord) => {
       const engineOutcome = summarizeTurnOutcome(turnRecord);
@@ -313,6 +357,20 @@ export function renderRunnerSessionStateSnapshotForPrompt(
           );
         })
       : ["  - none"];
+  const approvalLines =
+    snapshot.approvals.length > 0
+      ? snapshot.approvals.map((approval) => {
+          const conversation = approval.conversationId
+            ? ` conversation=${approval.conversationId}`
+            : "";
+
+          return (
+            `  - ${approval.approvalId} [${approval.status}] ` +
+            `requestedBy=${approval.requestedByNodeId} ` +
+            `approvers=${approval.approverNodeIds.length}${conversation}`
+          );
+        })
+      : ["  - none"];
   const artifactLines =
     snapshot.artifacts.length > 0
       ? snapshot.artifacts.map((artifact) => {
@@ -334,9 +392,13 @@ export function renderRunnerSessionStateSnapshotForPrompt(
     `- Session status: \`${snapshot.session.status}\``,
     `- Session intent: ${snapshot.session.intent}`,
     `- Active conversations: ${snapshot.counts.activeConversationCount}`,
+    `- Waiting approvals: ${snapshot.counts.waitingApprovalCount}`,
+    `- Recorded approvals: ${snapshot.counts.approvalCount}`,
     `- Conversations observed: ${snapshot.counts.conversationCount}`,
     `- Related artifacts: ${snapshot.counts.artifactCount}`,
     `- Recent turns: ${snapshot.counts.recentTurnCount}`,
+    "- Approval summary:",
+    ...approvalLines,
     "- Conversation summary:",
     ...conversationLines,
     "- Recent turn summary:",

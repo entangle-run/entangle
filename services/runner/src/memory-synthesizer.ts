@@ -44,6 +44,7 @@ import type { RunnerInboundEnvelope } from "./transport.js";
 
 const maxWorkingContextListEntries = 6;
 const maxSynthesisArtifacts = 6;
+const maxSynthesisApprovals = 8;
 const maxSynthesisRecentTurns = 4;
 const maxSynthesisToolObservations = 4;
 const maxFocusedRegisterTransitionHistoryEntries = 60;
@@ -1951,10 +1952,27 @@ function renderSessionContextLines(
     return ["- No current session snapshot was available during synthesis."];
   }
 
+  const approvalStatusCounts = sessionSnapshot.approvals.reduce(
+    (counts, approval) => {
+      counts.set(approval.status, (counts.get(approval.status) ?? 0) + 1);
+      return counts;
+    },
+    new Map<string, number>()
+  );
+  const approvalStatusSummary =
+    approvalStatusCounts.size > 0
+      ? Array.from(approvalStatusCounts.entries())
+          .sort(([leftStatus], [rightStatus]) => leftStatus.localeCompare(rightStatus))
+          .map(([status, count]) => `${status}:${count}`)
+          .join(", ")
+      : "none";
+
   return [
     `- Session status: \`${sessionSnapshot.session.status}\``,
     `- Active conversations: ${sessionSnapshot.session.activeConversationIds.length}`,
-    `- Waiting approvals: ${sessionSnapshot.session.waitingApprovalIds.length}`,
+    `- Waiting approvals: ${sessionSnapshot.counts.waitingApprovalCount}`,
+    `- Recorded approvals: ${sessionSnapshot.counts.approvalCount}`,
+    `- Approval statuses in snapshot: ${approvalStatusSummary}`,
     `- Recent turns in snapshot: ${sessionSnapshot.recentTurns.length}`
   ];
 }
@@ -2652,6 +2670,7 @@ export function createModelGuidedMemorySynthesizer(input: {
       const [sessionSnapshot, focusedRegisterContext] = await Promise.all([
         buildRunnerSessionStateSnapshot({
           maxArtifacts: maxSynthesisArtifacts,
+          maxApprovals: maxSynthesisApprovals,
           maxRecentTurns: maxSynthesisRecentTurns,
           sessionId: synthesis.envelope.message.sessionId,
           statePaths
