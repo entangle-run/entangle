@@ -1272,3 +1272,15 @@ The CLI now supports compact operator-oriented output for
 `host sessions list --summary` and `host sessions get <sessionId> --summary`,
 including active conversation, approval, root artifact, node status, trace,
 and latest message signals over the existing host session read model.
+
+## [2026-04-25] implementation | Added shared artifact presentation and CLI summaries
+
+Closed the parallel artifact-presentation drift by moving artifact label,
+status, locator, filtering, sorting, and detail-line helpers into
+`packages/host-client`. Studio now consumes those helpers through a thin
+re-export while preserving the same selected-artifact detail behavior.
+
+The CLI now supports compact operator-oriented output for
+`host runtimes artifact <nodeId> <artifactId> --summary` and
+`host runtimes artifacts <nodeId> --summary`, over the existing host-backed
+runtime artifact read model.

@@ -761,6 +761,15 @@ export {
   type HostEventFilter
 } from "./event-inspection.js";
 export {
+  filterRuntimeArtifactsForPresentation,
+  formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactLabel,
+  formatRuntimeArtifactLocator,
+  formatRuntimeArtifactStatus,
+  sortRuntimeArtifactsForPresentation,
+  type RuntimeArtifactPresentationFilterOptions
+} from "./runtime-artifact.js";
+export {
   collectRuntimeTraceEvents,
   describeRuntimeTraceEvent,
   formatRuntimeTraceEventLabel,

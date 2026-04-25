@@ -1,55 +1,57 @@
-import type {
-  ArtifactBackend,
-  ArtifactKind,
-  ArtifactLifecycleState,
-  ArtifactPublicationState,
-  ArtifactRecord,
-  ArtifactRetrievalState
-} from "@entangle/types";
+import {
+  filterRuntimeArtifactsForPresentation,
+  formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactLabel,
+  formatRuntimeArtifactLocator,
+  formatRuntimeArtifactStatus,
+  sortRuntimeArtifactsForPresentation,
+  type RuntimeArtifactPresentationFilterOptions
+} from "@entangle/host-client";
+import type { ArtifactRecord } from "@entangle/types";
 
-export type RuntimeArtifactCliFilterOptions = {
-  backend?: ArtifactBackend;
-  kind?: ArtifactKind;
-  lifecycleState?: ArtifactLifecycleState;
-  publicationState?: ArtifactPublicationState | "not_requested";
-  retrievalState?: ArtifactRetrievalState | "not_retrieved";
-};
+export type RuntimeArtifactCliFilterOptions =
+  RuntimeArtifactPresentationFilterOptions;
 
-export function sortRuntimeArtifactsForCli(
-  artifacts: ArtifactRecord[]
-): ArtifactRecord[] {
-  return [...artifacts].sort((left, right) =>
-    right.updatedAt.localeCompare(left.updatedAt)
-  );
+export const filterRuntimeArtifactsForCli =
+  filterRuntimeArtifactsForPresentation;
+export const sortRuntimeArtifactsForCli = sortRuntimeArtifactsForPresentation;
+
+export interface RuntimeArtifactCliSummaryRecord {
+  artifactId: string;
+  backend: ArtifactRecord["ref"]["backend"];
+  detailLines: string[];
+  kind?: ArtifactRecord["ref"]["artifactKind"];
+  label: string;
+  lifecycleState?: ArtifactRecord["ref"]["status"];
+  locator: string;
+  publicationState: "not_requested" | NonNullable<
+    ArtifactRecord["publication"]
+  >["state"];
+  retrievalState: "not_retrieved" | NonNullable<
+    ArtifactRecord["retrieval"]
+  >["state"];
+  sessionId?: string;
+  status: string;
+  turnId?: string;
+  updatedAt: string;
 }
 
-export function filterRuntimeArtifactsForCli(
-  artifacts: ArtifactRecord[],
-  options: RuntimeArtifactCliFilterOptions
-): ArtifactRecord[] {
-  return artifacts.filter((artifact) => {
-    if (options.backend && artifact.ref.backend !== options.backend) {
-      return false;
-    }
-
-    if (options.kind && artifact.ref.artifactKind !== options.kind) {
-      return false;
-    }
-
-    if (options.lifecycleState && artifact.ref.status !== options.lifecycleState) {
-      return false;
-    }
-
-    const publicationState = artifact.publication?.state ?? "not_requested";
-    if (options.publicationState && publicationState !== options.publicationState) {
-      return false;
-    }
-
-    const retrievalState = artifact.retrieval?.state ?? "not_retrieved";
-    if (options.retrievalState && retrievalState !== options.retrievalState) {
-      return false;
-    }
-
-    return true;
-  });
+export function projectRuntimeArtifactSummary(
+  artifact: ArtifactRecord
+): RuntimeArtifactCliSummaryRecord {
+  return {
+    artifactId: artifact.ref.artifactId,
+    backend: artifact.ref.backend,
+    detailLines: formatRuntimeArtifactDetailLines(artifact),
+    ...(artifact.ref.artifactKind ? { kind: artifact.ref.artifactKind } : {}),
+    label: formatRuntimeArtifactLabel(artifact),
+    locator: formatRuntimeArtifactLocator(artifact),
+    ...(artifact.ref.status ? { lifecycleState: artifact.ref.status } : {}),
+    publicationState: artifact.publication?.state ?? "not_requested",
+    retrievalState: artifact.retrieval?.state ?? "not_retrieved",
+    ...(artifact.ref.sessionId ? { sessionId: artifact.ref.sessionId } : {}),
+    status: formatRuntimeArtifactStatus(artifact),
+    ...(artifact.turnId ? { turnId: artifact.turnId } : {}),
+    updatedAt: artifact.updatedAt
+  };
 }

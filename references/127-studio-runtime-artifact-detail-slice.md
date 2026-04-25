@@ -20,6 +20,9 @@ runtime artifact detail inspection slice.
 - Selected-runtime refresh revalidates the selected artifact against the
   current artifact list and refreshes the detail record when it is still
   present.
+- Artifact label, status, locator, and detail-line formatting now comes from
+  shared `packages/host-client` runtime-artifact presentation helpers, keeping
+  Studio aligned with CLI summary output.
 - The detail card displays:
   - artifact id;
   - backend;

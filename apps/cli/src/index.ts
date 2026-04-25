@@ -32,6 +32,7 @@ import {
 import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
 import {
   filterRuntimeArtifactsForCli,
+  projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
 import {
@@ -952,16 +953,22 @@ hostRuntimesCommand
   .command("artifact")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<artifactId>", "Artifact identifier to inspect.")
+  .option("--summary", "Print a compact operator-oriented artifact summary.")
   .description("Inspect one persisted runtime artifact.")
   .action(
     async (
       nodeId: string,
       artifactId: string,
-      _options,
+      options: { summary?: boolean },
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      printJson(await client.getRuntimeArtifact(nodeId, artifactId));
+      const response = await client.getRuntimeArtifact(nodeId, artifactId);
+      printJson(
+        options.summary
+          ? { artifact: projectRuntimeArtifactSummary(response.artifact) }
+          : response
+      );
     }
   );
 
@@ -982,6 +989,7 @@ hostRuntimesCommand
     "--retrieval-state <retrievalState>",
     "Filter artifacts by retrieval state, including not_retrieved."
   )
+  .option("--summary", "Print compact operator-oriented artifact summaries.")
   .description("Inspect persisted runtime artifacts for one runtime.")
   .action(
     async (
@@ -1005,17 +1013,21 @@ hostRuntimesCommand
           | "superseded";
         publicationState?: "failed" | "not_requested" | "published";
         retrievalState?: "failed" | "not_retrieved" | "retrieved";
+        summary?: boolean;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
       const response = await client.listRuntimeArtifacts(nodeId);
+      const artifacts = filterRuntimeArtifactsForCli(
+        sortRuntimeArtifactsForCli(response.artifacts),
+        options
+      );
 
       printJson({
-        artifacts: filterRuntimeArtifactsForCli(
-          sortRuntimeArtifactsForCli(response.artifacts),
-          options
-        )
+        artifacts: options.summary
+          ? artifacts.map(projectRuntimeArtifactSummary)
+          : artifacts
       });
     }
   );

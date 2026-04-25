@@ -508,6 +508,10 @@ This repository currently contains:
   and `host sessions get` now support `--summary` over shared `host-client`
   session presentation helpers, keeping Studio and CLI active-work summaries
   aligned;
+- the matching artifact-presentation slice where Studio and CLI now consume
+  shared `host-client` artifact helpers, and `host runtimes artifact` plus
+  `host runtimes artifacts` support `--summary` for compact headless
+  inspection;
 
 The highest-value remaining gaps are:
 

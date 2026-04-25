@@ -8,6 +8,8 @@ inspection on top of the already implemented host artifact read surface.
 The CLI now supports:
 
 - `host runtimes artifacts <nodeId>`
+- `host runtimes artifacts <nodeId> --summary`
+- `host runtimes artifact <nodeId> <artifactId> --summary`
 - optional local filtering by:
   - `--backend`
   - `--kind`
@@ -51,6 +53,10 @@ Added a dedicated pure helper module for:
 - deterministic runtime artifact sorting by `updatedAt`;
 - local filtering by backend, kind, lifecycle state, publication state, and
   retrieval state.
+
+Those command-facing helpers now delegate to shared `packages/host-client`
+runtime-artifact presentation helpers so Studio and CLI use the same label,
+status, locator, and detail-line vocabulary.
 
 ### Runtime artifact CLI surface
 

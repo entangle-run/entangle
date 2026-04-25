@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-
 import type { ArtifactRecord } from "@entangle/types";
-
 import {
-  filterRuntimeArtifactsForCli,
-  projectRuntimeArtifactSummary,
-  sortRuntimeArtifactsForCli
-} from "./runtime-artifact-command.js";
+  filterRuntimeArtifactsForPresentation,
+  formatRuntimeArtifactDetailLines,
+  formatRuntimeArtifactLabel,
+  formatRuntimeArtifactLocator,
+  formatRuntimeArtifactStatus,
+  sortRuntimeArtifactsForPresentation
+} from "./runtime-artifact.js";
 
 const artifacts: ArtifactRecord[] = [
   {
@@ -75,31 +76,30 @@ const artifacts: ArtifactRecord[] = [
   }
 ];
 
-describe("runtime-artifact-command", () => {
+describe("runtime artifact presentation helpers", () => {
   it("sorts artifacts from newest to oldest update", () => {
-    expect(sortRuntimeArtifactsForCli(artifacts).map((artifact) => artifact.ref.artifactId))
-      .toEqual(["artifact-report", "artifact-summary", "artifact-patch"]);
+    expect(
+      sortRuntimeArtifactsForPresentation(artifacts).map(
+        (artifact) => artifact.ref.artifactId
+      )
+    ).toEqual(["artifact-report", "artifact-summary", "artifact-patch"]);
   });
 
-  it("filters artifacts by backend and publication state", () => {
-    const filtered = filterRuntimeArtifactsForCli(artifacts, {
+  it("filters artifacts by backend, publication, and retrieval state", () => {
+    const filtered = filterRuntimeArtifactsForPresentation(artifacts, {
       backend: "git",
       publicationState: "published"
+    });
+    const publicationFiltered = filterRuntimeArtifactsForPresentation(artifacts, {
+      publicationState: "not_requested"
+    });
+    const retrievalFiltered = filterRuntimeArtifactsForPresentation(artifacts, {
+      retrievalState: "not_retrieved"
     });
 
     expect(filtered.map((artifact) => artifact.ref.artifactId)).toEqual([
       "artifact-report"
     ]);
-  });
-
-  it("treats missing publication and retrieval metadata as explicit CLI defaults", () => {
-    const publicationFiltered = filterRuntimeArtifactsForCli(artifacts, {
-      publicationState: "not_requested"
-    });
-    const retrievalFiltered = filterRuntimeArtifactsForCli(artifacts, {
-      retrievalState: "not_retrieved"
-    });
-
     expect(publicationFiltered.map((artifact) => artifact.ref.artifactId)).toEqual([
       "artifact-summary"
     ]);
@@ -109,25 +109,24 @@ describe("runtime-artifact-command", () => {
     ]);
   });
 
-  it("projects artifacts into compact operator summaries", () => {
+  it("formats artifact labels, status, locators, and detail lines", () => {
     const [artifact] = artifacts;
 
     expect(artifact).toBeDefined();
-    expect(projectRuntimeArtifactSummary(artifact!)).toMatchObject({
-      artifactId: "artifact-report",
-      backend: "git",
-      kind: "report_file",
-      label: "artifact-report · git/report_file",
-      lifecycleState: "published",
-      locator: "worker-it:reports/report.md@0123456789ab",
-      publicationState: "published",
-      retrievalState: "not_retrieved",
-      status:
-        "Lifecycle published · publication published · retrieval not_retrieved",
-      updatedAt: "2026-04-24T10:02:00.000Z"
-    });
-    expect(projectRuntimeArtifactSummary(artifact!).detailLines).toEqual(
+    expect(formatRuntimeArtifactLabel(artifact!)).toBe(
+      "artifact-report · git/report_file"
+    );
+    expect(formatRuntimeArtifactStatus(artifact!)).toContain(
+      "publication published"
+    );
+    expect(formatRuntimeArtifactLocator(artifact!)).toContain(
+      "worker-it:reports/report.md"
+    );
+    expect(formatRuntimeArtifactDetailLines(artifact!)).toEqual(
       expect.arrayContaining([
+        "created 2026-04-24T10:00:00.000Z",
+        "updated 2026-04-24T10:02:00.000Z",
+        "publication published",
         "published remote ssh://git@example.com/team/worker-it.git"
       ])
     );
