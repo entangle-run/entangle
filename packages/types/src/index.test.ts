@@ -67,6 +67,7 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
@@ -339,7 +340,10 @@ describe("federated runtime contracts", () => {
           envVar: "ENTANGLE_HOST_TOKEN",
           mode: "bearer_env"
         },
-        baseUrl: "http://host.test"
+        baseUrl: "http://host.test",
+        runtimeIdentitySecret: {
+          mode: "host_api"
+        }
       },
       hostAuthorityPubkey: authorityPubkey,
       identity: {
@@ -357,7 +361,27 @@ describe("federated runtime contracts", () => {
     expect(config.authRequired).toBe(false);
     expect(config.capabilities.maxAssignments).toBe(1);
     expect(config.hostApi?.baseUrl).toBe("http://host.test");
+    expect(config.hostApi?.runtimeIdentitySecret?.mode).toBe("host_api");
     expect(config.identity.publicKey).toBe(runnerPubkey);
+  });
+
+  it("accepts authenticated runtime identity secret responses", () => {
+    const response = runtimeIdentitySecretResponseSchema.parse({
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-rev-1",
+      nodeId: "worker-it",
+      publicKey: runnerPubkey,
+      schemaVersion: "1",
+      secretDelivery: {
+        envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+        mode: "env_var"
+      },
+      secretKey:
+        "1111111111111111111111111111111111111111111111111111111111111111"
+    });
+
+    expect(response.nodeId).toBe("worker-it");
+    expect(response.secretDelivery.mode).toBe("env_var");
   });
 
   it("accepts signed control assignment offers from Host Authority", () => {

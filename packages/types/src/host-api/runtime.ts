@@ -5,6 +5,7 @@ import {
   artifactRecordSchema
 } from "../artifacts/artifact-ref.js";
 import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
+import { nostrPublicKeySchema, nostrSecretKeySchema } from "../common/crypto.js";
 import {
   policyOperationSchema,
   policyResourceScopeSchema
@@ -19,6 +20,7 @@ import {
 import { nodeAgentRuntimeModeSchema } from "../graph/graph-spec.js";
 import { agentEngineProfileKindSchema } from "../resources/catalog.js";
 import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
+import { runtimeSecretDeliverySchema } from "../runtime/secret-delivery.js";
 import {
   classifyRuntimeReconciliation,
   runtimeReconciliationSummarySchema
@@ -142,6 +144,16 @@ export const runtimeIntentMutationRequestSchema = z.object({
 });
 
 export const runtimeContextInspectionResponseSchema = effectiveRuntimeContextSchema;
+
+export const runtimeIdentitySecretResponseSchema = z.object({
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  nodeId: identifierSchema,
+  publicKey: nostrPublicKeySchema,
+  schemaVersion: z.literal("1"),
+  secretDelivery: runtimeSecretDeliverySchema,
+  secretKey: nostrSecretKeySchema
+});
 
 export const runtimeArtifactListResponseSchema = z.object({
   artifacts: z.array(artifactRecordSchema)
@@ -700,6 +712,7 @@ export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponse
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;
 export type RuntimeContextInspectionResponse = z.infer<typeof runtimeContextInspectionResponseSchema>;
+export type RuntimeIdentitySecretResponse = z.infer<typeof runtimeIdentitySecretResponseSchema>;
 export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResponseSchema>;
 export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;
 export type RuntimeArtifactPreview = z.infer<typeof runtimeArtifactPreviewSchema>;

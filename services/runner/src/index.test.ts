@@ -33,6 +33,12 @@ import type { RunnerJoinTransport } from "./join-service.js";
 import { InMemoryRunnerTransport } from "./transport.js";
 
 afterEach(async () => {
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith("ENTANGLE_NODE_IDENTITY_")) {
+      delete process.env[key];
+    }
+  }
+
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
   delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH;
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
@@ -633,15 +639,142 @@ describe("runner runtime context", () => {
       "assignment-alpha",
       "runtime-context.json"
     );
-    expect(JSON.parse(await readFile(runtimeContextPath, "utf8"))).toMatchObject({
+    const materializedContext = await loadRuntimeContext(runtimeContextPath);
+    expect(materializedContext).toMatchObject({
       binding: {
+        packageSource: {
+          absolutePath: path.join(
+            runnerStateRoot,
+            "assignments",
+            "assignment-alpha",
+            "workspace",
+            "package"
+          )
+        },
         node: {
           nodeId: "worker-it"
         }
       },
       schemaVersion: "1"
     });
+    expect(materializedContext.workspace.runtimeRoot).toBe(
+      path.join(
+        runnerStateRoot,
+        "assignments",
+        "assignment-alpha",
+        "workspace",
+        "runtime"
+      )
+    );
+    expect(materializedContext.workspace.runtimeRoot).not.toBe(
+      runtimeFixture.context.workspace.runtimeRoot
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await configured.service.stop();
+  });
+
+  it("can fetch Host runtime identity secrets for assigned runtime startup", async () => {
+    const runtimeFixture = await createRuntimeFixture();
+    const fixture = await createRunnerJoinFixture({
+      hostApi: {
+        auth: {
+          envVar: "ENTANGLE_HOST_TOKEN",
+          mode: "bearer_env"
+        },
+        baseUrl: "http://host.test",
+        runtimeIdentitySecret: {
+          mode: "host_api"
+        }
+      }
+    });
+    const runnerStateRoot = path.join(path.dirname(fixture.configPath), "runner-state");
+    const transport = new FakeRunnerJoinTransport();
+    const fetchMock = vi.fn(
+      (url: string | URL | Request, init?: RequestInit) => {
+        const requestUrl = url instanceof Request ? url.url : url.toString();
+
+        expect(init?.headers).toMatchObject({
+          accept: "application/json",
+          authorization: "Bearer host-token"
+        });
+
+        if (requestUrl === "http://host.test/v1/runtimes/worker-it/context") {
+          return Promise.resolve(
+            new Response(JSON.stringify(runtimeFixture.context), {
+              headers: {
+                "content-type": "application/json"
+              },
+              status: 200
+            })
+          );
+        }
+
+        expect(requestUrl).toBe(
+          "http://host.test/v1/runtimes/worker-it/identity-secret"
+        );
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              graphId: runtimeFixture.context.binding.graphId,
+              graphRevisionId: runtimeFixture.context.binding.graphRevisionId,
+              nodeId: "worker-it",
+              publicKey: runtimeFixture.context.identityContext.publicKey,
+              schemaVersion: "1",
+              secretDelivery: {
+                envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+                mode: "env_var"
+              },
+              secretKey: runnerSecretHex
+            }),
+            {
+              headers: {
+                "content-type": "application/json"
+              },
+              status: 200
+            }
+          )
+        );
+      }
+    );
+    process.env.ENTANGLE_HOST_TOKEN = "host-token";
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+    process.env.ENTANGLE_RUNNER_STATE_ROOT = runnerStateRoot;
+    vi.stubGlobal("fetch", fetchMock);
+
+    const configured = await createConfiguredRunnerJoinService(
+      fixture.configPath,
+      {
+        clock: () => "2026-04-26T12:00:00.000Z",
+        nonceFactory: () => "nonce-alpha",
+        runtimeStarter: ({ runtimeContextPath }) =>
+          Promise.resolve({
+            runtimeContextPath,
+            stop: () => Promise.resolve()
+          }),
+        transport
+      }
+    );
+
+    await configured.service.start();
+    await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
+
+    const materializedContext = await loadRuntimeContext(
+      path.join(
+        runnerStateRoot,
+        "assignments",
+        "assignment-alpha",
+        "runtime-context.json"
+      )
+    );
+    expect(materializedContext.identityContext.secretDelivery).toMatchObject({
+      envVar: "ENTANGLE_NODE_IDENTITY_ASSIGNMENT_ALPHA",
+      mode: "env_var"
+    });
+    expect(process.env.ENTANGLE_NODE_IDENTITY_ASSIGNMENT_ALPHA).toBe(
+      runnerSecretHex
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
 
     await configured.service.stop();
   });

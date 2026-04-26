@@ -188,6 +188,7 @@ import {
   runtimeIdentityRecordSchema,
   runtimeArtifactListResponseSchema,
   runtimeInspectionResponseSchema,
+  runtimeIdentitySecretResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryRecordSchema,
   runtimeRecoveryControllerRecordSchema,
@@ -212,6 +213,7 @@ import {
   type RuntimeAgentRuntimeInspection,
   type RuntimeApprovalDecisionMutationRequest,
   type RuntimeInspectionResponse,
+  type RuntimeIdentitySecretResponse,
   type RuntimeWorkspaceHealth,
   runtimeArtifactDiffResponseSchema,
   runtimeArtifactHistoryResponseSchema,
@@ -754,9 +756,29 @@ function encodeJsonFile(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+async function writeTextFileAtomically(
+  filePath: string,
+  contents: string
+): Promise<void> {
+  const directory = path.dirname(filePath);
+  const temporaryPath = path.join(
+    directory,
+    `.${path.basename(filePath)}.${process.pid}.${randomUUID()}.tmp`
+  );
+
+  await ensureDirectory(directory);
+
+  try {
+    await writeFile(temporaryPath, contents, "utf8");
+    await rename(temporaryPath, filePath);
+  } catch (error) {
+    await rm(temporaryPath, { force: true });
+    throw error;
+  }
+}
+
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
-  await ensureDirectory(path.dirname(filePath));
-  await writeFile(filePath, encodeJsonFile(value), "utf8");
+  await writeTextFileAtomically(filePath, encodeJsonFile(value));
 }
 
 async function writeSecretFile(filePath: string, value: string): Promise<void> {
@@ -777,8 +799,7 @@ async function writeJsonFileIfChanged(
     return false;
   }
 
-  await ensureDirectory(path.dirname(filePath));
-  await writeFile(filePath, encoded, "utf8");
+  await writeTextFileAtomically(filePath, encoded);
   return true;
 }
 
@@ -1170,6 +1191,53 @@ async function ensureRuntimeIdentity(input: {
   await writeSecretFile(secretStoragePath, `${secretHex}\n`);
   await writeJsonFile(recordPath, record);
   return record;
+}
+
+export async function getRuntimeIdentitySecret(input: {
+  nodeId: string;
+}): Promise<RuntimeIdentitySecretResponse | null> {
+  await initializeHostState();
+
+  const activeGraph = await readActiveGraphState();
+
+  if (!activeGraph.graph || !activeGraph.activeRevisionId) {
+    return null;
+  }
+
+  const node = activeGraph.graph.nodes.find(
+    (candidate) => candidate.nodeId === input.nodeId
+  );
+
+  if (!node || node.nodeKind === "user") {
+    return null;
+  }
+
+  const identity = await ensureRuntimeIdentity({
+    graphId: activeGraph.graph.graphId,
+    nodeId: input.nodeId
+  });
+  const secretKey = (await readFile(identity.secretStoragePath, "utf8")).trim();
+  const secretKeyBytes = parseNostrSecretKeyBytes(secretKey);
+  const publicKey = getPublicKey(secretKeyBytes);
+
+  if (publicKey !== identity.publicKey) {
+    throw new Error(
+      `Runtime identity secret for node '${input.nodeId}' does not match its public key.`
+    );
+  }
+
+  return runtimeIdentitySecretResponseSchema.parse({
+    graphId: activeGraph.graph.graphId,
+    graphRevisionId: activeGraph.activeRevisionId,
+    nodeId: input.nodeId,
+    publicKey: identity.publicKey,
+    schemaVersion: "1",
+    secretDelivery: {
+      envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+      mode: "env_var"
+    },
+    secretKey
+  });
 }
 
 function buildUserNodeIdentityRecordId(graphId: string, nodeId: string): string {

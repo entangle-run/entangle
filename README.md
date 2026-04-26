@@ -324,6 +324,10 @@ This repository currently contains:
 - a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
+- a process-boundary federated smoke through `pnpm ops:smoke-federated-process-runner`
+  that starts a Host HTTP server, launches a generic joined runner as a
+  separate OS process, assigns a node through the relay, and verifies
+  runner-owned materialization plus Host projection;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,

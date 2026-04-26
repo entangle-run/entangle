@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-26] verification | Added separate process runner federated smoke
+
+Added `references/254-process-runner-federated-smoke-slice.md` and
+`pnpm ops:smoke-federated-process-runner`. The smoke starts a real Host HTTP
+server with federated control-plane transport, then launches a generic joined
+runner as a separate OS process against the same relay. The runner registers,
+is trusted, receives a Host-signed assignment, fetches Host API bootstrap
+context, materializes runner-owned workspace paths, starts the assigned node
+runtime, and reports signed runtime status back through the relay.
+
+The runner materializer now localizes fetched runtime context into its own
+assignment workspace, can opt into authenticated Host API runtime identity
+secret bootstrap, and does not write the secret into the context file. Host JSON
+state writes now use atomic temp-file-and-rename persistence after the process
+smoke exposed a partial-read race during rapid runtime status observations.
+
 ## [2026-04-26] implementation | Added runtime evidence to diagnostics bundle
 
 Deepened `entangle deployment diagnostics` with bounded per-runtime evidence from

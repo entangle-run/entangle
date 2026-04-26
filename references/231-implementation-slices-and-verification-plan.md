@@ -264,6 +264,18 @@ Verification:
 Add smoke path that can run Host and runners with separate filesystem roots and
 shared reachable relay/git backend.
 
+Implementation records:
+
+- [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
+- [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
+
+Current status:
+
+- live relay control/observe smoke is implemented;
+- separate OS process runner smoke is implemented;
+- the remaining distributed proof is the three-machine/multi-network demo with
+  reachable relay and git service.
+
 Verification:
 
 - distributed smoke;

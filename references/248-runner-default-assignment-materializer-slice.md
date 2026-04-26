@@ -46,14 +46,23 @@ Implemented in this slice:
 
 Deferred:
 
-- converting Host runtime context into a fully runner-rebased executable
-  context;
 - fetching Host-signed graph/resource/package snapshots without Host API
   bootstrap;
-- starting the full node runtime service from the accepted assignment;
-- durable runtime status observations from materialized node execution;
-- per-assignment workspace and memory/wiki repository initialization;
+- replacing Host-managed development runtime identity secret export with
+  production-grade remote key custody;
+- replacing Host-local package copying with portable package/artifact refs;
 - control-event replay/idempotency beyond filesystem overwrite semantics.
+
+Follow-up refinement in
+[254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md):
+
+- Host API bootstrap can optionally fetch Host-managed runtime identity secret
+  material through an authenticated route;
+- fetched Host context is localized into runner-owned assignment workspace
+  paths before it is persisted;
+- package and memory seed state are copied into the runner materialization root
+  so the default assignment runtime starter can start a real node service;
+- `runtime.status` projection is covered by a separate OS process runner smoke.
 
 ## Tests Required
 

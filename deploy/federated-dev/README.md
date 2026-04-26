@@ -146,6 +146,16 @@ This smoke uses real Nostr relay transport for runner hello, Host assignment
 control, assignment acceptance, runtime status, and a git-backed artifact ref
 projection while keeping Host and runner state in separate temporary roots.
 
+To verify a real joined runner process over the same relay, run:
+
+```sh
+pnpm ops:smoke-federated-process-runner
+```
+
+This smoke starts a Host HTTP server, launches `entangle-runner join` as a
+separate OS process, assigns a node through signed control events, and verifies
+the runner-owned materialized context plus Host projection.
+
 To verify the support-bundle path against an already-running federated dev
 profile, run:
 

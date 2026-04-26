@@ -21,7 +21,12 @@ export const runnerJoinHostApiSchema = z.object({
       mode: z.literal("bearer_env")
     })
     .optional(),
-  baseUrl: httpUrlSchema
+  baseUrl: httpUrlSchema,
+  runtimeIdentitySecret: z
+    .object({
+      mode: z.literal("host_api")
+    })
+    .optional()
 });
 
 export const runnerJoinConfigSchema = z.object({

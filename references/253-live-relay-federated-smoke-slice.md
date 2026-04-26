@@ -55,6 +55,12 @@ Deferred:
 - replacing Docker-backed runtime lifecycle smoke with assignment-only runner
   execution.
 
+Follow-up implemented after this slice:
+
+- [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
+  adds a separate OS process runner that starts the assigned node runtime from
+  Host API bootstrap materialization over the real relay path.
+
 ## Tests Required
 
 - `node --check scripts/smoke-federated-live-relay.mjs`
@@ -93,13 +99,14 @@ The new smoke defaults to `ws://localhost:7777` and also honors
   Mitigation: it is exposed as an ops smoke and not part of package tests.
 - Risk: the runtime starter inside this smoke is still a controlled fake.
   Mitigation: this smoke is scoped to live relay control/observe and projection;
-  the runtime lifecycle smoke remains responsible for actual engine execution.
+  the process runner smoke now covers actual joined runner process startup and
+  assigned runtime service startup.
 - Risk: temporary git commit does not prove Gitea API publication.
   Mitigation: the existing runtime smoke covers Gitea publication; this smoke
   proves git-backed artifact references travel through the federated relay path.
 
 ## Open Questions
 
-No product question blocks this slice. The remaining implementation question is
-whether the next smoke should orchestrate Host and runner as separate OS
-processes on the same machine before moving to the full three-machine demo.
+No product question blocks this slice. The separate OS process smoke now exists;
+the remaining implementation question is how much of the three-machine demo
+should be automated in CI versus documented as an operator proof.

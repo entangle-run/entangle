@@ -1,0 +1,152 @@
+# Process Runner Federated Smoke Slice
+
+## Current Repo Truth
+
+The live relay smoke proved real Nostr control/observe transport, but the runner
+service was still created inside the smoke process with an injected materializer
+and fake runtime starter. Joined runners could fetch Host runtime context, but
+that fetched context still carried Host workspace paths and did not provide the
+node runtime identity secret needed by the default runtime starter.
+
+Host JSON state writes also used direct file replacement. The process smoke
+exposed a real race where close `runtime.status` observations could make a
+projection read observe a partially rewritten JSON record.
+
+## Target Model
+
+The federated regression path should prove a real runner OS process can:
+
+- start from `runner-join.json`;
+- register through a real relay;
+- fetch assignment runtime context through the Host API;
+- materialize runner-owned workspace paths;
+- receive Host-managed node identity material only through an authenticated
+  Host API path, not through Nostr;
+- start the assigned node runtime with the normal runner starter;
+- emit signed assignment and runtime observations through the relay;
+- let Host projection observe the runtime without reading runner-owned paths.
+
+This is still a same-workstation smoke. It is a stronger process-boundary proof
+before the three-machine demo.
+
+## Impacted Modules/Files
+
+- `packages/types/src/federation/runner-join.ts`
+- `packages/types/src/host-api/runtime.ts`
+- `services/host/src/index.ts`
+- `services/host/src/state.ts`
+- `services/host/src/index.test.ts`
+- `services/runner/src/assignment-materializer.ts`
+- `services/runner/src/index.test.ts`
+- `services/host/scripts/federated-process-runner-smoke.ts`
+- `scripts/smoke-federated-process-runner.mjs`
+- `package.json`
+- `references/221-federated-runtime-redesign-index.md`
+- `references/231-implementation-slices-and-verification-plan.md`
+- `references/README.md`
+- `wiki/log.md`
+
+## Concrete Changes Required
+
+Implemented in this slice:
+
+- added optional `hostApi.runtimeIdentitySecret.mode: "host_api"` to runner join
+  config;
+- added an authenticated `GET /v1/runtimes/:nodeId/identity-secret` Host API
+  route for Host-managed development node identity material;
+- made the route refuse operation unless `ENTANGLE_HOST_OPERATOR_TOKEN` is
+  configured, so the secret cannot be exported from an unauthenticated Host;
+- updated the default runner assignment materializer to localize fetched Host
+  runtime context into runner-owned assignment workspace paths;
+- copied package and memory seed state into the runner-owned materialization
+  root with symlink dereferencing;
+- fetched runtime identity secret material when explicitly configured and
+  installed it into the runtime identity env var before starting the assigned
+  node service;
+- switched Host JSON state writes to atomic temp-file-and-rename persistence to
+  avoid partial projection reads during rapid observation updates;
+- added `pnpm ops:smoke-federated-process-runner`;
+- added a smoke that starts an actual runner process, uses a real relay, trusts
+  the runner, assigns a node through Host API, and verifies accepted assignment,
+  running runtime projection, runner-owned materialized context, local git
+  backend setup, and Host/runner filesystem isolation.
+
+Deferred:
+
+- replacing Host-managed node identity delivery with runner-owned or external
+  signer custody for production remote deployments;
+- packaging runtime context as Host-signed graph/resource/package snapshots
+  instead of copying from a Host-local package materialization;
+- proving the same flow across separate machines and networks;
+- routing normal turn-produced artifact/source/wiki observations from the
+  runner service into projection during real task execution.
+
+## Tests Required
+
+- `pnpm --filter @entangle/types typecheck`
+- `pnpm --filter @entangle/runner typecheck`
+- `pnpm --filter @entangle/host typecheck`
+- `pnpm --filter @entangle/types test -- index.test.ts`
+- `pnpm --filter @entangle/runner test -- index.test.ts`
+- `pnpm --filter @entangle/host test -- index.test.ts`
+- `node --check scripts/smoke-federated-process-runner.mjs`
+- one-file TypeScript check for
+  `services/host/scripts/federated-process-runner-smoke.ts`
+- `pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777`
+- package lint/typecheck gates before commit.
+
+Verification record:
+
+- focused typechecks passed for types, runner, and Host;
+- focused types and runner tests passed;
+- focused Host tests passed after authenticated helper requests were updated;
+- wrapper syntax check passed;
+- one-file TypeScript check for the process smoke passed;
+- process runner smoke passed against the federated dev `strfry` relay on
+  `ws://localhost:7777`;
+- root `pnpm typecheck` passed;
+- root `pnpm lint` passed;
+- `git diff --check` passed;
+- active stale product marker search returned no implementation or user-facing
+  hits;
+- the smoke stopped the relay after verification.
+
+## End-Of-Slice Audit
+
+The slice intentionally adds one Host API that returns secret material. The
+route is explicit, token-gated, and only used by runner join configs that opt
+into `host_api` runtime identity secret bootstrap. It does not put private keys
+on Nostr and does not write the secret into materialized runtime context files.
+
+The materialized runtime context still includes some non-workspace bindings
+that can reference Host-side development resources, especially model and git
+secret delivery metadata. That is a remaining production custody gap, not a new
+canonical remote assumption.
+
+## Migration/Compatibility Notes
+
+The new Host API route is additive. Existing joined runners keep fetching only
+runtime context unless their join config explicitly requests
+`runtimeIdentitySecret.mode: "host_api"`.
+
+The JSON atomic-write helper changes persistence mechanics without changing file
+formats.
+
+## Risks And Mitigations
+
+- Risk: Host-managed runtime identity export becomes a production pattern.
+  Mitigation: the slice names it as development/bootstrap behavior and requires
+  authenticated Host API access.
+- Risk: copied package materialization is mistaken for remote package delivery.
+  Mitigation: the deferred work calls for signed graph/resource/package
+  snapshots or artifact refs.
+- Risk: atomic JSON writes leave temporary files after crashes.
+  Mitigation: temp names are hidden, unique, and removed on write failure; stale
+  temp cleanup can be added to state repair if needed.
+
+## Open Questions
+
+No product question blocks this slice. The next architectural decision is which
+production key custody model should replace Host-exported node identity secrets
+for remote runners: runner-generated node keys, external signer refs, or
+Host-issued encrypted assignment bundles.

@@ -54,6 +54,7 @@ same-machine slice records.
 - [251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md)
 - [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
 - [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
+- [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
 
 ## Audited Scope
 
@@ -120,6 +121,10 @@ The repository is not fully federated:
   reconciliation;
 - `ops:smoke-federated-live-relay` now proves the federated control/observe path
   against a real relay and projects a git-backed artifact ref;
+- `ops:smoke-federated-process-runner` now starts a real joined runner process,
+  has it fetch authenticated runtime bootstrap context from Host API,
+  materializes runner-owned workspace paths, starts the assigned node runtime,
+  and reports signed runtime status through the relay;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 
@@ -203,7 +208,8 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 14 plus startup/materialization follow-up
-slices are implemented in this branch. The next blocking implementation areas
-are replacing remaining deep filesystem-backed runtime inspection paths and
-orchestrating a separate-process distributed smoke.
+Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
+follow-up slices are implemented in this branch. The next blocking
+implementation areas are replacing remaining deep filesystem-backed runtime
+inspection paths and turning the process smoke into the full multi-machine
+distributed proof.

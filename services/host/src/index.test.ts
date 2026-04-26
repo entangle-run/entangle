@@ -60,6 +60,7 @@ import {
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
+  runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
@@ -746,6 +747,13 @@ async function admitPackageSource(
   packageDirectory: string
 ): Promise<string> {
   const admitResponse = await server.inject({
+    ...(process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+      ? {
+          headers: {
+            authorization: `Bearer ${process.env.ENTANGLE_HOST_OPERATOR_TOKEN}`
+          }
+        }
+      : {}),
     method: "POST",
     payload: {
       sourceKind: "local_path",
@@ -788,6 +796,13 @@ async function applySingleWorkerGraph(input: {
   workerPolicy?: unknown;
 }) {
   const response = await input.server.inject({
+    ...(process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+      ? {
+          headers: {
+            authorization: `Bearer ${process.env.ENTANGLE_HOST_OPERATOR_TOKEN}`
+          }
+        }
+      : {}),
     method: "PUT",
     payload: {
       schemaVersion: "1",
@@ -2820,6 +2835,60 @@ describe("buildHostServer", () => {
           packageLinkTarget
         )
       ).toBe(admittedPackageSource.materialization?.packageRoot);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("exports runtime identity secret material only through authenticated Host API", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(
+      createdDirectories[0]!
+    );
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({ packageSourceId, server });
+
+      const unauthorizedResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/identity-secret"
+      });
+      expect(unauthorizedResponse.statusCode).toBe(401);
+
+      const contextResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/runtimes/worker-it/context"
+      });
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        contextResponse.json()
+      );
+
+      const secretResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/runtimes/worker-it/identity-secret"
+      });
+      expect(secretResponse.statusCode).toBe(200);
+      const identitySecret = runtimeIdentitySecretResponseSchema.parse(
+        secretResponse.json()
+      );
+      expect(identitySecret).toMatchObject({
+        graphId: "team-alpha",
+        nodeId: "worker-it",
+        publicKey: runtimeContext.identityContext.publicKey,
+        secretDelivery: {
+          envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+          mode: "env_var"
+        }
+      });
+      expect(identitySecret.secretKey).toMatch(/^[0-9a-f]{64}$/);
     } finally {
       await server.close();
     }

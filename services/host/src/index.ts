@@ -63,6 +63,7 @@ import {
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
+  runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
@@ -127,6 +128,7 @@ import {
   getRunnerRegistryEntry,
   getRuntimeAssignment,
   getRuntimeContext,
+  getRuntimeIdentitySecret,
   getRuntimeInspection,
   getRuntimeApprovalInspection,
   recordRuntimeApprovalDecision,
@@ -1380,6 +1382,46 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     }
 
     return runtimeContextInspectionResponseSchema.parse(runtimeContext);
+  });
+
+  server.get("/v1/runtimes/:nodeId/identity-secret", async (request, reply) => {
+    if (!operatorToken) {
+      throw new HostHttpError({
+        code: "conflict",
+        message:
+          "Runtime identity secret export requires ENTANGLE_HOST_OPERATOR_TOKEN so the Host API request is authenticated.",
+        statusCode: 409
+      });
+    }
+
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    const identitySecret = await getRuntimeIdentitySecret({
+      nodeId: params.nodeId
+    });
+
+    if (!identitySecret) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          `Runtime '${params.nodeId}' does not have exportable Host-managed identity material.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeIdentitySecretResponseSchema.parse(identitySecret);
   });
 
   server.get("/v1/runtimes/:nodeId/turns", async (request, reply) => {

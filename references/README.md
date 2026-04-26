@@ -299,6 +299,12 @@ files are the active federated redesign pack.
 247. [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
 248. [247-host-startup-control-plane-wiring-slice.md](247-host-startup-control-plane-wiring-slice.md)
 249. [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
+250. [249-runtime-status-observation-projection-slice.md](249-runtime-status-observation-projection-slice.md)
+251. [250-federated-dev-deployment-naming-cleanup-slice.md](250-federated-dev-deployment-naming-cleanup-slice.md)
+252. [251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md)
+253. [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
+254. [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
+255. [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
 
 ## Role of this corpus
 
