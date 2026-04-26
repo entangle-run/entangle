@@ -68,6 +68,8 @@ deployment adapter while keeping distributed semantics independent.
 - Keep same-machine Docker/process launchers as deployment adapters only.
 - Add distributed smoke scripts that can run with separate Host and runner
   roots even when processes are on the same workstation.
+- Use portable bootstrap bundles for joined runner package/memory
+  materialization instead of making runners consume Host-local workspace paths.
 
 ## Audit Search Classification
 
@@ -88,17 +90,20 @@ Classified results:
   - `apps/cli/src/local-*.ts`;
   - Docker Engine client and local launcher code while it remains an adapter.
 - Invalid local-only assumptions for the target architecture:
-- Host API contracts exposing `contextPath`:
-  - fixed for public runtime inspection responses by
-    [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md);
-  - still present as Host-internal process state and explicit context
-    inspection/debug routes;
+  - Host API contracts exposing `contextPath` in public runtime inspection:
+    fixed by
+    [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md).
+  - Host-internal process state and explicit context inspection/debug routes
+    still carry `contextPath`.
   - runtime state contracts exposing `runtimeContextPath`;
   - Host state code reading `context.workspace.runtimeRoot` for canonical
     projection;
   - Host approval decisions writing local approval records directly;
   - runner bootstrap requiring `effective-runtime-context.json` for canonical
     startup.
+  - runner Host API bootstrap that copies directly from Host-local context
+    paths: fixed for default joined runners by
+    [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md).
 - Test fixtures:
   - local relay/git endpoints;
   - Docker-backed deployment adapter fixtures;

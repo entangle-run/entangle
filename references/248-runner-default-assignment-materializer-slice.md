@@ -64,6 +64,16 @@ Follow-up refinement in
   so the default assignment runtime starter can start a real node service;
 - `runtime.status` projection is covered by a separate OS process runner smoke.
 
+Follow-up refinement in
+[256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md):
+
+- the default joined runner now fetches an authenticated bootstrap bundle
+  instead of the raw runtime context endpoint;
+- package and memory state are delivered as file snapshots with hashes and
+  materialized under runner-owned assignment workspace paths;
+- Host-local workspace paths are no longer the substrate for default runner
+  bootstrap materialization.
+
 ## Tests Required
 
 - `pnpm --filter @entangle/runner typecheck`

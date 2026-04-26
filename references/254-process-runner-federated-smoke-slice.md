@@ -8,6 +8,11 @@ and fake runtime starter. Joined runners could fetch Host runtime context, but
 that fetched context still carried Host workspace paths and did not provide the
 node runtime identity secret needed by the default runtime starter.
 
+Follow-up slice
+[256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
+replaces the raw context fetch in default joined runners with a portable
+bootstrap bundle.
+
 Host JSON state writes also used direct file replacement. The process smoke
 exposed a real race where close `runtime.status` observations could make a
 projection read observe a partially rewritten JSON record.
@@ -18,7 +23,7 @@ The federated regression path should prove a real runner OS process can:
 
 - start from `runner-join.json`;
 - register through a real relay;
-- fetch assignment runtime context through the Host API;
+- fetch an assignment runtime bootstrap bundle through the Host API;
 - materialize runner-owned workspace paths;
 - receive Host-managed node identity material only through an authenticated
   Host API path, not through Nostr;
@@ -80,6 +85,7 @@ Deferred:
 - proving the same flow across separate machines and networks;
 - routing normal turn-produced artifact/source/wiki observations from the
   runner service into projection during real task execution.
+- replacing inline bootstrap snapshots with git/object refs for large packages.
 
 ## Tests Required
 
@@ -118,10 +124,11 @@ route is explicit, token-gated, and only used by runner join configs that opt
 into `host_api` runtime identity secret bootstrap. It does not put private keys
 on Nostr and does not write the secret into materialized runtime context files.
 
-The materialized runtime context still includes some non-workspace bindings
-that can reference Host-side development resources, especially model and git
-secret delivery metadata. That is a remaining production custody gap, not a new
-canonical remote assumption.
+The follow-up bootstrap bundle slice removes package/memory copying from
+Host-local path values. The materialized runtime context can still include some
+non-workspace bindings that reference Host-side development resources,
+especially model and git secret delivery metadata. That is a remaining
+production custody gap, not a new canonical remote assumption.
 
 ## Migration/Compatibility Notes
 

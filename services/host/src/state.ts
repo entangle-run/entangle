@@ -187,6 +187,8 @@ import {
   type RuntimeIdentityRecord,
   runtimeIdentityRecordSchema,
   runtimeArtifactListResponseSchema,
+  runtimeBootstrapBundleResponseSchema,
+  runtimeBootstrapDirectorySnapshotSchema,
   runtimeInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
@@ -232,6 +234,8 @@ import {
   type RuntimeApprovalListResponse,
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
+  type RuntimeBootstrapBundleResponse,
+  type RuntimeBootstrapDirectorySnapshot,
   type RuntimeArtifactDiffResponse,
   type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactPreviewResponse,
@@ -6616,6 +6620,160 @@ export async function getRuntimeContext(
   return effectiveRuntimeContextSchema.parse(
     await readJsonFile(inspection.contextPath)
   );
+}
+
+function buildPortableWorkspaceLayout(
+  workspace: EffectiveRuntimeContext["workspace"]
+): EffectiveRuntimeContext["workspace"] {
+  const root = "/entangle/runtime/workspace";
+
+  return {
+    artifactWorkspaceRoot: path.posix.join(root, "artifact-workspace"),
+    ...(workspace.engineStateRoot
+      ? { engineStateRoot: path.posix.join(root, "engine-state") }
+      : {}),
+    injectedRoot: path.posix.join(root, "injected"),
+    memoryRoot: path.posix.join(root, "memory"),
+    packageRoot: path.posix.join(root, "package"),
+    retrievalRoot: path.posix.join(root, "retrieval"),
+    root,
+    runtimeRoot: path.posix.join(root, "runtime"),
+    ...(workspace.sourceWorkspaceRoot
+      ? { sourceWorkspaceRoot: path.posix.join(root, "source") }
+      : {}),
+    ...(workspace.wikiRepositoryRoot
+      ? { wikiRepositoryRoot: path.posix.join(root, "wiki-repository") }
+      : {})
+  };
+}
+
+function buildPortableRuntimeContext(
+  context: EffectiveRuntimeContext
+): EffectiveRuntimeContext {
+  const workspace = buildPortableWorkspaceLayout(context.workspace);
+  const packageSource = context.binding.packageSource;
+  const portablePackageSource =
+    packageSource?.sourceKind === "local_path"
+      ? {
+          ...packageSource,
+          absolutePath: workspace.packageRoot,
+          ...(packageSource.materialization
+            ? {
+                materialization: {
+                  ...packageSource.materialization,
+                  packageRoot: workspace.packageRoot
+                }
+              }
+            : {})
+        }
+      : packageSource?.sourceKind === "local_archive"
+        ? {
+            ...packageSource,
+            archivePath: path.posix.join(
+              workspace.packageRoot,
+              ".source-archive"
+            ),
+            ...(packageSource.materialization
+              ? {
+                  materialization: {
+                    ...packageSource.materialization,
+                    packageRoot: workspace.packageRoot
+                  }
+                }
+              : {})
+          }
+        : undefined;
+
+  return effectiveRuntimeContextSchema.parse({
+    ...context,
+    binding: {
+      ...context.binding,
+      ...(portablePackageSource ? { packageSource: portablePackageSource } : {})
+    },
+    workspace
+  });
+}
+
+async function buildRuntimeBootstrapDirectorySnapshot(input: {
+  capturedAt: string;
+  root: RuntimeBootstrapDirectorySnapshot["root"];
+  rootPath: string;
+}): Promise<RuntimeBootstrapDirectorySnapshot> {
+  const files: RuntimeBootstrapDirectorySnapshot["files"] = [];
+
+  async function collect(currentPath: string, relativeRoot = ""): Promise<void> {
+    if (!(await pathExists(currentPath))) {
+      return;
+    }
+
+    const entries = (await readdir(currentPath)).sort();
+
+    for (const entry of entries) {
+      const entryPath = path.join(currentPath, entry);
+      const relativePath = relativeRoot ? `${relativeRoot}/${entry}` : entry;
+      const entryStats = await stat(entryPath);
+
+      if (entryStats.isDirectory()) {
+        await collect(entryPath, relativePath);
+        continue;
+      }
+
+      if (!entryStats.isFile()) {
+        continue;
+      }
+
+      const content = await readFile(entryPath);
+      files.push({
+        contentBase64: content.toString("base64"),
+        path: relativePath,
+        sha256: createHash("sha256").update(content).digest("hex"),
+        sizeBytes: content.byteLength
+      });
+    }
+  }
+
+  await collect(input.rootPath);
+
+  return runtimeBootstrapDirectorySnapshotSchema.parse({
+    capturedAt: input.capturedAt,
+    files,
+    root: input.root,
+    schemaVersion: "1"
+  });
+}
+
+export async function getRuntimeBootstrapBundle(
+  nodeId: string
+): Promise<RuntimeBootstrapBundleResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const capturedAt = nowIsoString();
+  const runtimeContext = buildPortableRuntimeContext(context);
+  const snapshots = await Promise.all([
+    buildRuntimeBootstrapDirectorySnapshot({
+      capturedAt,
+      root: "package",
+      rootPath: context.workspace.packageRoot
+    }),
+    buildRuntimeBootstrapDirectorySnapshot({
+      capturedAt,
+      root: "memory",
+      rootPath: context.workspace.memoryRoot
+    })
+  ]);
+
+  return runtimeBootstrapBundleResponseSchema.parse({
+    graphId: context.binding.graphId,
+    graphRevisionId: context.binding.graphRevisionId,
+    nodeId,
+    runtimeContext,
+    schemaVersion: "1",
+    snapshots
+  });
 }
 
 export async function listRuntimeArtifacts(

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
 import type {
+  EffectiveRuntimeContext,
   EntangleControlEvent,
   EntangleObservationEventPayload,
   RuntimeAssignmentRecord
@@ -100,6 +101,17 @@ class FakeRunnerJoinTransport implements RunnerJoinTransport {
       }
     });
   }
+}
+
+function buildRuntimeBootstrapBundle(context: EffectiveRuntimeContext) {
+  return {
+    graphId: context.binding.graphId,
+    graphRevisionId: context.binding.graphRevisionId,
+    nodeId: context.binding.node.nodeId,
+    runtimeContext: context,
+    schemaVersion: "1",
+    snapshots: []
+  };
 }
 
 function buildAssignment(): RuntimeAssignmentRecord {
@@ -655,19 +667,24 @@ describe("runner runtime context", () => {
       (url: string | URL | Request, init?: RequestInit) => {
         const requestUrl = url instanceof Request ? url.url : url.toString();
 
-        expect(requestUrl).toBe("http://host.test/v1/runtimes/worker-it/context");
+        expect(requestUrl).toBe(
+          "http://host.test/v1/runtimes/worker-it/bootstrap-bundle"
+        );
         expect(init?.headers).toMatchObject({
           accept: "application/json",
           authorization: "Bearer host-token"
         });
 
         return Promise.resolve(
-          new Response(JSON.stringify(runtimeFixture.context), {
-            headers: {
-              "content-type": "application/json"
-            },
-            status: 200
-          })
+          new Response(
+            JSON.stringify(buildRuntimeBootstrapBundle(runtimeFixture.context)),
+            {
+              headers: {
+                "content-type": "application/json"
+              },
+              status: 200
+            }
+          )
         );
       }
     );
@@ -754,14 +771,19 @@ describe("runner runtime context", () => {
           authorization: "Bearer host-token"
         });
 
-        if (requestUrl === "http://host.test/v1/runtimes/worker-it/context") {
+        if (
+          requestUrl === "http://host.test/v1/runtimes/worker-it/bootstrap-bundle"
+        ) {
           return Promise.resolve(
-            new Response(JSON.stringify(runtimeFixture.context), {
-              headers: {
-                "content-type": "application/json"
-              },
-              status: 200
-            })
+            new Response(
+              JSON.stringify(buildRuntimeBootstrapBundle(runtimeFixture.context)),
+              {
+                headers: {
+                  "content-type": "application/json"
+                },
+                status: 200
+              }
+            )
           );
         }
 

@@ -128,11 +128,16 @@ node service is the next runner-runtime slice.
 Implementation record:
 
 - [237-generic-runner-bootstrap-slice.md](237-generic-runner-bootstrap-slice.md)
+- [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
+- [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
 
 Verification:
 
 - runner bootstrap tests without `ENTANGLE_RUNTIME_CONTEXT_PATH`;
 - negative tests for missing/invalid Host Authority.
+- authenticated bootstrap bundle tests;
+- runner materialization tests proving package/memory snapshots are written
+  under runner-owned assignment state.
 
 ### Slice 7: Local Adapter Rebase
 

@@ -59,6 +59,7 @@ import {
   runtimeArtifactPromotionResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
@@ -2835,6 +2836,67 @@ describe("buildHostServer", () => {
           packageLinkTarget
         )
       ).toBe(admittedPackageSource.materialization?.packageRoot);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("exports portable runtime bootstrap bundles only through authenticated Host API", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(
+      createdDirectories[0]!
+    );
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({ packageSourceId, server });
+
+      const unauthorizedResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/bootstrap-bundle"
+      });
+      expect(unauthorizedResponse.statusCode).toBe(401);
+
+      const bundleResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/runtimes/worker-it/bootstrap-bundle"
+      });
+      expect(bundleResponse.statusCode).toBe(200);
+      const bootstrapBundle = runtimeBootstrapBundleResponseSchema.parse(
+        bundleResponse.json()
+      );
+      const serializedBundle = JSON.stringify(bootstrapBundle);
+
+      expect(bootstrapBundle).toMatchObject({
+        graphId: "team-alpha",
+        nodeId: "worker-it",
+        runtimeContext: {
+          workspace: {
+            packageRoot: "/entangle/runtime/workspace/package",
+            runtimeRoot: "/entangle/runtime/workspace/runtime"
+          }
+        }
+      });
+      expect(serializedBundle).not.toContain(packageDirectory);
+
+      const packageSnapshot = bootstrapBundle.snapshots.find(
+        (snapshot) => snapshot.root === "package"
+      );
+      const manifestFile = packageSnapshot?.files.find(
+        (file) => file.path === "manifest.json"
+      );
+      expect(manifestFile).toBeDefined();
+      expect(
+        JSON.parse(
+          Buffer.from(manifestFile?.contentBase64 ?? "", "base64").toString("utf8")
+        )
+      ).toMatchObject({
+        packageId: "worker-it"
+      });
     } finally {
       await server.close();
     }

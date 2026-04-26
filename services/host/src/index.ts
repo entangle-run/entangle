@@ -62,6 +62,7 @@ import {
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
@@ -127,6 +128,7 @@ import {
   getNodeInspection,
   getRunnerRegistryEntry,
   getRuntimeAssignment,
+  getRuntimeBootstrapBundle,
   getRuntimeContext,
   getRuntimeIdentitySecret,
   getRuntimeInspection,
@@ -1382,6 +1384,58 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     }
 
     return runtimeContextInspectionResponseSchema.parse(runtimeContext);
+  });
+
+  server.get("/v1/runtimes/:nodeId/bootstrap-bundle", async (request, reply) => {
+    if (!operatorToken) {
+      throw new HostHttpError({
+        code: "conflict",
+        message:
+          "Runtime bootstrap bundle export requires ENTANGLE_HOST_OPERATOR_TOKEN so the Host API request is authenticated.",
+        statusCode: 409
+      });
+    }
+
+    const params = request.params as { nodeId: string };
+    const inspection = await getRuntimeInspection(params.nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime '${params.nodeId}' was not found in the active graph.`
+      });
+    }
+
+    if (!inspection.contextAvailable) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    const bootstrapBundle = await getRuntimeBootstrapBundle(params.nodeId);
+
+    if (!bootstrapBundle) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId: params.nodeId
+        },
+        message:
+          inspection.reason ??
+          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+        statusCode: 409
+      });
+    }
+
+    return runtimeBootstrapBundleResponseSchema.parse(bootstrapBundle);
   });
 
   server.get("/v1/runtimes/:nodeId/identity-secret", async (request, reply) => {

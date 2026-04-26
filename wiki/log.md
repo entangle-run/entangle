@@ -3002,3 +3002,15 @@ Runtime recovery fingerprinting now normalizes through the public runtime
 schema before hashing, so private Host-only fields cannot create duplicate
 recovery snapshots. The remaining filesystem-backed detail endpoints are still
 tracked as projection-migration work.
+
+## [2026-04-26] implementation | Added portable runner bootstrap bundles
+
+Added `references/256-portable-runtime-bootstrap-bundle-slice.md` and a
+token-gated `GET /v1/runtimes/:nodeId/bootstrap-bundle` Host API. The bundle
+contains a runtime context with sanitized workspace placeholders plus
+package/memory file snapshots with sha256 and size metadata.
+
+The default joined runner materializer now fetches that bundle instead of the
+raw context endpoint, verifies snapshot metadata, and writes package/memory
+files into the runner-owned assignment workspace. This removes the default
+runner bootstrap dependency on copying from Host-local context paths.

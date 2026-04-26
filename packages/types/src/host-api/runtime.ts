@@ -5,7 +5,11 @@ import {
   artifactRecordSchema
 } from "../artifacts/artifact-ref.js";
 import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
-import { nostrPublicKeySchema, nostrSecretKeySchema } from "../common/crypto.js";
+import {
+  nostrPublicKeySchema,
+  nostrSecretKeySchema,
+  sha256DigestSchema
+} from "../common/crypto.js";
 import {
   policyOperationSchema,
   policyResourceScopeSchema
@@ -143,6 +147,50 @@ export const runtimeIntentMutationRequestSchema = z.object({
 });
 
 export const runtimeContextInspectionResponseSchema = effectiveRuntimeContextSchema;
+
+export const runtimeBootstrapSnapshotRootSchema = z.enum(["package", "memory"]);
+
+export const runtimeBootstrapRelativePathSchema = z
+  .string()
+  .min(1)
+  .superRefine((value, context) => {
+    const segments = value.split("/");
+
+    if (
+      value.startsWith("/") ||
+      value.includes("\\") ||
+      segments.some((segment) => segment === "" || segment === "." || segment === "..")
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Runtime bootstrap file paths must be relative POSIX paths without empty, '.', or '..' segments."
+      });
+    }
+  });
+
+export const runtimeBootstrapFileSnapshotSchema = z.object({
+  contentBase64: z.string(),
+  path: runtimeBootstrapRelativePathSchema,
+  sha256: sha256DigestSchema,
+  sizeBytes: z.number().int().nonnegative()
+});
+
+export const runtimeBootstrapDirectorySnapshotSchema = z.object({
+  capturedAt: nonEmptyStringSchema,
+  files: z.array(runtimeBootstrapFileSnapshotSchema).default([]),
+  root: runtimeBootstrapSnapshotRootSchema,
+  schemaVersion: z.literal("1")
+});
+
+export const runtimeBootstrapBundleResponseSchema = z.object({
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  nodeId: identifierSchema,
+  runtimeContext: effectiveRuntimeContextSchema,
+  schemaVersion: z.literal("1"),
+  snapshots: z.array(runtimeBootstrapDirectorySnapshotSchema).default([])
+});
 
 export const runtimeIdentitySecretResponseSchema = z.object({
   graphId: identifierSchema,
@@ -711,6 +759,10 @@ export type RuntimeInspectionResponse = z.infer<typeof runtimeInspectionResponse
 export type RuntimeListResponse = z.infer<typeof runtimeListResponseSchema>;
 export type RuntimeIntentMutationRequest = z.infer<typeof runtimeIntentMutationRequestSchema>;
 export type RuntimeContextInspectionResponse = z.infer<typeof runtimeContextInspectionResponseSchema>;
+export type RuntimeBootstrapSnapshotRoot = z.infer<typeof runtimeBootstrapSnapshotRootSchema>;
+export type RuntimeBootstrapFileSnapshot = z.infer<typeof runtimeBootstrapFileSnapshotSchema>;
+export type RuntimeBootstrapDirectorySnapshot = z.infer<typeof runtimeBootstrapDirectorySnapshotSchema>;
+export type RuntimeBootstrapBundleResponse = z.infer<typeof runtimeBootstrapBundleResponseSchema>;
 export type RuntimeIdentitySecretResponse = z.infer<typeof runtimeIdentitySecretResponseSchema>;
 export type RuntimeArtifactListResponse = z.infer<typeof runtimeArtifactListResponseSchema>;
 export type RuntimeArtifactInspectionResponse = z.infer<typeof runtimeArtifactInspectionResponseSchema>;

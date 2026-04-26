@@ -1,15 +1,18 @@
-import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   EffectiveRuntimeContext,
   EntangleControlEvent,
+  RuntimeBootstrapBundleResponse,
+  RuntimeBootstrapDirectorySnapshot,
   RuntimeIdentitySecretResponse,
   RuntimeAssignmentRecord,
   RunnerJoinHostApi
 } from "@entangle/types";
 import {
   effectiveRuntimeContextSchema,
-  runtimeContextInspectionResponseSchema,
+  runtimeBootstrapBundleResponseSchema,
   runtimeIdentitySecretResponseSchema
 } from "@entangle/types";
 import type {
@@ -65,37 +68,15 @@ async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-async function pathExists(targetPath: string): Promise<boolean> {
-  try {
-    await stat(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function copyDirectoryIfPresent(input: {
-  source: string | undefined;
-  target: string | undefined;
-}): Promise<void> {
-  if (!input.source || !input.target || !(await pathExists(input.source))) {
-    return;
-  }
-
-  await rm(input.target, { force: true, recursive: true });
-  await mkdir(path.dirname(input.target), { recursive: true });
-  await cp(input.source, input.target, { dereference: true, recursive: true });
-}
-
 function buildAssignmentWorkspaceLayout(
   assignmentRoot: string,
-  hostWorkspace: EffectiveRuntimeContext["workspace"]
+  portableWorkspace: EffectiveRuntimeContext["workspace"]
 ): EffectiveRuntimeContext["workspace"] {
   const root = path.join(assignmentRoot, "workspace");
 
   return {
     artifactWorkspaceRoot: path.join(root, "artifact-workspace"),
-    ...(hostWorkspace.engineStateRoot
+    ...(portableWorkspace.engineStateRoot
       ? { engineStateRoot: path.join(root, "engine-state") }
       : {}),
     injectedRoot: path.join(root, "injected"),
@@ -104,22 +85,88 @@ function buildAssignmentWorkspaceLayout(
     retrievalRoot: path.join(root, "retrieval"),
     root,
     runtimeRoot: path.join(root, "runtime"),
-    ...(hostWorkspace.sourceWorkspaceRoot
+    ...(portableWorkspace.sourceWorkspaceRoot
       ? { sourceWorkspaceRoot: path.join(root, "source") }
       : {}),
-    ...(hostWorkspace.wikiRepositoryRoot
+    ...(portableWorkspace.wikiRepositoryRoot
       ? { wikiRepositoryRoot: path.join(root, "wiki-repository") }
       : {})
   };
 }
 
-async function materializeWorkspaceFromHostContext(input: {
+function snapshotTargetRoot(input: {
+  root: RuntimeBootstrapDirectorySnapshot["root"];
+  workspace: EffectiveRuntimeContext["workspace"];
+}): string {
+  switch (input.root) {
+    case "memory":
+      return input.workspace.memoryRoot;
+    case "package":
+      return input.workspace.packageRoot;
+  }
+}
+
+function resolveSnapshotFilePath(input: {
+  relativePath: string;
+  root: string;
+}): string {
+  const root = path.resolve(input.root);
+  const filePath = path.resolve(root, input.relativePath);
+  const rootPrefix = `${root}${path.sep}`;
+
+  if (filePath !== root && !filePath.startsWith(rootPrefix)) {
+    throw new Error(
+      `Runtime bootstrap snapshot path '${input.relativePath}' escapes '${root}'.`
+    );
+  }
+
+  return filePath;
+}
+
+async function materializeDirectorySnapshot(input: {
+  snapshot: RuntimeBootstrapDirectorySnapshot;
+  workspace: EffectiveRuntimeContext["workspace"];
+}): Promise<void> {
+  const root = snapshotTargetRoot({
+    root: input.snapshot.root,
+    workspace: input.workspace
+  });
+
+  await rm(root, { force: true, recursive: true });
+  await mkdir(root, { recursive: true });
+
+  for (const file of input.snapshot.files) {
+    const content = Buffer.from(file.contentBase64, "base64");
+    const digest = createHash("sha256").update(content).digest("hex");
+
+    if (digest !== file.sha256) {
+      throw new Error(
+        `Runtime bootstrap snapshot file '${file.path}' failed sha256 verification.`
+      );
+    }
+
+    if (content.byteLength !== file.sizeBytes) {
+      throw new Error(
+        `Runtime bootstrap snapshot file '${file.path}' size did not match metadata.`
+      );
+    }
+
+    const filePath = resolveSnapshotFilePath({
+      relativePath: file.path,
+      root
+    });
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, content);
+  }
+}
+
+async function materializeWorkspaceFromBootstrapBundle(input: {
   assignmentRoot: string;
-  hostRuntimeContext: EffectiveRuntimeContext;
+  bootstrapBundle: RuntimeBootstrapBundleResponse;
 }): Promise<EffectiveRuntimeContext> {
   const workspace = buildAssignmentWorkspaceLayout(
     input.assignmentRoot,
-    input.hostRuntimeContext.workspace
+    input.bootstrapBundle.runtimeContext.workspace
   );
   const workspaceDirectories = [
     workspace.root,
@@ -138,18 +185,16 @@ async function materializeWorkspaceFromHostContext(input: {
       mkdir(directory, { recursive: true })
     )
   );
-  await Promise.all([
-    copyDirectoryIfPresent({
-      source: input.hostRuntimeContext.workspace.packageRoot,
-      target: workspace.packageRoot
-    }),
-    copyDirectoryIfPresent({
-      source: input.hostRuntimeContext.workspace.memoryRoot,
-      target: workspace.memoryRoot
-    })
-  ]);
+  await Promise.all(
+    input.bootstrapBundle.snapshots.map((snapshot) =>
+      materializeDirectorySnapshot({
+        snapshot,
+        workspace
+      })
+    )
+  );
 
-  const packageSource = input.hostRuntimeContext.binding.packageSource;
+  const packageSource = input.bootstrapBundle.runtimeContext.binding.packageSource;
   const localizedPackageSource =
     packageSource?.sourceKind === "local_path"
       ? {
@@ -159,9 +204,9 @@ async function materializeWorkspaceFromHostContext(input: {
       : packageSource;
 
   return effectiveRuntimeContextSchema.parse({
-    ...input.hostRuntimeContext,
+    ...input.bootstrapBundle.runtimeContext,
     binding: {
-      ...input.hostRuntimeContext.binding,
+      ...input.bootstrapBundle.runtimeContext.binding,
       ...(localizedPackageSource
         ? { packageSource: localizedPackageSource }
         : {})
@@ -190,12 +235,12 @@ function buildHostApiHeaders(input: RunnerJoinHostApi): Record<string, string> {
   return headers;
 }
 
-async function fetchHostRuntimeContext(input: {
+async function fetchHostRuntimeBootstrapBundle(input: {
   assignment: RuntimeAssignmentRecord;
   hostApi: RunnerJoinHostApi;
-}): Promise<EffectiveRuntimeContext> {
+}): Promise<RuntimeBootstrapBundleResponse> {
   const url = new URL(
-    `/v1/runtimes/${encodeURIComponent(input.assignment.nodeId)}/context`,
+    `/v1/runtimes/${encodeURIComponent(input.assignment.nodeId)}/bootstrap-bundle`,
     input.hostApi.baseUrl
   );
   const response = await fetch(url, {
@@ -204,11 +249,11 @@ async function fetchHostRuntimeContext(input: {
 
   if (!response.ok) {
     throw new Error(
-      `Host runtime context fetch failed for node '${input.assignment.nodeId}' with HTTP ${response.status}.`
+      `Host runtime bootstrap bundle fetch failed for node '${input.assignment.nodeId}' with HTTP ${response.status}.`
     );
   }
 
-  return runtimeContextInspectionResponseSchema.parse(await response.json());
+  return runtimeBootstrapBundleResponseSchema.parse(await response.json());
 }
 
 async function fetchHostRuntimeIdentitySecret(input: {
@@ -303,16 +348,16 @@ export async function materializeAssignmentToFileSystem(input: {
     ? path.join(assignmentRoot, "runtime-context.json")
     : undefined;
   const materializationPath = path.join(assignmentRoot, "materialization.json");
-  const hostRuntimeContext = input.hostApi
-    ? await fetchHostRuntimeContext({
+  const bootstrapBundle = input.hostApi
+    ? await fetchHostRuntimeBootstrapBundle({
         assignment: input.assignment,
         hostApi: input.hostApi
       })
     : undefined;
-  let runtimeContext = hostRuntimeContext
-    ? await materializeWorkspaceFromHostContext({
+  let runtimeContext = bootstrapBundle
+    ? await materializeWorkspaceFromBootstrapBundle({
         assignmentRoot,
-        hostRuntimeContext
+        bootstrapBundle
       })
     : undefined;
 

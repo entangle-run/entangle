@@ -62,6 +62,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
+  runtimeBootstrapBundleResponseSchema,
   runtimeArtifactPromotionListResponseSchema,
   runtimeArtifactPromotionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
@@ -860,6 +861,123 @@ describe("runtime inspection host API contracts", () => {
     ]);
     expect(result.agentRuntime?.lastSourceChangeSummary?.fileCount).toBe(1);
     expect(result.workspaceHealth?.status).toBe("ready");
+  });
+
+  it("accepts portable runtime bootstrap bundles", () => {
+    const result = runtimeBootstrapBundleResponseSchema.parse({
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260426-000001",
+      nodeId: "worker-it",
+      runtimeContext: {
+        agentRuntimeContext: {
+          engineProfile: {
+            defaultAgent: "build",
+            displayName: "OpenCode",
+            executable: "opencode",
+            id: "opencode-default",
+            kind: "opencode_server"
+          },
+          engineProfileRef: "opencode-default",
+          mode: "coding_agent"
+        },
+        artifactContext: {},
+        binding: {
+          bindingId: "team-alpha-worker-it",
+          externalPrincipals: [],
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-20260426-000001",
+          node: {
+            displayName: "Worker IT",
+            nodeId: "worker-it",
+            nodeKind: "worker"
+          },
+          resolvedResourceBindings: {
+            externalPrincipalRefs: [],
+            gitServiceRefs: [],
+            relayProfileRefs: []
+          },
+          runtimeProfile: "federated",
+          schemaVersion: "1"
+        },
+        generatedAt: "2026-04-26T10:00:00.000Z",
+        identityContext: {
+          algorithm: "nostr_secp256k1",
+          publicKey:
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          secretDelivery: {
+            envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+            mode: "env_var"
+          }
+        },
+        modelContext: {},
+        packageManifest: {
+          schemaVersion: "1",
+          defaultNodeKind: "worker",
+          packageKind: "template",
+          packageId: "worker-it",
+          name: "Worker IT",
+          version: "0.1.0"
+        },
+        policyContext: {
+          autonomy: {
+            canInitiateSessions: false,
+            canMutateGraph: false
+          },
+          runtimeProfile: "federated"
+        },
+        relayContext: {},
+        schemaVersion: "1",
+        workspace: {
+          artifactWorkspaceRoot: "/entangle/runtime/workspace/artifacts",
+          injectedRoot: "/entangle/runtime/workspace/injected",
+          memoryRoot: "/entangle/runtime/workspace/memory",
+          packageRoot: "/entangle/runtime/workspace/package",
+          retrievalRoot: "/entangle/runtime/workspace/retrieval",
+          root: "/entangle/runtime/workspace",
+          runtimeRoot: "/entangle/runtime/workspace/runtime"
+        }
+      },
+      schemaVersion: "1",
+      snapshots: [
+        {
+          capturedAt: "2026-04-26T10:00:00.000Z",
+          files: [
+            {
+              contentBase64: "e30=",
+              path: "manifest.json",
+              sha256:
+                "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+              sizeBytes: 2
+            }
+          ],
+          root: "package",
+          schemaVersion: "1"
+        }
+      ]
+    });
+
+    expect(result.snapshots[0]?.files[0]?.path).toBe("manifest.json");
+    expect(
+      runtimeBootstrapBundleResponseSchema.safeParse({
+        ...result,
+        snapshots: [
+          {
+            capturedAt: "2026-04-26T10:00:00.000Z",
+            files: [
+              {
+                contentBase64: "e30=",
+                path: "../manifest.json",
+                sha256:
+                  "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+                sizeBytes: 2
+              }
+            ],
+            root: "package",
+            schemaVersion: "1"
+          }
+        ]
+      }).success
+    ).toBe(false);
   });
 });
 
