@@ -42,6 +42,8 @@ User nodes are now partially runtime-capable:
 - User Node message records now preserve approval metadata, and the User Client
   renders approve/reject controls that publish signed `approval.response`
   messages as the selected User Node.
+- The User Client renders bounded artifact refs attached to message records,
+  including backend, kind, summary, and locator details.
 - The process-boundary smoke now starts one real joined agent runner and one
   real joined User Node `human_interface` runner, assigns both through the same
   control plane, verifies User Client `/health`, and proves the signed User
@@ -54,7 +56,7 @@ User nodes are now partially runtime-capable:
 Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
-  dedicated app with artifact/source/wiki review panels;
+  dedicated app with artifact/source/wiki preview and review actions;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;

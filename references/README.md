@@ -314,6 +314,7 @@ files are the active federated redesign pack.
 262. [261-user-node-message-history-slice.md](261-user-node-message-history-slice.md)
 263. [262-user-node-inbound-message-intake-slice.md](262-user-node-inbound-message-intake-slice.md)
 264. [263-user-node-approval-controls-slice.md](263-user-node-approval-controls-slice.md)
+265. [264-user-node-artifact-ref-rendering-slice.md](264-user-node-artifact-ref-rendering-slice.md)
 
 ## Role of this corpus
 

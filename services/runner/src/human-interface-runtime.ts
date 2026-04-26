@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import type {
+  ArtifactRef,
   EntangleA2AMessage,
   EffectiveRuntimeContext,
   RunnerJoinHostApi,
@@ -426,6 +427,43 @@ function renderApprovalControls(message: UserNodeMessageRecord): string {
   </form>`;
 }
 
+function renderArtifactLocator(ref: ArtifactRef): string {
+  switch (ref.backend) {
+    case "git":
+      return [
+        ref.locator.repositoryName,
+        ref.locator.branch,
+        ref.locator.commit,
+        ref.locator.path
+      ]
+        .filter((value) => value !== undefined)
+        .join(" / ");
+    case "wiki":
+      return `${ref.locator.nodeId} / ${ref.locator.path}`;
+    case "local_file":
+      return ref.locator.path;
+  }
+}
+
+function renderArtifactRefs(refs: ArtifactRef[]): string {
+  if (refs.length === 0) {
+    return "";
+  }
+
+  return `<div class="artifact-list">
+    ${refs
+      .map(
+        (ref) =>
+          `<div class="artifact-ref">
+            <div><strong>${escapeHtml(ref.artifactId)}</strong> ${escapeHtml(ref.backend)}${ref.artifactKind ? ` ${escapeHtml(ref.artifactKind)}` : ""}</div>
+            ${ref.contentSummary ? `<div>${escapeHtml(ref.contentSummary)}</div>` : ""}
+            <div class="message-meta">${escapeHtml(renderArtifactLocator(ref))}</div>
+          </div>`
+      )
+      .join("")}
+  </div>`;
+}
+
 async function renderHome(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -507,6 +545,7 @@ async function renderHome(input: {
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
               <div>${escapeHtml(message.summary)}</div>
+              ${renderArtifactRefs(message.artifactRefs)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
               ${renderApprovalControls(message)}
             </article>`
@@ -552,6 +591,8 @@ async function renderHome(input: {
       .message:first-child { border-top: 0; padding-top: 0; }
       .message-meta { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
       .approval-actions { display: flex; gap: 8px; margin-top: 4px; }
+      .artifact-list { display: grid; gap: 6px; }
+      .artifact-ref { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
       dt { color: var(--muted); font-size: 13px; }

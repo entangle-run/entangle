@@ -3215,3 +3215,22 @@ relay-backed
 smoke passed with `user-node-approval-request`,
 `user-node-approval-response`, two User Node runtimes, and filesystem
 isolation.
+
+## [2026-04-26] implementation | Rendered User Node artifact refs
+
+Added `references/264-user-node-artifact-ref-rendering-slice.md`. The
+runner-served User Client now renders bounded artifact refs attached to message
+records, including artifact id, backend, kind, summary, and git/wiki/local-file
+locator details. This is display-only; artifact preview, source diff review,
+wiki review, and permission-aware artifact actions remain explicit follow-up
+work.
+
+Runner focused tests now cover rendering an attached git artifact ref on the
+conversation page. The process runner smoke synthetic agent-to-user message now
+includes a git artifact ref and asserts Host conversation detail preserves it.
+Host and runner typechecks, runner tests, runner lint, and
+`node --check scripts/smoke-federated-process-runner.mjs` passed before the
+relay-backed smoke rerun. The relay-backed
+`pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000`
+smoke passed after adding the artifact ref to the synthetic agent-to-user
+message.

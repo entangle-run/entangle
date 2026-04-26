@@ -1333,7 +1333,24 @@ async function main(): Promise<void> {
         toPubkey: materializedUserContext.identityContext.publicKey,
         turnId: `${turnId}-synthetic-result`,
         work: {
-          artifactRefs: [],
+          artifactRefs: [
+            {
+              artifactId: `artifact-${runId}`,
+              artifactKind: "report_file",
+              backend: "git",
+              contentSummary: "Synthetic report artifact for User Node review.",
+              conversationId: userMessage.conversationId,
+              createdByNodeId: "builder",
+              locator: {
+                branch: "main",
+                commit: "synthetic-commit",
+                path: "reports/synthetic-review.md",
+                repositoryName: "smoke-artifacts"
+              },
+              sessionId: userMessage.sessionId,
+              status: "published"
+            }
+          ],
           metadata: {
             synthetic: true
           },
@@ -1369,7 +1386,10 @@ async function main(): Promise<void> {
         (message) =>
           message.direction === "inbound" &&
           message.eventId === syntheticAgentMessageId &&
-          message.peerNodeId === "builder"
+          message.peerNodeId === "builder" &&
+          message.artifactRefs.some(
+            (artifactRef) => artifactRef.artifactId === `artifact-${runId}`
+          )
       ),
       "User Node conversation detail must include the inbound synthetic agent message."
     );

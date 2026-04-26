@@ -504,6 +504,20 @@ describe("runner runtime context", () => {
                     approverNodeIds: ["user-main"],
                     operation: "source_application"
                   },
+                  artifactRefs: [
+                    {
+                      artifactId: "artifact-alpha",
+                      artifactKind: "report_file",
+                      backend: "git",
+                      contentSummary: "Review report.",
+                      locator: {
+                        branch: "main",
+                        commit: "abc123",
+                        path: "reports/review.md",
+                        repositoryName: "worker-artifacts"
+                      }
+                    }
+                  ],
                   conversationId: "conversation-alpha",
                   createdAt: "2026-04-26T12:02:00.000Z",
                   direction: "inbound",
@@ -696,6 +710,8 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("conversation-alpha");
       expect(pageBody).toContain("Previous user message.");
       expect(pageBody).toContain("approval-alpha");
+      expect(pageBody).toContain("artifact-alpha");
+      expect(pageBody).toContain("reports/review.md");
       expect(pageBody).toContain("Approve");
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
