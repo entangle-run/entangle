@@ -37,6 +37,8 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreRequestSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
@@ -97,6 +99,8 @@ import {
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeArtifactPreviewResponse,
+  type RuntimeArtifactRestoreRequest,
+  type RuntimeArtifactRestoreResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
   type RuntimeMemoryInspectionResponse,
@@ -733,6 +737,28 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async restoreRuntimeArtifact(
+      nodeId: string,
+      artifactId: string,
+      request: RuntimeArtifactRestoreRequest = {}
+    ): Promise<RuntimeArtifactRestoreResponse> {
+      const body = runtimeArtifactRestoreRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/restore`,
+          {
+            body: JSON.stringify(body),
+            headers: {
+              "content-type": "application/json"
+            },
+            method: "POST"
+          }
+        ),
+        runtimeArtifactRestoreResponseSchema
+      );
+    },
+
     async getRuntimeMemory(
       nodeId: string
     ): Promise<RuntimeMemoryInspectionResponse> {
@@ -1111,6 +1137,7 @@ export {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation,
   type RuntimeArtifactPresentationFilterOptions

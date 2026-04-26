@@ -228,7 +228,10 @@ This repository currently contains:
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, with bounded preview,
   git history, and git diff inspection for supported materialized artifacts,
-  plus matching host-client, CLI, and Studio coverage;
+  plus a first safe `POST /v1/runtimes/{nodeId}/artifacts/{artifactId}/restore`
+  path that restores git-backed artifacts into an explicit artifact workspace
+  restore directory without overwriting existing targets by default, with
+  matching host-client and CLI coverage;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -738,9 +741,10 @@ The highest-value remaining gaps are:
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
-- advanced git widening beyond the current locator-specific handoff and
-  source-history publication model, especially artifact restore/replay
-  semantics, non-primary target provisioning, and replicated fallback paths;
+- advanced git widening beyond the current locator-specific handoff,
+  source-history publication, and safe artifact restore model, especially
+  approval-gated replay/promotion semantics, non-primary target provisioning,
+  and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

@@ -87,6 +87,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -1741,6 +1742,43 @@ hostRuntimesCommand
         options.summary
           ? { artifact: projectRuntimeArtifactSummary(response.artifact) }
           : response
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("artifact-restore")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<artifactId>", "Artifact identifier to restore.")
+  .option("--overwrite", "Replace an existing restore target with the same id.")
+  .option("--reason <reason>", "Operator reason for the restore attempt.")
+  .option("--requested-by <nodeId>", "Node or operator identifier requesting restore.")
+  .option("--restore-id <restoreId>", "Stable restore identifier.")
+  .option("--summary", "Print a compact operator-oriented restore summary.")
+  .description("Restore a git-backed runtime artifact into the artifact workspace.")
+  .action(
+    async (
+      nodeId: string,
+      artifactId: string,
+      options: {
+        overwrite?: boolean;
+        reason?: string;
+        requestedBy?: string;
+        restoreId?: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.restoreRuntimeArtifact(nodeId, artifactId, {
+        overwrite: options.overwrite ?? false,
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
+        ...(options.restoreId ? { restoreId: options.restoreId } : {})
+      });
+
+      printJson(
+        options.summary ? projectRuntimeArtifactRestoreSummary(response) : response
       );
     }
   );

@@ -44,6 +44,8 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreRequestSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
@@ -122,6 +124,7 @@ import {
   getRuntimeArtifactHistory,
   getRuntimeArtifactPreview,
   restartRuntime,
+  restoreRuntimeArtifact,
   replaceEdge,
   replaceManagedNode,
   reviewRuntimeSourceChangeCandidate,
@@ -1196,6 +1199,59 @@ export async function buildHostServer() {
       }
 
       return runtimeArtifactDiffResponseSchema.parse(artifactDiff);
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/artifacts/:artifactId/restore",
+    async (request, reply) => {
+      const params = request.params as { artifactId: string; nodeId: string };
+      const body = parseRequestInput(
+        runtimeArtifactRestoreRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message: "Request body did not match the expected schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      if (!inspection.contextAvailable) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
+          statusCode: 409
+        });
+      }
+
+      const artifactRestore = await restoreRuntimeArtifact({
+        artifactId: params.artifactId,
+        nodeId: params.nodeId,
+        request: body
+      });
+
+      if (!artifactRestore) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeArtifactRestoreResponseSchema.parse(artifactRestore);
     }
   );
 

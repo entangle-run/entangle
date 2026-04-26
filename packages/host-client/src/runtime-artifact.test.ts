@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
-  RuntimeArtifactHistoryResponse
+  RuntimeArtifactHistoryResponse,
+  RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 import {
   filterRuntimeArtifactsForPresentation,
@@ -12,6 +13,7 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation
 } from "./runtime-artifact.js";
@@ -182,5 +184,35 @@ describe("runtime artifact presentation helpers", () => {
     expect(formatRuntimeArtifactDiffStatus(diff)).toBe(
       "000000000000..0123456789ab · 42 bytes"
     );
+  });
+
+  it("formats artifact restore summaries", () => {
+    const restore: RuntimeArtifactRestoreResponse["restore"] = {
+      artifactId: "artifact-report",
+      createdAt: "2026-04-24T10:03:00.000Z",
+      mode: "restore_workspace",
+      nodeId: "worker-it",
+      restoreId: "restore-artifact-report",
+      restoredFileCount: 1,
+      restoredPath: "/tmp/worker-it/restores/restore-artifact-report",
+      source: {
+        backend: "git",
+        commit: "0123456789abcdef",
+        path: "reports/report.md"
+      },
+      status: "restored",
+      updatedAt: "2026-04-24T10:03:00.000Z"
+    };
+
+    expect(formatRuntimeArtifactRestoreStatus(restore)).toBe("1 file restored");
+    expect(
+      formatRuntimeArtifactRestoreStatus({
+        ...restore,
+        restoredFileCount: undefined,
+        restoredPath: undefined,
+        status: "unavailable",
+        unavailableReason: "missing git repository"
+      })
+    ).toBe("unavailable");
   });
 });

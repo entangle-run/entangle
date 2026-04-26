@@ -6,6 +6,7 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation,
   type RuntimeArtifactPresentationFilterOptions
@@ -14,7 +15,8 @@ import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
-  RuntimeArtifactPreviewResponse
+  RuntimeArtifactPreviewResponse,
+  RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 
 export type RuntimeArtifactCliFilterOptions =
@@ -193,5 +195,50 @@ export function projectRuntimeArtifactDiffSummary(
           reason: response.diff.reason,
           status: formatRuntimeArtifactDiffStatus(response.diff)
         }
+  };
+}
+
+export interface RuntimeArtifactCliRestoreSummaryRecord {
+  artifact: RuntimeArtifactCliSummaryRecord;
+  restore:
+    | {
+        available: true;
+        mode: RuntimeArtifactRestoreResponse["restore"]["mode"];
+        restoredFileCount: number;
+        restoredPath: string;
+        restoreId: string;
+        status: string;
+      }
+    | {
+        available: false;
+        reason: string;
+        restoreId: string;
+        status: string;
+      };
+}
+
+export function projectRuntimeArtifactRestoreSummary(
+  response: RuntimeArtifactRestoreResponse
+): RuntimeArtifactCliRestoreSummaryRecord {
+  return {
+    artifact: projectRuntimeArtifactSummary(response.artifact),
+    restore:
+      response.restore.status === "restored"
+        ? {
+            available: true,
+            mode: response.restore.mode,
+            restoredFileCount: response.restore.restoredFileCount ?? 0,
+            restoredPath: response.restore.restoredPath ?? "",
+            restoreId: response.restore.restoreId,
+            status: formatRuntimeArtifactRestoreStatus(response.restore)
+          }
+        : {
+            available: false,
+            reason:
+              response.restore.unavailableReason ??
+              "Artifact restore is unavailable.",
+            restoreId: response.restore.restoreId,
+            status: formatRuntimeArtifactRestoreStatus(response.restore)
+          }
   };
 }

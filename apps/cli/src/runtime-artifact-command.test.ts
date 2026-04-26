@@ -7,6 +7,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -246,6 +247,43 @@ describe("runtime-artifact-command", () => {
         contentType: "text/x-diff",
         status: "000000000000..0123456789ab · 42 bytes",
         truncated: false
+      }
+    });
+  });
+
+  it("projects artifact restore status without duplicating artifact payloads", () => {
+    const [artifact] = artifacts;
+
+    expect(artifact).toBeDefined();
+    expect(
+      projectRuntimeArtifactRestoreSummary({
+        artifact: artifact!,
+        restore: {
+          artifactId: "artifact-report",
+          createdAt: "2026-04-24T10:03:00.000Z",
+          mode: "restore_workspace",
+          nodeId: "worker-it",
+          restoreId: "restore-artifact-report",
+          restoredFileCount: 2,
+          restoredPath: "/tmp/worker-it/restores/restore-artifact-report",
+          source: {
+            backend: "git",
+            commit: "0123456789abcdef",
+            path: "reports/report.md"
+          },
+          status: "restored",
+          updatedAt: "2026-04-24T10:03:00.000Z"
+        }
+      })
+    ).toMatchObject({
+      artifact: {
+        artifactId: "artifact-report"
+      },
+      restore: {
+        available: true,
+        restoredFileCount: 2,
+        restoreId: "restore-artifact-report",
+        status: "2 files restored"
       }
     });
   });

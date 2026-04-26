@@ -171,11 +171,14 @@ The repository now also contains the first real implementation baseline:
   before accepting a supplied approval id, with a host/CLI/Studio operator
   decision path for creating scoped approvals or deciding pending approvals,
   with bounded host/CLI/Studio history and diff inspection for supported
-  materialized git artifacts, and with runner-owned local git snapshots of
-  `memory/wiki` into each node's `wiki-repository` workspace after completed
-  turns, including durable sync outcomes on turns, host events, CLI output, and
-  Studio turn inspection, plus `entangle local doctor` runtime wiki repository
-  health warnings for uninitialized, dirty, or uncommitted snapshots, and with
+  materialized git artifacts, plus a first safe host/CLI restore path that
+  materializes git-backed runtime artifacts into explicit artifact workspace
+  restore directories without overwriting existing targets by default, and
+  with runner-owned local git snapshots of `memory/wiki` into each node's
+  `wiki-repository` workspace after completed turns, including durable sync
+  outcomes on turns, host events, CLI output, and Studio turn inspection, plus
+  `entangle local doctor` runtime wiki repository health warnings for
+  uninitialized, dirty, or uncommitted snapshots, and with
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
@@ -525,7 +528,8 @@ The repository now also contains the first real implementation baseline:
   Studio consuming the same formatting and the CLI exposing compact
   `host runtimes artifact --summary` and `host runtimes artifacts --summary`
   output, including shared selected-artifact preview, history, and diff
-  status formatting;
+  status formatting plus restore status formatting for headless restore
+  operations;
 - shared graph-topology presentation helpers in `packages/host-client`, with
   Studio consuming the same graph revision, managed-node, and edge vocabulary
   and the CLI exposing compact `--summary` output for active graph, graph
@@ -732,11 +736,11 @@ The current implementation-truth audit now lives in
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
   retryable target-aware source-history commit artifact publication plus
-  bounded artifact history/diff inspection for materialized git artifacts; the
-  next git gaps are artifact restore/replay semantics and non-primary target
-  provisioning/fallback behavior, while the next deployment-grade gap is
-  non-disposable local-profile upgrade and repair behavior for older Gitea
-  volumes;
+  bounded artifact history/diff inspection and safe workspace restore for
+  materialized git artifacts; the next git gaps are approval-gated
+  restore/replay promotion semantics and non-primary target provisioning/
+  fallback behavior, while the next deployment-grade gap is non-disposable
+  local-profile upgrade and repair behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

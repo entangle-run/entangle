@@ -1430,6 +1430,91 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runtime artifact restore requests to the host surface", async () => {
+    const requests: Array<{ body?: string; method?: string; url: string }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-22T00:00:00.000Z",
+                materialization: {
+                  repoPath: "/tmp/entangle-runner/workspace"
+                },
+                ref: {
+                  artifactId: "report-turn-001",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  locator: {
+                    branch: "worker-it/session-alpha/review-patch",
+                    commit: "abc123",
+                    path: "reports/session-alpha/turn-001.md"
+                  },
+                  preferred: true,
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-22T00:00:00.000Z"
+              },
+              restore: {
+                artifactId: "report-turn-001",
+                createdAt: "2026-04-22T00:01:00.000Z",
+                mode: "restore_workspace",
+                nodeId: "worker-it",
+                requestedBy: "user-main",
+                restoreId: "restore-report-turn-001",
+                restoredFileCount: 1,
+                restoredPath:
+                  "/tmp/entangle-runner/workspace/restores/restore-report-turn-001",
+                source: {
+                  backend: "git",
+                  commit: "abc123",
+                  path: "reports/session-alpha/turn-001.md"
+                },
+                status: "restored",
+                updatedAt: "2026-04-22T00:01:00.000Z"
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.restoreRuntimeArtifact("worker-it", "report-turn-001", {
+        requestedBy: "user-main",
+        restoreId: "restore-report-turn-001"
+      })
+    ).resolves.toMatchObject({
+      restore: {
+        restoredFileCount: 1,
+        status: "restored"
+      }
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          mode: "restore_workspace",
+          overwrite: false,
+          requestedBy: "user-main",
+          restoreId: "restore-report-turn-001"
+        }),
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/restore"
+      }
+    ]);
+  });
+
   it("parses runtime memory list and page responses from the host surface", async () => {
     const requests: string[] = [];
     const client = createHostClient({

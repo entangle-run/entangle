@@ -6,7 +6,8 @@ import type {
   ArtifactRecord,
   ArtifactRetrievalState,
   RuntimeArtifactDiffResponse,
-  RuntimeArtifactHistoryResponse
+  RuntimeArtifactHistoryResponse,
+  RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 
 export type RuntimeArtifactPresentationFilterOptions = {
@@ -196,4 +197,16 @@ export function formatRuntimeArtifactDiffStatus(
   const truncated = diff.truncated ? " · truncated" : "";
 
   return `${range} · ${diff.bytesRead} bytes${truncated}`;
+}
+
+export function formatRuntimeArtifactRestoreStatus(
+  restore: RuntimeArtifactRestoreResponse["restore"]
+): string {
+  if (restore.status === "unavailable") {
+    return "unavailable";
+  }
+
+  const fileCount = restore.restoredFileCount ?? 0;
+
+  return `${fileCount} ${fileCount === 1 ? "file" : "files"} restored`;
 }

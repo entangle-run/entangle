@@ -45,6 +45,7 @@ import {
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
@@ -287,6 +288,49 @@ describe("runtime artifact host API contracts", () => {
 
     expect(history.history.available).toBe(true);
     expect(diff.diff.available).toBe(true);
+  });
+
+  it("accepts runtime artifact restore responses", () => {
+    const result = runtimeArtifactRestoreResponseSchema.parse({
+      artifact: {
+        createdAt: "2026-04-24T00:00:00.000Z",
+        materialization: {
+          repoPath: "/tmp/entangle-runner"
+        },
+        ref: {
+          artifactId: "report-turn-001",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            path: "reports/turn-001.md"
+          },
+          preferred: true,
+          status: "materialized"
+        },
+        updatedAt: "2026-04-24T00:00:00.000Z"
+      },
+      restore: {
+        artifactId: "report-turn-001",
+        createdAt: "2026-04-24T00:01:00.000Z",
+        mode: "restore_workspace",
+        nodeId: "worker-it",
+        requestedBy: "user-main",
+        restoreId: "restore-report-turn-001",
+        restoredFileCount: 1,
+        restoredPath: "/tmp/entangle-runner/artifacts/restores/restore-report-turn-001",
+        source: {
+          backend: "git",
+          commit: "abc123",
+          path: "reports/turn-001.md"
+        },
+        status: "restored",
+        updatedAt: "2026-04-24T00:01:00.000Z"
+      }
+    });
+
+    expect(result.restore.status).toBe("restored");
   });
 });
 

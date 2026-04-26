@@ -46,6 +46,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
@@ -4041,6 +4042,60 @@ describe("buildHostServer", () => {
           ? sourceArtifactDiff.diff.content
           : undefined
       ).toContain("generated = true");
+
+      const sourceArtifactRestoreResponse = await server.inject({
+        method: "POST",
+        payload: {
+          requestedBy: "user-main",
+          restoreId: "restore-source-history-alpha"
+        },
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/restore"
+      });
+
+      expect(sourceArtifactRestoreResponse.statusCode).toBe(200);
+      const sourceArtifactRestore = runtimeArtifactRestoreResponseSchema.parse(
+        sourceArtifactRestoreResponse.json()
+      );
+      expect(sourceArtifactRestore.restore).toMatchObject({
+        artifactId: "source-source-history-source-change-turn-alpha",
+        mode: "restore_workspace",
+        nodeId: "worker-it",
+        requestedBy: "user-main",
+        restoredFileCount: 1,
+        restoreId: "restore-source-history-alpha",
+        status: "restored"
+      });
+      await expect(
+        readFile(
+          path.join(
+            runtimeContext.workspace.artifactWorkspaceRoot,
+            "restores",
+            "restore-source-history-alpha",
+            "worker.ts"
+          ),
+          "utf8"
+        )
+      ).resolves.toBe("export const generated = true;\n");
+
+      const repeatedSourceArtifactRestoreResponse = await server.inject({
+        method: "POST",
+        payload: {
+          restoreId: "restore-source-history-alpha"
+        },
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/restore"
+      });
+
+      expect(repeatedSourceArtifactRestoreResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactRestoreResponseSchema.parse(
+          repeatedSourceArtifactRestoreResponse.json()
+        ).restore
+      ).toMatchObject({
+        restoreId: "restore-source-history-alpha",
+        status: "unavailable"
+      });
 
       const repeatedPublishResponse = await server.inject({
         method: "POST",

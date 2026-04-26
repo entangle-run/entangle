@@ -2496,3 +2496,17 @@ the failed runner turn now preserves bounded engine session id, engine version,
 provider stop reason, permission observations, tool observations, and usage
 evidence so host, CLI, and Studio inspection retain useful debugging context
 without granting the rejected side effect.
+
+## [2026-04-26] implementation | Added safe runtime artifact restore
+
+Added `references/215-runtime-artifact-restore-slice.md` and advanced B5 of
+the Entangle Local completion plan. Supported git-backed runtime artifacts can
+now be restored through the host and CLI into
+`artifactWorkspaceRoot/restores/{restoreId}` with durable restore-attempt
+records under runtime state.
+
+The restore path is conservative: unsupported backends, unsafe paths, missing
+local git state, and existing targets without overwrite produce structured
+`unavailable` records. Successful restores stream git blob contents through a
+temporary directory and atomically publish the restore target, so failed
+restores do not leave a partially published workspace.

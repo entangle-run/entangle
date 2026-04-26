@@ -7,15 +7,17 @@ import {
   readFile,
   readlink,
   readdir,
+  rename,
   rm,
   stat,
   symlink,
   writeFile
 } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { constants as fsConstants } from "node:fs";
+import { constants as fsConstants, createWriteStream } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
+import { pipeline } from "node:stream/promises";
 import { gunzip } from "node:zlib";
 import { promisify } from "node:util";
 import {
@@ -157,6 +159,9 @@ import {
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreRecordSchema,
+  runtimeArtifactRestoreRequestSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeIntentRecordSchema,
   type RuntimeApprovalInspectionResponse,
   type RuntimeApprovalListResponse,
@@ -165,6 +170,9 @@ import {
   type RuntimeArtifactDiffResponse,
   type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactPreviewResponse,
+  type RuntimeArtifactRestoreRecord,
+  type RuntimeArtifactRestoreRequest,
+  type RuntimeArtifactRestoreResponse,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   type RuntimeMemoryInspectionResponse,
@@ -5554,6 +5562,352 @@ async function readArtifactGitDiff(input: {
   });
 }
 
+function buildRuntimeArtifactRestoreId(input: {
+  artifactId: string;
+  restoreId?: string | undefined;
+}): string {
+  if (input.restoreId) {
+    return input.restoreId;
+  }
+
+  const base = sanitizeIdentifier(
+    `restore-${input.artifactId}-${randomUUID().slice(0, 8)}`
+  );
+
+  if (base.length <= 100) {
+    return base;
+  }
+
+  const suffix = randomUUID().slice(0, 8);
+  const prefix = base.slice(0, 91).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${suffix}`;
+}
+
+function buildRuntimeArtifactRestoreSource(
+  artifact: ArtifactRecord
+): RuntimeArtifactRestoreRecord["source"] {
+  if (artifact.ref.backend === "git") {
+    return {
+      backend: "git",
+      commit: artifact.ref.locator.commit,
+      path: artifact.ref.locator.path
+    };
+  }
+
+  if (artifact.ref.backend === "wiki") {
+    return {
+      backend: "wiki",
+      path: artifact.ref.locator.path
+    };
+  }
+
+  return {
+    backend: "local_file",
+    path: artifact.ref.locator.path
+  };
+}
+
+function resolveRuntimeArtifactRestoreTarget(input: {
+  context: EffectiveRuntimeContext;
+  restoreId: string;
+}): { targetRoot: string } | { reason: string } {
+  const targetRoot = path.resolve(
+    input.context.workspace.artifactWorkspaceRoot,
+    "restores",
+    input.restoreId
+  );
+
+  if (
+    !isPathInsideRoot({
+      candidatePath: targetRoot,
+      rootPath: input.context.workspace.artifactWorkspaceRoot
+    })
+  ) {
+    return {
+      reason:
+        "Artifact restore is unavailable because the requested restore id resolves outside the runtime artifact workspace."
+    };
+  }
+
+  return { targetRoot };
+}
+
+function normalizeRestoredGitFilePath(
+  filePath: string
+): { path: string } | { reason: string } {
+  const normalizedPath = path.posix.normalize(filePath.replace(/\\/g, "/"));
+
+  if (
+    normalizedPath === "." ||
+    normalizedPath === ".." ||
+    normalizedPath.startsWith("../") ||
+    path.posix.isAbsolute(normalizedPath)
+  ) {
+    return {
+      reason:
+        "Artifact restore is unavailable because the artifact contains an unsafe git path."
+    };
+  }
+
+  return { path: normalizedPath.replace(/^\.\//, "") };
+}
+
+async function listGitArtifactFilePaths(input: {
+  artifactPath: string;
+  commit: string;
+  repoPath: string;
+}): Promise<string[]> {
+  const args =
+    input.artifactPath === "."
+      ? ["ls-tree", "-r", "-z", "--name-only", input.commit]
+      : [
+          "ls-tree",
+          "-r",
+          "-z",
+          "--name-only",
+          input.commit,
+          "--",
+          input.artifactPath
+        ];
+  const output = await runSourceHistoryGitCommandBuffer(input.repoPath, args);
+
+  return output
+    .toString("utf8")
+    .split("\0")
+    .filter((entry) => entry.length > 0);
+}
+
+async function restoreGitArtifactToWorkspace(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  overwrite: boolean;
+  restoreId: string;
+}): Promise<
+  | {
+      restoredFileCount: number;
+      restoredPath: string;
+    }
+  | { reason: string }
+> {
+  const target = await resolveArtifactGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      reason: target.reason.replaceAll("git history", "restore")
+    };
+  }
+
+  if (input.artifact.ref.backend !== "git") {
+    return {
+      reason:
+        "Artifact restore is unavailable because the artifact is not git-backed."
+    };
+  }
+
+  const restoreTarget = resolveRuntimeArtifactRestoreTarget({
+    context: input.context,
+    restoreId: input.restoreId
+  });
+
+  if ("reason" in restoreTarget) {
+    return restoreTarget;
+  }
+
+  const sanitizeReason = (reason: string): string =>
+    sanitizeArtifactGitInspectionReason({
+      context: input.context,
+      reason,
+      repoPath: target.repoPath
+    });
+
+  try {
+    await runSourceHistoryGitCommand(target.repoPath, [
+      "cat-file",
+      "-e",
+      `${input.artifact.ref.locator.commit}^{commit}`
+    ]);
+
+    const gitFilePaths = await listGitArtifactFilePaths({
+      artifactPath: target.artifactPath,
+      commit: input.artifact.ref.locator.commit,
+      repoPath: target.repoPath
+    });
+    const restoredFilePaths = gitFilePaths.map((filePath) =>
+      normalizeRestoredGitFilePath(filePath)
+    );
+    const unsafePath = restoredFilePaths.find(
+      (candidate): candidate is { reason: string } => "reason" in candidate
+    );
+
+    if (unsafePath) {
+      return unsafePath;
+    }
+
+    if (restoredFilePaths.length === 0) {
+      return {
+        reason:
+          "Artifact restore is unavailable because the git artifact path did not resolve to any files."
+      };
+    }
+
+    if ((await pathExists(restoreTarget.targetRoot)) && !input.overwrite) {
+      return {
+        reason:
+          "Artifact restore is unavailable because the restore target already exists. Retry with overwrite enabled to replace it."
+      };
+    }
+
+    const tempRoot = path.resolve(
+      path.dirname(restoreTarget.targetRoot),
+      `${path.basename(restoreTarget.targetRoot)}.tmp-${randomUUID().slice(0, 8)}`
+    );
+
+    await rm(tempRoot, { force: true, recursive: true });
+    await mkdir(tempRoot, { recursive: true });
+
+    try {
+      for (const restoredFilePath of restoredFilePaths) {
+        if ("reason" in restoredFilePath) {
+          return restoredFilePath;
+        }
+
+        const outputPath = path.resolve(
+          tempRoot,
+          ...restoredFilePath.path.split(path.posix.sep)
+        );
+
+        if (!isPathInsideRoot({ candidatePath: outputPath, rootPath: tempRoot })) {
+          return {
+            reason:
+              "Artifact restore is unavailable because the artifact contains a path outside the restore workspace."
+          };
+        }
+
+        await mkdir(path.dirname(outputPath), { recursive: true });
+        await writeSourceHistoryGitCommandOutputToFile({
+          args: [
+            "show",
+            `${input.artifact.ref.locator.commit}:${restoredFilePath.path}`
+          ],
+          cwd: target.repoPath,
+          outputPath
+        });
+      }
+
+      await rm(restoreTarget.targetRoot, { force: true, recursive: true });
+      await mkdir(path.dirname(restoreTarget.targetRoot), { recursive: true });
+      await rename(tempRoot, restoreTarget.targetRoot);
+
+      return {
+        restoredFileCount: restoredFilePaths.length,
+        restoredPath: restoreTarget.targetRoot
+      };
+    } finally {
+      await rm(tempRoot, { force: true, recursive: true });
+    }
+  } catch (error) {
+    return {
+      reason: `Artifact restore is unavailable: ${sanitizeReason(
+        formatUnknownError(error)
+      )}`
+    };
+  }
+}
+
+async function persistRuntimeArtifactRestoreRecord(input: {
+  context: EffectiveRuntimeContext;
+  record: RuntimeArtifactRestoreRecord;
+}): Promise<RuntimeArtifactRestoreRecord> {
+  const record = runtimeArtifactRestoreRecordSchema.parse(input.record);
+
+  await mkdir(runtimeArtifactRestoresRoot(input.context.workspace.runtimeRoot), {
+    recursive: true
+  });
+  await writeFile(
+    runtimeArtifactRestoreRecordPath(
+      input.context.workspace.runtimeRoot,
+      record.restoreId
+    ),
+    `${JSON.stringify(record, null, 2)}\n`,
+    "utf8"
+  );
+
+  return record;
+}
+
+export async function restoreRuntimeArtifact(input: {
+  artifactId: string;
+  nodeId: string;
+  request?: RuntimeArtifactRestoreRequest | undefined;
+}): Promise<RuntimeArtifactRestoreResponse | null> {
+  const request = runtimeArtifactRestoreRequestSchema.parse(input.request ?? {});
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+  const artifact = artifacts.find(
+    (candidate) => candidate.ref.artifactId === input.artifactId
+  );
+
+  if (!artifact) {
+    return null;
+  }
+
+  const restoreId = buildRuntimeArtifactRestoreId({
+    artifactId: input.artifactId,
+    restoreId: request.restoreId
+  });
+  const createdAt = nowIsoString();
+  const baseRecord = {
+    artifactId: artifact.ref.artifactId,
+    createdAt,
+    mode: request.mode,
+    nodeId: input.nodeId,
+    ...(request.reason ? { reason: request.reason } : {}),
+    ...(request.requestedBy ? { requestedBy: request.requestedBy } : {}),
+    restoreId,
+    source: buildRuntimeArtifactRestoreSource(artifact),
+    updatedAt: createdAt
+  };
+  const result =
+    artifact.ref.backend === "git"
+      ? await restoreGitArtifactToWorkspace({
+          artifact,
+          context,
+          overwrite: request.overwrite,
+          restoreId
+        })
+      : {
+          reason:
+            "Artifact restore is unavailable because only git-backed artifacts can be restored into a runtime workspace."
+        };
+  const restore = await persistRuntimeArtifactRestoreRecord({
+    context,
+    record:
+      "reason" in result
+        ? {
+            ...baseRecord,
+            status: "unavailable",
+            unavailableReason: result.reason
+          }
+        : {
+            ...baseRecord,
+            restoredFileCount: result.restoredFileCount,
+            restoredPath: result.restoredPath,
+            status: "restored"
+          }
+  });
+
+  return runtimeArtifactRestoreResponseSchema.parse({
+    artifact,
+    restore
+  });
+}
+
 export async function getRuntimeArtifactHistory(input: {
   artifactId: string;
   limit: number;
@@ -6124,6 +6478,116 @@ async function runSourceHistoryGitCommand(
       );
     });
   });
+}
+
+async function runSourceHistoryGitCommandBuffer(
+  cwd: string,
+  args: string[],
+  options: HostGitCommandOptions = {}
+): Promise<Buffer> {
+  const fullArgs = [
+    ...(options.gitDir ? ["--git-dir", options.gitDir] : []),
+    ...(options.workTree ? ["--work-tree", options.workTree] : []),
+    ...args
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", fullArgs, {
+      cwd,
+      env: {
+        ...process.env,
+        ...options.env
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      stdoutChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderrChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(Buffer.concat(stdoutChunks));
+        return;
+      }
+
+      const stdout = Buffer.concat(stdoutChunks).toString("utf8").trim();
+      const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+
+      reject(
+        new Error(
+          `Git source-history command failed (${args.join(" ")}): ${
+            stderr || stdout || `exit ${code ?? "unknown"}`
+          }`
+        )
+      );
+    });
+  });
+}
+
+async function writeSourceHistoryGitCommandOutputToFile(input: {
+  args: string[];
+  cwd: string;
+  outputPath: string;
+  options?: HostGitCommandOptions | undefined;
+}): Promise<void> {
+  const options = input.options ?? {};
+  const fullArgs = [
+    ...(options.gitDir ? ["--git-dir", options.gitDir] : []),
+    ...(options.workTree ? ["--work-tree", options.workTree] : []),
+    ...input.args
+  ];
+
+  const child = spawn("git", fullArgs, {
+    cwd: input.cwd,
+    env: {
+      ...process.env,
+      ...options.env
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const stderrChunks: Buffer[] = [];
+  let stderrKeptBytes = 0;
+
+  child.stderr.on("data", (chunk: Buffer | string) => {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
+    if (stderrKeptBytes < 1_000) {
+      const remaining = 1_000 - stderrKeptBytes;
+      stderrChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+      stderrKeptBytes += Math.min(buffer.length, remaining);
+    }
+  });
+
+  const exitPromise = new Promise<void>((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+
+      reject(
+        new Error(
+          `Git source-history command failed (${input.args.join(" ")}): ${
+            stderr || `exit ${code ?? "unknown"}`
+          }`
+        )
+      );
+    });
+  });
+
+  await Promise.all([
+    pipeline(child.stdout, createWriteStream(input.outputPath)),
+    exitPromise
+  ]);
 }
 
 function sanitizeRuntimePathError(
@@ -8135,6 +8599,17 @@ function runtimeArtifactRecordPath(
   artifactId: string
 ): string {
   return path.join(runtimeArtifactsRoot(runtimeRoot), `${artifactId}.json`);
+}
+
+function runtimeArtifactRestoresRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "artifact-restores");
+}
+
+function runtimeArtifactRestoreRecordPath(
+  runtimeRoot: string,
+  restoreId: string
+): string {
+  return path.join(runtimeArtifactRestoresRoot(runtimeRoot), `${restoreId}.json`);
 }
 
 async function synchronizeSessionActivityObservation(input: {

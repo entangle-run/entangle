@@ -96,7 +96,8 @@ The latest implementation state includes:
   publication as git commit artifacts with explicit retry and target-selection
   controls, node-configured source mutation approval gates, host-scoped
   operator approval decisions, and bounded artifact history/diff inspection
-  for supported materialized git artifacts;
+  plus safe restore into artifact workspace restore directories for supported
+  materialized git artifacts;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -109,10 +110,10 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary plus bounded request-shape evidence for executable
 turns, but Entangle Local still lacks the complete policy bridge, live OpenCode
-permission approval mapping, artifact restore/replay workflow, full git/wiki
-backup/restore/publication workflow, external cancellation bridge, deeper
-doctor remediation, and richer runtime evidence panels required for L3
-acceptance.
+permission approval mapping, approval-gated artifact replay/promotion
+workflow, full git/wiki backup/restore/publication workflow, external
+cancellation bridge, deeper doctor remediation, and richer runtime evidence
+panels required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -468,7 +469,7 @@ Current partial implementation:
   checked where runner turns actually execute;
 - this does not yet complete external cancellation, permission mapping, full
   degraded-runtime status DTOs, attached server lifecycle, policy-gated source
-  publication, or artifact restore/replay workflow.
+  publication, or approval-gated artifact replay/promotion workflow.
 
 Acceptance:
 
@@ -602,6 +603,9 @@ Tasks:
 - Materialize report artifacts from engine output and workspace state.
 - Link produced artifacts to turns, sessions, messages, and git refs.
 - Add artifact history/diff host API, host-client, CLI, and Studio surfaces.
+- Add safe artifact restore host API, host-client, and CLI surfaces, then add
+  approval-gated replay/promotion and Studio controls once the safe restore
+  record model is proven.
 - Add bounded previews for harvested text/code outputs.
 
 Constraints:
@@ -668,9 +672,15 @@ Current partial implementation:
   `source_publication` plus the concrete source-history and git target tuple;
 - materialized git artifacts now have bounded host-owned history and diff
   inspection through host API, host-client, CLI, and Studio surfaces;
+- materialized git artifacts now have a first safe host-owned restore path
+  through host API, host-client, and CLI surfaces; restore attempts are
+  persisted under runtime state, git files are streamed into
+  `artifactWorkspaceRoot/restores/{restoreId}`, existing targets are not
+  overwritten by default, and unsupported/unsafe restore attempts return
+  structured unavailable records rather than widening filesystem access;
 - live OpenCode permission-to-approval flow, non-primary target
-  provisioning/fallback behavior, and artifact restore/replay workflow remain
-  open.
+  provisioning/fallback behavior, Studio restore controls, and approval-gated
+  artifact replay/promotion workflow remain open.
 
 Acceptance:
 
