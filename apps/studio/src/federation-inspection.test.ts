@@ -5,10 +5,13 @@ import type {
   UserNodeIdentityRecord
 } from "@entangle/types";
 import {
+  formatRuntimeProjectionDetail,
+  formatRuntimeProjectionLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeIdentityDetail,
   formatUserNodeIdentityLabel,
+  sortRuntimeProjectionsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
   summarizeFederationProjection
@@ -36,6 +39,27 @@ const projection: HostProjectionSnapshot = {
   generatedAt: "2026-04-26T12:00:00.000Z",
   hostAuthorityPubkey:
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  runtimes: [
+    {
+      assignmentId: "assignment-alpha",
+      backendKind: "federated",
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "rev-1",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:00:00.000Z",
+      nodeId: "worker-it",
+      observedState: "running",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:00:00.000Z"
+      },
+      restartGeneration: 0,
+      runnerId: "runner-alpha",
+      runtimeHandle: "federated:runner-alpha:assignment-alpha"
+    }
+  ],
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],
@@ -106,8 +130,31 @@ describe("Studio federation inspection helpers", () => {
   it("summarizes projection counts for operator panels", () => {
     expect(summarizeFederationProjection(projection)).toMatchObject({
       assignmentCount: 1,
-      freshness: "current"
+      freshness: "current",
+      runtimeCount: 1,
+      runningRuntimeCount: 1
     });
+  });
+
+  it("sorts and formats runtime projections", () => {
+    const sorted = sortRuntimeProjectionsForStudio([
+      {
+        ...projection.runtimes[0]!,
+        nodeId: "worker-z"
+      },
+      projection.runtimes[0]!
+    ]);
+
+    expect(sorted.map((runtime) => runtime.nodeId)).toEqual([
+      "worker-it",
+      "worker-z"
+    ]);
+    expect(formatRuntimeProjectionLabel(projection.runtimes[0]!)).toBe(
+      "worker-it · running"
+    );
+    expect(formatRuntimeProjectionDetail(projection.runtimes[0]!)).toContain(
+      "runner runner-alpha"
+    );
   });
 
   it("sorts and formats User Node conversations", () => {

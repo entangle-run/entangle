@@ -140,6 +140,8 @@ import {
   artifactRefObservationPayloadSchema,
   artifactRefProjectionRecordSchema,
   type ArtifactRefProjectionRecord,
+  runtimeProjectionRecordSchema,
+  type RuntimeProjectionRecord,
   runtimeIdentityContextSchema,
   runtimeAssignmentInspectionResponseSchema,
   type RuntimeAssignmentInspectionResponse,
@@ -2390,12 +2392,16 @@ export async function recordRuntimeStatusObservation(
   }
 
   const observedRecord = observedRuntimeRecordSchema.parse({
+    ...(observation.assignmentId
+      ? { assignmentId: observation.assignmentId }
+      : {}),
     backendKind: "federated",
     graphId: observation.graphId,
     graphRevisionId,
     lastSeenAt: observation.observedAt,
     nodeId: observation.nodeId,
     observedState: observation.observedState,
+    runnerId: observation.runnerId,
     runtimeHandle:
       `federated:${observation.runnerId}:` +
       `${observation.assignmentId ?? observation.nodeId}`,
@@ -2462,6 +2468,139 @@ function assignmentProjectionSource(
   return assignment.status === "accepted" || assignment.status === "rejected"
     ? "observation_event"
     : "desired_state";
+}
+
+const runtimeProjectionAssignmentStatuses = new Set<
+  RuntimeAssignmentRecord["status"]
+>(["active", "accepted", "offered", "revoking"]);
+
+function selectRuntimeProjectionAssignment(input: {
+  assignments: RuntimeAssignmentRecord[];
+  nodeId: string;
+}): RuntimeAssignmentRecord | undefined {
+  return input.assignments
+    .filter(
+      (assignment) =>
+        assignment.nodeId === input.nodeId &&
+        runtimeProjectionAssignmentStatuses.has(assignment.status)
+    )
+    .sort((left, right) => {
+      const statusPriority = (status: RuntimeAssignmentRecord["status"]) =>
+        status === "active" || status === "accepted"
+          ? 0
+          : status === "offered"
+            ? 1
+            : 2;
+      const priorityOrder =
+        statusPriority(left.status) - statusPriority(right.status);
+
+      if (priorityOrder !== 0) {
+        return priorityOrder;
+      }
+
+      return right.updatedAt.localeCompare(left.updatedAt);
+    })[0];
+}
+
+async function listRuntimeProjectionRecords(input: {
+  assignments: RuntimeAssignmentRecord[];
+  hostAuthorityPubkey: string;
+}): Promise<RuntimeProjectionRecord[]> {
+  const { activeRevisionId, graph } = await readActiveGraphState();
+  const runtimeNodeIds = new Set(
+    graph?.nodes
+      .filter((node) => node.nodeKind !== "user")
+      .map((node) => node.nodeId) ?? []
+  );
+
+  for (const nodeId of await listObservedRuntimeNodeIds()) {
+    runtimeNodeIds.add(nodeId);
+  }
+
+  for (const assignment of input.assignments) {
+    if (runtimeProjectionAssignmentStatuses.has(assignment.status)) {
+      runtimeNodeIds.add(assignment.nodeId);
+    }
+  }
+
+  const records = await Promise.all(
+    [...runtimeNodeIds].map(async (nodeId) => {
+      const [intent, observed] = await Promise.all([
+        readRuntimeIntentRecord(nodeId),
+        readObservedRuntimeRecord(nodeId)
+      ]);
+      const assignment = selectRuntimeProjectionAssignment({
+        assignments: input.assignments,
+        nodeId
+      });
+      const graphId =
+        observed?.graphId ?? intent?.graphId ?? assignment?.graphId ?? graph?.graphId;
+      const graphRevisionId =
+        observed?.graphRevisionId ??
+        intent?.graphRevisionId ??
+        assignment?.graphRevisionId ??
+        activeRevisionId;
+      const updatedAt =
+        observed?.lastSeenAt ?? intent?.updatedAt ?? assignment?.updatedAt;
+
+      if (!graphId || !graphRevisionId) {
+        return undefined;
+      }
+
+      if (!updatedAt) {
+        return runtimeProjectionRecordSchema.parse({
+          backendKind: "federated",
+          desiredState: "running",
+          graphId,
+          graphRevisionId,
+          hostAuthorityPubkey: input.hostAuthorityPubkey,
+          nodeId,
+          observedState: "missing",
+          projection: {
+            source: "desired_state",
+            updatedAt: nowIsoString()
+          },
+          restartGeneration: 0
+        });
+      }
+
+      return runtimeProjectionRecordSchema.parse({
+        ...(observed?.assignmentId ?? assignment?.assignmentId
+          ? { assignmentId: observed?.assignmentId ?? assignment?.assignmentId }
+          : {}),
+        backendKind: observed?.backendKind ?? "federated",
+        desiredState: intent?.desiredState ?? "running",
+        graphId,
+        graphRevisionId,
+        hostAuthorityPubkey: input.hostAuthorityPubkey,
+        ...(observed?.lastSeenAt ? { lastSeenAt: observed.lastSeenAt } : {}),
+        nodeId,
+        observedState: observed?.observedState ?? "missing",
+        projection: {
+          source: observed
+            ? "observation_event"
+            : assignment
+              ? "control_event"
+              : "desired_state",
+          updatedAt
+        },
+        restartGeneration: intent?.restartGeneration ?? 0,
+        ...(observed?.runnerId ?? assignment?.runnerId
+          ? { runnerId: observed?.runnerId ?? assignment?.runnerId }
+          : {}),
+        ...(observed?.runtimeHandle
+          ? { runtimeHandle: observed.runtimeHandle }
+          : {}),
+        ...(observed?.statusMessage
+          ? { statusMessage: observed.statusMessage }
+          : {})
+      });
+    })
+  );
+
+  return records
+    .filter((record): record is RuntimeProjectionRecord => Boolean(record))
+    .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
 }
 
 async function listArtifactRefProjectionRecords(): Promise<
@@ -2546,6 +2685,10 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
       listSourceChangeRefProjectionRecords(),
       listWikiRefProjectionRecords()
     ]);
+  const runtimeProjections = await listRuntimeProjectionRecords({
+    assignments,
+    hostAuthorityPubkey: authority.publicKey
+  });
   const hasStaleTrustedRunner = runnerList.runners.some(
     (runner) =>
       runner.registration.trustState === "trusted" &&
@@ -2573,6 +2716,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     freshness: hasStaleTrustedRunner ? "stale" : "current",
     generatedAt: nowIsoString(),
     hostAuthorityPubkey: authority.publicKey,
+    runtimes: runtimeProjections,
     runners: runnerList.runners.map((runner) => ({
       assignmentIds: runner.heartbeat?.assignmentIds ?? [],
       hostAuthorityPubkey: runner.registration.hostAuthorityPubkey,

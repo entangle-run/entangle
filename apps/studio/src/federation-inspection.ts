@@ -1,5 +1,6 @@
 import type {
   HostProjectionSnapshot,
+  RuntimeProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord
 } from "@entangle/types";
@@ -7,7 +8,10 @@ import type {
 export type FederationProjectionSummary = {
   assignmentCount: number;
   artifactRefCount: number;
+  failedRuntimeCount: number;
   freshness: string;
+  runtimeCount: number;
+  runningRuntimeCount: number;
   runnerCount: number;
   sourceChangeRefCount: number;
   userConversationCount: number;
@@ -20,12 +24,44 @@ export function summarizeFederationProjection(
   return {
     assignmentCount: projection?.assignments.length ?? 0,
     artifactRefCount: projection?.artifactRefs.length ?? 0,
+    failedRuntimeCount:
+      projection?.runtimes.filter((runtime) => runtime.observedState === "failed")
+        .length ?? 0,
     freshness: projection?.freshness ?? "unknown",
+    runtimeCount: projection?.runtimes.length ?? 0,
+    runningRuntimeCount:
+      projection?.runtimes.filter((runtime) => runtime.observedState === "running")
+        .length ?? 0,
     runnerCount: projection?.runners.length ?? 0,
     sourceChangeRefCount: projection?.sourceChangeRefs.length ?? 0,
     userConversationCount: projection?.userConversations.length ?? 0,
     wikiRefCount: projection?.wikiRefs.length ?? 0
   };
+}
+
+export function sortRuntimeProjectionsForStudio(
+  runtimes: RuntimeProjectionRecord[]
+): RuntimeProjectionRecord[] {
+  return [...runtimes].sort((left, right) =>
+    left.nodeId.localeCompare(right.nodeId)
+  );
+}
+
+export function formatRuntimeProjectionLabel(
+  runtime: RuntimeProjectionRecord
+): string {
+  return `${runtime.nodeId} · ${runtime.observedState}`;
+}
+
+export function formatRuntimeProjectionDetail(
+  runtime: RuntimeProjectionRecord
+): string {
+  return [
+    `desired ${runtime.desiredState}`,
+    `backend ${runtime.backendKind}`,
+    runtime.runnerId ? `runner ${runtime.runnerId}` : "runner unassigned",
+    `source ${runtime.projection.source}`
+  ].join(" · ");
 }
 
 export function sortUserNodeIdentitiesForStudio(

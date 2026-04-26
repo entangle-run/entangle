@@ -465,6 +465,23 @@ describe("federated runtime contracts", () => {
       freshness: "current",
       generatedAt: observedAt,
       hostAuthorityPubkey: authorityPubkey,
+      runtimes: [
+        {
+          assignmentId: "assignment-alpha",
+          backendKind: "federated",
+          desiredState: "running",
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-rev-1",
+          hostAuthorityPubkey: authorityPubkey,
+          lastSeenAt: observedAt,
+          nodeId: "worker-it",
+          observedState: "running",
+          projection,
+          restartGeneration: 0,
+          runnerId: "runner-alpha",
+          runtimeHandle: "federated:runner-alpha:assignment-alpha"
+        }
+      ],
       runners: [
         {
           assignmentIds: ["assignment-alpha"],
@@ -524,6 +541,7 @@ describe("federated runtime contracts", () => {
     });
 
     expect(snapshot.artifactRefs[0]?.artifactId).toBe("artifact-alpha");
+    expect(snapshot.runtimes[0]?.nodeId).toBe("worker-it");
     expect(snapshot.sourceChangeRefs[0]?.candidateId).toBe("candidate-alpha");
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
     expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");

@@ -35,7 +35,9 @@ through
 then
 [250-federated-dev-deployment-naming-cleanup-slice.md](250-federated-dev-deployment-naming-cleanup-slice.md)
 and
-[251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md).
+[251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md),
+then
+[252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

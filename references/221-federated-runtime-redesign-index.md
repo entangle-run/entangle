@@ -52,6 +52,7 @@ same-machine slice records.
 - [249-runtime-status-observation-projection-slice.md](249-runtime-status-observation-projection-slice.md)
 - [250-federated-dev-deployment-naming-cleanup-slice.md](250-federated-dev-deployment-naming-cleanup-slice.md)
 - [251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md)
+- [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
 
 ## Audited Scope
 
@@ -113,6 +114,9 @@ The repository is not fully federated:
 - runner A2A transport exists, Host startup subscribes to control/observe relay
   paths, and joined runners can now start node runtime services from
   materialized assignment context paths;
+- Host projection now exposes runtime projection records from observed runtime
+  state, intents, and assignment records without invoking backend
+  reconciliation;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 
@@ -198,5 +202,5 @@ The plan was checked against the actual repo after writing:
 
 Plan readiness: Slices 1 through 14 plus startup/materialization follow-up
 slices are implemented in this branch. The next blocking implementation areas
-are projection surfacing for federated runtime state and a live relay/git
-distributed smoke.
+are replacing remaining deep filesystem-backed runtime inspection paths and a
+live relay/git distributed smoke.

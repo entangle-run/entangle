@@ -2938,3 +2938,16 @@ This closes the runner-side gap left after runtime status projection: a runner
 can now accept an assignment only after the node runtime has actually started.
 Lease renewal, restart/backoff supervision, and live relay smoke coverage remain
 future execution-hardening work.
+
+## [2026-04-26] implementation | Surfaced federated runtime projection
+
+Added `references/252-federated-runtime-projection-surface-slice.md` and
+extended Host projection with runtime records derived from observed runtime
+state, runtime intents, and assignment records. Signed runner `runtime.status`
+observations now persist runner and assignment identity so the projection can
+show which runner reported a node runtime state.
+
+Studio now shows projected runtime counts and compact runtime rows in the
+federation panel, while CLI gained `entangle host projection` for the same Host
+projection snapshot. The older detailed runtime inspection APIs still exist for
+deep detail until their filesystem-backed reads are replaced.

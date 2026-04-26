@@ -24,6 +24,7 @@ export const runtimeIntentRecordSchema = z.object({
 });
 
 export const observedRuntimeRecordSchema = z.object({
+  assignmentId: identifierSchema.optional(),
   backendKind: runtimeBackendKindSchema,
   graphId: identifierSchema,
   graphRevisionId: identifierSchema,
@@ -31,6 +32,7 @@ export const observedRuntimeRecordSchema = z.object({
   lastSeenAt: nonEmptyStringSchema,
   nodeId: identifierSchema,
   observedState: runtimeObservedStateSchema,
+  runnerId: identifierSchema.optional(),
   runtimeContextPath: filesystemPathSchema.optional(),
   runtimeHandle: nonEmptyStringSchema.optional(),
   schemaVersion: z.literal("1"),

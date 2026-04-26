@@ -7,6 +7,12 @@ import {
   runnerOperationalStateSchema,
   runnerTrustStateSchema
 } from "../federation/runner.js";
+import {
+  runtimeBackendKindSchema,
+  runtimeDesiredStateSchema,
+  runtimeObservedStateSchema,
+  runtimeRestartGenerationSchema
+} from "../runtime/runtime-state.js";
 import { sourceChangeCandidateStatusSchema } from "../runtime/session-state.js";
 
 export const projectionSourceKindSchema = z.enum([
@@ -49,6 +55,23 @@ export const assignmentProjectionRecordSchema = z.object({
   projection: projectionMetadataSchema,
   runnerId: identifierSchema,
   status: runtimeAssignmentStatusSchema
+});
+
+export const runtimeProjectionRecordSchema = z.object({
+  assignmentId: identifierSchema.optional(),
+  backendKind: runtimeBackendKindSchema,
+  desiredState: runtimeDesiredStateSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  hostAuthorityPubkey: nostrPublicKeySchema,
+  lastSeenAt: nonEmptyStringSchema.optional(),
+  nodeId: identifierSchema,
+  observedState: runtimeObservedStateSchema,
+  projection: projectionMetadataSchema,
+  restartGeneration: runtimeRestartGenerationSchema,
+  runnerId: identifierSchema.optional(),
+  runtimeHandle: nonEmptyStringSchema.optional(),
+  statusMessage: nonEmptyStringSchema.optional()
 });
 
 export const userConversationProjectionRecordSchema = z.object({
@@ -96,6 +119,7 @@ export const hostProjectionSnapshotSchema = z.object({
   freshness: projectionFreshnessSchema.default("unknown"),
   generatedAt: nonEmptyStringSchema,
   hostAuthorityPubkey: nostrPublicKeySchema,
+  runtimes: z.array(runtimeProjectionRecordSchema).default([]),
   runners: z.array(runnerProjectionRecordSchema).default([]),
   schemaVersion: z.literal("1"),
   sourceChangeRefs: z.array(sourceChangeRefProjectionRecordSchema).default([]),
@@ -113,6 +137,9 @@ export type RunnerProjectionRecord = z.infer<
 >;
 export type AssignmentProjectionRecord = z.infer<
   typeof assignmentProjectionRecordSchema
+>;
+export type RuntimeProjectionRecord = z.infer<
+  typeof runtimeProjectionRecordSchema
 >;
 export type UserConversationProjectionRecord = z.infer<
   typeof userConversationProjectionRecordSchema

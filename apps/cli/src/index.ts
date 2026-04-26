@@ -88,6 +88,7 @@ import {
   projectRuntimeAssignmentSummary,
   sortRuntimeAssignmentsForCli
 } from "./assignment-output.js";
+import { projectHostProjectionSummary } from "./projection-output.js";
 import {
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
@@ -752,6 +753,20 @@ hostCommand
     const response = await client.getHostStatus();
     printJson(
       options.summary ? { status: projectHostStatusSummary(response) } : response
+    );
+  });
+
+hostCommand
+  .command("projection")
+  .option("--summary", "Print compact federated projection summaries.")
+  .description("Fetch the Host projection snapshot from entangle-host.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const response = await client.getProjection();
+    printJson(
+      options.summary
+        ? { projection: projectHostProjectionSummary(response) }
+        : response
     );
   });
 

@@ -313,6 +313,17 @@ describe("Host federated control plane", () => {
       runnerId: "runner-alpha",
       trustState: "pending"
     });
+    expect(projection.runtimes[0]).toMatchObject({
+      assignmentId: "assignment-alpha",
+      backendKind: "federated",
+      desiredState: "running",
+      nodeId: "worker-it",
+      observedState: "running",
+      projection: {
+        source: "observation_event"
+      },
+      runnerId: "runner-alpha"
+    });
 
     const hostEvents = await stateModule.listHostEvents();
     expect(

@@ -206,10 +206,13 @@ import {
   type SessionLaunchDraft
 } from "./session-launch.js";
 import {
+  formatRuntimeProjectionDetail,
+  formatRuntimeProjectionLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeIdentityDetail,
   formatUserNodeIdentityLabel,
+  sortRuntimeProjectionsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
   summarizeFederationProjection
@@ -3499,6 +3502,10 @@ export function App() {
       ),
     [projectionSnapshot]
   );
+  const projectedRuntimeStates = useMemo(
+    () => sortRuntimeProjectionsForStudio(projectionSnapshot?.runtimes ?? []),
+    [projectionSnapshot]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3629,6 +3636,18 @@ export function App() {
             <span>Assignments</span>
           </div>
           <div>
+            <strong>{federationSummary.runtimeCount}</strong>
+            <span>Runtimes</span>
+          </div>
+          <div>
+            <strong>{federationSummary.runningRuntimeCount}</strong>
+            <span>Running</span>
+          </div>
+          <div>
+            <strong>{federationSummary.failedRuntimeCount}</strong>
+            <span>Failed</span>
+          </div>
+          <div>
             <strong>{federationSummary.artifactRefCount}</strong>
             <span>Artifact refs</span>
           </div>
@@ -3649,6 +3668,21 @@ export function App() {
             <span>Conversations</span>
           </div>
         </div>
+
+        {projectedRuntimeStates.length > 0 ? (
+          <div className="compact-list">
+            {projectedRuntimeStates.slice(0, 6).map((runtime) => (
+              <div key={runtime.nodeId} className="compact-list-item">
+                <strong>{formatRuntimeProjectionLabel(runtime)}</strong>
+                <span>{formatRuntimeProjectionDetail(runtime)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="inline-empty-state">
+            <p>No runtime projection is available yet.</p>
+          </div>
+        )}
 
         {userNodes.length > 0 ? (
           <div className="compact-list">
