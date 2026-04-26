@@ -42,6 +42,7 @@ export type RunnerAssignmentMaterializationResult =
   | {
       accepted: true;
       lease?: AssignmentLease;
+      runtimeContextPath?: string;
     }
   | {
       accepted: false;
@@ -53,10 +54,26 @@ export type RunnerAssignmentMaterializer = (input: {
   controlEvent: EntangleControlEvent;
 }) => Promise<RunnerAssignmentMaterializationResult>;
 
+export type RunnerAssignmentRuntimeHandle = {
+  runtimeContextPath: string;
+  runtimeRoot?: string;
+  stop(): Promise<void>;
+};
+
+export type RunnerAssignmentRuntimeStarter = (input: {
+  assignment: RuntimeAssignmentRecord;
+  controlEvent: EntangleControlEvent;
+  runtimeContextPath: string;
+}) => Promise<RunnerAssignmentRuntimeHandle>;
+
 export class RunnerJoinService {
   private readonly acceptedAssignments = new Map<
     string,
     RuntimeAssignmentRecord
+  >();
+  private readonly assignmentRuntimeHandles = new Map<
+    string,
+    RunnerAssignmentRuntimeHandle
   >();
   private lastHelloAck:
     | Extract<
@@ -75,6 +92,7 @@ export class RunnerJoinService {
       materializer?: RunnerAssignmentMaterializer;
       nonceFactory?: () => string;
       runnerPubkey: string;
+      runtimeStarter?: RunnerAssignmentRuntimeStarter;
       transport: RunnerJoinTransport;
     }
   ) {}
@@ -117,6 +135,11 @@ export class RunnerJoinService {
     const subscription = this.subscription;
     this.subscription = undefined;
 
+    for (const assignment of this.acceptedAssignments.values()) {
+      await this.stopAssignmentRuntime(assignment, "Runner join service stopped.");
+    }
+    this.acceptedAssignments.clear();
+
     if (subscription) {
       await subscription.close();
     }
@@ -151,6 +174,10 @@ export class RunnerJoinService {
     }
 
     if (payload.eventType === "runtime.assignment.revoke") {
+      const assignment = this.acceptedAssignments.get(payload.assignmentId);
+      if (assignment) {
+        await this.stopAssignmentRuntime(assignment, payload.reason);
+      }
       this.acceptedAssignments.delete(payload.assignmentId);
       await this.publishObservation({
         assignmentId: payload.assignmentId,
@@ -215,7 +242,55 @@ export class RunnerJoinService {
       return;
     }
 
+    let runtimeHandle: RunnerAssignmentRuntimeHandle | undefined;
+    if (materialized.runtimeContextPath) {
+      if (!this.input.runtimeStarter) {
+        await this.rejectAssignment(
+          assignment,
+          "No assignment runtime starter is configured for this runner."
+        );
+        return;
+      }
+
+      await this.publishRuntimeStatus(
+        assignment,
+        "starting",
+        "Assignment runtime is starting."
+      );
+
+      try {
+        runtimeHandle = await this.input.runtimeStarter({
+          assignment,
+          controlEvent: event,
+          runtimeContextPath: materialized.runtimeContextPath
+        });
+      } catch (error) {
+        await this.publishRuntimeStatus(
+          assignment,
+          "failed",
+          error instanceof Error
+            ? error.message
+            : "Assignment runtime start failed."
+        );
+        await this.rejectAssignment(
+          assignment,
+          error instanceof Error
+            ? error.message
+            : "Assignment runtime start failed."
+        );
+        return;
+      }
+    }
+
     this.acceptedAssignments.set(assignment.assignmentId, assignment);
+    if (runtimeHandle) {
+      this.assignmentRuntimeHandles.set(assignment.assignmentId, runtimeHandle);
+      await this.publishRuntimeStatus(
+        assignment,
+        "running",
+        "Assignment runtime is running."
+      );
+    }
     await this.publishObservation({
       acceptedAt: this.now(),
       assignmentId: assignment.assignmentId,
@@ -224,6 +299,24 @@ export class RunnerJoinService {
         ? { lease: materialized.lease ?? assignment.lease }
         : {})
     });
+  }
+
+  private async stopAssignmentRuntime(
+    assignment: RuntimeAssignmentRecord,
+    reason: string | undefined
+  ): Promise<void> {
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle) {
+      return;
+    }
+
+    this.assignmentRuntimeHandles.delete(assignment.assignmentId);
+    await handle.stop();
+    await this.publishRuntimeStatus(
+      assignment,
+      "stopped",
+      reason ?? "Assignment runtime stopped."
+    );
   }
 
   private async rejectAssignment(
@@ -257,6 +350,24 @@ export class RunnerJoinService {
         runnerPubkey: this.input.runnerPubkey
       } as EntangleObservationEventPayload,
       relayUrls: this.input.config.relayUrls
+    });
+  }
+
+  private publishRuntimeStatus(
+    assignment: RuntimeAssignmentRecord,
+    observedState: "failed" | "running" | "starting" | "stopped",
+    statusMessage: string
+  ) {
+    return this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "runtime.status",
+      graphId: assignment.graphId,
+      graphRevisionId: assignment.graphRevisionId,
+      nodeId: assignment.nodeId,
+      observedAt: this.now(),
+      observedState,
+      restartGeneration: 0,
+      statusMessage
     });
   }
 

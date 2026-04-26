@@ -51,6 +51,7 @@ same-machine slice records.
 - [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
 - [249-runtime-status-observation-projection-slice.md](249-runtime-status-observation-projection-slice.md)
 - [250-federated-dev-deployment-naming-cleanup-slice.md](250-federated-dev-deployment-naming-cleanup-slice.md)
+- [251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md)
 
 ## Audited Scope
 
@@ -110,8 +111,8 @@ The repository is not fully federated:
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
-  paths, and tests cover the bridge, but runner node execution is not yet
-  started from the materialized assignment path;
+  paths, and joined runners can now start node runtime services from
+  materialized assignment context paths;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 
@@ -197,5 +198,5 @@ The plan was checked against the actual repo after writing:
 
 Plan readiness: Slices 1 through 14 plus startup/materialization follow-up
 slices are implemented in this branch. The next blocking implementation areas
-are assignment-driven node execution, projection surfacing for federated
-runtime state, and a live relay/git distributed smoke.
+are projection surfacing for federated runtime state and a live relay/git
+distributed smoke.

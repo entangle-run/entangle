@@ -2925,3 +2925,16 @@ The default engine and catalog IDs are now `opencode-default` and
 `entangle-runner:federated-dev`, and state-layout contracts no longer export
 `localStateLayout*` names. Conversation initiator values are now `self/peer`
 instead of `local/remote`.
+
+## [2026-04-26] implementation | Started assigned node runtimes from runner materialization
+
+Added `references/251-runner-assignment-runtime-start-slice.md` and extended
+generic joined runners so assignment materialization can start the assigned node
+runtime from a runner-owned `runtime-context.json`. The join service now emits
+signed `runtime.status` observations for starting, running, failed, and stopped
+states, and stops active assignment runtimes on revoke or runner shutdown.
+
+This closes the runner-side gap left after runtime status projection: a runner
+can now accept an assignment only after the node runtime has actually started.
+Lease renewal, restart/backoff supervision, and live relay smoke coverage remain
+future execution-hardening work.

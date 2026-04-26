@@ -17,6 +17,7 @@ import {
   createRunnerJoinTransport,
   RunnerJoinService,
   type RunnerAssignmentMaterializer,
+  type RunnerAssignmentRuntimeStarter,
   type RunnerJoinTransport
 } from "./join-service.js";
 import { NostrRunnerTransport } from "./nostr-transport.js";
@@ -233,6 +234,7 @@ export async function createConfiguredRunnerJoinService(
     clock?: () => string;
     materializer?: RunnerAssignmentMaterializer;
     nonceFactory?: () => string;
+    runtimeStarter?: RunnerAssignmentRuntimeStarter;
     transport?: RunnerJoinTransport;
   } = {}
 ): Promise<{
@@ -259,6 +261,18 @@ export async function createConfiguredRunnerJoinService(
       }),
     ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
     runnerPubkey: publicKey,
+    runtimeStarter:
+      input.runtimeStarter ??
+      (async ({ runtimeContextPath }) => {
+        const configured = await createConfiguredRunnerService(runtimeContextPath);
+        const startResult = await configured.service.start();
+
+        return {
+          runtimeContextPath,
+          runtimeRoot: startResult.runtimeRoot,
+          stop: () => configured.service.stop()
+        };
+      }),
     transport
   });
 
@@ -353,6 +367,7 @@ export async function runGenericRunnerUntilSignal(input: {
   joinConfigPath?: string;
   materializer?: RunnerAssignmentMaterializer;
   nonceFactory?: () => string;
+  runtimeStarter?: RunnerAssignmentRuntimeStarter;
   transport?: RunnerJoinTransport;
 } = {}): Promise<
   RunnerJoinStatus & {
@@ -365,6 +380,7 @@ export async function runGenericRunnerUntilSignal(input: {
       ...(input.clock ? { clock: input.clock } : {}),
       ...(input.materializer ? { materializer: input.materializer } : {}),
       ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
+      ...(input.runtimeStarter ? { runtimeStarter: input.runtimeStarter } : {}),
       ...(input.transport ? { transport: input.transport } : {})
     }
   );

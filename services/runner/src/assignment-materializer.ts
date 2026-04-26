@@ -22,9 +22,9 @@ export type AssignmentMaterializationRecord = {
   assignment: RuntimeAssignmentRecord;
   assignmentPath: string;
   controlEventPath: string;
-  hostRuntimeContextPath?: string;
   materializedAt: string;
   materializationPath: string;
+  runtimeContextPath?: string;
   schemaVersion: "1";
 };
 
@@ -106,8 +106,8 @@ export async function materializeAssignmentToFileSystem(input: {
   );
   const assignmentPath = path.join(assignmentRoot, "assignment.json");
   const controlEventPath = path.join(assignmentRoot, "control-event.json");
-  const hostRuntimeContextPath = input.hostApi
-    ? path.join(assignmentRoot, "host-runtime-context.json")
+  const runtimeContextPath = input.hostApi
+    ? path.join(assignmentRoot, "runtime-context.json")
     : undefined;
   const materializationPath = path.join(assignmentRoot, "materialization.json");
   const hostRuntimeContext = input.hostApi
@@ -120,17 +120,17 @@ export async function materializeAssignmentToFileSystem(input: {
     assignment: input.assignment,
     assignmentPath,
     controlEventPath,
-    ...(hostRuntimeContextPath ? { hostRuntimeContextPath } : {}),
     materializedAt,
     materializationPath,
+    ...(runtimeContextPath ? { runtimeContextPath } : {}),
     schemaVersion: "1"
   };
 
   await Promise.all([
     writeJsonFile(assignmentPath, input.assignment),
     writeJsonFile(controlEventPath, input.controlEvent),
-    ...(hostRuntimeContext && hostRuntimeContextPath
-      ? [writeJsonFile(hostRuntimeContextPath, hostRuntimeContext)]
+    ...(hostRuntimeContext && runtimeContextPath
+      ? [writeJsonFile(runtimeContextPath, hostRuntimeContext)]
       : []),
     writeJsonFile(materializationPath, record)
   ]);
@@ -145,7 +145,7 @@ export function createFileSystemAssignmentMaterializer(
     assignment,
     controlEvent
   }): Promise<RunnerAssignmentMaterializationResult> => {
-    await materializeAssignmentToFileSystem({
+    const record = await materializeAssignmentToFileSystem({
       assignment,
       ...(input.clock ? { clock: input.clock } : {}),
       controlEvent,
@@ -155,7 +155,10 @@ export function createFileSystemAssignmentMaterializer(
 
     return {
       accepted: true,
-      ...(assignment.lease ? { lease: assignment.lease } : {})
+      ...(assignment.lease ? { lease: assignment.lease } : {}),
+      ...(record.runtimeContextPath
+        ? { runtimeContextPath: record.runtimeContextPath }
+        : {})
     };
   };
 }

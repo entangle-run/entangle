@@ -441,6 +441,84 @@ describe("runner runtime context", () => {
     await configured.service.stop();
   });
 
+  it("starts a node runtime when materialization returns a runtime context path", async () => {
+    const fixture = await createRunnerJoinFixture();
+    const transport = new FakeRunnerJoinTransport();
+    const runtimeStops: string[] = [];
+    const runtimeStarts: string[] = [];
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const configured = await createConfiguredRunnerJoinService(
+      fixture.configPath,
+      {
+        clock: () => "2026-04-26T12:00:00.000Z",
+        materializer: () =>
+          Promise.resolve({
+            accepted: true,
+            runtimeContextPath: "/runner/assignments/assignment-alpha/runtime-context.json"
+          }),
+        nonceFactory: () => "nonce-alpha",
+        runtimeStarter: ({ runtimeContextPath }) => {
+          runtimeStarts.push(runtimeContextPath);
+          return Promise.resolve({
+            runtimeContextPath,
+            stop: () => {
+              runtimeStops.push(runtimeContextPath);
+              return Promise.resolve();
+            }
+          });
+        },
+        transport
+      }
+    );
+
+    await configured.service.start();
+    await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
+
+    expect(runtimeStarts).toEqual([
+      "/runner/assignments/assignment-alpha/runtime-context.json"
+    ]);
+    expect(transport.observations.map((payload) => payload.eventType)).toEqual([
+      "runner.hello",
+      "assignment.receipt",
+      "runtime.status",
+      "runtime.status",
+      "assignment.accepted"
+    ]);
+    expect(
+      transport.observations.filter(
+        (payload) => payload.eventType === "runtime.status"
+      )
+    ).toMatchObject([
+      {
+        assignmentId: "assignment-alpha",
+        graphId: "graph-alpha",
+        graphRevisionId: "graph-alpha-rev-1",
+        nodeId: "worker-it",
+        observedState: "starting"
+      },
+      {
+        assignmentId: "assignment-alpha",
+        graphId: "graph-alpha",
+        graphRevisionId: "graph-alpha-rev-1",
+        nodeId: "worker-it",
+        observedState: "running"
+      }
+    ]);
+
+    await configured.service.stop();
+
+    expect(runtimeStops).toEqual([
+      "/runner/assignments/assignment-alpha/runtime-context.json"
+    ]);
+    expect(transport.observations.at(-1)).toMatchObject({
+      assignmentId: "assignment-alpha",
+      eventType: "runtime.status",
+      observedState: "stopped"
+    });
+    expect(configured.service.getAcceptedAssignments()).toEqual([]);
+  });
+
   it("materializes assignment offers to runner-owned storage by default", async () => {
     const fixture = await createRunnerJoinFixture();
     const runnerStateRoot = path.join(path.dirname(fixture.configPath), "runner-state");
@@ -453,6 +531,11 @@ describe("runner runtime context", () => {
       {
         clock: () => "2026-04-26T12:00:00.000Z",
         nonceFactory: () => "nonce-alpha",
+        runtimeStarter: ({ runtimeContextPath }) =>
+          Promise.resolve({
+            runtimeContextPath,
+            stop: () => Promise.resolve()
+          }),
         transport
       }
     );
@@ -544,13 +627,13 @@ describe("runner runtime context", () => {
     await configured.service.start();
     await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
 
-    const hostRuntimeContextPath = path.join(
+    const runtimeContextPath = path.join(
       runnerStateRoot,
       "assignments",
       "assignment-alpha",
-      "host-runtime-context.json"
+      "runtime-context.json"
     );
-    expect(JSON.parse(await readFile(hostRuntimeContextPath, "utf8"))).toMatchObject({
+    expect(JSON.parse(await readFile(runtimeContextPath, "utf8"))).toMatchObject({
       binding: {
         node: {
           nodeId: "worker-it"
