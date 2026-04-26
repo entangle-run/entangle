@@ -31,6 +31,8 @@ RUN rm -rf /prod/runner/dist \
 
 FROM node:22-bookworm-slim AS runtime
 
+ARG OPENCODE_PACKAGE_VERSION=1.14.20
+
 ENV NODE_ENV="production"
 
 WORKDIR /app
@@ -38,6 +40,9 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates git openssh-client \
     && rm -rf /var/lib/apt/lists/*
+
+RUN npm install --global "opencode-ai@${OPENCODE_PACKAGE_VERSION}" \
+    && opencode --version
 
 COPY --from=build /prod/runner ./
 

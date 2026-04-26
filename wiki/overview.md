@@ -151,9 +151,11 @@ The repository now also contains the first real implementation baseline:
   bounded probe/run process timeouts, and persists generic engine-session ids
   plus engine versions and permission-block observations on turn outcomes,
   including `policy_denied` results when OpenCode one-shot CLI auto-rejects a
-  permission request, while host runtime inspection now carries a generic
-  agent-runtime summary plus workspace-health status consumed by the shared
-  host-client, CLI, and Studio, and runner-owned source workspace change
+  permission request, while the Local runner image now installs pinned
+  `opencode-ai@1.14.20` and verifies `opencode --version` during image build,
+  and host runtime inspection now carries a generic agent-runtime summary
+  plus workspace-health status consumed by the shared host-client, CLI, and
+  Studio, and runner-owned source workspace change
   harvesting now records bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus durable
   pending source-change candidate records with host, CLI, and Studio
@@ -597,10 +599,10 @@ The repository now also contains the first real implementation baseline:
   and Compose config validity;
 - a first Local reliability doctor through `entangle local doctor`, with
   read-only human-readable and JSON diagnostics for Local profile files,
-  Node/pnpm/Docker/Compose, the runner image, OpenCode availability,
-  `.entangle/host`, live host status, host-reported runtime workspace health,
-  git principals, Studio, Gitea, and the local relay, plus strict and
-  offline modes;
+  Node/pnpm/Docker/Compose, the runner image, OpenCode availability on the host
+  and inside the runner image, `.entangle/host`, live host status,
+  host-reported runtime workspace health, git principals, Studio, Gitea, and
+  the local relay, plus strict and offline modes;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket

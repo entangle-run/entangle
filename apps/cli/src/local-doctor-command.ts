@@ -673,6 +673,27 @@ export async function buildLocalDoctorReport(
     summary: "Runner image"
   });
 
+  if (dockerAvailable) {
+    checkCommand({
+      args: [
+        "run",
+        "--rm",
+        "--entrypoint",
+        "opencode",
+        options.runnerImage ?? "entangle-runner:local",
+        "--version"
+      ],
+      category: "runner",
+      checks,
+      command: "docker",
+      deps: commandDeps,
+      options,
+      remediation:
+        "Rebuild the runner image so the default OpenCode engine is available inside runtime containers.",
+      summary: "Runner OpenCode"
+    });
+  }
+
   checkCommand({
     args: ["--version"],
     category: "engine",

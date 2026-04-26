@@ -441,6 +441,12 @@ Current partial implementation:
 - the adapter now applies a bounded timeout to the version probe and one-shot
   run process, sends `SIGTERM` on timeout, and records classified
   `provider_unavailable` evidence;
+- the Local runner image now installs pinned `opencode-ai@1.14.20` and runs
+  `opencode --version` during image build, using the version observed in the
+  local OpenCode resource checkout;
+- `entangle local doctor` now probes `opencode --version` inside the configured
+  runner image in addition to the host PATH so default-engine availability is
+  checked where runner turns actually execute;
 - this does not yet complete external cancellation, permission mapping, full
   degraded-runtime status DTOs, attached server lifecycle, policy-gated source
   publication, or artifact restore/replay workflow.
@@ -845,9 +851,10 @@ Current partial implementation:
   human-readable and JSON output;
 - the first doctor checks required Local profile files, Node 22+, `pnpm`,
   Docker CLI, Docker Compose, Docker daemon, Local Compose config, the local
-  runner image, OpenCode availability, `.entangle/host`, live host status,
-  host-reported runtime workspace health, runtime wiki repository health,
-  host-managed git principals, Studio, Gitea, and the local relay;
+  runner image, OpenCode availability on the host and inside the runner image,
+  `.entangle/host`, live host status, host-reported runtime workspace health,
+  runtime wiki repository health, host-managed git principals, Studio, Gitea,
+  and the local relay;
 - default mode reports optional local infrastructure gaps as warnings, while
   `--strict` escalates those gaps to failures for release and smoke
   preparation;

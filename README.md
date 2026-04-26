@@ -130,10 +130,12 @@ This repository currently contains:
   applying bounded probe/run process timeouts, and carrying generic
   engine-session ids, engine versions, and permission-block observations on
   persisted turn outcomes, including `policy_denied` results when OpenCode
-  one-shot CLI auto-rejects a permission request, with host runtime inspection
-  now exposing a generic agent-runtime summary for effective mode, engine
-  profile, state scope, last engine version/session, last permission decision,
-  last turn, bounded failure evidence, and generic workspace-health status for
+  one-shot CLI auto-rejects a permission request, with the Local runner image
+  now installing pinned `opencode-ai@1.14.20` and verifying `opencode
+  --version` during image build, and with host runtime inspection exposing a
+  generic agent-runtime summary for effective mode, engine profile, state
+  scope, last engine version/session, last permission decision, last turn,
+  bounded failure evidence, and generic workspace-health status for
   source/artifact/engine-state/wiki surfaces through the shared host-client,
   CLI, and Studio surfaces, with runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,
@@ -646,9 +648,10 @@ This repository currently contains:
   `agentRuntime` fields through the shared host-client node mutation boundary;
 - the first Local reliability diagnostic slice where `entangle local doctor`
   performs read-only checks over Local profile files, Node/pnpm/Docker/Compose,
-  the runner image, OpenCode availability, `.entangle/host`, host status,
-  runtime workspace health, git principals, Studio, Gitea, and the local relay,
-  with human-readable and JSON output plus strict/offline modes;
+  the runner image, OpenCode availability on the host and inside the runner
+  image, `.entangle/host`, host status, runtime workspace health, git
+  principals, Studio, Gitea, and the local relay, with human-readable and JSON
+  output plus strict/offline modes;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

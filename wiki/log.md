@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Installed OpenCode in the Local runner image
+
+Closed a concrete OpenCode availability gap for Entangle Local: the default
+node engine is OpenCode, so the Local runner image now installs pinned
+`opencode-ai@1.14.20` and verifies `opencode --version` during image build.
+The pin matches the local OpenCode resource checkout at
+`0595c289046d7f45d82a563ad0c76b3ccfca050b`.
+
+`entangle local doctor` now also checks `opencode --version` inside the
+configured runner image, so the diagnostic verifies availability where runner
+turns execute, not only on the host PATH.
+
+Verification included `npm view opencode-ai@1.14.20 version`, focused CLI
+typecheck/lint/tests, a Docker build of the runner runtime target tagged
+`entangle-runner:opencode-local-check`, and a container-level
+`opencode --version` run returning `1.14.20`.
+
 ## [2026-04-26] implementation | Surfaced runtime approval blockers and artifacts
 
 Advanced Entangle Local B8 runtime visibility by adding generic

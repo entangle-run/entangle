@@ -218,6 +218,11 @@ describe("local doctor command helpers", () => {
           category: "engine",
           status: "pass",
           summary: "OpenCode"
+        }),
+        expect.objectContaining({
+          category: "runner",
+          status: "pass",
+          summary: "Runner OpenCode"
         })
       ])
     );
