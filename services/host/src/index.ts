@@ -411,7 +411,7 @@ function isDirectExecution(): boolean {
 
 export async function buildHostServer() {
   const server = Fastify({
-    logger: true
+    logger: process.env.ENTANGLE_HOST_LOGGER === "false" ? false : true
   });
   const operatorToken = normalizeOperatorToken(
     process.env.ENTANGLE_HOST_OPERATOR_TOKEN

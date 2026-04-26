@@ -1,4 +1,5 @@
 import {
+  formatHostStateLayoutSummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,
@@ -27,6 +28,9 @@ export type HostStatusCliSummary = {
   runtimeCounts: HostStatusResponse["runtimeCounts"];
   service: string;
   sessionDiagnostics?: NonNullable<HostStatusResponse["sessionDiagnostics"]> & {
+    summary: string;
+  };
+  stateLayout: HostStatusResponse["stateLayout"] & {
     summary: string;
   };
   status: string;
@@ -67,6 +71,10 @@ export function projectHostStatusSummary(
         }
       : {}),
     status: status.status,
+    stateLayout: {
+      ...status.stateLayout,
+      summary: formatHostStateLayoutSummary(status)
+    },
     timestamp: status.timestamp
   };
 }

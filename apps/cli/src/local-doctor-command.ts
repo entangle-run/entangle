@@ -1,12 +1,15 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import type {
-  ExternalPrincipalListResponse,
-  HostStatusResponse,
-  RuntimeContextInspectionResponse,
-  RuntimeInspectionResponse,
-  RuntimeListResponse
+import {
+  currentLocalStateLayoutVersion,
+  localStateLayoutRecordSchema,
+  minimumSupportedLocalStateLayoutVersion,
+  type ExternalPrincipalListResponse,
+  type HostStatusResponse,
+  type RuntimeContextInspectionResponse,
+  type RuntimeInspectionResponse,
+  type RuntimeListResponse
 } from "@entangle/types";
 
 export type LocalDoctorCheckStatus = "pass" | "warn" | "fail";
@@ -60,6 +63,7 @@ export interface LocalDoctorDeps {
   fetchUrl?: (url: string) => Promise<string>;
   hostClient?: LocalDoctorHostClient;
   now?: () => Date;
+  readFile?: (filePath: string) => string;
 }
 
 const localProfileComposeFile = "deploy/local/compose/docker-compose.local.yml";
@@ -117,6 +121,121 @@ function addCheck(checks: LocalDoctorCheck[], check: LocalDoctorCheck): void {
 
 function optionalFailureStatus(strict: boolean | undefined): LocalDoctorCheckStatus {
   return strict ? "fail" : "warn";
+}
+
+function buildLocalStateLayoutCheck(input: {
+  fileExists: NonNullable<LocalDoctorDeps["fileExists"]>;
+  hostStateFound: boolean;
+  options: LocalDoctorOptions;
+  readFile: NonNullable<LocalDoctorDeps["readFile"]>;
+}): LocalDoctorCheck {
+  const stateLayoutPath = path.join(
+    input.options.repositoryRoot,
+    ".entangle",
+    "host",
+    "state-layout.json"
+  );
+
+  if (!input.hostStateFound) {
+    return {
+      category: "state",
+      detail: "no .entangle/host yet",
+      remediation: "Start entangle-host once to initialize Local state.",
+      status: "warn",
+      summary: "Local state layout"
+    };
+  }
+
+  if (!input.fileExists(stateLayoutPath)) {
+    return {
+      category: "state",
+      detail: "missing .entangle/host/state-layout.json",
+      remediation: "Start the upgraded entangle-host once to stamp the current Local state layout.",
+      status: "warn",
+      summary: "Local state layout"
+    };
+  }
+
+  let rawRecord: unknown;
+  try {
+    rawRecord = JSON.parse(input.readFile(stateLayoutPath));
+  } catch (error) {
+    return {
+      category: "state",
+      detail:
+        error instanceof Error ? error.message : "state layout record is unreadable",
+      remediation: "Inspect .entangle/host/state-layout.json before starting Entangle Local.",
+      status: "fail",
+      summary: "Local state layout"
+    };
+  }
+
+  const parseResult = localStateLayoutRecordSchema.safeParse(rawRecord);
+  if (!parseResult.success) {
+    return {
+      category: "state",
+      detail: "state layout record does not match the Entangle Local schema",
+      remediation: "Back up .entangle/host, then inspect or repair state-layout.json.",
+      status: "fail",
+      summary: "Local state layout"
+    };
+  }
+
+  const record = parseResult.data;
+  if (record.layoutVersion > currentLocalStateLayoutVersion) {
+    return {
+      category: "state",
+      detail: `layout ${record.layoutVersion} is newer than supported layout ${currentLocalStateLayoutVersion}`,
+      remediation: "Upgrade Entangle before using this Local state directory.",
+      status: "fail",
+      summary: "Local state layout"
+    };
+  }
+
+  if (record.layoutVersion < minimumSupportedLocalStateLayoutVersion) {
+    return {
+      category: "state",
+      detail: `layout ${record.layoutVersion} is older than minimum supported layout ${minimumSupportedLocalStateLayoutVersion}`,
+      remediation: "Use a compatible Entangle version or restore a supported Local state backup.",
+      status: "fail",
+      summary: "Local state layout"
+    };
+  }
+
+  if (record.layoutVersion < currentLocalStateLayoutVersion) {
+    return {
+      category: "state",
+      detail: `layout ${record.layoutVersion} can be upgraded to ${currentLocalStateLayoutVersion}`,
+      remediation: "Back up .entangle/host, then start entangle-host to run the layout upgrade.",
+      status: "warn",
+      summary: "Local state layout"
+    };
+  }
+
+  return {
+    category: "state",
+    detail: `layout ${record.layoutVersion} current`,
+    status: "pass",
+    summary: "Local state layout"
+  };
+}
+
+function classifyLiveStateLayoutStatus(
+  status: HostStatusResponse["stateLayout"]["status"]
+): LocalDoctorCheckStatus {
+  if (status === "current") {
+    return "pass";
+  }
+
+  if (
+    status === "unsupported_future" ||
+    status === "unsupported_legacy" ||
+    status === "unreadable"
+  ) {
+    return "fail";
+  }
+
+  return "warn";
 }
 
 function checkCommand(input: {
@@ -447,6 +566,18 @@ async function addLiveChecks(input: {
         status: status.status === "healthy" ? "pass" : "warn",
         summary: "Host API"
       });
+      addCheck(input.checks, {
+        category: "state",
+        detail:
+          `layout ${status.stateLayout.recordedLayoutVersion ?? "unknown"} ` +
+          `${status.stateLayout.status}`,
+        remediation:
+          status.stateLayout.status === "current"
+            ? undefined
+            : "Back up .entangle/host, then resolve the reported Local state layout issue before continuing.",
+        status: classifyLiveStateLayoutStatus(status.stateLayout.status),
+        summary: "Host state layout"
+      });
     } catch (error) {
       addCheck(input.checks, {
         category: "host",
@@ -570,6 +701,8 @@ export async function buildLocalDoctorReport(
 ): Promise<LocalDoctorReport> {
   const checks: LocalDoctorCheck[] = [];
   const fileExists = deps.fileExists ?? existsSync;
+  const readFile =
+    deps.readFile ?? ((filePath: string) => readFileSync(filePath, "utf8"));
   const commandRunner =
     deps.commandRunner ??
     ((command, args, commandOptions) =>
@@ -714,6 +847,15 @@ export async function buildLocalDoctorReport(
     status: hostStateFound ? "pass" : "warn",
     summary: "Local host state"
   });
+  addCheck(
+    checks,
+    buildLocalStateLayoutCheck({
+      fileExists,
+      hostStateFound,
+      options,
+      readFile
+    })
+  );
 
   await addLiveChecks({
     checks,

@@ -1067,6 +1067,7 @@ export {
   type HostEventFilter
 } from "./event-inspection.js";
 export {
+  formatHostStateLayoutSummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,

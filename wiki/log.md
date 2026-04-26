@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added Local state layout compatibility checks
+
+Advanced the Entangle Local reliability track by introducing a version-1
+`.entangle/host/state-layout.json` marker for host-owned Local state. The host
+now materializes the marker on first startup and refuses unreadable,
+unsupported legacy, or unsupported future layout records before mutating state.
+
+`GET /v1/host/status` now exposes machine-readable state layout status. The
+shared host-client formatter, CLI host status summary, Studio Host Status
+panel, and `entangle local doctor` consume the same status; the doctor also
+checks offline local state layout compatibility when the host is not running.
+
+Verification covered focused typecheck/lint/tests for the touched packages and
+passed `CI=1 TURBO_DAEMON=false pnpm verify`.
+
 ## [2026-04-26] implementation | Installed OpenCode in the Local runner image
 
 Closed a concrete OpenCode availability gap for Entangle Local: the default

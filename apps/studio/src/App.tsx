@@ -17,6 +17,7 @@ import {
 } from "@xyflow/react";
 import {
   createHostClient,
+  formatHostStateLayoutSummary,
   formatHostStatusSessionDiagnosticsSummary,
   formatRuntimeWorkspaceHealthSummary,
   formatRuntimeMemoryPageDetail,
@@ -3699,6 +3700,10 @@ export function App() {
                   ? formatHostStatusSessionDiagnosticsSummary(status)
                   : "not loaded"}
               </dd>
+            </div>
+            <div>
+              <dt>State layout</dt>
+              <dd>{status ? formatHostStateLayoutSummary(status) : "not loaded"}</dd>
             </div>
           </dl>
 

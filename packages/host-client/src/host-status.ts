@@ -28,12 +28,20 @@ export function formatHostStatusSessionDiagnosticsSummary(
   );
 }
 
+export function formatHostStateLayoutSummary(status: HostStatusResponse): string {
+  const layout = status.stateLayout;
+  const recordedLayoutVersion = layout.recordedLayoutVersion ?? "unknown";
+
+  return `v${recordedLayoutVersion} · ${layout.status}`;
+}
+
 export function formatHostStatusDetailLines(
   status: HostStatusResponse
 ): string[] {
   const reconciliation = status.reconciliation;
   const detailLines = [
     `timestamp ${status.timestamp}`,
+    `state layout ${formatHostStateLayoutSummary(status)}`,
     `runtime counts desired ${status.runtimeCounts.desired}, observed ${status.runtimeCounts.observed}, running ${status.runtimeCounts.running}`,
     `reconciliation ${formatHostStatusReconciliationSummary(status)}`,
     `session diagnostics ${formatHostStatusSessionDiagnosticsSummary(status)}`,

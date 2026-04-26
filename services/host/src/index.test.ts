@@ -632,6 +632,7 @@ async function createTestServer(
     includeModelEndpoint?: boolean;
     includeModelSecret?: boolean;
     runtimeBackend?: RuntimeBackend;
+    stateLayoutRecord?: unknown;
   } = {}
 ) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-host-"));
@@ -639,6 +640,7 @@ async function createTestServer(
   process.env.ENTANGLE_HOME = tempRoot;
   process.env.ENTANGLE_SECRETS_HOME = path.join(tempRoot, ".entangle-secrets");
   process.env.ENTANGLE_RUNTIME_BACKEND = "memory";
+  process.env.ENTANGLE_HOST_LOGGER = "false";
   const includeModelEndpoint = options.includeModelEndpoint ?? false;
   const includeModelSecret = options.includeModelSecret ?? includeModelEndpoint;
   process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID = options.includeModelEndpoint
@@ -653,6 +655,15 @@ async function createTestServer(
   process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL = options.includeModelEndpoint
     ? "claude-opus"
     : "";
+
+  if (options.stateLayoutRecord) {
+    await mkdir(path.join(tempRoot, "host"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "host", "state-layout.json"),
+      `${JSON.stringify(options.stateLayoutRecord, null, 2)}\n`,
+      "utf8"
+    );
+  }
 
   if (includeModelSecret) {
     await writeSecretRefFile("secret://shared-model", "test-model-secret\n");
@@ -782,6 +793,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
+  delete process.env.ENTANGLE_HOST_LOGGER;
   vi.unstubAllGlobals();
   vi.resetModules();
 
@@ -831,12 +843,36 @@ describe("buildHostServer", () => {
       });
 
       expect(authorizedResponse.statusCode).toBe(200);
-      expect(hostStatusResponseSchema.parse(authorizedResponse.json()).service).toBe(
-        "entangle-host"
-      );
+      const status = hostStatusResponseSchema.parse(authorizedResponse.json());
+      expect(status.service).toBe("entangle-host");
+      expect(status.stateLayout).toMatchObject({
+        currentLayoutVersion: 1,
+        recordedLayoutVersion: 1,
+        status: "current"
+      });
+      await expect(
+        readFile(
+          path.join(createdDirectories[0]!, "host", "state-layout.json"),
+          "utf8"
+        )
+      ).resolves.toContain('"layoutVersion": 1');
     } finally {
       await server.close();
     }
+  });
+
+  it("refuses to start against a newer local state layout", async () => {
+    await expect(
+      createTestServer({
+        stateLayoutRecord: {
+          createdAt: "2026-04-25T00:00:00.000Z",
+          layoutVersion: 99,
+          product: "entangle-local",
+          schemaVersion: "1",
+          updatedAt: "2026-04-25T00:00:00.000Z"
+        }
+      })
+    ).rejects.toThrow("newer than the supported layout 1");
   });
 
   it("records audit events for token-protected operator mutation requests", async () => {

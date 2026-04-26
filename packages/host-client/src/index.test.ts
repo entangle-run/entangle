@@ -72,6 +72,14 @@ describe("createHostClient", () => {
                 observed: 0,
                 running: 0
               },
+              stateLayout: {
+                checkedAt: "2026-04-24T00:00:00.000Z",
+                currentLayoutVersion: 1,
+                minimumSupportedLayoutVersion: 1,
+                recordedAt: "2026-04-24T00:00:00.000Z",
+                recordedLayoutVersion: 1,
+                status: "current"
+              },
               timestamp: "2026-04-24T00:00:00.000Z"
             }),
             ok: true,

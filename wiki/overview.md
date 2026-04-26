@@ -600,7 +600,8 @@ The repository now also contains the first real implementation baseline:
 - a first Local reliability doctor through `entangle local doctor`, with
   read-only human-readable and JSON diagnostics for Local profile files,
   Node/pnpm/Docker/Compose, the runner image, OpenCode availability on the host
-  and inside the runner image, `.entangle/host`, live host status,
+  and inside the runner image, `.entangle/host`, local state layout
+  compatibility, live host status, host-reported state layout status,
   host-reported runtime workspace health, git principals, Studio, Gitea, and
   the local relay, plus strict and offline modes;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering

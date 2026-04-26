@@ -55,6 +55,14 @@ function createPassingDeps(): LocalDoctorDeps {
             running: 1
           },
           service: "entangle-host",
+          stateLayout: {
+            checkedAt: "2026-04-25T00:00:00.000Z",
+            currentLayoutVersion: 1,
+            minimumSupportedLayoutVersion: 1,
+            recordedAt: "2026-04-25T00:00:00.000Z",
+            recordedLayoutVersion: 1,
+            status: "current"
+          },
           timestamp: "2026-04-25T00:00:00.000Z",
           status: "healthy"
         });
@@ -181,7 +189,15 @@ function createPassingDeps(): LocalDoctorDeps {
         });
       }
     },
-    now: () => new Date("2026-04-25T00:00:00.000Z")
+    now: () => new Date("2026-04-25T00:00:00.000Z"),
+    readFile: () =>
+      JSON.stringify({
+        createdAt: "2026-04-25T00:00:00.000Z",
+        layoutVersion: 1,
+        product: "entangle-local",
+        schemaVersion: "1",
+        updatedAt: "2026-04-25T00:00:00.000Z"
+      })
   };
 }
 
@@ -223,6 +239,16 @@ describe("local doctor command helpers", () => {
           category: "runner",
           status: "pass",
           summary: "Runner OpenCode"
+        }),
+        expect.objectContaining({
+          category: "state",
+          status: "pass",
+          summary: "Local state layout"
+        }),
+        expect.objectContaining({
+          category: "state",
+          status: "pass",
+          summary: "Host state layout"
         })
       ])
     );
@@ -311,5 +337,33 @@ describe("local doctor command helpers", () => {
       status: "warn"
     });
     expect(wikiRepositoryCheck?.detail).toContain("dirty: worker-it");
+  });
+
+  it("fails when the local state layout is newer than the current binary", async () => {
+    const report = await buildLocalDoctorReport(
+      {
+        repositoryRoot: "/repo",
+        skipLive: true
+      },
+      {
+        ...createPassingDeps(),
+        readFile: () =>
+          JSON.stringify({
+            createdAt: "2026-04-25T00:00:00.000Z",
+            layoutVersion: 99,
+            product: "entangle-local",
+            schemaVersion: "1",
+            updatedAt: "2026-04-25T00:00:00.000Z"
+          })
+      }
+    );
+
+    expect(report.status).toBe("fail");
+    expect(
+      report.checks.find((check) => check.summary === "Local state layout")
+    ).toMatchObject({
+      category: "state",
+      status: "fail"
+    });
   });
 });

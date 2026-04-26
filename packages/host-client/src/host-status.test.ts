@@ -33,6 +33,14 @@ function createStatus(): HostStatusResponse {
       inspectedSessionCount: 4,
       sessionsWithConsistencyFindings: 1
     },
+    stateLayout: {
+      checkedAt: "2026-04-25T08:00:02.000Z",
+      currentLayoutVersion: 1,
+      minimumSupportedLayoutVersion: 1,
+      recordedAt: "2026-04-25T08:00:00.000Z",
+      recordedLayoutVersion: 1,
+      status: "current"
+    },
     status: "degraded",
     timestamp: "2026-04-25T08:00:02.000Z"
   };
@@ -57,6 +65,7 @@ describe("host status presentation helpers", () => {
     expect(detailLines).toContain(
       "session diagnostics 4 sessions · 2 consistency findings · 1 affected"
     );
+    expect(detailLines).toContain("state layout v1 · current");
     expect(detailLines).toContain(
       "findings context_unavailable, runtime_failed"
     );

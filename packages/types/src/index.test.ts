@@ -1819,12 +1819,21 @@ describe("reconciliation contracts", () => {
         running: 1
       },
       service: "entangle-host",
+      stateLayout: {
+        checkedAt: "2026-04-24T00:00:00.000Z",
+        currentLayoutVersion: 1,
+        minimumSupportedLayoutVersion: 1,
+        recordedAt: "2026-04-24T00:00:00.000Z",
+        recordedLayoutVersion: 1,
+        status: "current"
+      },
       status: "degraded",
       timestamp: "2026-04-24T00:00:00.000Z"
     });
 
     expect(result.reconciliation.blockedRuntimeCount).toBe(1);
     expect(result.reconciliation.findingCodes).toEqual(["context_unavailable"]);
+    expect(result.stateLayout.status).toBe("current");
   });
 });
 

@@ -37,6 +37,7 @@ import {
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
+  currentLocalStateLayoutVersion,
   observedApprovalActivityRecordSchema,
   observedArtifactActivityRecordSchema,
   observedConversationActivityRecordSchema,
@@ -182,6 +183,11 @@ import {
   type RuntimeSourceHistoryPublishMutationRequest,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
+  localStateLayoutInspectionSchema,
+  localStateLayoutRecordSchema,
+  type LocalStateLayoutInspection,
+  type LocalStateLayoutRecord,
+  minimumSupportedLocalStateLayoutVersion,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeListResponseSchema,
@@ -247,6 +253,7 @@ const cacheRoot = path.join(hostStateRoot, "cache");
 const packageStoreRoot = path.join(importsRoot, "packages", "store");
 const reservedPackageSourceIds = new Set(["store"]);
 
+const localStateLayoutRecordPath = path.join(hostStateRoot, "state-layout.json");
 const catalogPath = path.join(desiredRoot, "catalog.json");
 const externalPrincipalsRoot = path.join(desiredRoot, "external-principals");
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
@@ -621,6 +628,138 @@ async function writeJsonFileIfChanged(
   await ensureDirectory(path.dirname(filePath));
   await writeFile(filePath, encoded, "utf8");
   return true;
+}
+
+function buildLocalStateLayoutRecord(timestamp: string) {
+  return localStateLayoutRecordSchema.parse({
+    createdAt: timestamp,
+    layoutVersion: currentLocalStateLayoutVersion,
+    product: "entangle-local",
+    schemaVersion: "1",
+    updatedAt: timestamp
+  });
+}
+
+function classifyLocalStateLayoutVersion(
+  layoutVersion: number
+): LocalStateLayoutInspection["status"] {
+  if (layoutVersion > currentLocalStateLayoutVersion) {
+    return "unsupported_future";
+  }
+
+  if (layoutVersion < minimumSupportedLocalStateLayoutVersion) {
+    return "unsupported_legacy";
+  }
+
+  if (layoutVersion < currentLocalStateLayoutVersion) {
+    return "upgrade_available";
+  }
+
+  return "current";
+}
+
+function describeLocalStateLayoutStatus(
+  inspection: LocalStateLayoutInspection
+): string | undefined {
+  if (inspection.status === "current") {
+    return undefined;
+  }
+
+  if (inspection.status === "missing") {
+    return "Local state layout record is missing.";
+  }
+
+  if (inspection.status === "upgrade_available") {
+    return `Local state layout ${inspection.recordedLayoutVersion} can be upgraded to ${inspection.currentLayoutVersion}.`;
+  }
+
+  if (inspection.status === "unsupported_legacy") {
+    return `Local state layout ${inspection.recordedLayoutVersion} is older than the minimum supported layout ${inspection.minimumSupportedLayoutVersion}.`;
+  }
+
+  if (inspection.status === "unsupported_future") {
+    return `Local state layout ${inspection.recordedLayoutVersion} is newer than the supported layout ${inspection.currentLayoutVersion}.`;
+  }
+
+  return inspection.detail ?? "Local state layout record could not be read.";
+}
+
+async function inspectLocalStateLayout(input: {
+  materializeIfMissing: boolean;
+}): Promise<LocalStateLayoutInspection> {
+  const checkedAt = nowIsoString();
+
+  if (!(await pathExists(localStateLayoutRecordPath))) {
+    if (input.materializeIfMissing) {
+      const record = buildLocalStateLayoutRecord(checkedAt);
+      await writeJsonFile(localStateLayoutRecordPath, record);
+
+      return localStateLayoutInspectionSchema.parse({
+        checkedAt,
+        currentLayoutVersion: currentLocalStateLayoutVersion,
+        minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+        recordedAt: record.updatedAt,
+        recordedLayoutVersion: record.layoutVersion,
+        status: "current"
+      });
+    }
+
+    return localStateLayoutInspectionSchema.parse({
+      checkedAt,
+      currentLayoutVersion: currentLocalStateLayoutVersion,
+      detail: "Local state layout record is missing.",
+      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      status: "missing"
+    });
+  }
+
+  let record: LocalStateLayoutRecord;
+  try {
+    record = localStateLayoutRecordSchema.parse(
+      await readJsonFile(localStateLayoutRecordPath)
+    );
+  } catch (error) {
+    return localStateLayoutInspectionSchema.parse({
+      checkedAt,
+      currentLayoutVersion: currentLocalStateLayoutVersion,
+      detail: `Local state layout record is unreadable: ${formatUnknownError(error)}`,
+      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      status: "unreadable"
+    });
+  }
+
+  const status = classifyLocalStateLayoutVersion(record.layoutVersion);
+  const inspection = localStateLayoutInspectionSchema.parse({
+    checkedAt,
+    currentLayoutVersion: currentLocalStateLayoutVersion,
+    minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+    recordedAt: record.updatedAt,
+    recordedLayoutVersion: record.layoutVersion,
+    status
+  });
+  const detail = describeLocalStateLayoutStatus(inspection);
+
+  return localStateLayoutInspectionSchema.parse({
+    ...inspection,
+    ...(detail ? { detail } : {})
+  });
+}
+
+async function ensureLocalStateLayoutCompatible(): Promise<void> {
+  const inspection = await inspectLocalStateLayout({
+    materializeIfMissing: true
+  });
+
+  if (
+    inspection.status === "unsupported_future" ||
+    inspection.status === "unsupported_legacy" ||
+    inspection.status === "unreadable"
+  ) {
+    throw new Error(
+      describeLocalStateLayoutStatus(inspection) ??
+        "Local state layout is not compatible with this Entangle host."
+    );
+  }
 }
 
 function buildDefaultCatalog(): DeploymentResourceCatalog {
@@ -2914,6 +3053,9 @@ function externalPrincipalRecordPath(principalId: string): string {
 }
 
 export async function initializeHostState(): Promise<void> {
+  await ensureDirectory(hostStateRoot);
+  await ensureLocalStateLayoutCompatible();
+
   await Promise.all([
     ensureDirectory(runtimeIdentitiesRoot),
     ensureDirectory(secretRefsRoot),
@@ -9600,6 +9742,9 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
+  const stateLayout = await inspectLocalStateLayout({
+    materializeIfMissing: true
+  });
   const runtimeInspections = await listRuntimeInspections();
   const sessionList = await listSessions();
   const sessionDiagnostics = {
@@ -9634,6 +9779,7 @@ export async function buildHostStatus() {
       transitioningRuntimeCount: 0
     });
   const hostStatus =
+    stateLayout.status !== "current" ||
     reconciliationSnapshot.degradedRuntimeCount > 0 ||
     sessionDiagnostics.consistencyFindingCount > 0
       ? "degraded"
@@ -9671,6 +9817,7 @@ export async function buildHostStatus() {
       ).length
     },
     sessionDiagnostics,
+    stateLayout,
     timestamp: nowIsoString()
   };
 }

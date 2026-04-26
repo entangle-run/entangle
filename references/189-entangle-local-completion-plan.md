@@ -53,6 +53,11 @@ The latest implementation state includes:
 - `entangle local doctor` live checks now inspect runtime wiki repositories for
   initialization, clean working trees, branch availability, and committed HEADs
   when runtime context is available;
+- host state now carries an explicit `state-layout.json` compatibility record,
+  `GET /v1/host/status` exposes machine-readable layout status, CLI/Studio
+  render that status through the shared host-client formatter, and `entangle
+  local doctor` checks both offline local state layout compatibility and live
+  host-reported layout status;
 - runner turns now persist bounded `engineRequestSummary` evidence for the
   assembled engine request shape, including prompt part counts, aggregate
   prompt character counts, memory, artifact, and tool counts, execution
@@ -923,6 +928,20 @@ Constraints:
 
 - Do not silently mutate unknown future state.
 - Migrations must be idempotent or guarded.
+
+Current partial implementation:
+
+- the host materializes `.entangle/host/state-layout.json` for Entangle Local
+  layout version 1 and refuses unreadable, unsupported legacy, or unsupported
+  future layout records during host-state initialization;
+- `GET /v1/host/status` now includes machine-readable local state layout
+  status, and the shared host-client, CLI host status summary, and Studio Host
+  Status panel render the same status;
+- `entangle local doctor` now performs an offline check for missing, malformed,
+  future, legacy, or current local state layout records and a live check for
+  the host-reported state layout status;
+- migration implementation, backup/restore integration, and upgrade rehearsal
+  from previous Local release state remain open.
 
 Acceptance:
 

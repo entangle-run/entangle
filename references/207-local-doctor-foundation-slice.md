@@ -80,7 +80,8 @@ The remaining Local reliability implementation should add:
 
 - conservative repair actions with dry-run previews;
 - backup and restore bundles;
-- local state layout versioning and upgrade checks;
+- local state layout migrations beyond the active version-1 compatibility
+  marker and upgrade rehearsal checks;
 - diagnostics/log bundle export with secret redaction;
 - repeated-use, backup/restore, and repair smokes.
 

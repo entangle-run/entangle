@@ -29,6 +29,14 @@ function createStatus(): HostStatusResponse {
       inspectedSessionCount: 2,
       sessionsWithConsistencyFindings: 1
     },
+    stateLayout: {
+      checkedAt: "2026-04-25T08:00:02.000Z",
+      currentLayoutVersion: 1,
+      minimumSupportedLayoutVersion: 1,
+      recordedAt: "2026-04-25T08:00:00.000Z",
+      recordedLayoutVersion: 1,
+      status: "current"
+    },
     status: "degraded",
     timestamp: "2026-04-25T08:00:02.000Z"
   };
@@ -49,6 +57,9 @@ describe("host status CLI summary projection", () => {
       sessionDiagnostics: {
         consistencyFindingCount: 3,
         summary: "2 sessions · 3 consistency findings · 1 affected"
+      },
+      stateLayout: {
+        summary: "v1 · current"
       },
       status: "degraded"
     });

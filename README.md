@@ -649,9 +649,10 @@ This repository currently contains:
 - the first Local reliability diagnostic slice where `entangle local doctor`
   performs read-only checks over Local profile files, Node/pnpm/Docker/Compose,
   the runner image, OpenCode availability on the host and inside the runner
-  image, `.entangle/host`, host status, runtime workspace health, git
-  principals, Studio, Gitea, and the local relay, with human-readable and JSON
-  output plus strict/offline modes;
+  image, `.entangle/host`, local state layout compatibility, host status,
+  host-reported state layout status, runtime workspace health, git principals,
+  Studio, Gitea, and the local relay, with human-readable and JSON output plus
+  strict/offline modes;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

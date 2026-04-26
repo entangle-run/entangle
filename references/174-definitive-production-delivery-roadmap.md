@@ -495,7 +495,8 @@ Incremental features:
    - restore local state bundle;
    - document what is included and excluded.
 4. Upgrade path:
-   - version local state layout;
+   - extend the active version-1 local state layout marker into rehearsed
+     migrations;
    - migration notes between Local releases;
    - compatibility checks before startup.
 5. Diagnostics:

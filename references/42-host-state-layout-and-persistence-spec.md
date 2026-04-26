@@ -58,6 +58,7 @@ Recommended first serious layout:
 ```text
 .entangle/
   host/
+    state-layout.json
     desired/
       catalog.json
       graph/
@@ -256,13 +257,22 @@ This is the right split between product source and operator state.
 
 On host startup, the first serious implementation should:
 
-1. load `desired/`;
-2. load any useful `observed/` snapshots;
-3. inspect actual runtime state;
-4. reconcile toward `desired/`;
-5. continue appending traces instead of discarding prior state silently.
+1. verify or materialize `host/state-layout.json`;
+2. refuse unsupported future or legacy state layouts instead of silently
+   mutating them;
+3. load `desired/`;
+4. load any useful `observed/` snapshots;
+5. inspect actual runtime state;
+6. reconcile toward `desired/`;
+7. continue appending traces instead of discarding prior state silently.
 
 This is the minimum disciplined recovery model for a real local control plane.
+
+The active Local implementation writes `state-layout.json` with product
+`entangle-local`, schema version `1`, and layout version `1`. `GET
+/v1/host/status`, shared host-client formatters, Studio, and `entangle local
+doctor` expose the same machine-readable layout status so upgrade checks are
+visible before repair, backup, or restore operations become available.
 
 ## 11. Relationship to Compose and Docker
 

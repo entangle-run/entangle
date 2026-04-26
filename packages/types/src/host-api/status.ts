@@ -3,6 +3,36 @@ import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js"
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 
+export const currentLocalStateLayoutVersion = 1;
+export const minimumSupportedLocalStateLayoutVersion = 1;
+
+export const localStateLayoutRecordSchema = z.object({
+  createdAt: nonEmptyStringSchema,
+  layoutVersion: z.number().int().nonnegative(),
+  product: z.literal("entangle-local"),
+  schemaVersion: z.literal("1"),
+  updatedAt: nonEmptyStringSchema
+});
+
+export const localStateLayoutInspectionStatusSchema = z.enum([
+  "current",
+  "missing",
+  "upgrade_available",
+  "unsupported_legacy",
+  "unsupported_future",
+  "unreadable"
+]);
+
+export const localStateLayoutInspectionSchema = z.object({
+  checkedAt: nonEmptyStringSchema,
+  currentLayoutVersion: z.number().int().nonnegative(),
+  detail: nonEmptyStringSchema.optional(),
+  minimumSupportedLayoutVersion: z.number().int().nonnegative(),
+  recordedAt: nonEmptyStringSchema.optional(),
+  recordedLayoutVersion: z.number().int().nonnegative().optional(),
+  status: localStateLayoutInspectionStatusSchema
+});
+
 export const hostStatusResponseSchema = z.object({
   service: z.literal("entangle-host"),
   status: z.enum(["starting", "healthy", "degraded"]),
@@ -32,6 +62,7 @@ export const hostStatusResponseSchema = z.object({
       sessionsWithConsistencyFindings: z.number().int().nonnegative()
     })
     .optional(),
+  stateLayout: localStateLayoutInspectionSchema,
   timestamp: nonEmptyStringSchema
 });
 
@@ -49,5 +80,9 @@ export const traceEventSchema = z.object({
 });
 
 export type HostStatusResponse = z.infer<typeof hostStatusResponseSchema>;
+export type LocalStateLayoutInspection = z.infer<
+  typeof localStateLayoutInspectionSchema
+>;
+export type LocalStateLayoutRecord = z.infer<typeof localStateLayoutRecordSchema>;
 export type RuntimeStatus = z.infer<typeof runtimeStatusSchema>;
 export type TraceEvent = z.infer<typeof traceEventSchema>;
