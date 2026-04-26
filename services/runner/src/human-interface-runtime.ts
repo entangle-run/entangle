@@ -6,6 +6,7 @@ import type {
   RunnerJoinHostApi,
   UserNodeConversationResponse,
   UserConversationProjectionRecord,
+  UserNodeMessageRecord,
   UserNodeMessagePublishResponse,
   UserNodeMessagePublishType
 } from "@entangle/types";
@@ -346,9 +347,16 @@ async function recordInboundUserNodeMessage(input: {
 }
 
 async function publishUserNodeMessage(input: {
+  approval?:
+    | {
+        approvalId: string;
+        decision: "approved" | "rejected";
+      }
+    | undefined;
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   messageType: UserNodeMessagePublishType;
+  parentMessageId?: string | undefined;
   sessionId?: string | undefined;
   summary: string;
   targetNodeId: string;
@@ -365,8 +373,10 @@ async function publishUserNodeMessage(input: {
     ),
     {
       body: JSON.stringify({
+        ...(input.approval ? { approval: input.approval } : {}),
         ...(input.conversationId ? { conversationId: input.conversationId } : {}),
         messageType: input.messageType,
+        ...(input.parentMessageId ? { parentMessageId: input.parentMessageId } : {}),
         ...(input.sessionId ? { sessionId: input.sessionId } : {}),
         summary: input.summary,
         targetNodeId: input.targetNodeId
@@ -387,6 +397,33 @@ async function publishUserNodeMessage(input: {
   }
 
   return userNodeMessagePublishResponseSchema.parse(JSON.parse(body));
+}
+
+function renderApprovalControls(message: UserNodeMessageRecord): string {
+  if (
+    message.direction !== "inbound" ||
+    message.messageType !== "approval.request" ||
+    !message.approval
+  ) {
+    return "";
+  }
+
+  const approvalId = escapeHtml(message.approval.approvalId);
+  const conversationId = escapeHtml(message.conversationId);
+  const eventId = escapeHtml(message.eventId);
+  const fromNodeId = escapeHtml(message.fromNodeId);
+  const sessionId = escapeHtml(message.sessionId);
+
+  return `<form class="approval-actions" method="post" action="/messages">
+    <input type="hidden" name="approvalId" value="${approvalId}" />
+    <input type="hidden" name="conversationId" value="${conversationId}" />
+    <input type="hidden" name="messageType" value="approval.response" />
+    <input type="hidden" name="parentMessageId" value="${eventId}" />
+    <input type="hidden" name="sessionId" value="${sessionId}" />
+    <input type="hidden" name="targetNodeId" value="${fromNodeId}" />
+    <button name="approvalDecision" value="approved" type="submit">Approve</button>
+    <button name="approvalDecision" value="rejected" type="submit">Reject</button>
+  </form>`;
 }
 
 async function renderHome(input: {
@@ -468,8 +505,10 @@ async function renderHome(input: {
           (message) =>
             `<article class="message">
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
+              ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
               <div>${escapeHtml(message.summary)}</div>
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
+              ${renderApprovalControls(message)}
             </article>`
         )
         .join("")
@@ -512,6 +551,7 @@ async function renderHome(input: {
       .message { border-top: 1px solid var(--line); display: grid; gap: 6px; padding: 12px 0; }
       .message:first-child { border-top: 0; padding-top: 0; }
       .message-meta { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+      .approval-actions { display: flex; gap: 8px; margin-top: 4px; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
       dt { color: var(--muted); font-size: 13px; }
@@ -621,16 +661,27 @@ export async function startHumanInterfaceRuntime(input: {
 
         try {
           const form = new URLSearchParams(await readRequestBody(request));
+          const approvalId = form.get("approvalId")?.trim() || undefined;
+          const approvalDecision = form.get("approvalDecision")?.trim();
           const conversationId =
             form.get("conversationId")?.trim() || undefined;
+          const parentMessageId =
+            form.get("parentMessageId")?.trim() || undefined;
           const sessionId = form.get("sessionId")?.trim() || undefined;
           const targetNodeId = form.get("targetNodeId")?.trim() ?? "";
           const summary = form.get("summary")?.trim() ?? "";
           const messageType = (form.get("messageType")?.trim() ||
             "task.request") as UserNodeMessagePublishType;
+          const effectiveSummary =
+            summary ||
+            (approvalId && approvalDecision === "approved"
+              ? `Approved ${approvalId}.`
+              : approvalId && approvalDecision === "rejected"
+                ? `Rejected ${approvalId}.`
+                : "");
           selectedConversationIdForError = conversationId;
 
-          if (!targetNodeId || !summary) {
+          if (!targetNodeId || !effectiveSummary) {
             writeHtml(
               response,
               400,
@@ -645,11 +696,21 @@ export async function startHumanInterfaceRuntime(input: {
           }
 
           const published = await publishUserNodeMessage({
+            ...(approvalId &&
+            (approvalDecision === "approved" || approvalDecision === "rejected")
+              ? {
+                  approval: {
+                    approvalId,
+                    decision: approvalDecision
+                  }
+                }
+              : {}),
             conversationId,
             hostApi: input.hostApi,
             messageType,
+            parentMessageId,
             sessionId,
-            summary,
+            summary: effectiveSummary,
             targetNodeId,
             userNodeId: input.context.binding.node.nodeId
           });

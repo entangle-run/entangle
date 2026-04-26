@@ -39,6 +39,9 @@ User nodes are now partially runtime-capable:
   User Node when identity key material is available, forwards bounded inbound
   message records to Host, and Host exposes those records through the same
   conversation detail API.
+- User Node message records now preserve approval metadata, and the User Client
+  renders approve/reject controls that publish signed `approval.response`
+  messages as the selected User Node.
 - The process-boundary smoke now starts one real joined agent runner and one
   real joined User Node `human_interface` runner, assigns both through the same
   control plane, verifies User Client `/health`, and proves the signed User
@@ -51,10 +54,10 @@ User nodes are now partially runtime-capable:
 Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
-  dedicated app with durable message history, approval controls, and artifact
-  review;
-- Studio approval decisions still include operator-side mutation paths instead
-  of being only signed User Node protocol behavior;
+  dedicated app with artifact/source/wiki review panels;
+- Studio approval decisions still include operator-side mutation paths for
+  admin/debug compatibility even though User Client approval responses now use
+  signed User Node protocol behavior;
 - Host approval mutation still writes local approval records.
 
 ## Target Model
@@ -123,7 +126,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   Node identity.
 - Move user-facing `reply`, `answer`, `approve`, and `reject` flows onto the
   signed User Node A2A message surface. Studio should show operator visibility
-  and a link to the User Client, not own chat state.
+  and a link to the User Client, not own chat state. The first User Client
+  approve/reject controls are implemented.
 - Project inbound and outbound user-node conversations into Host read models.
   Conversation-level projection and first per-message inbound/outbound records
   exist.
@@ -150,6 +154,7 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Signed user task launch tests.
 - Signed reply and answer tests.
 - Signed approval.response tests.
+- User Client approval request/response tests.
 - Rejection of Host-signed user messages.
 - Inbox/outbox projection tests.
 - Studio and CLI user-node surface tests.

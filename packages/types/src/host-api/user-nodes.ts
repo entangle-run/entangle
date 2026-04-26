@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { artifactRefSchema } from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
+import {
+  policyOperationSchema,
+  policyResourceScopeSchema
+} from "../common/policy.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   entangleA2AMessageSchema,
@@ -32,6 +36,16 @@ export const userNodeInboxResponseSchema = z.object({
 export const userNodeMessageDirectionSchema = z.enum(["inbound", "outbound"]);
 
 export const userNodeMessageRecordSchema = z.object({
+  approval: z
+    .object({
+      approvalId: identifierSchema,
+      approverNodeIds: z.array(identifierSchema).default([]),
+      decision: entangleA2AApprovalResponseDecisionSchema.optional(),
+      operation: policyOperationSchema.optional(),
+      reason: nonEmptyStringSchema.optional(),
+      resource: policyResourceScopeSchema.optional()
+    })
+    .optional(),
   artifactRefs: z.array(artifactRefSchema).default([]),
   conversationId: identifierSchema,
   createdAt: nonEmptyStringSchema,

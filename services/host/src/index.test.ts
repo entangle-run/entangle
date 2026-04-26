@@ -3357,6 +3357,76 @@ describe("buildHostServer", () => {
         summary: "The worker completed the task."
       });
 
+      const inboundApprovalResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "POST",
+        payload: {
+          eventId:
+            "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+          message: {
+            constraints: {
+              approvalRequiredBeforeAction: false
+            },
+            conversationId: "conversation-alpha",
+            fromNodeId: "worker-it",
+            fromPubkey: workerPubkey,
+            graphId: "team-alpha",
+            intent: "Request approval from the User Node.",
+            messageType: "approval.request",
+            parentMessageId:
+              "abababababababababababababababababababababababababababababababab",
+            protocol: "entangle.a2a.v1",
+            responsePolicy: {
+              closeOnResult: false,
+              maxFollowups: 1,
+              responseRequired: true
+            },
+            sessionId: "session-alpha",
+            toNodeId: "user-main",
+            toPubkey: bootstrapBundle.runtimeContext.identityContext.publicKey,
+            turnId: "turn-approval",
+            work: {
+              artifactRefs: [],
+              metadata: {
+                approval: {
+                  approvalId: "approval-alpha",
+                  approverNodeIds: ["user-main"],
+                  operation: "source_application"
+                }
+              },
+              summary: "Approve source application."
+            }
+          },
+          receivedAt: new Date().toISOString()
+        },
+        url: "/v1/user-nodes/user-main/messages/inbound"
+      });
+      expect(inboundApprovalResponse.statusCode).toBe(200);
+      expect(userNodeMessageRecordSchema.parse(inboundApprovalResponse.json()))
+        .toMatchObject({
+          approval: {
+            approvalId: "approval-alpha",
+            operation: "source_application"
+          },
+          messageType: "approval.request"
+        });
+
+      const inboxWithApprovalResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox"
+      });
+      expect(
+        userNodeInboxResponseSchema.parse(inboxWithApprovalResponse.json())
+          .conversations[0]
+      ).toMatchObject({
+        pendingApprovalIds: ["approval-alpha"]
+      });
+
       const secretResponse = await server.inject({
         headers: {
           authorization: "Bearer host-secret"

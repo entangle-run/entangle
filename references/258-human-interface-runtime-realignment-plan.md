@@ -46,6 +46,9 @@ The current implementation has the first federated execution path:
 - The Human Interface Runtime now subscribes as the assigned User Node and
   forwards inbound A2A messages to Host so the same conversation detail renders
   inbound records.
+- User Node message records now retain approval metadata, and the User Client
+  can approve or reject inbound `approval.request` messages by publishing
+  signed `approval.response` messages.
 - The process-boundary smoke now includes two User Nodes assigned to two
   distinct `human_interface` runners, each exposing its own User Client and
   publishing with a distinct stable User Node pubkey.
@@ -53,7 +56,7 @@ The current implementation has the first federated execution path:
 The current implementation still does not have the final User Node client:
 
 - The current User Client is a usable runner-served shell, not a complete
-  approval/artifact-review application.
+  artifact/source/wiki review application.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, but not delivery/read state or a local encrypted client
@@ -211,7 +214,8 @@ and signs through the User Node gateway boundary, not through Studio.
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
-message publication that keeps the selected conversation/session context.
+message/approval publication that keeps the selected conversation/session
+context.
 
 Impacted modules:
 
@@ -344,7 +348,7 @@ The fastest path to a product the user can test is:
    path.
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
-7. Expand approvals, artifact review, delivery/read state, and OpenCode parity.
+7. Expand artifact review, delivery/read state, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

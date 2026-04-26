@@ -1375,6 +1375,110 @@ async function main(): Promise<void> {
     );
     printPass("user-node-inbound-message-history", userMessage.conversationId);
 
+    const approvalId = `approval-${runId}`;
+    const syntheticApprovalRequestMessageId = await publishSyntheticA2AMessage({
+      message: {
+        constraints: {
+          approvalRequiredBeforeAction: false
+        },
+        conversationId: userMessage.conversationId,
+        fromNodeId: "builder",
+        fromPubkey: materializedContext.identityContext.publicKey,
+        graphId: materializedContext.binding.graphId,
+        intent: "Request approval from the User Node.",
+        messageType: "approval.request",
+        parentMessageId: userMessage.eventId,
+        protocol: "entangle.a2a.v1",
+        responsePolicy: {
+          closeOnResult: false,
+          maxFollowups: 1,
+          responseRequired: true
+        },
+        sessionId: userMessage.sessionId,
+        toNodeId: "user",
+        toPubkey: materializedUserContext.identityContext.publicKey,
+        turnId: `${turnId}-approval-request`,
+        work: {
+          artifactRefs: [],
+          metadata: {
+            approval: {
+              approvalId,
+              approverNodeIds: ["user"],
+              operation: "source_application"
+            }
+          },
+          summary:
+            "Process runner smoke: approve synthetic source application."
+        }
+      },
+      relayUrls,
+      senderSecretKeyHex: builderIdentitySecret.secretKey
+    });
+    await waitFor(
+      "Host User Node inbound approval request",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.messageType === "approval.request" &&
+            message.approval?.approvalId === approvalId
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    printPass("user-node-approval-request", approvalId);
+
+    const approvalResponse = await fetch(new URL("/messages", userClientUrl), {
+      body: new URLSearchParams({
+        approvalDecision: "approved",
+        approvalId,
+        conversationId: userMessage.conversationId,
+        messageType: "approval.response",
+        parentMessageId: syntheticApprovalRequestMessageId,
+        sessionId: userMessage.sessionId,
+        targetNodeId: "builder"
+      }),
+      headers: {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      method: "POST"
+    });
+    assertCondition(
+      approvalResponse.ok,
+      `User Client approval response failed with HTTP ${approvalResponse.status}: ${await approvalResponse.text()}`
+    );
+    await waitFor(
+      "Host User Node approval response history",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.direction === "outbound" &&
+            message.messageType === "approval.response" &&
+            message.approval?.approvalId === approvalId &&
+            message.approval.decision === "approved"
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    printPass("user-node-approval-response", approvalId);
+
     const reviewerUserMessage = userNodeMessagePublishResponseSchema.parse(
       await hostRequest({
         baseUrl: hostBaseUrl,

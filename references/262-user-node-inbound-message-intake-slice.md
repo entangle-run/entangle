@@ -29,6 +29,7 @@ human participant surface.
 - `services/runner/src/human-interface-runtime.ts`
 - `services/runner/src/index.test.ts`
 - `services/host/scripts/federated-process-runner-smoke.ts`
+- `references/263-user-node-approval-controls-slice.md`
 - `references/221-federated-runtime-redesign-index.md`
 - `references/226-user-node-and-human-interface-runtime-spec.md`
 - `references/229-studio-cli-operator-and-user-surfaces-spec.md`
@@ -58,9 +59,13 @@ Deferred:
 
 - browser-side key custody/signing;
 - inbound delivery/read receipt state;
-- full approval controls;
 - artifact/source/wiki review panels;
 - direct User Client relay storage independent of Host projection.
+
+Follow-up implemented:
+
+- `263-user-node-approval-controls-slice.md` adds approval metadata retention
+  and approve/reject controls in the User Client.
 
 ## Tests Required
 

@@ -87,7 +87,8 @@ verifies that the assigned agent runner persisted both received conversations
 and that Host projection contains both User Node conversations from
 runner-signed observations. It also publishes a synthetic signed agent-to-user
 message through the relay and verifies that the running User Node records it as
-inbound inbox history. Live OpenCode/model-provider behavior remains
+inbound inbox history, then submits a signed approval response through the User
+Client. Live OpenCode/model-provider behavior remains
 intentionally manual until API-backed provider testing is available.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
@@ -134,8 +135,8 @@ This repository currently contains:
   runners, portable User Node bootstrap bundles, a runner-served Human
   Interface Runtime/User Client with `/health`, `/api/state`, projected
   conversation list, selected-thread metadata, recorded inbound/outbound message
-  history, and Host-backed message publishing, plus projection of the User
-  Client endpoint through Host, CLI, and Studio;
+  history, User Client approval controls, and Host-backed message publishing,
+  plus projection of the User Client endpoint through Host, CLI, and Studio;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
   Nostr public keys are injected as non-secret route metadata, and runner turn
   requests now receive a bounded peer-route summary for controlled
@@ -371,8 +372,9 @@ This repository currently contains:
   User Node runners as OS processes, assigns nodes through the relay, verifies
   runner-owned materialization, checks two Human Interface Runtime User Client
   endpoints, publishes from two distinct User Node identities, records a
-  synthetic inbound agent message through the running User Node, and verifies
-  Host projection;
+  synthetic inbound agent message through the running User Node, submits a
+  signed User Node approval response through the User Client, and verifies Host
+  projection;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,

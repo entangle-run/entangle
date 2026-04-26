@@ -209,6 +209,7 @@ Implementation record:
 - [260-multi-user-human-runtime-smoke-slice.md](260-multi-user-human-runtime-smoke-slice.md)
 - [261-user-node-message-history-slice.md](261-user-node-message-history-slice.md)
 - [262-user-node-inbound-message-intake-slice.md](262-user-node-inbound-message-intake-slice.md)
+- [263-user-node-approval-controls-slice.md](263-user-node-approval-controls-slice.md)
 
 Current status:
 
@@ -227,12 +228,13 @@ Current status:
 - CLI inbox commands and the runner-served User Client use that inbox API;
 - the User Client has a first usable server-rendered conversation list,
   selected thread metadata, `/api/state`, recorded inbound/outbound messages,
-  and message publishing that preserves selected conversation/session context;
+  approval response controls, and message publishing that preserves selected
+  conversation/session context;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application, approval/artifact review controls, and
-  message delivery/read state remain open.
+- final bundled User Client application, artifact/source/wiki review controls,
+  and message delivery/read state remain open.
 
 Verification:
 

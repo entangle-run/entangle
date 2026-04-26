@@ -165,6 +165,8 @@ import {
   type SourceChangeRefProjectionRecord,
   sessionUpdatedObservationPayloadSchema,
   turnUpdatedObservationPayloadSchema,
+  entangleA2AApprovalRequestMetadataSchema,
+  entangleA2AApprovalResponseMetadataSchema,
   type ParsedUserNodeMessagePublishRequest,
   type UserNodeConversationResponse,
   type UserNodeInboundMessageRecordRequest,
@@ -3140,6 +3142,30 @@ function resolveUserConversationStatusFromMessage(input: {
   return inferredStatus;
 }
 
+function mergePendingApprovalIdsFromMessage(input: {
+  existing?: string[] | undefined;
+  record: UserNodeMessageRecord;
+}): string[] {
+  const existing = input.existing ?? [];
+  const approvalId = input.record.approval?.approvalId;
+
+  if (!approvalId) {
+    return existing;
+  }
+
+  if (input.record.messageType === "approval.response") {
+    return existing.filter((candidate) => candidate !== approvalId);
+  }
+
+  if (input.record.messageType !== "approval.request") {
+    return existing;
+  }
+
+  return [...new Set([...existing, approvalId])].sort((left, right) =>
+    left.localeCompare(right)
+  );
+}
+
 async function listUserConversationProjectionRecords(): Promise<
   UserConversationProjectionRecord[]
 > {
@@ -3235,7 +3261,10 @@ async function listUserConversationProjectionRecords(): Promise<
         lastMessageAt,
         ...(lastMessageType ? { lastMessageType } : {}),
         peerNodeId: existing?.peerNodeId ?? messageRecord.peerNodeId,
-        pendingApprovalIds: existing?.pendingApprovalIds ?? [],
+        pendingApprovalIds: mergePendingApprovalIdsFromMessage({
+          existing: existing?.pendingApprovalIds,
+          record: messageRecord
+        }),
         projection: {
           source: existing?.projection.source ?? "observation_event",
           updatedAt: lastMessageAt
@@ -3388,6 +3417,34 @@ function observedUserNodeMessageRecordPath(input: {
   );
 }
 
+function extractUserNodeMessageApproval(
+  message: UserNodeInboundMessageRecordRequest["message"]
+): UserNodeMessageRecord["approval"] {
+  if (message.messageType === "approval.request") {
+    const metadata = entangleA2AApprovalRequestMetadataSchema.safeParse(
+      message.work.metadata
+    );
+
+    return metadata.success ? metadata.data.approval : undefined;
+  }
+
+  if (message.messageType === "approval.response") {
+    const metadata = entangleA2AApprovalResponseMetadataSchema.safeParse(
+      message.work.metadata
+    );
+
+    return metadata.success
+      ? {
+          approvalId: metadata.data.approval.approvalId,
+          approverNodeIds: [],
+          decision: metadata.data.approval.decision
+        }
+      : undefined;
+  }
+
+  return undefined;
+}
+
 async function listUserNodeMessageRecords(input: {
   conversationId?: string;
   userNodeId: string;
@@ -3434,6 +3491,15 @@ export async function recordUserNodePublishedMessage(input: {
   await initializeHostState();
 
   const record = userNodeMessageRecordSchema.parse({
+    ...(input.request.approval
+      ? {
+          approval: {
+            approvalId: input.request.approval.approvalId,
+            approverNodeIds: [],
+            decision: input.request.approval.decision
+          }
+        }
+      : {}),
     artifactRefs: input.request.artifactRefs,
     conversationId: input.response.conversationId,
     createdAt: input.recordedAt ?? nowIsoString(),
@@ -3472,7 +3538,9 @@ export async function recordUserNodeInboundMessage(input: {
   await initializeHostState();
 
   const { message } = input.request;
+  const approval = extractUserNodeMessageApproval(message);
   const record = userNodeMessageRecordSchema.parse({
+    ...(approval ? { approval } : {}),
     artifactRefs: message.work.artifactRefs,
     conversationId: message.conversationId,
     createdAt: input.request.receivedAt,

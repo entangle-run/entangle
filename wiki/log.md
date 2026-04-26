@@ -3194,3 +3194,24 @@ changed `types`, `host`, and `runner` surfaces. The relay-backed
 `pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000`
 smoke passed with `user-node-inbound-message-history`, two User Node runtimes,
 and Host/runner/User-runner filesystem isolation.
+
+## [2026-04-26] implementation | Added User Node approval controls
+
+Added `references/263-user-node-approval-controls-slice.md`. User Node message
+records now preserve approval metadata from inbound `approval.request` messages
+and outbound `approval.response` messages. Host folds approval request/response
+records into User Node conversation projection pending approval ids.
+
+The runner-served User Client renders approval metadata in message history and
+adds approve/reject controls that post `approval.response` messages through the
+existing Host User Node gateway, preserving conversation, session, parent
+message, target node, and selected User Node identity.
+
+Focused typechecks, focused tests, and package lints passed for the changed
+`types`, `host`, and `runner` packages, and
+`node --check scripts/smoke-federated-process-runner.mjs` passed. The
+relay-backed
+`pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000`
+smoke passed with `user-node-approval-request`,
+`user-node-approval-response`, two User Node runtimes, and filesystem
+isolation.

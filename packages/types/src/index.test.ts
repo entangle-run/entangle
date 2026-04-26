@@ -293,6 +293,10 @@ describe("federated runtime contracts", () => {
     ).toBe("conversation-alpha");
 
     const messageRecord = userNodeMessageRecordSchema.parse({
+      approval: {
+        approvalId: "approval-alpha",
+        decision: "approved"
+      },
       artifactRefs: [],
       conversationId: "conversation-alpha",
       createdAt: observedAt,
@@ -319,8 +323,8 @@ describe("federated runtime contracts", () => {
         generatedAt: observedAt,
         messages: [messageRecord],
         userNodeId: "user-main"
-      }).messages[0]?.summary
-    ).toBe("Check the build.");
+      }).messages[0]?.approval?.approvalId
+    ).toBe("approval-alpha");
 
     expect(
       userNodeInboundMessageRecordRequestSchema.parse({

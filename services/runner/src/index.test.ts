@@ -497,6 +497,31 @@ describe("runner runtime context", () => {
                   toPubkey: remotePublicKey,
                   turnId: "turn-alpha",
                   userNodeId: "user-main"
+                },
+                {
+                  approval: {
+                    approvalId: "approval-alpha",
+                    approverNodeIds: ["user-main"],
+                    operation: "source_application"
+                  },
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:02:00.000Z",
+                  direction: "inbound",
+                  eventId:
+                    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                  fromNodeId: "worker-it",
+                  fromPubkey: remotePublicKey,
+                  messageType: "approval.request",
+                  peerNodeId: "worker-it",
+                  publishedRelays: [],
+                  relayUrls: [],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Approve source application.",
+                  toNodeId: "user-main",
+                  toPubkey: runnerPublicKey,
+                  turnId: "turn-approval",
+                  userNodeId: "user-main"
                 }
               ],
               userNodeId: "user-main"
@@ -509,6 +534,9 @@ describe("runner runtime context", () => {
           request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
+          const body = requestRecord.body as
+            | { messageType?: string; targetNodeId?: string }
+            | undefined;
           response.end(
             JSON.stringify({
               conversationId: "conversation-alpha",
@@ -516,11 +544,11 @@ describe("runner runtime context", () => {
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               fromNodeId: "user-main",
               fromPubkey: runnerPublicKey,
-              messageType: "answer",
+              messageType: body?.messageType ?? "answer",
               publishedRelays: ["ws://strfry:7777"],
               relayUrls: ["ws://strfry:7777"],
               sessionId: "session-alpha",
-              targetNodeId: "worker-it",
+              targetNodeId: body?.targetNodeId ?? "worker-it",
               toPubkey: remotePublicKey,
               turnId: "turn-alpha"
             })
@@ -667,6 +695,8 @@ describe("runner runtime context", () => {
       const pageBody = await pageResponse.text();
       expect(pageBody).toContain("conversation-alpha");
       expect(pageBody).toContain("Previous user message.");
+      expect(pageBody).toContain("approval-alpha");
+      expect(pageBody).toContain("Approve");
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
         body: new URLSearchParams({
@@ -682,6 +712,24 @@ describe("runner runtime context", () => {
         method: "POST"
       });
       expect(publishResponse.status).toBe(200);
+
+      const approvalResponse = await fetch(new URL("/messages", handle.clientUrl), {
+        body: new URLSearchParams({
+          approvalDecision: "approved",
+          approvalId: "approval-alpha",
+          conversationId: "conversation-alpha",
+          messageType: "approval.response",
+          parentMessageId:
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          sessionId: "session-alpha",
+          targetNodeId: "worker-it"
+        }),
+        headers: {
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        method: "POST"
+      });
+      expect(approvalResponse.status).toBe(200);
     } finally {
       await handle.stop();
       await new Promise<void>((resolve, reject) => {
@@ -716,6 +764,26 @@ describe("runner runtime context", () => {
       messageType: "answer",
       sessionId: "session-alpha",
       summary: "The reviewed answer is ready.",
+      targetNodeId: "worker-it"
+    });
+    const approvalPublishRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/user-nodes/user-main/messages" &&
+        (request.body as { messageType?: string } | undefined)?.messageType ===
+          "approval.response"
+    );
+    expect(approvalPublishRequest?.body).toMatchObject({
+      approval: {
+        approvalId: "approval-alpha",
+        decision: "approved"
+      },
+      conversationId: "conversation-alpha",
+      messageType: "approval.response",
+      parentMessageId:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      sessionId: "session-alpha",
+      summary: "Approved approval-alpha.",
       targetNodeId: "worker-it"
     });
     const inboundRequest = hostRequests.find(
