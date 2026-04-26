@@ -212,6 +212,18 @@ export class RunnerJoinService {
       return;
     }
 
+    if (
+      !this.acceptedAssignments.has(assignment.assignmentId) &&
+      this.acceptedAssignments.size >=
+        this.input.config.capabilities.maxAssignments
+    ) {
+      await this.rejectAssignment(
+        assignment,
+        `Runner '${this.input.config.runnerId}' has reached its assignment capacity of '${this.input.config.capabilities.maxAssignments}'.`
+      );
+      return;
+    }
+
     if (!this.input.materializer) {
       await this.rejectAssignment(
         assignment,

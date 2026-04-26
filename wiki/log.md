@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Enforced joined runner assignment capacity
+
+`RunnerJoinService` now rejects new assignment offers once the runner has
+reached its advertised `maxAssignments` capacity. This keeps the runner-side
+assignment model consistent with the capability record it sends in
+`runner.hello` and prevents accidental multi-assignment startup when the runner
+was configured for a single node runtime.
+
 ## [2026-04-26] verification | Added separate process runner federated smoke
 
 Added `references/254-process-runner-federated-smoke-slice.md` and

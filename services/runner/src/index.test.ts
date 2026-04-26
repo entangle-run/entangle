@@ -583,6 +583,61 @@ describe("runner runtime context", () => {
     await configured.service.stop();
   });
 
+  it("rejects new assignment offers after reaching runner capacity", async () => {
+    const fixture = await createRunnerJoinFixture({
+      capabilities: {
+        agentEngineKinds: ["opencode_server"],
+        labels: [],
+        maxAssignments: 1,
+        runtimeKinds: ["agent_runner"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      }
+    });
+    const runnerStateRoot = path.join(path.dirname(fixture.configPath), "runner-state");
+    const transport = new FakeRunnerJoinTransport();
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+    process.env.ENTANGLE_RUNNER_STATE_ROOT = runnerStateRoot;
+
+    const configured = await createConfiguredRunnerJoinService(
+      fixture.configPath,
+      {
+        clock: () => "2026-04-26T12:00:00.000Z",
+        nonceFactory: () => "nonce-alpha",
+        runtimeStarter: ({ runtimeContextPath }) =>
+          Promise.resolve({
+            runtimeContextPath,
+            stop: () => Promise.resolve()
+          }),
+        transport
+      }
+    );
+
+    await configured.service.start();
+    await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
+    await transport.dispatch(
+      buildAssignmentOfferEvent({
+        ...buildAssignment(),
+        assignmentId: "assignment-beta",
+        lease: {
+          ...buildAssignment().lease!,
+          leaseId: "lease-beta"
+        },
+        nodeId: "reviewer-it"
+      })
+    );
+
+    expect(configured.service.getAcceptedAssignments()).toHaveLength(1);
+    expect(transport.observations.at(-1)).toMatchObject({
+      assignmentId: "assignment-beta",
+      eventType: "assignment.rejected",
+      rejectionReason:
+        "Runner 'runner-alpha' has reached its assignment capacity of '1'."
+    });
+
+    await configured.service.stop();
+  });
+
   it("fetches Host runtime context when join config declares a Host API", async () => {
     const runtimeFixture = await createRuntimeFixture();
     const fixture = await createRunnerJoinFixture({

@@ -44,8 +44,10 @@ Implemented in this slice:
   starting/running;
 - made runner stop/revoke paths stop assignment runtime handles and publish
   stopped status;
+- added runner-side enforcement of advertised `maxAssignments` capacity before
+  materializing new assignment offers;
 - added runner tests proving assignment materialization can start and stop the
-  node runtime and emit status observations.
+  node runtime, emit status observations, and reject excess assignments.
 
 Deferred:
 
@@ -68,6 +70,8 @@ Verification record:
 
 - targeted runner typecheck passed;
 - targeted runner tests passed with 96 tests;
+- follow-up targeted runner tests passed with 98 tests after capacity
+  enforcement;
 - targeted runner lint passed;
 - targeted Host tests passed with 76 tests;
 - root typecheck passed;
