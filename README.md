@@ -668,8 +668,10 @@ This repository currently contains:
   Studio, Gitea, and the local relay, with human-readable and JSON output plus
   strict/offline modes, while `entangle local diagnostics` writes a redacted
   JSON support bundle containing doctor output, bounded Compose status/logs,
-  runner-image inspection, and live host state when available, and `entangle
-  local backup` / `entangle local restore` now provide the first versioned
+  runner-image inspection, live host state, and bounded runtime evidence for
+  turns, engine failures, permission decisions, approval blockers, and artifact
+  counts when available, and `entangle local backup` / `entangle local restore`
+  now provide the first versioned
   `.entangle/host` backup and validated restore path without bundling local
   secrets, while `entangle local repair` provides a dry-run-first conservative
   repair surface for safe host-state initialization and missing layout-marker

@@ -3,8 +3,11 @@ import type {
   ExternalPrincipalListResponse,
   HostEventListResponse,
   HostStatusResponse,
+  RuntimeApprovalListResponse,
+  RuntimeArtifactListResponse,
   RuntimeContextInspectionResponse,
-  RuntimeListResponse
+  RuntimeListResponse,
+  RuntimeTurnListResponse
 } from "@entangle/types";
 import {
   buildLocalDoctorReport,
@@ -22,6 +25,9 @@ export interface LocalDiagnosticsBundleOptions extends LocalDoctorOptions {
 interface LocalDiagnosticsHostClient {
   getRuntimeContext(nodeId: string): Promise<RuntimeContextInspectionResponse>;
   getHostStatus(): Promise<HostStatusResponse>;
+  listRuntimeApprovals(nodeId: string): Promise<RuntimeApprovalListResponse>;
+  listRuntimeArtifacts(nodeId: string): Promise<RuntimeArtifactListResponse>;
+  listRuntimeTurns(nodeId: string): Promise<RuntimeTurnListResponse>;
   listExternalPrincipals(): Promise<ExternalPrincipalListResponse>;
   listHostEvents(limit?: number): Promise<HostEventListResponse>;
   listRuntimes(): Promise<RuntimeListResponse>;
@@ -55,6 +61,7 @@ export interface LocalDiagnosticsBundle {
     errors: string[];
     events?: HostEventListResponse | undefined;
     externalPrincipals?: ExternalPrincipalListResponse | undefined;
+    runtimeEvidence?: LocalDiagnosticsRuntimeEvidence[] | undefined;
     runtimes?: RuntimeListResponse | undefined;
     status?: HostStatusResponse | undefined;
   };
@@ -70,6 +77,26 @@ export interface LocalDiagnosticsBundle {
     placeholder: string;
   };
   schemaVersion: "1";
+}
+
+export interface LocalDiagnosticsRuntimeEvidence {
+  approvalCount?: number | undefined;
+  artifactCount?: number | undefined;
+  errors: string[];
+  latestTurns?: Array<{
+    engineFailureClassification?: string | undefined;
+    engineFailureMessage?: string | undefined;
+    enginePermissionDecisions: string[];
+    engineStopReason?: string | undefined;
+    phase: string;
+    producedArtifactIds: string[];
+    requestedApprovalIds: string[];
+    turnId: string;
+    updatedAt: string;
+  }>;
+  nodeId: string;
+  pendingApprovalIds?: string[] | undefined;
+  turnCount?: number | undefined;
 }
 
 const localProfileComposeFile = "deploy/local/compose/docker-compose.local.yml";
@@ -144,6 +171,7 @@ function normalizeCommandCapture(input: {
 async function collectHostDiagnostics(input: {
   eventLimit: number;
   hostClient: LocalDiagnosticsHostClient | undefined;
+  runtimeEvidenceLimit: number;
 }): Promise<LocalDiagnosticsBundle["host"] | undefined> {
   if (!input.hostClient) {
     return undefined;
@@ -170,6 +198,14 @@ async function collectHostDiagnostics(input: {
     );
   }
 
+  if (host.runtimes) {
+    host.runtimeEvidence = await collectRuntimeEvidence({
+      hostClient: input.hostClient,
+      runtimeEvidenceLimit: input.runtimeEvidenceLimit,
+      runtimes: host.runtimes
+    });
+  }
+
   try {
     host.externalPrincipals = await input.hostClient.listExternalPrincipals();
   } catch (error) {
@@ -189,6 +225,83 @@ async function collectHostDiagnostics(input: {
   }
 
   return host;
+}
+
+async function collectRuntimeEvidence(input: {
+  hostClient: LocalDiagnosticsHostClient;
+  runtimeEvidenceLimit: number;
+  runtimes: RuntimeListResponse;
+}): Promise<LocalDiagnosticsRuntimeEvidence[]> {
+  const evidence: LocalDiagnosticsRuntimeEvidence[] = [];
+
+  for (const runtime of input.runtimes.runtimes) {
+    const runtimeEvidence: LocalDiagnosticsRuntimeEvidence = {
+      errors: [],
+      nodeId: runtime.nodeId
+    };
+
+    try {
+      const turns = await input.hostClient.listRuntimeTurns(runtime.nodeId);
+      runtimeEvidence.turnCount = turns.turns.length;
+      runtimeEvidence.latestTurns = turns.turns
+        .slice()
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, input.runtimeEvidenceLimit)
+        .map((turn) => ({
+          ...(turn.engineOutcome?.failure
+            ? {
+                engineFailureClassification:
+                  turn.engineOutcome.failure.classification,
+                engineFailureMessage: redactLocalDiagnosticsText(
+                  turn.engineOutcome.failure.message
+                )
+              }
+            : {}),
+          ...(turn.engineOutcome?.stopReason
+            ? { engineStopReason: turn.engineOutcome.stopReason }
+            : {}),
+          enginePermissionDecisions:
+            turn.engineOutcome?.permissionObservations?.map(
+              (observation) => observation.decision
+            ) ?? [],
+          phase: turn.phase,
+          producedArtifactIds: turn.producedArtifactIds,
+          requestedApprovalIds: turn.requestedApprovalIds,
+          turnId: turn.turnId,
+          updatedAt: turn.updatedAt
+        }));
+    } catch (error) {
+      runtimeEvidence.errors.push(
+        `turns: ${error instanceof Error ? error.message : "request failed"}`
+      );
+    }
+
+    try {
+      const approvals = await input.hostClient.listRuntimeApprovals(runtime.nodeId);
+      runtimeEvidence.approvalCount = approvals.approvals.length;
+      runtimeEvidence.pendingApprovalIds = approvals.approvals
+        .filter((approval) => approval.status === "pending")
+        .slice(0, input.runtimeEvidenceLimit)
+        .map((approval) => approval.approvalId);
+    } catch (error) {
+      runtimeEvidence.errors.push(
+        `approvals: ${error instanceof Error ? error.message : "request failed"}`
+      );
+    }
+
+    try {
+      const artifacts = await input.hostClient.listRuntimeArtifacts(runtime.nodeId);
+      runtimeEvidence.artifactCount = artifacts.artifacts.length;
+    } catch (error) {
+      runtimeEvidence.errors.push(
+        `artifacts: ${error instanceof Error ? error.message : "request failed"}`
+      );
+    }
+
+    evidence.push(runtimeEvidence);
+  }
+
+  return evidence;
 }
 
 export async function buildLocalDiagnosticsBundle(
@@ -237,7 +350,8 @@ export async function buildLocalDiagnosticsBundle(
   );
   const host = await collectHostDiagnostics({
     eventLimit,
-    hostClient: deps.hostClient
+    hostClient: deps.hostClient,
+    runtimeEvidenceLimit: 5
   });
 
   return {

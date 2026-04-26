@@ -605,8 +605,10 @@ The repository now also contains the first real implementation baseline:
   host-reported runtime workspace health, git principals, Studio, Gitea, and
   the local relay, plus strict and offline modes, and `entangle local
   diagnostics` now writes a redacted JSON support bundle with doctor output,
-  bounded Compose status/logs, runner-image inspection, and live host state
-  when available, while `entangle local backup` and `entangle local restore`
+  bounded Compose status/logs, runner-image inspection, live host state, and
+  bounded runtime evidence for turns, engine failures, permission decisions,
+  approval blockers, and artifact counts when available, while `entangle local
+  backup` and `entangle local restore`
   provide the first versioned `.entangle/host` backup and validated restore
   path without bundling local secrets, and `entangle local repair` provides a
   dry-run-first conservative repair surface for safe host-state initialization

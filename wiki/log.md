@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added runtime evidence to diagnostics bundle
+
+Deepened `entangle local diagnostics` with bounded per-runtime evidence from
+existing host surfaces. The support bundle now includes turn counts, latest
+turn summaries, redacted engine failure classification/messages, permission
+decisions, pending approval ids, and artifact counts for each runtime when the
+host is reachable.
+
 ## [2026-04-26] implementation | Added Local reliability smoke
 
 Added `pnpm ops:smoke-local:reliability` for initialized Entangle Local

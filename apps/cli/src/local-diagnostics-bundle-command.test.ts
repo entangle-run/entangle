@@ -9,10 +9,25 @@ function createDeps(): LocalDiagnosticsBundleDeps {
   return {
     commandRunner: (command, args) => ({
       status: 0,
-      stdout:
-        args.includes("logs")
-          ? "service ready\nAuthorization: Bearer abc.def\ntoken=plain-secret\n"
-          : `${command} ${args.join(" ")} ok\n`,
+      stdout: (() => {
+        if (args.includes("logs")) {
+          return "service ready\nAuthorization: Bearer abc.def\ntoken=plain-secret\n";
+        }
+
+        if (command === "git" && args.includes("status")) {
+          return "";
+        }
+
+        if (command === "git" && args.includes("--abbrev-ref")) {
+          return "entangle-wiki\n";
+        }
+
+        if (command === "git" && args.includes("--verify")) {
+          return "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n";
+        }
+
+        return `${command} ${args.join(" ")} ok\n`;
+      })(),
       stderr: ""
     }),
     connectWebSocket: (url) => Promise.resolve(`${url} connected`),
@@ -132,6 +147,64 @@ function createDeps(): LocalDiagnosticsBundleDeps {
           principals: []
         });
       },
+      listRuntimeApprovals() {
+        return Promise.resolve({
+          approvals: [
+            {
+              approvalId: "approval-alpha",
+              approverNodeIds: [],
+              graphId: "team-alpha",
+              requestedAt: "2026-04-26T00:00:00.000Z",
+              requestedByNodeId: "worker-it",
+              sessionId: "session-alpha",
+              status: "pending",
+              updatedAt: "2026-04-26T00:00:00.000Z"
+            }
+          ]
+        });
+      },
+      listRuntimeArtifacts() {
+        return Promise.resolve({
+          artifacts: []
+        });
+      },
+      listRuntimeTurns() {
+        return Promise.resolve({
+          turns: [
+            {
+              consumedArtifactIds: [],
+              emittedHandoffMessageIds: [],
+              engineOutcome: {
+                failure: {
+                  classification: "policy_denied",
+                  message: "Authorization: Bearer abc.def"
+                },
+                permissionObservations: [
+                  {
+                    decision: "denied",
+                    operation: "source_application",
+                    patterns: [],
+                    permission: "edit"
+                  }
+                ],
+                stopReason: "error",
+                toolExecutions: []
+              },
+              graphId: "team-alpha",
+              nodeId: "worker-it",
+              phase: "errored",
+              producedArtifactIds: ["artifact-alpha"],
+              requestedApprovalIds: ["approval-alpha"],
+              sessionId: "session-alpha",
+              sourceChangeCandidateIds: [],
+              startedAt: "2026-04-26T00:00:00.000Z",
+              triggerKind: "message",
+              turnId: "turn-alpha",
+              updatedAt: "2026-04-26T00:00:01.000Z"
+            }
+          ]
+        });
+      },
       listHostEvents() {
         return Promise.resolve({
           events: []
@@ -139,7 +212,22 @@ function createDeps(): LocalDiagnosticsBundleDeps {
       },
       listRuntimes() {
         return Promise.resolve({
-          runtimes: []
+          runtimes: [
+            {
+              agentRuntime: {
+                lastTurnId: "turn-alpha",
+                mode: "coding_agent"
+              },
+              backendKind: "memory",
+              contextAvailable: true,
+              desiredState: "running",
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-revision",
+              nodeId: "worker-it",
+              observedState: "running",
+              restartGeneration: 0
+            }
+          ]
         });
       }
     },
@@ -197,7 +285,26 @@ describe("local diagnostics bundle helpers", () => {
       schemaVersion: "1"
     });
     expect(bundle.commands).toHaveLength(3);
+    expect(bundle.host?.runtimeEvidence).toMatchObject([
+      {
+        approvalCount: 1,
+        artifactCount: 0,
+        nodeId: "worker-it",
+        pendingApprovalIds: ["approval-alpha"],
+        turnCount: 1
+      }
+    ]);
+    expect(bundle.host?.runtimeEvidence?.[0]?.latestTurns?.[0]).toMatchObject({
+      engineFailureClassification: "policy_denied",
+      engineFailureMessage: "Authorization: <redacted> <redacted>",
+      enginePermissionDecisions: ["denied"],
+      engineStopReason: "error",
+      producedArtifactIds: ["artifact-alpha"],
+      requestedApprovalIds: ["approval-alpha"],
+      turnId: "turn-alpha"
+    });
     expect(JSON.stringify(bundle)).toContain("<redacted>");
     expect(JSON.stringify(bundle)).not.toContain("plain-secret");
+    expect(JSON.stringify(bundle)).not.toContain("abc.def");
   });
 });

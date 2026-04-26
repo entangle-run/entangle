@@ -140,7 +140,8 @@ pnpm ops:smoke-local:diagnostics
 
 The diagnostics smoke writes a temporary redacted `entangle local diagnostics`
 JSON bundle, validates its stable top-level shape, and removes the temporary
-file after the check.
+file after the check. The diagnostics bundle includes bounded runtime
+turn/approval/artifact evidence when the host is reachable.
 
 To verify the non-destructive reliability support path against an initialized
 Local profile, run:

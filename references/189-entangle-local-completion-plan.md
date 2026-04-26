@@ -60,8 +60,8 @@ The latest implementation state includes:
   host-reported layout status;
 - `entangle local diagnostics` now writes a redacted JSON support bundle with
   doctor output, bounded Docker Compose service/log captures, runner-image
-  inspection, and host status/events/runtimes/principals when the host is
-  reachable;
+  inspection, host status/events/runtimes/principals, and bounded per-runtime
+  turn/approval/artifact evidence when the host is reachable;
 - `entangle local backup` and `entangle local restore` now provide the first
   versioned Local state backup path for `.entangle/host`, selected Local
   profile config snapshots, explicit `.entangle-secrets` exclusion, dry-run
@@ -1023,13 +1023,15 @@ Current partial implementation:
   caller-selected path;
 - the bundle includes the `entangle local doctor` report, bounded captures of
   `docker compose ps`, `docker compose logs --tail`, runner image inspection,
-  and live host status, runtimes, external principals, and recent events when
-  a host client is available;
+  live host status, runtimes, external principals, recent events, and bounded
+  runtime evidence when a host client is available;
+- runtime evidence includes turn counts, latest bounded turn summaries, engine
+  failure classification/message with diagnostics redaction, permission
+  decisions, pending approval ids, and artifact counts per runtime;
 - command output is bounded and passed through common bearer token, token,
   secret, password, authorization, and API-key redaction before writing the
   bundle;
-- the remaining work is deeper OpenCode failure extraction and explicit
-  release-run attachment guidance.
+- the remaining work is explicit release-run attachment guidance.
 
 Acceptance:
 
