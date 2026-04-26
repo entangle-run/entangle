@@ -215,6 +215,7 @@ This directory is the canonical design corpus for Entangle.
 209. [208-operator-scoped-approval-decisions-slice.md](208-operator-scoped-approval-decisions-slice.md)
 210. [209-agent-runtime-node-configuration-slice.md](209-agent-runtime-node-configuration-slice.md)
 211. [210-wiki-repository-sync-slice.md](210-wiki-repository-sync-slice.md)
+212. [211-local-doctor-wiki-repository-health-slice.md](211-local-doctor-wiki-repository-health-slice.md)
 
 ## Role of this corpus
 

@@ -53,6 +53,8 @@ The doctor report includes severity-ranked checks for:
 - `.entangle/host` local state presence;
 - live host status when a host client is available;
 - live runtime workspace health from host runtime inspection;
+- live runtime wiki repository initialization, clean working tree, branch, and
+  HEAD commit checks when runtime context is available;
 - host-managed git principal records;
 - Studio, Gitea, and local relay reachability.
 
@@ -83,8 +85,8 @@ The remaining Local reliability implementation should add:
 - repeated-use, backup/restore, and repair smokes.
 
 The doctor itself should also deepen over time with model-secret awareness,
-OpenCode engine profile checks from host runtime context, and more explicit
-remediation for old local volumes.
+OpenCode engine profile checks from host runtime context, wiki repository
+repair/export guidance, and more explicit remediation for old local volumes.
 
 ## Verification
 

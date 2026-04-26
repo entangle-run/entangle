@@ -158,7 +158,9 @@ This repository currently contains:
   through the same host boundary, plus runner-owned local git snapshots of
   `memory/wiki` into each node's `wiki-repository` workspace after completed
   turns, with durable sync outcomes carried through runner turns, host events,
-  CLI output, and Studio turn inspection;
+  CLI output, and Studio turn inspection, and with `entangle local doctor`
+  now warning on uninitialized, dirty, or uncommitted runtime wiki
+  repositories;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

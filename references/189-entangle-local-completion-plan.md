@@ -50,6 +50,9 @@ The latest implementation state includes:
 - runner-owned local git snapshots of each node's `memory/wiki` tree into the
   materialized `wiki-repository` workspace after completed turns, with durable
   turn-level sync outcomes and host/CLI/Studio presentation;
+- `entangle local doctor` live checks now inspect runtime wiki repositories for
+  initialization, clean working trees, branch availability, and committed HEADs
+  when runtime context is available;
 - runner-owned source workspace change harvesting with bounded changed-file
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
@@ -536,6 +539,9 @@ Current partial implementation:
   turn inspection;
 - this is a conservative local snapshot, not yet a full memory-as-repo
   migration or remote publication workflow.
+- `entangle local doctor` now reports wiki repository initialization, dirty
+  working trees, missing HEAD commits, and git inspection failures as runtime
+  workspace warnings without mutating node memory.
 
 Acceptance:
 
@@ -768,8 +774,8 @@ Current partial implementation:
 - the first doctor checks required Local profile files, Node 22+, `pnpm`,
   Docker CLI, Docker Compose, Docker daemon, Local Compose config, the local
   runner image, OpenCode availability, `.entangle/host`, live host status,
-  host-reported runtime workspace health, host-managed git principals, Studio,
-  Gitea, and the local relay;
+  host-reported runtime workspace health, runtime wiki repository health,
+  host-managed git principals, Studio, Gitea, and the local relay;
 - default mode reports optional local infrastructure gaps as warnings, while
   `--strict` escalates those gaps to failures for release and smoke
   preparation;

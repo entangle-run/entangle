@@ -4,6 +4,8 @@ import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import type {
   ExternalPrincipalListResponse,
   HostStatusResponse,
+  RuntimeContextInspectionResponse,
+  RuntimeInspectionResponse,
   RuntimeListResponse
 } from "@entangle/types";
 
@@ -41,6 +43,7 @@ export interface LocalDoctorOptions {
 }
 
 interface LocalDoctorHostClient {
+  getRuntimeContext(nodeId: string): Promise<RuntimeContextInspectionResponse>;
   getHostStatus(): Promise<HostStatusResponse>;
   listExternalPrincipals(): Promise<ExternalPrincipalListResponse>;
   listRuntimes(): Promise<RuntimeListResponse>;
@@ -150,6 +153,191 @@ function checkCommand(input: {
   return false;
 }
 
+function sanitizeRuntimePath(
+  message: string,
+  context: RuntimeContextInspectionResponse
+): string {
+  const replacements = [
+    [context.workspace.wikiRepositoryRoot, "<wiki_repository>"],
+    [context.workspace.memoryRoot, "<memory>"],
+    [context.workspace.runtimeRoot, "<runtime_state>"],
+    [context.workspace.root, "<workspace>"]
+  ].filter((entry): entry is [string, string] => Boolean(entry[0]));
+
+  return replacements.reduce(
+    (current, [target, replacement]) => current.replaceAll(target, replacement),
+    message
+  );
+}
+
+type RuntimeWikiRepositoryInspection =
+  | {
+      branch: string;
+      commit: string;
+      nodeId: string;
+      status: "clean";
+    }
+  | {
+      detail: string;
+      nodeId: string;
+      status:
+        | "context_unavailable"
+        | "dirty"
+        | "git_error"
+        | "not_configured"
+        | "not_initialized"
+        | "without_commit";
+    };
+
+function formatWikiRepositoryIssue(
+  inspection: Exclude<RuntimeWikiRepositoryInspection, { status: "clean" }>
+): string {
+  return `${inspection.status}: ${inspection.nodeId} (${inspection.detail})`;
+}
+
+async function inspectRuntimeWikiRepository(input: {
+  commandRunner: NonNullable<LocalDoctorDeps["commandRunner"]>;
+  fileExists: NonNullable<LocalDoctorDeps["fileExists"]>;
+  hostClient: LocalDoctorHostClient;
+  options: LocalDoctorOptions;
+  runtime: RuntimeInspectionResponse;
+}): Promise<RuntimeWikiRepositoryInspection> {
+  if (!input.runtime.contextAvailable) {
+    return {
+      detail: "runtime context is not available from the host",
+      nodeId: input.runtime.nodeId,
+      status: "context_unavailable"
+    };
+  }
+
+  let context: RuntimeContextInspectionResponse;
+  try {
+    context = await input.hostClient.getRuntimeContext(input.runtime.nodeId);
+  } catch (error) {
+    return {
+      detail:
+        error instanceof Error ? error.message : "runtime context request failed",
+      nodeId: input.runtime.nodeId,
+      status: "context_unavailable"
+    };
+  }
+
+  const wikiRepositoryRoot = context.workspace.wikiRepositoryRoot;
+  if (!wikiRepositoryRoot) {
+    return {
+      detail: "runtime context does not define wikiRepositoryRoot",
+      nodeId: input.runtime.nodeId,
+      status: "not_configured"
+    };
+  }
+
+  if (!input.fileExists(path.join(wikiRepositoryRoot, ".git"))) {
+    return {
+      detail: "wiki repository has not been initialized yet",
+      nodeId: input.runtime.nodeId,
+      status: "not_initialized"
+    };
+  }
+
+  const statusResult = input.commandRunner(
+    "git",
+    ["-C", wikiRepositoryRoot, "status", "--porcelain"],
+    { cwd: input.options.repositoryRoot }
+  );
+  if (statusResult.status !== 0) {
+    return {
+      detail: sanitizeRuntimePath(normalizeCommandOutput(statusResult), context),
+      nodeId: input.runtime.nodeId,
+      status: "git_error"
+    };
+  }
+
+  const dirtyFiles = (statusResult.stdout ?? "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
+  if (dirtyFiles.length > 0) {
+    return {
+      detail: `${dirtyFiles.length} uncommitted changes`,
+      nodeId: input.runtime.nodeId,
+      status: "dirty"
+    };
+  }
+
+  const branchResult = input.commandRunner(
+    "git",
+    ["-C", wikiRepositoryRoot, "rev-parse", "--abbrev-ref", "HEAD"],
+    { cwd: input.options.repositoryRoot }
+  );
+  if (branchResult.status !== 0) {
+    return {
+      detail: sanitizeRuntimePath(normalizeCommandOutput(branchResult), context),
+      nodeId: input.runtime.nodeId,
+      status: "git_error"
+    };
+  }
+
+  const commitResult = input.commandRunner(
+    "git",
+    ["-C", wikiRepositoryRoot, "rev-parse", "--verify", "HEAD"],
+    { cwd: input.options.repositoryRoot }
+  );
+  if (commitResult.status !== 0) {
+    return {
+      detail: "wiki repository has no committed snapshot",
+      nodeId: input.runtime.nodeId,
+      status: "without_commit"
+    };
+  }
+
+  return {
+    branch: (branchResult.stdout ?? "").trim(),
+    commit: (commitResult.stdout ?? "").trim(),
+    nodeId: input.runtime.nodeId,
+    status: "clean"
+  };
+}
+
+async function addRuntimeWikiRepositoryChecks(input: {
+  checks: LocalDoctorCheck[];
+  commandRunner: NonNullable<LocalDoctorDeps["commandRunner"]>;
+  fileExists: NonNullable<LocalDoctorDeps["fileExists"]>;
+  hostClient: LocalDoctorHostClient;
+  options: LocalDoctorOptions;
+  runtimes: RuntimeInspectionResponse[];
+}): Promise<void> {
+  const inspections = await Promise.all(
+    input.runtimes.map((runtime) =>
+      inspectRuntimeWikiRepository({
+        commandRunner: input.commandRunner,
+        fileExists: input.fileExists,
+        hostClient: input.hostClient,
+        options: input.options,
+        runtime
+      })
+    )
+  );
+  const issues = inspections.filter(
+    (
+      inspection
+    ): inspection is Exclude<RuntimeWikiRepositoryInspection, { status: "clean" }> =>
+      inspection.status !== "clean"
+  );
+
+  addCheck(input.checks, {
+    category: "workspace",
+    detail:
+      issues.length === 0
+        ? `${inspections.length} wiki repositories clean`
+        : issues.slice(0, 5).map(formatWikiRepositoryIssue).join("; "),
+    remediation:
+      issues.length > 0
+        ? "Run a node turn to initialize wiki snapshots, then inspect runtime turns or repair the runtime wiki repository."
+        : undefined,
+    status: issues.length === 0 ? "pass" : "warn",
+    summary: "Runtime wiki repositories"
+  });
+}
+
 async function defaultFetchUrl(url: string): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2_000);
@@ -231,7 +419,12 @@ function overallStatus(summary: LocalDoctorReport["summary"]): LocalDoctorOveral
 
 async function addLiveChecks(input: {
   checks: LocalDoctorCheck[];
-  deps: Required<Pick<LocalDoctorDeps, "connectWebSocket" | "fetchUrl">> &
+  deps: Required<
+    Pick<
+      LocalDoctorDeps,
+      "commandRunner" | "connectWebSocket" | "fetchUrl" | "fileExists"
+    >
+  > &
     Pick<LocalDoctorDeps, "hostClient">;
   options: LocalDoctorOptions;
 }): Promise<void> {
@@ -281,6 +474,15 @@ async function addLiveChecks(input: {
             : undefined,
         status: degradedRuntimeIds.length === 0 ? "pass" : "warn",
         summary: "Runtime workspace health"
+      });
+
+      await addRuntimeWikiRepositoryChecks({
+        checks: input.checks,
+        commandRunner: input.deps.commandRunner,
+        fileExists: input.deps.fileExists,
+        hostClient: input.deps.hostClient,
+        options: input.options,
+        runtimes: runtimes.runtimes
       });
     } catch (error) {
       addCheck(input.checks, {
@@ -495,7 +697,9 @@ export async function buildLocalDoctorReport(
   await addLiveChecks({
     checks,
     deps: {
+      commandRunner,
       connectWebSocket: deps.connectWebSocket ?? defaultConnectWebSocket,
+      fileExists,
       fetchUrl: deps.fetchUrl ?? defaultFetchUrl,
       ...(deps.hostClient ? { hostClient: deps.hostClient } : {})
     },

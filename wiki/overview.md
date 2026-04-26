@@ -172,7 +172,8 @@ The repository now also contains the first real implementation baseline:
   materialized git artifacts, and with runner-owned local git snapshots of
   `memory/wiki` into each node's `wiki-repository` workspace after completed
   turns, including durable sync outcomes on turns, host events, CLI output, and
-  Studio turn inspection;
+  Studio turn inspection, plus `entangle local doctor` runtime wiki repository
+  health warnings for uninitialized, dirty, or uncommitted snapshots;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

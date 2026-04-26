@@ -2302,3 +2302,14 @@ The same sync outcome now propagates through host observed activity,
 Studio turn inspection. This is intentionally a local runner-owned snapshot
 path, not yet a full memory-as-repo migration, backup/restore feature, or
 remote publication workflow.
+
+## [2026-04-25] implementation | Added doctor checks for runtime wiki repositories
+
+Added `references/211-local-doctor-wiki-repository-health-slice.md` and
+extended `entangle local doctor` so live diagnostics inspect each available
+runtime context's `wiki-repository` workspace. The doctor now warns when a
+runtime wiki repository is not configured, not initialized, dirty, missing a
+HEAD commit, unavailable through runtime context, or failing git inspection.
+
+The check remains read-only and diagnostic. It does not initialize, commit,
+repair, publish, or delete node memory repositories.
