@@ -5,16 +5,22 @@
 User nodes exist in `nodeKindSchema` and graph specs. Validator warns when a
 graph has no user node. Studio renders user nodes visually.
 
-But user nodes are not runtime actors:
+User nodes are now partially runtime-capable:
 
-- Host filters them out in runtime synchronization;
-- Host does not materialize user-node runtime identity;
-- peer routes to user nodes do not include `peerPubkey`;
-- session launch uses a user `fromNodeId` but an ephemeral Nostr key;
-- Studio approval decisions submit `approverNodeIds: ["user"]`;
-- Host approval mutation writes local approval records;
-- CLI approvals use the same Host mutation path;
-- there is no user-node inbox, outbox, conversation list, or signing surface.
+- Host filters them out of agent runner synchronization, but materializes
+  stable User Node identities from the active graph;
+- peer routes to user nodes include stable User Node pubkeys;
+- session launch signs `task.request` with stable User Node key material;
+- Host exposes a User Node A2A message publishing surface for local gateway
+  use.
+
+Still missing:
+
+- Studio approval decisions submit operator-side mutations instead of calling
+  the signed User Node message surface;
+- Host approval mutation still writes local approval records;
+- CLI approvals use the same legacy Host mutation path;
+- there is no durable user-node inbox, outbox, or conversation projection.
 
 ## Target Model
 
@@ -59,9 +65,10 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Add `UserNodeIdentityRecord` and key-ref contracts.
 - Add Host APIs for listing user-node identities and projected inbox state.
 - Add a User Interaction Gateway service boundary that can sign as a user node.
-- Make session launch publish signed `task.request` from the selected User
+- Keep session launch publishing signed `task.request` from the selected User
   Node identity.
-- Add `reply`, `answer`, `approve`, and `reject` flows as signed A2A messages.
+- Move CLI and Studio `reply`, `answer`, `approve`, and `reject` flows onto the
+  signed User Node A2A message surface.
 - Project inbound and outbound user-node conversations into Host read models.
 - Make approval records include signer pubkey, event id, and source message id.
 - Add edge-route pubkeys for user-node peers.

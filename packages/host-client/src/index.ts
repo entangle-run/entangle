@@ -93,6 +93,8 @@ import {
   sessionListResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
+  userNodeMessagePublishRequestSchema,
+  userNodeMessagePublishResponseSchema,
   type CatalogInspectionResponse,
   type EdgeCreateRequest,
   type EdgeDeletionResponse,
@@ -186,6 +188,8 @@ import {
   type SessionListResponse,
   type UserNodeIdentityInspectionResponse,
   type UserNodeIdentityListResponse,
+  type UserNodeMessagePublishRequest,
+  type UserNodeMessagePublishResponse,
 } from "@entangle/types";
 
 type FetchResponse = {
@@ -424,6 +428,24 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}`),
         userNodeIdentityInspectionResponseSchema
+      );
+    },
+
+    async publishUserNodeMessage(
+      nodeId: string,
+      message: UserNodeMessagePublishRequest
+    ): Promise<UserNodeMessagePublishResponse> {
+      const request = userNodeMessagePublishRequestSchema.parse(message);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}/messages`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(request)
+        }),
+        userNodeMessagePublishResponseSchema
       );
     },
 

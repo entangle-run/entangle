@@ -1,11 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EffectiveRuntimeContext, GraphSpec } from "@entangle/types";
+import { generateSecretKey, getPublicKey } from "nostr-tools";
 import {
   buildSessionLaunchMessage,
   publishHostSessionLaunch,
   resolveDefaultSessionLaunchUserNodeId,
   resolveSessionLaunchRelaySelection
 } from "./session-launch.js";
+
+function buildUserNodeSigner(nodeId = "user-main") {
+  const secretKey = generateSecretKey();
+
+  return {
+    nodeId,
+    publicKey: getPublicKey(secretKey),
+    secretKey
+  };
+}
 
 function buildGraph(): GraphSpec {
   return {
@@ -161,7 +172,7 @@ describe("host session launch helpers", () => {
       toNodeId: "builder",
       work: {
         metadata: {
-          launchedBy: "entangle-host"
+          launchedBy: "user-node-gateway"
         },
         summary: "Prepare a local report."
       }
@@ -184,7 +195,8 @@ describe("host session launch helpers", () => {
         targetNodeId: "builder",
         turnId: "turn-alpha"
       },
-      runtimeContext: buildRuntimeContext()
+      runtimeContext: buildRuntimeContext(),
+      userNode: buildUserNodeSigner()
     });
 
     expect(result).toMatchObject({
@@ -196,6 +208,7 @@ describe("host session launch helpers", () => {
       targetNodeId: "builder",
       turnId: "turn-alpha"
     });
+    expect(result.fromPubkey).toMatch(/^[0-9a-f]{64}$/u);
     expect(result.eventId).toMatch(/^[0-9a-f]{64}$/);
     expect(publish).toHaveBeenCalledOnce();
     expect(destroy).toHaveBeenCalledOnce();

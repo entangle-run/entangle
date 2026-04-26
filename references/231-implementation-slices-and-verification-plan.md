@@ -185,6 +185,10 @@ Verification:
 Convert session launch, replies, approvals, and rejections to signed User Node
 A2A messages. Retire direct approval mutation as canonical behavior.
 
+Implementation record:
+
+- [241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
+
 Verification:
 
 - signed task/reply/approval tests;

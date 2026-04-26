@@ -2779,3 +2779,15 @@ runtime edge routes.
 This slice establishes the identity substrate only. Signed User Node tasks,
 replies, approvals, inbox/outbox projection, and Studio/CLI user interaction
 surfaces remain the next federated runtime work.
+
+## [2026-04-26] implementation | Added signed User Node message publishing
+
+Added `references/241-signed-user-node-messages-slice.md` and implemented the
+tenth federated pivot slice. Session launch now signs `task.request` with the
+stable User Node identity instead of an ephemeral launch key, and Host exposes
+`POST /v1/user-nodes/:nodeId/messages` for local gateways to publish signed
+User Node A2A messages to connected runtimes.
+
+The new Host client method `publishUserNodeMessage()` is additive. Existing
+Studio/CLI approval controls still use the legacy mutation path until the user
+surface slice migrates them onto signed User Node messages.

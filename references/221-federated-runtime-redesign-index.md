@@ -40,6 +40,7 @@ because the handoff required these exact filenames. The existing
 - [238-local-launcher-join-adapter-slice.md](238-local-launcher-join-adapter-slice.md)
 - [239-host-projection-snapshot-slice.md](239-host-projection-snapshot-slice.md)
 - [240-user-node-identity-slice.md](240-user-node-identity-slice.md)
+- [241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
 
 ## Audited Scope
 
@@ -180,5 +181,6 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 9 are implemented in this branch. Slice 10,
-signed User Node conversations and approvals, is next.
+Plan readiness: Slices 1 through 10 are implemented in this branch. Slice 11,
+artifact/source/wiki reference publication through observation and git refs, is
+next.

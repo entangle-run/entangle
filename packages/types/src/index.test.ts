@@ -96,7 +96,9 @@ import {
   userInteractionGatewayRecordSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
-  userNodeIdentityRecordSchema
+  userNodeIdentityRecordSchema,
+  userNodeMessagePublishRequestSchema,
+  userNodeMessagePublishResponseSchema
 } from "./index.js";
 
 const authorityPubkey =
@@ -257,6 +259,47 @@ describe("federated runtime contracts", () => {
         userNode
       }).gateways[0]?.gatewayId
     ).toBe("studio-main");
+  });
+
+  it("accepts signed User Node message publish contracts", () => {
+    expect(
+      userNodeMessagePublishRequestSchema.parse({
+        messageType: "approval.response",
+        approval: {
+          approvalId: "approval-alpha",
+          decision: "approved"
+        },
+        parentMessageId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        summary: "Approved.",
+        targetNodeId: "worker-it"
+      })
+    ).toMatchObject({
+      approval: {
+        approvalId: "approval-alpha",
+        decision: "approved"
+      },
+      artifactRefs: [],
+      messageType: "approval.response",
+      targetNodeId: "worker-it"
+    });
+
+    expect(
+      userNodeMessagePublishResponseSchema.parse({
+        conversationId: "conversation-alpha",
+        eventId:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fromNodeId: "user-main",
+        fromPubkey: userNodePubkey,
+        messageType: "approval.response",
+        publishedRelays: ["ws://localhost:7777"],
+        relayUrls: ["ws://localhost:7777"],
+        sessionId: "session-alpha",
+        targetNodeId: "worker-it",
+        toPubkey: runnerPubkey,
+        turnId: "turn-alpha"
+      }).fromPubkey
+    ).toBe(userNodePubkey);
   });
 
   it("requires active assignments to carry a lease", () => {

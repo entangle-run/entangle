@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { artifactRefSchema } from "../artifacts/artifact-ref.js";
+import { nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   type ApprovalLifecycleState,
@@ -111,6 +112,7 @@ export const sessionLaunchResponseSchema = z.object({
   conversationId: identifierSchema,
   eventId: identifierSchema,
   fromNodeId: identifierSchema,
+  fromPubkey: nostrPublicKeySchema.optional(),
   publishedRelays: z.array(nonEmptyStringSchema),
   relayUrls: z.array(nonEmptyStringSchema),
   sessionId: identifierSchema,

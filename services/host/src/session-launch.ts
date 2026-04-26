@@ -10,8 +10,6 @@ import {
 } from "@entangle/types";
 import {
   finalizeEvent,
-  generateSecretKey,
-  getPublicKey,
   nip59,
   SimplePool,
   type EventTemplate,
@@ -28,6 +26,12 @@ type HostSessionLaunchPool = {
       onauth?: (event: EventTemplate) => Promise<VerifiedEvent>;
     }
   ): Promise<string>[];
+};
+
+type SessionLaunchUserNodeSigner = {
+  nodeId: string;
+  publicKey: string;
+  secretKey: Uint8Array;
 };
 
 function dedupeStrings(values: string[]): string[] {
@@ -114,7 +118,7 @@ export function buildSessionLaunchMessage(input: {
     work: {
       artifactRefs: input.request.artifactRefs,
       metadata: {
-        launchedBy: "entangle-host"
+        launchedBy: "user-node-gateway"
       },
       summary: input.request.summary
     }
@@ -132,17 +136,25 @@ export async function publishHostSessionLaunch(input: {
   pool?: HostSessionLaunchPool;
   request: ParsedSessionLaunchRequest;
   runtimeContext: EffectiveRuntimeContext;
+  userNode: SessionLaunchUserNodeSigner;
 }): Promise<SessionLaunchResponse> {
-  const userSecretKey = generateSecretKey();
-  const fromPubkey = getPublicKey(userSecretKey);
   const sessionId =
     input.request.sessionId ?? createSessionLaunchIdentifier("session");
   const conversationId =
     input.request.conversationId ??
     createSessionLaunchIdentifier("conversation");
   const turnId = input.request.turnId ?? createSessionLaunchIdentifier("turn");
-  const fromNodeId =
+  const requestedFromNodeId =
     input.request.fromNodeId ?? resolveDefaultSessionLaunchUserNodeId(input.graph);
+
+  if (requestedFromNodeId !== input.userNode.nodeId) {
+    throw new Error(
+      `Launch request User Node '${requestedFromNodeId}' does not match signer '${input.userNode.nodeId}'.`
+    );
+  }
+
+  const fromNodeId = input.userNode.nodeId;
+  const fromPubkey = input.userNode.publicKey;
   const message = buildSessionLaunchMessage({
     conversationId,
     fromNodeId,
@@ -166,11 +178,11 @@ export async function publishHostSessionLaunch(input: {
       kind: entangleNostrRumorKind,
       tags: []
     },
-    userSecretKey
+    input.userNode.secretKey
   );
   const seal = nip59.createSeal(
     rumor,
-    userSecretKey,
+    input.userNode.secretKey,
     input.runtimeContext.identityContext.publicKey
   );
   const wrappedEvent = nip59.createWrap(
@@ -185,7 +197,7 @@ export async function publishHostSessionLaunch(input: {
     } = {};
 
     if (relaySelection.authRequired) {
-      publishParams.onauth = buildAuthSigner(userSecretKey);
+      publishParams.onauth = buildAuthSigner(input.userNode.secretKey);
     }
 
     const publishedRelays = await Promise.all(
@@ -196,6 +208,7 @@ export async function publishHostSessionLaunch(input: {
       conversationId,
       eventId: rumor.id,
       fromNodeId,
+      fromPubkey,
       publishedRelays,
       relayUrls: relaySelection.relayUrls,
       sessionId,

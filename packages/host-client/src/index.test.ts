@@ -151,24 +151,42 @@ describe("createHostClient", () => {
       status: "active",
       updatedAt: "2026-04-26T12:00:00.000Z"
     };
+    const publishResponse = {
+      conversationId: "conversation-alpha",
+      eventId: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      fromNodeId: "user-main",
+      fromPubkey: userNode.publicKey,
+      messageType: "approval.response",
+      publishedRelays: ["ws://localhost:7777"],
+      relayUrls: ["ws://localhost:7777"],
+      sessionId: "session-alpha",
+      targetNodeId: "worker-it",
+      toPubkey: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      turnId: "turn-alpha"
+    };
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
-      fetchImpl: (url) => {
+      fetchImpl: (url, init) => {
         requests.push(url);
+        let body: unknown;
+
+        if (init?.method === "POST") {
+          body = publishResponse;
+        } else if (url.endsWith("/v1/user-nodes")) {
+          body = {
+            generatedAt: "2026-04-26T12:00:00.000Z",
+            userNodes: [userNode]
+          };
+        } else {
+          body = {
+            gateways: [],
+            userNode
+          };
+        }
 
         return Promise.resolve(
           createMockResponse({
-            body: JSON.stringify(
-              url.endsWith("/v1/user-nodes")
-                ? {
-                    generatedAt: "2026-04-26T12:00:00.000Z",
-                    userNodes: [userNode]
-                  }
-                : {
-                    gateways: [],
-                    userNode
-                  }
-            ),
+            body: JSON.stringify(body),
             ok: true,
             status: 200
           })
@@ -188,9 +206,27 @@ describe("createHostClient", () => {
         nodeId: "user-main"
       }
     });
+    await expect(
+      client.publishUserNodeMessage("user-main", {
+        approval: {
+          approvalId: "approval-alpha",
+          decision: "approved"
+        },
+        messageType: "approval.response",
+        parentMessageId:
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        summary: "Approved.",
+        targetNodeId: "worker-it"
+      })
+    ).resolves.toMatchObject({
+      eventId: publishResponse.eventId,
+      fromNodeId: "user-main",
+      messageType: "approval.response"
+    });
     expect(requests).toEqual([
       "http://entangle-host.test/v1/user-nodes",
-      "http://entangle-host.test/v1/user-nodes/user-main"
+      "http://entangle-host.test/v1/user-nodes/user-main",
+      "http://entangle-host.test/v1/user-nodes/user-main/messages"
     ]);
   });
 

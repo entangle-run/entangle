@@ -102,7 +102,9 @@ import {
   sessionLaunchResponseSchema,
   sessionListResponseSchema,
   userNodeIdentityInspectionResponseSchema,
-  userNodeIdentityListResponseSchema
+  userNodeIdentityListResponseSchema,
+  userNodeMessagePublishRequestSchema,
+  userNodeMessagePublishResponseSchema
 } from "@entangle/types";
 import { ZodError, type ZodType } from "zod";
 import {
@@ -134,6 +136,7 @@ import {
   getRuntimeSourceHistoryInspection,
   getRuntimeTurnInspection,
   getUserNodeIdentity,
+  getUserNodeSigningMaterial,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
   listRuntimeArtifactRestores,
@@ -195,6 +198,7 @@ import {
   validateGraphCandidate
 } from "./state.js";
 import { publishHostSessionLaunch } from "./session-launch.js";
+import { publishUserNodeA2AMessage } from "./user-node-messaging.js";
 
 class HostHttpError extends Error {
   readonly code:
@@ -559,6 +563,89 @@ export async function buildHostServer() {
     }
 
     return userNodeIdentityInspectionResponseSchema.parse(inspection);
+  });
+
+  server.post("/v1/user-nodes/:nodeId/messages", async (request) => {
+    const params = request.params as { nodeId: string };
+    const nodeId = identifierSchema.parse(params.nodeId);
+    const messageRequest = parseRequestInput(
+      userNodeMessagePublishRequestSchema,
+      request.body ?? {},
+      {
+        detailsKey: "bodyIssues",
+        message:
+          "Request body did not match the expected User Node message schema."
+      }
+    );
+    const [graphInspection, runtimeContext] = await Promise.all([
+      getGraphInspection(),
+      getRuntimeContext(messageRequest.targetNodeId)
+    ]);
+
+    if (!graphInspection.graph) {
+      throw new HostHttpError({
+        code: "conflict",
+        message: "Cannot publish a User Node message without an active graph.",
+        statusCode: 409
+      });
+    }
+
+    if (!runtimeContext) {
+      throw new HostHttpError({
+        code: "not_found",
+        message: `Runtime '${messageRequest.targetNodeId}' was not found in the active graph.`,
+        statusCode: 404
+      });
+    }
+
+    const edgeAllowsMessage = graphInspection.graph.edges.some(
+      (edge) =>
+        edge.enabled !== false &&
+        edge.fromNodeId === nodeId &&
+        edge.toNodeId === messageRequest.targetNodeId
+    );
+
+    if (!edgeAllowsMessage) {
+      throw new HostHttpError({
+        code: "conflict",
+        message:
+          `User Node '${nodeId}' does not have an enabled outbound edge to ` +
+          `runtime '${messageRequest.targetNodeId}'.`,
+        statusCode: 409
+      });
+    }
+
+    try {
+      const userNode = await getUserNodeSigningMaterial({
+        graph: graphInspection.graph,
+        nodeId
+      });
+
+      return userNodeMessagePublishResponseSchema.parse(
+        await publishUserNodeA2AMessage({
+          request: messageRequest,
+          runtimeContext,
+          userNode: {
+            nodeId: userNode.identity.nodeId,
+            publicKey: userNode.identity.publicKey,
+            secretKey: userNode.secretKey
+          }
+        })
+      );
+    } catch (error: unknown) {
+      throw new HostHttpError({
+        code: "conflict",
+        details: {
+          nodeId,
+          targetNodeId: messageRequest.targetNodeId
+        },
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not publish the User Node message to the configured relay.",
+        statusCode: 409
+      });
+    }
   });
 
   server.get("/v1/authority", async () =>
@@ -2887,11 +2974,23 @@ export async function buildHostServer() {
     }
 
     try {
+      const userNode = await getUserNodeSigningMaterial({
+        graph: graphInspection.graph,
+        ...(launchRequest.fromNodeId
+          ? { nodeId: launchRequest.fromNodeId }
+          : {})
+      });
+
       return sessionLaunchResponseSchema.parse(
         await publishHostSessionLaunch({
           graph: graphInspection.graph,
           request: launchRequest,
-          runtimeContext
+          runtimeContext,
+          userNode: {
+            nodeId: userNode.identity.nodeId,
+            publicKey: userNode.identity.publicKey,
+            secretKey: userNode.secretKey
+          }
         })
       );
     } catch (error: unknown) {

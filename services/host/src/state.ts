@@ -1267,6 +1267,65 @@ async function ensureUserNodeIdentitiesForGraph(
   );
 }
 
+export type UserNodeSigningMaterial = {
+  identity: UserNodeIdentityRecord;
+  secretKey: Uint8Array;
+};
+
+export async function getUserNodeSigningMaterial(input: {
+  graph: GraphSpec;
+  nodeId?: string;
+}): Promise<UserNodeSigningMaterial> {
+  await initializeHostState();
+
+  const userNode = input.nodeId
+    ? input.graph.nodes.find((node) => node.nodeId === input.nodeId)
+    : input.graph.nodes.find((node) => node.nodeKind === "user");
+
+  if (!userNode || userNode.nodeKind !== "user") {
+    throw new Error(
+      input.nodeId
+        ? `Node '${input.nodeId}' is not a User Node in graph '${input.graph.graphId}'.`
+        : `Graph '${input.graph.graphId}' does not contain a User Node.`
+    );
+  }
+
+  const authority = await ensureHostAuthorityMaterialized();
+  const identity = await ensureUserNodeIdentity({
+    graphId: input.graph.graphId,
+    hostAuthorityPubkey: authority.publicKey,
+    node: userNode
+  });
+
+  if (!identity.keyRef) {
+    throw new Error(
+      `User Node '${identity.nodeId}' does not reference local key material.`
+    );
+  }
+
+  const secretKey = await readSecretRefValue(identity.keyRef);
+
+  if (!secretKey) {
+    throw new Error(
+      `User Node '${identity.nodeId}' does not have available key material.`
+    );
+  }
+
+  const secretKeyBytes = parseNostrSecretKeyBytes(secretKey);
+  const publicKey = getPublicKey(secretKeyBytes);
+
+  if (publicKey !== identity.publicKey) {
+    throw new Error(
+      `User Node '${identity.nodeId}' key material does not match its public key.`
+    );
+  }
+
+  return {
+    identity,
+    secretKey: secretKeyBytes
+  };
+}
+
 function resolveSecretRefStoragePath(secretRef: string): string | undefined {
   const parsedSecretRef = secretRefSchema.safeParse(secretRef);
 
