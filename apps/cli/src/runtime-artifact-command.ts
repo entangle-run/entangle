@@ -6,6 +6,7 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactPromotionStatus,
   formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation,
@@ -302,18 +303,6 @@ export interface RuntimeArtifactCliPromotionSummaryRecord {
         target: RuntimeArtifactPromotionResponse["promotion"]["target"];
       };
   restore: RuntimeArtifactCliRestoreRecordSummary;
-}
-
-function formatRuntimeArtifactPromotionStatus(
-  promotion: RuntimeArtifactPromotionResponse["promotion"]
-): string {
-  if (promotion.status === "promoted") {
-    return `${promotion.promotedFileCount ?? 0} file${
-      promotion.promotedFileCount === 1 ? "" : "s"
-    } promoted`;
-  }
-
-  return promotion.unavailableReason ?? "Artifact promotion is unavailable.";
 }
 
 export function projectRuntimeArtifactPromotionSummary(

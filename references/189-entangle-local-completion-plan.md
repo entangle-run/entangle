@@ -688,8 +688,12 @@ Current partial implementation:
   `artifactWorkspaceRoot/restores/{restoreId}`, existing targets are not
   overwritten by default, and unsupported/unsafe restore attempts return
   structured unavailable records rather than widening filesystem access;
+- successful restored git artifacts can now be promoted into the node source
+  workspace through host API, shared host-client, CLI, and Studio controls when
+  the operator supplies an approved `source_application` approval id scoped to
+  the artifact/restore tuple;
 - live OpenCode permission-to-approval flow, fallback/replication behavior
-  across publication targets, Studio promotion controls, wiki promotion, and
+  across publication targets, promotion-history inspection, wiki promotion, and
   direct source-history replay workflows remain open.
 
 Acceptance:

@@ -244,7 +244,7 @@ This repository currently contains:
   host-client, CLI, and Studio coverage, and an approval-gated
   `POST /v1/runtimes/{nodeId}/artifacts/{artifactId}/promote` path that can
   copy a successful restore into the source workspace through the shared host
-  and CLI boundary;
+  boundary, CLI, and Studio controls;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI

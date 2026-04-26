@@ -176,8 +176,8 @@ The repository now also contains the first real implementation baseline:
   that materializes git-backed runtime artifacts into explicit artifact
   workspace restore directories without overwriting existing targets by
   default, with host/CLI/Studio restore-attempt history inspection and a first
-  approval-gated host/CLI promotion path from successful restores into the
-  source workspace, and with runner-owned local git snapshots of `memory/wiki` into
+  approval-gated host/CLI/Studio promotion path from successful restores into
+  the source workspace, and with runner-owned local git snapshots of `memory/wiki` into
   each node's `wiki-repository` workspace after completed turns, including
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus

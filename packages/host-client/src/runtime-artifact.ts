@@ -7,6 +7,7 @@ import type {
   ArtifactRetrievalState,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
+  RuntimeArtifactPromotionResponse,
   RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 
@@ -209,4 +210,16 @@ export function formatRuntimeArtifactRestoreStatus(
   const fileCount = restore.restoredFileCount ?? 0;
 
   return `${fileCount} ${fileCount === 1 ? "file" : "files"} restored`;
+}
+
+export function formatRuntimeArtifactPromotionStatus(
+  promotion: RuntimeArtifactPromotionResponse["promotion"]
+): string {
+  if (promotion.status === "unavailable") {
+    return promotion.unavailableReason ?? "Artifact promotion is unavailable.";
+  }
+
+  const fileCount = promotion.promotedFileCount ?? 0;
+
+  return `${fileCount} ${fileCount === 1 ? "file" : "files"} promoted`;
 }

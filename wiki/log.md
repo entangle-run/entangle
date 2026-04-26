@@ -2597,3 +2597,16 @@ Studio now treats `session.cancellation.requested` as overview-relevant and
 selected-runtime-relevant host activity. Cancellation requests started through
 CLI or another host client therefore schedule the same host-backed refresh path
 as in-Studio cancellation, instead of depending on a manual operator reload.
+
+## [2026-04-26] implementation | Added Studio artifact promotion controls
+
+Extended `references/219-artifact-promotion-slice.md` and closed the Studio
+control gap for approval-gated artifact promotion. The selected artifact detail
+panel can now promote the latest restored artifact workspace into the source
+workspace through the shared host client when the operator supplies an approved
+`source_application` approval id.
+
+The Studio control keeps overwrite disabled by default and remains host-first:
+the host validates the artifact/restore approval scope, restore workspace
+boundaries, unsafe paths, and target overwrite policy before mutating the node
+source workspace.
