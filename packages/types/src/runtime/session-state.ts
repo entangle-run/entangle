@@ -56,6 +56,7 @@ export const runnerPhaseSchema = z.enum([
   "persisting",
   "emitting",
   "blocked",
+  "cancelled",
   "errored"
 ]);
 
@@ -328,6 +329,43 @@ export const approvalRecordSchema = z.object({
   updatedAt: nonEmptyStringSchema
 });
 
+export const sessionCancellationRequestStatusSchema = z.enum([
+  "requested",
+  "observed"
+]);
+
+export const sessionCancellationRequestRecordSchema = z
+  .object({
+    cancellationId: identifierSchema,
+    graphId: identifierSchema,
+    nodeId: identifierSchema,
+    observedAt: nonEmptyStringSchema.optional(),
+    observedTurnId: identifierSchema.optional(),
+    reason: nonEmptyStringSchema.optional(),
+    requestedAt: nonEmptyStringSchema,
+    requestedBy: identifierSchema.optional(),
+    sessionId: identifierSchema,
+    status: sessionCancellationRequestStatusSchema
+  })
+  .superRefine((value, context) => {
+    if (value.status === "observed" && !value.observedAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Observed session cancellation requests must include observedAt.",
+        path: ["observedAt"]
+      });
+    }
+
+    if (value.status === "requested" && value.observedAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Requested session cancellation records must not include observedAt.",
+        path: ["observedAt"]
+      });
+    }
+  });
+
 export const runnerTurnRecordSchema = z.object({
   conversationId: identifierSchema.optional(),
   consumedArtifactIds: z.array(identifierSchema).default([]),
@@ -434,6 +472,12 @@ export type ConversationLifecycleState = z.infer<
   typeof conversationLifecycleStateSchema
 >;
 export type ApprovalLifecycleState = z.infer<typeof approvalLifecycleStateSchema>;
+export type SessionCancellationRequestStatus = z.infer<
+  typeof sessionCancellationRequestStatusSchema
+>;
+export type SessionCancellationRequestRecord = z.infer<
+  typeof sessionCancellationRequestRecordSchema
+>;
 export type RunnerPhase = z.infer<typeof runnerPhaseSchema>;
 export type RunnerTriggerKind = z.infer<typeof runnerTriggerKindSchema>;
 export type MemorySynthesisOutcome = z.infer<

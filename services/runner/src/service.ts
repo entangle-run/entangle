@@ -18,6 +18,7 @@ import type {
   MemorySynthesisOutcome,
   RunnerPhase,
   RunnerTurnRecord,
+  SessionCancellationRequestRecord,
   SessionLifecycleState,
   SessionRecord
 } from "@entangle/types";
@@ -28,7 +29,8 @@ import {
   engineTurnOutcomeSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
-  isAllowedSessionLifecycleTransition
+  isAllowedSessionLifecycleTransition,
+  sessionCancellationRequestRecordSchema
 } from "@entangle/types";
 import { validateA2AMessageDocument } from "@entangle/validator";
 import type { AgentEngine } from "@entangle/agent-engine";
@@ -48,6 +50,7 @@ import {
   ensureRunnerStatePaths,
   listApprovalRecords,
   listConversationRecords,
+  listSessionCancellationRequestRecords,
   listSessionRecords,
   readApprovalRecord,
   readConversationRecord,
@@ -56,6 +59,7 @@ import {
   writeArtifactRecord,
   writeConversationRecord,
   writeRunnerTurnRecord,
+  writeSessionCancellationRequestRecord,
   writeSourceChangeCandidateRecord,
   writeSessionRecord
 } from "./state-store.js";
@@ -205,6 +209,42 @@ function buildEngineFailure(
     classification: "unknown_provider_error",
     message: `Unexpected engine execution failure for node '${context.binding.node.nodeId}'.`
   };
+}
+
+function isSessionCancellationExecutionError(error: unknown): boolean {
+  return (
+    error instanceof AgentEngineExecutionError &&
+    error.classification === "cancelled"
+  );
+}
+
+function resolveCancellationRequestFromAbortSignal(
+  signal: AbortSignal | undefined
+): SessionCancellationRequestRecord | undefined {
+  if (!signal?.aborted) {
+    return undefined;
+  }
+
+  const parsedRequest = sessionCancellationRequestRecordSchema.safeParse(
+    signal.reason
+  );
+
+  return parsedRequest.success ? parsedRequest.data : undefined;
+}
+
+function buildSessionCancellationExecutionError(input: {
+  context: EffectiveRuntimeContext;
+  request?: SessionCancellationRequestRecord;
+  sessionId: string;
+}): AgentEngineExecutionError {
+  return new AgentEngineExecutionError(
+    input.request
+      ? `Session '${input.sessionId}' on node '${input.context.binding.node.nodeId}' was cancelled by request '${input.request.cancellationId}'.`
+      : `Session '${input.sessionId}' on node '${input.context.binding.node.nodeId}' was cancelled.`,
+    {
+      classification: "cancelled"
+    }
+  );
 }
 
 async function advanceSessionToProcessing(
@@ -921,6 +961,111 @@ function isTerminalSessionStatus(status: SessionLifecycleState): boolean {
   return ["cancelled", "completed", "failed", "timed_out"].includes(status);
 }
 
+async function markSessionCancellationRequestObserved(input: {
+  record: SessionCancellationRequestRecord;
+  statePaths: RunnerStatePaths;
+  turnId?: string;
+}): Promise<SessionCancellationRequestRecord> {
+  if (input.record.status === "observed") {
+    return input.record;
+  }
+
+  const observedRecord = sessionCancellationRequestRecordSchema.parse({
+    ...input.record,
+    observedAt: nowIsoString(),
+    ...(input.turnId ? { observedTurnId: input.turnId } : {}),
+    status: "observed"
+  });
+  await writeSessionCancellationRequestRecord(input.statePaths, observedRecord);
+  return observedRecord;
+}
+
+async function cancelSessionForRequest(input: {
+  lastMessageId?: string;
+  lastMessageType?: EntangleA2AMessage["messageType"];
+  request: SessionCancellationRequestRecord;
+  session: SessionRecord;
+  statePaths: RunnerStatePaths;
+  turnId?: string;
+}): Promise<SessionRecord> {
+  if (isTerminalSessionStatus(input.session.status)) {
+    await markSessionCancellationRequestObserved({
+      record: input.request,
+      statePaths: input.statePaths,
+      ...(input.turnId ? { turnId: input.turnId } : {})
+    });
+    return input.session;
+  }
+
+  const [approvalRecords, conversationRecords] = await Promise.all([
+    listApprovalRecords(input.statePaths),
+    listConversationRecords(input.statePaths)
+  ]);
+  const now = nowIsoString();
+
+  await Promise.all(
+    approvalRecords
+      .filter(
+        (approvalRecord) =>
+          approvalRecord.sessionId === input.session.sessionId &&
+          approvalRecord.status === "pending"
+      )
+      .map((approvalRecord) =>
+        transitionApprovalStatus(input.statePaths, approvalRecord, "withdrawn", {
+          updatedAt: now
+        })
+      )
+  );
+
+  await Promise.all(
+    conversationRecords
+      .filter(
+        (conversationRecord) =>
+          conversationRecord.sessionId === input.session.sessionId &&
+          hasOpenConversationStatus(conversationRecord) &&
+          isAllowedConversationLifecycleTransition(
+            conversationRecord.status,
+            "expired"
+          )
+      )
+      .map((conversationRecord) =>
+        transitionConversationStatus(input.statePaths, conversationRecord, "expired", {
+          ...(conversationRecord.lastInboundMessageId
+            ? { lastInboundMessageId: conversationRecord.lastInboundMessageId }
+            : {}),
+          lastMessageType:
+            conversationRecord.lastMessageType ??
+            input.lastMessageType ??
+            "conversation.close"
+        })
+      )
+  );
+
+  const cancellableSession: SessionRecord = {
+    ...input.session,
+    activeConversationIds: [],
+    waitingApprovalIds: [],
+    updatedAt: now
+  };
+  const cancelledSession = isAllowedSessionLifecycleTransition(
+    cancellableSession.status,
+    "cancelled"
+  )
+    ? await transitionSessionStatus(input.statePaths, cancellableSession, "cancelled", {
+        ...(input.lastMessageId ? { lastMessageId: input.lastMessageId } : {}),
+        ...(input.lastMessageType ? { lastMessageType: input.lastMessageType } : {})
+      })
+    : cancellableSession;
+
+  await markSessionCancellationRequestObserved({
+    record: input.request,
+    statePaths: input.statePaths,
+    ...(input.turnId ? { turnId: input.turnId } : {})
+  });
+
+  return cancelledSession;
+}
+
 function areIdentifierListsEqual(left: string[], right: string[]): boolean {
   return (
     left.length === right.length &&
@@ -1111,12 +1256,14 @@ function buildFailedEngineTurnOutcome(
   error: unknown,
   result?: AgentEngineTurnResult
 ): EngineTurnOutcome {
+  const failure = buildEngineFailure(context, error);
+
   return engineTurnOutcomeSchema.parse({
     ...(result?.engineSessionId
       ? { engineSessionId: result.engineSessionId }
       : {}),
     ...(result?.engineVersion ? { engineVersion: result.engineVersion } : {}),
-    failure: buildEngineFailure(context, error),
+    failure,
     ...(result?.permissionObservations
       ? { permissionObservations: result.permissionObservations }
       : {}),
@@ -1128,19 +1275,25 @@ function buildFailedEngineTurnOutcome(
     ...(result?.providerStopReason
       ? { providerStopReason: result.providerStopReason }
       : {}),
-    stopReason: "error",
+    stopReason: failure.classification === "cancelled" ? "cancelled" : "error",
     toolExecutions: result?.toolExecutions ?? [],
     ...(result?.usage ? { usage: result.usage } : {})
   });
 }
 
 export class RunnerService {
+  private readonly cancellationPollIntervalMs: number;
   private readonly artifactBackend: RunnerArtifactBackend;
   private readonly context: EffectiveRuntimeContext;
   private readonly engine: AgentEngine;
   private readonly explicitToolDefinitions: EngineToolDefinition[] | undefined;
   private readonly memorySynthesizer: RunnerMemorySynthesizer | undefined;
   private readonly transport: RunnerTransport;
+  private readonly activeSessionAbortControllers = new Map<
+    string,
+    AbortController
+  >();
+  private cancellationPollTimer: ReturnType<typeof setInterval> | undefined;
   private subscription: RunnerTransportSubscription | undefined;
   private statePaths: RunnerStatePaths | undefined;
   private toolDefinitionsPromise: Promise<EngineToolDefinition[]> | undefined;
@@ -1150,9 +1303,11 @@ export class RunnerService {
     context: EffectiveRuntimeContext;
     engine?: AgentEngine;
     memorySynthesizer?: RunnerMemorySynthesizer;
+    cancellationPollIntervalMs?: number;
     toolDefinitions?: EngineToolDefinition[];
     transport: RunnerTransport;
   }) {
+    this.cancellationPollIntervalMs = input.cancellationPollIntervalMs ?? 500;
     this.artifactBackend =
       input.artifactBackend ?? new GitCliRunnerArtifactBackend();
     this.context = input.context;
@@ -1160,6 +1315,65 @@ export class RunnerService {
     this.explicitToolDefinitions = input.toolDefinitions;
     this.memorySynthesizer = input.memorySynthesizer;
     this.transport = input.transport;
+  }
+
+  private startCancellationPolling(): () => void {
+    const timer = setInterval(() => {
+      void this.applyExternalCancellationRequests();
+    }, this.cancellationPollIntervalMs);
+    timer.unref?.();
+
+    return () => {
+      clearInterval(timer);
+    };
+  }
+
+  private async applyExternalCancellationRequests(): Promise<void> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const requests = await listSessionCancellationRequestRecords(statePaths);
+
+    for (const request of requests) {
+      if (
+        request.nodeId !== this.context.binding.node.nodeId ||
+        request.status !== "requested"
+      ) {
+        continue;
+      }
+
+      const activeController = this.activeSessionAbortControllers.get(
+        request.sessionId
+      );
+
+      if (activeController) {
+        if (!activeController.signal.aborted) {
+          activeController.abort(request);
+        }
+        continue;
+      }
+
+      const session = await readSessionRecord(statePaths, request.sessionId);
+
+      if (!session) {
+        continue;
+      }
+
+      if (isTerminalSessionStatus(session.status)) {
+        await markSessionCancellationRequestObserved({
+          record: request,
+          statePaths
+        });
+        continue;
+      }
+
+      await cancelSessionForRequest({
+        request,
+        session,
+        statePaths
+      });
+    }
   }
 
   private async resolveToolDefinitions(): Promise<EngineToolDefinition[]> {
@@ -1986,6 +2200,12 @@ export class RunnerService {
       updatedAt: envelope.receivedAt
     };
     await writeRunnerTurnRecord(statePaths, turnRecord);
+    const cancellationController = new AbortController();
+    const stopTurnCancellationPolling = this.startCancellationPolling();
+    this.activeSessionAbortControllers.set(
+      envelope.message.sessionId,
+      cancellationController
+    );
     let currentSession: SessionRecord | undefined;
     let currentConversation: ConversationRecord | undefined;
 
@@ -1996,10 +2216,31 @@ export class RunnerService {
         (await readSessionRecord(statePaths, envelope.message.sessionId)) ??
         buildInitialSessionRecord(this.context, envelope);
       await writeSessionRecord(statePaths, sessionRecord);
+      currentSession = sessionRecord;
+      if (sessionRecord.status === "cancelled") {
+        throw buildSessionCancellationExecutionError({
+          context: this.context,
+          sessionId: sessionRecord.sessionId
+        });
+      }
+
       currentSession = await advanceSessionToProcessing(statePaths, sessionRecord, {
         lastMessageId: envelope.eventId,
         lastMessageType: envelope.message.messageType
       });
+      await this.applyExternalCancellationRequests();
+      const earlyCancellationRequest = resolveCancellationRequestFromAbortSignal(
+        cancellationController.signal
+      );
+      if (cancellationController.signal.aborted) {
+        throw buildSessionCancellationExecutionError({
+          context: this.context,
+          ...(earlyCancellationRequest
+            ? { request: earlyCancellationRequest }
+            : {}),
+          sessionId: envelope.message.sessionId
+        });
+      }
 
       const conversationRecord =
         (await readConversationRecord(statePaths, envelope.message.conversationId)) ??
@@ -2078,7 +2319,11 @@ export class RunnerService {
       let handoffPlans: ResolvedHandoffPlan[] = [];
 
       try {
-        result = parseEngineTurnResult(await this.engine.executeTurn(turnRequest));
+        result = parseEngineTurnResult(
+          await this.engine.executeTurn(turnRequest, {
+            abortSignal: cancellationController.signal
+          })
+        );
         handoffPlans = resolveHandoffPlans(this.context, result.handoffDirectives);
       } catch (error) {
         const sourceChangeHarvestResult = await harvestSourceChanges(
@@ -2427,6 +2672,69 @@ export class RunnerService {
         response: publishedEnvelope
       };
     } catch (error: unknown) {
+      const cancellationRequest = resolveCancellationRequestFromAbortSignal(
+        cancellationController.signal
+      );
+      const isCancellation =
+        isSessionCancellationExecutionError(error) ||
+        cancellationController.signal.aborted;
+
+      if (isCancellation) {
+        if (!turnRecord.engineOutcome) {
+          turnRecord = {
+            ...turnRecord,
+            engineOutcome: buildFailedEngineTurnOutcome(
+              this.context,
+              isSessionCancellationExecutionError(error)
+                ? error
+                : buildSessionCancellationExecutionError({
+                    context: this.context,
+                    ...(cancellationRequest
+                      ? { request: cancellationRequest }
+                      : {}),
+                    sessionId: envelope.message.sessionId
+                  })
+            ),
+            updatedAt: nowIsoString()
+          };
+          await writeRunnerTurnRecord(statePaths, turnRecord);
+        }
+
+        turnRecord = await writeRunnerPhase(statePaths, turnRecord, "cancelled");
+
+        if (currentSession) {
+          await cancelSessionForRequest({
+            lastMessageId: envelope.eventId,
+            lastMessageType: envelope.message.messageType,
+            request:
+              cancellationRequest ??
+              sessionCancellationRequestRecordSchema.parse({
+                cancellationId: buildSyntheticTurnId("session-cancel"),
+                graphId: envelope.message.graphId,
+                nodeId: this.context.binding.node.nodeId,
+                requestedAt: nowIsoString(),
+                sessionId: envelope.message.sessionId,
+                status: "requested"
+              }),
+            session: currentSession,
+            statePaths,
+            turnId: turnRecord.turnId
+          });
+        } else if (cancellationRequest) {
+          await markSessionCancellationRequestObserved({
+            record: cancellationRequest,
+            statePaths,
+            turnId: turnRecord.turnId
+          });
+        }
+
+        return {
+          handled: true,
+          handoffs: [],
+          response: undefined
+        };
+      }
+
       await writeRunnerPhase(statePaths, turnRecord, "errored");
 
       if (
@@ -2440,6 +2748,14 @@ export class RunnerService {
       }
 
       throw error;
+    } finally {
+      stopTurnCancellationPolling();
+      if (
+        this.activeSessionAbortControllers.get(envelope.message.sessionId) ===
+        cancellationController
+      ) {
+        this.activeSessionAbortControllers.delete(envelope.message.sessionId);
+      }
     }
   }
 
@@ -2454,6 +2770,11 @@ export class RunnerService {
 
     this.statePaths = await ensureRunnerStatePaths(this.context.workspace.runtimeRoot);
     await repairSessionDerivedWorkState(this.statePaths);
+    await this.applyExternalCancellationRequests();
+    this.cancellationPollTimer = setInterval(() => {
+      void this.applyExternalCancellationRequests();
+    }, this.cancellationPollIntervalMs);
+    this.cancellationPollTimer.unref?.();
     this.subscription = await this.transport.subscribe({
       onMessage: async (envelope) => {
         await this.handleInboundEnvelope(envelope);
@@ -2469,6 +2790,10 @@ export class RunnerService {
   }
 
   async stop(): Promise<void> {
+    if (this.cancellationPollTimer) {
+      clearInterval(this.cancellationPollTimer);
+      this.cancellationPollTimer = undefined;
+    }
     await this.subscription?.close();
     this.subscription = undefined;
     await this.transport.close();

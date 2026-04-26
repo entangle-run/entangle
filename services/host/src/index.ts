@@ -71,6 +71,8 @@ import {
   runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  sessionCancellationMutationRequestSchema,
+  sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionLaunchRequestSchema,
   sessionLaunchResponseSchema,
@@ -135,6 +137,8 @@ import {
   replaceManagedNode,
   reviewRuntimeSourceChangeCandidate,
   publishRuntimeSourceHistory,
+  requestRuntimeBoundSessionCancellation,
+  requestSessionCancellation,
   setRuntimeDesiredState,
   setRuntimeRecoveryPolicy,
   recordHostOperatorRequestCompleted,
@@ -2294,6 +2298,66 @@ export async function buildHostServer() {
 
     return sessionInspectionResponseSchema.parse(inspection);
   });
+
+  server.post("/v1/sessions/:sessionId/cancel", async (request, reply) => {
+    const params = request.params as { sessionId: string };
+    const cancellationRequest = parseRequestInput(
+      sessionCancellationMutationRequestSchema,
+      request.body ?? {},
+      {
+        detailsKey: "bodyIssues",
+        message:
+          "Request body did not match the expected session cancellation schema."
+      }
+    );
+    const cancellation = await requestSessionCancellation({
+      request: cancellationRequest,
+      sessionId: params.sessionId
+    });
+
+    if (!cancellation) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message:
+          `Session '${params.sessionId}' was not found in the current host runtime state ` +
+          "and no target node ids were supplied."
+      });
+    }
+
+    return sessionCancellationResponseSchema.parse(cancellation);
+  });
+
+  server.post(
+    "/v1/runtimes/:nodeId/sessions/:sessionId/cancel",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string; sessionId: string };
+      const cancellationRequest = parseRequestInput(
+        sessionCancellationMutationRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected session cancellation schema."
+        }
+      );
+      const cancellation = await requestRuntimeBoundSessionCancellation({
+        nodeId: params.nodeId,
+        request: cancellationRequest,
+        sessionId: params.sessionId
+      });
+
+      if (!cancellation) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      return sessionCancellationResponseSchema.parse(cancellation);
+    }
+  );
 
   server.post("/v1/runtimes/:nodeId/start", async (request) => {
     const params = request.params as { nodeId: string };

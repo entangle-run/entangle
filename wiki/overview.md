@@ -197,7 +197,10 @@ The repository now also contains the first real implementation baseline:
   with engine-requested approvals materialized as pending runner approval
   records that move the session/conversation lifecycle to
   `waiting_approval`/`awaiting_approval` without granting the engine the
-  gated side effect, and with generic runtime inspection now surfacing pending
+  gated side effect, with host-written external session cancellation requests
+  now observed by node runners while idle or mid-turn and translated into
+  engine abort signals for OpenCode-backed turns, and with generic runtime
+  inspection now surfacing pending
   approval blockers plus the latest produced artifact and requested approval
   ids through the shared host/CLI/Studio boundary;
 - an explicit package tool-catalog contract through `runtime/tools.json`,

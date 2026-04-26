@@ -143,6 +143,23 @@ function createMockOpenCodeSpawn(input: {
   };
 }
 
+async function waitForMockSpawnCallCount(
+  mock: { calls: MockSpawnCall[] },
+  count: number
+): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (mock.calls.length >= count) {
+      return;
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+
+  throw new Error(`Expected at least ${count} OpenCode spawn call(s).`);
+}
+
 afterEach(async () => {
   await cleanupRuntimeFixtures();
 });
@@ -264,6 +281,37 @@ describe("OpenCode runner engine adapter", () => {
     expect(mock.calls[1]!.readStdin()).toContain(
       "Review the current workspace"
     );
+  });
+
+  it("kills the OpenCode run process when the turn abort signal is cancelled", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          autoClose: false
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+    const abortController = new AbortController();
+    const turnPromise = engine.executeTurn(buildTurnRequest(), {
+      abortSignal: abortController.signal
+    });
+
+    await waitForMockSpawnCallCount(mock, 2);
+    abortController.abort();
+
+    await expect(turnPromise).rejects.toMatchObject({
+      classification: "cancelled",
+      name: AgentEngineExecutionError.name
+    });
+    expect(mock.calls[1]?.killSignals).toContain("SIGTERM");
   });
 
   it("extracts Entangle action handoffs from OpenCode text blocks", () => {

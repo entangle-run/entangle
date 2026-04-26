@@ -2565,3 +2565,16 @@ Promotion requires an approved `source_application` approval scoped to the
 artifact/restore tuple, records a durable promotion attempt, rejects unsafe
 restore paths and symlinks, and refuses to overwrite existing source files
 unless overwrite is explicitly requested.
+
+## [2026-04-26] implementation | Added external session cancellation
+
+Added `references/220-external-session-cancellation-slice.md` and closed the
+first external cancellation bridge for Entangle Local agentic node turns. The
+host now persists node-scoped cancellation requests under runtime state, the
+shared host client and CLI expose cancellation commands, and the runner observes
+requests while idle or mid-turn.
+
+Active turns now receive cancellation as a generic engine `AbortSignal`.
+OpenCode-backed turns terminate the child process with `SIGTERM`, and runner
+state records cancelled turn/session lifecycle evidence instead of collapsing
+operator cancellation into generic failure.

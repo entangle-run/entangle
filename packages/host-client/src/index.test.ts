@@ -869,6 +869,84 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts session cancellation requests to aggregate and runtime-bound host surfaces", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              cancellations: [
+                {
+                  cancellationId: "cancel-alpha",
+                  graphId: "team-alpha",
+                  nodeId: "worker-it",
+                  requestedAt: "2026-04-24T10:00:00.000Z",
+                  sessionId: "session-alpha",
+                  status: "requested"
+                }
+              ],
+              sessionId: "session-alpha"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.cancelSession("session-alpha", {
+        cancellationId: "cancel-alpha",
+        reason: "Stop the session.",
+        requestedBy: "operator-main"
+      })
+    ).resolves.toMatchObject({
+      cancellations: [
+        {
+          cancellationId: "cancel-alpha",
+          nodeId: "worker-it",
+          sessionId: "session-alpha"
+        }
+      ],
+      sessionId: "session-alpha"
+    });
+    await expect(
+      client.cancelRuntimeSession("worker-it", "session-alpha", {
+        cancellationId: "cancel-runtime-alpha"
+      })
+    ).resolves.toMatchObject({
+      sessionId: "session-alpha"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          cancellationId: "cancel-alpha",
+          nodeIds: [],
+          reason: "Stop the session.",
+          requestedBy: "operator-main"
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/sessions/session-alpha/cancel"
+      },
+      {
+        body: JSON.stringify({
+          cancellationId: "cancel-runtime-alpha",
+          nodeIds: []
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/sessions/session-alpha/cancel"
+      }
+    ]);
+  });
+
   it("formats structured host conflict errors for managed node creation", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

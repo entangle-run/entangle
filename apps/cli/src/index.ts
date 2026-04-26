@@ -30,6 +30,7 @@ import {
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
+  sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema
 } from "@entangle/types";
@@ -2648,6 +2649,70 @@ hostSessionsCommand
     printJson(
       options.summary
         ? { session: projectHostSessionInspectionSummary(response) }
+        : response
+    );
+  });
+
+hostSessionsCommand
+  .command("cancel")
+  .argument("<sessionId>", "Session identifier to cancel.")
+  .option("--cancellation-id <id>", "Explicit cancellation request id.")
+  .option(
+    "--node-id <nodeId>",
+    "Runtime node id to target. Repeatable; if one node is supplied, the runtime-bound cancellation endpoint is used.",
+    collectRepeatedOptionValue,
+    [] as string[]
+  )
+  .option("--reason <reason>", "Operator-visible cancellation reason.")
+  .option("--requested-by <operatorId>", "Operator id requesting cancellation.")
+  .option("--summary", "Print a compact operator-oriented cancellation summary.")
+  .description(
+    "Request external cancellation for a persisted session through entangle-host."
+  )
+  .action(async (
+    sessionId: string,
+    options: {
+      cancellationId?: string;
+      nodeId: string[];
+      reason?: string;
+      requestedBy?: string;
+      summary?: boolean;
+    },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const request = sessionCancellationMutationRequestSchema.parse({
+      ...(options.cancellationId
+        ? { cancellationId: options.cancellationId }
+        : {}),
+      nodeIds: options.nodeId,
+      ...(options.reason ? { reason: options.reason } : {}),
+      ...(options.requestedBy ? { requestedBy: options.requestedBy } : {})
+    });
+    const response =
+      options.nodeId.length === 1
+        ? await client.cancelRuntimeSession(options.nodeId[0]!, sessionId, request)
+        : await client.cancelSession(sessionId, request);
+
+    printJson(
+      options.summary
+        ? {
+            cancellation: {
+              cancellations: response.cancellations.map((cancellation) => ({
+                cancellationId: cancellation.cancellationId,
+                nodeId: cancellation.nodeId,
+                status: cancellation.status
+              })),
+              nextCommands: [
+                `entangle host sessions get ${sessionId} --summary`,
+                ...response.cancellations.map(
+                  (cancellation) =>
+                    `entangle host runtimes turns ${cancellation.nodeId} --summary`
+                )
+              ],
+              sessionId: response.sessionId
+            }
+          }
         : response
     );
   });

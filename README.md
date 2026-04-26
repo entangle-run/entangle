@@ -177,7 +177,12 @@ This repository currently contains:
   with engine-requested approvals materialized as pending runner approval
   records that move the session/conversation lifecycle to
   `waiting_approval`/`awaiting_approval` without granting the engine the
-  gated side effect, and with generic runtime inspection now surfacing pending
+  gated side effect, with external session cancellation requests now persisted
+  under node runtime state by the host, exposed through host-client and CLI
+  `sessions cancel` surfaces, observed by the long-lived runner while idle or
+  mid-turn, translated into engine `AbortSignal` cancellation for OpenCode
+  processes, and recorded as cancelled session/turn lifecycle evidence rather
+  than generic failure, and with generic runtime inspection now surfacing pending
   approval blockers plus the latest produced artifact and requested approval
   ids through the shared host/CLI/Studio boundary;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio

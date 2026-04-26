@@ -121,6 +121,9 @@ import {
   type RuntimeDesiredState,
   runtimeIdentityContextSchema,
   secretRefSchema,
+  sessionCancellationRequestRecordSchema,
+  sessionCancellationResponseSchema,
+  sessionCancellationMutationRequestSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sessionRecordSchema,
@@ -218,6 +221,9 @@ import {
   type HostSessionConsistencyFinding,
   type HostSessionConsistencyFindingCode,
   type SessionInspectionResponse,
+  type SessionCancellationMutationRequest,
+  type SessionCancellationResponse,
+  type SessionCancellationRequestRecord,
   type SessionListResponse,
   type SessionRecord,
   type RunnerTurnRecord,
@@ -436,6 +442,10 @@ type RuntimeObservedStateChangedEventInput = Omit<
 >;
 type SessionUpdatedEventInput = Omit<
   Extract<HostEventRecord, { type: "session.updated" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type SessionCancellationRequestedEventInput = Omit<
+  Extract<HostEventRecord, { type: "session.cancellation.requested" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type RunnerTurnUpdatedEventInput = Omit<
@@ -8895,6 +8905,55 @@ async function listRuntimeSessionRecords(
   );
 }
 
+function runtimeSessionCancellationRequestsRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "session-cancellations");
+}
+
+function runtimeSessionCancellationRequestRecordPath(
+  runtimeRoot: string,
+  cancellationId: string
+): string {
+  return path.join(
+    runtimeSessionCancellationRequestsRoot(runtimeRoot),
+    `${cancellationId}.json`
+  );
+}
+
+async function writeRuntimeSessionCancellationRequestRecord(
+  runtimeRoot: string,
+  record: SessionCancellationRequestRecord
+): Promise<void> {
+  await writeJsonFile(
+    runtimeSessionCancellationRequestRecordPath(
+      runtimeRoot,
+      record.cancellationId
+    ),
+    sessionCancellationRequestRecordSchema.parse(record)
+  );
+}
+
+async function listRuntimeSessionCancellationRequestRecords(
+  runtimeRoot: string
+): Promise<SessionCancellationRequestRecord[]> {
+  const cancellationsRoot = runtimeSessionCancellationRequestsRoot(runtimeRoot);
+
+  if (!(await pathExists(cancellationsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(cancellationsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sessionCancellationRequestRecordSchema.parse(
+        await readJsonFile(path.join(cancellationsRoot, fileName))
+      )
+    )
+  );
+}
+
 async function listRuntimeConversationRecords(
   runtimeRoot: string
 ): Promise<ConversationRecord[]> {
@@ -10428,6 +10487,143 @@ export async function getSessionInspection(
     graphId: firstNode.session.graphId,
     nodes,
     sessionId
+  });
+}
+
+function buildSessionCancellationId(input: {
+  request: SessionCancellationMutationRequest;
+  sessionId: string;
+}): string {
+  return sanitizeIdentifier(
+    input.request.cancellationId ??
+      `session-cancel-${input.sessionId}-${randomUUID().slice(0, 8)}`
+  );
+}
+
+async function requestRuntimeSessionCancellation(input: {
+  nodeId: string;
+  request: SessionCancellationMutationRequest;
+  sessionId: string;
+}): Promise<SessionCancellationRequestRecord | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const existingRequests = await listRuntimeSessionCancellationRequestRecords(
+    context.workspace.runtimeRoot
+  );
+  const existingOpenRequest = existingRequests.find(
+    (request) =>
+      request.sessionId === input.sessionId &&
+      request.nodeId === input.nodeId &&
+      request.status === "requested"
+  );
+
+  if (existingOpenRequest) {
+    return existingOpenRequest;
+  }
+
+  const request = sessionCancellationMutationRequestSchema.parse(input.request);
+  const record = sessionCancellationRequestRecordSchema.parse({
+    cancellationId: buildSessionCancellationId({
+      request,
+      sessionId: input.sessionId
+    }),
+    graphId: context.binding.graphId,
+    nodeId: input.nodeId,
+    ...(request.reason ? { reason: request.reason } : {}),
+    requestedAt: nowIsoString(),
+    ...(request.requestedBy ? { requestedBy: request.requestedBy } : {}),
+    sessionId: input.sessionId,
+    status: "requested"
+  });
+
+  await writeRuntimeSessionCancellationRequestRecord(
+    context.workspace.runtimeRoot,
+    record
+  );
+  await appendHostEvent({
+    cancellationId: record.cancellationId,
+    category: "session",
+    graphId: record.graphId,
+    message:
+      `Session cancellation '${record.cancellationId}' was requested for ` +
+      `session '${record.sessionId}' on node '${record.nodeId}'.`,
+    nodeId: record.nodeId,
+    ...(record.reason ? { reason: record.reason } : {}),
+    ...(record.requestedBy ? { requestedBy: record.requestedBy } : {}),
+    sessionId: record.sessionId,
+    status: record.status,
+    type: "session.cancellation.requested"
+  } satisfies SessionCancellationRequestedEventInput);
+
+  return record;
+}
+
+export async function requestSessionCancellation(input: {
+  request: SessionCancellationMutationRequest;
+  sessionId: string;
+}): Promise<SessionCancellationResponse | null> {
+  const request = sessionCancellationMutationRequestSchema.parse(input.request);
+  const targetNodeIds =
+    request.nodeIds.length > 0
+      ? request.nodeIds
+      : (await getSessionInspection(input.sessionId))?.nodes.map(
+          (node) => node.nodeId
+        ) ?? [];
+
+  if (targetNodeIds.length === 0) {
+    return null;
+  }
+
+  const cancellations = (
+    await Promise.all(
+      targetNodeIds.map((nodeId) =>
+        requestRuntimeSessionCancellation({
+          nodeId,
+          request,
+          sessionId: input.sessionId
+        })
+      )
+    )
+  ).filter(
+    (
+      record
+    ): record is SessionCancellationRequestRecord => record !== null
+  );
+
+  if (cancellations.length === 0) {
+    return null;
+  }
+
+  const inspection = await getSessionInspection(input.sessionId);
+
+  return sessionCancellationResponseSchema.parse({
+    cancellations,
+    ...(inspection ? { inspection } : {}),
+    sessionId: input.sessionId
+  });
+}
+
+export async function requestRuntimeBoundSessionCancellation(input: {
+  nodeId: string;
+  request: SessionCancellationMutationRequest;
+  sessionId: string;
+}): Promise<SessionCancellationResponse | null> {
+  const cancellation = await requestRuntimeSessionCancellation(input);
+
+  if (!cancellation) {
+    return null;
+  }
+
+  const inspection = await getSessionInspection(input.sessionId);
+
+  return sessionCancellationResponseSchema.parse({
+    cancellations: [cancellation],
+    ...(inspection ? { inspection } : {}),
+    sessionId: input.sessionId
   });
 }
 

@@ -25,6 +25,7 @@ import {
   readSessionRecord,
   writeApprovalRecord,
   writeConversationRecord,
+  writeSessionCancellationRequestRecord,
   writeSessionRecord
 } from "./state-store.js";
 import {
@@ -40,6 +41,25 @@ import { InMemoryRunnerTransport } from "./transport.js";
 
 const docsPublicKey =
   "3333333333333333333333333333333333333333333333333333333333333333";
+
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  reject: (reason?: unknown) => void;
+  resolve: (value: T | PromiseLike<T>) => void;
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+
+  return {
+    promise,
+    reject,
+    resolve
+  };
+}
 
 afterEach(async () => {
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
@@ -203,6 +223,113 @@ describe("RunnerService", () => {
     });
     expect(candidate?.snapshot).toMatchObject({
       kind: "shadow_git_tree"
+    });
+  });
+
+  it("cancels an active engine turn when an external cancellation request is observed", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
+    const engineStarted = createDeferred<AbortSignal>();
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      cancellationPollIntervalMs: 5,
+      context,
+      engine: {
+        executeTurn(_request, options) {
+          if (!options?.abortSignal) {
+            throw new Error("Expected cancellation abort signal.");
+          }
+
+          engineStarted.resolve(options.abortSignal);
+
+          return new Promise<never>((_resolve, reject) => {
+            options.abortSignal.addEventListener(
+              "abort",
+              () => {
+                reject(
+                  new AgentEngineExecutionError(
+                    "Synthetic engine turn was cancelled.",
+                    {
+                      classification: "cancelled"
+                    }
+                  )
+                );
+              },
+              { once: true }
+            );
+          });
+        }
+      },
+      transport
+    });
+    const handleResultPromise = service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        conversationId: "conv-cancel",
+        intent: "cancel_active_turn",
+        sessionId: "session-cancel",
+        summary: "Start work that will be cancelled.",
+        turnId: "turn-cancel-001"
+      })
+    );
+    await engineStarted.promise;
+
+    await writeSessionCancellationRequestRecord(statePaths, {
+      cancellationId: "cancel-session-alpha",
+      graphId: "graph-alpha",
+      nodeId: "worker-it",
+      reason: "Operator stopped the active turn.",
+      requestedAt: "2026-04-24T10:00:00.000Z",
+      requestedBy: "operator-main",
+      sessionId: "session-cancel",
+      status: "requested"
+    });
+
+    await expect(handleResultPromise).resolves.toMatchObject({
+      handled: true,
+      response: undefined
+    });
+
+    const [sessionRecord, conversationRecord, turnRecord] = await Promise.all([
+      readSessionRecord(statePaths, "session-cancel"),
+      readConversationRecord(statePaths, "conv-cancel"),
+      listRunnerTurnRecords(statePaths).then((records) => records[0])
+    ]);
+    const cancellationRecord = JSON.parse(
+      await readFile(
+        path.join(
+          context.workspace.runtimeRoot,
+          "session-cancellations",
+          "cancel-session-alpha.json"
+        ),
+        "utf8"
+      )
+    ) as unknown;
+
+    expect(sessionRecord).toMatchObject({
+      activeConversationIds: [],
+      sessionId: "session-cancel",
+      status: "cancelled",
+      waitingApprovalIds: []
+    });
+    expect(conversationRecord).toMatchObject({
+      conversationId: "conv-cancel",
+      status: "expired"
+    });
+    expect(turnRecord).toMatchObject({
+      engineOutcome: {
+        failure: {
+          classification: "cancelled"
+        },
+        stopReason: "cancelled"
+      },
+      phase: "cancelled",
+      sessionId: "session-cancel"
+    });
+    expect(cancellationRecord).toMatchObject({
+      cancellationId: "cancel-session-alpha",
+      observedTurnId: turnRecord?.turnId,
+      status: "observed"
     });
   });
 

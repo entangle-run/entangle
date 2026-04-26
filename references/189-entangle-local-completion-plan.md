@@ -106,14 +106,15 @@ The current OpenCode adapter is intentionally not yet enough for L3 acceptance.
 It can execute a primary node turn, persist the engine session id and probed
 engine version, fail early when its workspace/state roots are unavailable,
 terminate overlong OpenCode probe/run processes with classified failure
-evidence, and report OpenCode one-shot permission auto-rejections as generic
-`policy_denied` outcomes. Host, CLI, and Studio can now see a generic
+evidence, accept host-to-runner external cancellation requests that abort
+active engine work, and report OpenCode one-shot permission auto-rejections as
+generic `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary plus bounded request-shape evidence for executable
 turns, but Entangle Local still lacks the complete policy bridge, live OpenCode
 permission approval mapping, approval-gated artifact replay/promotion
-workflow beyond the first source-workspace promotion path, full git/wiki backup/restore/publication workflow, external
-cancellation bridge, deeper doctor remediation, and richer runtime evidence
-panels required for L3 acceptance.
+workflow beyond the first source-workspace promotion path, full git/wiki
+backup/restore/publication workflow, deeper doctor remediation, and richer
+runtime evidence panels required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -467,7 +468,13 @@ Current partial implementation:
 - `entangle local doctor` now probes `opencode --version` inside the configured
   runner image in addition to the host PATH so default-engine availability is
   checked where runner turns actually execute;
-- this does not yet complete external cancellation, permission mapping, full
+- host-written session cancellation requests are now persisted under
+  runtime-local `session-cancellations`, exposed through host-client and CLI
+  session cancellation commands, observed by the runner while idle or mid-turn,
+  propagated through the generic engine boundary as `AbortSignal`, and honored
+  by the OpenCode adapter by terminating the child process and recording
+  cancelled turn/session lifecycle evidence;
+- this does not yet complete permission mapping, full
   degraded-runtime status DTOs, attached server lifecycle, policy-gated source
   publication, or the broader artifact replay/promotion workflow beyond the
   first approval-gated source-workspace promotion path.
@@ -775,9 +782,10 @@ Current partial implementation:
   provider stop reason, permission, tool, and usage evidence on the failed turn
   outcome;
 - OpenCode-backed handoff and engine-requested approval gates are therefore
-  available through runner-owned Entangle validation/materialization paths, but
-  live OpenCode permission approval mapping, post-approval engine resumption,
-  publication directives, and external cancellation remain open.
+  available through runner-owned Entangle validation/materialization paths, and
+  external cancellation now crosses the host/runner/engine boundary, but live
+  OpenCode permission approval mapping, post-approval engine resumption, and
+  publication directives remain open.
 
 Acceptance:
 

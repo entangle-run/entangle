@@ -1,0 +1,77 @@
+# External Session Cancellation Slice
+
+Date: 2026-04-26.
+
+## Purpose
+
+This slice closes the first Entangle Local external cancellation bridge for
+agentic node turns.
+
+Cancellation is modeled as a host-written runtime intent, not as an ad hoc
+process signal. The host persists a node-scoped cancellation record, the runner
+observes it through the shared runtime state, and active engine work receives a
+standard abort signal.
+
+## Implementation
+
+- Added runtime-local `SessionCancellationRequestRecord` contracts and host API
+  request/response DTOs.
+- Added `POST /v1/sessions/{sessionId}/cancel` for persisted aggregate
+  sessions.
+- Added `POST /v1/runtimes/{nodeId}/sessions/{sessionId}/cancel` for
+  runtime-bound cancellation, including queued sessions that have not yet been
+  materialized by the runner.
+- Added shared host-client `cancelSession` and `cancelRuntimeSession` methods.
+- Added `entangle host sessions cancel` with optional node targeting and compact
+  summary output.
+- Extended the generic agent engine boundary with optional `AbortSignal`
+  propagation.
+- Added a `cancelled` engine stop reason, cancellation failure classification,
+  and runner `cancelled` phase.
+- Added runner polling for runtime-local cancellation requests while the service
+  is idle and while a turn is active.
+- Added OpenCode adapter cancellation handling that terminates the child process
+  with `SIGTERM` and returns classified cancellation evidence.
+
+## Runtime Semantics
+
+The host writes cancellation requests under:
+
+```text
+{runtimeRoot}/session-cancellations/{cancellationId}.json
+```
+
+The runner observes `requested` records for its own node id. For an idle or
+approval-waiting session it withdraws pending approvals, expires open
+conversations, clears active/waiting ids, transitions the session to
+`cancelled`, and marks the request `observed`.
+
+For an active turn, the runner aborts the active engine controller. The
+OpenCode adapter kills the active process, the runner records the turn with
+`phase: "cancelled"` and `engineOutcome.stopReason: "cancelled"`, and the
+session transitions to `cancelled`.
+
+## Boundaries
+
+This is intentionally not an OpenCode-specific control plane. OpenCode is only
+the first adapter to honor the generic engine abort signal. Future attached
+server or other engine adapters should consume the same cancellation option.
+
+The slice does not implement post-approval engine resumption, live OpenCode
+permission approval mapping, or richer Studio cancellation controls. Those
+remain separate L3 tasks.
+
+## Verification
+
+Targeted verification passed:
+
+```bash
+pnpm --filter @entangle/types test -- --runInBand
+pnpm --filter @entangle/runner test -- --runInBand
+pnpm --filter @entangle/host-client test -- --runInBand
+pnpm --filter @entangle/host test -- --runInBand
+pnpm --filter @entangle/agent-engine typecheck
+pnpm --filter @entangle/runner typecheck
+pnpm --filter @entangle/host typecheck
+pnpm --filter @entangle/cli typecheck
+```

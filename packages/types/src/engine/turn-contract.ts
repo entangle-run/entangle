@@ -41,6 +41,7 @@ export const agentEngineStopReasonSchema = z.enum([
   "completed",
   "tool_call_requested",
   "max_turns_reached",
+  "cancelled",
   "error"
 ]);
 
@@ -54,6 +55,7 @@ export const agentEngineFailureClassificationSchema = z.enum([
   "tool_protocol_error",
   "context_limit_error",
   "configuration_error",
+  "cancelled",
   "unknown_provider_error"
 ]);
 
@@ -113,18 +115,27 @@ function refineEngineFailureConsistency(
   },
   context: z.RefinementCtx
 ): void {
-  if (value.failure && value.stopReason !== "error") {
+  if (
+    value.failure &&
+    value.stopReason !== "error" &&
+    value.stopReason !== "cancelled"
+  ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Engine failures can only be recorded when stopReason is 'error'.",
+      message:
+        "Engine failures can only be recorded when stopReason is 'error' or 'cancelled'.",
       path: ["failure"]
     });
   }
 
-  if (!value.failure && value.stopReason === "error") {
+  if (
+    !value.failure &&
+    (value.stopReason === "error" || value.stopReason === "cancelled")
+  ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Engine stopReason 'error' must include a bounded failure payload.",
+      message:
+        "Engine stopReason 'error' or 'cancelled' must include a bounded failure payload.",
       path: ["failure"]
     });
   }

@@ -5,6 +5,7 @@ import {
   type ApprovalLifecycleState,
   type ConversationLifecycleState,
   sessionLifecycleStateSchema,
+  sessionCancellationRequestRecordSchema,
   sessionRecordSchema
 } from "../runtime/session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
@@ -117,6 +118,19 @@ export const sessionLaunchResponseSchema = z.object({
   turnId: identifierSchema
 });
 
+export const sessionCancellationMutationRequestSchema = z.object({
+  cancellationId: identifierSchema.optional(),
+  nodeIds: z.array(identifierSchema).default([]),
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional()
+});
+
+export const sessionCancellationResponseSchema = z.object({
+  cancellations: z.array(sessionCancellationRequestRecordSchema).min(1),
+  inspection: sessionInspectionResponseSchema.optional(),
+  sessionId: identifierSchema
+});
+
 export type HostSessionNodeStatus = z.infer<typeof hostSessionNodeStatusSchema>;
 export type ApprovalStatusCounts = z.infer<typeof approvalStatusCountsSchema>;
 export type ConversationStatusCounts = z.infer<
@@ -141,3 +155,12 @@ export type ParsedSessionLaunchRequest = z.infer<
 >;
 export type SessionLaunchRequest = z.input<typeof sessionLaunchRequestSchema>;
 export type SessionLaunchResponse = z.infer<typeof sessionLaunchResponseSchema>;
+export type ParsedSessionCancellationMutationRequest = z.infer<
+  typeof sessionCancellationMutationRequestSchema
+>;
+export type SessionCancellationMutationRequest = z.input<
+  typeof sessionCancellationMutationRequestSchema
+>;
+export type SessionCancellationResponse = z.infer<
+  typeof sessionCancellationResponseSchema
+>;

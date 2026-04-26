@@ -127,7 +127,14 @@ type ExecutedOpenAICompatibleToolRound = {
 };
 
 export interface AgentEngine {
-  executeTurn(request: AgentEngineTurnRequest): Promise<AgentEngineTurnResult>;
+  executeTurn(
+    request: AgentEngineTurnRequest,
+    options?: AgentEngineTurnOptions
+  ): Promise<AgentEngineTurnResult>;
+}
+
+export interface AgentEngineTurnOptions {
+  abortSignal?: AbortSignal;
 }
 
 type AnthropicClientLike = {
@@ -176,6 +183,22 @@ export class AgentEngineExecutionError extends Error {
     this.name = "AgentEngineExecutionError";
     this.classification = input.classification;
   }
+}
+
+function throwIfAgentEngineAborted(input: {
+  nodeId: string;
+  signal?: AbortSignal;
+}): void {
+  if (!input.signal?.aborted) {
+    return;
+  }
+
+  throw new AgentEngineExecutionError(
+    `Agent engine turn for node '${input.nodeId}' was cancelled.`,
+    {
+      classification: "cancelled"
+    }
+  );
 }
 
 function createAnthropicClient(input: {
@@ -1271,7 +1294,7 @@ export function createAnthropicAgentEngine(input: {
   let clientPromise: Promise<AnthropicClientLike> | undefined;
 
   return {
-    async executeTurn(request): Promise<AgentEngineTurnResult> {
+    async executeTurn(request, options): Promise<AgentEngineTurnResult> {
       if (!clientPromise) {
         clientPromise = readDeliveredSecretValue(
           input.modelContext.auth,
@@ -1297,6 +1320,11 @@ export function createAnthropicAgentEngine(input: {
 
       try {
         while (true) {
+          throwIfAgentEngineAborted({
+            nodeId: normalizedRequest.nodeId,
+            ...(options?.abortSignal ? { signal: options.abortSignal } : {})
+          });
+
           const response = await client.messages.create({
             ...(await buildAnthropicRequest(normalizedRequest, {
               ...(messages ? { messages } : {})
@@ -1402,7 +1430,7 @@ export function createOpenAICompatibleAgentEngine(input: {
   let clientPromise: Promise<OpenAICompatibleClientLike> | undefined;
 
   return {
-    async executeTurn(request): Promise<AgentEngineTurnResult> {
+    async executeTurn(request, options): Promise<AgentEngineTurnResult> {
       if (!clientPromise) {
         clientPromise = readDeliveredSecretValue(
           input.modelContext.auth,
@@ -1428,6 +1456,11 @@ export function createOpenAICompatibleAgentEngine(input: {
 
       try {
         while (true) {
+          throwIfAgentEngineAborted({
+            nodeId: normalizedRequest.nodeId,
+            ...(options?.abortSignal ? { signal: options.abortSignal } : {})
+          });
+
           const response = await client.createChatCompletion({
             ...(await buildOpenAICompatibleRequest(normalizedRequest, {
               ...(messages ? { messages } : {})
@@ -1551,8 +1584,14 @@ export function createAgentEngineForModelContext(input: {
 export function createStubAgentEngine(): AgentEngine {
   return {
     executeTurn(
-      request: AgentEngineTurnRequest
+      request: AgentEngineTurnRequest,
+      options?: AgentEngineTurnOptions
     ): Promise<AgentEngineTurnResult> {
+      throwIfAgentEngineAborted({
+        nodeId: request.nodeId,
+        ...(options?.abortSignal ? { signal: options.abortSignal } : {})
+      });
+
       return Promise.resolve(
         agentEngineTurnResultSchema.parse({
           assistantMessages: [

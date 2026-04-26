@@ -10,7 +10,8 @@ import type { Readable } from "node:stream";
 import {
   AgentEngineConfigurationError,
   AgentEngineExecutionError,
-  type AgentEngine
+  type AgentEngine,
+  type AgentEngineTurnOptions
 } from "@entangle/agent-engine";
 import {
   agentEngineTurnRequestSchema,
@@ -563,6 +564,7 @@ function firstNonEmptyLine(value: string): string | undefined {
 }
 
 async function waitForOpenCodeProcess(input: {
+  abortSignal?: AbortSignal;
   child: OpenCodeProcess;
   flushStdout?: () => void;
   nodeId: string;
@@ -572,6 +574,7 @@ async function waitForOpenCodeProcess(input: {
 }): Promise<void> {
   let settled = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let abortHandler: (() => void) | undefined;
 
   try {
     await new Promise<void>((resolve, reject) => {
@@ -587,6 +590,20 @@ async function waitForOpenCodeProcess(input: {
         operation();
       };
 
+      const rejectCancelled = (): void => {
+        settle(() => {
+          input.child.kill("SIGTERM");
+          reject(
+            new AgentEngineExecutionError(
+              `OpenCode ${input.processLabel} was cancelled for node '${input.nodeId}'.`,
+              {
+                classification: "cancelled"
+              }
+            )
+          );
+        });
+      };
+
       timer = setTimeout(() => {
         settle(() => {
           input.child.kill("SIGTERM");
@@ -600,6 +617,16 @@ async function waitForOpenCodeProcess(input: {
           );
         });
       }, input.timeoutMs);
+      abortHandler = rejectCancelled;
+
+      if (input.abortSignal?.aborted) {
+        rejectCancelled();
+        return;
+      }
+
+      input.abortSignal?.addEventListener("abort", abortHandler, {
+        once: true
+      });
 
       input.child.once("error", (error) => {
         settle(() => {
@@ -646,10 +673,15 @@ async function waitForOpenCodeProcess(input: {
     if (timer) {
       clearTimeout(timer);
     }
+
+    if (abortHandler) {
+      input.abortSignal?.removeEventListener("abort", abortHandler);
+    }
   }
 }
 
 async function probeOpenCodeVersion(input: {
+  abortSignal?: AbortSignal;
   env: NodeJS.ProcessEnv;
   executable: string;
   nodeId: string;
@@ -668,6 +700,7 @@ async function probeOpenCodeVersion(input: {
 
   await waitForOpenCodeProcess({
     child,
+    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
     nodeId: input.nodeId,
     processLabel: "version probe",
     stderr,
@@ -748,8 +781,20 @@ export function createOpenCodeAgentEngine(input: {
   const spawn = input.spawn ?? defaultOpenCodeSpawn;
 
   return {
-    async executeTurn(request): Promise<AgentEngineTurnResult> {
+    async executeTurn(
+      request,
+      options?: AgentEngineTurnOptions
+    ): Promise<AgentEngineTurnResult> {
       const normalizedRequest = agentEngineTurnRequestSchema.parse(request);
+      if (options?.abortSignal?.aborted) {
+        throw new AgentEngineExecutionError(
+          `OpenCode run was cancelled before launch for node '${normalizedRequest.nodeId}'.`,
+          {
+            classification: "cancelled"
+          }
+        );
+      }
+
       const workspace = chooseOpenCodeWorkspace(input.runtimeContext);
       const runtimePaths = await prepareOpenCodeRuntime({
         context: input.runtimeContext,
@@ -770,6 +815,7 @@ export function createOpenCodeAgentEngine(input: {
         nodeId: normalizedRequest.nodeId,
         spawn,
         timeoutMs: processTimeoutMs,
+        ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
         workspace
       });
       const child = spawn(executable, args, {
@@ -799,6 +845,7 @@ export function createOpenCodeAgentEngine(input: {
         nodeId: normalizedRequest.nodeId,
         processLabel: "run process",
         stderr,
+        ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
         timeoutMs: processTimeoutMs
       });
 

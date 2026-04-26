@@ -65,6 +65,7 @@ import {
   runtimeSourceHistoryPublicationResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sourceChangeCandidateRecordSchema,
@@ -5221,6 +5222,124 @@ describe("buildHostServer", () => {
         code: "not_found",
         message:
           "Session 'missing-session' was not found in the current host runtime state."
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("records external session cancellation requests for runtime runners", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(
+      createdDirectories[0]!
+    );
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "sessions",
+          "session-cancel-alpha.json"
+        ),
+        {
+          activeConversationIds: ["conv-cancel-alpha"],
+          graphId: "team-alpha",
+          intent: "Cancel this active session.",
+          lastMessageId:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          lastMessageType: "task.request",
+          openedAt: "2026-04-24T10:00:00.000Z",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: [],
+          sessionId: "session-cancel-alpha",
+          status: "active",
+          traceId: "session-cancel-alpha",
+          updatedAt: "2026-04-24T10:01:00.000Z",
+          waitingApprovalIds: []
+        }
+      );
+
+      const cancelResponse = await server.inject({
+        method: "POST",
+        payload: {
+          cancellationId: "cancel-alpha",
+          reason: "Operator stopped the run.",
+          requestedBy: "operator-main"
+        },
+        url: "/v1/sessions/session-cancel-alpha/cancel"
+      });
+
+      expect(cancelResponse.statusCode).toBe(200);
+      expect(
+        sessionCancellationResponseSchema.parse(cancelResponse.json())
+      ).toMatchObject({
+        cancellations: [
+          {
+            cancellationId: "cancel-alpha",
+            graphId: "team-alpha",
+            nodeId: "worker-it",
+            reason: "Operator stopped the run.",
+            requestedBy: "operator-main",
+            sessionId: "session-cancel-alpha",
+            status: "requested"
+          }
+        ],
+        sessionId: "session-cancel-alpha"
+      });
+      const cancellationRecord = JSON.parse(
+        await readFile(
+          path.join(
+            runtimeContext.workspace.runtimeRoot,
+            "session-cancellations",
+            "cancel-alpha.json"
+          ),
+          "utf8"
+        )
+      ) as unknown;
+      expect(cancellationRecord).toMatchObject({
+        cancellationId: "cancel-alpha",
+        nodeId: "worker-it",
+        sessionId: "session-cancel-alpha",
+        status: "requested"
+      });
+
+      const runtimeBoundCancelResponse = await server.inject({
+        method: "POST",
+        payload: {
+          cancellationId: "cancel-before-intake",
+          reason: "Stop queued work."
+        },
+        url: "/v1/runtimes/worker-it/sessions/session-before-intake/cancel"
+      });
+
+      expect(runtimeBoundCancelResponse.statusCode).toBe(200);
+      expect(
+        sessionCancellationResponseSchema.parse(
+          runtimeBoundCancelResponse.json()
+        )
+      ).toMatchObject({
+        cancellations: [
+          {
+            cancellationId: "cancel-before-intake",
+            nodeId: "worker-it",
+            sessionId: "session-before-intake",
+            status: "requested"
+          }
+        ],
+        sessionId: "session-before-intake"
       });
     } finally {
       await server.close();

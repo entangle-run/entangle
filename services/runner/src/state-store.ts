@@ -6,6 +6,7 @@ import type {
   ConversationRecord,
   FocusedRegisterState,
   RunnerTurnRecord,
+  SessionCancellationRequestRecord,
   SessionRecord,
   SourceChangeCandidateRecord
 } from "@entangle/types";
@@ -15,6 +16,7 @@ import {
   conversationRecordSchema,
   focusedRegisterStateSchema,
   runnerTurnRecordSchema,
+  sessionCancellationRequestRecordSchema,
   sessionRecordSchema,
   sourceChangeCandidateRecordSchema
 } from "@entangle/types";
@@ -24,6 +26,7 @@ export type RunnerStatePaths = {
   artifactsRoot: string;
   conversationsRoot: string;
   memoryStateRoot: string;
+  sessionCancellationsRoot: string;
   sessionsRoot: string;
   sourceChangeCandidatesRoot: string;
   turnsRoot: string;
@@ -57,6 +60,7 @@ export function buildRunnerStatePaths(runtimeRoot: string): RunnerStatePaths {
     artifactsRoot: path.join(runtimeRoot, "artifacts"),
     conversationsRoot: path.join(runtimeRoot, "conversations"),
     memoryStateRoot: path.join(runtimeRoot, "memory-state"),
+    sessionCancellationsRoot: path.join(runtimeRoot, "session-cancellations"),
     sessionsRoot: path.join(runtimeRoot, "sessions"),
     sourceChangeCandidatesRoot: path.join(runtimeRoot, "source-change-candidates"),
     turnsRoot: path.join(runtimeRoot, "turns")
@@ -73,6 +77,7 @@ export async function ensureRunnerStatePaths(
     ensureDirectory(statePaths.artifactsRoot),
     ensureDirectory(statePaths.conversationsRoot),
     ensureDirectory(statePaths.memoryStateRoot),
+    ensureDirectory(statePaths.sessionCancellationsRoot),
     ensureDirectory(statePaths.sessionsRoot),
     ensureDirectory(statePaths.sourceChangeCandidatesRoot),
     ensureDirectory(statePaths.turnsRoot)
@@ -83,6 +88,13 @@ export async function ensureRunnerStatePaths(
 
 function sessionRecordPath(statePaths: RunnerStatePaths, sessionId: string): string {
   return path.join(statePaths.sessionsRoot, `${sessionId}.json`);
+}
+
+function sessionCancellationRequestRecordPath(
+  statePaths: RunnerStatePaths,
+  cancellationId: string
+): string {
+  return path.join(statePaths.sessionCancellationsRoot, `${cancellationId}.json`);
 }
 
 function conversationRecordPath(
@@ -162,6 +174,54 @@ export async function listSessionRecords(
     fileNames.map(async (fileName) =>
       sessionRecordSchema.parse(
         await readJsonFile<unknown>(path.join(statePaths.sessionsRoot, fileName))
+      )
+    )
+  );
+}
+
+export async function readSessionCancellationRequestRecord(
+  statePaths: RunnerStatePaths,
+  cancellationId: string
+): Promise<SessionCancellationRequestRecord | undefined> {
+  const filePath = sessionCancellationRequestRecordPath(
+    statePaths,
+    cancellationId
+  );
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return sessionCancellationRequestRecordSchema.parse(await readJsonFile(filePath));
+}
+
+export async function writeSessionCancellationRequestRecord(
+  statePaths: RunnerStatePaths,
+  record: SessionCancellationRequestRecord
+): Promise<void> {
+  await writeJsonFile(
+    sessionCancellationRequestRecordPath(statePaths, record.cancellationId),
+    sessionCancellationRequestRecordSchema.parse(record)
+  );
+}
+
+export async function listSessionCancellationRequestRecords(
+  statePaths: RunnerStatePaths
+): Promise<SessionCancellationRequestRecord[]> {
+  if (!(await pathExists(statePaths.sessionCancellationsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.sessionCancellationsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sessionCancellationRequestRecordSchema.parse(
+        await readJsonFile<unknown>(
+          path.join(statePaths.sessionCancellationsRoot, fileName)
+        )
       )
     )
   );

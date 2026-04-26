@@ -28,6 +28,7 @@ import {
   runnerPhaseSchema,
   runnerTriggerKindSchema,
   sessionLifecycleStateSchema,
+  sessionCancellationRequestStatusSchema,
   sourceHistoryApplicationModeSchema,
   sourceChangeCandidateReviewDecisionSchema,
   sourceChangeCandidateStatusSchema,
@@ -250,6 +251,19 @@ export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("session.updated")
 });
 
+export const sessionCancellationRequestedEventSchema =
+  hostEventBaseSchema.extend({
+    cancellationId: identifierSchema,
+    category: z.literal("session"),
+    graphId: identifierSchema,
+    nodeId: identifierSchema,
+    reason: nonEmptyStringSchema.optional(),
+    requestedBy: identifierSchema.optional(),
+    sessionId: identifierSchema,
+    status: sessionCancellationRequestStatusSchema,
+    type: z.literal("session.cancellation.requested")
+  });
+
 export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   category: z.literal("runner"),
   consumedArtifactIds: z.array(identifierSchema),
@@ -412,6 +426,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeRecoveryControllerUpdatedEventSchema,
   runtimeObservedStateChangedEventSchema,
   sessionUpdatedEventSchema,
+  sessionCancellationRequestedEventSchema,
   runnerTurnUpdatedEventSchema,
   sourceChangeCandidateReviewedEventSchema,
   sourceHistoryUpdatedEventSchema,
@@ -479,6 +494,9 @@ export type RuntimeObservedStateChangedEvent = z.infer<
   typeof runtimeObservedStateChangedEventSchema
 >;
 export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
+export type SessionCancellationRequestedEvent = z.infer<
+  typeof sessionCancellationRequestedEventSchema
+>;
 export type RunnerTurnUpdatedEvent = z.infer<typeof runnerTurnUpdatedEventSchema>;
 export type SourceChangeCandidateReviewedEvent = z.infer<
   typeof sourceChangeCandidateReviewedEventSchema

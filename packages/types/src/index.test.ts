@@ -64,6 +64,8 @@ import {
   runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  sessionCancellationRequestRecordSchema,
+  sessionCancellationResponseSchema,
   resolveEffectiveAgentRuntime,
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
@@ -82,6 +84,40 @@ describe("host API error contracts", () => {
       code: "unauthorized",
       message: "Entangle host operator token is required."
     });
+  });
+});
+
+describe("session cancellation contracts", () => {
+  it("accepts runtime-local cancellation records and host responses", () => {
+    const cancellation = sessionCancellationRequestRecordSchema.parse({
+      cancellationId: "cancel-alpha",
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      reason: "Operator stopped the session.",
+      requestedAt: "2026-04-24T10:00:00.000Z",
+      requestedBy: "operator-main",
+      sessionId: "session-alpha",
+      status: "requested"
+    });
+    const response = sessionCancellationResponseSchema.parse({
+      cancellations: [cancellation],
+      sessionId: "session-alpha"
+    });
+
+    expect(response.cancellations[0]?.cancellationId).toBe("cancel-alpha");
+  });
+
+  it("requires observed cancellation records to include observation time", () => {
+    const result = sessionCancellationRequestRecordSchema.safeParse({
+      cancellationId: "cancel-alpha",
+      graphId: "team-alpha",
+      nodeId: "worker-it",
+      requestedAt: "2026-04-24T10:00:00.000Z",
+      sessionId: "session-alpha",
+      status: "observed"
+    });
+
+    expect(result.success).toBe(false);
   });
 });
 
@@ -964,6 +1000,22 @@ describe("agent engine turn contracts", () => {
         kind: "source_history"
       }
     });
+  });
+
+  it("accepts cancelled engine outcomes with bounded cancellation failure evidence", () => {
+    const result = agentEngineTurnResultSchema.parse({
+      assistantMessages: ["The turn was cancelled before completion."],
+      failure: {
+        classification: "cancelled",
+        message: "Session cancellation was requested by the operator."
+      },
+      stopReason: "cancelled",
+      toolExecutions: [],
+      toolRequests: []
+    });
+
+    expect(result.stopReason).toBe("cancelled");
+    expect(result.failure?.classification).toBe("cancelled");
   });
 
   it("rejects approval request directives without an operation", () => {

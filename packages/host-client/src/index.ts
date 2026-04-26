@@ -61,6 +61,8 @@ import {
   runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  sessionCancellationMutationRequestSchema,
+  sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionLaunchRequestSchema,
   sessionLaunchResponseSchema,
@@ -126,6 +128,8 @@ import {
   type RuntimeSourceHistoryPublishMutationRequest,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
+  type SessionCancellationMutationRequest,
+  type SessionCancellationResponse,
   type SessionInspectionResponse,
   type SessionLaunchRequest,
   type SessionLaunchResponse,
@@ -1048,6 +1052,46 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/sessions/${sessionId}`),
         sessionInspectionResponseSchema
+      );
+    },
+
+    async cancelSession(
+      sessionId: string,
+      request: SessionCancellationMutationRequest = {}
+    ): Promise<SessionCancellationResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/sessions/${sessionId}/cancel`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(
+            sessionCancellationMutationRequestSchema.parse(request)
+          )
+        }),
+        sessionCancellationResponseSchema
+      );
+    },
+
+    async cancelRuntimeSession(
+      nodeId: string,
+      sessionId: string,
+      request: SessionCancellationMutationRequest = {}
+    ): Promise<SessionCancellationResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/sessions/${sessionId}/cancel`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(
+              sessionCancellationMutationRequestSchema.parse(request)
+            )
+          }
+        ),
+        sessionCancellationResponseSchema
       );
     },
 
