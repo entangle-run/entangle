@@ -27,6 +27,11 @@ User nodes are now partially runtime-capable:
 - Runner `runtime.status` observations can carry a `clientUrl`, Host records it
   in observed runtime state, Host projection exposes it, Studio renders an open
   action, and the CLI projection summary includes it.
+- The process-boundary smoke now starts one real joined agent runner and one
+  real joined User Node `human_interface` runner, assigns both through the same
+  control plane, verifies User Client `/health`, and proves the signed User
+  Node message reaches the agent runner without shared Host/runner filesystem
+  state.
 
 Still missing:
 
@@ -117,6 +122,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Human Interface Runtime assignment tests.
 - Multiple Human Interface Runtime placement tests.
 - User Client endpoint projection tests.
+- Process smoke coverage for one assigned agent runner plus one assigned User
+  Node runner.
 - Signed user task launch tests.
 - Signed reply and answer tests.
 - Signed approval.response tests.

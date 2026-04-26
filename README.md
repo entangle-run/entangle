@@ -77,18 +77,22 @@ docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml 
 pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777
 ```
 
-That smoke starts Host and a real joined runner process with separate state
-roots, assigns a node through signed control events, observes runtime state
-through signed runner observations, publishes a signed User Node message through
-the relay, and verifies that the assigned runner persisted the received
-conversation and that Host projection contains the User Node conversation from
-runner-signed observations. Live OpenCode/model-provider behavior remains
-intentionally manual until API-backed provider testing is available.
+That smoke starts Host, one real joined agent runner process, and one real
+joined User Node runner process with separate state roots. It assigns the
+agent node and the User Node through signed control events, verifies that the
+User Node `human_interface` runtime exposes a User Client endpoint, checks the
+User Client health route, observes runtime state through signed runner
+observations, publishes a signed User Node message through the relay, and
+verifies that the assigned agent runner persisted the received conversation and
+that Host projection contains the User Node conversation from runner-signed
+observations. Live OpenCode/model-provider behavior remains intentionally
+manual until API-backed provider testing is available.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
-the joined runner process alive, keeps its temporary state root, and prints CLI
-commands for publishing a signed `task.request` to the assigned builder node
-and inspecting the User Node inbox projection plus runner turn events.
+both joined runner processes alive, keeps their temporary state roots, prints
+the User Client URL, and prints CLI commands for publishing a signed
+`task.request` to the assigned builder node and inspecting the User Node inbox
+projection plus runner turn events.
 
 ## Current Status
 
@@ -359,9 +363,10 @@ This repository currently contains:
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
 - a process-boundary federated smoke through `pnpm ops:smoke-federated-process-runner`
-  that starts a Host HTTP server, launches a generic joined runner as a
-  separate OS process, assigns a node through the relay, and verifies
-  runner-owned materialization plus Host projection;
+  that starts a Host HTTP server, launches separate generic joined agent and
+  User Node runners as OS processes, assigns nodes through the relay, verifies
+  runner-owned materialization, checks the Human Interface Runtime User Client
+  endpoint, and verifies Host projection;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,

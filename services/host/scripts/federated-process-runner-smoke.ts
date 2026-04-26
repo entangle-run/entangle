@@ -263,20 +263,25 @@ async function main(): Promise<void> {
     .replace(/^-+|-+$/gu, "")
     .slice(-48);
   const assignmentId = `assignment-${runId}`;
+  const userAssignmentId = `assignment-user-${runId}`;
   const conversationId = `conversation-${runId}`;
   const graphId = `graph-${runId}`;
   const runnerId = `runner-${runId}`;
+  const userRunnerId = `user-runner-${runId}`;
   const sessionId = `session-${runId}`;
   const turnId = `turn-${runId}`;
   const hostHome = path.join(tempRoot, "host-home");
   const hostSecrets = path.join(tempRoot, "host-secrets");
   const runnerRoot = path.join(tempRoot, "runner-root");
   const runnerStateRoot = path.join(runnerRoot, "state");
+  const userRunnerRoot = path.join(tempRoot, "user-runner-root");
+  const userRunnerStateRoot = path.join(userRunnerRoot, "state");
   const packageRoot = path.join(tempRoot, "package-source");
   await Promise.all([
     mkdir(hostHome, { recursive: true }),
     mkdir(hostSecrets, { recursive: true }),
     mkdir(runnerStateRoot, { recursive: true }),
+    mkdir(userRunnerStateRoot, { recursive: true }),
     createAgentPackage(packageRoot)
   ]);
 
@@ -301,15 +306,28 @@ async function main(): Promise<void> {
   let runnerProcess:
     | ChildProcessByStdio<null, Readable, Readable>
     | undefined;
+  let userRunnerProcess:
+    | ChildProcessByStdio<null, Readable, Readable>
+    | undefined;
   let runnerStdout = "";
   let runnerStderr = "";
+  let userRunnerStdout = "";
+  let userRunnerStderr = "";
   let runnerExit:
     | {
         code: number | null;
         signal: NodeJS.Signals | null;
       }
     | undefined;
+  let userRunnerExit:
+    | {
+        code: number | null;
+        signal: NodeJS.Signals | null;
+      }
+    | undefined;
   const runnerSecretEnv = "ENTANGLE_PROCESS_RUNNER_SMOKE_RUNNER_SECRET";
+  const userRunnerSecretEnv =
+    "ENTANGLE_PROCESS_RUNNER_SMOKE_USER_RUNNER_SECRET";
 
   try {
     const [stateModule, hostModule, controlPlaneModule, hostTransportModule] =
@@ -455,6 +473,46 @@ async function main(): Promise<void> {
     const joinConfigPath = path.join(runnerRoot, "runner-join.json");
     await writeJsonFile(joinConfigPath, joinConfig);
 
+    const userRunnerSecretKey = generateSecretKey();
+    const userRunnerPubkey = getPublicKey(userRunnerSecretKey);
+    const userRunnerSecretHex = Buffer.from(userRunnerSecretKey).toString("hex");
+    const userRunnerJoinConfig: RunnerJoinConfig = runnerJoinConfigSchema.parse({
+      capabilities: {
+        agentEngineKinds: [],
+        labels: ["process-smoke", "human-interface"],
+        maxAssignments: 1,
+        runtimeKinds: ["human_interface"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      },
+      hostApi: {
+        auth: {
+          envVar: "ENTANGLE_HOST_TOKEN",
+          mode: "bearer_env"
+        },
+        baseUrl: hostBaseUrl,
+        runtimeIdentitySecret: {
+          mode: "host_api"
+        }
+      },
+      hostAuthorityPubkey: exportedAuthority.authority.publicKey,
+      identity: {
+        publicKey: userRunnerPubkey,
+        secretDelivery: {
+          envVar: userRunnerSecretEnv,
+          mode: "env_var"
+        }
+      },
+      relayUrls,
+      runnerId: userRunnerId,
+      schemaVersion: "1"
+    });
+    const userRunnerJoinConfigPath = path.join(
+      userRunnerRoot,
+      "runner-join.json"
+    );
+    await writeJsonFile(userRunnerJoinConfigPath, userRunnerJoinConfig);
+
     const child = spawn(
       "pnpm",
       [
@@ -491,6 +549,42 @@ async function main(): Promise<void> {
     });
     printPass("runner-process", `pid=${child.pid ?? "unknown"}`);
 
+    const userChild = spawn(
+      "pnpm",
+      [
+        "--filter",
+        "@entangle/runner",
+        "exec",
+        "tsx",
+        "src/index.ts",
+        "join",
+        "--config",
+        userRunnerJoinConfigPath
+      ],
+      {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          ENTANGLE_HOST_LOGGER: "false",
+          ENTANGLE_HOST_TOKEN: operatorToken,
+          ENTANGLE_RUNNER_STATE_ROOT: userRunnerStateRoot,
+          [userRunnerSecretEnv]: userRunnerSecretHex
+        },
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+    userRunnerProcess = userChild;
+    userChild.stdout.on("data", (chunk: Buffer | string) => {
+      userRunnerStdout = appendBounded(userRunnerStdout, chunk);
+    });
+    userChild.stderr.on("data", (chunk: Buffer | string) => {
+      userRunnerStderr = appendBounded(userRunnerStderr, chunk);
+    });
+    userChild.once("close", (code, signal) => {
+      userRunnerExit = { code, signal };
+    });
+    printPass("user-runner-process", `pid=${userChild.pid ?? "unknown"}`);
+
     await waitFor(
       "runner registration",
       async () => {
@@ -515,6 +609,30 @@ async function main(): Promise<void> {
     );
     printPass("runner-hello", `runner=${runnerId}`);
 
+    await waitFor(
+      "User Node runner registration",
+      async () => {
+        if (userRunnerExit) {
+          throw new Error(
+            `User Node runner process exited early: ${JSON.stringify(userRunnerExit)}\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+          );
+        }
+
+        try {
+          return runnerRegistryInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runners/${userRunnerId}`
+            })
+          );
+        } catch {
+          return undefined;
+        }
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    printPass("user-runner-hello", `runner=${userRunnerId}`);
+
     await hostRequest({
       baseUrl: hostBaseUrl,
       body: {
@@ -525,6 +643,17 @@ async function main(): Promise<void> {
       path: `/v1/runners/${runnerId}/trust`
     });
     printPass("runner-trust", "trusted");
+
+    await hostRequest({
+      baseUrl: hostBaseUrl,
+      body: {
+        reason: "Federated process runner smoke User Node runner.",
+        trustedBy: "smoke"
+      },
+      method: "POST",
+      path: `/v1/runners/${userRunnerId}/trust`
+    });
+    printPass("user-runner-trust", "trusted");
 
     const assignment = runtimeAssignmentOfferResponseSchema.parse(
       await hostRequest({
@@ -606,6 +735,99 @@ async function main(): Promise<void> {
     printPass(
       "runner-materialization",
       `context=${materializedContextPath}`
+    );
+
+    const userAssignment = runtimeAssignmentOfferResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          assignmentId: userAssignmentId,
+          leaseDurationSeconds: 3600,
+          nodeId: "user",
+          runnerId: userRunnerId
+        },
+        method: "POST",
+        path: "/v1/assignments"
+      })
+    ).assignment;
+    printPass("user-assignment-offer", userAssignment.assignmentId);
+
+    const userRuntimeProjection = await waitFor(
+      "User Node runtime running projection",
+      async () => {
+        if (userRunnerExit) {
+          throw new Error(
+            `User Node runner process exited before runtime projection: ${JSON.stringify(userRunnerExit)}\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+          );
+        }
+
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+        const acceptedAssignment = projection.assignments.find(
+          (candidate) =>
+            candidate.assignmentId === userAssignment.assignmentId &&
+            candidate.status === "accepted"
+        );
+        const runningRuntime = projection.runtimes.find(
+          (candidate) =>
+            candidate.assignmentId === userAssignment.assignmentId &&
+            candidate.nodeId === "user" &&
+            candidate.observedState === "running" &&
+            Boolean(candidate.clientUrl)
+        );
+
+        return acceptedAssignment && runningRuntime
+          ? runningRuntime
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const userClientUrl = userRuntimeProjection.clientUrl;
+    if (!userClientUrl) {
+      throw new Error(
+        "User Node runtime projection must include a User Client URL."
+      );
+    }
+    printPass(
+      "user-runtime-projection",
+      `runtime=running; client=${userClientUrl}`
+    );
+
+    const userRuntimeHealthResponse = await fetch(
+      new URL("/health", userClientUrl)
+    );
+    assertCondition(
+      userRuntimeHealthResponse.ok,
+      `User Client health failed with HTTP ${userRuntimeHealthResponse.status}`
+    );
+    printPass("user-client-health", userClientUrl);
+
+    const materializedUserContextPath = path.join(
+      userRunnerStateRoot,
+      "assignments",
+      userAssignment.assignmentId,
+      "runtime-context.json"
+    );
+    const materializedUserContext = runtimeContextInspectionResponseSchema.parse(
+      JSON.parse(await readFile(materializedUserContextPath, "utf8")) as unknown
+    );
+    assertCondition(
+      materializedUserContext.binding.node.nodeKind === "user",
+      "Materialized Human Interface Runtime context must belong to a User Node."
+    );
+    assertCondition(
+      path
+        .resolve(materializedUserContext.workspace.runtimeRoot)
+        .startsWith(path.resolve(userRunnerStateRoot)),
+      "Materialized User Node runtime root must live under the User Node runner state root."
+    );
+    printPass(
+      "user-runner-materialization",
+      `context=${materializedUserContextPath}`
     );
 
     const userMessage = userNodeMessagePublishResponseSchema.parse(
@@ -723,9 +945,21 @@ async function main(): Promise<void> {
         .startsWith(`${path.resolve(runnerRoot)}${path.sep}`),
       "Host home must not be inside runner root."
     );
+    assertCondition(
+      !path
+        .resolve(userRunnerRoot)
+        .startsWith(`${path.resolve(hostHome)}${path.sep}`),
+      "User Node runner root must not be inside Host home."
+    );
+    assertCondition(
+      !path
+        .resolve(userRunnerRoot)
+        .startsWith(`${path.resolve(runnerRoot)}${path.sep}`),
+      "User Node runner root must not be inside agent runner root."
+    );
     printPass(
       "filesystem-isolation",
-      `host=${hostHome}; runner=${runnerRoot}`
+      `host=${hostHome}; runner=${runnerRoot}; userRunner=${userRunnerRoot}`
     );
 
     if (keepRunning) {
@@ -735,6 +969,8 @@ async function main(): Promise<void> {
       printPass("manual-host", hostBaseUrl);
       printPass("manual-token", operatorToken);
       printPass("manual-runner-state", runnerStateRoot);
+      printPass("manual-user-runner-state", userRunnerStateRoot);
+      printPass("manual-user-client", userClientUrl);
       console.log("Manual signed task command:");
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
@@ -750,6 +986,8 @@ async function main(): Promise<void> {
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
           `inbox list --user-node user --summary`
       );
+      console.log("Manual User Client URL:");
+      console.log(userClientUrl);
       console.log("Manual runner turn event command:");
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
@@ -765,6 +1003,7 @@ async function main(): Promise<void> {
     }
   } finally {
     await stopRunnerProcess(runnerProcess);
+    await stopRunnerProcess(userRunnerProcess);
     await server?.close();
     await controlPlane?.close();
 

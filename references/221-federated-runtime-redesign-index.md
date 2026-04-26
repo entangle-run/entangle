@@ -137,10 +137,12 @@ The repository is not fully federated:
 - `ops:smoke-federated-process-runner` now starts a real joined runner process,
   has it fetch authenticated runtime bootstrap context from Host API,
   materializes runner-owned workspace paths, starts the assigned node runtime,
-  reports signed runtime status through the relay, publishes a signed User Node
-  message to the assigned node, verifies runner-owned session/conversation
-  intake, and verifies Host projection of the User Node conversation without
-  requiring a live model-provider call;
+  reports signed runtime status through the relay, starts a second joined
+  runner process for the graph User Node, assigns it as a `human_interface`
+  runtime, verifies its projected User Client endpoint and health route,
+  publishes a signed User Node message to the assigned agent node, verifies
+  runner-owned session/conversation intake, and verifies Host projection of the
+  User Node conversation without requiring a live model-provider call;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 
@@ -229,8 +231,10 @@ The plan was checked against the actual repo after writing:
 - no code implementation is included in this documentation slice.
 
 Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
-follow-up slices, the public runtime API path boundary, and portable runtime
-bootstrap bundles are implemented in this branch. The next blocking
-implementation areas are replacing remaining deep filesystem-backed runtime
-inspection paths and turning the process smoke into the full multi-machine
-distributed proof.
+follow-up slices, the public runtime API path boundary, portable runtime
+bootstrap bundles, and the first split agent/User Node process smoke are
+implemented in this branch. The next blocking implementation areas are durable
+User Client inbox/outbox, approval/artifact review in the User Client, replacing
+remaining deep filesystem-backed runtime inspection paths, proving two distinct
+User Nodes at runtime, and turning the process smoke into the full
+multi-machine distributed proof.

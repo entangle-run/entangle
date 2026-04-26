@@ -31,6 +31,11 @@ The current implementation has the first federated execution path:
   address is not externally reachable.
 - Runner `runtime.status` observations can include `clientUrl`; Host persists
   and projects it, Studio links to it, and CLI projection summaries include it.
+- The process-boundary smoke now proves the first runnable split topology: one
+  real joined agent runner and one real joined User Node `human_interface`
+  runner are assigned through the same Host control plane and relay, the User
+  Client endpoint is projected and health-checked, and the User Node message is
+  delivered to the agent runner without Host/runner filesystem sharing.
 
 The current implementation still does not have the final User Node client:
 
@@ -276,6 +281,13 @@ Everything may run on one machine, but the topology must be unaware that it is
 local: no shared Host/runner filesystem dependency is allowed in the
 federated path.
 
+Status: the no-LLM version is implemented in
+`pnpm ops:smoke-federated-process-runner`. It starts separate agent and User
+Node runner processes, assigns both nodes, verifies the User Client health
+route, publishes a signed User Node message, verifies agent-runner intake, and
+projects the conversation through Host. Manual provider-backed OpenCode testing
+is available with `--keep-running`.
+
 Then extend the demo to two User Nodes:
 
 - two `human_interface` runners;
@@ -305,9 +317,10 @@ The fastest path to a product the user can test is:
 2. Start a minimal Human Interface Runtime from the runner.
 3. Add a minimal User Client that can send signed messages.
 4. Show the User Client URL in Studio.
-5. Add a smoke that runs one agent node and one user node.
+5. Add a smoke that runs one agent node and one user node. Done for the no-LLM
+   path.
 6. Add a second-user-node smoke to prove distributed human placement.
-7. Then expand inbox history, approvals, artifact review, and OpenCode parity.
+7. Expand inbox history, approvals, artifact review, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

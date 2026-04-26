@@ -3097,3 +3097,21 @@ Runner `runtime.status` observations can include `clientUrl`. Host persists and
 projects that endpoint, Studio exposes an `Open User Client` action for runtime
 projection rows with a client URL, and the CLI projection summary includes the
 same endpoint.
+
+## [2026-04-26] verification | Extended process smoke with User Node runner
+
+Extended `pnpm ops:smoke-federated-process-runner` so the fastest runnable
+federated proof now launches two real joined runner processes: one agent runner
+and one User Node `human_interface` runner. The smoke trusts both runners,
+assigns the builder node and the User Node through signed control events,
+verifies runner-owned materialized runtime contexts, waits for the projected
+User Client endpoint, checks the User Client `/health` route, publishes a
+signed User Node message, verifies agent-runner session/conversation intake,
+and verifies Host projection of the User Node conversation.
+
+The smoke passed against the federated dev `strfry` relay on
+`ws://localhost:7777`. The same-machine proof now exercises the intended
+topology without depending on Host/runner shared filesystem state; the next
+runtime-facing gaps are durable User Client inbox/outbox, approval/artifact
+review in the User Client, second-User-Node runtime coverage, and the eventual
+multi-machine proof.

@@ -19,6 +19,12 @@ message signed by the stable User Node identity through the configured relay,
 and the runner persists the received session and conversation under
 runner-owned runtime state.
 
+The same smoke now covers the first split agent/User Node runtime proof: it
+starts a second joined runner process that advertises `human_interface`, assigns
+the graph User Node to that runner, verifies its runner-owned materialized
+runtime context, waits for a projected User Client endpoint, and checks the
+User Client `/health` route before publishing the signed User Node message.
+
 Host JSON state writes also used direct file replacement. The process smoke
 exposed a real race where close `runtime.status` observations could make a
 projection read observe a partially rewritten JSON record.
@@ -34,7 +40,11 @@ The federated regression path should prove a real runner OS process can:
 - receive Host-managed node identity material only through an authenticated
   Host API path, not through Nostr;
 - start the assigned node runtime with the normal runner starter;
+- start a separate assigned User Node `human_interface` runtime in a second
+  runner OS process;
 - emit signed assignment and runtime observations through the relay;
+- project the User Client endpoint for the User Node runtime and verify its
+  health route;
 - receive signed User Node messages through the same Nostr A2A transport used
   by normal graph communication;
 - persist received coordination state in runner-owned session and conversation
@@ -85,6 +95,10 @@ Implemented in this slice:
   the runner, assigns a node through Host API, and verifies accepted assignment,
   running runtime projection, runner-owned materialized context, local git
   backend setup, and Host/runner filesystem isolation;
+- extended the smoke to start a second actual runner process that advertises
+  only `human_interface`, trust it, assign the graph User Node to it, verify a
+  projected running User Client endpoint, call `/health`, and verify User Node
+  runtime materialization under the second runner's state root;
 - made the smoke use per-run graph, runner, assignment, session, conversation,
   and turn identifiers so persistent relays do not mix current evidence with
   stale smoke events;
@@ -96,9 +110,10 @@ Implemented in this slice:
   so Host projection must contain the User Node conversation produced from
   runner-signed observations;
 - added `--keep-running` as a manual test harness mode that leaves the Host
-  server and joined runner process alive, keeps the temporary state root, and
-  prints CLI commands for publishing a signed `task.request` to the assigned
-  builder node for API-backed OpenCode testing;
+  server and both joined runner processes alive, keeps the temporary state
+  root, prints the User Client URL, and prints CLI commands for publishing a
+  signed `task.request` to the assigned builder node for API-backed OpenCode
+  testing;
 - normalized blank relay publish acknowledgements from `nostr-tools` to the
   configured relay URL so a successful live publish cannot fail DTO validation
   because the underlying pool returned an empty string.
@@ -138,8 +153,10 @@ Verification record:
 - wrapper syntax check passed;
 - one-file TypeScript check for the process smoke passed;
 - process runner smoke passed against the federated dev `strfry` relay on
-  `ws://localhost:7777`, including signed User Node publish and runner
-  session/conversation intake;
+  `ws://localhost:7777`, including separate agent and User Node runner
+  processes, User Client health, signed User Node publish, runner
+  session/conversation intake, Host projection of the User Node conversation,
+  and Host/agent-runner/User-runner filesystem isolation;
 - root `pnpm typecheck` passed;
 - root `pnpm lint` passed;
 - `git diff --check` passed;

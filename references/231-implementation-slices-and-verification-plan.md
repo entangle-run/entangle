@@ -161,7 +161,10 @@ Current status:
   from a portable bootstrap bundle, publishes a signed User Node message over
   the live relay, verifies runner-owned session/conversation intake, and
   verifies Host projection of the User Node conversation without requiring
-  model-provider credentials.
+  model-provider credentials. It now also starts a second real joined runner
+  process for the graph User Node, assigns it as a `human_interface` runtime,
+  verifies its projected User Client URL, checks User Client health, and proves
+  Host, agent runner, and User Node runner state roots are isolated.
 
 ### Slice 8: ProjectionStore
 
@@ -214,8 +217,10 @@ Current status:
 - Host bootstrap and identity-secret APIs now support User Nodes;
 - Host projection, Studio, and CLI can carry/display the Human Interface
   Runtime `clientUrl`;
+- the process-boundary smoke covers one assigned agent runner plus one assigned
+  User Node `human_interface` runner with a live User Client health check;
 - durable inbox/outbox, final User Client application, approval/artifact review
-  controls, and full multi-runner smoke coverage remain open.
+  controls, and second-User-Node smoke coverage remain open.
 
 Verification:
 
@@ -317,9 +322,11 @@ Current status:
 
 - live relay control/observe smoke is implemented;
 - separate OS process runner smoke is implemented;
-- the remaining fast product proof is a same-machine but topology-agnostic
-  demo with one assigned agent runner and one assigned User Node
-  `human_interface` runner exposing a User Client endpoint;
+- the same-machine but topology-agnostic fast product proof now runs with one
+  assigned agent runner and one assigned User Node `human_interface` runner
+  exposing and serving a User Client endpoint;
+- the remaining fast topology proof is a second User Node assigned to a second
+  `human_interface` runner;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 
