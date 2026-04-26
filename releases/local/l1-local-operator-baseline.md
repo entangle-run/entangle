@@ -6,7 +6,7 @@ Release date: 2026-04-25.
 
 Tag: `v0.1-local-operator-baseline`.
 
-Product line: Entangle Local.
+Product line: Entangle.
 
 Production claim: none.
 
@@ -21,7 +21,7 @@ artifact handoff, graph-bound runner handoff, approval lifecycle handling,
 Studio and CLI inspection over host truth, and preflight/smoke checks for the
 Local profile.
 
-This is not Entangle Local GA. It is the first released Local baseline.
+This is not Entangle GA. It is the first released Local baseline.
 
 ## Supported Local Workflows
 

@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Scope
 
-This slice completes Entangle Local completion workstream A1 and the current
+This slice completes Entangle completion workstream A1 and the current
 documentation part of A2.
 
 Implemented:
@@ -12,13 +12,13 @@ Implemented:
 - renamed the active runtime profile machine value from `hackathon_local` to
   `local`;
 - updated the runtime profile schema and graph defaults;
-- updated package scaffolding so new packages emit `runtimeProfile: "local"`;
-- migrated active Local Preview graph and package assets;
+- updated package scaffolding so new packages emit `runtimeProfile: "federated"`;
+- migrated active Federated Preview graph and package assets;
 - migrated active smoke scripts and tests;
-- updated current product documentation to use Entangle Local scope language;
+- updated current product documentation to use Entangle scope language;
 - corrected the Local release index so L2 is listed as released and the next
   planned train is L3 Agentic Node Runtime, L4 Local Reliability, and L5
-  Entangle Local GA.
+  Entangle GA.
 
 Not changed:
 
@@ -33,7 +33,7 @@ The canonical active machine value is `local`.
 
 Rationale:
 
-- it matches the active product line, Entangle Local;
+- it matches the active product line, Entangle;
 - it does not imply GA status;
 - it remains durable after Local GA, avoiding a second rename from
   `local_operator` to `local`;
@@ -65,8 +65,8 @@ pnpm --filter @entangle/runner test
 node --check scripts/smoke-local-runtime.mjs
 pnpm --filter @entangle/types build
 pnpm --filter @entangle/validator build
-pnpm --filter @entangle/cli dev validate package examples/local-preview/agent-package
-pnpm --filter @entangle/cli dev validate graph examples/local-preview/graph.json
+pnpm --filter @entangle/cli dev validate package examples/federated-preview/agent-package
+pnpm --filter @entangle/cli dev validate graph examples/federated-preview/graph.json
 pnpm verify
 pnpm build
 ```

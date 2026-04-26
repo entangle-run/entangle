@@ -4,7 +4,7 @@ Date: 2026-04-26.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B6 by persisting bounded
+This slice advances Entangle L3 workstream B6 by persisting bounded
 evidence about the engine request assembled for each executable runner turn.
 
 The goal is not to store raw prompts. It is to make the message-to-engine path
@@ -23,7 +23,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/210-wiki-repository-sync-slice.md`;
 - `references/211-local-doctor-wiki-repository-health-slice.md`.
 

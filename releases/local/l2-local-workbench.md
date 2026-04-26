@@ -6,13 +6,13 @@ Release date: 2026-04-25.
 
 Tag: `v0.2-local-workbench`.
 
-Product line: Entangle Local.
+Product line: Entangle.
 
 Production claim: none.
 
 ## Release Summary
 
-L2 turns Entangle Local from an operator baseline into a practical local
+L2 turns Entangle from an operator baseline into a practical local
 workbench. A technical operator can inspect package state, compare and move
 graph JSON through the host boundary, launch local sessions, inspect runtime
 sessions, turns, approvals, artifacts, and memory, and use Studio for the same
@@ -26,7 +26,7 @@ Included:
   `pnpm --filter @entangle/cli dev`;
 - offline graph diffing through `entangle graph diff`;
 - graph template listing and export through `entangle graph templates list`
-  and `entangle graph templates export local-preview <file>`;
+  and `entangle graph templates export federated-preview <file>`;
 - host graph JSON import/export through
   `entangle host graph export <file>` and
   `entangle host graph import <file>`, with import validation before apply;
@@ -75,15 +75,15 @@ Excluded:
 From the repository root:
 
 ```bash
-pnpm --filter @entangle/cli dev package inspect examples/local-preview/agent-package
-pnpm --filter @entangle/cli dev graph diff examples/local-preview/graph.json examples/local-preview/graph.json
-pnpm --filter @entangle/cli dev host graph import examples/local-preview/graph.json --dry-run
+pnpm --filter @entangle/cli dev package inspect examples/federated-preview/agent-package
+pnpm --filter @entangle/cli dev graph diff examples/federated-preview/graph.json examples/federated-preview/graph.json
+pnpm --filter @entangle/cli dev host graph import examples/federated-preview/graph.json --dry-run
 pnpm --filter @entangle/cli dev host graph export /tmp/entangle-active-graph.json
-pnpm --filter @entangle/cli dev host sessions launch local-preview-planner "Prepare a local workbench report." --wait
-pnpm --filter @entangle/cli dev host runtimes artifacts local-preview-planner --session-id <session-id> --summary
-pnpm --filter @entangle/cli dev host runtimes artifact local-preview-planner <artifact-id> --preview
-pnpm --filter @entangle/cli dev host runtimes memory local-preview-planner --summary
-pnpm --filter @entangle/cli dev host runtimes memory-page local-preview-planner wiki/summaries/working-context.md --summary
+pnpm --filter @entangle/cli dev host sessions launch federated-preview-planner "Prepare a local workbench report." --wait
+pnpm --filter @entangle/cli dev host runtimes artifacts federated-preview-planner --session-id <session-id> --summary
+pnpm --filter @entangle/cli dev host runtimes artifact federated-preview-planner <artifact-id> --preview
+pnpm --filter @entangle/cli dev host runtimes memory federated-preview-planner --summary
+pnpm --filter @entangle/cli dev host runtimes memory-page federated-preview-planner wiki/summaries/working-context.md --summary
 ```
 
 `host sessions launch` requires a running local host, a realizable target

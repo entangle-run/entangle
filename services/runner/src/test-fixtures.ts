@@ -157,7 +157,7 @@ export async function createRuntimeFixture(input: {
     input.remotePublication === "bare_repo" ||
     input.remotePublication === "missing_repo"
       ? {
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           provisioningMode: "preexisting" as const,
           remoteUrl: remoteRepositoryPath,
@@ -189,7 +189,7 @@ export async function createRuntimeFixture(input: {
             principalId: "worker-it-git",
             displayName: "Worker IT Git Principal",
             systemKind: "git",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             subject: "worker-it",
             transportAuthMode: "ssh_key",
             secretRef: "secret://git/worker-it/ssh",
@@ -213,7 +213,7 @@ export async function createRuntimeFixture(input: {
       ],
       gitServices: [
         {
-          id: "local-gitea",
+          id: "gitea",
           displayName: "Local Gitea",
           baseUrl: "http://gitea:3000",
           remoteBase: "ssh://git@gitea:22",
@@ -231,7 +231,7 @@ export async function createRuntimeFixture(input: {
             primaryGitRepositoryTarget
           }
         : {}),
-      primaryGitServiceRef: "local-gitea"
+      primaryGitServiceRef: "gitea"
     },
     binding: {
       bindingId: "graph-revision-alpha.worker-it",
@@ -248,8 +248,8 @@ export async function createRuntimeFixture(input: {
         },
         packageSourceRef: "worker-it-source",
         resourceBindings: {
-          relayProfileRefs: ["local-relay"],
-          gitServiceRefs: ["local-gitea"],
+          relayProfileRefs: ["preview-relay"],
+          gitServiceRefs: ["gitea"],
           modelEndpointProfileRef: "shared-model"
         },
         autonomy: {
@@ -264,13 +264,13 @@ export async function createRuntimeFixture(input: {
         admittedAt: "2026-04-22T00:00:00.000Z"
       },
       resolvedResourceBindings: {
-        relayProfileRefs: ["local-relay"],
-        primaryRelayProfileRef: "local-relay",
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
+        relayProfileRefs: ["preview-relay"],
+        primaryRelayProfileRef: "preview-relay",
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
         modelEndpointProfileRef: "shared-model"
       },
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-22T00:00:00.000Z",
@@ -333,15 +333,15 @@ export async function createRuntimeFixture(input: {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     relayContext: {
       edgeRoutes: [],
-      primaryRelayProfileRef: "local-relay",
+      primaryRelayProfileRef: "preview-relay",
       relayProfiles: [
         {
-          id: "local-relay",
-          displayName: "Local Relay",
+          id: "preview-relay",
+          displayName: "Preview Relay",
           readUrls: ["ws://strfry:7777"],
           writeUrls: ["ws://strfry:7777"],
           authMode: "none"
@@ -492,7 +492,7 @@ export async function createPublishedGitArtifact(input: {
     locator: {
       branch,
       commit,
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       namespace: "team-alpha",
       repositoryName,
       path: filePath

@@ -26,11 +26,11 @@ function buildGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     edges: [],
-    graphId: "local-preview",
-    name: "Local Preview",
+    graphId: "federated-preview",
+    name: "Federated Preview",
     nodes: [
       {
         displayName: "Operator",
@@ -71,10 +71,10 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
       gitServices: []
     },
     binding: {
-      bindingId: "local-preview.builder",
+      bindingId: "federated-preview.builder",
       externalPrincipals: [],
-      graphId: "local-preview",
-      graphRevisionId: "local-preview-rev-1",
+      graphId: "federated-preview",
+      graphRevisionId: "federated-preview-rev-1",
       node: {
         displayName: "Builder",
         nodeId: "builder",
@@ -90,7 +90,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-25T00:00:00.000Z",
@@ -110,7 +110,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     relayContext: {
       edgeRoutes: [],
@@ -118,7 +118,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
       relayProfiles: [
         {
           authMode: "none",
-          displayName: "Local Relay",
+          displayName: "Preview Relay",
           id: "relay-main",
           readUrls: ["ws://localhost:7777"],
           writeUrls: ["ws://localhost:7777", "ws://localhost:7777"]
@@ -165,7 +165,7 @@ describe("host session launch helpers", () => {
       })
     ).toMatchObject({
       fromNodeId: "user-main",
-      graphId: "local-preview",
+      graphId: "federated-preview",
       intent: "Prepare a local report.",
       messageType: "task.request",
       sessionId: "session-alpha",

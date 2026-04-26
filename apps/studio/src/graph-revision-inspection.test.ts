@@ -58,7 +58,7 @@ describe("studio graph revision inspection helpers", () => {
           agentRuntime: {
             mode: "coding_agent"
           },
-          runtimeProfile: "local"
+          runtimeProfile: "federated"
         },
         edges: [],
         graphId: "team-alpha",

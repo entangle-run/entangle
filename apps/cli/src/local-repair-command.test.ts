@@ -42,7 +42,7 @@ function createRepairDeps(): LocalDoctorDeps {
       JSON.stringify({
         createdAt: "2026-04-26T00:00:00.000Z",
         layoutVersion: 1,
-        product: "entangle-local",
+        product: "entangle",
         schemaVersion: "1",
         updatedAt: "2026-04-26T00:00:00.000Z"
       })
@@ -125,7 +125,7 @@ describe("local repair command helpers", () => {
     await writeJson(path.join(repositoryRoot, ".entangle/host/state-layout.json"), {
       createdAt: "2026-04-26T00:00:00.000Z",
       layoutVersion: 99,
-      product: "entangle-local",
+      product: "entangle",
       schemaVersion: "1",
       updatedAt: "2026-04-26T00:00:00.000Z"
     });

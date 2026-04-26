@@ -49,12 +49,12 @@ const entries: SourceHistoryRecord[] = [
       branch: "worker-it/source-history/source-history-source-change-turn-new",
       publication: {
         publishedAt: "2026-04-24T00:04:00.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       requestedAt: "2026-04-24T00:04:00.000Z",
-      targetGitServiceRef: "local-gitea",
+      targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
       targetRepositoryName: "graph-alpha"
     },
@@ -88,7 +88,7 @@ describe("runtime source history Studio helpers", () => {
       "artifact source-source-history-source-change-turn-new"
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
-      "publication target local-gitea/team-alpha/graph-alpha"
+      "publication target gitea/team-alpha/graph-alpha"
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
       "publication approval approval-source-publish-new"

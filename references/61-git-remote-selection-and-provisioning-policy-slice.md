@@ -92,7 +92,7 @@ The current deterministic naming policy is:
 Example:
 
 - graph id: `team-alpha`
-- service ref: `local-gitea`
+- service ref: `gitea`
 - namespace: `team-alpha`
 - remote base: `ssh://git@gitea:22`
 

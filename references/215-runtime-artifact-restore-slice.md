@@ -5,7 +5,7 @@ Date: 2026-04-26.
 ## Purpose
 
 This slice adds the first safe restore path for git-backed runtime artifacts in
-Entangle Local.
+Entangle.
 
 The goal is not broad artifact replay automation yet. The goal is an audited
 operator and control-plane surface that can materialize a recorded git artifact

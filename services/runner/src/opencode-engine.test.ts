@@ -177,7 +177,7 @@ describe("OpenCode runner engine adapter", () => {
             locator: {
               branch: "main",
               commit: "abc123",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               path: "reports/input.md",
               repositoryName: "graph-alpha"

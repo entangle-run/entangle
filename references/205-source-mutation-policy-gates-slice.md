@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstreams B3 and B5 by making source
+This slice advances Entangle L3 workstreams B3 and B5 by making source
 application and source-history publication subject to node-level source
 mutation policy.
 
@@ -27,7 +27,7 @@ The audit read the mandatory repository state files:
 - `references/23-edge-semantics-and-policy-matrix.md`;
 - `references/38-engine-adapter-and-model-execution-spec.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/201-source-history-application-slice.md`;
 - `references/202-source-history-publication-slice.md`;
 - `references/203-artifact-history-diff-slice.md`;

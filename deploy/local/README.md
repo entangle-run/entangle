@@ -95,7 +95,7 @@ Default local URLs:
 Create a versioned backup bundle for Local host state with:
 
 ```sh
-pnpm --filter @entangle/cli dev local backup --output entangle-local-backup
+pnpm --filter @entangle/cli dev local backup --output entangle-backup
 ```
 
 The bundle contains `.entangle/host`, including runtime state, workspaces, git
@@ -106,14 +106,14 @@ external service state such as Docker volumes, Gitea internals, and relay data.
 Validate a restore without changing local state:
 
 ```sh
-pnpm --filter @entangle/cli dev local restore entangle-local-backup --dry-run
+pnpm --filter @entangle/cli dev local restore entangle-backup --dry-run
 ```
 
 Restore into a clean profile, or replace the current `.entangle/host` only when
 that destructive replacement is intentional:
 
 ```sh
-pnpm --filter @entangle/cli dev local restore entangle-local-backup --force
+pnpm --filter @entangle/cli dev local restore entangle-backup --force
 ```
 
 ## Smoke Test
@@ -159,12 +159,12 @@ validates `entangle local restore --dry-run`, runs `entangle local repair
 
 Environment overrides:
 
-- `ENTANGLE_HOST_URL` or `ENTANGLE_LOCAL_HOST_URL`
-- `ENTANGLE_STUDIO_URL` or `ENTANGLE_LOCAL_STUDIO_URL`
-- `ENTANGLE_GITEA_URL` or `ENTANGLE_LOCAL_GITEA_URL`
-- `ENTANGLE_STRFRY_URL` or `ENTANGLE_LOCAL_RELAY_URL`
+- `ENTANGLE_HOST_URL`
+- `ENTANGLE_STUDIO_URL`
+- `ENTANGLE_GITEA_URL`
+- `ENTANGLE_RELAY_URL` or `ENTANGLE_STRFRY_URL`
 - `ENTANGLE_HOST_TOKEN` or `ENTANGLE_HOST_OPERATOR_TOKEN`
-- `ENTANGLE_LOCAL_SMOKE_TIMEOUT_MS`
+- `ENTANGLE_SMOKE_TIMEOUT_MS`
 
 Use `--skip-compose` only when validating endpoint reachability outside the
 repository's Compose project. Use `--skip-runner-image` only when the smoke is

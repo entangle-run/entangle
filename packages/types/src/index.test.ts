@@ -765,7 +765,7 @@ describe("runtime inspection host API contracts", () => {
       restartGeneration: 1,
       workspaceHealth: {
         checkedAt: "2026-04-25T08:05:01.000Z",
-        layoutVersion: "entangle-local-workspace-v1",
+        layoutVersion: "entangle-workspace-v1",
         status: "ready",
         surfaces: [
           {
@@ -814,7 +814,7 @@ describe("runtime artifact host API contracts", () => {
           locator: {
             branch: "worker-it/session-alpha/review",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             path: "reports/turn-001.md"
           },
@@ -1004,7 +1004,7 @@ describe("runtime artifact host API contracts", () => {
           locator: {
             branch: "worker-it/source-history/source-history-alpha",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             path: ".",
             repositoryName: "team-alpha"
@@ -1125,9 +1125,9 @@ describe("runtime approval host API contracts", () => {
       requestedAt: "2026-04-24T00:00:00.000Z",
       requestedByNodeId: "worker-it",
       resource: {
-        id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+        id: "source-history-alpha|gitea|team-alpha|team-alpha",
         kind: "source_history_publication",
-        label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+        label: "source-history-alpha -> gitea/team-alpha/team-alpha"
       },
       sessionId: "session-alpha",
       status: "pending",
@@ -1290,13 +1290,13 @@ describe("source change candidate host API contracts", () => {
         branch: "worker-it/source-history/source-history-source-change-turn-alpha",
         publication: {
           publishedAt: "2026-04-24T00:04:00.000Z",
-          remoteName: "entangle-local-gitea",
+          remoteName: "entangle-gitea",
           remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
           state: "published"
         },
         requestedAt: "2026-04-24T00:04:00.000Z",
         requestedBy: "operator-alpha",
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "graph-alpha"
       },
@@ -1324,7 +1324,7 @@ describe("source change candidate host API contracts", () => {
       },
       publication: {
         publishedAt: "2026-04-24T00:04:00.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
@@ -1337,7 +1337,7 @@ describe("source change candidate host API contracts", () => {
           branch:
             "worker-it/source-history/source-history-source-change-turn-alpha",
           commit: "artifact-commit-alpha",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           path: ".",
           repositoryName: "graph-alpha"
@@ -1354,7 +1354,7 @@ describe("source change candidate host API contracts", () => {
         publishedBy: "operator-alpha",
         reason: "Publish source for peer review.",
         retry: true,
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "graph-alpha"
       })
@@ -1408,7 +1408,7 @@ describe("source change candidate host API contracts", () => {
       },
       publication: {
         publishedAt: "2026-04-24T00:06:00.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
@@ -1420,7 +1420,7 @@ describe("source change candidate host API contracts", () => {
         locator: {
           branch: "worker-it/wiki-repository/entangle-wiki",
           commit: "artifact-wiki-commit-alpha",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           path: ".",
           repositoryName: "graph-alpha"
@@ -1440,13 +1440,13 @@ describe("source change candidate host API contracts", () => {
       nodeId: "worker-it",
       publication: {
         publishedAt: "2026-04-24T00:06:00.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       publicationId: "wiki-publication-alpha",
       requestedBy: "operator-alpha",
-      targetGitServiceRef: "local-gitea",
+      targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
       targetRepositoryName: "graph-alpha",
       updatedAt: "2026-04-24T00:06:00.000Z"
@@ -1457,7 +1457,7 @@ describe("source change candidate host API contracts", () => {
         publishedBy: "operator-alpha",
         reason: "Publish wiki repository.",
         retry: true,
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "graph-alpha"
       }).targetRepositoryName
@@ -1774,7 +1774,7 @@ describe("artifact contracts", () => {
         locator: {
           branch: "worker-it/session-alpha/review-patch",
           commit: "abc123",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/turn-001.md"
@@ -1810,7 +1810,7 @@ describe("artifact contracts", () => {
           locator: {
             branch: "worker-it/session-alpha/review-patch",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/turn-001.md"
@@ -1838,7 +1838,7 @@ describe("artifact contracts", () => {
         locator: {
           branch: "worker-it/session-alpha/review-patch",
           commit: "abc123",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/turn-001.md"
@@ -1849,7 +1849,7 @@ describe("artifact contracts", () => {
       retrieval: {
         state: "retrieved",
         retrievedAt: "2026-04-23T00:00:01.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git"
       },
       updatedAt: "2026-04-23T00:00:01.000Z"
@@ -1929,7 +1929,7 @@ describe("external principal contracts", () => {
       principalId: "worker-it-git",
       displayName: "Worker IT Git Principal",
       systemKind: "git",
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       subject: "worker-it",
       transportAuthMode: "ssh_key",
       secretRef: "secret://git/worker-it/ssh",
@@ -1943,7 +1943,7 @@ describe("external principal contracts", () => {
     });
 
     expect(result.systemKind).toBe("git");
-    expect(result.gitServiceRef).toBe("local-gitea");
+    expect(result.gitServiceRef).toBe("gitea");
   });
 
   it("accepts an external principal deletion response", () => {
@@ -2378,12 +2378,12 @@ describe("host event contracts", () => {
         "Source history 'source-history-source-change-turn-alpha' for runtime 'worker-it' published artifact 'source-source-history-source-change-turn-alpha'.",
       nodeId: "worker-it",
       publicationState: "published",
-      remoteName: "entangle-local-gitea",
+      remoteName: "entangle-gitea",
       remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
       schemaVersion: "1",
       sourceHistoryBranch:
         "worker-it/source-history/source-history-source-change-turn-alpha",
-      targetGitServiceRef: "local-gitea",
+      targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
       targetRepositoryName: "graph-alpha",
       timestamp: "2026-04-24T00:00:04.000Z",
@@ -2422,10 +2422,10 @@ describe("host event contracts", () => {
       nodeId: "worker-it",
       publicationId: "wiki-publication-alpha",
       publicationState: "published",
-      remoteName: "entangle-local-gitea",
+      remoteName: "entangle-gitea",
       remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
       schemaVersion: "1",
-      targetGitServiceRef: "local-gitea",
+      targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
       targetRepositoryName: "graph-alpha",
       timestamp: "2026-04-24T00:00:06.000Z",
@@ -2559,9 +2559,9 @@ describe("host event contracts", () => {
       requestedAt: "2026-04-24T00:00:03.000Z",
       requestedByNodeId: "worker-it",
       resource: {
-        id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+        id: "source-history-alpha|gitea|team-alpha|team-alpha",
         kind: "source_history_publication",
-        label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+        label: "source-history-alpha -> gitea/team-alpha/team-alpha"
       },
       schemaVersion: "1",
       sessionId: "session-alpha",
@@ -2784,7 +2784,7 @@ describe("reconciliation contracts", () => {
     expect(result.stateLayout.status).toBe("current");
   });
 
-  it("accepts current and legacy local state layout product markers", () => {
+  it("accepts only the current Entangle state layout product marker", () => {
     const baseRecord = {
       createdAt: observedAt,
       layoutVersion: 1,
@@ -2798,12 +2798,12 @@ describe("reconciliation contracts", () => {
         product: "entangle"
       }).product
     ).toBe("entangle");
-    expect(
+    expect(() =>
       localStateLayoutRecordSchema.parse({
         ...baseRecord,
-        product: "entangle-local"
-      }).product
-    ).toBe("entangle-local");
+        product: "other-product"
+      })
+    ).toThrow();
   });
 });
 
@@ -2881,11 +2881,11 @@ describe("node inspection contracts", () => {
           packageSourceRef: "worker-it-source",
           resourceBindings: {
             externalPrincipalRefs: [],
-            gitServiceRefs: ["local-gitea"],
+            gitServiceRefs: ["gitea"],
             modelEndpointProfileRef: "shared-anthropic",
-            primaryGitServiceRef: "local-gitea",
-            primaryRelayProfileRef: "local-relay",
-            relayProfileRefs: ["local-relay"]
+            primaryGitServiceRef: "gitea",
+            primaryRelayProfileRef: "preview-relay",
+            relayProfileRefs: ["preview-relay"]
           }
         },
         packageSource: {
@@ -2905,13 +2905,13 @@ describe("node inspection contracts", () => {
         },
         resolvedResourceBindings: {
           externalPrincipalRefs: [],
-          gitServiceRefs: ["local-gitea"],
+          gitServiceRefs: ["gitea"],
           modelEndpointProfileRef: "shared-anthropic",
-          primaryGitServiceRef: "local-gitea",
-          primaryRelayProfileRef: "local-relay",
-          relayProfileRefs: ["local-relay"]
+          primaryGitServiceRef: "gitea",
+          primaryRelayProfileRef: "preview-relay",
+          relayProfileRefs: ["preview-relay"]
         },
-        runtimeProfile: "local",
+        runtimeProfile: "federated",
         schemaVersion: "1"
       },
       runtime: {
@@ -2939,7 +2939,7 @@ describe("node inspection contracts", () => {
 describe("git service contracts", () => {
   it("accepts an SSH git service with an explicit remote base", () => {
     const result = gitServiceProfileSchema.parse({
-      id: "local-gitea",
+      id: "gitea",
       displayName: "Local Gitea",
       baseUrl: "http://gitea:3000",
       remoteBase: "ssh://git@gitea:22",
@@ -2958,7 +2958,7 @@ describe("git service contracts", () => {
   it("rejects git services whose remote base does not match the transport kind", () => {
     expect(
       gitServiceProfileSchema.safeParse({
-        id: "local-gitea",
+        id: "gitea",
         displayName: "Local Gitea",
         baseUrl: "http://gitea:3000",
         remoteBase: "http://gitea:3000",
@@ -2973,7 +2973,7 @@ describe("git service contracts", () => {
       defaultNamespace: "team-alpha",
       gitServices: [
         gitServiceProfileSchema.parse({
-          id: "local-gitea",
+          id: "gitea",
           displayName: "Local Gitea",
           baseUrl: "http://gitea:3000",
           remoteBase: "ssh://git@gitea:22",
@@ -2986,11 +2986,11 @@ describe("git service contracts", () => {
         })
       ],
       graphId: "graph-alpha",
-      primaryGitServiceRef: "local-gitea"
+      primaryGitServiceRef: "gitea"
     });
 
     expect(target).toEqual({
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       namespace: "team-alpha",
       provisioningMode: "preexisting",
       remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
@@ -3007,7 +3007,7 @@ describe("git service contracts", () => {
         gitPrincipalBindings: [],
         gitServices: [
           gitServiceProfileSchema.parse({
-            id: "local-gitea",
+            id: "gitea",
             displayName: "Local Gitea",
             baseUrl: "http://gitea:3000",
             remoteBase: "ssh://git@gitea:22",
@@ -3020,19 +3020,19 @@ describe("git service contracts", () => {
           })
         ],
         primaryGitRepositoryTarget: {
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           provisioningMode: "preexisting",
           remoteUrl: "/tmp/entangle-remotes/graph-alpha.git",
           repositoryName: "graph-alpha",
           transportKind: "ssh"
         },
-        primaryGitServiceRef: "local-gitea"
+        primaryGitServiceRef: "gitea"
       },
       locator: {
         branch: "worker-it/session-alpha/review",
         commit: "abc123",
-        gitServiceRef: "local-gitea",
+        gitServiceRef: "gitea",
         namespace: "team-alpha",
         repositoryName: "review-artifacts",
         path: "reports/session-alpha/turn-001.md"
@@ -3040,7 +3040,7 @@ describe("git service contracts", () => {
     });
 
     expect(target).toEqual({
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       namespace: "team-alpha",
       provisioningMode: "preexisting",
       remoteUrl: "/tmp/entangle-remotes/review-artifacts.git",
@@ -3057,7 +3057,7 @@ describe("git service contracts", () => {
         gitPrincipalBindings: [],
         gitServices: [
           gitServiceProfileSchema.parse({
-            id: "local-gitea",
+            id: "gitea",
             displayName: "Local Gitea",
             baseUrl: "http://gitea:3000",
             remoteBase: "ssh://git@gitea:22",
@@ -3082,14 +3082,14 @@ describe("git service contracts", () => {
           })
         ],
         primaryGitRepositoryTarget: {
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           provisioningMode: "preexisting",
           remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
           repositoryName: "graph-alpha",
           transportKind: "ssh"
         },
-        primaryGitServiceRef: "local-gitea"
+        primaryGitServiceRef: "gitea"
       },
       locator: {
         branch: "worker-it/session-alpha/review",
@@ -3115,7 +3115,7 @@ describe("git repository provisioning contracts", () => {
       schemaVersion: "1",
       state: "ready",
       target: {
-        gitServiceRef: "local-gitea",
+        gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "gitea_api",
         remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
@@ -3135,7 +3135,7 @@ describe("git repository provisioning contracts", () => {
         schemaVersion: "1",
         state: "failed",
         target: {
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           provisioningMode: "gitea_api",
           remoteUrl: "ssh://git@gitea:22/team-alpha/graph-alpha.git",
@@ -3159,7 +3159,7 @@ describe("runtime git resolution helpers", () => {
               principalId: "worker-it-git-main",
               displayName: "Worker IT Git Main",
               systemKind: "git",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               subject: "worker-it",
               transportAuthMode: "ssh_key",
               secretRef: "secret://git/worker-it/main"
@@ -3178,7 +3178,7 @@ describe("runtime git resolution helpers", () => {
               principalId: "worker-it-git-backup",
               displayName: "Worker IT Git Backup",
               systemKind: "git",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               subject: "worker-it",
               transportAuthMode: "ssh_key",
               secretRef: "secret://git/worker-it/backup"
@@ -3195,9 +3195,9 @@ describe("runtime git resolution helpers", () => {
         ],
         gitServices: [],
         primaryGitPrincipalRef: "worker-it-git-backup",
-        primaryGitServiceRef: "local-gitea"
+        primaryGitServiceRef: "gitea"
       },
-      gitServiceRef: "local-gitea"
+      gitServiceRef: "gitea"
     });
 
     expect(resolution.status).toBe("resolved");
@@ -3219,7 +3219,7 @@ describe("runtime git resolution helpers", () => {
               principalId: "worker-it-git-main",
               displayName: "Worker IT Git Main",
               systemKind: "git",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               subject: "worker-it",
               transportAuthMode: "ssh_key",
               secretRef: "secret://git/worker-it/main"
@@ -3238,7 +3238,7 @@ describe("runtime git resolution helpers", () => {
               principalId: "worker-it-git-backup",
               displayName: "Worker IT Git Backup",
               systemKind: "git",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               subject: "worker-it",
               transportAuthMode: "ssh_key",
               secretRef: "secret://git/worker-it/backup"
@@ -3256,7 +3256,7 @@ describe("runtime git resolution helpers", () => {
         gitServices: [],
         primaryGitServiceRef: "backup-gitea"
       },
-      gitServiceRef: "local-gitea"
+      gitServiceRef: "gitea"
     });
 
     expect(resolution.status).toBe("ambiguous");
@@ -3434,7 +3434,7 @@ describe("agent runtime contracts", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "local",
+        runtimeProfile: "federated",
         agentRuntime: {
           mode: "coding_agent"
         }
@@ -3549,7 +3549,7 @@ describe("engine tool execution contracts", () => {
             locator: {
               branch: "worker-it/session-alpha/review-patch",
               commit: "abc123",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               repositoryName: "graph-alpha",
               path: "reports/session-alpha/input.md"

@@ -470,7 +470,7 @@ localCommand
   .option(
     "--output <path>",
     "Entangle local profile backup bundle output directory.",
-    "entangle-local-backup"
+    "entangle-backup"
   )
   .description("Create a versioned Entangle local profile backup bundle without local secrets.")
   .action(
@@ -658,7 +658,7 @@ localCommand
   .option(
     "--output <path>",
     "Diagnostics bundle JSON output path.",
-    "entangle-local-diagnostics.json"
+    "entangle-diagnostics.json"
   )
   .option("--relay-url <url>", "Expected local Nostr relay URL.", "ws://localhost:7777")
   .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")

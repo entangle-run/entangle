@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B5 by turning an applied
+This slice advances Entangle L3 workstream B5 by turning an applied
 runtime-local source-history record into a git-backed commit artifact.
 
 The implementation keeps Entangle as the side-effect owner. Engines still
@@ -23,7 +23,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/201-source-history-application-slice.md`.
 
 The implementation audit inspected:
@@ -85,7 +85,7 @@ The shared git service and git repository target contracts now also support a
 `file` transport kind backed by `file://` remote bases. This is intentionally
 limited to local git remotes and does not require a git principal binding.
 
-This keeps Entangle Local testable without network access while still using a
+This keeps Entangle testable without network access while still using a
 real git push against a bare repository. SSH and HTTPS publication continue to
 use the existing principal and secret-delivery paths.
 
@@ -100,7 +100,7 @@ This slice intentionally does not:
 - implement non-primary target provisioning or fallback replication;
 - treat failed remote publication as loss of local artifact truth.
 
-The publication mutation is host-mediated for the current Entangle Local
+The publication mutation is host-mediated for the current Entangle
 operator surface. A later runner-side executor can take over the low-level git
 operation without changing the public host contract.
 

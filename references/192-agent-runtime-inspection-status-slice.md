@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 by adding a generic status surface for the
+This slice advances Entangle L3 by adding a generic status surface for the
 agent runtime inside each node.
 
 The goal is not to expose OpenCode internals directly. The goal is to let the
@@ -14,7 +14,7 @@ engines, or disabled/non-executing nodes.
 
 ## Audit Findings
 
-Before this slice, Entangle Local had:
+Before this slice, Entangle had:
 
 - graph and node-level `agentRuntime` selection;
 - deployment-level `agentEngineProfiles`;

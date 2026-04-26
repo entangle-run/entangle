@@ -47,7 +47,7 @@ const graph: GraphSpec = {
     agentRuntime: {
       mode: "coding_agent"
     },
-    runtimeProfile: "local"
+    runtimeProfile: "federated"
   },
   edges: [],
   graphId: "team-alpha",

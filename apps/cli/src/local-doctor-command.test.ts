@@ -111,7 +111,7 @@ function createPassingDeps(): LocalDoctorDeps {
               gitServiceRefs: [],
               relayProfileRefs: []
             },
-            runtimeProfile: "local",
+            runtimeProfile: "federated",
             schemaVersion: "1"
           },
           generatedAt: "2026-04-25T00:00:00.000Z",
@@ -130,7 +130,7 @@ function createPassingDeps(): LocalDoctorDeps {
               canMutateGraph: false
             },
             notes: [],
-            runtimeProfile: "local",
+            runtimeProfile: "federated",
             sourceMutation: {
               applyRequiresApproval: false,
               nonPrimaryPublishRequiresApproval: true,
@@ -180,7 +180,7 @@ function createPassingDeps(): LocalDoctorDeps {
               restartGeneration: 0,
               workspaceHealth: {
                 checkedAt: "2026-04-25T00:00:00.000Z",
-                layoutVersion: "entangle-local-workspace-v1",
+                layoutVersion: "entangle-workspace-v1",
                 status: "ready",
                 surfaces: []
               }
@@ -194,7 +194,7 @@ function createPassingDeps(): LocalDoctorDeps {
       JSON.stringify({
         createdAt: "2026-04-25T00:00:00.000Z",
         layoutVersion: 1,
-        product: "entangle-local",
+        product: "entangle",
         schemaVersion: "1",
         updatedAt: "2026-04-25T00:00:00.000Z"
       })
@@ -351,7 +351,7 @@ describe("local doctor command helpers", () => {
           JSON.stringify({
             createdAt: "2026-04-25T00:00:00.000Z",
             layoutVersion: 99,
-            product: "entangle-local",
+            product: "entangle",
             schemaVersion: "1",
             updatedAt: "2026-04-25T00:00:00.000Z"
           })

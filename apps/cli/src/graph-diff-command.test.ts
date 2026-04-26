@@ -10,7 +10,7 @@ function buildGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     edges: [
       {
@@ -26,8 +26,8 @@ function buildGraph(): GraphSpec {
         }
       }
     ],
-    graphId: "local-preview",
-    name: "Local Preview",
+    graphId: "federated-preview",
+    name: "Federated Preview",
     nodes: [
       {
         displayName: "User",
@@ -43,7 +43,7 @@ function buildGraph(): GraphSpec {
         displayName: "Planner",
         nodeId: "planner",
         nodeKind: "planner",
-        packageSourceRef: "local-preview-agent",
+        packageSourceRef: "federated-preview-agent",
         resourceBindings: {
           externalPrincipalRefs: [],
           gitServiceRefs: [],
@@ -64,7 +64,7 @@ describe("buildGraphDiff", () => {
         ...fromGraph.defaults,
         resourceBindings: {
           ...fromGraph.defaults.resourceBindings,
-          gitServiceRefs: ["local-gitea"]
+          gitServiceRefs: ["gitea"]
         }
       },
       edges: [
@@ -95,10 +95,10 @@ describe("buildGraphDiff", () => {
           displayName: "Builder",
           nodeId: "builder",
           nodeKind: "worker",
-          packageSourceRef: "local-preview-agent",
+          packageSourceRef: "federated-preview-agent",
           resourceBindings: {
             externalPrincipalRefs: [],
-            gitServiceRefs: ["local-gitea"],
+            gitServiceRefs: ["gitea"],
             relayProfileRefs: ["relay-main"]
           }
         }

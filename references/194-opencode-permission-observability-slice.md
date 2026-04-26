@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice starts Entangle Local L3 workstream B3 by making engine permission
+This slice starts Entangle L3 workstream B3 by making engine permission
 blocks explicit and inspectable. It does not claim the full approval bridge is
 complete.
 

@@ -913,10 +913,10 @@ async function ensureLocalStateLayoutCompatible(): Promise<void> {
 
 function buildDefaultCatalog(): DeploymentResourceCatalog {
   const relayId = sanitizeIdentifier(
-    process.env.ENTANGLE_DEFAULT_RELAY_ID ?? "local-relay"
+    process.env.ENTANGLE_DEFAULT_RELAY_ID ?? "preview-relay"
   );
   const gitServiceId = sanitizeIdentifier(
-    process.env.ENTANGLE_DEFAULT_GIT_SERVICE_ID ?? "local-gitea"
+    process.env.ENTANGLE_DEFAULT_GIT_SERVICE_ID ?? "gitea"
   );
   const catalogId = sanitizeIdentifier(
     process.env.ENTANGLE_CATALOG_ID ?? "local-catalog"
@@ -1008,7 +1008,7 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
     relays: [
       {
         id: relayId,
-        displayName: process.env.ENTANGLE_DEFAULT_RELAY_DISPLAY_NAME ?? "Local Relay",
+        displayName: process.env.ENTANGLE_DEFAULT_RELAY_DISPLAY_NAME ?? "Preview Relay",
         readUrls: [relayReadUrl],
         writeUrls: [relayWriteUrl],
         authMode: "none"
@@ -3656,7 +3656,7 @@ function buildWorkspaceLayout(nodeId: string) {
   };
 }
 
-const runtimeWorkspaceLayoutVersion = "entangle-local-workspace-v1";
+const runtimeWorkspaceLayoutVersion = "entangle-workspace-v1";
 
 type RuntimeWorkspaceSurfaceHealth =
   RuntimeWorkspaceHealth["surfaces"][number];

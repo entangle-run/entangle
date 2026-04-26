@@ -4,7 +4,7 @@ Date: 2026-04-26.
 
 ## Purpose
 
-This slice advances Entangle Local B4/B5 by giving each node's runner-owned
+This slice advances Entangle B4/B5 by giving each node's runner-owned
 wiki repository a host-mediated publication path.
 
 The runner still owns `memory/wiki` writes and the local `wiki-repository`
@@ -22,7 +22,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/210-wiki-repository-sync-slice.md`;
 - `references/211-local-doctor-wiki-repository-health-slice.md`;
 - `references/221-source-history-replay-slice.md`.

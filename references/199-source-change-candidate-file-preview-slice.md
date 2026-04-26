@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B5 by adding bounded,
+This slice advances Entangle L3 workstream B5 by adding bounded,
 read-only file preview for files listed on a source-change candidate.
 
 The goal remains operator inspection. Entangle can now preview one changed
@@ -23,7 +23,7 @@ The audit read the mandatory repository state files:
 - `wiki/log.md`;
 - `AGENTS.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/197-source-change-candidates-slice.md`;
 - `references/198-source-change-candidate-diff-slice.md`.
 

@@ -163,8 +163,8 @@ points to the local stable services.
 
 Example conceptual defaults:
 
-- relay profile `local-relay` -> `strfry`
-- git service `local-gitea` -> `gitea`
+- relay profile `preview-relay` -> `strfry`
+- git service `gitea` -> `gitea`
 - model profile `shared-claude` -> chosen hackathon endpoint
 
 These are deployment defaults, not hardcoded runner constants.

@@ -52,7 +52,7 @@ export interface LocalBackupManifest {
     paths: string[];
     secretsIncluded: false;
   };
-  product: "entangle-local-backup";
+  product: "entangle-backup";
   repository: {
     packageName: string;
     packageVersion: string;
@@ -375,7 +375,7 @@ function validateBackupManifest(rawManifest: unknown): LocalBackupManifest {
   const manifest = rawManifest as Partial<LocalBackupManifest>;
   if (
     manifest.schemaVersion !== "1" ||
-    manifest.product !== "entangle-local-backup"
+    manifest.product !== "entangle-backup"
   ) {
     throw new Error(
       "Backup manifest is not an Entangle local profile backup manifest."
@@ -461,7 +461,7 @@ export async function createLocalBackup(
       paths: [localSecretsPath],
       secretsIncluded: false
     },
-    product: "entangle-local-backup",
+    product: "entangle-backup",
     repository: await readRepositoryPackageMetadata(options.repositoryRoot),
     restore: {
       stateTargetPath: localHostStatePath

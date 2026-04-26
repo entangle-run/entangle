@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B1/B2 by making the first
+This slice advances Entangle L3 workstream B1/B2 by making the first
 OpenCode runner adapter more diagnosable and more node-scoped without widening
 the public node runtime back to legacy model inference.
 

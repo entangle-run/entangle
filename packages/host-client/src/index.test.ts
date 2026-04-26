@@ -885,10 +885,10 @@ describe("createHostClient", () => {
                 },
                 resolvedResourceBindings: {
                   externalPrincipalRefs: [],
-                  gitServiceRefs: ["local-gitea"],
-                  relayProfileRefs: ["local-relay"]
+                  gitServiceRefs: ["gitea"],
+                  relayProfileRefs: ["preview-relay"]
                 },
-                runtimeProfile: "local",
+                runtimeProfile: "federated",
                 schemaVersion: "1"
               },
               runtime: {
@@ -922,10 +922,10 @@ describe("createHostClient", () => {
             },
             resolvedResourceBindings: {
               externalPrincipalRefs: [],
-              gitServiceRefs: ["local-gitea"],
-              relayProfileRefs: ["local-relay"]
+              gitServiceRefs: ["gitea"],
+              relayProfileRefs: ["preview-relay"]
             },
-            runtimeProfile: "local",
+            runtimeProfile: "federated",
             schemaVersion: "1"
           },
           runtime: {
@@ -988,10 +988,10 @@ describe("createHostClient", () => {
               },
               resolvedResourceBindings: {
                 externalPrincipalRefs: [],
-                gitServiceRefs: ["local-gitea"],
-                relayProfileRefs: ["local-relay"]
+                gitServiceRefs: ["gitea"],
+                relayProfileRefs: ["preview-relay"]
               },
-              runtimeProfile: "local",
+              runtimeProfile: "federated",
               schemaVersion: "1"
             },
             runtime: {
@@ -1029,10 +1029,10 @@ describe("createHostClient", () => {
               },
               resolvedResourceBindings: {
                 externalPrincipalRefs: [],
-                gitServiceRefs: ["local-gitea"],
-                relayProfileRefs: ["local-relay"]
+                gitServiceRefs: ["gitea"],
+                relayProfileRefs: ["preview-relay"]
               },
-              runtimeProfile: "local",
+              runtimeProfile: "federated",
               schemaVersion: "1"
             },
             runtime: {
@@ -1668,7 +1668,7 @@ describe("createHostClient", () => {
                 principalId: "worker-it-git",
                 displayName: "Worker IT Git Principal",
                 systemKind: "git",
-                gitServiceRef: "local-gitea",
+                gitServiceRef: "gitea",
                 subject: "worker-it",
                 transportAuthMode: "ssh_key",
                 secretRef: "secret://git/worker-it/ssh",
@@ -1694,7 +1694,7 @@ describe("createHostClient", () => {
     await expect(client.getExternalPrincipal("worker-it-git")).resolves.toMatchObject({
       principal: {
         principalId: "worker-it-git",
-        gitServiceRef: "local-gitea"
+        gitServiceRef: "gitea"
       }
     });
   });
@@ -1724,7 +1724,7 @@ describe("createHostClient", () => {
                     locator: {
                       branch: "worker-it/session-alpha/review-patch",
                       commit: "abc123",
-                      gitServiceRef: "local-gitea",
+                      gitServiceRef: "gitea",
                       namespace: "team-alpha",
                       path: "reports/session-alpha/turn-001.md"
                     },
@@ -1782,7 +1782,7 @@ describe("createHostClient", () => {
                   locator: {
                     branch: "worker-it/session-alpha/review-patch",
                     commit: "abc123",
-                    gitServiceRef: "local-gitea",
+                    gitServiceRef: "gitea",
                     namespace: "team-alpha",
                     path: "reports/session-alpha/turn-001.md"
                   },
@@ -2127,7 +2127,7 @@ describe("createHostClient", () => {
                   locator: {
                     branch: "main",
                     commit: "abc123",
-                    gitServiceRef: "local-gitea",
+                    gitServiceRef: "gitea",
                     namespace: "team-alpha",
                     path: "reports/session-alpha/turn-001.md",
                     repositoryName: "team-alpha"
@@ -2887,13 +2887,13 @@ describe("createHostClient", () => {
         branch: "worker-it/source-history/source-history-source-change-turn-alpha",
         publication: {
           publishedAt: "2026-04-24T00:04:00.000Z",
-          remoteName: "entangle-local-gitea",
+          remoteName: "entangle-gitea",
           remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
           state: "published"
         },
         requestedAt: "2026-04-24T00:04:00.000Z",
         requestedBy: "operator-alpha",
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "graph-alpha"
       },
@@ -2906,7 +2906,7 @@ describe("createHostClient", () => {
       },
       publication: {
         publishedAt: "2026-04-24T00:04:00.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
@@ -2918,7 +2918,7 @@ describe("createHostClient", () => {
         locator: {
           branch: "worker-it/source-history/source-history-source-change-turn-alpha",
           commit: "artifact-commit-alpha",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           path: ".",
           repositoryName: "graph-alpha"
@@ -3016,7 +3016,7 @@ describe("createHostClient", () => {
           publishedBy: "operator-alpha",
           reason: "Publish source history.",
           retry: true,
-          targetGitServiceRef: "local-gitea",
+          targetGitServiceRef: "gitea",
           targetNamespace: "team-alpha",
           targetRepositoryName: "graph-alpha"
         }
@@ -3094,7 +3094,7 @@ describe("createHostClient", () => {
           publishedBy: "operator-alpha",
           reason: "Publish source history.",
           retry: true,
-          targetGitServiceRef: "local-gitea",
+          targetGitServiceRef: "gitea",
           targetNamespace: "team-alpha",
           targetRepositoryName: "graph-alpha"
         }),
@@ -3133,13 +3133,13 @@ describe("createHostClient", () => {
       nodeId: "worker-it",
       publication: {
         publishedAt: "2026-04-24T00:06:00.000Z",
-        remoteName: "entangle-local-gitea",
+        remoteName: "entangle-gitea",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       publicationId: "wiki-publication-alpha",
       requestedBy: "operator-alpha",
-      targetGitServiceRef: "local-gitea",
+      targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
       targetRepositoryName: "graph-alpha",
       updatedAt: "2026-04-24T00:06:00.000Z"
@@ -3158,7 +3158,7 @@ describe("createHostClient", () => {
         locator: {
           branch: "worker-it/wiki-repository/entangle-wiki",
           commit: "artifact-wiki-commit-alpha",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           path: ".",
           repositoryName: "graph-alpha"

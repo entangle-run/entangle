@@ -10,14 +10,14 @@ host is reachable.
 
 ## [2026-04-26] implementation | Added Local reliability smoke
 
-Added `pnpm ops:smoke-local:reliability` for initialized Entangle Local
+Added `pnpm ops:smoke-local:reliability` for initialized Entangle
 profiles. The smoke creates a temporary `entangle local backup` bundle,
 validates `entangle local restore --dry-run`, checks `entangle local repair
 --skip-live --json`, and removes the temporary backup bundle after the check.
 
 ## [2026-04-26] implementation | Added conservative Local repair foundation
 
-Advanced Entangle Local L4 reliability with `entangle local repair`. The command
+Advanced Entangle L4 reliability with `entangle local repair`. The command
 runs the Local doctor, builds a conservative repair plan, defaults to dry-run
 output, and applies only actions marked safe when `--apply-safe` is supplied.
 
@@ -29,7 +29,7 @@ blocked/manual rather than mutated.
 
 ## [2026-04-26] implementation | Added Local backup and restore foundation
 
-Advanced Entangle Local L4 reliability with `entangle local backup` and
+Advanced Entangle L4 reliability with `entangle local backup` and
 `entangle local restore`. Backups now create a schema-versioned directory
 bundle containing `.entangle/host`, selected Local profile config snapshots,
 copy statistics, package metadata, state-layout status, and explicit exclusions
@@ -43,14 +43,14 @@ and unsupported-future layout rejection.
 
 ## [2026-04-26] implementation | Added diagnostics bundle smoke
 
-Added `pnpm ops:smoke-local:diagnostics` for already-running Entangle Local
+Added `pnpm ops:smoke-local:diagnostics` for already-running Entangle
 profiles. The smoke runs `entangle local diagnostics`, writes a temporary
 redacted JSON support bundle, validates the stable top-level shape, and removes
 the temporary bundle after the check.
 
 ## [2026-04-26] implementation | Added Local diagnostics support bundle
 
-Advanced Entangle Local C5 by adding `entangle local diagnostics`, a read-only
+Advanced Entangle C5 by adding `entangle local diagnostics`, a read-only
 CLI command that writes a schema-versioned JSON support bundle. The bundle
 includes the Local doctor report, bounded Docker Compose service status and
 log captures, runner-image inspection, and live host status, runtime,
@@ -63,7 +63,7 @@ failure extraction, and release-run attachment guidance.
 
 ## [2026-04-26] implementation | Added Local state layout compatibility checks
 
-Advanced the Entangle Local reliability track by introducing a version-1
+Advanced the Entangle reliability track by introducing a version-1
 `.entangle/host/state-layout.json` marker for host-owned Local state. The host
 now materializes the marker on first startup and refuses unreadable,
 unsupported legacy, or unsupported future layout records before mutating state.
@@ -78,7 +78,7 @@ passed `CI=1 TURBO_DAEMON=false pnpm verify`.
 
 ## [2026-04-26] implementation | Installed OpenCode in the Local runner image
 
-Closed a concrete OpenCode availability gap for Entangle Local: the default
+Closed a concrete OpenCode availability gap for Entangle: the default
 node engine is OpenCode, so the Local runner image now installs pinned
 `opencode-ai@1.14.20` and verifies `opencode --version` during image build.
 The pin matches the local OpenCode resource checkout at
@@ -95,7 +95,7 @@ typecheck/lint/tests, a Docker build of the runner runtime target tagged
 
 ## [2026-04-26] implementation | Surfaced runtime approval blockers and artifacts
 
-Advanced Entangle Local B8 runtime visibility by adding generic
+Advanced Entangle B8 runtime visibility by adding generic
 `agentRuntime` inspection fields for pending approval blocker ids, the latest
 engine turn's produced artifact ids, and the latest engine turn's requested
 approval ids. The host derives those fields from runner turn and approval
@@ -111,7 +111,7 @@ Studio, plus focused contract, host, host-client, and CLI tests.
 
 ## [2026-04-26] implementation | Materialized engine-requested approval gates
 
-Advanced Entangle Local B7/B3 by extending the OpenCode `entangle-actions`
+Advanced Entangle B7/B3 by extending the OpenCode `entangle-actions`
 bridge beyond handoffs. `AgentEngineTurnResult` now accepts generic
 `approvalRequestDirectives`, the OpenCode adapter validates those directives
 from bounded action blocks, and runner turns record `requestedApprovalIds`.
@@ -130,7 +130,7 @@ work.
 
 ## [2026-04-25] implementation | Added operator scoped approval decisions
 
-Advanced Entangle Local L3 approval governance with an explicit host mutation
+Advanced Entangle L3 approval governance with an explicit host mutation
 for runtime approval decisions. `POST /v1/runtimes/{nodeId}/approvals` can now
 create a new operation/resource-scoped approval decision for source mutation
 workflows or decide an existing pending approval without respecifying its
@@ -152,7 +152,7 @@ bounded prefix plus UUID.
 
 ## [2026-04-25] implementation | Added Local doctor foundation
 
-Started Entangle Local L4 reliability workstream C1 with a read-only
+Started Entangle L4 reliability workstream C1 with a read-only
 `entangle local doctor` command. The command reports severity-ranked Local
 profile diagnostics in human-readable or JSON form and supports `--strict` for
 release/smoke preparation plus `--skip-live` for offline checks.
@@ -170,7 +170,7 @@ known Studio chunk-size warning.
 
 ## [2026-04-25] implementation | Scoped approvals to operations and resources
 
-Tightened Entangle Local L3 approval evidence for source mutations. Approval
+Tightened Entangle L3 approval evidence for source mutations. Approval
 request metadata, runner approval records, observed approval activity, and
 typed approval trace events now carry optional operation and resource scope.
 Source-candidate application and source-history publication gates require exact
@@ -190,7 +190,7 @@ still reports only the known Studio chunk-size warning.
 
 ## [2026-04-25] implementation | Added source mutation policy gates
 
-Advanced Entangle Local L3 workstreams B3 and B5. Graph node bindings now carry
+Advanced Entangle L3 workstreams B3 and B5. Graph node bindings now carry
 optional `policy.sourceMutation` controls, and effective runtime context exposes
 the resolved source mutation policy. Source-candidate apply and source-history
 publish mutations now accept `approvalId`; the host requires an approved
@@ -213,7 +213,7 @@ same package tests passed when run directly.
 
 ## [2026-04-25] implementation | Added source history publication controls
 
-Advanced Entangle Local L3 workstream B5. Source-history publication now has
+Advanced Entangle L3 workstream B5. Source-history publication now has
 explicit retry and git target-selection semantics. The host rejects replacement
 of a failed publication attempt unless `retry: true` is supplied, keeps already
 published source-history entries immutable, resolves optional git service,
@@ -232,7 +232,7 @@ end-to-end OpenCode-backed source-publication smoke coverage remain open.
 
 ## [2026-04-25] implementation | Added runtime artifact history and diff inspection
 
-Advanced Entangle Local L3 workstream B5. Materialized git-backed runtime
+Advanced Entangle L3 workstream B5. Materialized git-backed runtime
 artifacts now expose bounded history and diff inspection through the host
 boundary. The host validates runtime context, keeps inspection inside the
 runtime artifact/retrieval workspaces, rejects unsafe locator paths, bounds git
@@ -248,7 +248,7 @@ OpenCode-backed source-publication smoke coverage remain open.
 
 ## [2026-04-25] implementation | Added source history publication
 
-Advanced Entangle Local L3 workstream B5. Applied source-history entries can
+Advanced Entangle L3 workstream B5. Applied source-history entries can
 now be published as git commit artifacts through the host boundary. The host
 verifies the recorded source-history commit and tree, materializes the tree
 into a dedicated publication repository, pushes to the runtime's resolved
@@ -257,14 +257,14 @@ source-history record and artifact record, emits `source_history.published`,
 and exposes the flow through the shared host client, CLI, and Studio.
 
 The shared git service contract now also supports local `file://` remotes via
-`transportKind: "file"` so Entangle Local can exercise real git pushes against
+`transportKind: "file"` so Entangle can exercise real git pushes against
 bare repositories without network access. Policy approval, richer publication
 retry/target controls, artifact restore/replay semantics, and end-to-end
 OpenCode-backed source-publication smoke coverage remain open.
 
 ## [2026-04-25] implementation | Added local source history application
 
-Advanced Entangle Local L3 workstream B5. Accepted source-change candidates can
+Advanced Entangle L3 workstream B5. Accepted source-change candidates can
 now be explicitly applied into runtime-local source history. The host validates
 that the current source workspace still matches either the candidate base tree
 or head tree, records `already_in_workspace` or `applied_to_workspace`, creates
@@ -280,7 +280,7 @@ end-to-end OpenCode-backed smoke coverage remain open B5 work.
 
 ## [2026-04-25] implementation | Added source change candidate review mutation
 
-Advanced Entangle Local L3 workstream B5. Source-change candidates now have an
+Advanced Entangle L3 workstream B5. Source-change candidates now have an
 audited host review mutation for `accepted`, `rejected`, and `superseded`
 decisions. The host only mutates pending candidates, records structured review
 metadata, validates supersession targets, and emits
@@ -297,7 +297,7 @@ end-to-end OpenCode-backed smoke coverage remain open B5 work.
 
 ## [2026-04-25] implementation | Added source change candidate file preview
 
-Advanced Entangle Local L3 workstream B5. Source-change candidates with
+Advanced Entangle L3 workstream B5. Source-change candidates with
 shadow-git tree snapshots now expose a bounded read-only file preview route for
 paths listed in the candidate changed-file summary. The host reads from the
 candidate `headTree`, bounds text to 16 KiB, rejects unsafe or unlisted paths,
@@ -313,7 +313,7 @@ linkage remain open B5 work.
 
 ## [2026-04-25] implementation | Added source change candidate diff inspection
 
-Advanced Entangle Local L3 workstream B5. Source-change candidates that carry a
+Advanced Entangle L3 workstream B5. Source-change candidates that carry a
 shadow-git tree snapshot can now be inspected through a bounded read-only diff
 route on the host. The response returns the candidate plus either a sanitized
 `text/x-diff` payload or a bounded unavailable reason, without changing
@@ -329,7 +329,7 @@ linkage remain open B5 work.
 
 ## [2026-04-25] implementation | Added source change candidate inspection
 
-Advanced Entangle Local L3 workstream B5. Changed source workspace turns now
+Advanced Entangle L3 workstream B5. Changed source workspace turns now
 create durable pending `SourceChangeCandidateRecord` entries with the harvested
 source-change summary and optional shadow-git tree snapshot references. Runner
 turns, observed activity, and `runner.turn.updated` events now carry
@@ -346,7 +346,7 @@ publication, and artifact linkage remain open B5 work.
 
 ## [2026-04-25] implementation | Added source workspace change harvesting
 
-Advanced Entangle Local L3 workstream B5. Runner turns now record a generic
+Advanced Entangle L3 workstream B5. Runner turns now record a generic
 `sourceChangeSummary` after engine execution, including bounded changed-file
 summaries, additions/deletions, optional diff excerpts, truncation state, and
 bounded failure evidence. The runner prepares a baseline before the engine turn
@@ -365,7 +365,7 @@ APIs, and publication remain open B5 work.
 
 ## [2026-04-25] implementation | Added node workspace health inspection
 
-Advanced Entangle Local L3 workstream B4. Runtime inspection now carries a
+Advanced Entangle L3 workstream B4. Runtime inspection now carries a
 generic `workspaceHealth` summary for the current Local node workspace layout,
 including package, injected context, memory, artifact workspace, runtime state,
 retrieval cache, source workspace, engine state, and wiki repository surfaces.
@@ -385,7 +385,7 @@ cleanly.
 
 ## [2026-04-25] implementation | Added OpenCode permission-block observability
 
-Advanced Entangle Local L3 workstream B3. Engine turn contracts now include a
+Advanced Entangle L3 workstream B3. Engine turn contracts now include a
 generic permission-observation model, an Entangle-facing policy operation
 vocabulary, and a `policy_denied` failure classification. The OpenCode runner
 adapter now recognizes the one-shot CLI permission auto-rejection line, maps the
@@ -402,7 +402,7 @@ approval records or feed decisions back into OpenCode.
 
 ## [2026-04-25] implementation | Hardened OpenCode adapter lifecycle checks
 
-Advanced Entangle Local L3 workstream B2. The OpenCode runner adapter now runs
+Advanced Entangle L3 workstream B2. The OpenCode runner adapter now runs
 `opencode --version` with the node-scoped environment before each one-shot run,
 persists the probed version as a generic `engineVersion`, and exposes the latest
 engine version through runner outcomes, host runtime inspection, shared
@@ -419,7 +419,7 @@ remain open.
 
 ## [2026-04-25] implementation | Added generic agent runtime inspection status
 
-Advanced Entangle Local L3 workstream B1/B8. Host runtime inspection now exposes
+Advanced Entangle L3 workstream B1/B8. Host runtime inspection now exposes
 a generic `agentRuntime` summary derived from effective runtime context and
 durable turn records, including mode, engine profile kind/reference/display
 name, default agent, state scope, last engine session, last engine turn, stop
@@ -433,7 +433,7 @@ panels remain open L3 work.
 
 ## [2026-04-25] implementation | Isolated OpenCode node runtime state
 
-Advanced Entangle Local L3 workstream B1/B2. Engine turn outcomes now carry a
+Advanced Entangle L3 workstream B1/B2. Engine turn outcomes now carry a
 generic optional `engineSessionId`, and the OpenCode runner adapter captures
 the JSON `sessionID` emitted by `opencode run --format json` so persisted turns
 and trace surfaces can link Entangle turns to engine sessions without exposing
@@ -450,17 +450,17 @@ availability DTOs remain open L3 work.
 
 ## [2026-04-25] implementation | Renamed the active Local runtime profile
 
-Started Entangle Local completion workstream A1/A2. The active runtime profile
+Started Entangle completion workstream A1/A2. The active runtime profile
 machine value is now `local` in schemas, graph defaults, package scaffolds,
 examples, smoke scripts, and active tests. Current product documents now use
-Entangle Local language for scope and release status, while historical release
+Entangle language for scope and release status, while historical release
 packets remain historical evidence. Added
 `references/190-local-runtime-profile-rename-slice.md` to record the slice
 scope, decision, constraints, and verification plan.
 
-## [2026-04-25] planning | Made the Entangle Local plan audit-gated
+## [2026-04-25] planning | Made the Entangle plan audit-gated
 
-Updated `references/189-entangle-local-completion-plan.md` so the plan now
+Updated `references/189-entangle-completion-plan.md` so the plan now
 requires a deep initial audit before execution and a mandatory entry, drift,
 design, implementation, closure, milestone-exit, and blocker audit loop for
 every task from A1 through D5. The update records the current audit baseline:
@@ -468,10 +468,10 @@ L2 complete, L3 in progress, L4/L5 incomplete, `hackathon_local` still active
 as machine state, OpenCode wired only as the first safe adapter, and the local
 reference corpus materialized at the manifest commits.
 
-## [2026-04-25] planning | Added the Entangle Local completion plan
+## [2026-04-25] planning | Added the Entangle completion plan
 
-Added `references/189-entangle-local-completion-plan.md` as the detailed
-completion plan for Entangle Local from the current post-L2/L3-in-progress
+Added `references/189-entangle-completion-plan.md` as the detailed
+completion plan for Entangle from the current post-L2/L3-in-progress
 state through L3 Agentic Node Runtime, L4 Local Reliability, and L5 Local GA.
 The plan records mandatory professional constraints, task breakdowns,
 subtasks, acceptance criteria, and the required execution order.
@@ -586,8 +586,8 @@ test/typecheck/lint commands.
 Closed the first L2 graph-template workflow by adding
 `entangle graph templates list` and
 `entangle graph templates export <templateId> <file>`. The command exposes the
-canonical `examples/local-preview/graph.json` graph as the built-in
-`local-preview` template, writes pretty JSON, and preserves root-relative path
+canonical `examples/federated-preview/graph.json` graph as the built-in
+`federated-preview` template, writes pretty JSON, and preserves root-relative path
 behavior when run through `pnpm --filter`.
 
 This is intentionally a CLI template export path over existing graph assets,
@@ -653,7 +653,7 @@ memory inspection, and the full Docker-backed release gate before any
 ## [2026-04-25] release | Closed L1.5 Local Operator Preview
 
 Closed L1.5 as `v0.1.5-local-operator-preview`. The release adds canonical
-Local Preview assets, `pnpm ops:demo-local-preview`, reset guidance, CLI
+Federated Preview assets, `pnpm ops:demo-federated-preview`, reset guidance, CLI
 inspection evidence, and a release packet under
 `releases/local/l1.5-local-operator-preview.md`.
 
@@ -665,9 +665,9 @@ Cloud, Enterprise, or production readiness.
 
 ## [2026-04-25] implementation | Started L1.5 Local Operator Preview
 
-Added canonical Local Preview assets under `examples/local-preview/`, including
+Added canonical Federated Preview assets under `examples/federated-preview/`, including
 an inspectable AgentPackage, graph, and model-stub catalog example. Added
-`pnpm ops:demo-local-preview` and `pnpm ops:demo-local-preview:reset` as the
+`pnpm ops:demo-federated-preview` and `pnpm ops:demo-federated-preview:reset` as the
 near-one-command demo and reset paths for the L1.5 release packet.
 
 The preview path reuses the same host, runner, local relay, model-stub, and
@@ -692,7 +692,7 @@ next active Local target to L1.5 Local Operator Preview.
 ## [2026-04-25] audit | Added Local GA product truth baseline
 
 Added `references/180-local-ga-product-truth-audit.md` as the current
-milestone truth table and execution baseline for taking Entangle Local from
+milestone truth table and execution baseline for taking Entangle from
 R1/L1 release closure through Local GA.
 
 The audit confirmed that the current repository is functionally ready to close
@@ -2358,7 +2358,7 @@ readiness.
 ## [2026-04-25] planning | Reframed roadmap around three final products
 
 Rewrote `references/174-definitive-production-delivery-roadmap.md` around the
-three final products: Entangle Local, Entangle Cloud, and
+three final products: Entangle, Entangle Cloud, and
 Entangle Enterprise. The roadmap now requires sequential product
 development: finish Local first, then begin Cloud, then package the
 stable production core as Entangle Enterprise.
@@ -2374,7 +2374,7 @@ infrastructure from displacing completion of the first final product.
 Added `references/178-product-line-roadmap-readiness-audit.md` after a critical
 roadmap, documentation, and code readiness audit. The audit corrected product
 name drift across README, wiki overview, wiki log, the definitive roadmap, and
-the R1 ledger so the final products are Entangle Local, Entangle Cloud, and
+the R1 ledger so the final products are Entangle, Entangle Cloud, and
 Entangle Enterprise.
 
 The roadmap now records that `LatticeOps` is only the imported redesign corpus
@@ -2420,7 +2420,7 @@ configuration surface.
 ## [2026-04-25] implementation | Added runner-owned wiki repository snapshots
 
 Added `references/210-wiki-repository-sync-slice.md` and advanced B4 of the
-Entangle Local completion plan. Completed runner turns now mirror the node's
+Entangle completion plan. Completed runner turns now mirror the node's
 active `memory/wiki` tree into the materialized `wiki-repository` workspace,
 initialize a local git repository when needed, commit changed snapshots on the
 `entangle-wiki` branch, and persist a bounded sync outcome on the turn record.
@@ -2445,7 +2445,7 @@ repair, publish, or delete node memory repositories.
 ## [2026-04-26] implementation | Added bounded engine-request summaries
 
 Added `references/212-engine-request-summary-slice.md` and advanced B6 of the
-Entangle Local completion plan. Executable runner turns now persist bounded
+Entangle completion plan. Executable runner turns now persist bounded
 `engineRequestSummary` evidence for the assembled engine request shape:
 prompt part counts, aggregate prompt character counts, memory, artifact, and
 tool counts, execution limits, peer-route inclusion, and generation time.
@@ -2459,7 +2459,7 @@ or engine-specific request payloads.
 ## [2026-04-26] implementation | Added policy and workspace prompt context
 
 Added `references/213-engine-prompt-policy-workspace-context-slice.md` and
-continued B6 of the Entangle Local completion plan. Executable runner turns
+continued B6 of the Entangle completion plan. Executable runner turns
 now include explicit prompt context for agent-runtime mode/profile, logical
 workspace ownership boundaries, autonomy policy, source-mutation approval
 policy, and inbound response/constraint controls.
@@ -2473,7 +2473,7 @@ inspection.
 ## [2026-04-26] implementation | Bridged OpenCode action directives
 
 Added `references/214-opencode-action-directive-bridge-slice.md` and advanced
-B7 of the Entangle Local completion plan. Executable turn assembly now includes
+B7 of the Entangle completion plan. Executable turn assembly now includes
 an Entangle action contract telling node-local coding engines to propose
 side effects through fenced `entangle-actions` JSON blocks rather than
 messaging peers or publishing artifacts directly.
@@ -2500,7 +2500,7 @@ without granting the rejected side effect.
 ## [2026-04-26] implementation | Added safe runtime artifact restore
 
 Added `references/215-runtime-artifact-restore-slice.md` and advanced B5 of
-the Entangle Local completion plan. Supported git-backed runtime artifacts can
+the Entangle completion plan. Supported git-backed runtime artifacts can
 now be restored through the host, CLI, and Studio into
 `artifactWorkspaceRoot/restores/{restoreId}` with durable restore-attempt
 records under runtime state.
@@ -2542,7 +2542,7 @@ package test script now pins `--pool=forks` so the repository-level
 ## [2026-04-26] implementation | Added non-primary publication provisioning
 
 Added `references/218-non-primary-publication-provisioning-slice.md` and
-advanced B5 of the Entangle Local completion plan. Source-history publication
+advanced B5 of the Entangle completion plan. Source-history publication
 now runs host-owned Gitea provisioning for the resolved publication target, so
 selected non-primary `gitea_api` repositories are created before the remote git
 push path is attempted.
@@ -2557,7 +2557,7 @@ behavior.
 ## [2026-04-26] implementation | Added approval-gated artifact promotion
 
 Added `references/219-artifact-promotion-slice.md` and advanced B5 of the
-Entangle Local completion plan. Git-backed artifacts that were safely restored
+Entangle completion plan. Git-backed artifacts that were safely restored
 into the artifact restore workspace can now be promoted into the node source
 workspace through a host-mediated `artifact-promote` flow.
 
@@ -2569,7 +2569,7 @@ unless overwrite is explicitly requested.
 ## [2026-04-26] implementation | Added external session cancellation
 
 Added `references/220-external-session-cancellation-slice.md` and closed the
-first external cancellation bridge for Entangle Local agentic node turns. The
+first external cancellation bridge for Entangle agentic node turns. The
 host now persists node-scoped cancellation requests under runtime state, the
 shared host client and CLI expose cancellation commands, and the runner observes
 requests while idle or mid-turn.
@@ -2614,7 +2614,7 @@ source workspace.
 ## [2026-04-26] implementation | Added artifact promotion history inspection
 
 Extended `references/219-artifact-promotion-slice.md` and closed the persisted
-promotion-history inspection gap for Entangle Local artifact promotion. The host
+promotion-history inspection gap for Entangle artifact promotion. The host
 now exposes all-runtime and per-artifact promotion-attempt lists, the shared
 host client and CLI consume the same contracts, and Studio shows recent
 promotion attempts next to restore history in selected artifact detail.
@@ -2626,7 +2626,7 @@ or bypass the existing scoped `source_application` approval gate.
 ## [2026-04-26] implementation | Added direct source-history replay
 
 Added `references/221-source-history-replay-slice.md` and advanced B5 of the
-Entangle Local completion plan. Source-history entries can now be replayed
+Entangle completion plan. Source-history entries can now be replayed
 directly into a node source workspace through host, shared host-client, CLI, and
 Studio surfaces without requiring the indirect publish -> restore -> promote
 artifact path.
@@ -2641,7 +2641,7 @@ of overwriting user work.
 ## [2026-04-26] implementation | Added wiki repository publication
 
 Added `references/222-wiki-repository-publication-slice.md` and advanced the
-node memory/artifact bridge for Entangle Local. A clean node
+node memory/artifact bridge for Entangle. A clean node
 `wiki-repository` HEAD can now be published through the host as a git-backed
 `knowledge_summary` artifact, with durable publication records and typed
 `wiki_repository.published` events.
@@ -2823,11 +2823,20 @@ follow-up work.
 
 Added `references/244-product-naming-migration-slice.md` and implemented the
 thirteenth federated pivot slice. New Host-created and local-repair-created
-state layout records now use product marker `entangle`, while the schema still
-accepts legacy `entangle-local` markers for pre-release compatibility.
+state layout records now use product marker `entangle`, and the schema accepts
+only that product marker.
 
 Current README, resources, deployment, wiki overview, and CLI local-profile
 wording now describe Entangle as the product and local as a deployment profile.
-Historical Local-era docs, local Docker/network names, backup bundle markers,
-and compatibility fixtures are intentionally preserved as local adapter or
-history records.
+Same-machine Docker/network names, backup bundle markers, diagnostics names,
+workspace layout names, and runtime profile fixtures no longer use a separate
+local product identity.
+
+## [2026-04-26] implementation | Removed remaining local product markers
+
+Corrected the naming migration after the federated pivot decision became
+stricter: there is no legacy product marker and no local runtime profile in the
+active codebase. The canonical runtime profile is now only `"federated"`, Host
+state layout records parse only product marker `entangle`, and the old Local
+Preview graph fixture has been renamed to the deployment-agnostic Federated
+Preview example under `examples/federated-preview/`.

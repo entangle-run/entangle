@@ -89,7 +89,7 @@ function buildHttpsRuntimeContext(input: {
             principalId: "worker-it-git-https",
             displayName: "Worker IT HTTPS Git Principal",
             systemKind: "git",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             subject: "worker-it",
             transportAuthMode: "https_token",
             secretRef: "secret://git/worker-it/https-token",
@@ -114,7 +114,7 @@ function buildHttpsRuntimeContext(input: {
           baseUrl: "https://gitea.example",
           defaultNamespace: "team-alpha",
           displayName: "Local Gitea",
-          id: "local-gitea",
+          id: "gitea",
           provisioning: {
             mode: "preexisting"
           },
@@ -124,14 +124,14 @@ function buildHttpsRuntimeContext(input: {
       ],
       primaryGitPrincipalRef: "worker-it-git-https",
       primaryGitRepositoryTarget: {
-        gitServiceRef: "local-gitea",
+        gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "preexisting",
         remoteUrl: "https://gitea.example/git/team-alpha/graph-alpha.git",
         repositoryName: "graph-alpha",
         transportKind: "https"
       },
-      primaryGitServiceRef: "local-gitea"
+      primaryGitServiceRef: "gitea"
     }
   };
 }
@@ -501,7 +501,7 @@ describe("RunnerService", () => {
     );
 
     expect(retrievedArtifactRecord?.retrieval).toMatchObject({
-      remoteName: "entangle-local-gitea",
+      remoteName: "entangle-gitea",
       remoteUrl: upstreamFixture.remoteRepositoryPath,
       state: "retrieved"
     });
@@ -580,7 +580,7 @@ describe("RunnerService", () => {
             peerNodeId: "worker-qa",
             peerPubkey: remotePublicKey,
             relation: "delegates_to",
-            relayProfileRefs: ["local-relay"]
+            relayProfileRefs: ["preview-relay"]
           }
         ]
       }
@@ -1006,7 +1006,7 @@ describe("RunnerService", () => {
             peerNodeId: "worker-qa",
             peerPubkey: remotePublicKey,
             relation: "delegates_to",
-            relayProfileRefs: ["local-relay"]
+            relayProfileRefs: ["preview-relay"]
           },
           {
             channel: "default",
@@ -1014,7 +1014,7 @@ describe("RunnerService", () => {
             peerNodeId: "worker-docs",
             peerPubkey: docsPublicKey,
             relation: "peer_collaborates_with",
-            relayProfileRefs: ["local-relay"]
+            relayProfileRefs: ["preview-relay"]
           }
         ]
       }
@@ -2044,7 +2044,7 @@ describe("RunnerService", () => {
     expect(capturedRequest?.artifactInputs[0]?.repoPath).toContain(
       path.join(
         runtimeContext.workspace.retrievalRoot,
-        "local-gitea",
+        "gitea",
         "team-alpha",
         "review-artifacts"
       )
@@ -2472,7 +2472,7 @@ describe("RunnerService", () => {
 
     expect(artifactRecord.ref.status).toBe("published");
     expect(artifactRecord.publication?.state).toBe("published");
-    expect(artifactRecord.publication?.remoteName).toBe("entangle-local-gitea");
+    expect(artifactRecord.publication?.remoteName).toBe("entangle-gitea");
     expect(artifactRecord.publication?.remoteUrl).toBe(fixture.remoteRepositoryPath);
 
     const remoteRef = spawnSync(
@@ -2722,7 +2722,7 @@ describe("RunnerService", () => {
 
     expect(artifactRecord.ref.status).toBe("materialized");
     expect(artifactRecord.publication?.state).toBe("failed");
-    expect(artifactRecord.publication?.remoteName).toBe("entangle-local-gitea");
+    expect(artifactRecord.publication?.remoteName).toBe("entangle-gitea");
     expect(artifactRecord.publication?.remoteUrl).toBe(fixture.remoteRepositoryPath);
     expect(artifactRecord.publication?.lastError).toContain("Git command failed");
     expect(artifactRecord.materialization?.repoPath).toBe(

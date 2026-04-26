@@ -1,10 +1,10 @@
-# Entangle Local GA Product Truth Audit
+# Entangle GA Product Truth Audit
 
 Date: 2026-04-25.
 
 ## Purpose
 
-This audit is the product-truth baseline for carrying Entangle Local from the
+This audit is the product-truth baseline for carrying Entangle from the
 R1/L1 local operator release toward Local GA.
 
 It maps the repository's actual implemented state against the requested Local
@@ -44,7 +44,7 @@ as follows:
 | R1.2 Local Workbench | L2 | Productized package, graph, session, and artifact workflows. |
 | R1.3 Agentic Node Runtime | L3 | Per-node coding-agent runtime selection, OpenCode integration path, policy bridge, git/wiki workspaces, and observability. |
 | R1.4 Local Reliability | L4 | Doctor, repair, backup, restore, upgrade, and diagnostics. |
-| GA Entangle Local GA | L5 | Complete local/developer product. |
+| GA Entangle GA | L5 | Complete local/developer product. |
 
 Cloud and Enterprise remain future product lines and are not active
 implementation tracks before Local GA.
@@ -170,7 +170,7 @@ known Vite chunk-size warning for the current bundle.
 | R1.2 / L2 Local Workbench | Released as `v0.2-local-workbench`. | Package scaffold/admission, package inspect, package tool-catalog validation, graph/node/edge mutation, shared graph diff for CLI and Studio, Studio active-graph validation, host graph import/export through the CLI, CLI graph template export, host API plus CLI and Studio session launch over host-resolved runtime context, CLI launch wait polling through host session inspection, runtime/session/artifact/turn/approval inspection, artifact filtering, bounded preview, bounded git history/diff inspection, and runtime memory inspection with bounded page preview exist. | None for L2; graph bundles, broader artifact replay/promotion beyond the first source-workspace path, and relay-publish retry remain later work. |
 | R1.3 / L3 Agentic Node Runtime | Contract, host-context foundation, first safe OpenCode process execution path, first generic status surface, source-change harvesting, pending candidate read surface, bounded candidate diff inspection, bounded listed-file preview, candidate review mutation, local source-history application, target-aware retryable source-history publication with scoped approval gates and non-primary Gitea provisioning, host-scoped approval decision creation, bounded git artifact history/diff inspection, safe git artifact restore with restore-attempt history, approval-gated source-workspace promotion from restored artifacts and promotion-history inspection, direct source-history replay, graph-backed node agent-runtime configuration, runner-owned local wiki-repository snapshots, host-mediated wiki-repository publication, bounded engine-request evidence, explicit policy/workspace prompt context, first OpenCode action-directive bridge, and external cancellation bridge exist, but the product milestone is not complete. | Catalog-level `agentEngineProfiles`, graph/node `agentRuntime`, effective runtime `agentRuntimeContext`, validator semantics, host default OpenCode profile, per-node source/artifact/engine-state/wiki workspace roots, runner OpenCode CLI/process adapter, node-scoped OpenCode DB/config/XDG runtime roots, pre-spawn workspace/state checks, OpenCode version probing, bounded process timeout handling, generic engine-session-id/version/permission turn observability, `policy_denied` classification for one-shot OpenCode permission auto-rejections, generic workspace-health runtime inspection, runner-owned source workspace change summaries, durable pending source-change candidates, bounded candidate diff inspection, bounded listed-file preview, audited accepted/rejected/superseded candidate review mutation, local source-history application records with optional approval linkage, source commit artifact publication records with explicit retry, target-selection controls, non-primary `gitea_api` publication target provisioning, operation/resource-scoped approval linkage, operator approval-decision mutation through host/CLI/Studio, bounded git artifact history/diff APIs, safe git artifact restore and restore-history APIs, approval-gated artifact promotion and promotion-history APIs through host/client/CLI/Studio, direct source-history replay and replay-history APIs through host/client/CLI/Studio, host-written session cancellation requests with runner observation, engine abort propagation, and CLI/Studio controls, generic host runtime `agentRuntime` inspection consumed by CLI and Studio, latest produced artifact/requested approval ids and pending approval blockers in runtime inspection, CLI `host nodes agent-runtime` configuration, Studio Managed Node Editor runtime mode/profile/default-agent controls, post-turn `memory/wiki` snapshots committed into the node-local `wiki-repository` branch, wiki repository publication records and `wiki_repository.published` events through host/client/CLI/Studio, structural engine-request summaries propagated through runner turns and host events, prompt assembly that includes agent-runtime, workspace-boundary, policy, inbound-control, and Entangle action-contract context, OpenCode `entangle-actions` parsing into validated generic handoff directives, and engine-requested approval directives that persist pending approval gates on runner turns exist. | Full policy bridge, richer engine lifecycle, live OpenCode permission/approval mapping and approval resumption, fallback/replication behavior across publication targets, wiki restore/promotion and merge behavior, richer source-history merge/reconcile behavior, and richer runtime state panels. |
 | R1.4 / L4 Local Reliability | Early reliability foundation exists, but reliability product is incomplete and must follow L3. | Strict preflight, active smoke, disposable smoke, runtime smoke, reset through Compose volume teardown, first read-only `entangle local doctor` diagnostics with JSON, strict/offline modes, runtime workspace health, runtime wiki repository health, runner-image OpenCode availability checks, version-1 local state layout compatibility surfaced by host status, CLI, Studio, and doctor, first redacted `entangle local diagnostics` JSON support bundle with bounded runtime turn/approval/artifact evidence, Local diagnostics and reliability smokes, first versioned `.entangle/host` backup/validated restore commands that exclude local secrets, and a first dry-run-first conservative repair command for safe host-state initialization and missing layout-marker recovery. | Host-level stale-runtime repair, destructive restore rehearsal, layout migration rehearsal beyond the version-1 marker, deeper remediation, and conservative drift repair. |
-| L5 Entangle Local GA | Not ready and must not be claimed. | Core local runtime works, but agentic-node-runtime, reliability, onboarding, and release-discipline gaps remain. | Complete Local docs, install/demo path, OpenCode-backed node execution, repair/backup/upgrade, release notes, website claim audit, GA tag only after all gates pass. |
+| L5 Entangle GA | Not ready and must not be claimed. | Core local runtime works, but agentic-node-runtime, reliability, onboarding, and release-discipline gaps remain. | Complete Local docs, install/demo path, OpenCode-backed node execution, repair/backup/upgrade, release notes, website claim audit, GA tag only after all gates pass. |
 
 ## Existing Capability Matrix
 
@@ -269,7 +269,7 @@ failure.
   handoff directives. Materialized git artifacts can now also be restored into
   explicit artifact workspace restore directories through the host, CLI, and
   Studio without overwriting existing targets by default.
-  Entangle Local still lacks the complete policy bridge, live OpenCode
+  Entangle still lacks the complete policy bridge, live OpenCode
   approval mapping, fallback/replication behavior
   across publication targets, wiki restore/promotion, richer source-history
   merge/reconcile behavior, doctor remediation, and richer runtime evidence panels required for L3
@@ -280,7 +280,7 @@ failure.
 
 The detailed task, constraint, and mandatory per-step audit-loop breakdown now
 lives in
-[189-entangle-local-completion-plan.md](189-entangle-local-completion-plan.md).
+[189-entangle-completion-plan.md](189-entangle-completion-plan.md).
 
 1. Build L3 Agentic Node Runtime.
    - Keep Entangle as graph, identity, policy, artifact, wiki, and

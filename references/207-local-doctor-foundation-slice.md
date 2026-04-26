@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice starts Entangle Local L4 reliability workstream C1 by adding a
+This slice starts Entangle L4 reliability workstream C1 by adding a
 read-only `entangle local doctor` CLI diagnostic.
 
 The goal is not yet a full repair system. The goal is to give a local operator
@@ -21,7 +21,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`.
+- `references/189-entangle-completion-plan.md`.
 
 The implementation audit inspected:
 

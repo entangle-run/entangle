@@ -1,5 +1,5 @@
 {
-  "runtimeProfile": "local",
+  "runtimeProfile": "federated",
   "toolBudget": {
     "maxOutputTokens": 512,
     "maxToolTurns": 2

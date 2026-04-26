@@ -17,9 +17,9 @@ const approvals: ApprovalRecord[] = [
     requestedAt: "2026-04-24T11:00:00.000Z",
     requestedByNodeId: "worker-it",
     resource: {
-      id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+      id: "source-history-alpha|gitea|team-alpha|team-alpha",
       kind: "source_history_publication",
-      label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+      label: "source-history-alpha -> gitea/team-alpha/team-alpha"
     },
     sessionId: "session-alpha",
     status: "pending",
@@ -64,9 +64,9 @@ describe("runtime-approval-output", () => {
       label: "approval-newer · pending",
       operation: "source_publication",
       resource: {
-        id: "source-history-alpha|local-gitea|team-alpha|team-alpha",
+        id: "source-history-alpha|gitea|team-alpha|team-alpha",
         kind: "source_history_publication",
-        label: "source-history-alpha -> local-gitea/team-alpha/team-alpha"
+        label: "source-history-alpha -> gitea/team-alpha/team-alpha"
       },
       requestedByNodeId: "worker-it",
       sessionId: "session-alpha",
@@ -77,7 +77,7 @@ describe("runtime-approval-output", () => {
     expect(projectRuntimeApprovalSummary(approval!).detailLines).toEqual(
       expect.arrayContaining([
         "operation source_publication",
-        "resource source_history_publication:source-history-alpha|local-gitea|team-alpha|team-alpha (source-history-alpha -> local-gitea/team-alpha/team-alpha)",
+        "resource source_history_publication:source-history-alpha|gitea|team-alpha|team-alpha (source-history-alpha -> gitea/team-alpha/team-alpha)",
         "reason Review publication.",
         "conversation conv-alpha"
       ])

@@ -25,9 +25,9 @@ function createNodeInspection(): NodeInspectionResponse {
         packageSourceRef: "builder-package",
         resourceBindings: {
           externalPrincipalRefs: ["builder-git"],
-          gitServiceRefs: ["local-gitea"],
-          primaryGitServiceRef: "local-gitea",
-          relayProfileRefs: ["local-relay"]
+          gitServiceRefs: ["gitea"],
+          primaryGitServiceRef: "gitea",
+          relayProfileRefs: ["preview-relay"]
         }
       },
       packageSource: {
@@ -37,11 +37,11 @@ function createNodeInspection(): NodeInspectionResponse {
       },
       resolvedResourceBindings: {
         externalPrincipalRefs: ["builder-git"],
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
-        relayProfileRefs: ["local-relay"]
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
+        relayProfileRefs: ["preview-relay"]
       },
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       schemaVersion: "1"
     },
     runtime: {
@@ -75,9 +75,9 @@ describe("node agent runtime CLI helpers", () => {
       packageSourceRef: "builder-package",
       resourceBindings: {
         externalPrincipalRefs: ["builder-git"],
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
-        relayProfileRefs: ["local-relay"]
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
+        relayProfileRefs: ["preview-relay"]
       }
     });
   });
@@ -97,9 +97,9 @@ describe("node agent runtime CLI helpers", () => {
       },
       resourceBindings: {
         externalPrincipalRefs: ["builder-git"],
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
-        relayProfileRefs: ["local-relay"]
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
+        relayProfileRefs: ["preview-relay"]
       }
     });
   });

@@ -17,7 +17,7 @@ function createGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: []
       },
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     edges: [],
     graphId: "team-alpha",
@@ -107,7 +107,7 @@ function createExternalPrincipal(): ExternalPrincipalInspectionResponse {
   return {
     principal: {
       displayName: "IT Git",
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       principalId: "worker-it-git",
       secretRef: "secret://git/worker-it/ssh",
       subject: "worker-it",
@@ -142,7 +142,7 @@ describe("resource inventory CLI summary projection", () => {
     expect(
       projectExternalPrincipalSummary(createExternalPrincipal(), createGraph())
     ).toMatchObject({
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       label: "IT Git (worker-it-git)",
       principalId: "worker-it-git",
       referenceNodeIds: ["user-main", "worker-it"],

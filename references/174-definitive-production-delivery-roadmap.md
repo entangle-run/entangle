@@ -3,7 +3,7 @@
 This document is the execution roadmap for turning Entangle into three final
 products:
 
-1. Entangle Local;
+1. Entangle;
 2. Entangle Cloud;
 3. Entangle Enterprise.
 
@@ -20,7 +20,7 @@ for what the repository already proves.
 
 The product names are:
 
-1. Entangle Local;
+1. Entangle;
 2. Entangle Cloud;
 3. Entangle Enterprise.
 
@@ -41,7 +41,7 @@ This roadmap defines:
 - the audit and reconsideration loop before and after every serious slice;
 - quality gates for each release family;
 - the immediate path from the current repository to the first final product:
-  Entangle Local.
+  Entangle.
 
 ## Current State
 
@@ -79,9 +79,9 @@ The repository does not yet have:
 
 ## Final Product Line
 
-### Product 1: Entangle Local
+### Product 1: Entangle
 
-Entangle Local is the maximum local product.
+Entangle is the maximum local product.
 
 It is not a throwaway preview. It is the durable local/developer product for:
 
@@ -132,8 +132,8 @@ Its promise:
 
 Product development is sequential.
 
-1. Finish Entangle Local as the first final product.
-2. Start Entangle Cloud only after Entangle Local reaches its GA gate.
+1. Finish Entangle as the first final product.
+2. Start Entangle Cloud only after Entangle reaches its GA gate.
 3. Start Entangle Enterprise only after the Cloud product has a stable
    production core worth packaging for customer-operated environments.
 
@@ -246,7 +246,7 @@ If yes, update this roadmap or add a decision record before continuing.
 | Enterprise | E3 | Enterprise GA | Supported production self-host. |
 | Enterprise | E4 | Enterprise Complete | Air-gapped, HA, DR, multi-region, regulated-enterprise maturity. |
 
-## Product 1: Entangle Local
+## Product 1: Entangle
 
 ### L0: Closure And Ledger
 
@@ -365,7 +365,7 @@ Exit criteria:
 
 Target tag: `v0.2-local-workbench`.
 
-Target outcome: Entangle Local becomes a productive local workbench, not only a
+Target outcome: Entangle becomes a productive local workbench, not only a
 demo runtime.
 
 Incremental features:
@@ -478,7 +478,7 @@ Exit criteria:
 
 Target tag: `v0.4-local-reliability`.
 
-Target outcome: Entangle Local is robust enough for repeated technical use.
+Target outcome: Entangle is robust enough for repeated technical use.
 
 Incremental features:
 
@@ -520,11 +520,11 @@ Exit criteria:
 - common local drift is diagnosed without reading raw files;
 - repair behavior is conservative and never silently destroys user work.
 
-### L5: Entangle Local GA
+### L5: Entangle GA
 
 Target tag: `v1.0-local`.
 
-Target outcome: Entangle Local is a complete local/developer product.
+Target outcome: Entangle is a complete local/developer product.
 
 Required capabilities:
 
@@ -546,7 +546,7 @@ Required capabilities:
 
 Local GA exit criteria:
 
-- a technical user can use Entangle Local without reading source code;
+- a technical user can use Entangle without reading source code;
 - the product can survive repeated local use and upgrades;
 - Local remains useful even after Cloud and Enterprise exist;
 - Cloud development can begin without stealing Local closure work.
@@ -914,11 +914,11 @@ Agentic Node Runtime, not Local GA.
 L1.5 shipped:
 
 - canonical demo package, graph, and model-stub catalog assets now live under
-  `examples/local-preview/`;
-- `pnpm ops:demo-local-preview` starts the Local profile and runs the preview
+  `examples/federated-preview/`;
+- `pnpm ops:demo-federated-preview` starts the Local profile and runs the preview
   runtime path through the same host, runner, relay, model-stub, and
   Gitea/git-backed artifact flow as the runtime smoke;
-- `pnpm ops:demo-local-preview:reset` is the explicit reset path for preview
+- `pnpm ops:demo-federated-preview:reset` is the explicit reset path for preview
   state.
 
 Remaining implementation sequence:

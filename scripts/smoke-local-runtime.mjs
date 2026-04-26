@@ -28,53 +28,53 @@ const args = process.argv.slice(2);
 const previewDemo = args.includes("--preview-demo");
 const keepState = previewDemo || args.includes("--keep-state");
 const runSuffix = Date.now().toString(36);
-const outputPrefix = previewDemo ? "local-preview" : "runtime-smoke";
+const outputPrefix = previewDemo ? "federated-preview" : "runtime-smoke";
 const packageId = previewDemo
-  ? "local-preview-agent-package"
+  ? "federated-preview-agent-package"
   : `runtime-smoke-package-${runSuffix}`;
 const packageSourceId = previewDemo
-  ? "local-preview-package-source"
+  ? "federated-preview-package-source"
   : `runtime-smoke-source-${runSuffix}`;
 const graphId = previewDemo
-  ? "local-preview-graph"
+  ? "federated-preview-graph"
   : `runtime-smoke-graph-${runSuffix}`;
 const userNodeId = previewDemo
-  ? "local-preview-user"
+  ? "federated-preview-user"
   : `runtime-smoke-user-${runSuffix}`;
 const workerNodeId = previewDemo
-  ? "local-preview-planner"
+  ? "federated-preview-planner"
   : `runtime-smoke-worker-${runSuffix}`;
 const downstreamNodeId = previewDemo
-  ? "local-preview-builder"
+  ? "federated-preview-builder"
   : `runtime-smoke-downstream-${runSuffix}`;
 const edgeId = previewDemo
-  ? "local-preview-user-to-planner"
+  ? "federated-preview-user-to-planner"
   : `runtime-smoke-edge-${runSuffix}`;
 const downstreamEdgeId = previewDemo
-  ? "local-preview-user-to-builder"
+  ? "federated-preview-user-to-builder"
   : `runtime-smoke-downstream-edge-${runSuffix}`;
 const modelEndpointId = previewDemo
-  ? "local-preview-model"
+  ? "federated-preview-model"
   : `runtime-smoke-model-${runSuffix}`;
 const modelStubContainerName = previewDemo
-  ? "entangle-local-preview-model"
+  ? "entangle-preview-model"
   : `entangle-runtime-smoke-model-${runSuffix}`;
 const secretRef = `secret://local/${modelEndpointId}`;
 const gitPrincipalId = previewDemo
-  ? "local-preview-git"
+  ? "federated-preview-git"
   : `runtime-smoke-git-${runSuffix}`;
 const gitProvisioningSecretRef = previewDemo
-  ? "secret://git-services/local-preview/provisioning"
+  ? "secret://git-services/federated-preview/provisioning"
   : `secret://git-services/runtime-smoke-${runSuffix}/provisioning`;
 const gitPrincipalSecretRef = previewDemo
-  ? "secret://git/local-preview/https-token"
+  ? "secret://git/federated-preview/https-token"
   : `secret://git/runtime-smoke-${runSuffix}/https-token`;
 const giteaUsername = previewDemo
-  ? `local-preview-${runSuffix}`
+  ? `federated-preview-${runSuffix}`
   : `runtime-smoke-${runSuffix}`;
 const giteaPassword = `${giteaUsername}-password`;
 const hostPackagePath = previewDemo
-  ? "/tmp/entangle-local-preview-package"
+  ? "/tmp/entangle-preview-package"
   : `/tmp/${packageSourceId}`;
 const smokeSecret = `${outputPrefix}-secret-${runSuffix}`;
 const smokeSessionId = `${outputPrefix}-session-${runSuffix}`;
@@ -85,7 +85,7 @@ const downstreamTurnId = `${outputPrefix}-downstream-turn-${runSuffix}`;
 const previewPackageRoot = path.join(
   repositoryRoot,
   "examples",
-  "local-preview",
+  "federated-preview",
   "agent-package"
 );
 
@@ -124,11 +124,11 @@ const pollIntervalMs = readPositiveInteger(
   defaultPollIntervalMs
 );
 const hostUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_HOST_URL ?? process.env.ENTANGLE_LOCAL_HOST_URL,
+  process.env.ENTANGLE_HOST_URL,
   defaultHostUrl
 );
 const relayUrl = normalizeWebsocketUrl(
-  process.env.ENTANGLE_STRFRY_URL ?? process.env.ENTANGLE_LOCAL_RELAY_URL,
+  process.env.ENTANGLE_RELAY_URL ?? process.env.ENTANGLE_STRFRY_URL,
   defaultRelayUrl
 );
 const hostToken =
@@ -217,12 +217,12 @@ function buildModelStubServerSource() {
   const expectedToken = JSON.stringify(smokeSecret);
   const runLabel = previewDemo ? "Local preview" : "Runtime smoke";
   const focus = previewDemo
-    ? "Validate the Local Preview operator path."
+    ? "Validate the Federated Preview operator path."
     : "Validate the local Entangle runtime message path.";
   const stableFact = previewDemo
-    ? "The Local Preview demo uses canonical package assets with a local model stub."
+    ? "The Federated Preview demo uses canonical package assets with a local model stub."
     : "The local runtime smoke uses a disposable model endpoint and package source.";
-  const summary = `The ${previewDemo ? "Local Preview demo" : "local runtime smoke"} exercised message intake, model execution, artifact materialization, and memory synthesis.`;
+  const summary = `The ${previewDemo ? "Federated Preview demo" : "local runtime smoke"} exercised message intake, model execution, artifact materialization, and memory synthesis.`;
 
   return `
 const http = require("node:http");
@@ -407,7 +407,7 @@ async function startModelStubContainer() {
     "--name",
     modelStubContainerName,
     "--network",
-    "entangle-local",
+    "entangle",
     "node:22-bookworm-slim",
     "node",
     "-e",
@@ -557,7 +557,7 @@ async function writeSmokePackage(packageRoot) {
       "utf8"
     ),
     writeJsonFile(path.join(packageRoot, "runtime", "config.json"), {
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       toolBudget: {
         maxOutputTokens: 256,
         maxToolTurns: 2
@@ -619,12 +619,12 @@ function assertValidationOk(label, response) {
 }
 
 function buildSmokeCatalog(catalog) {
-  const gitServiceRef = catalog.defaults.gitServiceRef ?? "local-gitea";
+  const gitServiceRef = catalog.defaults.gitServiceRef ?? "gitea";
   const smokeGitService = {
     authMode: "https_token",
     baseUrl: "http://gitea:3000",
     defaultNamespace: giteaUsername,
-    displayName: previewDemo ? "Local Preview Gitea" : "Runtime Smoke Gitea",
+    displayName: previewDemo ? "Federated Preview Gitea" : "Runtime Smoke Gitea",
     id: gitServiceRef,
     provisioning: {
       apiBaseUrl: "http://gitea:3000/api/v1",
@@ -648,13 +648,13 @@ function buildSmokeCatalog(catalog) {
       {
         id: modelEndpointId,
         displayName: previewDemo
-          ? "Local Preview Model Stub"
+          ? "Federated Preview Model Stub"
           : "Runtime Smoke Model Endpoint",
         adapterKind: "openai_compatible",
         baseUrl: `http://${modelStubContainerName}:8080/v1`,
         authMode: "api_key_bearer",
         secretRef,
-        defaultModel: previewDemo ? "local-preview-model" : "runtime-smoke-model"
+        defaultModel: previewDemo ? "federated-preview-model" : "runtime-smoke-model"
       }
     ],
     defaults: {
@@ -688,7 +688,7 @@ function buildSmokeGraph(catalog) {
       transportPolicy: {
         mode: "bidirectional_shared_set",
         relayProfileRefs,
-        channel: previewDemo ? "local-preview" : "runtime-smoke"
+        channel: previewDemo ? "federated-preview" : "runtime-smoke"
       }
     },
     {
@@ -701,7 +701,7 @@ function buildSmokeGraph(catalog) {
         mode: "bidirectional_shared_set",
         relayProfileRefs,
         channel: previewDemo
-          ? "local-preview-handoff"
+          ? "federated-preview-handoff"
           : "runtime-smoke-handoff"
       }
     }
@@ -710,7 +710,7 @@ function buildSmokeGraph(catalog) {
   if (previewDemo) {
     edges.push(
       {
-        edgeId: "local-preview-planner-to-builder",
+        edgeId: "federated-preview-planner-to-builder",
         fromNodeId: workerNodeId,
         toNodeId: downstreamNodeId,
         relation: "routes_to",
@@ -718,11 +718,11 @@ function buildSmokeGraph(catalog) {
         transportPolicy: {
           mode: "bidirectional_shared_set",
           relayProfileRefs,
-          channel: "local-preview-artifact-handoff"
+          channel: "federated-preview-artifact-handoff"
         }
       },
       {
-        edgeId: "local-preview-builder-review",
+        edgeId: "federated-preview-builder-review",
         fromNodeId: downstreamNodeId,
         toNodeId: workerNodeId,
         relation: "reviews",
@@ -730,7 +730,7 @@ function buildSmokeGraph(catalog) {
         transportPolicy: {
           mode: "bidirectional_shared_set",
           relayProfileRefs,
-          channel: "local-preview-review"
+          channel: "federated-preview-review"
         }
       }
     );
@@ -739,17 +739,17 @@ function buildSmokeGraph(catalog) {
   return {
     schemaVersion: "1",
     graphId,
-    name: previewDemo ? "Local Preview Graph" : "Runtime Smoke Graph",
+    name: previewDemo ? "Federated Preview Graph" : "Runtime Smoke Graph",
     nodes: [
       {
         nodeId: userNodeId,
-        displayName: previewDemo ? "Local Preview User" : "Runtime Smoke User",
+        displayName: previewDemo ? "Federated Preview User" : "Runtime Smoke User",
         nodeKind: "user"
       },
       {
         nodeId: workerNodeId,
         displayName: previewDemo
-          ? "Local Preview Planner"
+          ? "Federated Preview Planner"
           : "Runtime Smoke Worker",
         nodeKind: "worker",
         packageSourceRef: packageSourceId,
@@ -758,7 +758,7 @@ function buildSmokeGraph(catalog) {
       {
         nodeId: downstreamNodeId,
         displayName: previewDemo
-          ? "Local Preview Builder"
+          ? "Federated Preview Builder"
           : "Runtime Smoke Downstream Worker",
         nodeKind: "worker",
         packageSourceRef: packageSourceId,
@@ -768,7 +768,7 @@ function buildSmokeGraph(catalog) {
     edges,
     defaults: {
       resourceBindings: sharedResourceBindings,
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     }
   };
 }
@@ -779,14 +779,14 @@ async function upsertSmokeGitPrincipal(gitServiceRef) {
     `/v1/external-principals/${gitPrincipalId}`,
     {
       principalId: gitPrincipalId,
-      displayName: previewDemo ? "Local Preview Git Principal" : "Runtime Smoke Git Principal",
+      displayName: previewDemo ? "Federated Preview Git Principal" : "Runtime Smoke Git Principal",
       systemKind: "git",
       gitServiceRef,
       subject: giteaUsername,
       transportAuthMode: "https_token",
       secretRef: gitPrincipalSecretRef,
       attribution: {
-        displayName: previewDemo ? "Local Preview Git Principal" : "Runtime Smoke Git Principal",
+        displayName: previewDemo ? "Federated Preview Git Principal" : "Runtime Smoke Git Principal",
         email: `${giteaUsername}@entangle.invalid`
       },
       signing: {
@@ -1242,7 +1242,7 @@ async function main() {
     if (previewDemo) {
       console.log(
         [
-          "Local Preview demo completed.",
+          "Federated Preview demo completed.",
           `Session: ${smokeSessionId}`,
           `Planner node: ${workerNodeId}`,
           `Builder node: ${downstreamNodeId}`,
@@ -1253,7 +1253,7 @@ async function main() {
           `  pnpm --filter @entangle/cli dev host runtimes artifacts ${workerNodeId} --summary`,
           `  pnpm --filter @entangle/cli dev host runtimes artifacts ${downstreamNodeId} --summary`,
           "Reset when finished:",
-          "  pnpm ops:demo-local-preview:reset"
+          "  pnpm ops:demo-federated-preview:reset"
         ].join("\n")
       );
     } else {

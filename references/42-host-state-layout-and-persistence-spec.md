@@ -269,7 +269,7 @@ On host startup, the first serious implementation should:
 This is the minimum disciplined recovery model for a real local control plane.
 
 The active Local implementation writes `state-layout.json` with product
-`entangle-local`, schema version `1`, and layout version `1`. `GET
+`entangle`, schema version `1`, and layout version `1`. `GET
 /v1/host/status`, shared host-client formatters, Studio, and `entangle local
 doctor` expose the same machine-readable layout status so upgrade checks are
 visible before repair, backup, or restore operations become available.

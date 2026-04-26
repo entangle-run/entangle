@@ -8,7 +8,7 @@ const skipBuild = args.includes("--skip-build");
 const reset = args.includes("--reset");
 const defaultGiteaUrl = "http://localhost:3001";
 const giteaUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_GITEA_URL ?? process.env.ENTANGLE_LOCAL_GITEA_URL,
+  process.env.ENTANGLE_GITEA_URL,
   defaultGiteaUrl
 );
 
@@ -32,7 +32,7 @@ function run(command, commandArgs) {
 }
 
 function removePreviewModelStub() {
-  spawnSync("docker", ["rm", "-f", "entangle-local-preview-model"], {
+  spawnSync("docker", ["rm", "-f", "entangle-preview-model"], {
     encoding: "utf8",
     stdio: "ignore"
   });
@@ -60,7 +60,7 @@ function waitForHttp(url, label) {
     );
 
     if (result.status === 0) {
-      console.log(`PASS local-preview:${label}: ${url}`);
+      console.log(`PASS federated-preview:${label}: ${url}`);
       return;
     }
 
@@ -82,7 +82,7 @@ if (reset) {
     "down",
     "--volumes"
   ]);
-  console.log("Local Preview demo state reset.");
+  console.log("Federated Preview demo state reset.");
 } else {
   run("pnpm", ["ops:check-local:strict"]);
 

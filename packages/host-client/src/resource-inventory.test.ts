@@ -80,7 +80,7 @@ function createPrincipalInspection(
   return {
     principal: {
       displayName: principalId === "worker-a-git" ? "Worker A Git" : "Worker B Git",
-      gitServiceRef: "local-gitea",
+      gitServiceRef: "gitea",
       principalId,
       secretRef: `secret://git/${principalId}/ssh`,
       subject: principalId,
@@ -123,7 +123,7 @@ describe("resource inventory presentation helpers", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "local"
+        runtimeProfile: "federated"
       },
       edges: [],
       graphId: "demo",
@@ -189,7 +189,7 @@ describe("resource inventory presentation helpers", () => {
       "Worker A Git (worker-a-git)"
     );
     expect(formatExternalPrincipalDetail(inspections[1]!)).toBe(
-      "git - local-gitea - ssh_key - subject worker-a-git"
+      "git - gitea - ssh_key - subject worker-a-git"
     );
   });
 
@@ -201,7 +201,7 @@ describe("resource inventory presentation helpers", () => {
           gitServiceRefs: [],
           relayProfileRefs: []
         },
-        runtimeProfile: "local"
+        runtimeProfile: "federated"
       },
       edges: [],
       graphId: "team-alpha",

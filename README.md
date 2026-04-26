@@ -21,15 +21,16 @@ architecture discovery.
   Shared internal packages. The first scaffold includes `types/`, `validator/`,
   `host-client/`, `agent-engine/`, and `package-scaffold/`.
 - `examples/`
-  Product-line examples. The active Local Preview assets live under
-  `examples/local-preview/`.
+  Canonical example graphs and packages. The active Federated Preview assets
+  live under `examples/federated-preview/`.
 - `deploy/`
-  Deployment profiles. The active profile is `deploy/local/`; future Cloud and
-  Enterprise deployment material should be added only when the roadmap reaches
-  those gates.
+  Deployment profiles. The current same-machine profile is `deploy/local/`;
+  future remote or managed deployment material should be added only when the
+  roadmap reaches those gates.
 - `releases/`
-  Release-control packets organized by product line. These point back to the
-  canonical roadmap and ledgers instead of duplicating specification truth.
+  Release-control packets organized by deployment milestone. These point back
+  to the canonical roadmap and ledgers instead of duplicating specification
+  truth.
 - `resources/`
   External reference repositories and a manifest of the research corpus. This directory holds local clones of the primary systems, protocols, and engines studied while designing Entangle.
 - `references/`
@@ -52,9 +53,9 @@ Entangle generalizes that model into an explicit graph:
 
 The system is not just a chat application with agents behind it. It is a graph-native runtime for AI organizations.
 
-## Local Profile Scope Principle
+## Same-Machine Profile Scope Principle
 
-Entangle's local deployment profile should not be architecturally simplified
+Entangle's same-machine deployment profile should not be architecturally simplified
 for short-term delivery. The correct rule is:
 
 > Keep the final architecture. Reduce only the active feature surface and the number of active components.
@@ -62,7 +63,7 @@ for short-term delivery. The correct rule is:
 That means:
 
 - stable types now;
-- restricted execution profile for the local deployment profile while the
+- restricted execution profile for the same-machine deployment profile while the
   product matures;
 - no deliberate shortcuts that would invalidate later features such as remote node attachment, richer transport policies, multi-relay operation, or stronger governance.
 
@@ -85,7 +86,7 @@ This repository currently contains:
   graph state under `.entangle/host`;
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
-  shared host client, CLI, and Studio for local profiles that should not expose
+  shared host client, CLI, and Studio for same-machine profiles that should not expose
   an open mutation surface, plus typed `security` audit events for protected
   mutation requests through `host.operator_request.completed`;
 - host-managed external principal records for backend-facing identities such as
@@ -202,7 +203,7 @@ This repository currently contains:
   than inferred absence;
 - runtime-context artifact metadata that now carries resolved git principal
   bindings, including secret-delivery availability and mounted-file delivery
-  paths for the current local profile;
+  paths for the current same-machine profile;
 - deterministic primary git repository-target resolution in runtime context,
   separating HTTP/API service base URLs from SSH/HTTPS remote transport roots
   and carrying explicit provisioning mode hints for the selected git service;
@@ -298,29 +299,29 @@ This repository currently contains:
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
   for toolchain, Docker, Docker Compose, daemon access, and Compose config
   validity;
-- an explicit deployment profile layout where active Local deployment material
+- an explicit deployment profile layout where active same-machine deployment material
   lives under `deploy/local/`, with scripts sharing profile paths through
   `scripts/local-profile-paths.mjs`;
 - an explicit release-control area under `releases/`, with the released Local
   L1 operator-baseline packet pointing back to the canonical R1/L1 ledger;
-- an active local profile smoke through `pnpm ops:smoke-local` that checks the
+- an active same-machine profile smoke through `pnpm ops:smoke-local` that checks the
   running Compose services, runner image presence, host JSON APIs, Studio HTTP,
   Gitea HTTP reachability, and the local `strfry` Nostr WebSocket path;
-- a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics` that
-  writes a temporary redacted diagnostics bundle against a running Local
-  profile and validates its stable top-level shape;
-- a Local reliability smoke through `pnpm ops:smoke-local:reliability` that
+- a same-machine diagnostics smoke through `pnpm ops:smoke-local:diagnostics` that
+  writes a temporary redacted diagnostics bundle against a running
+  same-machine profile and validates its stable top-level shape;
+- a same-machine reliability smoke through `pnpm ops:smoke-local:reliability` that
   creates a temporary backup bundle, validates restore dry-run, and verifies
-  repair dry-run output against an initialized Local profile;
-- first Local backup/restore commands through `entangle local backup` and
+  repair dry-run output against an initialized same-machine profile;
+- first same-machine backup/restore commands through `entangle local backup` and
   `entangle local restore`, using a versioned directory bundle for
-  `.entangle/host`, selected Local profile config snapshots, explicit secret
+  `.entangle/host`, selected same-machine profile config snapshots, explicit secret
   exclusion, and restore-time state-layout compatibility checks;
-- a first conservative Local repair command through `entangle local repair`,
+- a first conservative same-machine repair command through `entangle local repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization or missing layout-marker repairs when `--apply-safe` is
   supplied;
-- a disposable local profile smoke through `pnpm ops:smoke-local:disposable`
+- a disposable same-machine profile smoke through `pnpm ops:smoke-local:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-local:runtime`
@@ -334,12 +335,12 @@ This repository currently contains:
   session and runner-turn state, verifies published git-backed artifact
   materialization, verifies downstream retrieval of the upstream artifact by
   `ArtifactRef`, and stops both runtimes;
-- a released Local Preview demo path through `pnpm ops:demo-local-preview` that
+- a released Federated Preview demo path through `pnpm ops:demo-federated-preview` that
   starts the Local Compose profile, verifies local services, runs the runtime
-  path through canonical `examples/local-preview/` package assets, publishes
+  path through canonical `examples/federated-preview/` package assets, publishes
   through the local relay, writes git-backed artifacts to local Gitea, and
   leaves the profile running for Studio and CLI inspection, with
-  `pnpm ops:demo-local-preview:reset` as the reset path;
+  `pnpm ops:demo-federated-preview:reset` as the reset path;
 - a released L2 Local Workbench implementation with `entangle package
   inspect`, package tool-catalog validation, `entangle graph diff`,
   root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
@@ -352,7 +353,7 @@ This repository currently contains:
   artifact filtering by `--session-id`, bounded local report-artifact preview
   through the host API, CLI, and Studio, runtime memory page inspection and
   bounded preview through the host API, CLI, and Studio, and CLI graph
-  template list/export commands for the canonical Local Preview graph;
+  template list/export commands for the canonical Federated Preview graph;
 - a quality baseline with ESLint, Vitest, GitHub Actions CI, and
   socketless host service tests that keep ordinary verification portable in
   constrained sandbox or CI profiles;
@@ -681,8 +682,8 @@ This repository currently contains:
   engine profile, and default-agent overrides, while Studio's Managed Node
   Editor now loads catalog engine profiles and writes the same graph-backed
   `agentRuntime` fields through the shared host-client node mutation boundary;
-- the first Local reliability diagnostic slice where `entangle local doctor`
-  performs read-only checks over Local profile files, Node/pnpm/Docker/Compose,
+- the first same-machine reliability diagnostic slice where `entangle local doctor`
+  performs read-only checks over same-machine profile files, Node/pnpm/Docker/Compose,
   the runner image, OpenCode availability on the host and inside the runner
   image, `.entangle/host`, local state layout compatibility, host status,
   host-reported state layout status, runtime workspace health, git principals,
@@ -768,7 +769,7 @@ The highest-value remaining gaps are:
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
-  disposable local profile, especially CI-grade coverage and non-disposable
+  disposable same-machine profile, especially CI-grade coverage and non-disposable
   upgrade/repair behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:

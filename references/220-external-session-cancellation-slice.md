@@ -4,7 +4,7 @@ Date: 2026-04-26.
 
 ## Purpose
 
-This slice closes the first Entangle Local external cancellation bridge for
+This slice closes the first Entangle external cancellation bridge for
 agentic node turns.
 
 Cancellation is modeled as a host-written runtime intent, not as an ad hoc

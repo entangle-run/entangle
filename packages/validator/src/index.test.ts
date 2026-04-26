@@ -56,7 +56,7 @@ function buildGraph(
         gitServiceRefs: [],
         relayProfileRefs: []
       },
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     edges: [],
     graphId: "demo-graph",
@@ -114,7 +114,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
             principalId: "worker-it-git",
             displayName: "Worker IT Git Principal",
             systemKind: "git",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             subject: "worker-it",
             transportAuthMode: "ssh_key",
             secretRef: "secret://git/worker-it/ssh"
@@ -131,7 +131,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
       ],
       gitServices: [
         {
-          id: "local-gitea",
+          id: "gitea",
           displayName: "Local Gitea",
           baseUrl: "https://gitea.local",
           remoteBase: "ssh://git@gitea.local:22",
@@ -145,14 +145,14 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
       ],
       primaryGitPrincipalRef: "worker-it-git",
       primaryGitRepositoryTarget: {
-        gitServiceRef: "local-gitea",
+        gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "preexisting",
         remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
         repositoryName: "graph-alpha",
         transportKind: "ssh"
       },
-      primaryGitServiceRef: "local-gitea"
+      primaryGitServiceRef: "gitea"
     },
     binding: {
       bindingId: "graph-alpha.worker-it",
@@ -169,18 +169,18 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         nodeKind: "worker",
         resourceBindings: {
           externalPrincipalRefs: [],
-          gitServiceRefs: ["local-gitea"],
-          primaryGitServiceRef: "local-gitea",
+          gitServiceRefs: ["gitea"],
+          primaryGitServiceRef: "gitea",
           relayProfileRefs: []
         }
       },
       resolvedResourceBindings: {
         externalPrincipalRefs: [],
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
         relayProfileRefs: []
       },
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-23T00:00:00.000Z",
@@ -200,7 +200,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     relayContext: {
       edgeRoutes: [],
@@ -575,8 +575,8 @@ describe("validateGraphDocument", () => {
     const report = validateGraphDocument(
       buildGraph("worker-source", {
         externalPrincipalRefs: ["worker-git"],
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
         relayProfileRefs: []
       }),
       {
@@ -586,7 +586,7 @@ describe("validateGraphDocument", () => {
           relays: [],
           gitServices: [
             {
-              id: "local-gitea",
+              id: "gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
               remoteBase: "ssh://git@gitea.local:22",
@@ -695,8 +695,8 @@ describe("validateGraphDocument", () => {
     const report = validateGraphDocument(
       buildGraph("worker-source", {
         externalPrincipalRefs: [],
-        gitServiceRefs: ["local-gitea"],
-        primaryGitServiceRef: "local-gitea",
+        gitServiceRefs: ["gitea"],
+        primaryGitServiceRef: "gitea",
         relayProfileRefs: []
       }),
       {
@@ -706,7 +706,7 @@ describe("validateGraphDocument", () => {
           relays: [],
           gitServices: [
             {
-              id: "local-gitea",
+              id: "gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
               remoteBase: "ssh://git@gitea.local:22",
@@ -741,7 +741,7 @@ describe("validateGraphDocument", () => {
     const report = validateGraphDocument(
       buildGraph("worker-source", {
         externalPrincipalRefs: ["worker-git-main", "worker-git-backup"],
-        gitServiceRefs: ["local-gitea", "backup-gitea"],
+        gitServiceRefs: ["gitea", "backup-gitea"],
         relayProfileRefs: []
       }),
       {
@@ -751,7 +751,7 @@ describe("validateGraphDocument", () => {
           relays: [],
           gitServices: [
             {
-              id: "local-gitea",
+              id: "gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
               remoteBase: "ssh://git@gitea.local:22",
@@ -783,7 +783,7 @@ describe("validateGraphDocument", () => {
             principalId: "worker-git-main",
             displayName: "Worker Git Main",
             systemKind: "git",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             subject: "worker",
             transportAuthMode: "ssh_key",
             secretRef: "secret://git/worker/main"
@@ -1039,7 +1039,7 @@ describe("validateRuntimeArtifactRefs", () => {
           locator: {
             branch: "worker-it/session-alpha/review",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/turn-001.md"

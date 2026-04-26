@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B5 by turning an operator
+This slice advances Entangle L3 workstream B5 by turning an operator
 accepted source-change candidate into a durable local source-history entry.
 
 The implementation deliberately remained local and explicit at the time of
@@ -23,7 +23,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/196-source-workspace-change-harvesting-slice.md`;
 - `references/197-source-change-candidates-slice.md`;
 - `references/198-source-change-candidate-diff-slice.md`;
@@ -92,7 +92,7 @@ Follow-up slice `references/202-source-history-publication-slice.md` added
 explicit source-history publication and source commit artifact records while
 preserving this slice's separation between application and publication.
 
-The mutation is host-mediated in Entangle Local because the active product
+The mutation is host-mediated in Entangle because the active product
 surface already exposes local operator mutations through the host boundary.
 The design still treats engines as proposers and Entangle as the validator and
 side-effect owner; future remote runner control can move the low-level apply

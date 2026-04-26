@@ -24,12 +24,12 @@ const entry: SourceHistoryRecord = {
     branch: "worker-it/source-history/source-history-source-change-turn-alpha",
     publication: {
       publishedAt: "2026-04-24T00:04:00.000Z",
-      remoteName: "entangle-local-gitea",
+      remoteName: "entangle-gitea",
       remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
       state: "published"
     },
     requestedAt: "2026-04-24T00:04:00.000Z",
-    targetGitServiceRef: "local-gitea",
+    targetGitServiceRef: "gitea",
     targetNamespace: "team-alpha",
     targetRepositoryName: "graph-alpha"
   },
@@ -56,7 +56,7 @@ describe("runtime source history CLI output", () => {
       applicationApprovalId: "approval-source-apply-alpha",
       mode: "already_in_workspace",
       publicationApprovalId: "approval-source-publish-alpha",
-      publicationTarget: "local-gitea/team-alpha/graph-alpha",
+      publicationTarget: "gitea/team-alpha/graph-alpha",
       publicationState: "published",
       publishedArtifactId: "source-source-history-source-change-turn-alpha",
       sourceHistoryId: "source-history-source-change-turn-alpha"

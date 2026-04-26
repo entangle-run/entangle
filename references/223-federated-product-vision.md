@@ -2,17 +2,16 @@
 
 ## Current Repo Truth
 
-The root README calls the product Entangle, but major active docs and deploy
-material still frame the release path as Entangle Local. That framing matches
-the current implementation but undersells the durable architecture already
-present in the canonical docs: graph-native topology, users as nodes,
-Nostr-signed messages, artifact backends, node-local runtime state, and
-separate Host/Runner/Studio/CLI roles.
+The root README calls the product Entangle, and the implementation now uses a
+single Entangle product/state marker plus the `"federated"` runtime profile.
+Older release and deployment docs still contain many same-machine delivery
+notes. Those are useful implementation history, but current product messaging
+must not frame the runtime as a separate local product or a local graph mode.
 
-Recent Local slices added real coding-agent behavior, OpenCode execution,
-source changes, approvals, artifact promotion, wiki repository publication,
-and local smokes. They prove an integrated single-workstation runtime, not a
-federated runtime.
+Recent same-machine slices added real coding-agent behavior, OpenCode
+execution, source changes, approvals, artifact promotion, wiki repository
+publication, and Docker smokes. They prove an integrated workstation
+deployment, not yet a fully distributed runtime.
 
 ## Target Model
 
@@ -36,8 +35,10 @@ The graph is the live operational model:
 - artifacts are referenced and auditable;
 - Studio and CLI expose both operator and user-node surfaces.
 
-Local deployment remains important, but it is the simplest deployment profile,
-not the product identity.
+Same-machine deployment remains important, but it is only one deployment
+topology. The graph, runtime profile, identity, assignment, and protocol model
+must be identical when all services run on one host and when they run across
+multiple networks.
 
 ## Impacted Modules/Files
 
@@ -48,7 +49,7 @@ not the product identity.
 - `references/177-r1-local-operator-release-ledger.md`
 - `references/178-product-line-roadmap-readiness-audit.md`
 - `references/180-local-ga-product-truth-audit.md`
-- `references/189-entangle-local-completion-plan.md`
+- `references/189-entangle-completion-plan.md`
 - `references/39-local-deployment-topology-and-compose-spec.md`
 - `wiki/overview.md`
 - `wiki/decisions/architecture-baseline.md`
@@ -57,8 +58,8 @@ not the product identity.
 ## Concrete Changes Required
 
 - Treat Entangle as the public product name.
-- Reframe Local as a deployment profile in docs, CLI help, Studio text, and
-  release language.
+- Reframe same-machine deployment as a deployment profile in docs, CLI help,
+  Studio text, and release language.
 - Preserve local operational commands where they describe the local adapter.
 - Replace product-line sequencing of Local/Cloud/Enterprise with deployment
   profile language unless a document is explicitly historical.
@@ -75,10 +76,11 @@ not the product identity.
 
 ## Migration/Compatibility Notes
 
-Existing `entangle local ...` commands can remain. They should mean “operate the
-local deployment profile”, not “operate a separate product”.
+Existing `entangle local ...` commands can remain where they operate the
+same-machine deployment adapter. They must not imply a separate product, graph
+mode, or runtime profile.
 
-Historical docs may keep Entangle Local language if marked historical or
+Historical docs may keep Entangle language if marked historical or
 superseded. Current public docs should prefer Entangle.
 
 ## Risks And Mitigations
@@ -94,5 +96,6 @@ superseded. Current public docs should prefer Entangle.
 
 ## Open Questions
 
-- Should the old Local release packets remain under `releases/local`, or should
-  future release packets be organized by deployment profile and milestone?
+No open question blocks this slice. Future release packets should be organized
+around Entangle deployment milestones, with same-machine deployment treated as
+one topology.

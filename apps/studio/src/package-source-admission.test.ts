@@ -129,7 +129,7 @@ describe("package source admission helpers", () => {
         agentRuntime: {
           mode: "coding_agent"
         },
-        runtimeProfile: "local"
+        runtimeProfile: "federated"
       },
       edges: [],
       graphId: "demo",

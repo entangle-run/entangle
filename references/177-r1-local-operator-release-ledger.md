@@ -209,5 +209,5 @@ direction. It does narrow the immediate milestone: Entangle should close as a
 local operator baseline before production foundation work begins.
 
 The next highest-value release after R1 is now `L1.5 Local Operator Preview`,
-not production foundation. The project should finish Entangle Local as the
+not production foundation. The project should finish Entangle as the
 first final product before starting Cloud production foundation work.

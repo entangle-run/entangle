@@ -7,14 +7,15 @@ in this pack.
 
 This pack supersedes the local-only delivery framing in
 `180-local-ga-product-truth-audit.md` and
-`189-entangle-local-completion-plan.md` for future architecture work. It does
+`189-entangle-completion-plan.md` for future architecture work. It does
 not delete those files because they remain useful history for the implemented
 local adapter.
 
 The file numbers `221` and `222` are intentionally reused by this pivot pack
 because the handoff required these exact filenames. The existing
 `221-source-history-replay-slice.md` and
-`222-wiki-repository-publication-slice.md` remain valid Local-era slice records.
+`222-wiki-repository-publication-slice.md` remain valid earlier
+same-machine slice records.
 
 ## Pack
 
@@ -80,33 +81,37 @@ Current audit read or searched:
 
 The repository already has a serious graph-native base: `GraphSpec`,
 `NodeInstance`-like bindings, edges, resource catalogs, Nostr A2A messages,
-artifact references, git-backed handoff, local runner services, OpenCode-first
-engine profiles, Host API, Studio, CLI, tests, and local Docker deployment.
+artifact references, git-backed handoff, same-machine runner services,
+OpenCode-first engine profiles, Host API, Studio, CLI, tests, and Docker
+deployment adapter material.
 
-The repository is not yet federated:
+The repository is not fully federated:
 
-- `runtimeProfileSchema` is only `"local"`;
-- Host state layout still declares product `"entangle-local"`;
-- Host materializes local workspaces and writes
+- `runtimeProfileSchema` now uses `"federated"`;
+- Host state layout declares product `"entangle"`;
+- Host still materializes local workspaces and writes
   `effective-runtime-context.json`;
 - Docker runners mount shared Host and secret volumes;
 - Host starts/stops runners by local Docker state, not signed assignment
   protocol;
 - Host reconstructs sessions, approvals, artifacts, source history, and wiki
   publications by reading runner-local `runtimeRoot`;
-- `publishHostSessionLaunch` generates an ephemeral Nostr key for the user
-  launch;
-- user nodes exist in the graph but are excluded from runtime synchronization;
-- user approvals in Studio/CLI are Host mutations, not signed User Node A2A
-  messages;
-- runner Nostr transport implements `entangle.a2a.v1` only, with no
-  `control` or `observe` protocol domains;
+- Host session launch now signs `task.request` with stable User Node identity
+  material, but the Human Interface Runtime remains incomplete;
+- user nodes have stable identities and projected inbox surfaces, but full
+  chat composition and approval workflow migration are still incomplete;
+- older Studio/CLI approval controls still include Host mutation paths even
+  though signed User Node reply/approve/reject commands now exist;
+- runner A2A transport exists and control/observe contracts plus local fabric
+  helpers exist, but Host-runner relay subscription wiring is not yet the
+  canonical execution path;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a local launcher adapter.
 
 ## Target Model
 
-Entangle is the product. Local is one deployment profile.
+Entangle is the product. Same-machine deployment is one topology, not a
+separate product or runtime profile.
 
 Host is an authoritative control plane with a Host Authority key. Runners start
 generic, register through signed Nostr events, receive assignments, execute
@@ -140,7 +145,7 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 11. Artifact/source/wiki reference publication through observation and git
     refs.
 12. Studio and CLI operator/user-node federation surfaces.
-13. Product naming and compatibility migration.
+13. Product naming migration with no local-product compatibility marker.
 14. Distributed smoke test.
 
 ## Acceptance Criteria
@@ -166,8 +171,8 @@ No uncertainty blocks the first implementation slice. The plan assumes:
 
 - v1 supports one active Host Authority instance to avoid split brain;
 - breaking changes are acceptable because the project is pre-release;
-- local state migration can preserve old markers for compatibility while new
-  state says Entangle;
+- pre-release local state can be regenerated instead of preserving old
+  local-product markers;
 - Host may provision local dev key material initially, but Host must not be the
   conceptual signer for user-node messages;
 - remote OpenCode server integration is preferred over only one-shot CLI for

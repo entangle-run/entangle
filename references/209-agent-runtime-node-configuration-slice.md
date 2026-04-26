@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B8 by exposing the existing
+This slice advances Entangle L3 workstream B8 by exposing the existing
 graph/node `agentRuntime` contract through the two operator surfaces that
 already mutate managed nodes: the CLI and Studio.
 
@@ -24,7 +24,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/208-operator-scoped-approval-decisions-slice.md`.
 
 The implementation audit inspected:

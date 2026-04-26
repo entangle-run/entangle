@@ -74,7 +74,7 @@ describe("createRuntimeBackend", () => {
     process.env.ENTANGLE_DOCKER_SHARED_STATE_TARGET = "/entangle-state";
     process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME = "entangle-secret-state";
     process.env.ENTANGLE_DOCKER_SECRET_STATE_TARGET = "/entangle-secrets";
-    process.env.ENTANGLE_DOCKER_NETWORK = "entangle-local";
+    process.env.ENTANGLE_DOCKER_NETWORK = "entangle";
 
     const dockerClient = createFakeDockerClient();
     dockerClient.inspectImage.mockResolvedValue(true);
@@ -136,7 +136,7 @@ describe("createRuntimeBackend", () => {
           type: "volume"
         }
       ],
-      networkName: "entangle-local"
+      networkName: "entangle"
     });
     expect(createContainerInput?.env).toEqual(
       expect.arrayContaining([

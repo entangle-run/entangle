@@ -64,7 +64,7 @@ function createDeps(): LocalDiagnosticsBundleDeps {
               gitServiceRefs: [],
               relayProfileRefs: []
             },
-            runtimeProfile: "local",
+            runtimeProfile: "federated",
             schemaVersion: "1"
           },
           generatedAt: "2026-04-26T00:00:00.000Z",
@@ -83,7 +83,7 @@ function createDeps(): LocalDiagnosticsBundleDeps {
               canMutateGraph: false
             },
             notes: [],
-            runtimeProfile: "local",
+            runtimeProfile: "federated",
             sourceMutation: {
               applyRequiresApproval: false,
               nonPrimaryPublishRequiresApproval: true,
@@ -236,7 +236,7 @@ function createDeps(): LocalDiagnosticsBundleDeps {
       JSON.stringify({
         createdAt: "2026-04-26T00:00:00.000Z",
         layoutVersion: 1,
-        product: "entangle-local",
+        product: "entangle",
         schemaVersion: "1",
         updatedAt: "2026-04-26T00:00:00.000Z"
       })

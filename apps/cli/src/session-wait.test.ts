@@ -14,7 +14,7 @@ function createInspection(
   statuses: Array<SessionInspectionResponse["nodes"][number]["session"]["status"]>
 ): SessionInspectionResponse {
   return {
-    graphId: "local-preview",
+    graphId: "federated-preview",
     nodes: statuses.map((status, index) => {
       const nodeId = `worker-${index + 1}`;
 
@@ -24,8 +24,8 @@ function createInspection(
           backendKind: "docker",
           contextAvailable: true,
           desiredState: "running",
-          graphId: "local-preview",
-          graphRevisionId: "local-preview-20260425-000000",
+          graphId: "federated-preview",
+          graphRevisionId: "federated-preview-20260425-000000",
           nodeId,
           observedState: "running",
           restartGeneration: 0
@@ -33,7 +33,7 @@ function createInspection(
         session: {
           activeConversationIds:
             status === "active" ? [`conversation-${index + 1}`] : [],
-          graphId: "local-preview",
+          graphId: "federated-preview",
           intent: "Prepare a workbench report.",
           openedAt: "2026-04-25T12:00:00.000Z",
           ownerNodeId: nodeId,

@@ -120,7 +120,7 @@ async function seedCurrentSessionState(input: {
         locator: {
           branch: "reviewer-it/session-alpha/input",
           commit: "abc123",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/input.md"
@@ -149,7 +149,7 @@ async function seedCurrentSessionState(input: {
         locator: {
           branch: "worker-it/session-alpha/report",
           commit: "def456",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/output.md"
@@ -428,7 +428,7 @@ describe("model-guided memory synthesis", () => {
             locator: {
               branch: "reviewer-it/session-alpha/input",
               commit: "abc123",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               repositoryName: "graph-alpha",
               path: "reports/session-alpha/input.md"
@@ -449,7 +449,7 @@ describe("model-guided memory synthesis", () => {
             locator: {
               branch: "worker-it/session-alpha/report",
               commit: "def456",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               repositoryName: "graph-alpha",
               path: "reports/session-alpha/output.md"
@@ -467,7 +467,7 @@ describe("model-guided memory synthesis", () => {
           locator: {
             branch: "reviewer-it/session-alpha/input",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/input.md"
@@ -483,7 +483,7 @@ describe("model-guided memory synthesis", () => {
           locator: {
             branch: "worker-it/session-alpha/report",
             commit: "def456",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/output.md"

@@ -36,10 +36,10 @@ function createDiff(): GraphDiffSummary {
     },
     from: {
       edgeCount: 1,
-      graphId: "local-preview",
-      name: "Local Preview",
+      graphId: "federated-preview",
+      name: "Federated Preview",
       nodeCount: 1,
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     hasChanges: true,
     identityChangedFields: ["name"],
@@ -65,10 +65,10 @@ function createDiff(): GraphDiffSummary {
     },
     to: {
       edgeCount: 1,
-      graphId: "local-preview",
+      graphId: "federated-preview",
       name: "Local Workbench",
       nodeCount: 1,
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     totals: {
       edgesAdded: 0,

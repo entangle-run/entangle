@@ -133,7 +133,7 @@ describe("agent-engine anthropic adapter", () => {
           artifactKind: "report_file",
           backend: "git",
           locator: {
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             branch: "worker-it/session-alpha/review",
@@ -154,7 +154,7 @@ describe("agent-engine anthropic adapter", () => {
             artifactKind: "report_file",
             backend: "git",
             locator: {
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               repositoryName: "graph-alpha",
               branch: "worker-it/session-alpha/review",
@@ -391,7 +391,7 @@ describe("agent-engine anthropic adapter", () => {
             locator: {
               branch: "worker-it/session-alpha/review",
               commit: "abc123",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               repositoryName: "graph-alpha",
               path: "reports/session-alpha/input.md"

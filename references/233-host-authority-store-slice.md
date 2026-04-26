@@ -96,7 +96,7 @@ Verification record for the implemented slice:
 The mandatory local-assumption search was run against the current diff:
 
 ```bash
-git diff -U0 | rg "^\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
+git diff -U0 | rg "^\+.*(runtimeProfile.*single-machine|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
 ```
 
 No newly added local-only assumptions were found. The slice adds Host

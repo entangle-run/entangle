@@ -40,13 +40,13 @@ Severity: high.
 The roadmap still used three planning labels that no longer match the accepted
 product line:
 
-- `Entangle Local Pro`;
+- `Entangle Pro`;
 - `Entangle Cloud / LatticeOps SaaS`;
 - `Entangle Enterprise Self-Hosted`.
 
 Fix: current release claims now use only:
 
-- Entangle Local;
+- Entangle;
 - Entangle Cloud;
 - Entangle Enterprise.
 
@@ -73,7 +73,7 @@ on the final product sequence.
 
 Fix: the canonical current-state docs now sequence:
 
-1. finish Entangle Local through its incremental Local releases;
+1. finish Entangle through its incremental Local releases;
 2. start Entangle Cloud only after Local GA;
 3. start Entangle Enterprise only after the Cloud production core is stable
    enough to package for customer-operated environments.
@@ -101,7 +101,7 @@ One code naming issue was intentionally deferred at the time of this audit: the
 machine contract still exposed `hackathon_local` as the only runtime profile.
 That was not a current product-name claim, but it needed retirement before the
 productized Local profile could be considered clean. The active runtime profile
-was later renamed to `local` in the Entangle Local completion workstream.
+was later renamed to `local` in the Entangle completion workstream.
 
 ## Remaining L1 Release Blockers
 

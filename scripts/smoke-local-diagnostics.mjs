@@ -11,20 +11,20 @@ const defaultGiteaUrl = "http://localhost:3001";
 const defaultRelayUrl = "ws://localhost:7777";
 
 const hostUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_HOST_URL ?? process.env.ENTANGLE_LOCAL_HOST_URL,
+  process.env.ENTANGLE_HOST_URL,
   defaultHostUrl
 );
 const studioUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_STUDIO_URL ?? process.env.ENTANGLE_LOCAL_STUDIO_URL,
+  process.env.ENTANGLE_STUDIO_URL,
   defaultStudioUrl
 );
 const giteaUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_GITEA_URL ?? process.env.ENTANGLE_LOCAL_GITEA_URL,
+  process.env.ENTANGLE_GITEA_URL,
   defaultGiteaUrl
 );
 const relayUrl =
+  process.env.ENTANGLE_RELAY_URL ??
   process.env.ENTANGLE_STRFRY_URL ??
-  process.env.ENTANGLE_LOCAL_RELAY_URL ??
   defaultRelayUrl;
 
 function normalizeHttpUrl(value, fallback) {

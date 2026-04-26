@@ -1,11 +1,11 @@
-# Local Preview Example
+# Federated Preview Example
 
-This directory contains the canonical Entangle Local Preview assets.
+This directory contains the canonical Entangle Preview assets.
 
 The runnable preview command is:
 
 ```bash
-pnpm ops:demo-local-preview
+pnpm ops:demo-federated-preview
 ```
 
 It starts the Local Compose profile, verifies the running local services, runs
@@ -17,13 +17,13 @@ the CLI can inspect the completed session.
 Reset the preview state with:
 
 ```bash
-pnpm ops:demo-local-preview:reset
+pnpm ops:demo-federated-preview:reset
 ```
 
 ## Assets
 
 - `agent-package/` is the package admitted by the preview demo.
-- `graph.json` is the canonical Local Preview graph shape.
+- `graph.json` is the canonical Federated Preview graph shape.
 - `catalog.model-stub.json` is the model-stub catalog shape used by the demo
   flow after the Local profile is running.
 

@@ -4,7 +4,7 @@ Date: 2026-04-26.
 
 ## Purpose
 
-This slice advances B7 of the Entangle Local completion plan by adding the
+This slice advances B7 of the Entangle completion plan by adding the
 first production-shaped bridge from OpenCode text outcomes back into Entangle
 actions.
 

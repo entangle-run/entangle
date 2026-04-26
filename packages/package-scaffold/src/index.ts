@@ -134,7 +134,7 @@ export async function createAgentPackageScaffold(
       "runtime/config.json",
       `${JSON.stringify(
         {
-          runtimeProfile: "local",
+          runtimeProfile: "federated",
           toolBudget: {
             maxToolTurns: 8,
             maxOutputTokens: 4096

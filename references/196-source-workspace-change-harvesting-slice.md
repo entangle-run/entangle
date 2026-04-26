@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B5 by making source workspace
+This slice advances Entangle L3 workstream B5 by making source workspace
 changes produced during a node turn inspectable through Entangle contracts.
 
 The goal is deliberately narrower than publication: Entangle now detects and
@@ -21,7 +21,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/45-quality-engineering-and-ci-baseline.md`;
 - `wiki/decisions/repository-audit-loop.md`.
 

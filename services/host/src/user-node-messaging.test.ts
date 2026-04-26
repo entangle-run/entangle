@@ -39,7 +39,7 @@ function buildRuntimeContext(publicKey: string): EffectiveRuntimeContext {
         gitServiceRefs: [],
         relayProfileRefs: ["relay-main"]
       },
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       schemaVersion: "1"
     },
     generatedAt: "2026-04-26T12:00:00.000Z",
@@ -58,7 +58,7 @@ function buildRuntimeContext(publicKey: string): EffectiveRuntimeContext {
         canMutateGraph: false
       },
       notes: [],
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     relayContext: {
       edgeRoutes: [],
@@ -66,7 +66,7 @@ function buildRuntimeContext(publicKey: string): EffectiveRuntimeContext {
       relayProfiles: [
         {
           authMode: "none",
-          displayName: "Local Relay",
+          displayName: "Preview Relay",
           id: "relay-main",
           readUrls: ["ws://localhost:7777"],
           writeUrls: ["ws://localhost:7777"]

@@ -5,15 +5,15 @@ describe("graph template command helpers", () => {
   it("lists the canonical local preview graph template", () => {
     expect(listGraphTemplates()).toEqual([
       expect.objectContaining({
-        graphPath: "examples/local-preview/graph.json",
-        templateId: "local-preview"
+        graphPath: "examples/federated-preview/graph.json",
+        templateId: "federated-preview"
       })
     ]);
   });
 
   it("resolves graph templates by id", () => {
-    expect(getGraphTemplate("local-preview")?.description).toContain(
-      "Local Preview"
+    expect(getGraphTemplate("federated-preview")?.description).toContain(
+      "Federated Preview"
     );
     expect(getGraphTemplate("missing-template")).toBeUndefined();
   });

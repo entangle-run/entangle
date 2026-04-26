@@ -1,6 +1,6 @@
-# Entangle Local Releases
+# Entangle Releases
 
-Entangle Local is the first final product line.
+Entangle is the first final product line.
 
 Release execution follows
 [`references/174-definitive-production-delivery-roadmap.md`](../../references/174-definitive-production-delivery-roadmap.md)
@@ -20,4 +20,4 @@ and the L1/R1 ledger in
 
 - L3 Agentic Node Runtime;
 - L4 Local Reliability;
-- L5 Entangle Local GA.
+- L5 Entangle GA.

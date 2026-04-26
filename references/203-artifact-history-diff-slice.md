@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B5 by adding bounded
+This slice advances Entangle L3 workstream B5 by adding bounded
 host-owned history and diff inspection for git-backed runtime artifacts.
 
 The implementation keeps artifacts as the work substrate and keeps the host API
@@ -22,7 +22,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/202-source-history-publication-slice.md`.
 
 The implementation audit inspected:

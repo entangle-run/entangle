@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B5 by making source-history
+This slice advances Entangle L3 workstream B5 by making source-history
 publication retries and git target selection explicit host-contract behavior.
 
 The previous publication path could record a failed remote push, but a later
@@ -23,7 +23,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/202-source-history-publication-slice.md`;
 - `references/203-artifact-history-diff-slice.md`.
 
@@ -81,7 +81,7 @@ The CLI extends the existing publish command:
 
 ```bash
 entangle host runtimes source-history-entry <nodeId> <sourceHistoryId> --publish --retry
-entangle host runtimes source-history-entry <nodeId> <sourceHistoryId> --publish --target-git-service local-gitea --target-namespace team-alpha --target-repository graph-alpha
+entangle host runtimes source-history-entry <nodeId> <sourceHistoryId> --publish --target-git-service gitea --target-namespace team-alpha --target-repository graph-alpha
 ```
 
 `--published-by`, `--reason`, `--retry`, and target options are valid only with

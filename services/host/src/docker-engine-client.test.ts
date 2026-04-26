@@ -187,7 +187,7 @@ describe("DockerEngineClient", () => {
             type: "volume"
           }
         ],
-        networkName: "entangle-local"
+        networkName: "entangle"
       })
     ).resolves.toBe("container-123");
     await expect(client.startContainer("runner")).resolves.toBeUndefined();
@@ -211,7 +211,7 @@ describe("DockerEngineClient", () => {
             Type: "volume"
           }
         ],
-        NetworkMode: "entangle-local"
+        NetworkMode: "entangle"
       },
       Image: "entangle-runner:local",
       Labels: {

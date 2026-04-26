@@ -41,7 +41,7 @@ function createGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: []
       },
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     edges: [createEdge("user-to-it", "delegates_to")],
     graphId: "team-alpha",
@@ -120,7 +120,7 @@ describe("graph CLI summary projection", () => {
       managedNodeCount: 1,
       name: "Team Alpha",
       nodeCount: 2,
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     });
     expect(projectGraphSummary({})).toEqual({
       edgeCount: 0,

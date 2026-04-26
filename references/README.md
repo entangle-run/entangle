@@ -227,7 +227,7 @@ files are the active federated redesign pack.
 187. [186-cli-graph-import-export-slice.md](186-cli-graph-import-export-slice.md)
 188. [187-cli-session-launch-wait-slice.md](187-cli-session-launch-wait-slice.md)
 189. [188-local-memory-workbench-slice.md](188-local-memory-workbench-slice.md)
-190. [189-entangle-local-completion-plan.md](189-entangle-local-completion-plan.md)
+190. [189-entangle-completion-plan.md](189-entangle-completion-plan.md)
 191. [190-local-runtime-profile-rename-slice.md](190-local-runtime-profile-rename-slice.md)
 192. [191-opencode-runtime-state-isolation-slice.md](191-opencode-runtime-state-isolation-slice.md)
 193. [192-agent-runtime-inspection-status-slice.md](192-agent-runtime-inspection-status-slice.md)

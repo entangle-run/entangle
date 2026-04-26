@@ -272,7 +272,7 @@ describe("runner runtime context", () => {
             peerNodeId: "reviewer-it",
             peerPubkey: remotePublicKey,
             relation: "reviews",
-            relayProfileRefs: ["local-relay"]
+            relayProfileRefs: ["preview-relay"]
           }
         ]
       }

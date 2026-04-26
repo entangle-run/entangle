@@ -127,7 +127,7 @@ Verification record for the implemented slice:
 The mandatory local-assumption search was run after implementation:
 
 ```bash
-rg "Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker" .
+rg "runtimeProfile.*single-machine|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker" .
 ```
 
 Classification:
@@ -135,17 +135,14 @@ Classification:
 - valid local adapter/debug usage: `deploy/local`, local smoke scripts,
   Docker runtime backend code, runner-local state paths, runner memory/artifact
   helpers, and current local profile operational checks;
-- legacy docs needing later migration: README product language, Local GA
-  planning files, historical slice records, and existing wiki log history;
+- docs needing later migration: old single-machine planning files, historical
+  slice records, and existing wiki log history;
 - invalid local-only assumptions already captured for later slices:
-  `runtimeProfileSchema` only accepting `"local"`, Host state product marker
-  `"entangle-local"`, injected `effective-runtime-context.json`, Host
+  injected `effective-runtime-context.json`, Host
   `contextPath` exposure, Host reads from runner `runtimeRoot`, Docker shared
   volumes, and ephemeral user launch signing;
 - test fixtures: package, Host, runner, CLI, and Studio tests that still encode
-  local paths, local profile values, and `entangle-local-gitea` names;
-- migration compatibility: historical layout markers, local Gitea remote names,
-  and local Docker profile labels.
+  local paths and same-machine endpoint names.
 
 The added lines in this slice introduce no new local-only assumptions under the
 same search pattern. Existing hits are intentionally preserved for the

@@ -11,7 +11,7 @@ services:
       host:
         condition: service_started
     networks:
-      - entangle-local
+      - entangle
 
   host:
     build:
@@ -22,7 +22,7 @@ services:
       ENTANGLE_HOME: /entangle-state/.entangle
       ENTANGLE_SECRETS_HOME: /entangle-secrets
       ENTANGLE_RUNTIME_BACKEND: docker
-      ENTANGLE_DOCKER_NETWORK: entangle-local
+      ENTANGLE_DOCKER_NETWORK: entangle
       ENTANGLE_DOCKER_RUNNER_IMAGE: entangle-runner:local
       ENTANGLE_DOCKER_SHARED_STATE_TARGET: /entangle-state
       ENTANGLE_DOCKER_SHARED_STATE_VOLUME: entangle-host-state
@@ -36,7 +36,7 @@ services:
       - entangle-secret-state:/entangle-secrets
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - entangle-local
+      - entangle
 
   runner-image:
     profiles:
@@ -48,7 +48,7 @@ services:
     command:
       - "true"
     networks:
-      - entangle-local
+      - entangle
 
   strfry:
     image: ghcr.io/hoytech/strfry:latest
@@ -62,7 +62,7 @@ services:
       - ../config/strfry.local.conf:/etc/strfry.conf:ro
       - strfry-data:/app/strfry-db
     networks:
-      - entangle-local
+      - entangle
 
   gitea:
     image: gitea/gitea:1.24.7
@@ -78,7 +78,7 @@ services:
     volumes:
       - gitea-data:/data
     networks:
-      - entangle-local
+      - entangle
 
 volumes:
   entangle-host-state:
@@ -89,5 +89,5 @@ volumes:
   strfry-data:
 
 networks:
-  entangle-local:
-    name: entangle-local
+  entangle:
+    name: entangle

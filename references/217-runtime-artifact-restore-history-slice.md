@@ -5,7 +5,7 @@ Date: 2026-04-26.
 ## Purpose
 
 This slice closes the first audit-read surface for runtime artifact restore
-attempts in Entangle Local.
+attempts in Entangle.
 
 Restore is intentionally modeled as an auditable operation, not only as a
 latest action response. Operators need to inspect successful and unavailable

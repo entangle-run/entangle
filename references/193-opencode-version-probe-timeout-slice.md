@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B2 by hardening the per-node
+This slice advances Entangle L3 workstream B2 by hardening the per-node
 OpenCode adapter lifecycle without changing the product boundary. Entangle
 still owns graph, identity, policy, artifacts, wiki, and inspection. OpenCode
 remains a node-local coding engine behind the runner adapter.
@@ -56,7 +56,7 @@ classified as `provider_unavailable`.
 
 ## Boundary Decisions
 
-- Entangle Local continues to use one-shot `opencode run` for this slice. The
+- Entangle continues to use one-shot `opencode run` for this slice. The
   attached OpenCode server remains a future B2 lifecycle decision because it
   needs explicit auth, readiness, per-node process ownership, and teardown.
 - Engine version is modeled generically as engine metadata. OpenCode-specific

@@ -7,9 +7,9 @@ export type GraphTemplateSummary = {
 const graphTemplates: GraphTemplateSummary[] = [
   {
     description:
-      "Canonical Local Preview graph with a user node, planner runtime, local relay, and local package binding.",
-    graphPath: "examples/local-preview/graph.json",
-    templateId: "local-preview"
+      "Canonical Federated Preview graph with a user node, planner runtime, relay resource profile, and package binding.",
+    graphPath: "examples/federated-preview/graph.json",
+    templateId: "federated-preview"
   }
 ];
 

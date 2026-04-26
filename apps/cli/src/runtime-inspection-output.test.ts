@@ -51,7 +51,7 @@ function createRuntime(): RuntimeInspectionResponse {
     statusMessage: "container exited",
     workspaceHealth: {
       checkedAt: "2026-04-25T08:05:01.000Z",
-      layoutVersion: "entangle-local-workspace-v1",
+      layoutVersion: "entangle-workspace-v1",
       status: "degraded",
       surfaces: [
         {

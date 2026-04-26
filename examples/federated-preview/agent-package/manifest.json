@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1",
-  "packageId": "local-preview-agent-package",
-  "name": "Local Preview Agent Package",
+  "packageId": "federated-preview-agent-package",
+  "name": "Federated Preview Agent Package",
   "version": "0.1.0",
   "packageKind": "template",
   "defaultNodeKind": "worker",
@@ -20,7 +20,7 @@
     "toolsPath": "runtime/tools.json"
   },
   "metadata": {
-    "description": "Canonical package used by the Entangle Local Preview demo.",
+    "description": "Canonical package used by the Entangle Preview demo.",
     "tags": [
       "local",
       "preview"

@@ -8,7 +8,7 @@ gate evidence, known limitations, and tag decisions.
 
 ## Product Lines
 
-- [local](local/README.md) — Entangle Local release train.
+- [local](local/README.md) — Entangle release train.
 
 Cloud and Enterprise release directories should be added only when the roadmap
 allows work on those products.

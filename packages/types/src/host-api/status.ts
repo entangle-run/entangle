@@ -7,10 +7,7 @@ import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 export const currentLocalStateLayoutVersion = 1;
 export const minimumSupportedLocalStateLayoutVersion = 1;
 
-export const localStateLayoutProductSchema = z.enum([
-  "entangle",
-  "entangle-local"
-]);
+export const localStateLayoutProductSchema = z.literal("entangle");
 
 export const localStateLayoutRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,

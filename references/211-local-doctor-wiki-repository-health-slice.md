@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local B4/C1 by teaching `entangle local doctor`
+This slice advances Entangle B4/C1 by teaching `entangle local doctor`
 to inspect node wiki repositories as real runtime state after the first
 runner-owned wiki repository sync.
 
@@ -22,7 +22,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/207-local-doctor-foundation-slice.md`;
 - `references/210-wiki-repository-sync-slice.md`.
 

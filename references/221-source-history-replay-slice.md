@@ -4,7 +4,7 @@ Date: 2026-04-26.
 
 ## Purpose
 
-This slice adds the first direct source-history replay path for Entangle Local.
+This slice adds the first direct source-history replay path for Entangle.
 
 Before this slice, an operator could apply a source-change candidate into
 source history, publish that source history as a git artifact, restore the

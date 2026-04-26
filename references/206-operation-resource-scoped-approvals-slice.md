@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice tightens Entangle Local L3 approval evidence so an approval cannot be
+This slice tightens Entangle L3 approval evidence so an approval cannot be
 reused for a different policy operation or a different source mutation target.
 
 The previous source mutation gate accepted an approved runtime approval id, but
@@ -22,7 +22,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/205-source-mutation-policy-gates-slice.md`.
 
 The implementation audit inspected:

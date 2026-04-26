@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B4 by making the node
+This slice advances Entangle L3 workstream B4 by making the node
 workspace model explicit and inspectable from the host boundary.
 
 It does not initialize the wiki repository as a git repository yet. That
@@ -64,7 +64,7 @@ show the same health summary.
 The root `pnpm test` script was also hardened to run Turbo test tasks with
 `--concurrency=1`. During closure, package-local Studio tests passed on their
 own, but the aggregate Turbo test run could leave the Studio Vitest process
-open after the other package tests completed. Entangle Local's default gate now
+open after the other package tests completed. Entangle's default gate now
 prefers deterministic closure over parallel test speed.
 
 ## Boundary Decisions

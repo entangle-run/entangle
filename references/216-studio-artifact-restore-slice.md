@@ -5,7 +5,7 @@ Date: 2026-04-26.
 ## Purpose
 
 This slice completes the first visual operator surface for safe runtime artifact
-restore in Entangle Local.
+restore in Entangle.
 
 The host remains the source of truth. Studio does not inspect runner-local
 files directly and does not invent client-owned artifact state.

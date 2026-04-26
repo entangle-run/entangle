@@ -4,7 +4,7 @@ Date: 2026-04-26.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B6 by making the runner's
+This slice advances Entangle L3 workstream B6 by making the runner's
 engine turn request more explicitly graph-aware and policy-aware before the
 node-local coding engine starts work.
 
@@ -23,7 +23,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/212-engine-request-summary-slice.md`.
 
 The implementation audit inspected:

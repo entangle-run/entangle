@@ -21,7 +21,7 @@ The corpus now extends from conceptual architecture into normative contracts,
 package and binding structure, edge semantics, artifact backends, control-plane
 rules, compatibility policy, observability, Studio responsibilities, host API
 contracts, effective runtime context, engine-adapter boundaries, and a concrete
-local deployment profile.
+same-machine deployment profile.
 
 The local reference corpus is materialized under `resources/`, and the
 implementation stack direction has now been narrowed toward a canonical
@@ -36,28 +36,28 @@ closed:
 - live local host state should live under a disciplined `.entangle/` runtime
   root with explicit desired, observed, trace, import, and workspace
   partitions;
-- the early Local profile should include a thin but real CLI plus package
+- the early same-machine profile should include a thin but real CLI plus package
   scaffolding, while Studio remains the richer operator surface.
 
 The repository is therefore no longer best described as "entering
 implementation" or as being in a control-plane-only stage.
 
 As of the 2026-04-26 federated-runtime pivot audit, the forward-looking product
-baseline is Entangle, with Local treated as the first deployment profile rather
-than the product identity. The current implementation is still materially
-local: Host writes injected runtime context, Docker runners share Host-managed
-volumes, user nodes are not stable signing runtimes, and Host derives much of
-its runtime projection by reading runner-local state. The active redesign pack
-under `references/221-federated-runtime-redesign-index.md` defines the required
-shift to Host Authority signing, generic runner registration, runtime
-assignments, signed observations, stable User Node identities, and
-projection-backed Studio/CLI surfaces.
+baseline is Entangle. Same-machine deployment is the first deployment topology,
+not the product identity or a separate runtime profile. The current
+implementation is still materially single-host in places: Host writes injected
+runtime context, Docker runners share Host-managed volumes, and Host still
+derives much of its runtime projection by reading runner-local state. The active
+redesign pack under `references/221-federated-runtime-redesign-index.md`
+defines the required shift to Host Authority signing, generic runner
+registration, runtime assignments, signed observations, stable User Node
+identities, and projection-backed Studio/CLI surfaces.
 
 The most accurate current description is:
 
 - the architecture and contract layers are strong and largely stable;
 - the host and runner are already real local runtime components;
-- the remaining Local-era implementation is now subordinate to the federated
+- the remaining same-machine-era implementation is now subordinate to the federated
   runtime pivot;
 - the largest gaps are Host-runner federation, stable user-node signing, and
   projection state that does not depend on shared local filesystems.
@@ -76,12 +76,12 @@ The repository now also contains the first real implementation baseline:
 - `services/host` and `services/runner`;
 - `packages/types`, `validator`, `host-client`, `agent-engine`, and
   `package-scaffold`;
-- a first local Compose profile and service Dockerfiles;
-- an explicit `deploy/local/` profile layout for Entangle local deployment
+- a first same-machine Compose profile and service Dockerfiles;
+- an explicit `deploy/local/` profile layout for Entangle same-machine deployment
   material, with shared script path constants instead of duplicated local
   Compose paths;
 - an explicit `releases/` area for release-control packets, starting with the
-  released Local L1 operator-baseline packet;
+  first operator-baseline packet;
 - a persistent local host-state model under `.entangle/host`;
 - a separate local secret root for host-owned runtime identities;
 - a safer `entangle package init` path that exposes package name, package id,
@@ -95,7 +95,7 @@ The repository now also contains the first real implementation baseline:
   node execution now depends on actual credential availability rather than only
   on model endpoint selection;
 - resolved git principal runtime bindings that now include secret-availability
-  status and mounted-file delivery metadata for the current local profile;
+  status and mounted-file delivery metadata for the current same-machine profile;
 - deterministic primary git repository-target resolution in effective runtime
   context, based on explicit git service `remoteBase` contracts, resolved
   namespace hints, and graph identity;
@@ -104,7 +104,7 @@ The repository now also contains the first real implementation baseline:
   desired-state mutation;
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
-  shared host client, CLI, and Studio while the default local profile remains
+  shared host client, CLI, and Studio while the default same-machine profile remains
   tokenless for low-friction development, plus typed `security` audit events
   for protected mutation requests through `host.operator_request.completed`;
 - host-side runtime materialization for effective bindings, runtime intents,
@@ -136,8 +136,8 @@ The repository now also contains the first real implementation baseline:
   read-only secret-volume mount into runner containers;
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
-- canonical Local Preview assets under `examples/local-preview/` plus
-  `pnpm ops:demo-local-preview`, which reuses the real local host, runner,
+- canonical Federated Preview assets under `examples/federated-preview/` plus
+  `pnpm ops:demo-federated-preview`, which reuses the real local host, runner,
   relay, model-stub, and Gitea/git-backed artifact path for an inspectable
   preview session;
 - a released L2 Local Workbench slice with CLI package inspection, package
@@ -149,7 +149,7 @@ The repository now also contains the first real implementation baseline:
   diffing for CLI and Studio, Studio graph revision diff against active graph
   state, host-backed Studio active-graph validation, host graph import/export
   through the CLI, CLI graph template list/export commands for the canonical
-  Local Preview graph, artifact filtering by session id, bounded local
+  Federated Preview graph, artifact filtering by session id, bounded local
   report-artifact preview through the host API, CLI, and Studio, and runtime
   memory page inspection plus bounded preview through the host API, CLI, and
   Studio;
@@ -620,12 +620,12 @@ The repository now also contains the first real implementation baseline:
   service builds inside image stages, pinned `pnpm` installation and store
   semantics, a static Nginx Studio runtime, and verified host/runner portable
   deploy payloads built from the real `build -> deploy` path;
-- a documented local operator bootstrap profile under `deploy/`, backed by
+- a documented same-machine operator bootstrap profile under `deploy/`, backed by
   `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
-  for local profile files, Node/pnpm, Docker, Docker Compose, daemon access,
+  for same-machine profile files, Node/pnpm, Docker, Docker Compose, daemon access,
   and Compose config validity;
-- a first Local reliability doctor through `entangle local doctor`, with
-  read-only human-readable and JSON diagnostics for Local profile files,
+- a first same-machine reliability doctor through `entangle local doctor`, with
+  read-only human-readable and JSON diagnostics for same-machine profile files,
   Node/pnpm/Docker/Compose, the runner image, OpenCode availability on the host
   and inside the runner image, `.entangle/host`, local state layout
   compatibility, live host status, host-reported state layout status,
@@ -640,17 +640,17 @@ The repository now also contains the first real implementation baseline:
   path without bundling local secrets, and `entangle local repair` provides a
   dry-run-first conservative repair surface for safe host-state initialization
   and missing layout-marker recovery;
-- an active local profile smoke through `pnpm ops:smoke-local`, covering
+- an active same-machine profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
   subscription path;
-- a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics`, which
-  writes a temporary redacted diagnostics bundle against a running Local
-  profile and validates its stable top-level shape;
-- a Local reliability smoke through `pnpm ops:smoke-local:reliability`, which
-  creates a temporary Local backup bundle, validates restore dry-run, and
-  checks repair dry-run output against an initialized Local profile;
-- a disposable local profile smoke through `pnpm ops:smoke-local:disposable`,
+- a same-machine diagnostics smoke through `pnpm ops:smoke-local:diagnostics`,
+  which writes a temporary redacted diagnostics bundle against a running
+  same-machine profile and validates its stable top-level shape;
+- a same-machine reliability smoke through `pnpm ops:smoke-local:reliability`,
+  which creates a temporary same-machine backup bundle, validates restore dry-run, and
+  checks repair dry-run output against an initialized same-machine profile;
+- a disposable same-machine profile smoke through `pnpm ops:smoke-local:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;
 - a Docker-backed runtime lifecycle smoke through
@@ -716,7 +716,7 @@ The central design direction is now clear:
 - a separate host control-plane service for node admission and runtime lifecycle.
 - headless operation should remain possible through CLI and host-facing surfaces, not only through Studio.
 - the project should remain in one monorepo with explicit internal package
-  boundaries during the local profile and early product phase.
+  boundaries during the same-machine profile and early product phase.
 - relay, git service, and model endpoint configuration should come from a
   deployment-scoped resource catalog, not hardcoded runtime assumptions.
 - git-facing principals should be bound explicitly through host-managed
@@ -724,7 +724,7 @@ The central design direction is now clear:
 - runners should consume a versioned effective runtime context resolved by the
   host, not recompute graph and deployment merges on their own.
 - model-provider integration should happen behind an internal engine-adapter
-  boundary, and the local deployment profile should make the real control-plane
+  boundary, and the same-machine deployment profile should make the real control-plane
   topology visible.
 
 ## Most important current design conclusions
@@ -744,7 +744,7 @@ The central design direction is now clear:
     runtime context rather than ad hoc coupling.
 11. The engine/provider layer must stay behind an adapter boundary, not leak
     provider-native types into the runner contract.
-12. The Entangle local profile should preserve the final architecture while restricting active features.
+12. The Entangle same-machine profile should preserve the final architecture while restricting active features.
 
 ## Immediate next steps
 

@@ -5,7 +5,7 @@ Date: 2026-04-26.
 ## Purpose
 
 This slice closes the first host-owned provisioning path for explicit
-non-primary source-history publication targets in Entangle Local.
+non-primary source-history publication targets in Entangle.
 
 Before this slice, runtime context reconciliation could provision only the
 primary git repository target. A source-history publication to an explicit

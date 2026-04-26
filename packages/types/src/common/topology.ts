@@ -18,7 +18,7 @@ export const edgeRelationSchema = z.enum([
   "escalates_to"
 ]);
 
-export const runtimeProfileSchema = z.enum(["local"]);
+export const runtimeProfileSchema = z.enum(["federated"]);
 
 export type NodeKind = z.infer<typeof nodeKindSchema>;
 export type EdgeRelation = z.infer<typeof edgeRelationSchema>;

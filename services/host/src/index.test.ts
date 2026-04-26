@@ -232,7 +232,7 @@ async function createAdmittedPackageDirectory(rootPath: string): Promise<string>
       "utf8"
     ),
     writeJsonFile(path.join(packageRoot, "runtime", "config.json"), {
-      runtimeProfile: "local",
+      runtimeProfile: "federated",
       toolBudget: {
         maxToolTurns: 8,
         maxOutputTokens: 4096
@@ -396,7 +396,7 @@ function buildGitPrincipalRecord(
     principalId: overrides.principalId ?? "worker-it-git",
     displayName: overrides.displayName ?? "Worker IT Git Principal",
     systemKind: "git" as const,
-    gitServiceRef: overrides.gitServiceRef ?? "local-gitea",
+    gitServiceRef: overrides.gitServiceRef ?? "gitea",
     subject: overrides.subject ?? "worker-it",
     transportAuthMode: "ssh_key" as const,
     secretRef: overrides.secretRef ?? "secret://git/worker-it/ssh",
@@ -609,8 +609,8 @@ function buildProvisioningCatalog(input: {
     catalogId: "local-catalog",
     relays: [
       {
-        id: "local-relay",
-        displayName: "Local Relay",
+        id: "preview-relay",
+        displayName: "Preview Relay",
         readUrls: ["ws://relay.local"],
         writeUrls: ["ws://relay.local"],
         authMode: "none"
@@ -618,7 +618,7 @@ function buildProvisioningCatalog(input: {
     ],
     gitServices: [
       {
-        id: "local-gitea",
+        id: "gitea",
         displayName: "Local Gitea",
         baseUrl: input.apiBaseUrl,
         remoteBase: "ssh://git@gitea.local:22",
@@ -630,7 +630,7 @@ function buildProvisioningCatalog(input: {
           apiBaseUrl: `${input.apiBaseUrl}/api/v1`,
           secretRef:
             input.provisioningSecretRef ??
-            "secret://git-services/local-gitea/provisioning"
+            "secret://git-services/gitea/provisioning"
         }
       }
     ],
@@ -646,8 +646,8 @@ function buildProvisioningCatalog(input: {
       }
     ],
     defaults: {
-      relayProfileRefs: ["local-relay"],
-      gitServiceRef: "local-gitea",
+      relayProfileRefs: ["preview-relay"],
+      gitServiceRef: "gitea",
       modelEndpointRef: "shared-model"
     }
   };
@@ -786,8 +786,8 @@ async function applySingleWorkerGraph(input: {
           resourceBindings: {
             externalPrincipalRefs: input.externalPrincipalRefs ?? [],
             relayProfileRefs: [],
-            gitServiceRefs: ["local-gitea"],
-            primaryGitServiceRef: "local-gitea"
+            gitServiceRefs: ["gitea"],
+            primaryGitServiceRef: "gitea"
           }
         }
       ],
@@ -1008,7 +1008,7 @@ describe("buildHostServer", () => {
         stateLayoutRecord: {
           createdAt: "2026-04-25T00:00:00.000Z",
           layoutVersion: 99,
-          product: "entangle-local",
+          product: "entangle",
           schemaVersion: "1",
           updatedAt: "2026-04-25T00:00:00.000Z"
         }
@@ -1814,7 +1814,7 @@ describe("buildHostServer", () => {
       ).toMatchObject({
         principal: {
           principalId: "worker-it-git",
-          gitServiceRef: "local-gitea"
+          gitServiceRef: "gitea"
         }
       });
 
@@ -2154,8 +2154,8 @@ describe("buildHostServer", () => {
           packageSourceRef: packageSourceId,
           resourceBindings: {
             relayProfileRefs: [],
-            gitServiceRefs: ["local-gitea"],
-            primaryGitServiceRef: "local-gitea"
+            gitServiceRefs: ["gitea"],
+            primaryGitServiceRef: "gitea"
           },
           autonomy: {
             canInitiateSessions: false,
@@ -2254,8 +2254,8 @@ describe("buildHostServer", () => {
           packageSourceRef: packageSourceId,
           resourceBindings: {
             relayProfileRefs: [],
-            gitServiceRefs: ["local-gitea"],
-            primaryGitServiceRef: "local-gitea"
+            gitServiceRefs: ["gitea"],
+            primaryGitServiceRef: "gitea"
           },
           autonomy: {
             canInitiateSessions: true,
@@ -2380,9 +2380,9 @@ describe("buildHostServer", () => {
           nodeKind: "reviewer",
           packageSourceRef: packageSourceId,
           resourceBindings: {
-            gitServiceRefs: ["local-gitea"],
-            primaryGitServiceRef: "local-gitea",
-            relayProfileRefs: ["local-relay"]
+            gitServiceRefs: ["gitea"],
+            primaryGitServiceRef: "gitea",
+            relayProfileRefs: ["preview-relay"]
           }
         },
         url: "/v1/nodes"
@@ -2619,7 +2619,7 @@ describe("buildHostServer", () => {
             observedState: "running",
             packageSourceId: admittedPackageSourceId,
             workspaceHealth: {
-              layoutVersion: "entangle-local-workspace-v1",
+              layoutVersion: "entangle-workspace-v1",
               status: "ready"
             }
           }
@@ -2903,8 +2903,8 @@ describe("buildHostServer", () => {
               packageSourceRef: admittedPackageSource.packageSourceId,
               resourceBindings: {
                 relayProfileRefs: [],
-                gitServiceRefs: ["local-gitea"],
-                primaryGitServiceRef: "local-gitea",
+                gitServiceRefs: ["gitea"],
+                primaryGitServiceRef: "gitea",
                 externalPrincipalRefs: ["worker-it-git"]
               }
             }
@@ -2937,7 +2937,7 @@ describe("buildHostServer", () => {
             {
               principal: {
                 principalId: "worker-it-git",
-                gitServiceRef: "local-gitea"
+                gitServiceRef: "gitea"
               },
               transport: {
                 secretRef: principal.secretRef,
@@ -3013,8 +3013,8 @@ describe("buildHostServer", () => {
               packageSourceRef: admittedPackageSource.packageSourceId,
               resourceBindings: {
                 relayProfileRefs: [],
-                gitServiceRefs: ["local-gitea"],
-                primaryGitServiceRef: "local-gitea",
+                gitServiceRefs: ["gitea"],
+                primaryGitServiceRef: "gitea",
                 externalPrincipalRefs: ["worker-it-git"]
               }
             }
@@ -3043,7 +3043,7 @@ describe("buildHostServer", () => {
       );
 
       expect(context.artifactContext.primaryGitRepositoryTarget).toEqual({
-        gitServiceRef: "local-gitea",
+        gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "preexisting",
         remoteUrl: "ssh://git@gitea:22/team-alpha/team-alpha.git",
@@ -3062,7 +3062,7 @@ describe("buildHostServer", () => {
 
     try {
       await writeSecretRefFile(
-        "secret://git-services/local-gitea/provisioning",
+        "secret://git-services/gitea/provisioning",
         "gitea-provisioning-token\n"
       );
 
@@ -3097,7 +3097,7 @@ describe("buildHostServer", () => {
           created: true,
           state: "ready",
           target: {
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             provisioningMode: "gitea_api",
             repositoryName: "team-alpha"
@@ -3155,7 +3155,7 @@ describe("buildHostServer", () => {
 
     try {
       await writeSecretRefFile(
-        "secret://git-services/local-gitea/provisioning",
+        "secret://git-services/gitea/provisioning",
         "gitea-provisioning-token\n"
       );
 
@@ -3222,7 +3222,7 @@ describe("buildHostServer", () => {
 
     try {
       await writeSecretRefFile(
-        "secret://git-services/local-gitea/provisioning",
+        "secret://git-services/gitea/provisioning",
         "gitea-provisioning-token\n"
       );
 
@@ -3308,7 +3308,7 @@ describe("buildHostServer", () => {
         primaryGitRepositoryProvisioning: {
           state: "failed",
           target: {
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "team-alpha"
           }
@@ -3329,7 +3329,7 @@ describe("buildHostServer", () => {
 
     try {
       await writeSecretRefFile(
-        "secret://git-services/local-gitea/provisioning",
+        "secret://git-services/gitea/provisioning",
         "gitea-provisioning-token\n"
       );
 
@@ -3387,7 +3387,7 @@ describe("buildHostServer", () => {
         publishResponse.json()
       );
       expect(publication.entry.publication).toMatchObject({
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "secondary-target"
       });
@@ -3425,7 +3425,7 @@ describe("buildHostServer", () => {
         "host",
         "observed",
         "git-repository-targets",
-        "local-gitea-team-alpha-secondary-target.json"
+        "gitea-team-alpha-secondary-target.json"
       );
       const provisioningRecord = gitRepositoryProvisioningRecordSchema.parse(
         JSON.parse(await readFile(provisioningRecordPath, "utf8"))
@@ -3434,7 +3434,7 @@ describe("buildHostServer", () => {
         created: true,
         state: "ready",
         target: {
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "secondary-target"
         }
@@ -3466,8 +3466,8 @@ describe("buildHostServer", () => {
           catalogId: "local-catalog",
           relays: [
             {
-              id: "local-relay",
-              displayName: "Local Relay",
+              id: "preview-relay",
+              displayName: "Preview Relay",
               readUrls: ["ws://relay.local"],
               writeUrls: ["ws://relay.local"],
               authMode: "none"
@@ -3475,7 +3475,7 @@ describe("buildHostServer", () => {
           ],
           gitServices: [
             {
-              id: "local-gitea",
+              id: "gitea",
               displayName: "Local Gitea",
               baseUrl: "https://gitea.local",
               remoteBase: "ssh://git@gitea.local:22",
@@ -3511,7 +3511,7 @@ describe("buildHostServer", () => {
             }
           ],
           defaults: {
-            relayProfileRefs: ["local-relay"],
+            relayProfileRefs: ["preview-relay"],
             modelEndpointRef: "shared-model"
           }
         },
@@ -3522,7 +3522,7 @@ describe("buildHostServer", () => {
       for (const principal of [
         buildGitPrincipalRecord({
           principalId: "worker-it-git-main",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           secretRef: "secret://git/worker-it/main"
         }),
         buildGitPrincipalRecord({
@@ -3574,7 +3574,7 @@ describe("buildHostServer", () => {
               packageSourceRef: admittedPackageSource.packageSourceId,
               resourceBindings: {
                 relayProfileRefs: [],
-                gitServiceRefs: ["local-gitea", "backup-gitea"],
+                gitServiceRefs: ["gitea", "backup-gitea"],
                 externalPrincipalRefs: [
                   "worker-it-git-main",
                   "worker-it-git-backup"
@@ -3707,7 +3707,7 @@ describe("buildHostServer", () => {
           locator: {
             branch: "worker-it/session-alpha/review-patch",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             path: "reports/session-alpha/turn-001.md"
           },
@@ -4145,10 +4145,10 @@ describe("buildHostServer", () => {
         requestedByNodeId: "worker-it",
         resource: {
           id:
-            "source-history-source-change-turn-alpha|local-gitea|team-alpha|missing-target",
+            "source-history-source-change-turn-alpha|gitea|team-alpha|missing-target",
           kind: "source_history_publication",
           label:
-            "source-history-source-change-turn-alpha -> local-gitea/team-alpha/missing-target"
+            "source-history-source-change-turn-alpha -> gitea/team-alpha/missing-target"
         },
         sessionId: "session-alpha",
         status: "approved",
@@ -4164,10 +4164,10 @@ describe("buildHostServer", () => {
         requestedByNodeId: "worker-it",
         resource: {
           id:
-            "source-history-source-change-turn-alpha|local-gitea|team-alpha|other-target",
+            "source-history-source-change-turn-alpha|gitea|team-alpha|other-target",
           kind: "source_history_publication",
           label:
-            "source-history-source-change-turn-alpha -> local-gitea/team-alpha/other-target"
+            "source-history-source-change-turn-alpha -> gitea/team-alpha/other-target"
         },
         sessionId: "session-alpha",
         status: "approved",
@@ -4618,7 +4618,7 @@ describe("buildHostServer", () => {
       expect(
         hostErrorResponseSchema.parse(wrongResourcePublishResponse.json()).message
       ).toContain(
-        "source_history_publication:source-history-source-change-turn-alpha|local-gitea|team-alpha|missing-target"
+        "source_history_publication:source-history-source-change-turn-alpha|gitea|team-alpha|missing-target"
       );
 
       const failedPublishResponse = await server.inject({
@@ -4644,7 +4644,7 @@ describe("buildHostServer", () => {
         publication: {
           state: "failed"
         },
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "missing-target"
       });
@@ -4677,7 +4677,7 @@ describe("buildHostServer", () => {
           publishedBy: "operator-alpha",
           reason: "Publish accepted source for downstream handoff.",
           retry: true,
-          targetGitServiceRef: "local-gitea",
+          targetGitServiceRef: "gitea",
           targetNamespace: "team-alpha",
           targetRepositoryName: "team-alpha"
         },
@@ -4696,7 +4696,7 @@ describe("buildHostServer", () => {
           state: "published"
         },
         requestedBy: "operator-alpha",
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "team-alpha"
       });
@@ -5123,7 +5123,7 @@ describe("buildHostServer", () => {
           publishedBy: "operator-alpha",
           publicationId: "wiki-publication-alpha",
           reason: "Publish node wiki repository.",
-          targetGitServiceRef: "local-gitea",
+          targetGitServiceRef: "gitea",
           targetNamespace: "team-alpha",
           targetRepositoryName: "team-alpha"
         },
@@ -5145,7 +5145,7 @@ describe("buildHostServer", () => {
         },
         publicationId: "wiki-publication-alpha",
         requestedBy: "operator-alpha",
-        targetGitServiceRef: "local-gitea",
+        targetGitServiceRef: "gitea",
         targetNamespace: "team-alpha",
         targetRepositoryName: "team-alpha"
       });
@@ -6396,8 +6396,8 @@ describe("buildHostServer", () => {
           },
           publication: {
             publishedAt: "2026-04-24T10:05:00.000Z",
-            remoteName: "entangle-local-gitea",
-            remoteUrl: "file:///tmp/entangle-local-gitea.git",
+            remoteName: "entangle-gitea",
+            remoteUrl: "file:///tmp/entangle-gitea.git",
             state: "published"
           },
           ref: {

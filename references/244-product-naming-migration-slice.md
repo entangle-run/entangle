@@ -2,136 +2,149 @@
 
 ## Current Repo Truth
 
-The federated pivot changed product identity from "Entangle Local" to
-"Entangle", with local as one deployment profile. Before this slice, current
-public-facing docs and CLI help still used Entangle Local as product language,
-and new Host/local repair state layout records still wrote the product marker
-`"entangle-local"`.
+The federated pivot establishes a single product identity: Entangle.
 
-Historical Local-era slice records still correctly use Entangle Local because
-they describe the work as it was framed at that time. Compatibility fixtures
-also still need old markers.
+Before this correction, the migration plan still preserved old local-product
+markers as readable compatibility state. That is no longer acceptable for the
+pivot. The repository must not carry a separate local product identity. A
+single-machine deployment may use local relay and git services, but graph,
+runner, identity, assignment, projection, and protocol semantics must remain
+the same as any other federated deployment.
 
 ## Target Model
 
-Current product-facing surfaces should say Entangle. Local should be described
-as a deployment profile, adapter, or compatibility path, not as a separate
-product identity.
+Entangle is the product. Local is only a deployment topology for running Host,
+runners, relay, git, and Studio on one workstation.
 
-New local state layout records should use product marker `"entangle"` while
-existing `"entangle-local"` records remain readable during the pre-release
-migration window.
+New and current state must use:
+
+- product marker: `"entangle"`;
+- runtime profile: `"federated"`;
+- local git/relay endpoints as ordinary resource profiles;
+- local Docker and process launchers as deployment adapters only.
+
+There is no retained compatibility product marker and no special graph/runtime
+profile for local execution.
 
 ## Impacted Modules/Files
 
+- `packages/types/src/common/topology.ts`
+- `packages/types/src/graph/graph-spec.ts`
 - `packages/types/src/host-api/status.ts`
 - `packages/types/src/index.test.ts`
 - `services/host/src/state.ts`
 - `services/host/src/index.test.ts`
-- `apps/cli/src/index.ts`
-- `apps/cli/src/local-backup-command.ts`
-- `apps/cli/src/local-doctor-command.ts`
-- `apps/cli/src/local-repair-command.ts`
-- `apps/cli/src/local-repair-command.test.ts`
-- `README.md`
-- `resources/README.md`
-- `deploy/README.md`
-- `deploy/local/README.md`
-- `wiki/overview.md`
+- `services/host/src/*test.ts`
+- `services/runner/src/*test.ts`
+- `apps/cli/src/*`
+- `apps/studio/src/*`
+- `packages/host-client/src/*`
+- `packages/package-scaffold/src/index.ts`
+- `packages/validator/src/index.test.ts`
+- `deploy/local/**`
+- `scripts/*.mjs`
+- `examples/federated-preview/**`
+- `releases/**`
+- `references/**`
 - `wiki/log.md`
-- `references/221-federated-runtime-redesign-index.md`
-- `references/230-migration-from-local-assumptions-plan.md`
-- `references/231-implementation-slices-and-verification-plan.md`
-- `references/README.md`
 
 ## Concrete Changes Required
 
-Implemented in this slice:
+Implemented in this correction:
 
-- allow local state layout records to parse both `"entangle"` and legacy
-  `"entangle-local"` product markers;
-- write `"entangle"` for newly materialized Host local state layout records;
-- write `"entangle"` for new local repair-created state layout records;
-- keep backup manifest product `"entangle-local-backup"` as a compatibility
-  bundle marker;
-- update current CLI local command/help wording from Entangle Local product
-  language to Entangle local profile language;
-- update current README, deploy README, resources README, and wiki overview
-  wording so local is a profile, not the product identity;
-- leave historical docs, test fixtures, local Docker network names, local
-  backup file names, and workspace layout versions in place where they are
-  compatibility records or local adapter identifiers.
+- state layout records parse only product marker `"entangle"`;
+- newly materialized Host state and local repair-created state write
+  `"entangle"`;
+- runtime profile schema accepts only `"federated"`;
+- graph defaults and package scaffolds default to `"federated"`;
+- tests, examples, smoke fixtures, local git remote names, local Docker network
+  names, backup bundle names, diagnostics names, preview container names, and
+  workspace layout names no longer use the former local-product marker;
+- the graph example formerly named as a local preview is now the
+  deployment-agnostic Federated Preview under `examples/federated-preview/`;
+- current docs describe same-machine execution as one federated deployment
+  topology, not as a separate product or runtime mode.
 
 Deferred to later slices:
 
-- remove or hide legacy runtimeRoot/contextPath Host APIs after projection
-  parity exists;
-- rename Docker network/volume identifiers only if a migration-safe adapter
-  story is needed before public release;
-- rewrite historical Local-era references only if they are promoted back into
-  current docs.
+- replace remaining runtimeRoot/contextPath-backed inspection APIs with
+  projection-backed APIs;
+- make the single-machine smoke use the same Host/runner control and observe
+  protocol path as remote-machine smokes.
 
 ## Tests Required
 
 - `pnpm --filter @entangle/types typecheck`
 - `pnpm --filter @entangle/types test`
 - `pnpm --filter @entangle/types lint`
+- `pnpm --filter @entangle/validator test`
 - `pnpm --filter @entangle/host typecheck`
 - `pnpm --filter @entangle/host test`
 - `pnpm --filter @entangle/host lint`
+- `pnpm --filter @entangle/runner typecheck`
+- `pnpm --filter @entangle/runner test`
+- `pnpm --filter @entangle/runner lint`
+- `pnpm --filter @entangle/host-client typecheck`
+- `pnpm --filter @entangle/host-client test`
+- `pnpm --filter @entangle/host-client lint`
 - `pnpm --filter @entangle/cli typecheck`
 - `pnpm --filter @entangle/cli test`
 - `pnpm --filter @entangle/cli lint`
+- `pnpm --filter @entangle/studio typecheck`
+- `pnpm --filter @entangle/studio test`
+- `pnpm --filter @entangle/studio lint`
+- `node --check scripts/federated-preview-demo.mjs`
+- `node --check scripts/smoke-local-runtime.mjs`
+- `pnpm --filter @entangle/cli dev validate package examples/federated-preview/agent-package`
+- `pnpm --filter @entangle/cli dev validate graph examples/federated-preview/graph.json`
+- `pnpm exec tsx -e "...validateDeploymentResourceCatalogDocument(...examples/federated-preview/catalog.model-stub.json...)"`
 - `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`
 - `git diff --check`
+- no-hit search for the old product marker, old preview id/name, and any
+  graph/runtime profile value that would imply same-host execution.
 
-Verification record for the implemented slice:
+Verification record for the correction:
 
-- `pnpm --filter @entangle/types typecheck` passed;
-- `pnpm --filter @entangle/types test` passed;
-- `pnpm --filter @entangle/types lint` passed;
-- `pnpm --filter @entangle/host typecheck` passed;
-- `pnpm --filter @entangle/host test` passed;
-- `pnpm --filter @entangle/host lint` passed;
-- `pnpm --filter @entangle/cli typecheck` passed;
-- `pnpm --filter @entangle/cli test` passed;
-- `pnpm --filter @entangle/cli lint` passed;
-- `pnpm typecheck` passed;
-- `git diff --check` passed.
+- Passed targeted package typecheck/test/lint for types, validator, host,
+  runner, host-client, CLI, and Studio.
+- Passed Federated Preview package, graph, and catalog validation.
+- Passed `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `git diff --check`.
+- Passed no-hit search for old local product markers, old preview names/ids,
+  and local runtime profile values.
 
 ## End-Of-Slice Audit
 
-The naming audit still finds `entangle-local` in valid local adapter and
-compatibility places:
+The audit gate for this correction is:
 
-- local backup bundle marker and default file names;
-- local Docker network names;
-- runtime workspace layout version;
-- historical Local-era docs;
-- tests proving legacy state layout records and local Gitea remote names still
-  parse.
+```sh
+rg "former-local-product-marker|runtimeProfile.*single-machine|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker" .
+```
 
-Those hits should not be blindly deleted.
+The former local-product marker is spelled indirectly above to avoid
+reintroducing it into the corpus.
 
-## Migration/Compatibility Notes
+Valid remaining hits after this correction should be:
 
-Pre-existing state layout records with product `"entangle-local"` remain
-accepted. New Host materialization and local repair write `"entangle"`. This is
-a controlled pre-release migration rather than a public upgrade contract.
+- `contextPath`, `runtimeRoot`, and `effective-runtime-context` only where the
+  current local launcher and old inspection APIs still need migration;
+- `Docker` only for the local deployment adapter, tests, and docs;
+- `runtimeProfile.*single-machine` should have no hits.
+
+## Migration Notes
+
+There is no compatibility migration for old local-product state in this
+pre-release branch. Existing development state should be regenerated.
 
 ## Risks And Mitigations
 
-- Risk: old local state becomes unreadable.
-  Mitigation: schema accepts both current and legacy product markers and tests
-  cover both.
-- Risk: docs erase useful history.
-  Mitigation: current docs are reframed; historical implementation records are
-  left accurate.
-- Risk: renaming local Docker identifiers breaks developer state.
-  Mitigation: local adapter identifiers remain compatibility names for now.
+- Risk: old developer state no longer parses.
+  Mitigation: pre-release branch; regenerate state.
+- Risk: single-machine deployment accidentally becomes privileged architecture.
+  Mitigation: keep relay/git endpoints as resource profiles and runners as
+  assigned actors, even when all processes run on one host.
 
 ## Open Questions
 
-No open question blocks this slice. Before first public release, decide whether
-local Docker network and backup bundle identifiers should keep legacy names for
-stability or receive an explicit migration.
+No open question blocks this correction.

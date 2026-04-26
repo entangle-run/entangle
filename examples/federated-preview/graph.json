@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1",
+  "graphId": "federated-preview-graph",
+  "name": "Federated Preview Graph",
+  "nodes": [
+    {
+      "nodeId": "federated-preview-user",
+      "displayName": "Federated Preview User",
+      "nodeKind": "user"
+    },
+    {
+      "nodeId": "federated-preview-planner",
+      "displayName": "Federated Preview Planner",
+      "nodeKind": "worker",
+      "packageSourceRef": "federated-preview-package-source",
+      "resourceBindings": {
+        "relayProfileRefs": [
+          "preview-relay"
+        ],
+        "primaryRelayProfileRef": "preview-relay",
+        "gitServiceRefs": [
+          "gitea"
+        ],
+        "primaryGitServiceRef": "gitea",
+        "modelEndpointProfileRef": "federated-preview-model",
+        "externalPrincipalRefs": [
+          "federated-preview-git"
+        ]
+      }
+    },
+    {
+      "nodeId": "federated-preview-builder",
+      "displayName": "Federated Preview Builder",
+      "nodeKind": "worker",
+      "packageSourceRef": "federated-preview-package-source",
+      "resourceBindings": {
+        "relayProfileRefs": [
+          "preview-relay"
+        ],
+        "primaryRelayProfileRef": "preview-relay",
+        "gitServiceRefs": [
+          "gitea"
+        ],
+        "primaryGitServiceRef": "gitea",
+        "modelEndpointProfileRef": "federated-preview-model",
+        "externalPrincipalRefs": [
+          "federated-preview-git"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "federated-preview-user-to-planner",
+      "fromNodeId": "federated-preview-user",
+      "toNodeId": "federated-preview-planner",
+      "relation": "delegates_to",
+      "enabled": true,
+      "transportPolicy": {
+        "mode": "bidirectional_shared_set",
+        "relayProfileRefs": [
+          "preview-relay"
+        ],
+        "channel": "federated-preview"
+      }
+    },
+    {
+      "edgeId": "federated-preview-user-to-builder",
+      "fromNodeId": "federated-preview-user",
+      "toNodeId": "federated-preview-builder",
+      "relation": "delegates_to",
+      "enabled": true,
+      "transportPolicy": {
+        "mode": "bidirectional_shared_set",
+        "relayProfileRefs": [
+          "preview-relay"
+        ],
+        "channel": "federated-preview-handoff"
+      }
+    },
+    {
+      "edgeId": "federated-preview-planner-to-builder",
+      "fromNodeId": "federated-preview-planner",
+      "toNodeId": "federated-preview-builder",
+      "relation": "routes_to",
+      "enabled": true,
+      "transportPolicy": {
+        "mode": "bidirectional_shared_set",
+        "relayProfileRefs": [
+          "preview-relay"
+        ],
+        "channel": "federated-preview-artifact-handoff"
+      }
+    },
+    {
+      "edgeId": "federated-preview-builder-review",
+      "fromNodeId": "federated-preview-builder",
+      "toNodeId": "federated-preview-planner",
+      "relation": "reviews",
+      "enabled": true,
+      "transportPolicy": {
+        "mode": "bidirectional_shared_set",
+        "relayProfileRefs": [
+          "preview-relay"
+        ],
+        "channel": "federated-preview-review"
+      }
+    }
+  ],
+  "defaults": {
+    "resourceBindings": {
+      "relayProfileRefs": [
+        "preview-relay"
+      ],
+      "primaryRelayProfileRef": "preview-relay",
+      "gitServiceRefs": [
+        "gitea"
+      ],
+      "primaryGitServiceRef": "gitea",
+      "modelEndpointProfileRef": "federated-preview-model",
+      "externalPrincipalRefs": [
+        "federated-preview-git"
+      ]
+    },
+    "runtimeProfile": "federated"
+  }
+}

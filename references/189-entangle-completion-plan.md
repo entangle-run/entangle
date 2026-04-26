@@ -1,15 +1,15 @@
-# Entangle Local Completion Plan
+# Entangle Completion Plan
 
 Date: 2026-04-25.
 
 ## Purpose
 
-This document is the implementation plan for completing Entangle Local.
+This document is the implementation plan for completing Entangle.
 
-For this plan, the project is Entangle Local. Historical names such as
+For this plan, the project is Entangle. Historical names such as
 `hackathon_local` are treated as legacy implementation detail that must be
 retired before the Local GA release. Cloud and Enterprise are explicitly out of
-scope until Entangle Local reaches GA.
+scope until Entangle reaches GA.
 
 ## Current Baseline
 
@@ -26,7 +26,7 @@ In progress:
 Not complete:
 
 - L4 Local Reliability.
-- L5 Entangle Local GA.
+- L5 Entangle GA.
 
 The latest implementation state includes:
 
@@ -116,7 +116,7 @@ active engine work, expose CLI and Studio cancellation controls over the same
 host boundary, and report OpenCode one-shot permission auto-rejections as
 generic `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
 agent-runtime status summary plus bounded request-shape evidence for executable
-turns, but Entangle Local still lacks the complete policy bridge, live OpenCode
+turns, but Entangle still lacks the complete policy bridge, live OpenCode
 permission approval mapping, approval-gated artifact replay/promotion
 workflow beyond the first source-workspace promotion path, full git/wiki
 backup/restore/publication workflow, deeper doctor remediation, and richer
@@ -167,7 +167,7 @@ These constraints are mandatory for every task below.
 
 ### Product Scope
 
-- The active product is Entangle Local.
+- The active product is Entangle.
 - Do not start Cloud or Enterprise product work before Local GA.
 - Do not use Local GA language until L3, L4, release hardening, and claim audit
   gates pass.
@@ -347,7 +347,7 @@ on top of it.
 Tasks:
 
 - Replace public `hackathon_local` schema value with `local`.
-- Use `local` as the canonical machine value for Entangle Local because it is
+- Use `local` as the canonical machine value for Entangle because it is
   product-stable and does not imply GA status.
 - Add compatibility parsing only if needed for old fixtures or release assets.
 - Update graph defaults, package scaffolds, examples, smoke scripts, and tests.
@@ -355,7 +355,7 @@ Tasks:
 
 Constraints:
 
-- Do not break existing Local Preview assets without a deliberate migration.
+- Do not break existing Federated Preview assets without a deliberate migration.
 - Keep old release packets historically accurate.
 - Do not use a name that implies GA before GA exists.
 
@@ -370,7 +370,7 @@ Acceptance:
 
 Tasks:
 
-- Update current docs to refer to Entangle Local as the active product.
+- Update current docs to refer to Entangle as the active product.
 - Keep historical hackathon documents clearly historical.
 - Make the roadmap point from L2 to L3/L4/L5 without ambiguous R1 wording.
 - Ensure README, wiki overview, product truth audit, and release index agree.
@@ -382,12 +382,12 @@ Constraints:
 
 Acceptance:
 
-- Current-state docs call the project Entangle Local.
+- Current-state docs call the project Entangle.
 - Historical hackathon language remains only in historical/reference context.
 
 ## Workstream B: L3 Agentic Node Runtime
 
-Goal: every non-user Entangle Local node can be configured as a real coding
+Goal: every non-user Entangle node can be configured as a real coding
 agent entity while Entangle owns graph, identity, policy, artifacts, wiki,
 communication, and inspection.
 
@@ -434,7 +434,7 @@ Acceptance:
 Tasks:
 
 - Study the local OpenCode source before each deeper adapter change.
-- Decide whether Entangle Local should use one-shot `opencode run`, an attached
+- Decide whether Entangle should use one-shot `opencode run`, an attached
   OpenCode server, or a hybrid lifecycle per node.
 - Implement availability checks for executable, version, config root, DB root,
   and workspace access.
@@ -496,7 +496,7 @@ Acceptance:
 
 Tasks:
 
-- Define the Entangle Local policy operations needed by coding nodes:
+- Define the Entangle policy operations needed by coding nodes:
   filesystem read, filesystem write, command execution, git commit, git push,
   artifact publication, wiki update, peer message, graph mutation, and
   approval request.
@@ -716,7 +716,7 @@ Current partial implementation:
 Acceptance:
 
 - An OpenCode-backed node can modify its workspace, produce an artifact, and
-  expose inspectable diff/history through Entangle Local.
+  expose inspectable diff/history through Entangle.
 
 ### B6. Complete Entangle message to engine prompt flow
 
@@ -888,7 +888,7 @@ Acceptance:
 
 ## Workstream C: L4 Local Reliability
 
-Goal: Entangle Local becomes robust enough for repeated technical use.
+Goal: Entangle becomes robust enough for repeated technical use.
 
 ### C1. Build `entangle local doctor`
 
@@ -1006,7 +1006,7 @@ Current partial implementation:
 
 Acceptance:
 
-- A user can back up Entangle Local and restore it into a clean Local
+- A user can back up Entangle and restore it into a clean Local
   environment with documented limitations.
 
 ### C4. Add state versioning and upgrade checks
@@ -1026,7 +1026,7 @@ Constraints:
 
 Current partial implementation:
 
-- the host materializes `.entangle/host/state-layout.json` for Entangle Local
+- the host materializes `.entangle/host/state-layout.json` for Entangle
   layout version 1 and refuses unreadable, unsupported legacy, or unsupported
   future layout records during host-state initialization;
 - `GET /v1/host/status` now includes machine-readable local state layout
@@ -1040,7 +1040,7 @@ Current partial implementation:
 
 Acceptance:
 
-- Entangle Local can detect unsupported or outdated local state before causing
+- Entangle can detect unsupported or outdated local state before causing
   damage.
 
 ### C5. Add diagnostics and logs bundle
@@ -1110,12 +1110,12 @@ Current partial implementation:
 
 Acceptance:
 
-- L4 exits only when Entangle Local can survive repeated use, restart, backup,
+- L4 exits only when Entangle can survive repeated use, restart, backup,
   restore, and repair workflows.
 
-## Workstream D: L5 Entangle Local GA
+## Workstream D: L5 Entangle GA
 
-Goal: release Entangle Local as a complete local/developer product.
+Goal: release Entangle as a complete local/developer product.
 
 ### D1. Complete install and first-run path
 
@@ -1136,7 +1136,7 @@ Acceptance:
 
 - Clean-machine or clean-clone rehearsal passes using only documented steps.
 
-### D2. Complete Entangle Local docs
+### D2. Complete Entangle docs
 
 Tasks:
 
@@ -1161,7 +1161,7 @@ Acceptance:
 
 Tasks:
 
-- Create `releases/local/l5-entangle-local-ga.md`.
+- Create `releases/local/l5-entangle-ga.md`.
 - Record verification commands and results.
 - Record known limitations.
 - Record rollback guidance.
@@ -1194,7 +1194,7 @@ Constraints:
 
 Acceptance:
 
-- Public claims match the implemented Entangle Local product.
+- Public claims match the implemented Entangle product.
 
 ### D5. Final GA verification
 
@@ -1237,7 +1237,7 @@ per-step audit loop and ends with the closure audit.
 
 ## Definition Of Done
 
-Entangle Local is complete when:
+Entangle is complete when:
 
 - every active non-user node can run as a policy-bound coding agent through
   OpenCode by default;

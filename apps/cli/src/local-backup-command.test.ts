@@ -75,7 +75,7 @@ async function seedRepository(root: string): Promise<void> {
   await writeJson(path.join(root, ".entangle/host/state-layout.json"), {
     createdAt: "2026-04-26T00:00:00.000Z",
     layoutVersion: 1,
-    product: "entangle-local",
+    product: "entangle",
     schemaVersion: "1",
     updatedAt: "2026-04-26T00:00:00.000Z"
   });
@@ -125,7 +125,7 @@ describe("local backup command helpers", () => {
         paths: [".entangle-secrets"],
         secretsIncluded: false
       },
-      product: "entangle-local-backup",
+      product: "entangle-backup",
       schemaVersion: "1",
       state: {
         layout: {
@@ -198,7 +198,7 @@ describe("local backup command helpers", () => {
         paths: [".entangle-secrets"],
         secretsIncluded: false
       },
-      product: "entangle-local-backup",
+      product: "entangle-backup",
       repository: {
         packageName: "entangle",
         packageVersion: "0.1.0"
@@ -228,7 +228,7 @@ describe("local backup command helpers", () => {
     await writeJson(path.join(bundleRoot, "state/host/state-layout.json"), {
       createdAt: "2026-04-26T00:00:00.000Z",
       layoutVersion: 99,
-      product: "entangle-local",
+      product: "entangle",
       schemaVersion: "1",
       updatedAt: "2026-04-26T00:00:00.000Z"
     });

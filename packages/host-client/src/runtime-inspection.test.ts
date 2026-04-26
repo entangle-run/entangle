@@ -63,7 +63,7 @@ function createRuntime(
       schemaVersion: "1",
       state: "ready",
       target: {
-        gitServiceRef: "local-gitea",
+        gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "gitea_api",
         remoteUrl: "http://gitea.local/team-alpha/runtime.git",
@@ -85,7 +85,7 @@ function createRuntime(
     runtimeHandle: `${nodeId}-container`,
     workspaceHealth: {
       checkedAt: "2026-04-25T08:05:01.000Z",
-      layoutVersion: "entangle-local-workspace-v1",
+      layoutVersion: "entangle-workspace-v1",
       status: "ready",
       surfaces: [
         {
@@ -126,7 +126,7 @@ describe("runtime inspection presentation helpers", () => {
       "context unavailable"
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
-      "git provisioning ready · created no · local-gitea/team-alpha/runtime"
+      "git provisioning ready · created no · gitea/team-alpha/runtime"
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "agent runtime coding_agent / opencode_server / local-opencode"

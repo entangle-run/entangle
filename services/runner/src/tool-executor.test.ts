@@ -84,7 +84,7 @@ describe("runner builtin tool executor", () => {
             locator: {
               branch: "worker-it/session-alpha/review",
               commit: "abc123",
-              gitServiceRef: "local-gitea",
+              gitServiceRef: "gitea",
               namespace: "team-alpha",
               repositoryName: "graph-alpha",
               path: "reports/session-alpha/input.md"
@@ -773,7 +773,7 @@ describe("runner builtin tool executor", () => {
           locator: {
             branch: "worker-it/session-alpha/report",
             commit: "abc123",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/result.md"
@@ -793,7 +793,7 @@ describe("runner builtin tool executor", () => {
           locator: {
             branch: "worker-it/session-alpha/conv-alpha",
             commit: "def456",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/conv-alpha.md"
@@ -813,7 +813,7 @@ describe("runner builtin tool executor", () => {
           locator: {
             branch: "reviewer-it/session-alpha/input",
             commit: "ghi789",
-            gitServiceRef: "local-gitea",
+            gitServiceRef: "gitea",
             namespace: "team-alpha",
             repositoryName: "graph-alpha",
             path: "reports/session-alpha/input.md"

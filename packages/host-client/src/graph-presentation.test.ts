@@ -41,7 +41,7 @@ function createGraph(): GraphSpec {
         gitServiceRefs: [],
         relayProfileRefs: []
       },
-      runtimeProfile: "local"
+      runtimeProfile: "federated"
     },
     edges: [
       createEdge("user-to-reviewer", "reviews"),

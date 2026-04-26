@@ -1,8 +1,8 @@
-# Local Preview Agent Package
+# Federated Preview Agent Package
 
-- Package id: `local-preview-agent-package`
+- Package id: `federated-preview-agent-package`
 - Default node kind: `worker`
-- Product line: Entangle Local
+- Product line: Entangle
 
 This package is intentionally small. It exists to prove the local host,
 runner, relay, model endpoint, and git artifact path with inspectable package

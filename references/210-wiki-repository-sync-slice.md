@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B4 by turning the previously
+This slice advances Entangle L3 workstream B4 by turning the previously
 reserved per-node `wiki-repository` workspace into a runner-owned local git
 snapshot of the node's active `memory/wiki` tree after completed executable
 turns.
@@ -24,7 +24,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/209-agent-runtime-node-configuration-slice.md`.
 
 The implementation audit inspected:

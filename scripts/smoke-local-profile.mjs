@@ -28,7 +28,7 @@ function readFlagValue(name) {
 function readTimeoutMs() {
   const rawTimeout =
     readFlagValue("--timeout-ms") ??
-    process.env.ENTANGLE_LOCAL_SMOKE_TIMEOUT_MS ??
+    process.env.ENTANGLE_SMOKE_TIMEOUT_MS ??
     String(defaultTimeoutMs);
   const timeoutMs = Number.parseInt(rawTimeout, 10);
 
@@ -39,20 +39,20 @@ function readTimeoutMs() {
 
 const timeoutMs = readTimeoutMs();
 const hostUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_HOST_URL ?? process.env.ENTANGLE_LOCAL_HOST_URL,
+  process.env.ENTANGLE_HOST_URL,
   defaultHostUrl
 );
 const studioUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_STUDIO_URL ?? process.env.ENTANGLE_LOCAL_STUDIO_URL,
+  process.env.ENTANGLE_STUDIO_URL,
   defaultStudioUrl
 );
 const giteaUrl = normalizeHttpUrl(
-  process.env.ENTANGLE_GITEA_URL ?? process.env.ENTANGLE_LOCAL_GITEA_URL,
+  process.env.ENTANGLE_GITEA_URL,
   defaultGiteaUrl
 );
 const relayUrl =
+  process.env.ENTANGLE_RELAY_URL ??
   process.env.ENTANGLE_STRFRY_URL ??
-  process.env.ENTANGLE_LOCAL_RELAY_URL ??
   defaultRelayUrl;
 const hostToken =
   process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN;

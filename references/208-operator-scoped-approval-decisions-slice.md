@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle Local L3 workstream B3 by making operation and
+This slice advances Entangle L3 workstream B3 by making operation and
 resource scoped approval records operator-creatable and operator-decidable from
 the host boundary.
 
@@ -24,7 +24,7 @@ The audit read the mandatory repository state files:
 - `wiki/index.md`;
 - `wiki/log.md`;
 - `references/180-local-ga-product-truth-audit.md`;
-- `references/189-entangle-local-completion-plan.md`;
+- `references/189-entangle-completion-plan.md`;
 - `references/205-source-mutation-policy-gates-slice.md`;
 - `references/206-operation-resource-scoped-approvals-slice.md`;
 - `references/207-local-doctor-foundation-slice.md`.

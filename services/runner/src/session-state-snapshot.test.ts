@@ -193,7 +193,7 @@ async function seedSessionState(runtimeRoot: string): Promise<void> {
         locator: {
           branch: "reviewer-it/session-alpha/input",
           commit: "abc123",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/input.md"
@@ -222,7 +222,7 @@ async function seedSessionState(runtimeRoot: string): Promise<void> {
         locator: {
           branch: "worker-it/session-alpha/report",
           commit: "def456",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/output.md"
@@ -242,7 +242,7 @@ async function seedSessionState(runtimeRoot: string): Promise<void> {
         locator: {
           branch: "worker-it/session-alpha/root",
           commit: "ghi789",
-          gitServiceRef: "local-gitea",
+          gitServiceRef: "gitea",
           namespace: "team-alpha",
           repositoryName: "graph-alpha",
           path: "reports/session-alpha/root.md"
