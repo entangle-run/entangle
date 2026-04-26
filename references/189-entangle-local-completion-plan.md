@@ -979,8 +979,8 @@ Current partial implementation:
 - command output is bounded and passed through common bearer token, token,
   secret, password, authorization, and API-key redaction before writing the
   bundle;
-- the remaining work is a support-bundle smoke, deeper OpenCode failure
-  extraction, and explicit release-run attachment guidance.
+- the remaining work is deeper OpenCode failure extraction and explicit
+  release-run attachment guidance.
 
 Acceptance:
 
@@ -1000,6 +1000,13 @@ Constraints:
 
 - Disposable smokes are not enough for L4.
 - Repeated-use tests must preserve user-data safety.
+
+Current partial implementation:
+
+- `pnpm ops:smoke-local:diagnostics` now runs against an already-running Local
+  profile, writes a temporary redacted `entangle local diagnostics` JSON
+  bundle, validates the stable top-level schema, and removes the temporary
+  file after the check.
 
 Acceptance:
 

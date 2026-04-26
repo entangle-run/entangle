@@ -285,6 +285,9 @@ This repository currently contains:
 - an active local profile smoke through `pnpm ops:smoke-local` that checks the
   running Compose services, runner image presence, host JSON APIs, Studio HTTP,
   Gitea HTTP reachability, and the local `strfry` Nostr WebSocket path;
+- a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics` that
+  writes a temporary redacted diagnostics bundle against a running Local
+  profile and validates its stable top-level shape;
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;

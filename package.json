@@ -17,6 +17,7 @@
     "ops:check-local": "node scripts/check-local-profile.mjs",
     "ops:check-local:strict": "node scripts/check-local-profile.mjs --strict",
     "ops:smoke-local": "node scripts/smoke-local-profile.mjs",
+    "ops:smoke-local:diagnostics": "node scripts/smoke-local-diagnostics.mjs",
     "ops:smoke-local:disposable": "node scripts/smoke-local-profile-disposable.mjs",
     "ops:smoke-local:disposable:runtime": "node scripts/smoke-local-profile-disposable.mjs --include-runtime",
     "ops:smoke-local:runtime": "node scripts/smoke-local-runtime.mjs",

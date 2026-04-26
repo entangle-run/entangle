@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added diagnostics bundle smoke
+
+Added `pnpm ops:smoke-local:diagnostics` for already-running Entangle Local
+profiles. The smoke runs `entangle local diagnostics`, writes a temporary
+redacted JSON support bundle, validates the stable top-level shape, and removes
+the temporary bundle after the check.
+
 ## [2026-04-26] implementation | Added Local diagnostics support bundle
 
 Advanced Entangle Local C5 by adding `entangle local diagnostics`, a read-only

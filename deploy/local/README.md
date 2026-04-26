@@ -86,6 +86,17 @@ The smoke checks:
 - Gitea serves its local web surface;
 - the local `strfry` relay accepts a Nostr WebSocket subscription.
 
+To verify the support-bundle path against an already-running Local profile,
+run:
+
+```sh
+pnpm ops:smoke-local:diagnostics
+```
+
+The diagnostics smoke writes a temporary redacted `entangle local diagnostics`
+JSON bundle, validates its stable top-level shape, and removes the temporary
+file after the check.
+
 Environment overrides:
 
 - `ENTANGLE_HOST_URL` or `ENTANGLE_LOCAL_HOST_URL`

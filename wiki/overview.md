@@ -611,6 +611,9 @@ The repository now also contains the first real implementation baseline:
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
   subscription path;
+- a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics`, which
+  writes a temporary redacted diagnostics bundle against a running Local
+  profile and validates its stable top-level shape;
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;
