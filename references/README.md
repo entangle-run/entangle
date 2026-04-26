@@ -27,7 +27,11 @@ and
 then
 [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 and
-[244-product-naming-migration-slice.md](244-product-naming-migration-slice.md).
+[244-product-naming-migration-slice.md](244-product-naming-migration-slice.md),
+then
+[245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
+through
+[249-runtime-status-observation-projection-slice.md](249-runtime-status-observation-projection-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

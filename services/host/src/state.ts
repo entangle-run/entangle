@@ -154,6 +154,7 @@ import {
   type RuntimeAssignmentRevokeRequest,
   runtimeAssignmentRevokeResponseSchema,
   type RuntimeAssignmentRevokeResponse,
+  runtimeStatusObservationPayloadSchema,
   runnerJoinConfigSchema,
   type RuntimeNodeKind,
   sourceChangeRefObservationPayloadSchema,
@@ -2366,6 +2367,68 @@ export async function recordWikiRefObservation(
     record
   );
   return record;
+}
+
+export async function recordRuntimeStatusObservation(
+  input: unknown
+): Promise<ObservedRuntimeRecord> {
+  await initializeHostState();
+
+  const observation = runtimeStatusObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const existingObservedRecord = await readObservedRuntimeRecord(
+    observation.nodeId
+  );
+  const graphRevisionId =
+    observation.graphRevisionId ?? existingObservedRecord?.graphRevisionId;
+
+  if (!graphRevisionId) {
+    throw new Error(
+      `Runtime status observation for node '${observation.nodeId}' did not ` +
+        "include graphRevisionId and no prior observed runtime record exists."
+    );
+  }
+
+  const observedRecord = observedRuntimeRecordSchema.parse({
+    backendKind: "federated",
+    graphId: observation.graphId,
+    graphRevisionId,
+    lastSeenAt: observation.observedAt,
+    nodeId: observation.nodeId,
+    observedState: observation.observedState,
+    runtimeHandle:
+      `federated:${observation.runnerId}:` +
+      `${observation.assignmentId ?? observation.nodeId}`,
+    schemaVersion: "1",
+    ...(observation.statusMessage
+      ? { statusMessage: observation.statusMessage }
+      : {})
+  });
+
+  await writeJsonFileIfChanged(
+    path.join(observedRuntimesRoot, `${observation.nodeId}.json`),
+    observedRecord
+  );
+
+  if (didObservedRuntimeChange(existingObservedRecord, observedRecord)) {
+    const intent = await readRuntimeIntentRecord(observation.nodeId);
+    await appendHostEvent({
+      backendKind: observedRecord.backendKind,
+      category: "runtime",
+      desiredState: intent?.desiredState ?? "running",
+      graphId: observedRecord.graphId,
+      graphRevisionId: observedRecord.graphRevisionId,
+      message: `Runtime '${observation.nodeId}' observed state is now '${observedRecord.observedState}'.`,
+      nodeId: observation.nodeId,
+      observedState: observedRecord.observedState,
+      previousObservedState: existingObservedRecord?.observedState,
+      runtimeHandle: observedRecord.runtimeHandle,
+      statusMessage: observedRecord.statusMessage,
+      type: "runtime.observed_state.changed"
+    } satisfies RuntimeObservedStateChangedEventInput);
+  }
+
+  return observedRecord;
 }
 
 export async function revokeRuntimeAssignment(input: {

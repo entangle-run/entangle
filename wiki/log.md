@@ -2898,3 +2898,16 @@ This closes the first runner-side gap after Host control startup. It does not
 yet rebase that context into fully executable runner-owned workspaces or start
 the assigned node runtime from the materialized assignment; those remain the
 next runner execution slices.
+
+## [2026-04-26] implementation | Projected runtime status from runner observations
+
+Added `references/249-runtime-status-observation-projection-slice.md` and
+routed signed `runtime.status` observations through the Host federated control
+plane. Host now verifies the registered runner identity, writes observed
+runtime records as `backendKind: "federated"`, and emits
+`runtime.observed_state.changed` events from runner-reported runtime state.
+
+This closes another Host-side filesystem assumption for runtime observability.
+The runner still needs to emit these status events from assignment-driven node
+execution, and Studio/CLI still need the federated runtime projection surfaced
+through their normal Host read paths.

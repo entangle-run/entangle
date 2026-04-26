@@ -49,6 +49,7 @@ same-machine slice records.
 - [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
 - [247-host-startup-control-plane-wiring-slice.md](247-host-startup-control-plane-wiring-slice.md)
 - [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
+- [249-runtime-status-observation-projection-slice.md](249-runtime-status-observation-projection-slice.md)
 
 ## Audited Scope
 
@@ -96,19 +97,20 @@ The repository is not fully federated:
 - Host still materializes local workspaces and writes
   `effective-runtime-context.json`;
 - Docker runners mount shared Host and secret volumes;
-- Host starts/stops runners by local Docker state, not signed assignment
-  protocol;
-- Host reconstructs sessions, approvals, artifacts, source history, and wiki
-  publications by reading runner-local `runtimeRoot`;
+- Host can publish signed assignment control payloads and project
+  runner-signed runtime status observations, but node runtime start/stop still
+  has a local launcher path that must be demoted to an adapter;
+- Host still reconstructs some sessions, approvals, source history, and wiki
+  details by reading runner-owned runtime paths;
 - Host session launch now signs `task.request` with stable User Node identity
   material, but the Human Interface Runtime remains incomplete;
 - user nodes have stable identities and projected inbox surfaces, but full
   chat composition and approval workflow migration are still incomplete;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
-- runner A2A transport exists and control/observe contracts plus local fabric
-  helpers exist, but Host-runner relay subscription wiring is not yet the
-  canonical execution path;
+- runner A2A transport exists, Host startup subscribes to control/observe relay
+  paths, and tests cover the bridge, but runner node execution is not yet
+  started from the materialized assignment path;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a local launcher adapter.
 
@@ -192,5 +194,8 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 13 are implemented in this branch. The next
-slice is the distributed smoke path.
+Plan readiness: Slices 1 through 14 plus startup/materialization follow-up
+slices are implemented in this branch. The next blocking implementation areas
+are assignment-driven node execution, projection surfacing for federated
+runtime state, removal of remaining same-machine command naming, and a live
+relay/git distributed smoke.

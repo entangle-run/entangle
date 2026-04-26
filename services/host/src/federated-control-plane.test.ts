@@ -157,6 +157,31 @@ function buildRunnerHeartbeat(input: {
   }).event;
 }
 
+function buildRuntimeStatus(input: {
+  hostAuthorityPubkey: string;
+  runnerPubkey: string;
+  runnerSecretKey: Uint8Array;
+}): EntangleObservationEvent {
+  return buildEntangleObservationNostrEvent({
+    payload: {
+      assignmentId: "assignment-alpha",
+      eventType: "runtime.status",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-rev-1",
+      hostAuthorityPubkey: input.hostAuthorityPubkey,
+      nodeId: "worker-it",
+      observedAt: "2026-04-26T12:00:03.000Z",
+      observedState: "running",
+      protocol: "entangle.observe.v1",
+      restartGeneration: 0,
+      runnerId: "runner-alpha",
+      runnerPubkey: input.runnerPubkey,
+      statusMessage: "Runtime is running from runner observation."
+    },
+    signerSecretKey: input.runnerSecretKey
+  }).event;
+}
+
 function buildAssignment(input: {
   hostAuthorityPubkey: string;
   runnerPubkey: string;
@@ -266,6 +291,19 @@ describe("Host federated control plane", () => {
       eventType: "runner.heartbeat"
     });
 
+    const runtimeStatusResult = await controlPlane.handleObservationEvent(
+      buildRuntimeStatus({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey,
+        runnerSecretKey
+      })
+    );
+    expect(runtimeStatusResult).toMatchObject({
+      action: "recorded",
+      eventType: "runtime.status",
+      runnerId: "runner-alpha"
+    });
+
     const projection = await stateModule.getHostProjectionSnapshot();
     expect(projection.runners).toHaveLength(1);
     expect(projection.runners[0]).toMatchObject({
@@ -274,6 +312,21 @@ describe("Host federated control plane", () => {
       publicKey: runnerPubkey,
       runnerId: "runner-alpha",
       trustState: "pending"
+    });
+
+    const hostEvents = await stateModule.listHostEvents();
+    expect(
+      hostEvents.events.find(
+        (event) => event.type === "runtime.observed_state.changed"
+      )
+    ).toMatchObject({
+      backendKind: "federated",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-rev-1",
+      nodeId: "worker-it",
+      observedState: "running",
+      runtimeHandle: "federated:runner-alpha:assignment-alpha",
+      type: "runtime.observed_state.changed"
     });
   });
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 
-export const runtimeBackendKindSchema = z.enum(["docker", "memory"]);
+export const runtimeBackendKindSchema = z.enum(["docker", "federated", "memory"]);
 export const runtimeDesiredStateSchema = z.enum(["running", "stopped"]);
 export const runtimeObservedStateSchema = z.enum([
   "missing",

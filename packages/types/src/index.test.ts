@@ -43,6 +43,7 @@ import {
   modelRuntimeContextSchema,
   nodeCreateRequestSchema,
   nodeInspectionResponseSchema,
+  observedRuntimeRecordSchema,
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
   runtimeAssignmentListResponseSchema,
@@ -687,6 +688,21 @@ describe("federated runtime contracts", () => {
         }
       }).assignment.status
     ).toBe("revoked");
+  });
+
+  it("accepts federated runtime observation records", () => {
+    expect(
+      observedRuntimeRecordSchema.parse({
+        backendKind: "federated",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-rev-1",
+        lastSeenAt: observedAt,
+        nodeId: "worker-it",
+        observedState: "running",
+        runtimeHandle: "federated:runner-alpha:assignment-alpha",
+        schemaVersion: "1"
+      }).backendKind
+    ).toBe("federated");
   });
 });
 
