@@ -149,6 +149,7 @@ import {
   type RuntimeAssignmentRevokeRequest,
   runtimeAssignmentRevokeResponseSchema,
   type RuntimeAssignmentRevokeResponse,
+  runnerJoinConfigSchema,
   type RuntimeNodeKind,
   secretRefSchema,
   sessionCancellationRequestRecordSchema,
@@ -401,6 +402,7 @@ const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
 const defaultHostAuthorityKeyRef = "secret://host-authority/main";
 const runtimeContextFileName = "effective-runtime-context.json";
+const runnerJoinConfigFileName = "runner-join.json";
 const artifactPreviewMaxBytes = 16 * 1024;
 const artifactDiffMaxBytes = 64 * 1024;
 const runnerStaleAfterMs = 60_000;
@@ -1791,6 +1793,52 @@ function inferRuntimeKindForNode(node: NodeBinding): RuntimeNodeKind {
   }
 
   return node.nodeKind === "service" ? "service_runner" : "agent_runner";
+}
+
+function buildRunnerJoinRelayUrls(context: EffectiveRuntimeContext): string[] {
+  return [
+    ...new Set(
+      context.relayContext.relayProfiles.flatMap((relayProfile) => [
+        ...relayProfile.readUrls,
+        ...relayProfile.writeUrls
+      ])
+    )
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+function buildRunnerJoinConfigForRuntimeContext(
+  context: EffectiveRuntimeContext,
+  hostAuthorityPubkey: string
+) {
+  const relayUrls = buildRunnerJoinRelayUrls(context);
+
+  if (relayUrls.length === 0) {
+    return undefined;
+  }
+
+  const runtimeKind = inferRuntimeKindForNode(context.binding.node);
+
+  return runnerJoinConfigSchema.parse({
+    capabilities: {
+      agentEngineKinds:
+        runtimeKind === "agent_runner"
+          ? [context.agentRuntimeContext.engineProfile.kind]
+          : [],
+      labels: [context.binding.node.nodeKind],
+      maxAssignments: 1,
+      runtimeKinds: [runtimeKind],
+      supportsLocalWorkspace: true,
+      supportsNip59: true
+    },
+    hostAuthorityPubkey,
+    identity: {
+      publicKey: context.identityContext.publicKey,
+      secretDelivery: context.identityContext.secretDelivery
+    },
+    relayUrls,
+    runnerId: context.binding.node.nodeId,
+    schemaVersion: "1"
+  });
 }
 
 function addSecondsIso(timestamp: string, seconds: number): string {
@@ -3834,6 +3882,12 @@ async function reconcileObservedRuntimeState(input: {
   const contextPath = input.context
     ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName)
     : undefined;
+  const joinConfigPath = input.context
+    ? path.join(input.context.workspace.injectedRoot, runnerJoinConfigFileName)
+    : undefined;
+  const joinConfigAvailable = joinConfigPath
+    ? await pathExists(joinConfigPath)
+    : false;
   const workspaceHealth = input.context
     ? await inspectRuntimeWorkspaceHealth(input.context.workspace)
     : undefined;
@@ -3861,6 +3915,7 @@ async function reconcileObservedRuntimeState(input: {
         desiredState: input.desiredState,
         graphId: input.graphId,
         graphRevisionId: input.graphRevisionId,
+        ...(joinConfigAvailable && joinConfigPath ? { joinConfigPath } : {}),
         nodeId: input.nodeId,
         reason: input.reason,
         restartGeneration: input.restartGeneration,
@@ -4688,6 +4743,10 @@ async function buildRuntimeResolution(input: {
     workspace.injectedRoot,
     runtimeContextFileName
   );
+  const runnerJoinConfigPath = path.join(
+    workspace.injectedRoot,
+    runnerJoinConfigFileName
+  );
   const runtimeIdentitySecret = (await readFile(
     runtimeIdentity.secretStoragePath,
     "utf8"
@@ -4931,9 +4990,22 @@ async function buildRuntimeResolution(input: {
     });
 
     await writeJsonFileIfChanged(runtimeContextPath, context);
+
+    const hostAuthority = await ensureHostAuthorityMaterialized();
+    const runnerJoinConfig = buildRunnerJoinConfigForRuntimeContext(
+      context,
+      hostAuthority.publicKey
+    );
+
+    if (runnerJoinConfig) {
+      await writeJsonFileIfChanged(runnerJoinConfigPath, runnerJoinConfig);
+    } else {
+      await rm(runnerJoinConfigPath, { force: true });
+    }
   } else {
     await rm(workspace.packageRoot, { force: true, recursive: true });
     await rm(runtimeContextPath, { force: true });
+    await rm(runnerJoinConfigPath, { force: true });
   }
 
   await writeJsonFileIfChanged(

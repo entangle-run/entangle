@@ -39,6 +39,7 @@ export type RuntimeBackendReconcileInput = {
   desiredState: RuntimeDesiredState;
   graphId: string;
   graphRevisionId: string;
+  joinConfigPath?: string | undefined;
   nodeId: string;
   reason: string | undefined;
   restartGeneration: number;
@@ -176,6 +177,10 @@ class MemoryRuntimeBackend implements RuntimeBackend {
 
 class DockerRuntimeBackend implements RuntimeBackend {
   readonly kind = "docker" as const;
+  private readonly bootstrapMode =
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP?.trim() === "join"
+      ? "join"
+      : "local-context";
   private readonly dockerClient: DockerEngineApi;
   private readonly networkName = process.env.ENTANGLE_DOCKER_NETWORK?.trim();
   private readonly runnerImage =
@@ -198,7 +203,10 @@ class DockerRuntimeBackend implements RuntimeBackend {
   ): Promise<RuntimeBackendObservation> {
     const containerName = buildContainerName(input.nodeId);
 
-    if (input.desiredState !== "running" || !input.context || !input.contextPath) {
+    const launchConfigPath =
+      this.bootstrapMode === "join" ? input.joinConfigPath : input.contextPath;
+
+    if (input.desiredState !== "running" || !input.context || !launchConfigPath) {
       await this.dockerClient.removeContainer(containerName);
       return {
         backendKind: this.kind,
@@ -232,7 +240,9 @@ class DockerRuntimeBackend implements RuntimeBackend {
 
     if (!inspection) {
       const containerEnv = [
-        `ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`,
+        this.bootstrapMode === "join"
+          ? `ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${launchConfigPath}`
+          : `ENTANGLE_RUNTIME_CONTEXT_PATH=${launchConfigPath}`,
         ...Object.entries(input.secretEnvironment ?? {})
           .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
           .map(([key, value]) => `${key}=${value}`)
@@ -261,7 +271,10 @@ class DockerRuntimeBackend implements RuntimeBackend {
           "io.entangle.managed": "true",
           "io.entangle.node_id": input.nodeId,
           "io.entangle.restart_generation": String(input.restartGeneration),
-          "io.entangle.runtime_context_path": input.contextPath
+          "io.entangle.runner_bootstrap": this.bootstrapMode,
+          ...(this.bootstrapMode === "join"
+            ? { "io.entangle.runner_join_config_path": launchConfigPath }
+            : { "io.entangle.runtime_context_path": launchConfigPath })
         },
         mounts: [...mounts],
         networkName: this.networkName
@@ -308,14 +321,19 @@ class DockerRuntimeBackend implements RuntimeBackend {
     inspection: DockerContainerInspect,
     input: RuntimeBackendReconcileInput
   ): boolean {
-    if (!input.contextPath) {
+    const launchConfigPath =
+      this.bootstrapMode === "join" ? input.joinConfigPath : input.contextPath;
+
+    if (!launchConfigPath) {
       return false;
     }
 
     const labels = inspection.Config.Labels ?? {};
     const envEntries = new Set(inspection.Config.Env ?? []);
     const requiredEnvEntries = [
-      `ENTANGLE_RUNTIME_CONTEXT_PATH=${input.contextPath}`,
+      this.bootstrapMode === "join"
+        ? `ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${launchConfigPath}`
+        : `ENTANGLE_RUNTIME_CONTEXT_PATH=${launchConfigPath}`,
       ...Object.entries(input.secretEnvironment ?? {})
         .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
         .map(([key, value]) => `${key}=${value}`)
@@ -325,7 +343,10 @@ class DockerRuntimeBackend implements RuntimeBackend {
       inspection.Config.Image !== this.runnerImage ||
       labels["io.entangle.graph_revision_id"] !== input.graphRevisionId ||
       labels["io.entangle.restart_generation"] !== String(input.restartGeneration) ||
-      labels["io.entangle.runtime_context_path"] !== input.contextPath ||
+      labels["io.entangle.runner_bootstrap"] !== this.bootstrapMode ||
+      (this.bootstrapMode === "join"
+        ? labels["io.entangle.runner_join_config_path"] !== launchConfigPath
+        : labels["io.entangle.runtime_context_path"] !== launchConfigPath) ||
       requiredEnvEntries.some((entry) => !envEntries.has(entry))
     );
   }

@@ -37,6 +37,7 @@ because the handoff required these exact filenames. The existing
 - [235-runner-registry-slice.md](235-runner-registry-slice.md)
 - [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
 - [237-generic-runner-bootstrap-slice.md](237-generic-runner-bootstrap-slice.md)
+- [238-local-launcher-join-adapter-slice.md](238-local-launcher-join-adapter-slice.md)
 
 ## Audited Scope
 
@@ -177,5 +178,5 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 6 are implemented in this branch. Slice 7,
-rebasing the local launcher adapter onto the assignment path, is next.
+Plan readiness: Slices 1 through 7 are implemented in this branch. Slice 8,
+projection from signed observations, is next.

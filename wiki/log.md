@@ -2741,3 +2741,16 @@ The existing `effective-runtime-context.json` path remains as explicit
 federated materializer boundary, so a generic runner without materialization
 rejects assignment offers instead of falsely reporting that a node runtime has
 started.
+
+## [2026-04-26] implementation | Added local launcher join adapter bridge
+
+Added `references/238-local-launcher-join-adapter-slice.md` and implemented the
+seventh federated pivot slice. Host now writes `runner-join.json` beside the
+local runtime context whenever a materialized runtime has relay URLs, using the
+Host Authority pubkey, runner identity, relay profile, runtime kind, and engine
+capability from the real runtime context.
+
+The Docker backend now supports `ENTANGLE_DOCKER_RUNNER_BOOTSTRAP=join`, which
+launches the runner with `ENTANGLE_RUNNER_JOIN_CONFIG_PATH` instead of
+`ENTANGLE_RUNTIME_CONTEXT_PATH`. The default remains `local-context` until Host
+control publishing and the federated assignment materializer are implemented.

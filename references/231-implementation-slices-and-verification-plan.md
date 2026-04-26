@@ -140,6 +140,10 @@ Change Docker local profile to launch generic runners and assign them through
 the same protocol. Shared volumes may remain only for local launcher state, not
 canonical Host observation.
 
+Implementation record:
+
+- [238-local-launcher-join-adapter-slice.md](238-local-launcher-join-adapter-slice.md)
+
 Verification:
 
 - local runtime smoke;

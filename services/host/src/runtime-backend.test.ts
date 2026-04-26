@@ -60,6 +60,7 @@ describe("createRuntimeBackend", () => {
   beforeEach(() => {
     delete process.env.ENTANGLE_RUNTIME_BACKEND;
     delete process.env.ENTANGLE_DOCKER_RUNNER_IMAGE;
+    delete process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP;
     delete process.env.ENTANGLE_DOCKER_NETWORK;
     delete process.env.ENTANGLE_DOCKER_SECRET_STATE_TARGET;
     delete process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME;
@@ -181,6 +182,77 @@ describe("createRuntimeBackend", () => {
       backendKind: "docker",
       observedState: "stopped",
       statusMessage: "Operator requested stop."
+    });
+  });
+
+  it("can launch a local Docker runner in generic join bootstrap mode", async () => {
+    process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "join";
+
+    const dockerClient = createFakeDockerClient();
+    dockerClient.inspectImage.mockResolvedValue(true);
+    dockerClient.inspectContainer
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(
+        buildContainerInspection({
+          Config: {
+            Env: [
+              "ENTANGLE_RUNNER_JOIN_CONFIG_PATH=/entangle-state/runner-join.json"
+            ],
+            Image: "entangle-runner:local",
+            Labels: {
+              "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.restart_generation": "0",
+              "io.entangle.runner_bootstrap": "join",
+              "io.entangle.runner_join_config_path":
+                "/entangle-state/runner-join.json"
+            }
+          }
+        })
+      );
+
+    const backend = createRuntimeBackend(
+      "/repo/.entangle/host",
+      "/repo/.entangle-secrets",
+      {
+        dockerClient
+      }
+    );
+    const result = await backend.reconcileRuntime({
+      context: buildRuntimeContext(),
+      contextPath: "/entangle-state/effective-runtime-context.json",
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "rev-1",
+      joinConfigPath: "/entangle-state/runner-join.json",
+      nodeId: "worker-it",
+      reason: undefined,
+      restartGeneration: 0,
+      secretEnvironment: {
+        ENTANGLE_NOSTR_SECRET_KEY:
+          "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    });
+
+    expect(dockerClient.createContainer).toHaveBeenCalledOnce();
+    const createContainerInput = dockerClient.createContainer.mock.calls[0]?.[0];
+
+    expect(createContainerInput?.env).toEqual(
+      expect.arrayContaining([
+        "ENTANGLE_RUNNER_JOIN_CONFIG_PATH=/entangle-state/runner-join.json",
+        "ENTANGLE_NOSTR_SECRET_KEY=1111111111111111111111111111111111111111111111111111111111111111"
+      ])
+    );
+    expect(createContainerInput?.env).not.toContain(
+      "ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/effective-runtime-context.json"
+    );
+    expect(createContainerInput?.labels).toMatchObject({
+      "io.entangle.runner_bootstrap": "join",
+      "io.entangle.runner_join_config_path": "/entangle-state/runner-join.json"
+    });
+    expect(result).toMatchObject({
+      backendKind: "docker",
+      observedState: "running"
     });
   });
 

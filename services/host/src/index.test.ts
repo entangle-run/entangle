@@ -79,6 +79,7 @@ import {
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
   runnerRegistryListResponseSchema,
+  runnerJoinConfigSchema,
   runnerRevokeMutationResponseSchema,
   runnerTrustMutationResponseSchema,
   sessionCancellationResponseSchema,
@@ -2559,6 +2560,27 @@ describe("buildHostServer", () => {
         ) as unknown
       );
       expect(storedContext.binding.node.nodeId).toBe("worker-it");
+      const runnerJoinConfig = runnerJoinConfigSchema.parse(
+        JSON.parse(
+          await readFile(path.join(contextPath, "runner-join.json"), "utf8")
+        ) as unknown
+      );
+      expect(runnerJoinConfig).toMatchObject({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        identity: {
+          publicKey: runtimeContext.identityContext.publicKey,
+          secretDelivery: {
+            envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+            mode: "env_var"
+          }
+        },
+        runnerId: "worker-it"
+      });
+      expect(runnerJoinConfig.hostAuthorityPubkey).toHaveLength(64);
+      expect(runnerJoinConfig.relayUrls.length).toBeGreaterThan(0);
       expect(
         JSON.parse(
           await readFile(
