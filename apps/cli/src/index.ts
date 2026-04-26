@@ -51,6 +51,10 @@ import {
 } from "./local-doctor-command.js";
 import { buildLocalDiagnosticsBundle } from "./local-diagnostics-bundle-command.js";
 import {
+  createLocalBackup,
+  restoreLocalBackup
+} from "./local-backup-command.js";
+import {
   projectGraphExportSummary,
   projectGraphImportSummary,
   projectGraphRevisionInspectionSummary,
@@ -416,6 +420,56 @@ packageCommand
 const localCommand = program
   .command("local")
   .description("Inspect and operate the Entangle Local profile.");
+
+localCommand
+  .command("backup")
+  .option("--force", "Replace an existing backup output directory.")
+  .option(
+    "--output <path>",
+    "Entangle Local backup bundle output directory.",
+    "entangle-local-backup"
+  )
+  .description("Create a versioned Entangle Local backup bundle without local secrets.")
+  .action(
+    async (options: { force?: boolean; output: string }) => {
+      const summary = await createLocalBackup({
+        force: options.force,
+        outputPath: resolveCliPath(options.output),
+        repositoryRoot
+      });
+
+      printJson({
+        backup: summary
+      });
+    }
+  );
+
+localCommand
+  .command("restore")
+  .argument("<bundle>", "Path to an Entangle Local backup bundle directory.")
+  .option("--dry-run", "Validate the backup and report what would be restored.")
+  .option("--force", "Replace the current .entangle/host state directory.")
+  .description("Restore .entangle/host from a validated Entangle Local backup bundle.")
+  .action(
+    async (
+      bundle: string,
+      options: {
+        dryRun?: boolean;
+        force?: boolean;
+      }
+    ) => {
+      const summary = await restoreLocalBackup({
+        dryRun: options.dryRun,
+        force: options.force,
+        inputPath: resolveCliPath(bundle),
+        repositoryRoot
+      });
+
+      printJson({
+        restore: summary
+      });
+    }
+  );
 
 localCommand
   .command("doctor")

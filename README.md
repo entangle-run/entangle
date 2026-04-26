@@ -288,6 +288,10 @@ This repository currently contains:
 - a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics` that
   writes a temporary redacted diagnostics bundle against a running Local
   profile and validates its stable top-level shape;
+- first Local backup/restore commands through `entangle local backup` and
+  `entangle local restore`, using a versioned directory bundle for
+  `.entangle/host`, selected Local profile config snapshots, explicit secret
+  exclusion, and restore-time state-layout compatibility checks;
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
@@ -657,7 +661,10 @@ This repository currently contains:
   Studio, Gitea, and the local relay, with human-readable and JSON output plus
   strict/offline modes, while `entangle local diagnostics` writes a redacted
   JSON support bundle containing doctor output, bounded Compose status/logs,
-  runner-image inspection, and live host state when available;
+  runner-image inspection, and live host state when available, and `entangle
+  local backup` / `entangle local restore` now provide the first versioned
+  `.entangle/host` backup and validated restore path without bundling local
+  secrets;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

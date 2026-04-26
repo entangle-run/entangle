@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added Local backup and restore foundation
+
+Advanced Entangle Local L4 reliability with `entangle local backup` and
+`entangle local restore`. Backups now create a schema-versioned directory
+bundle containing `.entangle/host`, selected Local profile config snapshots,
+copy statistics, package metadata, state-layout status, and explicit exclusions
+for `.entangle-secrets` and external service state.
+
+Restore now validates the manifest and bundled `state-layout.json`, supports
+`--dry-run`, refuses incompatible Local state layout versions, and refuses to
+replace an existing `.entangle/host` without `--force`. Focused CLI coverage
+exercises backup creation, dry-run restore, clean restore, secret exclusion,
+and unsupported-future layout rejection.
+
 ## [2026-04-26] implementation | Added diagnostics bundle smoke
 
 Added `pnpm ops:smoke-local:diagnostics` for already-running Entangle Local

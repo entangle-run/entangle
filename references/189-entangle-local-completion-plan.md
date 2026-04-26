@@ -62,6 +62,10 @@ The latest implementation state includes:
   doctor output, bounded Docker Compose service/log captures, runner-image
   inspection, and host status/events/runtimes/principals when the host is
   reachable;
+- `entangle local backup` and `entangle local restore` now provide the first
+  versioned Local state backup path for `.entangle/host`, selected Local
+  profile config snapshots, explicit `.entangle-secrets` exclusion, dry-run
+  validation, and restore-time state-layout compatibility checks;
 - runner turns now persist bounded `engineRequestSummary` evidence for the
   assembled engine request shape, including prompt part counts, aggregate
   prompt character counts, memory, artifact, and tool counts, execution
@@ -913,6 +917,25 @@ Constraints:
   protected.
 - Restore must detect incompatible state layout versions.
 
+Current partial implementation:
+
+- `entangle local backup` creates a schema-versioned directory bundle
+  containing `.entangle/host`, including runtime state, workspaces, git
+  artifact repositories, and node wiki repositories;
+- the backup manifest records selected Local profile config snapshots,
+  release/package metadata, copy statistics, local state layout status, and
+  explicit exclusions for `.entangle-secrets`, Docker volumes, Gitea internals,
+  and relay state;
+- `entangle local restore` validates the backup manifest and bundled
+  `state-layout.json` before writing, supports `--dry-run`, and refuses to
+  replace an existing `.entangle/host` unless `--force` is supplied;
+- focused CLI coverage exercises backup creation, dry-run restore, clean
+  restore into another Local root, secret exclusion, and unsupported-future
+  state-layout rejection;
+- remaining work is an operator-facing live backup/restore smoke against a
+  realistic Local profile and restore rehearsal documentation for release
+  validation.
+
 Acceptance:
 
 - A user can back up Entangle Local and restore it into a clean Local
@@ -944,8 +967,8 @@ Current partial implementation:
 - `entangle local doctor` now performs an offline check for missing, malformed,
   future, legacy, or current local state layout records and a live check for
   the host-reported state layout status;
-- migration implementation, backup/restore integration, and upgrade rehearsal
-  from previous Local release state remain open.
+- migration implementation and upgrade rehearsal from previous Local release
+  state remain open.
 
 Acceptance:
 
@@ -1006,7 +1029,10 @@ Current partial implementation:
 - `pnpm ops:smoke-local:diagnostics` now runs against an already-running Local
   profile, writes a temporary redacted `entangle local diagnostics` JSON
   bundle, validates the stable top-level schema, and removes the temporary
-  file after the check.
+  file after the check;
+- focused backup/restore helper coverage now validates dry-run restore, clean
+  restore, secret exclusion, and incompatible state-layout rejection, but a
+  live repeated-use backup/restore smoke remains open.
 
 Acceptance:
 

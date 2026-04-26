@@ -606,7 +606,9 @@ The repository now also contains the first real implementation baseline:
   the local relay, plus strict and offline modes, and `entangle local
   diagnostics` now writes a redacted JSON support bundle with doctor output,
   bounded Compose status/logs, runner-image inspection, and live host state
-  when available;
+  when available, while `entangle local backup` and `entangle local restore`
+  provide the first versioned `.entangle/host` backup and validated restore
+  path without bundling local secrets;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket

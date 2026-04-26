@@ -68,6 +68,32 @@ Default local URLs:
 - Gitea HTTP: `http://localhost:3001`
 - Strfry relay: `ws://localhost:7777`
 
+## Backup and Restore
+
+Create a versioned backup bundle for Local host state with:
+
+```sh
+pnpm --filter @entangle/cli dev local backup --output entangle-local-backup
+```
+
+The bundle contains `.entangle/host`, including runtime state, workspaces, git
+artifact repositories, and node wiki repositories, plus a snapshot of selected
+Local profile config files. It explicitly excludes `.entangle-secrets` and
+external service state such as Docker volumes, Gitea internals, and relay data.
+
+Validate a restore without changing local state:
+
+```sh
+pnpm --filter @entangle/cli dev local restore entangle-local-backup --dry-run
+```
+
+Restore into a clean profile, or replace the current `.entangle/host` only when
+that destructive replacement is intentional:
+
+```sh
+pnpm --filter @entangle/cli dev local restore entangle-local-backup --force
+```
+
 ## Smoke Test
 
 After the runner image has been built and the stable services are running, run
