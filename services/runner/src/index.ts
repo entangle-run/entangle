@@ -37,6 +37,7 @@ import {
 import type { RunnerTransport } from "./transport.js";
 import { createOpenCodeAgentEngine } from "./opencode-engine.js";
 import { createFileSystemAssignmentMaterializer } from "./assignment-materializer.js";
+import { startHumanInterfaceRuntime } from "./human-interface-runtime.js";
 
 function resolveRunnerIdentity(
   runtimeContext: EffectiveRuntimeContext
@@ -336,7 +337,22 @@ export async function createConfiguredRunnerJoinService(
     runnerPubkey: publicKey,
     runtimeStarter:
       input.runtimeStarter ??
-      (async ({ runtimeContextPath }) => {
+      (async ({ assignment, runtimeContextPath }) => {
+        if (assignment.runtimeKind === "human_interface") {
+          const runtimeContext = await loadRuntimeContext(runtimeContextPath);
+          const handle = await startHumanInterfaceRuntime({
+            ...(config.hostApi ? { hostApi: config.hostApi } : {}),
+            context: runtimeContext
+          });
+
+          return {
+            clientUrl: handle.clientUrl,
+            runtimeContextPath,
+            runtimeRoot: handle.runtimeRoot,
+            stop: () => handle.stop()
+          };
+        }
+
         const configured = await createConfiguredRunnerService(runtimeContextPath, {
           observationPublisher: createRuntimeObservationPublisher({
             config,

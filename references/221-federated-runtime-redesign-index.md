@@ -112,9 +112,12 @@ The repository is not fully federated:
 - Host still reconstructs some sessions, approvals, source history, and wiki
   details by reading runner-owned runtime paths;
 - Host session launch now signs `task.request` with stable User Node identity
-  material, but the Human Interface Runtime remains incomplete;
-- user nodes have stable identities and projected inbox surfaces, but full
-  chat composition and approval workflow migration are still incomplete;
+  material, and User Nodes are assignable to `human_interface` runners;
+- joined runners can start a minimal Human Interface Runtime for assigned User
+  Nodes, and Host projection can expose the runtime's `clientUrl`;
+- user nodes have stable identities, projected inbox surfaces, and a minimal
+  runner-served User Client, but full chat composition, durable inbox/outbox,
+  artifact review, and approval workflow migration are still incomplete;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
@@ -174,7 +177,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 8. ProjectionStore built from signed observations instead of runtime filesystem
    reads.
 9. User Node identity records, assignable Human Interface Runtime, and User
-   Client.
+   Client. The first assignable/minimal-client slice is implemented; full
+   inbox/outbox and approval/artifact review remain open.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs.

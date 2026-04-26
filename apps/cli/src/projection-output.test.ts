@@ -17,6 +17,7 @@ const projection: HostProjectionSnapshot = {
     {
       assignmentId: "assignment-alpha",
       backendKind: "federated",
+      clientUrl: "http://127.0.0.1:4173/",
       desiredState: "running",
       graphId: "team-alpha",
       graphRevisionId: "team-alpha-rev-1",
@@ -82,6 +83,7 @@ describe("projection CLI output", () => {
   it("projects compact runtime summaries", () => {
     expect(projectRuntimeProjectionSummary(projection.runtimes[0]!)).toMatchObject({
       assignmentId: "assignment-alpha",
+      clientUrl: "http://127.0.0.1:4173/",
       nodeId: "worker-b",
       observedState: "running",
       projectionSource: "observation_event",

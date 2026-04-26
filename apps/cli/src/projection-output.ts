@@ -6,6 +6,7 @@ import type {
 export type RuntimeProjectionCliSummary = {
   assignmentId?: string;
   backendKind: string;
+  clientUrl?: string;
   desiredState: string;
   lastSeenAt?: string;
   nodeId: string;
@@ -41,6 +42,7 @@ export function projectRuntimeProjectionSummary(
   return {
     ...(runtime.assignmentId ? { assignmentId: runtime.assignmentId } : {}),
     backendKind: runtime.backendKind,
+    ...(runtime.clientUrl ? { clientUrl: runtime.clientUrl } : {}),
     desiredState: runtime.desiredState,
     ...(runtime.lastSeenAt ? { lastSeenAt: runtime.lastSeenAt } : {}),
     nodeId: runtime.nodeId,

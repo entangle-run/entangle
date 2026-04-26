@@ -49,6 +49,7 @@ import {
   runtimeAssignmentListResponseSchema,
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeResponseSchema,
+  runtimeProjectionRecordSchema,
   runnerRegistrationRecordSchema,
   runnerJoinConfigSchema,
   runnerRegistryEntrySchema,
@@ -72,6 +73,7 @@ import {
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
+  runtimeStatusObservationPayloadSchema,
   runtimeWikiRepositoryPublicationListResponseSchema,
   runtimeWikiRepositoryPublicationRequestSchema,
   runtimeWikiRepositoryPublicationResponseSchema,
@@ -383,6 +385,60 @@ describe("federated runtime contracts", () => {
 
     expect(response.nodeId).toBe("worker-it");
     expect(response.secretDelivery.mode).toBe("env_var");
+  });
+
+  it("accepts Human Interface Runtime client URLs in observations and projections", () => {
+    const status = runtimeStatusObservationPayloadSchema.parse({
+      assignmentId: "assignment-user-main",
+      clientUrl: "http://127.0.0.1:4173/",
+      eventType: "runtime.status",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-rev-1",
+      hostAuthorityPubkey: authorityPubkey,
+      nodeId: "user-main",
+      observedAt,
+      observedState: "running",
+      protocol: "entangle.observe.v1",
+      runnerId: "runner-human",
+      runnerPubkey
+    });
+
+    expect(status.clientUrl).toBe("http://127.0.0.1:4173/");
+    expect(
+      observedRuntimeRecordSchema.parse({
+        assignmentId: "assignment-user-main",
+        backendKind: "federated",
+        clientUrl: status.clientUrl,
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-rev-1",
+        lastSeenAt: observedAt,
+        nodeId: "user-main",
+        observedState: "running",
+        runnerId: "runner-human",
+        runtimeHandle: "federated:runner-human:assignment-user-main",
+        schemaVersion: "1"
+      }).clientUrl
+    ).toBe("http://127.0.0.1:4173/");
+    expect(
+      runtimeProjectionRecordSchema.parse({
+        assignmentId: "assignment-user-main",
+        backendKind: "federated",
+        clientUrl: status.clientUrl,
+        desiredState: "running",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-rev-1",
+        hostAuthorityPubkey: authorityPubkey,
+        lastSeenAt: observedAt,
+        nodeId: "user-main",
+        observedState: "running",
+        projection: {
+          source: "observation_event",
+          updatedAt: observedAt
+        },
+        restartGeneration: 0,
+        runnerId: "runner-human"
+      }).clientUrl
+    ).toBe("http://127.0.0.1:4173/");
   });
 
   it("accepts signed control assignment offers from Host Authority", () => {

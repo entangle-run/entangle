@@ -21,11 +21,18 @@ candidates/history, wiki publications, recovery, and event refresh.
 Missing surfaces:
 
 - transport health;
-- User Node runtime assignment and Human Interface Runtime visibility;
-- User Client endpoint link/open action for running User Nodes;
+- full User Node runtime assignment workflow controls in Studio;
+- rich Human Interface Runtime visibility beyond the projected runtime row;
 - durable user-node inbox/outbox projection;
 - Studio signed user-node task launch migration;
-- projection-backed distributed runtime status.
+
+Recently added:
+
+- Host projection records can include `clientUrl` from runner
+  `runtime.status` observations;
+- Studio shows an `Open User Client` action for projected runtimes with a
+  client endpoint;
+- CLI projection summaries include `clientUrl`.
 
 ## Target Model
 
@@ -90,9 +97,12 @@ Node.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
   User Node summary panel.
-- Add Studio User Node runtime visibility and User Client open action.
+- Add Studio User Node runtime visibility and User Client open action. The
+  first `clientUrl` open action is implemented through projection; richer
+  assignment/health panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
-  replies, and approvals.
+  replies, and approvals. A minimal runner-served shell exists; the full client
+  app remains open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

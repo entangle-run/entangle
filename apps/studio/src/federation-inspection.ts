@@ -60,8 +60,9 @@ export function formatRuntimeProjectionDetail(
     `desired ${runtime.desiredState}`,
     `backend ${runtime.backendKind}`,
     runtime.runnerId ? `runner ${runtime.runnerId}` : "runner unassigned",
+    runtime.clientUrl ? `client ${runtime.clientUrl}` : undefined,
     `source ${runtime.projection.source}`
-  ].join(" · ");
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
 export function sortUserNodeIdentitiesForStudio(

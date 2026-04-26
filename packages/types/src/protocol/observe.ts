@@ -89,6 +89,7 @@ export const assignmentReceiptPayloadSchema = observedAtPayloadBaseSchema.extend
 export const runtimeStatusObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
     assignmentId: identifierSchema.optional(),
+    clientUrl: nonEmptyStringSchema.optional(),
     eventType: z.literal("runtime.status"),
     graphId: identifierSchema,
     graphRevisionId: identifierSchema.optional(),

@@ -1419,6 +1419,219 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("offers User Node assignments as human_interface only to compatible runners", async () => {
+    const publishedOffers: Array<{
+      assignment: RuntimeAssignmentRecord;
+      relayUrls: string[];
+    }> = [];
+    const server = await createTestServer({
+      federatedControlPlane: {
+        publishRuntimeAssignmentOffer: (input) => {
+          publishedOffers.push({
+            assignment: input.assignment,
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeAssignmentRevoke: () => Promise.resolve()
+      },
+      federatedControlRelayUrls: ["ws://relay.example"]
+    });
+
+    try {
+      const [{ recordRunnerHello }] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      const graphResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          graphId: "team-alpha",
+          name: "Team Alpha",
+          nodes: [
+            {
+              nodeId: "user-main",
+              displayName: "User Main",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "user-reviewer",
+              displayName: "User Reviewer",
+              nodeKind: "user"
+            },
+            {
+              nodeId: "worker-it",
+              displayName: "Worker IT",
+              nodeKind: "worker",
+              packageSourceRef: packageSourceId
+            }
+          ],
+          edges: [
+            {
+              edgeId: "user-main-to-worker",
+              fromNodeId: "user-main",
+              toNodeId: "worker-it",
+              relation: "delegates_to"
+            },
+            {
+              edgeId: "user-reviewer-to-worker",
+              fromNodeId: "user-reviewer",
+              toNodeId: "worker-it",
+              relation: "reviews"
+            }
+          ]
+        },
+        url: "/v1/graph"
+      });
+      expect(graphResponse.statusCode).toBe(200);
+
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      ).authority.publicKey;
+      const humanRunnerPubkey =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+      const agentRunnerPubkey =
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+      const reviewerRunnerPubkey =
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: [],
+          runtimeKinds: ["human_interface"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-human",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-human",
+        runnerPubkey: humanRunnerPubkey
+      });
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: [],
+          runtimeKinds: ["human_interface"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-human-reviewer",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-human-reviewer",
+        runnerPubkey: reviewerRunnerPubkey
+      });
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-agent",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-agent",
+        runnerPubkey: agentRunnerPubkey
+      });
+
+      expect(
+        (
+          await server.inject({
+            method: "POST",
+            url: "/v1/runners/runner-human/trust"
+          })
+        ).statusCode
+      ).toBe(200);
+      expect(
+        (
+          await server.inject({
+            method: "POST",
+            url: "/v1/runners/runner-human-reviewer/trust"
+          })
+        ).statusCode
+      ).toBe(200);
+      expect(
+        (
+          await server.inject({
+            method: "POST",
+            url: "/v1/runners/runner-agent/trust"
+          })
+        ).statusCode
+      ).toBe(200);
+
+      const offerResponse = await server.inject({
+        method: "POST",
+        payload: {
+          assignmentId: "assignment-user-main",
+          leaseDurationSeconds: 600,
+          nodeId: "user-main",
+          runnerId: "runner-human"
+        },
+        url: "/v1/assignments"
+      });
+      expect(offerResponse.statusCode).toBe(200);
+      const offered = runtimeAssignmentOfferResponseSchema.parse(
+        offerResponse.json()
+      ).assignment;
+      expect(offered).toMatchObject({
+        assignmentId: "assignment-user-main",
+        nodeId: "user-main",
+        runnerId: "runner-human",
+        runtimeKind: "human_interface",
+        status: "offered"
+      });
+      expect(publishedOffers[0]?.assignment.runtimeKind).toBe("human_interface");
+
+      const reviewerOfferResponse = await server.inject({
+        method: "POST",
+        payload: {
+          assignmentId: "assignment-user-reviewer",
+          leaseDurationSeconds: 600,
+          nodeId: "user-reviewer",
+          runnerId: "runner-human-reviewer"
+        },
+        url: "/v1/assignments"
+      });
+      expect(reviewerOfferResponse.statusCode).toBe(200);
+      expect(
+        runtimeAssignmentOfferResponseSchema.parse(
+          reviewerOfferResponse.json()
+        ).assignment
+      ).toMatchObject({
+        assignmentId: "assignment-user-reviewer",
+        nodeId: "user-reviewer",
+        runnerId: "runner-human-reviewer",
+        runtimeKind: "human_interface",
+        status: "offered"
+      });
+
+      const incompatibleOfferResponse = await server.inject({
+        method: "POST",
+        payload: {
+          assignmentId: "assignment-user-main-agent",
+          leaseDurationSeconds: 600,
+          nodeId: "user-main",
+          runnerId: "runner-agent"
+        },
+        url: "/v1/assignments"
+      });
+      expect(incompatibleOfferResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(incompatibleOfferResponse.json()))
+        .toMatchObject({
+          code: "conflict"
+        });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("projects artifact, source-change, and wiki refs from runner observations", async () => {
     const server = await createTestServer();
 
@@ -2945,6 +3158,95 @@ describe("buildHostServer", () => {
         graphId: "team-alpha",
         nodeId: "worker-it",
         publicKey: runtimeContext.identityContext.publicKey,
+        secretDelivery: {
+          envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+          mode: "env_var"
+        }
+      });
+      expect(identitySecret.secretKey).toMatch(/^[0-9a-f]{64}$/);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("exports User Node bootstrap bundles and identity secrets for Human Interface Runtime", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(
+      createdDirectories[0]!
+    );
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({ packageSourceId, server });
+
+      const unauthorizedResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/user-main/bootstrap-bundle"
+      });
+      expect(unauthorizedResponse.statusCode).toBe(401);
+
+      const bundleResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/runtimes/user-main/bootstrap-bundle"
+      });
+      expect(bundleResponse.statusCode).toBe(200);
+      const bootstrapBundle = runtimeBootstrapBundleResponseSchema.parse(
+        bundleResponse.json()
+      );
+      expect(bootstrapBundle).toMatchObject({
+        graphId: "team-alpha",
+        nodeId: "user-main",
+        runtimeContext: {
+          agentRuntimeContext: {
+            mode: "disabled"
+          },
+          binding: {
+            node: {
+              nodeId: "user-main",
+              nodeKind: "user"
+            }
+          }
+        }
+      });
+      expect(
+        bootstrapBundle.runtimeContext.relayContext.edgeRoutes.find(
+          (route) => route.peerNodeId === "worker-it"
+        )?.peerPubkey
+      ).toHaveLength(64);
+
+      const userNodesResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes"
+      });
+      const userNodeIdentity = userNodeIdentityListResponseSchema
+        .parse(userNodesResponse.json())
+        .userNodes.find((userNode) => userNode.nodeId === "user-main");
+      expect(userNodeIdentity?.publicKey).toBe(
+        bootstrapBundle.runtimeContext.identityContext.publicKey
+      );
+
+      const secretResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/runtimes/user-main/identity-secret"
+      });
+      expect(secretResponse.statusCode).toBe(200);
+      const identitySecret = runtimeIdentitySecretResponseSchema.parse(
+        secretResponse.json()
+      );
+      expect(identitySecret).toMatchObject({
+        graphId: "team-alpha",
+        nodeId: "user-main",
+        publicKey: userNodeIdentity?.publicKey,
         secretDelivery: {
           envVar: "ENTANGLE_NOSTR_SECRET_KEY",
           mode: "env_var"

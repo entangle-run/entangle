@@ -19,12 +19,23 @@ The current implementation has the first federated execution path:
   signed reply/approval/rejection messages as a User Node.
 - Studio shows User Node identity and conversation projection as operator
   visibility.
+- Host now maps User Nodes to `runtimeKind: "human_interface"` for assignment,
+  and tests cover both compatible `human_interface` runners and incompatible
+  agent-only runners.
+- Host can export portable User Node bootstrap bundles and identity secrets for
+  assigned Human Interface Runtimes.
+- Joined runners now start a minimal first-party Human Interface Runtime for
+  `human_interface` assignments. The runtime serves a basic HTTP User Client,
+  exposes `/health`, and forwards message publication through the Host User
+  Node gateway. Runners can advertise a configured public URL when the bind
+  address is not externally reachable.
+- Runner `runtime.status` observations can include `clientUrl`; Host persists
+  and projects it, Studio links to it, and CLI projection summaries include it.
 
-The current implementation does not yet have a true running User Node client:
+The current implementation still does not have the final User Node client:
 
-- Host still rejects assigning `nodeKind: "user"` to a runner.
-- `runtimeKind: "human_interface"` exists in contracts, but it is not wired as
-  a runnable assignment path.
+- The current User Client is a minimal runner-served shell, not a complete
+  conversation/approval/artifact-review application.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface is summary-level; it is not a
   durable inbox/outbox message-history model.
@@ -114,6 +125,8 @@ Tests:
 Change Host runtime-kind inference so `nodeKind: "user"` maps to
 `human_interface` instead of throwing.
 
+Status: implemented for the current Host assignment path.
+
 Add assignment tests proving:
 
 - a runner with `human_interface` can receive a User Node assignment;
@@ -137,13 +150,18 @@ Teach the joined runner materializer/runtime starter to branch by
 For `human_interface`, start a first-party Human Interface Runtime instead of
 the agent service loop.
 
+Status: implemented as a minimal runner-owned HTTP runtime. It starts for
+`human_interface` assignments, exposes health, serves a basic User Client shell,
+and delegates message publication to Host.
+
 The first version can be simple:
 
 - starts an HTTP server bound to a configurable host/port;
 - serves a bundled User Client app or a minimal HTML shell;
 - exposes runtime health;
 - receives Host/API configuration through the portable bootstrap bundle;
-- emits `runtime.status` and `human_interface.status` observations.
+- emits `runtime.status` observations with `clientUrl`. A richer
+  `human_interface.status` domain remains a later refinement.
 
 Impacted modules:
 
@@ -191,6 +209,10 @@ Studio should show operator visibility for user-node runtimes:
 - link/button to open the User Client.
 
 Studio still does not become the user chat app.
+
+Status: partially implemented. Studio now renders an open action for projected
+runtimes that expose `clientUrl`; richer Human Interface Runtime health and
+conversation/approval counts remain open.
 
 Impacted modules:
 

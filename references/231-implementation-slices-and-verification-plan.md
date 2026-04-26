@@ -201,11 +201,27 @@ inbox/outbox projection, and multi-user support.
 Implementation record:
 
 - [240-user-node-identity-slice.md](240-user-node-identity-slice.md)
+- [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
+
+Current status:
+
+- stable User Node identities exist;
+- User Nodes map to `human_interface` assignments;
+- multiple User Nodes can be assigned to distinct `human_interface` runners in
+  focused Host tests;
+- joined runners start a minimal Human Interface Runtime for assigned User
+  Nodes;
+- Host bootstrap and identity-secret APIs now support User Nodes;
+- Host projection, Studio, and CLI can carry/display the Human Interface
+  Runtime `clientUrl`;
+- durable inbox/outbox, final User Client application, approval/artifact review
+  controls, and full multi-runner smoke coverage remain open.
 
 Verification:
 
 - user-node identity tests;
 - multiple user-node graph tests;
+- Human Interface Runtime assignment and endpoint projection tests;
 - inbox/outbox projection tests.
 
 ### Slice 10: Signed User Conversations And Approvals
@@ -303,7 +319,7 @@ Current status:
 - separate OS process runner smoke is implemented;
 - the remaining fast product proof is a same-machine but topology-agnostic
   demo with one assigned agent runner and one assigned User Node
-  `human_interface` runner;
+  `human_interface` runner exposing a User Client endpoint;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

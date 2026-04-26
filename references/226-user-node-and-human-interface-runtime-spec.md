@@ -13,13 +13,26 @@ User nodes are now partially runtime-capable:
 - session launch signs `task.request` with stable User Node key material;
 - Host exposes a User Node A2A message publishing surface for local gateway
   use.
+- Host maps `nodeKind: "user"` to `runtimeKind: "human_interface"` for
+  runtime assignment and can assign multiple User Nodes to distinct
+  `human_interface` runners.
+- Host can export a portable User Node bootstrap bundle and identity secret for
+  a Human Interface Runtime through the authenticated runtime bootstrap APIs.
+- The joined runner starts a first-party minimal Human Interface Runtime for
+  `human_interface` assignments. That runtime serves a basic User Client HTTP
+  shell, exposes `/health`, and publishes messages through the Host User Node
+  gateway without exposing the Host token to the browser. A runner can set
+  `ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL` when the bind address is not the URL
+  that Studio/CLI should show to operators.
+- Runner `runtime.status` observations can carry a `clientUrl`, Host records it
+  in observed runtime state, Host projection exposes it, Studio renders an open
+  action, and the CLI projection summary includes it.
 
 Still missing:
 
-- Host still rejects assigning `nodeKind: "user"` to a runner, even though
-  `runtimeKind: "human_interface"` exists in the shared runner contracts;
-- there is no Human Interface Runtime that starts when a User Node is running;
-- there is no dedicated User Client exposed by that runtime;
+- the current User Client is a minimal runner-served shell, not the final
+  dedicated app with conversation detail, approval controls, and artifact
+  review;
 - Studio approval decisions still include operator-side mutation paths instead
   of being only signed User Node protocol behavior;
 - Host approval mutation still writes local approval records;
@@ -65,7 +78,7 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - `services/runner/src/service.ts`
 - `services/runner/src/join-service.ts`
 - `services/runner/src/assignment-materializer.ts`
-- new runner Human Interface Runtime module
+- `services/runner/src/human-interface-runtime.ts`
 - `packages/host-client/src/index.ts`
 - `apps/cli/src/index.ts`
 - `apps/studio/src/App.tsx`
@@ -73,14 +86,20 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 
 ## Concrete Changes Required
 
-- Add `UserNodeIdentityRecord` and key-ref contracts.
+- Add `UserNodeIdentityRecord` and key-ref contracts. Done for the current
+  Host-provisioned development key backend.
 - Add Host APIs for listing user-node identities and projected inbox state.
+  Basic identity and projected conversation surfaces exist; durable inbox/
+  outbox history remains open.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
+  Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that
-  can sign as a user node.
-- Start a User Client when a User Node runtime is assigned and running.
+  can sign as a user node. A minimal runner-owned runtime now publishes through
+  the Host User Node gateway; the durable gateway/read-model split remains open.
+- Start a User Client when a User Node runtime is assigned and running. Done for
+  the minimal runner-served shell.
 - Expose User Client endpoint/health through runner observations and Host
-  projection.
+  projection. Done through `runtime.status.clientUrl`.
 - Keep session launch publishing signed `task.request` from the selected User
   Node identity.
 - Move user-facing `reply`, `answer`, `approve`, and `reject` flows onto the

@@ -3675,6 +3675,11 @@ export function App() {
               <div key={runtime.nodeId} className="compact-list-item">
                 <strong>{formatRuntimeProjectionLabel(runtime)}</strong>
                 <span>{formatRuntimeProjectionDetail(runtime)}</span>
+                {runtime.clientUrl ? (
+                  <a href={runtime.clientUrl} rel="noreferrer" target="_blank">
+                    Open User Client
+                  </a>
+                ) : null}
               </div>
             ))}
           </div>

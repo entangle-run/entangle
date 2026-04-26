@@ -124,6 +124,10 @@ This repository currently contains:
   reconciliation snapshots under observed host state;
 - host-owned stable per-node Nostr runtime identities with non-secret identity
   context injected into runners and a separate local secret storage profile;
+- stable User Node identities that can be assigned to `human_interface`
+  runners, portable User Node bootstrap bundles, a minimal runner-served Human
+  Interface Runtime/User Client, and projection of the User Client endpoint
+  through Host, CLI, and Studio;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
   Nostr public keys are injected as non-secret route metadata, and runner turn
   requests now receive a bounded peer-route summary for controlled

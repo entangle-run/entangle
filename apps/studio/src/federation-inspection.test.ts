@@ -43,6 +43,7 @@ const projection: HostProjectionSnapshot = {
     {
       assignmentId: "assignment-alpha",
       backendKind: "federated",
+      clientUrl: "http://127.0.0.1:4173/",
       desiredState: "running",
       graphId: "team-alpha",
       graphRevisionId: "rev-1",
@@ -154,6 +155,9 @@ describe("Studio federation inspection helpers", () => {
     );
     expect(formatRuntimeProjectionDetail(projection.runtimes[0]!)).toContain(
       "runner runner-alpha"
+    );
+    expect(formatRuntimeProjectionDetail(projection.runtimes[0]!)).toContain(
+      "client http://127.0.0.1:4173/"
     );
   });
 

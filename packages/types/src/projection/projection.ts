@@ -60,6 +60,7 @@ export const assignmentProjectionRecordSchema = z.object({
 export const runtimeProjectionRecordSchema = z.object({
   assignmentId: identifierSchema.optional(),
   backendKind: runtimeBackendKindSchema,
+  clientUrl: nonEmptyStringSchema.optional(),
   desiredState: runtimeDesiredStateSchema,
   graphId: identifierSchema,
   graphRevisionId: identifierSchema,

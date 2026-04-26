@@ -1345,32 +1345,19 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
   server.get("/v1/runtimes/:nodeId/context", async (request, reply) => {
     const params = request.params as { nodeId: string };
-    const inspection = await getRuntimeInspection(params.nodeId);
-
-    if (!inspection) {
-      reply.status(404);
-      return hostErrorResponseSchema.parse({
-        code: "not_found",
-        message: `Runtime '${params.nodeId}' was not found in the active graph.`
-      });
-    }
-
-    if (!inspection.contextAvailable) {
-      throw new HostHttpError({
-        code: "conflict",
-        details: {
-          nodeId: params.nodeId
-        },
-        message:
-          inspection.reason ??
-          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-        statusCode: 409
-      });
-    }
-
     const runtimeContext = await getRuntimeContext(params.nodeId);
 
     if (!runtimeContext) {
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
       throw new HostHttpError({
         code: "conflict",
         details: {
@@ -1397,32 +1384,19 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     }
 
     const params = request.params as { nodeId: string };
-    const inspection = await getRuntimeInspection(params.nodeId);
-
-    if (!inspection) {
-      reply.status(404);
-      return hostErrorResponseSchema.parse({
-        code: "not_found",
-        message: `Runtime '${params.nodeId}' was not found in the active graph.`
-      });
-    }
-
-    if (!inspection.contextAvailable) {
-      throw new HostHttpError({
-        code: "conflict",
-        details: {
-          nodeId: params.nodeId
-        },
-        message:
-          inspection.reason ??
-          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-        statusCode: 409
-      });
-    }
-
     const bootstrapBundle = await getRuntimeBootstrapBundle(params.nodeId);
 
     if (!bootstrapBundle) {
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
       throw new HostHttpError({
         code: "conflict",
         details: {

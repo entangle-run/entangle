@@ -55,6 +55,7 @@ export type RunnerAssignmentMaterializer = (input: {
 }) => Promise<RunnerAssignmentMaterializationResult>;
 
 export type RunnerAssignmentRuntimeHandle = {
+  clientUrl?: string;
   runtimeContextPath: string;
   runtimeRoot?: string;
   stop(): Promise<void>;
@@ -300,7 +301,8 @@ export class RunnerJoinService {
       await this.publishRuntimeStatus(
         assignment,
         "running",
-        "Assignment runtime is running."
+        "Assignment runtime is running.",
+        runtimeHandle.clientUrl
       );
     }
     await this.publishObservation({
@@ -368,10 +370,12 @@ export class RunnerJoinService {
   private publishRuntimeStatus(
     assignment: RuntimeAssignmentRecord,
     observedState: "failed" | "running" | "starting" | "stopped",
-    statusMessage: string
+    statusMessage: string,
+    clientUrl?: string
   ) {
     return this.publishObservation({
       assignmentId: assignment.assignmentId,
+      ...(clientUrl ? { clientUrl } : {}),
       eventType: "runtime.status",
       graphId: assignment.graphId,
       graphRevisionId: assignment.graphRevisionId,

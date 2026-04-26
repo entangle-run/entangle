@@ -1221,19 +1221,36 @@ export async function getRuntimeIdentitySecret(input: {
     (candidate) => candidate.nodeId === input.nodeId
   );
 
-  if (!node || node.nodeKind === "user") {
+  if (!node) {
     return null;
   }
 
-  const identity = await ensureRuntimeIdentity({
-    graphId: activeGraph.graph.graphId,
-    nodeId: input.nodeId
-  });
-  const secretKey = (await readFile(identity.secretStoragePath, "utf8")).trim();
-  const secretKeyBytes = parseNostrSecretKeyBytes(secretKey);
+  const identitySecret =
+    node.nodeKind === "user"
+      ? await getUserNodeSigningMaterial({
+          graph: activeGraph.graph,
+          nodeId: input.nodeId
+        }).then((material) => ({
+          publicKey: material.identity.publicKey,
+          secretKey: Buffer.from(material.secretKey).toString("hex")
+        }))
+      : await ensureRuntimeIdentity({
+          graphId: activeGraph.graph.graphId,
+          nodeId: input.nodeId
+        }).then(async (identity) => ({
+          publicKey: identity.publicKey,
+          secretKey: await readFile(identity.secretStoragePath, "utf8")
+        }));
+  const normalizedSecretKey = identitySecret.secretKey.trim();
+
+  if (!normalizedSecretKey) {
+    return null;
+  }
+
+  const secretKeyBytes = parseNostrSecretKeyBytes(normalizedSecretKey);
   const publicKey = getPublicKey(secretKeyBytes);
 
-  if (publicKey !== identity.publicKey) {
+  if (publicKey !== identitySecret.publicKey) {
     throw new Error(
       `Runtime identity secret for node '${input.nodeId}' does not match its public key.`
     );
@@ -1243,13 +1260,13 @@ export async function getRuntimeIdentitySecret(input: {
     graphId: activeGraph.graph.graphId,
     graphRevisionId: activeGraph.activeRevisionId,
     nodeId: input.nodeId,
-    publicKey: identity.publicKey,
+    publicKey: identitySecret.publicKey,
     schemaVersion: "1",
     secretDelivery: {
       envVar: "ENTANGLE_NOSTR_SECRET_KEY",
       mode: "env_var"
     },
-    secretKey
+    secretKey: normalizedSecretKey
   });
 }
 
@@ -2069,7 +2086,7 @@ async function requireRuntimeAssignmentRecord(
 
 function inferRuntimeKindForNode(node: NodeBinding): RuntimeNodeKind {
   if (node.nodeKind === "user") {
-    throw new Error(`User node '${node.nodeId}' cannot be assigned to a runner.`);
+    return "human_interface";
   }
 
   return node.nodeKind === "service" ? "service_runner" : "agent_runner";
@@ -2744,6 +2761,7 @@ export async function recordRuntimeStatusObservation(
       ? { assignmentId: observation.assignmentId }
       : {}),
     backendKind: "federated",
+    ...(observation.clientUrl ? { clientUrl: observation.clientUrl } : {}),
     graphId: observation.graphId,
     graphRevisionId,
     lastSeenAt: observation.observedAt,
@@ -2917,6 +2935,7 @@ async function listRuntimeProjectionRecords(input: {
           ? { assignmentId: observed?.assignmentId ?? assignment?.assignmentId }
           : {}),
         backendKind: observed?.backendKind ?? "federated",
+        ...(observed?.clientUrl ? { clientUrl: observed.clientUrl } : {}),
         desiredState: intent?.desiredState ?? "running",
         graphId,
         graphRevisionId,
@@ -6947,9 +6966,246 @@ async function getRuntimeInspectionInternal(
   return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
 }
 
+async function buildUserNodeRuntimeContext(
+  nodeId: string
+): Promise<EffectiveRuntimeContext | null> {
+  await initializeHostState();
+
+  const { graph, activeRevisionId } = await readActiveGraphState();
+
+  if (!graph || !activeRevisionId) {
+    return null;
+  }
+
+  const node = graph.nodes.find((candidate) => candidate.nodeId === nodeId);
+
+  if (!node || node.nodeKind !== "user") {
+    return null;
+  }
+
+  const catalog = await readCatalog();
+  const workspace = buildWorkspaceLayout(node.nodeId);
+  const resolvedRelayProfiles = resolveEffectiveRelayProfiles(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedRelayProfileRefs = resolveEffectiveRelayProfileRefs(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedPrimaryRelayProfileRef = resolveEffectivePrimaryRelayProfileRef(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedGitServices = resolveEffectiveGitServices(node, graph, catalog);
+  const resolvedPrimaryGitServiceRef = resolveEffectivePrimaryGitServiceRef(
+    node,
+    graph,
+    catalog
+  );
+  const resolvedAgentEngineProfile = resolveEffectiveAgentEngineProfile(
+    node,
+    graph,
+    catalog
+  );
+
+  if (!resolvedAgentEngineProfile) {
+    return null;
+  }
+
+  const hostAuthority = await ensureHostAuthorityMaterialized();
+  const userNodeIdentity = await ensureUserNodeIdentity({
+    graphId: graph.graphId,
+    hostAuthorityPubkey: hostAuthority.publicKey,
+    node
+  });
+  const resolvedExternalPrincipals = resolveEffectiveExternalPrincipals(
+    node,
+    graph,
+    await currentExternalPrincipals()
+  );
+  const resolvedGitPrincipals = resolvedExternalPrincipals.filter(
+    (principal) => principal.systemKind === "git"
+  );
+  const resolvedGitPrincipalBindings = await resolveGitPrincipalRuntimeBindings(
+    resolvedGitPrincipals
+  );
+  const resolvedPrimaryGitPrincipalRef = resolveEffectivePrimaryGitPrincipalRef(
+    resolvedGitPrincipals,
+    resolvedPrimaryGitServiceRef
+  );
+  const resolvedDefaultNamespace = resolveEffectiveGitDefaultNamespace(
+    resolvedGitServices,
+    resolvedGitPrincipals,
+    resolvedPrimaryGitServiceRef
+  );
+  const resolvedPrimaryGitRepositoryTarget = resolvePrimaryGitRepositoryTarget({
+    defaultNamespace: resolvedDefaultNamespace,
+    gitServices: resolvedGitServices,
+    graphId: graph.graphId,
+    primaryGitServiceRef: resolvedPrimaryGitServiceRef
+  });
+  const effectiveBinding = effectiveNodeBindingSchema.parse({
+    bindingId: sanitizeIdentifier(`${activeRevisionId}-${node.nodeId}`),
+    externalPrincipals: resolvedExternalPrincipals,
+    graphId: graph.graphId,
+    graphRevisionId: activeRevisionId,
+    node,
+    resolvedResourceBindings: {
+      externalPrincipalRefs: resolveEffectiveExternalPrincipalRefs(node, graph),
+      relayProfileRefs: resolvedRelayProfileRefs,
+      primaryRelayProfileRef: resolvedPrimaryRelayProfileRef,
+      gitServiceRefs: resolvedGitServices.map((service) => service.id),
+      primaryGitServiceRef: resolvedPrimaryGitServiceRef
+    },
+    runtimeProfile: graph.defaults.runtimeProfile,
+    schemaVersion: "1"
+  });
+
+  await Promise.all([
+    ensureDirectory(workspace.root),
+    ensureDirectory(workspace.injectedRoot),
+    ensureDirectory(workspace.memoryRoot),
+    ensureDirectory(workspace.artifactWorkspaceRoot),
+    ensureDirectory(workspace.engineStateRoot),
+    ensureDirectory(workspace.packageRoot),
+    ensureDirectory(workspace.retrievalRoot),
+    ensureDirectory(workspace.runtimeRoot),
+    ensureDirectory(workspace.sourceWorkspaceRoot),
+    ensureDirectory(workspace.wikiRepositoryRoot)
+  ]);
+
+  const edgeRoutes: EffectiveRuntimeContext["relayContext"]["edgeRoutes"] = [];
+
+  for (const edge of graph.edges) {
+    if (
+      !edge.enabled ||
+      (edge.fromNodeId !== node.nodeId && edge.toNodeId !== node.nodeId)
+    ) {
+      continue;
+    }
+
+    const peerNodeId =
+      edge.fromNodeId === node.nodeId ? edge.toNodeId : edge.fromNodeId;
+    const peerNode = graph.nodes.find((candidate) => candidate.nodeId === peerNodeId);
+
+    if (!peerNode) {
+      continue;
+    }
+
+    const peerRelayRefs = resolveEffectiveRelayProfileRefs(
+      peerNode,
+      graph,
+      catalog
+    );
+    const transportRelayRefs =
+      edge.transportPolicy.relayProfileRefs.length > 0
+        ? edge.transportPolicy.relayProfileRefs
+        : intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs);
+    const realizableRelayRefs = intersectIdentifiers(
+      intersectIdentifiers(resolvedRelayProfileRefs, peerRelayRefs),
+      transportRelayRefs
+    );
+
+    if (realizableRelayRefs.length === 0) {
+      continue;
+    }
+
+    const peerRuntimeIdentity =
+      peerNode.nodeKind === "user"
+        ? await ensureUserNodeIdentity({
+            graphId: graph.graphId,
+            hostAuthorityPubkey: hostAuthority.publicKey,
+            node: peerNode
+          })
+        : await ensureRuntimeIdentity({
+            graphId: graph.graphId,
+            nodeId: peerNode.nodeId
+          });
+
+    edgeRoutes.push({
+      channel: edge.transportPolicy.channel,
+      edgeId: edge.edgeId,
+      peerNodeId,
+      ...(peerRuntimeIdentity ? { peerPubkey: peerRuntimeIdentity.publicKey } : {}),
+      relation: edge.relation,
+      relayProfileRefs: realizableRelayRefs
+    });
+  }
+
+  const context = effectiveRuntimeContextSchema.parse({
+    agentRuntimeContext: {
+      mode: "disabled",
+      engineProfile: resolvedAgentEngineProfile,
+      engineProfileRef: resolvedAgentEngineProfile.id
+    },
+    artifactContext: {
+      backends: ["git"],
+      defaultNamespace: resolvedDefaultNamespace,
+      gitPrincipalBindings: resolvedGitPrincipalBindings,
+      gitServices: resolvedGitServices,
+      primaryGitPrincipalRef: resolvedPrimaryGitPrincipalRef,
+      primaryGitRepositoryTarget: resolvedPrimaryGitRepositoryTarget,
+      primaryGitServiceRef: resolvedPrimaryGitServiceRef
+    },
+    binding: effectiveBinding,
+    generatedAt: nowIsoString(),
+    identityContext: runtimeIdentityContextSchema.parse({
+      algorithm: "nostr_secp256k1",
+      publicKey: userNodeIdentity.publicKey,
+      secretDelivery: {
+        envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+        mode: "env_var"
+      }
+    }),
+    modelContext: {},
+    policyContext: {
+      autonomy: node.autonomy,
+      notes: ["Human Interface Runtime context."],
+      runtimeProfile: graph.defaults.runtimeProfile,
+      sourceMutation: node.policy?.sourceMutation ?? defaultNodeSourceMutationPolicy
+    },
+    relayContext: {
+      edgeRoutes,
+      primaryRelayProfileRef: resolvedPrimaryRelayProfileRef,
+      relayProfiles: resolvedRelayProfiles
+    },
+    schemaVersion: "1",
+    workspace
+  });
+
+  await writeJsonFileIfChanged(
+    path.join(workspace.injectedRoot, runtimeContextFileName),
+    context
+  );
+
+  const runnerJoinConfig = buildRunnerJoinConfigForRuntimeContext(
+    context,
+    hostAuthority.publicKey
+  );
+
+  if (runnerJoinConfig) {
+    await writeJsonFileIfChanged(
+      path.join(workspace.injectedRoot, runnerJoinConfigFileName),
+      runnerJoinConfig
+    );
+  }
+
+  return context;
+}
+
 export async function getRuntimeContext(
   nodeId: string
 ): Promise<EffectiveRuntimeContext | null> {
+  const userNodeContext = await buildUserNodeRuntimeContext(nodeId);
+
+  if (userNodeContext) {
+    return userNodeContext;
+  }
+
   const inspection = await getRuntimeInspectionInternal(nodeId);
 
   if (!inspection?.contextPath || !inspection.contextAvailable) {

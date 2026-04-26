@@ -3079,3 +3079,21 @@ depth.
 The plan also records that multi-user support is a placement requirement:
 different human graph nodes can run on different `human_interface` runners, so
 each human participant may reside where their assigned node runtime is running.
+
+## [2026-04-26] implementation | Added minimal Human Interface Runtime
+
+User Nodes now map to `human_interface` assignments instead of being rejected
+by Host assignment. Focused Host tests cover compatible human-interface
+runners, incompatible agent-only runners, and two User Nodes assigned to
+distinct `human_interface` runners.
+
+Host can now export portable User Node bootstrap bundles and authenticated User
+Node identity secrets for runner materialization. Joined runners branch on
+assignment runtime kind: agent nodes still start the agent service, while
+`human_interface` assignments start a minimal first-party HTTP User Client with
+`/health` and Host-backed message publication.
+
+Runner `runtime.status` observations can include `clientUrl`. Host persists and
+projects that endpoint, Studio exposes an `Open User Client` action for runtime
+projection rows with a client URL, and the CLI projection summary includes the
+same endpoint.

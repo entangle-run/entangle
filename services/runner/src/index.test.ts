@@ -30,6 +30,7 @@ import {
   runnerPublicKey,
   runnerSecretHex
 } from "./test-fixtures.js";
+import { startHumanInterfaceRuntime } from "./human-interface-runtime.js";
 import type { RunnerJoinTransport } from "./join-service.js";
 import { InMemoryRunnerTransport } from "./transport.js";
 
@@ -45,6 +46,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
   delete process.env.ENTANGLE_RUNNER_STATE_ROOT;
   delete process.env.ENTANGLE_HOST_TOKEN;
+  delete process.env.ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL;
   vi.unstubAllGlobals();
   await cleanupRuntimeFixtures();
 });
@@ -366,6 +368,72 @@ describe("runner runtime context", () => {
     expect(result.publicKey).toBe(runnerPublicKey);
   });
 
+  it("starts a Human Interface Runtime as a local User Node client", async () => {
+    const fixture = await createRuntimeFixture();
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        mode: "disabled"
+      },
+      binding: {
+        ...fixture.context.binding,
+        node: {
+          ...fixture.context.binding.node,
+          displayName: "User",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      }
+    };
+    const handle = await startHumanInterfaceRuntime({
+      context
+    });
+
+    try {
+      const response = await fetch(new URL("/health", handle.clientUrl));
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        nodeId: "user-main",
+        ok: true,
+        runtimeKind: "human_interface"
+      });
+    } finally {
+      await handle.stop();
+    }
+  });
+
+  it("can advertise a configured public Human Interface Runtime URL", async () => {
+    const fixture = await createRuntimeFixture();
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        mode: "disabled"
+      },
+      binding: {
+        ...fixture.context.binding,
+        node: {
+          ...fixture.context.binding.node,
+          displayName: "User",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      }
+    };
+    process.env.ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL =
+      "https://user-main.example/client";
+    const handle = await startHumanInterfaceRuntime({
+      context
+    });
+
+    try {
+      expect(handle.clientUrl).toBe("https://user-main.example/client");
+    } finally {
+      await handle.stop();
+    }
+  });
+
   it("selects federated join mode from CLI args or env", () => {
     expect(parseRunnerCliMode(["join", "--config", "/tmp/runner.json"])).toEqual(
       {
@@ -479,6 +547,7 @@ describe("runner runtime context", () => {
         runtimeStarter: ({ runtimeContextPath }) => {
           runtimeStarts.push(runtimeContextPath);
           return Promise.resolve({
+            clientUrl: "http://127.0.0.1:4173/",
             runtimeContextPath,
             stop: () => {
               runtimeStops.push(runtimeContextPath);
@@ -519,6 +588,7 @@ describe("runner runtime context", () => {
         assignmentId: "assignment-alpha",
         graphId: "graph-alpha",
         graphRevisionId: "graph-alpha-rev-1",
+        clientUrl: "http://127.0.0.1:4173/",
         nodeId: "worker-it",
         observedState: "running"
       }
