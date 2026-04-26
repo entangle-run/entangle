@@ -56,6 +56,8 @@ Implemented in this slice:
   bundle instead of the raw runtime context endpoint;
 - changed runner materialization to write package and memory snapshots into the
   runner-owned assignment workspace and verify sha256/size metadata;
+- surfaced the portable bundle through `packages/host-client` and
+  `entangle host runtimes bootstrap-bundle <nodeId>`;
 - kept runtime identity secret bootstrap separate and opt-in through the
   existing authenticated identity-secret route.
 

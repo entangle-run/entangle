@@ -54,6 +54,7 @@ import {
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
@@ -149,6 +150,7 @@ import {
   type RuntimeArtifactRestoreListResponse,
   type RuntimeArtifactRestoreRequest,
   type RuntimeArtifactRestoreResponse,
+  type RuntimeBootstrapBundleResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
   type RuntimeMemoryInspectionResponse,
@@ -892,6 +894,15 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/context`),
         runtimeContextInspectionResponseSchema
+      );
+    },
+
+    async getRuntimeBootstrapBundle(
+      nodeId: string
+    ): Promise<RuntimeBootstrapBundleResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/bootstrap-bundle`),
+        runtimeBootstrapBundleResponseSchema
       );
     },
 

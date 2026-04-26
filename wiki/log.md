@@ -3014,3 +3014,8 @@ The default joined runner materializer now fetches that bundle instead of the
 raw context endpoint, verifies snapshot metadata, and writes package/memory
 files into the runner-owned assignment workspace. This removes the default
 runner bootstrap dependency on copying from Host-local context paths.
+
+Follow-up: `packages/host-client` and CLI now expose the same portable bundle
+through `getRuntimeBootstrapBundle()` and
+`entangle host runtimes bootstrap-bundle <nodeId>`, while the older runtime
+context command is labeled as debug-oriented.

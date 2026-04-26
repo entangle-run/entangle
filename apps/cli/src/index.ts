@@ -2374,10 +2374,19 @@ hostRuntimesCommand
 hostRuntimesCommand
   .command("context")
   .argument("<nodeId>", "Node identifier in the active graph.")
-  .description("Print the effective runtime context for one runtime.")
+  .description("Print the debug effective runtime context for one runtime.")
   .action(async (nodeId: string, _options, command: Command) => {
     const client = createCliHostClient(command);
     printJson(await client.getRuntimeContext(nodeId));
+  });
+
+hostRuntimesCommand
+  .command("bootstrap-bundle")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .description("Print the portable runtime bootstrap bundle for one runtime.")
+  .action(async (nodeId: string, _options, command: Command) => {
+    const client = createCliHostClient(command);
+    printJson(await client.getRuntimeBootstrapBundle(nodeId));
   });
 
 hostRuntimesCommand

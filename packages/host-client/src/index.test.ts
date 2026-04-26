@@ -1647,6 +1647,104 @@ describe("createHostClient", () => {
     );
   });
 
+  it("parses runtime bootstrap bundles from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              graphId: "team-alpha",
+              graphRevisionId: "team-alpha-20260426-000001",
+              nodeId: "worker-it",
+              runtimeContext: {
+                agentRuntimeContext: {
+                  engineProfile: {
+                    defaultAgent: "build",
+                    displayName: "OpenCode",
+                    executable: "opencode",
+                    id: "opencode-default",
+                    kind: "opencode_server"
+                  },
+                  engineProfileRef: "opencode-default",
+                  mode: "coding_agent"
+                },
+                artifactContext: {},
+                binding: {
+                  bindingId: "team-alpha-worker-it",
+                  externalPrincipals: [],
+                  graphId: "team-alpha",
+                  graphRevisionId: "team-alpha-20260426-000001",
+                  node: {
+                    displayName: "Worker IT",
+                    nodeId: "worker-it",
+                    nodeKind: "worker"
+                  },
+                  resolvedResourceBindings: {
+                    externalPrincipalRefs: [],
+                    gitServiceRefs: [],
+                    relayProfileRefs: []
+                  },
+                  runtimeProfile: "federated",
+                  schemaVersion: "1"
+                },
+                generatedAt: "2026-04-26T10:00:00.000Z",
+                identityContext: {
+                  algorithm: "nostr_secp256k1",
+                  publicKey:
+                    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                  secretDelivery: {
+                    envVar: "ENTANGLE_NOSTR_SECRET_KEY",
+                    mode: "env_var"
+                  }
+                },
+                modelContext: {},
+                policyContext: {
+                  autonomy: {
+                    canInitiateSessions: false,
+                    canMutateGraph: false
+                  },
+                  runtimeProfile: "federated"
+                },
+                relayContext: {},
+                schemaVersion: "1",
+                workspace: {
+                  artifactWorkspaceRoot: "/entangle/runtime/workspace/artifacts",
+                  injectedRoot: "/entangle/runtime/workspace/injected",
+                  memoryRoot: "/entangle/runtime/workspace/memory",
+                  packageRoot: "/entangle/runtime/workspace/package",
+                  retrievalRoot: "/entangle/runtime/workspace/retrieval",
+                  root: "/entangle/runtime/workspace",
+                  runtimeRoot: "/entangle/runtime/workspace/runtime"
+                }
+              },
+              schemaVersion: "1",
+              snapshots: []
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.getRuntimeBootstrapBundle("worker-it")
+    ).resolves.toMatchObject({
+      nodeId: "worker-it",
+      runtimeContext: {
+        workspace: {
+          packageRoot: "/entangle/runtime/workspace/package"
+        }
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/bootstrap-bundle"
+    ]);
+  });
+
   it("parses external principal inspection responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
