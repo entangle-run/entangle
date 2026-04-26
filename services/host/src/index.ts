@@ -82,6 +82,12 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  runnerRegistryInspectionResponseSchema,
+  runnerRegistryListResponseSchema,
+  runnerRevokeMutationRequestSchema,
+  runnerRevokeMutationResponseSchema,
+  runnerTrustMutationRequestSchema,
+  runnerTrustMutationResponseSchema,
   sessionCancellationMutationRequestSchema,
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
@@ -105,6 +111,7 @@ import {
   exportHostAuthority,
   getHostAuthorityInspection,
   getNodeInspection,
+  getRunnerRegistryEntry,
   getRuntimeContext,
   getRuntimeInspection,
   getRuntimeApprovalInspection,
@@ -141,6 +148,7 @@ import {
   getSessionInspection,
   initializeHostState,
   importHostAuthority,
+  listRunnerRegistry,
   listRuntimeInspections,
   listSessions,
   listPackageSources,
@@ -160,8 +168,10 @@ import {
   replayRuntimeSourceHistory,
   requestRuntimeBoundSessionCancellation,
   requestSessionCancellation,
+  revokeRunnerRegistration,
   setRuntimeDesiredState,
   setRuntimeRecoveryPolicy,
+  trustRunnerRegistration,
   recordHostOperatorRequestCompleted,
   subscribeToHostEvents,
   upsertExternalPrincipal,
@@ -554,6 +564,86 @@ export async function buildHostServer() {
         statusCode: 400
       });
     }
+  });
+
+  server.get("/v1/runners", async () =>
+    runnerRegistryListResponseSchema.parse(await listRunnerRegistry())
+  );
+
+  server.get("/v1/runners/:runnerId", async (request, reply) => {
+    const params = request.params as { runnerId: string };
+    const runnerId = identifierSchema.parse(params.runnerId);
+    const inspection = await getRunnerRegistryEntry(runnerId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runner '${runnerId}' was not found.`
+      });
+    }
+
+    return runnerRegistryInspectionResponseSchema.parse(inspection);
+  });
+
+  server.post("/v1/runners/:runnerId/trust", async (request, reply) => {
+    const params = request.params as { runnerId: string };
+    const runnerId = identifierSchema.parse(params.runnerId);
+    const existing = await getRunnerRegistryEntry(runnerId);
+
+    if (!existing) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runner '${runnerId}' was not found.`
+      });
+    }
+
+    const mutation = parseRequestInput(
+      runnerTrustMutationRequestSchema,
+      request.body ?? {},
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected runner trust schema."
+      }
+    );
+
+    return runnerTrustMutationResponseSchema.parse(
+      await trustRunnerRegistration({
+        request: mutation,
+        runnerId
+      })
+    );
+  });
+
+  server.post("/v1/runners/:runnerId/revoke", async (request, reply) => {
+    const params = request.params as { runnerId: string };
+    const runnerId = identifierSchema.parse(params.runnerId);
+    const existing = await getRunnerRegistryEntry(runnerId);
+
+    if (!existing) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runner '${runnerId}' was not found.`
+      });
+    }
+
+    const mutation = parseRequestInput(
+      runnerRevokeMutationRequestSchema,
+      request.body ?? {},
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected runner revoke schema."
+      }
+    );
+
+    return runnerRevokeMutationResponseSchema.parse(
+      await revokeRunnerRegistration({
+        request: mutation,
+        runnerId
+      })
+    );
   });
 
   server.get("/v1/catalog", async () =>

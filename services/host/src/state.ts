@@ -242,6 +242,27 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeListResponseSchema,
+  runnerHeartbeatIngestRequestSchema,
+  type RunnerHeartbeatSnapshot,
+  runnerHeartbeatSnapshotSchema,
+  runnerHelloIngestRequestSchema,
+  type RunnerLivenessState,
+  type RunnerRegistryEntry,
+  runnerRegistryEntrySchema,
+  runnerRegistryInspectionResponseSchema,
+  type RunnerRegistryInspectionResponse,
+  runnerRegistryListResponseSchema,
+  type RunnerRegistryListResponse,
+  type RunnerRegistrationRecord,
+  runnerRegistrationRecordSchema,
+  runnerRevokeMutationRequestSchema,
+  type RunnerRevokeMutationRequest,
+  runnerRevokeMutationResponseSchema,
+  type RunnerRevokeMutationResponse,
+  runnerTrustMutationRequestSchema,
+  type RunnerTrustMutationRequest,
+  runnerTrustMutationResponseSchema,
+  type RunnerTrustMutationResponse,
   runnerTurnRecordSchema,
   type ApprovalRecord,
   type ApprovalStatusCounts,
@@ -321,6 +342,7 @@ const hostAuthorityRecordPath = path.join(
   hostAuthorityRoot,
   "host-authority.json"
 );
+const runnerRegistryRoot = path.join(desiredRoot, "runner-registry");
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
 const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
@@ -349,6 +371,10 @@ const observedRunnerTurnActivityRoot = path.join(
   observedRoot,
   "runner-turn-activity"
 );
+const observedRunnerHeartbeatRoot = path.join(
+  observedRoot,
+  "runner-heartbeats"
+);
 const observedSessionActivityRoot = path.join(observedRoot, "session-activity");
 const reconciliationRoot = path.join(observedRoot, "reconciliation");
 const latestReconciliationPath = path.join(reconciliationRoot, "latest.json");
@@ -360,6 +386,8 @@ const defaultHostAuthorityKeyRef = "secret://host-authority/main";
 const runtimeContextFileName = "effective-runtime-context.json";
 const artifactPreviewMaxBytes = 16 * 1024;
 const artifactDiffMaxBytes = 64 * 1024;
+const runnerStaleAfterMs = 60_000;
+const runnerOfflineAfterMs = 300_000;
 const memoryPreviewMaxBytes = 16 * 1024;
 const sourceCandidateDiffMaxBytes = 64 * 1024;
 const sourceCandidateFilePreviewMaxBytes = 16 * 1024;
@@ -1385,6 +1413,303 @@ export async function signHostAuthorityPayloadEnvelope(input: {
     schemaVersion: "1",
     signature: signedEvent.sig,
     signerPubkey: signedEvent.pubkey
+  });
+}
+
+function runnerRegistrationRecordPath(runnerId: string): string {
+  return path.join(runnerRegistryRoot, `${runnerId}.json`);
+}
+
+function runnerHeartbeatSnapshotPath(runnerId: string): string {
+  return path.join(observedRunnerHeartbeatRoot, `${runnerId}.json`);
+}
+
+async function assertCurrentHostAuthorityPubkey(pubkey: string): Promise<void> {
+  const authority = await ensureHostAuthorityMaterialized();
+
+  if (authority.publicKey !== pubkey) {
+    throw new Error(
+      `Runner event targets Host Authority '${pubkey}', but this Host Authority is '${authority.publicKey}'.`
+    );
+  }
+}
+
+async function readRunnerRegistrationRecord(
+  runnerId: string
+): Promise<RunnerRegistrationRecord | undefined> {
+  const recordPath = runnerRegistrationRecordPath(runnerId);
+
+  if (!(await pathExists(recordPath))) {
+    return undefined;
+  }
+
+  return runnerRegistrationRecordSchema.parse(await readJsonFile(recordPath));
+}
+
+async function writeRunnerRegistrationRecord(
+  record: RunnerRegistrationRecord
+): Promise<void> {
+  await writeJsonFile(runnerRegistrationRecordPath(record.runnerId), record);
+}
+
+async function readRunnerHeartbeatSnapshot(
+  runnerId: string
+): Promise<RunnerHeartbeatSnapshot | undefined> {
+  const snapshotPath = runnerHeartbeatSnapshotPath(runnerId);
+
+  if (!(await pathExists(snapshotPath))) {
+    return undefined;
+  }
+
+  return runnerHeartbeatSnapshotSchema.parse(await readJsonFile(snapshotPath));
+}
+
+async function writeRunnerHeartbeatSnapshot(
+  snapshot: RunnerHeartbeatSnapshot
+): Promise<void> {
+  await writeJsonFile(runnerHeartbeatSnapshotPath(snapshot.runnerId), snapshot);
+}
+
+async function listRunnerRegistrationRecords(): Promise<
+  RunnerRegistrationRecord[]
+> {
+  if (!(await pathExists(runnerRegistryRoot))) {
+    return [];
+  }
+
+  const entries = await readdir(runnerRegistryRoot);
+  const records = await Promise.all(
+    entries
+      .filter((entry) => entry.endsWith(".json"))
+      .map((entry) =>
+        readJsonFile(path.join(runnerRegistryRoot, entry)).then((record) =>
+          runnerRegistrationRecordSchema.parse(record)
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    left.runnerId.localeCompare(right.runnerId)
+  );
+}
+
+function classifyRunnerLiveness(input: {
+  lastSeenAt?: string | undefined;
+  now: number;
+}): RunnerLivenessState {
+  if (!input.lastSeenAt) {
+    return "unknown";
+  }
+
+  const lastSeenMs = Date.parse(input.lastSeenAt);
+
+  if (!Number.isFinite(lastSeenMs)) {
+    return "unknown";
+  }
+
+  const ageMs = Math.max(0, input.now - lastSeenMs);
+
+  if (ageMs <= runnerStaleAfterMs) {
+    return "online";
+  }
+
+  if (ageMs <= runnerOfflineAfterMs) {
+    return "stale";
+  }
+
+  return "offline";
+}
+
+async function buildRunnerRegistryEntry(
+  registration: RunnerRegistrationRecord
+): Promise<RunnerRegistryEntry> {
+  const heartbeat = await readRunnerHeartbeatSnapshot(registration.runnerId);
+  const projectedAt = nowIsoString();
+  const lastSeenAt = heartbeat?.lastHeartbeatAt ?? registration.lastSeenAt;
+
+  return runnerRegistryEntrySchema.parse({
+    ...(heartbeat ? { heartbeat } : {}),
+    liveness: classifyRunnerLiveness({
+      lastSeenAt,
+      now: Date.parse(projectedAt)
+    }),
+    offlineAfterSeconds: runnerOfflineAfterMs / 1000,
+    projectedAt,
+    registration,
+    staleAfterSeconds: runnerStaleAfterMs / 1000
+  });
+}
+
+async function requireRunnerRegistration(
+  runnerId: string
+): Promise<RunnerRegistrationRecord> {
+  const registration = await readRunnerRegistrationRecord(runnerId);
+
+  if (!registration) {
+    throw new Error(`Runner '${runnerId}' is not registered.`);
+  }
+
+  return registration;
+}
+
+export async function recordRunnerHello(
+  input: unknown
+): Promise<RunnerRegistryInspectionResponse> {
+  await initializeHostState();
+
+  const hello = runnerHelloIngestRequestSchema.parse(input);
+  await assertCurrentHostAuthorityPubkey(hello.hostAuthorityPubkey);
+
+  const existing = await readRunnerRegistrationRecord(hello.runnerId);
+
+  if (existing && existing.publicKey !== hello.runnerPubkey) {
+    throw new Error(
+      `Runner '${hello.runnerId}' is already registered with a different public key.`
+    );
+  }
+
+  const registration = runnerRegistrationRecordSchema.parse({
+    capabilities: hello.capabilities,
+    firstSeenAt: existing?.firstSeenAt ?? hello.issuedAt,
+    hostAuthorityPubkey: hello.hostAuthorityPubkey,
+    lastSeenAt: hello.issuedAt,
+    publicKey: hello.runnerPubkey,
+    ...(existing?.revocationReason
+      ? { revocationReason: existing.revocationReason }
+      : {}),
+    ...(existing?.revokedAt ? { revokedAt: existing.revokedAt } : {}),
+    runnerId: hello.runnerId,
+    schemaVersion: "1",
+    trustState: existing?.trustState ?? "pending",
+    updatedAt: hello.issuedAt
+  });
+
+  await writeRunnerRegistrationRecord(registration);
+
+  return runnerRegistryInspectionResponseSchema.parse({
+    runner: await buildRunnerRegistryEntry(registration)
+  });
+}
+
+export async function recordRunnerHeartbeat(
+  input: unknown
+): Promise<RunnerRegistryInspectionResponse> {
+  await initializeHostState();
+
+  const heartbeat = runnerHeartbeatIngestRequestSchema.parse(input);
+  await assertCurrentHostAuthorityPubkey(heartbeat.hostAuthorityPubkey);
+
+  const registration = await requireRunnerRegistration(heartbeat.runnerId);
+
+  if (registration.publicKey !== heartbeat.runnerPubkey) {
+    throw new Error(
+      `Runner '${heartbeat.runnerId}' heartbeat was signed by a different public key.`
+    );
+  }
+
+  const updatedRegistration = runnerRegistrationRecordSchema.parse({
+    ...registration,
+    lastSeenAt: heartbeat.observedAt,
+    updatedAt: heartbeat.observedAt
+  });
+  const snapshot = runnerHeartbeatSnapshotSchema.parse({
+    assignmentIds: heartbeat.assignmentIds,
+    hostAuthorityPubkey: heartbeat.hostAuthorityPubkey,
+    lastHeartbeatAt: heartbeat.observedAt,
+    operationalState: heartbeat.operationalState,
+    runnerId: heartbeat.runnerId,
+    runnerPubkey: heartbeat.runnerPubkey,
+    schemaVersion: "1",
+    ...(heartbeat.statusMessage
+      ? { statusMessage: heartbeat.statusMessage }
+      : {}),
+    updatedAt: heartbeat.observedAt
+  });
+
+  await writeRunnerRegistrationRecord(updatedRegistration);
+  await writeRunnerHeartbeatSnapshot(snapshot);
+
+  return runnerRegistryInspectionResponseSchema.parse({
+    runner: await buildRunnerRegistryEntry(updatedRegistration)
+  });
+}
+
+export async function listRunnerRegistry(): Promise<RunnerRegistryListResponse> {
+  await initializeHostState();
+
+  const registrations = await listRunnerRegistrationRecords();
+  const runners = await Promise.all(
+    registrations.map((registration) => buildRunnerRegistryEntry(registration))
+  );
+
+  return runnerRegistryListResponseSchema.parse({
+    generatedAt: nowIsoString(),
+    runners
+  });
+}
+
+export async function getRunnerRegistryEntry(
+  runnerId: string
+): Promise<RunnerRegistryInspectionResponse | undefined> {
+  await initializeHostState();
+
+  const registration = await readRunnerRegistrationRecord(runnerId);
+
+  if (!registration) {
+    return undefined;
+  }
+
+  return runnerRegistryInspectionResponseSchema.parse({
+    runner: await buildRunnerRegistryEntry(registration)
+  });
+}
+
+export async function trustRunnerRegistration(input: {
+  request?: RunnerTrustMutationRequest;
+  runnerId: string;
+}): Promise<RunnerTrustMutationResponse> {
+  await initializeHostState();
+
+  runnerTrustMutationRequestSchema.parse(input.request ?? {});
+  const registration = await requireRunnerRegistration(input.runnerId);
+  const updatedAt = nowIsoString();
+  const trustedCandidate: Record<string, unknown> = {
+    ...registration,
+    trustState: "trusted",
+    updatedAt
+  };
+  delete trustedCandidate.revocationReason;
+  delete trustedCandidate.revokedAt;
+  const trusted = runnerRegistrationRecordSchema.parse(trustedCandidate);
+
+  await writeRunnerRegistrationRecord(trusted);
+
+  return runnerTrustMutationResponseSchema.parse({
+    runner: await buildRunnerRegistryEntry(trusted)
+  });
+}
+
+export async function revokeRunnerRegistration(input: {
+  request?: RunnerRevokeMutationRequest;
+  runnerId: string;
+}): Promise<RunnerRevokeMutationResponse> {
+  await initializeHostState();
+
+  const request = runnerRevokeMutationRequestSchema.parse(input.request ?? {});
+  const registration = await requireRunnerRegistration(input.runnerId);
+  const revokedAt = nowIsoString();
+  const revoked = runnerRegistrationRecordSchema.parse({
+    ...registration,
+    ...(request.reason ? { revocationReason: request.reason } : {}),
+    revokedAt,
+    trustState: "revoked",
+    updatedAt: revokedAt
+  });
+
+  await writeRunnerRegistrationRecord(revoked);
+
+  return runnerRevokeMutationResponseSchema.parse({
+    runner: await buildRunnerRegistryEntry(revoked)
   });
 }
 
@@ -3395,6 +3720,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(runtimeIdentitiesRoot),
     ensureDirectory(secretRefsRoot),
     ensureDirectory(hostAuthorityRoot),
+    ensureDirectory(runnerRegistryRoot),
     ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
@@ -3402,6 +3728,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
+    ensureDirectory(observedRunnerHeartbeatRoot),
     ensureDirectory(runtimeRecoveryHistoryRoot),
     ensureDirectory(runtimeRecoveryControllersRoot),
     ensureDirectory(gitRepositoryTargetsRoot),

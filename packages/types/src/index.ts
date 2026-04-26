@@ -20,6 +20,7 @@ export * from "./host-api/error.js";
 export * from "./host-api/nodes.js";
 export * from "./host-api/runtime.js";
 export * from "./host-api/runtime-recovery.js";
+export * from "./host-api/runners.js";
 export * from "./host-api/sessions.js";
 export * from "./host-api/status.js";
 export * from "./package/package-manifest.js";

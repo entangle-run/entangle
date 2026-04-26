@@ -45,6 +45,9 @@ import {
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
   runnerRegistrationRecordSchema,
+  runnerRegistryEntrySchema,
+  runnerRegistryListResponseSchema,
+  runnerTrustMutationResponseSchema,
   runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
@@ -419,6 +422,57 @@ describe("federated runtime contracts", () => {
         timestamp: observedAt
       }).authority?.authorityId
     ).toBe("authority-main");
+  });
+
+  it("accepts runner registry API projections", () => {
+    const runner = runnerRegistryEntrySchema.parse({
+      heartbeat: {
+        assignmentIds: ["assignment-alpha"],
+        hostAuthorityPubkey: authorityPubkey,
+        lastHeartbeatAt: observedAt,
+        operationalState: "ready",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        schemaVersion: "1",
+        updatedAt: observedAt
+      },
+      liveness: "online",
+      offlineAfterSeconds: 300,
+      projectedAt: observedAt,
+      registration: {
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        firstSeenAt: observedAt,
+        hostAuthorityPubkey: authorityPubkey,
+        lastSeenAt: observedAt,
+        publicKey: runnerPubkey,
+        runnerId: "runner-alpha",
+        schemaVersion: "1",
+        trustState: "pending",
+        updatedAt: observedAt
+      },
+      staleAfterSeconds: 60
+    });
+
+    expect(
+      runnerRegistryListResponseSchema.parse({
+        generatedAt: observedAt,
+        runners: [runner]
+      }).runners[0]?.liveness
+    ).toBe("online");
+    expect(
+      runnerTrustMutationResponseSchema.parse({
+        runner: {
+          ...runner,
+          registration: {
+            ...runner.registration,
+            trustState: "trusted"
+          }
+        }
+      }).runner.registration.trustState
+    ).toBe("trusted");
   });
 });
 

@@ -273,6 +273,159 @@ describe("createHostClient", () => {
     });
   });
 
+  it("calls runner registry list, inspect, trust, and revoke surfaces", async () => {
+    const runner = {
+      heartbeat: {
+        assignmentIds: [],
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        lastHeartbeatAt: "2026-04-26T10:01:00.000Z",
+        operationalState: "ready",
+        runnerId: "runner-alpha",
+        runnerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        schemaVersion: "1",
+        updatedAt: "2026-04-26T10:01:00.000Z"
+      },
+      liveness: "online",
+      offlineAfterSeconds: 300,
+      projectedAt: "2026-04-26T10:02:00.000Z",
+      registration: {
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        firstSeenAt: "2026-04-26T10:00:00.000Z",
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        lastSeenAt: "2026-04-26T10:01:00.000Z",
+        publicKey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        runnerId: "runner-alpha",
+        schemaVersion: "1",
+        trustState: "pending",
+        updatedAt: "2026-04-26T10:01:00.000Z"
+      },
+      staleAfterSeconds: 60
+    };
+    const requests: Array<{
+      body?: string;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        if (url.endsWith("/trust")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                runner: {
+                  ...runner,
+                  registration: {
+                    ...runner.registration,
+                    trustState: "trusted"
+                  }
+                }
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        if (url.endsWith("/revoke")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                runner: {
+                  ...runner,
+                  registration: {
+                    ...runner.registration,
+                    revokedAt: "2026-04-26T10:03:00.000Z",
+                    trustState: "revoked"
+                  }
+                }
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        if (url.endsWith("/v1/runners")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                generatedAt: "2026-04-26T10:02:00.000Z",
+                runners: [runner]
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({ runner }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.listRunners()).resolves.toMatchObject({
+      runners: [
+        {
+          registration: {
+            runnerId: "runner-alpha"
+          }
+        }
+      ]
+    });
+    await expect(client.getRunner("runner-alpha")).resolves.toMatchObject({
+      runner: {
+        liveness: "online"
+      }
+    });
+    await expect(
+      client.trustRunner("runner-alpha", { reason: "approved" })
+    ).resolves.toMatchObject({
+      runner: {
+        registration: {
+          trustState: "trusted"
+        }
+      }
+    });
+    await expect(
+      client.revokeRunner("runner-alpha", { reason: "maintenance" })
+    ).resolves.toMatchObject({
+      runner: {
+        registration: {
+          trustState: "revoked"
+        }
+      }
+    });
+
+    expect(requests.map((request) => request.url)).toEqual([
+      "http://entangle-host.test/v1/runners",
+      "http://entangle-host.test/v1/runners/runner-alpha",
+      "http://entangle-host.test/v1/runners/runner-alpha/trust",
+      "http://entangle-host.test/v1/runners/runner-alpha/revoke"
+    ]);
+    expect(JSON.parse(requests[2]!.body ?? "{}")).toEqual({
+      reason: "approved"
+    });
+  });
+
   it("deletes package sources through the host package-source surface", async () => {
     const requests: Array<{ method?: string; url: string }> = [];
     const client = createHostClient({

@@ -73,6 +73,10 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  runnerRegistryInspectionResponseSchema,
+  runnerRegistryListResponseSchema,
+  runnerRevokeMutationResponseSchema,
+  runnerTrustMutationResponseSchema,
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
@@ -1063,6 +1067,118 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(mismatchedImportResponse.json())).toMatchObject({
         code: "bad_request"
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("lists, trusts, revokes, and projects registered runners", async () => {
+    const server = await createTestServer();
+
+    try {
+      const [{ recordRunnerHeartbeat, recordRunnerHello }] = await Promise.all([
+        import("./state.js")
+      ]);
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+      const authorityInspection = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      );
+      const hostAuthorityPubkey = authorityInspection.authority.publicKey;
+      const runnerPubkey =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+      const runnerId = "runner-alpha";
+      const issuedAt = new Date().toISOString();
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt,
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runners"
+      });
+      expect(listResponse.statusCode).toBe(200);
+      const runnerList = runnerRegistryListResponseSchema.parse(
+        listResponse.json()
+      );
+      expect(runnerList.runners[0]).toMatchObject({
+        liveness: "online",
+        registration: {
+          runnerId,
+          trustState: "pending"
+        }
+      });
+
+      const trustResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "Lab runner approved.",
+          trustedBy: "operator-alpha"
+        },
+        url: `/v1/runners/${runnerId}/trust`
+      });
+      expect(trustResponse.statusCode).toBe(200);
+      expect(
+        runnerTrustMutationResponseSchema.parse(trustResponse.json()).runner
+          .registration.trustState
+      ).toBe("trusted");
+
+      await recordRunnerHeartbeat({
+        assignmentIds: ["assignment-alpha"],
+        eventType: "runner.heartbeat",
+        hostAuthorityPubkey,
+        observedAt: new Date().toISOString(),
+        operationalState: "busy",
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey,
+        statusMessage: "Working"
+      });
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: `/v1/runners/${runnerId}`
+      });
+      expect(inspectionResponse.statusCode).toBe(200);
+      const inspection = runnerRegistryInspectionResponseSchema.parse(
+        inspectionResponse.json()
+      );
+      expect(inspection.runner.heartbeat).toMatchObject({
+        assignmentIds: ["assignment-alpha"],
+        operationalState: "busy"
+      });
+
+      const revokeResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "Maintenance"
+        },
+        url: `/v1/runners/${runnerId}/revoke`
+      });
+      expect(revokeResponse.statusCode).toBe(200);
+      expect(
+        runnerRevokeMutationResponseSchema.parse(revokeResponse.json()).runner
+          .registration.trustState
+      ).toBe("revoked");
+
+      const missingResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runners/runner-missing"
+      });
+      expect(missingResponse.statusCode).toBe(404);
     } finally {
       await server.close();
     }

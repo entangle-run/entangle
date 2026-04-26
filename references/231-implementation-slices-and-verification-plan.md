@@ -92,6 +92,10 @@ Verification:
 Implement runner hello, pending registration, trust, revoke, heartbeat, and
 stale/offline projection.
 
+Implementation record:
+
+- [235-runner-registry-slice.md](235-runner-registry-slice.md)
+
 Verification:
 
 - Host registry tests;

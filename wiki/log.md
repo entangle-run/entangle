@@ -2706,3 +2706,15 @@ identities, and deduplicates received control/observation events.
 Host and runner now have thin federated transport wrappers over the same
 fabric. Registry, assignment state, and projection reducers remain deferred to
 the following slices.
+
+## [2026-04-26] implementation | Added runner registry
+
+Added `references/235-runner-registry-slice.md` and implemented the fourth
+federated pivot slice. Host now stores runner registrations and trust state,
+stores heartbeat snapshots separately as observed state, projects runner
+liveness, exposes runner list/get/trust/revoke API routes, and provides
+host-client plus CLI runner surfaces.
+
+Runner observation ingestion is implemented as Host state reducers for hello
+and heartbeat. Relay subscription wiring and assignment lifecycle remain
+deferred to the following slices.

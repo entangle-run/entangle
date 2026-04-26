@@ -78,6 +78,10 @@ import {
   projectHostAuthoritySummary
 } from "./authority-output.js";
 import {
+  projectRunnerRegistrySummary,
+  sortRunnerRegistryEntriesForPresentation
+} from "./runner-output.js";
+import {
   buildNodeAgentRuntimeReplacementRequest,
   type NodeAgentRuntimeConfigurationOptions
 } from "./node-agent-runtime-command.js";
@@ -809,6 +813,105 @@ authorityCommand
       );
     }
   );
+
+const runnersCommand = program
+  .command("runners")
+  .description("Inspect and manage federated runner registrations.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  );
+
+runnersCommand
+  .command("list")
+  .option("--summary", "Print compact runner summaries.")
+  .description("List federated runner registrations.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const response = await client.listRunners();
+    printJson(
+      options.summary
+        ? {
+            runners: sortRunnerRegistryEntriesForPresentation(
+              response.runners
+            ).map(projectRunnerRegistrySummary)
+          }
+        : response
+    );
+  });
+
+runnersCommand
+  .command("get")
+  .argument("<runnerId>", "Runner registration identifier.")
+  .option("--summary", "Print a compact runner summary.")
+  .description("Inspect one federated runner registration.")
+  .action(async (
+    runnerId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.getRunner(runnerId);
+    printJson(
+      options.summary
+        ? { runner: projectRunnerRegistrySummary(response.runner) }
+        : response
+    );
+  });
+
+runnersCommand
+  .command("trust")
+  .argument("<runnerId>", "Runner registration identifier.")
+  .option("--reason <reason>", "Operator note for the trust decision.")
+  .option("--trusted-by <operatorId>", "Operator identifier for audit context.")
+  .option("--summary", "Print a compact runner summary.")
+  .description("Trust a pending or previously revoked runner registration.")
+  .action(async (
+    runnerId: string,
+    options: { reason?: string; summary?: boolean; trustedBy?: string },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.trustRunner(runnerId, {
+      ...(options.reason ? { reason: options.reason } : {}),
+      ...(options.trustedBy ? { trustedBy: options.trustedBy } : {})
+    });
+    printJson(
+      options.summary
+        ? { runner: projectRunnerRegistrySummary(response.runner) }
+        : response
+    );
+  });
+
+runnersCommand
+  .command("revoke")
+  .argument("<runnerId>", "Runner registration identifier.")
+  .option("--reason <reason>", "Operator note for the revoke decision.")
+  .option("--revoked-by <operatorId>", "Operator identifier for audit context.")
+  .option("--summary", "Print a compact runner summary.")
+  .description("Revoke a runner registration.")
+  .action(async (
+    runnerId: string,
+    options: { reason?: string; revokedBy?: string; summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.revokeRunner(runnerId, {
+      ...(options.reason ? { reason: options.reason } : {}),
+      ...(options.revokedBy ? { revokedBy: options.revokedBy } : {})
+    });
+    printJson(
+      options.summary
+        ? { runner: projectRunnerRegistrySummary(response.runner) }
+        : response
+    );
+  });
 
 const hostEventsCommand = hostCommand
   .command("events")

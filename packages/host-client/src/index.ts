@@ -72,6 +72,12 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  runnerRegistryInspectionResponseSchema,
+  runnerRegistryListResponseSchema,
+  runnerRevokeMutationRequestSchema,
+  runnerRevokeMutationResponseSchema,
+  runnerTrustMutationRequestSchema,
+  runnerTrustMutationResponseSchema,
   sessionCancellationMutationRequestSchema,
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
@@ -150,6 +156,12 @@ import {
   type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
+  type RunnerRegistryInspectionResponse,
+  type RunnerRegistryListResponse,
+  type RunnerRevokeMutationRequest,
+  type RunnerRevokeMutationResponse,
+  type RunnerTrustMutationRequest,
+  type RunnerTrustMutationResponse,
   type SessionCancellationMutationRequest,
   type SessionCancellationResponse,
   type SessionInspectionResponse,
@@ -402,6 +414,58 @@ export function createHostClient(options: HostClientOptions) {
           body: JSON.stringify(canonicalRequest)
         }),
         hostAuthorityImportResponseSchema
+      );
+    },
+
+    async listRunners(): Promise<RunnerRegistryListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runners`),
+        runnerRegistryListResponseSchema
+      );
+    },
+
+    async getRunner(
+      runnerId: string
+    ): Promise<RunnerRegistryInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runners/${runnerId}`),
+        runnerRegistryInspectionResponseSchema
+      );
+    },
+
+    async trustRunner(
+      runnerId: string,
+      request: RunnerTrustMutationRequest = {}
+    ): Promise<RunnerTrustMutationResponse> {
+      const canonicalRequest = runnerTrustMutationRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runners/${runnerId}/trust`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        runnerTrustMutationResponseSchema
+      );
+    },
+
+    async revokeRunner(
+      runnerId: string,
+      request: RunnerRevokeMutationRequest = {}
+    ): Promise<RunnerRevokeMutationResponse> {
+      const canonicalRequest = runnerRevokeMutationRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runners/${runnerId}/revoke`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        runnerRevokeMutationResponseSchema
       );
     },
 
