@@ -53,6 +53,11 @@ The latest implementation state includes:
 - `entangle local doctor` live checks now inspect runtime wiki repositories for
   initialization, clean working trees, branch availability, and committed HEADs
   when runtime context is available;
+- clean runtime wiki repository HEADs can now be published through the host as
+  `knowledge_summary` git artifacts, with durable publication records,
+  `wiki_repository.published` events, shared host-client helpers, CLI
+  `wiki-publications` / `wiki-publish` commands, and Studio Runtime Memory
+  controls;
 - host state now carries an explicit `state-layout.json` compatibility record,
   `GET /v1/host/status` exposes machine-readable layout status, CLI/Studio
   render that status through the shared host-client formatter, and `entangle
@@ -591,11 +596,15 @@ Current partial implementation:
   `committed`, `unchanged`, `not_configured`, or `failed` sync outcomes on
   runner turns, host observed activity, host events, CLI output, and Studio
   turn inspection;
-- this is a conservative local snapshot, not yet a full memory-as-repo
-  migration or remote publication workflow.
 - `entangle local doctor` now reports wiki repository initialization, dirty
   working trees, missing HEAD commits, and git inspection failures as runtime
   workspace warnings without mutating node memory.
+- clean wiki repository HEADs can now be published as `knowledge_summary` git
+  artifacts through host, host-client, CLI, and Studio surfaces, with durable
+  publication records and `wiki_repository.published` events.
+- this remains a conservative local snapshot plus publication path, not yet a
+  full memory-as-repo migration, restore, promotion, or merge/reconcile
+  workflow.
 
 Acceptance:
 

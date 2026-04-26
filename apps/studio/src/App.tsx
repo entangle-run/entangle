@@ -59,6 +59,8 @@ import type {
   RuntimeSourceHistoryReplayRecord,
   RuntimeSourceHistoryReplayResponse,
   RuntimeTurnInspectionResponse,
+  RuntimeWikiRepositoryPublicationRecord,
+  RuntimeWikiRepositoryPublicationResponse,
   RunnerTurnRecord,
   SessionCancellationResponse,
   SessionLaunchResponse,
@@ -191,6 +193,10 @@ import {
   formatRuntimeSourceHistoryReplayStatus,
   sortRuntimeSourceHistory
 } from "./runtime-source-history-inspection.js";
+import {
+  formatRuntimeWikiRepositoryPublicationStatus,
+  sortRuntimeWikiRepositoryPublications
+} from "./runtime-wiki-repository-inspection.js";
 import {
   buildSessionLaunchRequest,
   createDefaultSessionLaunchDraft,
@@ -519,6 +525,16 @@ export function App() {
     useState<RuntimeMemoryPageInspectionResponse | null>(null);
   const [memoryError, setMemoryError] = useState<string | null>(null);
   const [memoryPageError, setMemoryPageError] = useState<string | null>(null);
+  const [
+    selectedWikiRepositoryPublications,
+    setSelectedWikiRepositoryPublications
+  ] = useState<RuntimeWikiRepositoryPublicationRecord[]>([]);
+  const [selectedWikiRepositoryPublication, setSelectedWikiRepositoryPublication] =
+    useState<RuntimeWikiRepositoryPublicationResponse | null>(null);
+  const [wikiRepositoryPublicationError, setWikiRepositoryPublicationError] =
+    useState<string | null>(null);
+  const [pendingWikiRepositoryPublication, setPendingWikiRepositoryPublication] =
+    useState(false);
   const [selectedTurns, setSelectedTurns] = useState<RunnerTurnRecord[]>([]);
   const [turnError, setTurnError] = useState<string | null>(null);
   const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
@@ -1114,6 +1130,7 @@ export function App() {
       approvalResult,
       artifactResult,
       memoryResult,
+      wikiRepositoryPublicationResult,
       turnResult,
       sourceCandidateResult,
       sourceHistoryResult,
@@ -1126,6 +1143,7 @@ export function App() {
         client.listRuntimeApprovals(nodeId),
         client.listRuntimeArtifacts(nodeId),
         client.getRuntimeMemory(nodeId),
+        client.listRuntimeWikiRepositoryPublications(nodeId),
         client.listRuntimeTurns(nodeId),
         client.listRuntimeSourceChangeCandidates(nodeId),
         client.listRuntimeSourceHistory(nodeId),
@@ -1592,6 +1610,24 @@ export function App() {
         setSelectedMemoryPagePath(null);
         setSelectedMemoryPageInspection(null);
         setMemoryPageError(null);
+      }
+
+      if (wikiRepositoryPublicationResult.status === "fulfilled") {
+        setSelectedWikiRepositoryPublications(
+          sortRuntimeWikiRepositoryPublications(
+            wikiRepositoryPublicationResult.value.publications
+          )
+        );
+        setWikiRepositoryPublicationError(null);
+      } else {
+        setSelectedWikiRepositoryPublications([]);
+        setSelectedWikiRepositoryPublication(null);
+        setWikiRepositoryPublicationError(
+          normalizeError(
+            wikiRepositoryPublicationResult.reason,
+            "Unknown error while loading wiki repository publications."
+          )
+        );
       }
 
       if (turnResult.status === "fulfilled") {
@@ -2453,6 +2489,70 @@ export function App() {
     selectedSourceHistoryId
   ]);
 
+  const publishSelectedWikiRepository = useCallback(async () => {
+    if (!selectedRuntimeId) {
+      return;
+    }
+
+    try {
+      setPendingWikiRepositoryPublication(true);
+      setWikiRepositoryPublicationError(null);
+      const response = await client.publishRuntimeWikiRepository(selectedRuntimeId, {
+        publishedBy: "studio-operator",
+        reason: "Studio wiki repository publication"
+      });
+
+      startTransition(() => {
+        setSelectedWikiRepositoryPublication(response);
+        setSelectedWikiRepositoryPublications((publications) =>
+          sortRuntimeWikiRepositoryPublications([
+            response.publication,
+            ...publications.filter(
+              (publication) =>
+                publication.publicationId !== response.publication.publicationId
+            )
+          ])
+        );
+        setSelectedArtifacts((artifacts) =>
+          sortRuntimeArtifacts([
+            response.artifact,
+            ...artifacts.filter(
+              (artifact) =>
+                artifact.ref.artifactId !== response.artifact.ref.artifactId
+            )
+          ])
+        );
+        setSelectedArtifactId(response.artifact.ref.artifactId);
+        setSelectedArtifactInspection({ artifact: response.artifact });
+        setSelectedArtifactPreview(null);
+        setSelectedArtifactHistory(null);
+        setSelectedArtifactDiff(null);
+        setSelectedArtifactRestore(null);
+        setSelectedArtifactRestores([]);
+        setSelectedArtifactPromotion(null);
+        setSelectedArtifactPromotions([]);
+        setArtifactPromotionApprovalId("");
+        setArtifactPromotionOverwrite(false);
+        setArtifactPromotionError(null);
+        setArtifactError(null);
+        setArtifactDetailError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setWikiRepositoryPublicationError(
+          normalizeError(
+            caught,
+            "Unknown error while publishing the wiki repository."
+          )
+        );
+      });
+    } finally {
+      setPendingWikiRepositoryPublication(false);
+    }
+  }, [client, refreshSelectedRuntimeDetails, selectedRuntimeId]);
+
   const restoreSelectedRuntimeArtifact = useCallback(async () => {
     if (
       !selectedRuntimeId ||
@@ -2986,6 +3086,15 @@ export function App() {
       setArtifactPromotionError(null);
       setPendingArtifactPromotion(false);
       setArtifactDetailError(null);
+      setSelectedMemory(null);
+      setSelectedMemoryPagePath(null);
+      setSelectedMemoryPageInspection(null);
+      setMemoryError(null);
+      setMemoryPageError(null);
+      setSelectedWikiRepositoryPublications([]);
+      setSelectedWikiRepositoryPublication(null);
+      setWikiRepositoryPublicationError(null);
+      setPendingWikiRepositoryPublication(false);
       setTurnError(null);
       setSelectedTurns([]);
       setSelectedTurnId(null);
@@ -3049,6 +3158,15 @@ export function App() {
     setArtifactPromotionError(null);
     setPendingArtifactPromotion(false);
     setArtifactDetailError(null);
+    setSelectedMemory(null);
+    setSelectedMemoryPagePath(null);
+    setSelectedMemoryPageInspection(null);
+    setMemoryError(null);
+    setMemoryPageError(null);
+    setSelectedWikiRepositoryPublications([]);
+    setSelectedWikiRepositoryPublication(null);
+    setWikiRepositoryPublicationError(null);
+    setPendingWikiRepositoryPublication(false);
     setTurnError(null);
     setSelectedTurns([]);
     setSelectedTurnId(null);
@@ -5831,6 +5949,76 @@ export function App() {
                             <dd>{selectedMemory.taskPages.length}</dd>
                           </div>
                         </dl>
+
+                        <div className="source-file-selector">
+                          <button
+                            className="action-button"
+                            disabled={pendingWikiRepositoryPublication}
+                            onClick={() => {
+                              void publishSelectedWikiRepository();
+                            }}
+                            type="button"
+                          >
+                            {pendingWikiRepositoryPublication
+                              ? "Publishing wiki repository"
+                              : "Publish wiki repository"}
+                          </button>
+                        </div>
+
+                        {wikiRepositoryPublicationError ? (
+                          <p className="error-box">{wikiRepositoryPublicationError}</p>
+                        ) : null}
+
+                        {selectedWikiRepositoryPublication ? (
+                          <dl className="status-list compact-list">
+                            <div>
+                              <dt>Published artifact</dt>
+                              <dd>
+                                {
+                                  selectedWikiRepositoryPublication.artifact.ref
+                                    .artifactId
+                                }
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Publication</dt>
+                              <dd>
+                                {formatRuntimeWikiRepositoryPublicationStatus(
+                                  selectedWikiRepositoryPublication.publication
+                                )}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Branch</dt>
+                              <dd>
+                                {selectedWikiRepositoryPublication.publication.branch}
+                              </dd>
+                            </div>
+                          </dl>
+                        ) : null}
+
+                        <div>
+                          <h4>Wiki Repository Publications</h4>
+                          {selectedWikiRepositoryPublications.length > 0 ? (
+                            <ul className="detail-list">
+                              {selectedWikiRepositoryPublications
+                                .slice(0, 6)
+                                .map((publication) => (
+                                  <li key={publication.publicationId}>
+                                    {publication.publicationId} ·{" "}
+                                    {formatRuntimeWikiRepositoryPublicationStatus(
+                                      publication
+                                    )}{" "}
+                                    · {publication.updatedAt}
+                                  </li>
+                                ))}
+                            </ul>
+                          ) : (
+                            <div className="inline-empty-state">
+                              <p>No wiki repository publication attempts recorded.</p>
+                            </div>
+                          )}
+                        </div>
 
                         <div className="memory-page-groups">
                           <div>

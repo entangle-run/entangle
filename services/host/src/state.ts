@@ -192,10 +192,18 @@ import {
   type RuntimeArtifactRestoreResponse,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
+  runtimeWikiRepositoryPublicationListResponseSchema,
+  runtimeWikiRepositoryPublicationRecordSchema,
+  runtimeWikiRepositoryPublicationRequestSchema,
+  runtimeWikiRepositoryPublicationResponseSchema,
   type RuntimeMemoryInspectionResponse,
   type RuntimeMemoryPageInspectionResponse,
   type RuntimeMemoryPageKind,
   type RuntimeMemoryPageSummary,
+  type RuntimeWikiRepositoryPublicationListResponse,
+  type RuntimeWikiRepositoryPublicationRecord,
+  type RuntimeWikiRepositoryPublicationRequest,
+  type RuntimeWikiRepositoryPublicationResponse,
   type RuntimeSourceChangeCandidateDiffResponse,
   type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateApplyMutationRequest,
@@ -476,6 +484,10 @@ type SourceHistoryPublishedEventInput = Omit<
 >;
 type SourceHistoryReplayedEventInput = Omit<
   Extract<HostEventRecord, { type: "source_history.replayed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type WikiRepositoryPublishedEventInput = Omit<
+  Extract<HostEventRecord, { type: "wiki_repository.published" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type ConversationTraceEventInput = Omit<
@@ -5127,6 +5139,498 @@ export async function getRuntimeMemoryPageInspection(input: {
   });
 }
 
+export type RuntimeWikiRepositoryPublicationMutationResult =
+  | {
+      ok: true;
+      publication: RuntimeWikiRepositoryPublicationResponse;
+    }
+  | {
+      code: "conflict";
+      message: string;
+      ok: false;
+    };
+
+function buildWikiRepositoryArtifactId(input: {
+  commit: string;
+  nodeId: string;
+}): string {
+  const raw = `wiki-repository-${input.nodeId}-${input.commit.slice(0, 12)}`;
+
+  if (raw.length <= 100) {
+    return sanitizeIdentifier(raw);
+  }
+
+  const digest = createHash("sha256")
+    .update(`${input.nodeId}-${input.commit}`)
+    .digest("hex")
+    .slice(0, 12);
+  const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
+
+  return sanitizeIdentifier(`${prefix}-${digest}`);
+}
+
+function buildWikiRepositoryPublicationId(input: {
+  commit: string;
+  nodeId: string;
+  publicationId?: string | undefined;
+}): string {
+  if (input.publicationId) {
+    return input.publicationId;
+  }
+
+  return sanitizeIdentifier(
+    `wiki-publication-${input.nodeId}-${input.commit.slice(0, 12)}-${randomUUID().slice(0, 8)}`
+  );
+}
+
+function buildWikiRepositoryPublicationBranch(input: {
+  nodeId: string;
+}): string {
+  return [
+    sanitizeGitBranchComponent(input.nodeId),
+    "wiki-repository",
+    "entangle-wiki"
+  ].join("/");
+}
+
+function wikiRepositoryPublicationRepoRoot(
+  context: EffectiveRuntimeContext
+): string {
+  return path.join(context.workspace.artifactWorkspaceRoot, "wiki-repository");
+}
+
+async function readCleanWikiRepositoryHead(input: {
+  context: EffectiveRuntimeContext;
+}): Promise<{ commit: string; repositoryRoot: string } | { reason: string }> {
+  const repositoryRoot = input.context.workspace.wikiRepositoryRoot;
+
+  if (!repositoryRoot) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' does not have a configured wiki repository root.`
+    };
+  }
+
+  if (
+    !isPathInsideRoot({
+      candidatePath: repositoryRoot,
+      rootPath: input.context.workspace.root
+    })
+  ) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' wiki repository is outside the node workspace root.`
+    };
+  }
+
+  if (!(await pathExists(path.join(repositoryRoot, ".git")))) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' wiki repository is not initialized. Complete a runner turn or repair the wiki repository before publication.`
+    };
+  }
+
+  try {
+    const commit = await runSourceHistoryGitCommand(repositoryRoot, [
+      "rev-parse",
+      "--verify",
+      "HEAD"
+    ]);
+    const status = await runSourceHistoryGitCommand(repositoryRoot, [
+      "status",
+      "--porcelain"
+    ]);
+
+    if (status.trim().length > 0) {
+      return {
+        reason:
+          `Runtime '${input.context.binding.node.nodeId}' wiki repository has uncommitted changes. Complete a runner-owned wiki sync before publication.`
+      };
+    }
+
+    return {
+      commit,
+      repositoryRoot
+    };
+  } catch (error) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' wiki repository head could not be inspected: ` +
+        sanitizeRuntimePathError(input.context, error)
+    };
+  }
+}
+
+async function materializeWikiRepositoryPublicationCommit(input: {
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  sourceCommit: string;
+  sourceRepositoryRoot: string;
+  targetRepoPath: string;
+}): Promise<string> {
+  await ensureSourceHistoryPublicationRepo({
+    context: input.context,
+    repoPath: input.targetRepoPath
+  });
+  await runSourceHistoryGitCommand(input.sourceRepositoryRoot, [
+    "cat-file",
+    "-e",
+    `${input.sourceCommit}^{commit}`
+  ]);
+  const sourceTree = await runSourceHistoryGitCommand(
+    input.sourceRepositoryRoot,
+    ["rev-parse", `${input.sourceCommit}^{tree}`]
+  );
+
+  await cleanSourceHistoryPublicationWorktree(input.targetRepoPath);
+
+  if (sourceTree !== gitEmptyTreeHash) {
+    await runSourceHistoryGitCommand(
+      input.targetRepoPath,
+      ["checkout", "--force", input.sourceCommit, "--", "."],
+      {
+        gitDir: path.join(input.sourceRepositoryRoot, ".git"),
+        workTree: input.targetRepoPath
+      }
+    );
+  }
+
+  await runSourceHistoryGitCommand(input.targetRepoPath, [
+    "add",
+    "--all",
+    "--",
+    "."
+  ]);
+  const tree = await runSourceHistoryGitCommand(input.targetRepoPath, [
+    "write-tree"
+  ]);
+  const refName = `refs/heads/${input.branchName}`;
+  let parentCommit: string | undefined;
+  let parentTree: string | undefined;
+
+  try {
+    parentCommit = await runSourceHistoryGitCommand(input.targetRepoPath, [
+      "rev-parse",
+      "--verify",
+      `${refName}^{commit}`
+    ]);
+    parentTree = await runSourceHistoryGitCommand(input.targetRepoPath, [
+      "rev-parse",
+      `${parentCommit}^{tree}`
+    ]);
+  } catch {
+    parentCommit = undefined;
+    parentTree = undefined;
+  }
+
+  const artifactCommit =
+    parentCommit && parentTree === tree
+      ? parentCommit
+      : await runSourceHistoryGitCommand(
+          input.targetRepoPath,
+          [
+            "commit-tree",
+            tree,
+            "-m",
+            [
+              `entangle(${input.context.binding.node.nodeId}): publish wiki repository`,
+              "",
+              `node: ${input.context.binding.node.nodeId}`,
+              `wiki_commit: ${input.sourceCommit}`
+            ].join("\n"),
+            ...(parentCommit ? ["-p", parentCommit] : [])
+          ],
+          {
+            env: {
+              GIT_AUTHOR_EMAIL: `${input.context.binding.node.nodeId}@entangle.invalid`,
+              GIT_AUTHOR_NAME: input.context.binding.node.displayName,
+              GIT_COMMITTER_EMAIL: `${input.context.binding.node.nodeId}@entangle.invalid`,
+              GIT_COMMITTER_NAME: input.context.binding.node.displayName
+            }
+          }
+        );
+
+  await runSourceHistoryGitCommand(input.targetRepoPath, [
+    "update-ref",
+    refName,
+    artifactCommit,
+    ...(parentCommit ? [parentCommit] : [])
+  ]);
+  await runSourceHistoryGitCommand(input.targetRepoPath, [
+    "reset",
+    "--hard",
+    artifactCommit
+  ]);
+
+  return artifactCommit;
+}
+
+function buildWikiRepositoryArtifactRecord(input: {
+  artifactCommit: string;
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  repoPath: string;
+  sourceCommit: string;
+  target: GitRepositoryTarget;
+  timestamp: string;
+}): ArtifactRecord {
+  const artifactId = buildWikiRepositoryArtifactId({
+    commit: input.sourceCommit,
+    nodeId: input.context.binding.node.nodeId
+  });
+
+  return artifactRecordSchema.parse({
+    createdAt: input.timestamp,
+    materialization: {
+      repoPath: input.repoPath
+    },
+    publication: {
+      state: "not_requested"
+    },
+    ref: {
+      artifactId,
+      artifactKind: "knowledge_summary",
+      backend: "git",
+      contentSummary:
+        `Wiki repository snapshot for node '${input.context.binding.node.nodeId}' ` +
+        `at wiki commit '${input.sourceCommit}'.`,
+      createdByNodeId: input.context.binding.node.nodeId,
+      locator: {
+        branch: input.branchName,
+        commit: input.artifactCommit,
+        gitServiceRef: input.target.gitServiceRef,
+        namespace: input.target.namespace,
+        repositoryName: input.target.repositoryName,
+        path: "."
+      },
+      preferred: true,
+      status: "materialized"
+    },
+    updatedAt: input.timestamp
+  });
+}
+
+async function persistRuntimeWikiRepositoryPublicationRecord(input: {
+  context: EffectiveRuntimeContext;
+  record: RuntimeWikiRepositoryPublicationRecord;
+}): Promise<RuntimeWikiRepositoryPublicationRecord> {
+  const record = runtimeWikiRepositoryPublicationRecordSchema.parse(input.record);
+  const publicationsRoot = runtimeWikiRepositoryPublicationsRoot(
+    input.context.workspace.runtimeRoot
+  );
+
+  await mkdir(publicationsRoot, { recursive: true });
+  await writeFile(
+    await allocateRuntimeWikiRepositoryPublicationRecordPath({
+      publicationId: record.publicationId,
+      runtimeRoot: input.context.workspace.runtimeRoot
+    }),
+    `${JSON.stringify(record, null, 2)}\n`,
+    "utf8"
+  );
+
+  return record;
+}
+
+export async function listRuntimeWikiRepositoryPublications(
+  nodeId: string
+): Promise<RuntimeWikiRepositoryPublicationListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeWikiRepositoryPublicationListResponseSchema.parse({
+    publications: (
+      await listRuntimeWikiRepositoryPublicationRecords(
+        context.workspace.runtimeRoot
+      )
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  });
+}
+
+export async function publishRuntimeWikiRepository(input: {
+  nodeId: string;
+  publish?: RuntimeWikiRepositoryPublicationRequest | undefined;
+}): Promise<RuntimeWikiRepositoryPublicationMutationResult | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const publish = runtimeWikiRepositoryPublicationRequestSchema.parse(
+    input.publish ?? {}
+  );
+  const sourceHead = await readCleanWikiRepositoryHead({ context });
+
+  if ("reason" in sourceHead) {
+    return {
+      code: "conflict",
+      message: sourceHead.reason,
+      ok: false
+    };
+  }
+
+  const targetResolution = resolveRuntimeGitPublicationTarget({
+    context,
+    label: `Wiki repository for runtime '${input.nodeId}'`,
+    request: publish
+  });
+
+  if (!targetResolution.ok) {
+    return {
+      code: "conflict",
+      message: targetResolution.message,
+      ok: false
+    };
+  }
+
+  const previousPublications =
+    await listRuntimeWikiRepositoryPublicationRecords(
+      context.workspace.runtimeRoot
+    );
+  const previousForCommit = previousPublications
+    .filter((record) => record.commit === sourceHead.commit)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+
+  if (previousForCommit?.publication.state === "published") {
+    return {
+      code: "conflict",
+      message:
+        `Wiki repository commit '${sourceHead.commit}' was already published as artifact '${previousForCommit.artifactId}'.`,
+      ok: false
+    };
+  }
+
+  if (previousForCommit && !publish.retry) {
+    return {
+      code: "conflict",
+      message:
+        `Wiki repository commit '${sourceHead.commit}' already has a publication attempt in state ` +
+        `'${previousForCommit.publication.state}'. Set retry to true to replace the previous attempt.`,
+      ok: false
+    };
+  }
+
+  const { target } = targetResolution;
+  const branchName = buildWikiRepositoryPublicationBranch({
+    nodeId: input.nodeId
+  });
+  const repoPath = wikiRepositoryPublicationRepoRoot(context);
+  const requestedAt = nowIsoString();
+
+  try {
+    const artifactCommit = await materializeWikiRepositoryPublicationCommit({
+      branchName,
+      context,
+      sourceCommit: sourceHead.commit,
+      sourceRepositoryRoot: sourceHead.repositoryRoot,
+      targetRepoPath: repoPath
+    });
+    const localArtifact = buildWikiRepositoryArtifactRecord({
+      artifactCommit,
+      branchName,
+      context,
+      repoPath,
+      sourceCommit: sourceHead.commit,
+      target,
+      timestamp: requestedAt
+    });
+    const artifact = await publishGitArtifactRecordToTarget({
+      artifactRecord: localArtifact,
+      branchName,
+      context,
+      operationLabel: "Wiki repository publication",
+      repoPath,
+      target
+    });
+    const artifactRef = artifact.ref;
+
+    if (artifactRef.backend !== "git") {
+      throw new Error(
+        `Wiki repository publication produced non-git artifact '${artifactRef.artifactId}'.`
+      );
+    }
+
+    const publication = await persistRuntimeWikiRepositoryPublicationRecord({
+      context,
+      record: {
+        artifactId: artifactRef.artifactId,
+        branch: branchName,
+        commit: sourceHead.commit,
+        createdAt: requestedAt,
+        graphId: context.binding.graphId,
+        graphRevisionId: context.binding.graphRevisionId,
+        nodeId: input.nodeId,
+        publication: artifact.publication ?? {
+          state: "not_requested"
+        },
+        publicationId: buildWikiRepositoryPublicationId({
+          commit: sourceHead.commit,
+          nodeId: input.nodeId,
+          publicationId: publish.publicationId
+        }),
+        ...(publish.reason ? { reason: publish.reason } : {}),
+        ...(publish.publishedBy ? { requestedBy: publish.publishedBy } : {}),
+        targetGitServiceRef: target.gitServiceRef,
+        targetNamespace: target.namespace,
+        targetRepositoryName: target.repositoryName,
+        updatedAt: artifact.updatedAt
+      }
+    });
+
+    await writeJsonFile(
+      runtimeArtifactRecordPath(
+        context.workspace.runtimeRoot,
+        artifactRef.artifactId
+      ),
+      artifact
+    );
+    await appendHostEvent({
+      artifactId: artifactRef.artifactId,
+      branch: branchName,
+      category: "runtime",
+      commit: sourceHead.commit,
+      graphId: context.binding.graphId,
+      graphRevisionId: context.binding.graphRevisionId,
+      message:
+        `Wiki repository for runtime '${input.nodeId}' published artifact ` +
+        `'${artifactRef.artifactId}' with publication state '${publication.publication.state}'.`,
+      nodeId: input.nodeId,
+      publicationId: publication.publicationId,
+      publicationState: publication.publication.state,
+      ...(publication.publication.remoteName
+        ? { remoteName: publication.publication.remoteName }
+        : {}),
+      ...(publication.publication.remoteUrl
+        ? { remoteUrl: publication.publication.remoteUrl }
+        : {}),
+      targetGitServiceRef: target.gitServiceRef,
+      targetNamespace: target.namespace,
+      targetRepositoryName: target.repositoryName,
+      type: "wiki_repository.published"
+    } satisfies WikiRepositoryPublishedEventInput);
+
+    return {
+      ok: true,
+      publication: runtimeWikiRepositoryPublicationResponseSchema.parse({
+        artifact,
+        publication
+      })
+    };
+  } catch (error) {
+    return {
+      code: "conflict",
+      message:
+        `Wiki repository for runtime '${input.nodeId}' could not be published: ` +
+        sanitizeRuntimePathError(context, error),
+      ok: false
+    };
+  }
+}
+
 function resolveArtifactPreviewPath(input: {
   artifact: ArtifactRecord;
   context: EffectiveRuntimeContext;
@@ -7802,10 +8306,11 @@ function buildSourceHistoryArtifactRecord(input: {
   });
 }
 
-async function publishSourceHistoryArtifactRecord(input: {
+async function publishGitArtifactRecordToTarget(input: {
   artifactRecord: ArtifactRecord;
   branchName: string;
   context: EffectiveRuntimeContext;
+  operationLabel: string;
   repoPath: string;
   target: GitRepositoryTarget;
 }): Promise<ArtifactRecord> {
@@ -7829,7 +8334,7 @@ async function publishSourceHistoryArtifactRecord(input: {
 
   if (artifactRef.backend !== "git") {
     throw new Error(
-      `Source history publication requires a git artifact ref for '${artifactRef.artifactId}'.`
+      `${input.operationLabel} requires a git artifact ref for '${artifactRef.artifactId}'.`
     );
   }
 
@@ -7893,7 +8398,20 @@ async function publishSourceHistoryArtifactRecord(input: {
   }
 }
 
-type SourceHistoryPublicationTargetResolution =
+async function publishSourceHistoryArtifactRecord(input: {
+  artifactRecord: ArtifactRecord;
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  repoPath: string;
+  target: GitRepositoryTarget;
+}): Promise<ArtifactRecord> {
+  return publishGitArtifactRecordToTarget({
+    ...input,
+    operationLabel: "Source history publication"
+  });
+}
+
+type GitPublicationTargetResolution =
   | {
       ok: true;
       target: GitRepositoryTarget;
@@ -7902,6 +8420,8 @@ type SourceHistoryPublicationTargetResolution =
       message: string;
       ok: false;
     };
+
+type SourceHistoryPublicationTargetResolution = GitPublicationTargetResolution;
 
 type SourceMutationApprovalResolution =
   | {
@@ -8064,15 +8584,19 @@ function buildSourceHistoryPublicationApprovalResource(input: {
   };
 }
 
-function resolveSourceHistoryPublicationTarget(input: {
+function resolveRuntimeGitPublicationTarget(input: {
   context: EffectiveRuntimeContext;
-  publish: RuntimeSourceHistoryPublishMutationRequest;
-  sourceHistoryId: string;
-}): SourceHistoryPublicationTargetResolution {
+  label: string;
+  request: {
+    targetGitServiceRef?: string | undefined;
+    targetNamespace?: string | undefined;
+    targetRepositoryName?: string | undefined;
+  };
+}): GitPublicationTargetResolution {
   const requestedTarget =
-    input.publish.targetGitServiceRef ||
-    input.publish.targetNamespace ||
-    input.publish.targetRepositoryName;
+    input.request.targetGitServiceRef ||
+    input.request.targetNamespace ||
+    input.request.targetRepositoryName;
 
   if (!requestedTarget) {
     const target = input.context.artifactContext.primaryGitRepositoryTarget;
@@ -8080,7 +8604,7 @@ function resolveSourceHistoryPublicationTarget(input: {
     if (!target) {
       return {
         message:
-          `Source history entry '${input.sourceHistoryId}' cannot be published because runtime ` +
+          `${input.label} cannot be published because runtime ` +
           `'${input.context.binding.node.nodeId}' has no primary git repository target.`,
         ok: false
       };
@@ -8093,13 +8617,13 @@ function resolveSourceHistoryPublicationTarget(input: {
   }
 
   const gitServiceRef =
-    input.publish.targetGitServiceRef ??
+    input.request.targetGitServiceRef ??
     input.context.artifactContext.primaryGitServiceRef;
 
   if (!gitServiceRef) {
     return {
       message:
-        `Source history entry '${input.sourceHistoryId}' cannot be published to an explicit target because no git service was selected.`,
+        `${input.label} cannot be published to an explicit target because no git service was selected.`,
       ok: false
     };
   }
@@ -8111,24 +8635,24 @@ function resolveSourceHistoryPublicationTarget(input: {
   if (!service) {
     return {
       message:
-        `Source history entry '${input.sourceHistoryId}' cannot be published because git service '${gitServiceRef}' is not available to runtime '${input.context.binding.node.nodeId}'.`,
+        `${input.label} cannot be published because git service '${gitServiceRef}' is not available to runtime '${input.context.binding.node.nodeId}'.`,
       ok: false
     };
   }
 
   const namespace =
-    input.publish.targetNamespace ?? input.context.artifactContext.defaultNamespace;
+    input.request.targetNamespace ?? input.context.artifactContext.defaultNamespace;
 
   if (!namespace) {
     return {
       message:
-        `Source history entry '${input.sourceHistoryId}' cannot be published to git service '${gitServiceRef}' because no target namespace was resolved.`,
+        `${input.label} cannot be published to git service '${gitServiceRef}' because no target namespace was resolved.`,
       ok: false
     };
   }
 
   const repositoryName =
-    input.publish.targetRepositoryName ??
+    input.request.targetRepositoryName ??
     input.context.artifactContext.primaryGitRepositoryTarget?.repositoryName ??
     input.context.binding.graphId;
 
@@ -8140,6 +8664,18 @@ function resolveSourceHistoryPublicationTarget(input: {
       service
     })
   };
+}
+
+function resolveSourceHistoryPublicationTarget(input: {
+  context: EffectiveRuntimeContext;
+  publish: RuntimeSourceHistoryPublishMutationRequest;
+  sourceHistoryId: string;
+}): SourceHistoryPublicationTargetResolution {
+  return resolveRuntimeGitPublicationTarget({
+    context: input.context,
+    label: `Source history entry '${input.sourceHistoryId}'`,
+    request: input.publish
+  });
 }
 
 export async function applyRuntimeSourceChangeCandidate(input: {
@@ -9659,6 +10195,28 @@ async function listRuntimeArtifactPromotionRecords(
   );
 }
 
+async function listRuntimeWikiRepositoryPublicationRecords(
+  runtimeRoot: string
+): Promise<RuntimeWikiRepositoryPublicationRecord[]> {
+  const publicationsRoot = runtimeWikiRepositoryPublicationsRoot(runtimeRoot);
+
+  if (!(await pathExists(publicationsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(publicationsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      runtimeWikiRepositoryPublicationRecordSchema.parse(
+        await readJsonFile(path.join(publicationsRoot, fileName))
+      )
+    )
+  );
+}
+
 function runtimeArtifactsRoot(runtimeRoot: string): string {
   return path.join(runtimeRoot, "artifacts");
 }
@@ -9678,6 +10236,10 @@ function runtimeArtifactPromotionsRoot(runtimeRoot: string): string {
   return path.join(runtimeRoot, "artifact-promotions");
 }
 
+function runtimeWikiRepositoryPublicationsRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "wiki-repository-publications");
+}
+
 function runtimeArtifactRestoreRecordPath(
   runtimeRoot: string,
   restoreId: string
@@ -9692,6 +10254,16 @@ function runtimeArtifactPromotionRecordPath(
   return path.join(
     runtimeArtifactPromotionsRoot(runtimeRoot),
     `${promotionId}.json`
+  );
+}
+
+function runtimeWikiRepositoryPublicationRecordPath(
+  runtimeRoot: string,
+  publicationId: string
+): string {
+  return path.join(
+    runtimeWikiRepositoryPublicationsRoot(runtimeRoot),
+    `${publicationId}.json`
   );
 }
 
@@ -9752,6 +10324,36 @@ async function allocateRuntimeArtifactPromotionRecordPath(input: {
   return path.join(
     runtimeArtifactPromotionsRoot(input.runtimeRoot),
     `${input.promotionId}-${Date.now()}.json`
+  );
+}
+
+async function allocateRuntimeWikiRepositoryPublicationRecordPath(input: {
+  publicationId: string;
+  runtimeRoot: string;
+}): Promise<string> {
+  const primaryPath = runtimeWikiRepositoryPublicationRecordPath(
+    input.runtimeRoot,
+    input.publicationId
+  );
+
+  if (!(await pathExists(primaryPath))) {
+    return primaryPath;
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidatePath = path.join(
+      runtimeWikiRepositoryPublicationsRoot(input.runtimeRoot),
+      `${input.publicationId}-${randomUUID().slice(0, 8)}.json`
+    );
+
+    if (!(await pathExists(candidatePath))) {
+      return candidatePath;
+    }
+  }
+
+  return path.join(
+    runtimeWikiRepositoryPublicationsRoot(input.runtimeRoot),
+    `${input.publicationId}-${Date.now()}.json`
   );
 }
 

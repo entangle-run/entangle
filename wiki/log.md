@@ -2637,3 +2637,16 @@ records every replay attempt under `runtimeRoot/source-history-replays`, emits
 `source_history.replayed`, writes only when the current workspace still matches
 the recorded base tree, and records diverged workspaces as unavailable instead
 of overwriting user work.
+
+## [2026-04-26] implementation | Added wiki repository publication
+
+Added `references/222-wiki-repository-publication-slice.md` and advanced the
+node memory/artifact bridge for Entangle Local. A clean node
+`wiki-repository` HEAD can now be published through the host as a git-backed
+`knowledge_summary` artifact, with durable publication records and typed
+`wiki_repository.published` events.
+
+The runner remains the owner of wiki writes and local wiki snapshots. The new
+Host, shared host-client, CLI, and Studio surfaces publish only clean
+runner-owned repository state and preserve the remaining restore, promotion,
+merge, and replication work as explicit follow-up scope.

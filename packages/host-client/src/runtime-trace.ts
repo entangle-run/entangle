@@ -259,6 +259,17 @@ export function describeRuntimeTraceEvent(
         ],
         label: `Source history ${event.historyId} replay ${event.replayStatus}`
       };
+    case "wiki_repository.published":
+      return {
+        detailLines: [
+          `Publication: ${event.publicationId}`,
+          `Artifact: ${event.artifactId}`,
+          `State: ${event.publicationState}`,
+          `Branch: ${event.branch}`,
+          ...(event.remoteUrl ? [`Remote: ${event.remoteUrl}`] : [])
+        ],
+        label: `Wiki repository ${event.nodeId} publication ${event.publicationState}`
+      };
     default:
       return {
         detailLines: [],

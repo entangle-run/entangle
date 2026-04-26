@@ -182,7 +182,10 @@ The repository now also contains the first real implementation baseline:
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus
   `entangle local doctor` runtime wiki repository health warnings for
-  uninitialized, dirty, or uncommitted snapshots, and with
+  uninitialized, dirty, or uncommitted snapshots, plus host-mediated
+  wiki-repository publication as `knowledge_summary` git artifacts with
+  durable publication records, `wiki_repository.published` events, and
+  host-client/CLI/Studio controls, and with
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without

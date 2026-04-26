@@ -52,6 +52,9 @@ import {
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
+  runtimeWikiRepositoryPublicationListResponseSchema,
+  runtimeWikiRepositoryPublicationRequestSchema,
+  runtimeWikiRepositoryPublicationResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
@@ -809,6 +812,78 @@ describe("source change candidate host API contracts", () => {
         replays: [sourceHistoryReplay]
       }).replays[0]?.replayId
     ).toBe("replay-source-history-alpha");
+    const wikiArtifact = artifactRecordSchema.parse({
+      createdAt: "2026-04-24T00:06:00.000Z",
+      materialization: {
+        repoPath: "/tmp/entangle/workspace/wiki-repository"
+      },
+      publication: {
+        publishedAt: "2026-04-24T00:06:00.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      ref: {
+        artifactId: "wiki-repository-worker-it-wiki-commit",
+        artifactKind: "knowledge_summary",
+        backend: "git",
+        createdByNodeId: "worker-it",
+        locator: {
+          branch: "worker-it/wiki-repository/entangle-wiki",
+          commit: "artifact-wiki-commit-alpha",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          path: ".",
+          repositoryName: "graph-alpha"
+        },
+        preferred: true,
+        status: "published"
+      },
+      updatedAt: "2026-04-24T00:06:00.000Z"
+    });
+    const wikiPublication = {
+      artifactId: "wiki-repository-worker-it-wiki-commit",
+      branch: "worker-it/wiki-repository/entangle-wiki",
+      commit: "wiki-commit-alpha",
+      createdAt: "2026-04-24T00:06:00.000Z",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      nodeId: "worker-it",
+      publication: {
+        publishedAt: "2026-04-24T00:06:00.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      publicationId: "wiki-publication-alpha",
+      requestedBy: "operator-alpha",
+      targetGitServiceRef: "local-gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha",
+      updatedAt: "2026-04-24T00:06:00.000Z"
+    };
+    expect(
+      runtimeWikiRepositoryPublicationRequestSchema.parse({
+        publicationId: "wiki-publication-alpha",
+        publishedBy: "operator-alpha",
+        reason: "Publish wiki repository.",
+        retry: true,
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha"
+      }).targetRepositoryName
+    ).toBe("graph-alpha");
+    expect(
+      runtimeWikiRepositoryPublicationResponseSchema.parse({
+        artifact: wikiArtifact,
+        publication: wikiPublication
+      }).publication.publicationId
+    ).toBe("wiki-publication-alpha");
+    expect(
+      runtimeWikiRepositoryPublicationListResponseSchema.parse({
+        publications: [wikiPublication]
+      }).publications[0]?.artifactId
+    ).toBe("wiki-repository-worker-it-wiki-commit");
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
@@ -1745,6 +1820,28 @@ describe("host event contracts", () => {
       turnId: "turn-alpha",
       type: "source_history.replayed"
     });
+    const wikiRepositoryPublishedEvent = hostEventRecordSchema.parse({
+      artifactId: "wiki-repository-worker-it-wiki-commit",
+      branch: "worker-it/wiki-repository/entangle-wiki",
+      category: "runtime",
+      commit: "wiki-commit-alpha",
+      eventId: "evt-wiki-repository-published",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260424-000000",
+      message:
+        "Wiki repository for runtime 'worker-it' published artifact 'wiki-repository-worker-it-wiki-commit'.",
+      nodeId: "worker-it",
+      publicationId: "wiki-publication-alpha",
+      publicationState: "published",
+      remoteName: "entangle-local-gitea",
+      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      schemaVersion: "1",
+      targetGitServiceRef: "local-gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha",
+      timestamp: "2026-04-24T00:00:06.000Z",
+      type: "wiki_repository.published"
+    });
 
     expect(sessionEvent.type).toBe("session.updated");
     expect(sessionEvent.category).toBe("session");
@@ -1795,6 +1892,11 @@ describe("host event contracts", () => {
     expect(sourceHistoryPublishedEvent.targetRepositoryName).toBe("graph-alpha");
     expect(sourceHistoryReplayedEvent.type).toBe("source_history.replayed");
     expect(sourceHistoryReplayedEvent.replayStatus).toBe("replayed");
+    expect(wikiRepositoryPublishedEvent.type).toBe(
+      "wiki_repository.published"
+    );
+    expect(wikiRepositoryPublishedEvent.publicationState).toBe("published");
+    expect(wikiRepositoryPublishedEvent.targetRepositoryName).toBe("graph-alpha");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

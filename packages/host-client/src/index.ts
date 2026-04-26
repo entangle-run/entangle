@@ -47,6 +47,9 @@ import {
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
+  runtimeWikiRepositoryPublicationListResponseSchema,
+  runtimeWikiRepositoryPublicationRequestSchema,
+  runtimeWikiRepositoryPublicationResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
@@ -118,6 +121,9 @@ import {
   type RuntimeInspectionResponse,
   type RuntimeMemoryInspectionResponse,
   type RuntimeMemoryPageInspectionResponse,
+  type RuntimeWikiRepositoryPublicationListResponse,
+  type RuntimeWikiRepositoryPublicationRequest,
+  type RuntimeWikiRepositoryPublicationResponse,
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
@@ -863,6 +869,38 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async listRuntimeWikiRepositoryPublications(
+      nodeId: string
+    ): Promise<RuntimeWikiRepositoryPublicationListResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/wiki-repository/publications`
+        ),
+        runtimeWikiRepositoryPublicationListResponseSchema
+      );
+    },
+
+    async publishRuntimeWikiRepository(
+      nodeId: string,
+      publish: RuntimeWikiRepositoryPublicationRequest = {}
+    ): Promise<RuntimeWikiRepositoryPublicationResponse> {
+      const request = runtimeWikiRepositoryPublicationRequestSchema.parse(publish);
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/wiki-repository/publish`,
+          {
+            body: JSON.stringify(request),
+            headers: {
+              "content-type": "application/json"
+            },
+            method: "POST"
+          }
+        ),
+        runtimeWikiRepositoryPublicationResponseSchema
+      );
+    },
+
     async listRuntimeApprovals(nodeId: string): Promise<RuntimeApprovalListResponse> {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals`),
@@ -1328,6 +1366,10 @@ export {
   formatRuntimeMemoryPageLabel,
   sortRuntimeMemoryPagesForPresentation
 } from "./runtime-memory.js";
+export {
+  formatRuntimeWikiRepositoryPublicationStatus,
+  sortRuntimeWikiRepositoryPublicationsForPresentation
+} from "./runtime-wiki-repository.js";
 export {
   collectExternalPrincipalReferenceNodeIds,
   collectPackageSourceReferenceNodeIds,

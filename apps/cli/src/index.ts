@@ -31,6 +31,7 @@ import {
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeSourceHistoryReplayRequestSchema,
+  runtimeWikiRepositoryPublicationRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema
@@ -129,6 +130,7 @@ import {
   projectRuntimeSourceHistoryReplaySummary,
   projectRuntimeSourceHistorySummary
 } from "./runtime-source-history-output.js";
+import { projectRuntimeWikiRepositoryPublicationSummary } from "./runtime-wiki-repository-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
@@ -2375,6 +2377,95 @@ hostRuntimesCommand
           ? candidates.map(projectRuntimeSourceChangeCandidateSummary)
           : candidates
       });
+    }
+  );
+
+hostRuntimesCommand
+  .command("wiki-publications")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--summary", "Print compact operator-oriented wiki publication summaries.")
+  .description("Inspect persisted runtime wiki-repository publication attempts.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.listRuntimeWikiRepositoryPublications(nodeId);
+
+      printJson({
+        publications: options.summary
+          ? response.publications.map(
+              projectRuntimeWikiRepositoryPublicationSummary
+            )
+          : response.publications
+      });
+    }
+  );
+
+hostRuntimesCommand
+  .command("wiki-publish")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--published-by <nodeId>", "Node or operator identifier requesting publication.")
+  .option("--publication-id <publicationId>", "Stable publication attempt identifier.")
+  .option("--reason <reason>", "Attach a publication reason.")
+  .option("--retry", "Retry after a failed wiki-repository publication attempt.")
+  .option("--target-git-service-ref <gitServiceRef>", "Target git service reference.")
+  .option("--target-namespace <namespace>", "Target git namespace.")
+  .option("--target-repository-name <repositoryName>", "Target git repository name.")
+  .option("--summary", "Print a compact operator-oriented publication summary.")
+  .description("Publish the runtime wiki repository as a git artifact.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        publishedBy?: string;
+        publicationId?: string;
+        reason?: string;
+        retry?: boolean;
+        summary?: boolean;
+        targetGitServiceRef?: string;
+        targetNamespace?: string;
+        targetRepositoryName?: string;
+      },
+      command: Command
+    ) => {
+      const publish = runtimeWikiRepositoryPublicationRequestSchema.parse({
+        ...(options.publicationId
+          ? { publicationId: options.publicationId }
+          : {}),
+        ...(options.publishedBy ? { publishedBy: options.publishedBy } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        retry: Boolean(options.retry),
+        ...(options.targetGitServiceRef
+          ? { targetGitServiceRef: options.targetGitServiceRef }
+          : {}),
+        ...(options.targetNamespace
+          ? { targetNamespace: options.targetNamespace }
+          : {}),
+        ...(options.targetRepositoryName
+          ? { targetRepositoryName: options.targetRepositoryName }
+          : {})
+      });
+      const client = createCliHostClient(command);
+      const response = await client.publishRuntimeWikiRepository(
+        nodeId,
+        publish
+      );
+
+      printJson(
+        options.summary
+          ? {
+              artifactId: response.artifact.ref.artifactId,
+              publication: projectRuntimeWikiRepositoryPublicationSummary(
+                response.publication
+              )
+            }
+          : response
+      );
     }
   );
 

@@ -318,4 +318,35 @@ describe("runtime trace helpers", () => {
       label: "Source history source-history-source-change-turn-alpha replay replayed"
     });
   });
+
+  it("describes wiki repository publication events", () => {
+    const event: HostEventRecord = {
+      artifactId: "wiki-repository-worker-it-wiki-commit",
+      branch: "worker-it/wiki-repository/entangle-wiki",
+      category: "runtime",
+      commit: "wiki-commit-alpha",
+      eventId: "evt-wiki-repository-published",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      message: "Published wiki repository.",
+      nodeId: "worker-it",
+      publicationId: "wiki-publication-alpha",
+      publicationState: "published",
+      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      schemaVersion: "1",
+      timestamp: "2026-04-24T11:00:06.000Z",
+      type: "wiki_repository.published"
+    };
+
+    expect(describeRuntimeTraceEvent(event)).toEqual({
+      detailLines: [
+        "Publication: wiki-publication-alpha",
+        "Artifact: wiki-repository-worker-it-wiki-commit",
+        "State: published",
+        "Branch: worker-it/wiki-repository/entangle-wiki",
+        "Remote: ssh://git@gitea.local:22/team-alpha/graph-alpha.git"
+      ],
+      label: "Wiki repository worker-it publication published"
+    });
+  });
 });

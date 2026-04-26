@@ -21,7 +21,8 @@ export const runtimeTraceEventTypePrefixes = [
   "source_change_candidate.reviewed",
   "source_history.updated",
   "source_history.published",
-  "source_history.replayed"
+  "source_history.replayed",
+  "wiki_repository.published"
 ] as const;
 
 function eventHasNodeId(

@@ -199,6 +199,21 @@ describe("host-event-refresh", () => {
       turnId: "turn-alpha",
       type: "source_history.replayed"
     };
+    const wikiRepositoryPublishedEvent: HostEventRecord = {
+      ...baseEvent,
+      artifactId: "wiki-repository-worker-it-wiki-commit",
+      branch: "worker-it/wiki-repository/entangle-wiki",
+      category: "runtime",
+      commit: "wiki-commit-alpha",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424t100000z",
+      message:
+        "Wiki repository for runtime 'worker-it' published artifact 'wiki-repository-worker-it-wiki-commit'.",
+      nodeId: "worker-it",
+      publicationId: "wiki-repository-worker-it-wiki-commit",
+      publicationState: "published",
+      type: "wiki_repository.published"
+    };
     const cancellationEvent: HostEventRecord = {
       ...baseEvent,
       cancellationId: "session-cancel-alpha",
@@ -238,6 +253,12 @@ describe("host-event-refresh", () => {
     expect(
       shouldRefreshSelectedRuntimeFromHostEvent(
         sourceHistoryReplayedEvent,
+        "worker-it"
+      )
+    ).toBe(true);
+    expect(
+      shouldRefreshSelectedRuntimeFromHostEvent(
+        wikiRepositoryPublishedEvent,
         "worker-it"
       )
     ).toBe(true);

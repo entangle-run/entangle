@@ -163,7 +163,11 @@ This repository currently contains:
   turns, with durable sync outcomes carried through runner turns, host events,
   CLI output, and Studio turn inspection, and with `entangle local doctor`
   now warning on uninitialized, dirty, or uncommitted runtime wiki
-  repositories, plus bounded engine-request summaries on executable turns so
+  repositories, plus a host-mediated wiki-repository publication path that
+  turns a clean node wiki HEAD into a `knowledge_summary` git artifact with
+  durable publication records, typed `wiki_repository.published` events, and
+  shared host-client, CLI, and Studio controls, plus bounded engine-request
+  summaries on executable turns so
   operators can inspect prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
   exposing raw prompt text, runtime-local paths, or engine-specific payloads,

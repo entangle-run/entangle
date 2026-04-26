@@ -225,6 +225,8 @@ This directory is the canonical design corpus for Entangle.
 219. [218-non-primary-publication-provisioning-slice.md](218-non-primary-publication-provisioning-slice.md)
 220. [219-artifact-promotion-slice.md](219-artifact-promotion-slice.md)
 221. [220-external-session-cancellation-slice.md](220-external-session-cancellation-slice.md)
+222. [221-source-history-replay-slice.md](221-source-history-replay-slice.md)
+223. [222-wiki-repository-publication-slice.md](222-wiki-repository-publication-slice.md)
 
 ## Role of this corpus
 

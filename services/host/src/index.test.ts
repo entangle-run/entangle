@@ -55,6 +55,8 @@ import {
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
+  runtimeWikiRepositoryPublicationListResponseSchema,
+  runtimeWikiRepositoryPublicationResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeListResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
@@ -4580,6 +4582,135 @@ describe("buildHostServer", () => {
         ])
       );
 
+      const wikiRepositoryRoot = runtimeContext.workspace.wikiRepositoryRoot;
+      if (!wikiRepositoryRoot) {
+        throw new Error("Expected wiki repository root in runtime context.");
+      }
+
+      await runGitCommand({
+        args: ["init", "--initial-branch=entangle-wiki"],
+        cwd: wikiRepositoryRoot
+      });
+      await runGitCommand({
+        args: ["config", "user.name", "Worker IT"],
+        cwd: wikiRepositoryRoot
+      });
+      await runGitCommand({
+        args: ["config", "user.email", "worker-it@entangle.invalid"],
+        cwd: wikiRepositoryRoot
+      });
+      await writeFile(
+        path.join(wikiRepositoryRoot, "index.md"),
+        "# Wiki Index\n\n- [Summary](summaries/working-context.md)\n",
+        "utf8"
+      );
+      await mkdir(path.join(wikiRepositoryRoot, "summaries"), {
+        recursive: true
+      });
+      await writeFile(
+        path.join(wikiRepositoryRoot, "summaries", "working-context.md"),
+        "# Working Context\n\nGenerated memory snapshot.\n",
+        "utf8"
+      );
+      await runGitCommand({
+        args: ["add", "--all"],
+        cwd: wikiRepositoryRoot
+      });
+      await runGitCommand({
+        args: ["commit", "-m", "Update wiki memory for turn-alpha"],
+        cwd: wikiRepositoryRoot
+      });
+      const wikiHeadCommit = await runGitCommand({
+        args: ["rev-parse", "HEAD"],
+        cwd: wikiRepositoryRoot
+      });
+
+      const wikiPublicationResponse = await server.inject({
+        method: "POST",
+        payload: {
+          publishedBy: "operator-alpha",
+          publicationId: "wiki-publication-alpha",
+          reason: "Publish node wiki repository.",
+          targetGitServiceRef: "local-gitea",
+          targetNamespace: "team-alpha",
+          targetRepositoryName: "team-alpha"
+        },
+        url: "/v1/runtimes/worker-it/wiki-repository/publish"
+      });
+
+      expect(wikiPublicationResponse.statusCode).toBe(200);
+      const wikiPublication =
+        runtimeWikiRepositoryPublicationResponseSchema.parse(
+          wikiPublicationResponse.json()
+        );
+      expect(wikiPublication.publication).toMatchObject({
+        artifactId: `wiki-repository-worker-it-${wikiHeadCommit.slice(0, 12)}`,
+        branch: "worker-it/wiki-repository/entangle-wiki",
+        commit: wikiHeadCommit,
+        nodeId: "worker-it",
+        publication: {
+          state: "published"
+        },
+        publicationId: "wiki-publication-alpha",
+        requestedBy: "operator-alpha",
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "team-alpha"
+      });
+      expect(wikiPublication.artifact).toMatchObject({
+        publication: {
+          remoteUrl: pathToFileURL(remoteSourceRepositoryPath).toString(),
+          state: "published"
+        },
+        ref: {
+          artifactKind: "knowledge_summary",
+          backend: "git",
+          locator: {
+            branch: "worker-it/wiki-repository/entangle-wiki",
+            repositoryName: "team-alpha"
+          },
+          status: "published"
+        }
+      });
+      await expect(
+        runGitCommand({
+          args: ["rev-parse", "refs/heads/worker-it/wiki-repository/entangle-wiki"],
+          cwd: remoteSourceRepositoryPath
+        })
+      ).resolves.toMatch(/^[0-9a-f]{40}$/);
+
+      const wikiPublicationListResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/wiki-repository/publications"
+      });
+
+      expect(wikiPublicationListResponse.statusCode).toBe(200);
+      expect(
+        runtimeWikiRepositoryPublicationListResponseSchema.parse(
+          wikiPublicationListResponse.json()
+        ).publications
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            commit: wikiHeadCommit,
+            publicationId: "wiki-publication-alpha"
+          })
+        ])
+      );
+
+      const repeatedWikiPublicationResponse = await server.inject({
+        method: "POST",
+        payload: {},
+        url: "/v1/runtimes/worker-it/wiki-repository/publish"
+      });
+
+      expect(repeatedWikiPublicationResponse.statusCode).toBe(409);
+      expect(
+        hostErrorResponseSchema.parse(
+          repeatedWikiPublicationResponse.json()
+        ).message
+      ).toContain("already published");
+
       const repeatedPublishResponse = await server.inject({
         method: "POST",
         payload: {},
@@ -4698,6 +4829,25 @@ describe("buildHostServer", () => {
         historyId: "source-history-source-change-turn-alpha",
         replayId: "replay-source-history-alpha",
         replayStatus: "already_in_workspace"
+      });
+      const wikiRepositoryPublishedEvents = hostEventListResponseSchema
+        .parse(
+          (
+            await server.inject({
+              method: "GET",
+              url: "/v1/events?limit=20"
+            })
+          ).json()
+        )
+        .events.filter((event) => event.type === "wiki_repository.published");
+      expect(wikiRepositoryPublishedEvents).toHaveLength(1);
+      expect(wikiRepositoryPublishedEvents[0]).toMatchObject({
+        artifactId: `wiki-repository-worker-it-${wikiHeadCommit.slice(0, 12)}`,
+        branch: "worker-it/wiki-repository/entangle-wiki",
+        commit: wikiHeadCommit,
+        publicationId: "wiki-publication-alpha",
+        publicationState: "published",
+        targetRepositoryName: "team-alpha"
       });
 
       const missingCandidateResponse = await server.inject({

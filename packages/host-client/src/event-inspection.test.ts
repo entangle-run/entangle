@@ -111,6 +111,26 @@ function createSourceHistoryPublishedEvent(): HostEventRecord {
   };
 }
 
+function createWikiRepositoryPublishedEvent(): HostEventRecord {
+  return {
+    artifactId: "wiki-repository-worker-it-wiki-commit",
+    branch: "worker-it/wiki-repository/entangle-wiki",
+    category: "runtime",
+    commit: "wiki-commit-alpha",
+    eventId: "evt-wiki-repository-published",
+    graphId: "team-alpha",
+    graphRevisionId: "team-alpha-20260424-000000",
+    message:
+      "Wiki repository for runtime 'worker-it' published artifact 'wiki-repository-worker-it-wiki-commit'.",
+    nodeId: "worker-it",
+    publicationId: "wiki-publication-alpha",
+    publicationState: "published",
+    schemaVersion: "1",
+    timestamp: "2026-04-24T10:00:50.000Z",
+    type: "wiki_repository.published"
+  };
+}
+
 describe("host event inspection helpers", () => {
   it("matches runtime recovery events by node id and type prefix", () => {
     const event = createRuntimeRecoveryRecordedEvent();
@@ -172,6 +192,12 @@ describe("host event inspection helpers", () => {
     ).toBe(true);
     expect(
       hostEventMatchesFilter(createSourceHistoryPublishedEvent(), {
+        nodeId: "worker-it",
+        typePrefixes: [...runtimeTraceEventTypePrefixes]
+      })
+    ).toBe(true);
+    expect(
+      hostEventMatchesFilter(createWikiRepositoryPublishedEvent(), {
         nodeId: "worker-it",
         typePrefixes: [...runtimeTraceEventTypePrefixes]
       })

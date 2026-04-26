@@ -2612,6 +2612,124 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("publishes and lists runtime wiki repositories through the host surface", async () => {
+    const requests: Array<{ body?: string; method?: string; url: string }> = [];
+    const publication = {
+      artifactId: "wiki-repository-worker-it-wiki-commit",
+      branch: "worker-it/wiki-repository/entangle-wiki",
+      commit: "wiki-commit-alpha",
+      createdAt: "2026-04-24T00:06:00.000Z",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      nodeId: "worker-it",
+      publication: {
+        publishedAt: "2026-04-24T00:06:00.000Z",
+        remoteName: "entangle-local-gitea",
+        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      publicationId: "wiki-publication-alpha",
+      requestedBy: "operator-alpha",
+      targetGitServiceRef: "local-gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha",
+      updatedAt: "2026-04-24T00:06:00.000Z"
+    };
+    const artifact = {
+      createdAt: "2026-04-24T00:06:00.000Z",
+      materialization: {
+        repoPath: "/tmp/entangle/workspace/wiki-repository"
+      },
+      publication: publication.publication,
+      ref: {
+        artifactId: "wiki-repository-worker-it-wiki-commit",
+        artifactKind: "knowledge_summary",
+        backend: "git",
+        createdByNodeId: "worker-it",
+        locator: {
+          branch: "worker-it/wiki-repository/entangle-wiki",
+          commit: "artifact-wiki-commit-alpha",
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          path: ".",
+          repositoryName: "graph-alpha"
+        },
+        preferred: true,
+        status: "published"
+      },
+      updatedAt: "2026-04-24T00:06:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(
+              url.endsWith("/publications")
+                ? { publications: [publication] }
+                : { artifact, publication }
+            ),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.publishRuntimeWikiRepository("worker-it", {
+        publicationId: "wiki-publication-alpha",
+        publishedBy: "operator-alpha",
+        reason: "Publish wiki repository.",
+        retry: true,
+        targetRepositoryName: "graph-alpha"
+      })
+    ).resolves.toMatchObject({
+      artifact: {
+        ref: {
+          artifactId: "wiki-repository-worker-it-wiki-commit"
+        }
+      },
+      publication: {
+        publicationId: "wiki-publication-alpha"
+      }
+    });
+    await expect(
+      client.listRuntimeWikiRepositoryPublications("worker-it")
+    ).resolves.toMatchObject({
+      publications: [
+        {
+          publicationId: "wiki-publication-alpha"
+        }
+      ]
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          publicationId: "wiki-publication-alpha",
+          publishedBy: "operator-alpha",
+          reason: "Publish wiki repository.",
+          retry: true,
+          targetRepositoryName: "graph-alpha"
+        }),
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/wiki-repository/publish"
+      },
+      {
+        method: undefined,
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/wiki-repository/publications"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
