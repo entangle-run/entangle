@@ -101,6 +101,7 @@ const userNodes: UserNodeIdentityRecord[] = [
 
 const conversations: UserConversationProjectionRecord[] = [
   {
+    artifactIds: [],
     conversationId: "conversation-old",
     graphId: "team-alpha",
     peerNodeId: "worker-a",
@@ -109,10 +110,12 @@ const conversations: UserConversationProjectionRecord[] = [
       source: "observation_event",
       updatedAt: "2026-04-26T12:00:00.000Z"
     },
+    status: "opened",
     unreadCount: 0,
     userNodeId: "user-a"
   },
   {
+    artifactIds: [],
     conversationId: "conversation-new",
     graphId: "team-alpha",
     lastMessageAt: "2026-04-26T12:05:00.000Z",
@@ -122,6 +125,7 @@ const conversations: UserConversationProjectionRecord[] = [
       source: "observation_event",
       updatedAt: "2026-04-26T12:04:00.000Z"
     },
+    status: "opened",
     unreadCount: 2,
     userNodeId: "user-a"
   }
