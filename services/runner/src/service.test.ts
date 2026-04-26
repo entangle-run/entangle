@@ -642,6 +642,84 @@ describe("RunnerService", () => {
     }
   });
 
+  it("records policy-denied evidence when an engine handoff is not authorized", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const service = new RunnerService({
+      context,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Prepared a handoff outside local policy."],
+            engineSessionId: "engine-session-policy-denied",
+            engineVersion: "0.10.0",
+            handoffDirectives: [
+              {
+                summary: "Review work without an authorized route.",
+                targetNodeId: "worker-qa"
+              }
+            ],
+            providerStopReason: "opencode_process_exit_0",
+            stopReason: "completed",
+            toolExecutions: [
+              {
+                outcome: "success",
+                sequence: 1,
+                toolCallId: "tool-handoff-policy",
+                toolId: "bash"
+              }
+            ],
+            toolRequests: []
+          });
+        }
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    await service.start();
+
+    try {
+      await expect(
+        service.handleInboundEnvelope(
+          buildInboundTaskRequest({
+            conversationId: "handoff-policy-denied-conv",
+            intent: "attempt_unauthorized_handoff",
+            sessionId: "handoff-policy-denied-session",
+            summary: "Attempt a handoff without policy authority.",
+            turnId: "handoff-policy-denied-turn"
+          })
+        )
+      ).rejects.toMatchObject({
+        classification: "policy_denied",
+        name: AgentEngineExecutionError.name
+      });
+
+      const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
+      const [turnRecord] = await listRunnerTurnRecords(statePaths);
+
+      expect(turnRecord?.engineOutcome).toMatchObject({
+        engineSessionId: "engine-session-policy-denied",
+        engineVersion: "0.10.0",
+        failure: {
+          classification: "policy_denied"
+        },
+        providerStopReason: "opencode_process_exit_0",
+        stopReason: "error",
+        toolExecutions: [
+          {
+            outcome: "success",
+            sequence: 1,
+            toolCallId: "tool-handoff-policy",
+            toolId: "bash"
+          }
+        ]
+      });
+    } finally {
+      await service.stop();
+    }
+  });
+
   it("keeps a delegated session active until every outbound handoff conversation closes", async () => {
     const upstreamFixture = await createRuntimeFixture({
       remotePublication: "bare_repo"

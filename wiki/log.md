@@ -2355,3 +2355,16 @@ assistant text, validates `handoffDirectives` with the canonical engine schema,
 strips the machine-action block from human assistant messages, and returns
 validated directives through the existing runner-owned handoff path. Malformed
 action blocks now produce a bounded `bad_request` engine result.
+
+## [2026-04-26] implementation | Hardened rejected handoff evidence
+
+Tightened the runner-owned action validation path for B7/B3. Syntactically
+valid handoff directives that are not authorized by local autonomy policy or
+cannot resolve through an effective peer route now fail as `policy_denied`
+instead of generic `bad_request`.
+
+When this rejection happens after an engine result has already been returned,
+the failed runner turn now preserves bounded engine session id, engine version,
+provider stop reason, permission observations, tool observations, and usage
+evidence so host, CLI, and Studio inspection retain useful debugging context
+without granting the rejected side effect.

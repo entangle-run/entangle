@@ -52,6 +52,13 @@ The runner then uses the existing B7-adjacent handoff path: directives are
 resolved against effective peer routes and policy after artifact
 materialization, and only validated Entangle messages are published.
 
+The hardening follow-up changed unauthorized or unroutable handoff directives
+from generic `bad_request` failures to `policy_denied` failures. When this
+happens after the engine already returned a syntactically valid result, the
+runner preserves bounded engine session id, engine version, provider stop
+reason, permission observations, tool observations, and usage evidence on the
+failed turn outcome.
+
 ## Boundary Decisions
 
 - OpenCode does not get direct authority to message peers or publish artifacts.
@@ -70,6 +77,8 @@ The focused implementation checks covered:
 - OpenCode adapter tests for valid action extraction, action-block
   sanitization, malformed directive classification, and standard JSON-event
   parsing.
+- Runner service tests for policy-denied handoff directives preserving bounded
+  engine evidence on failed turn outcomes.
 
 The full repository verification for this slice must still pass before the
 batch is considered closed.

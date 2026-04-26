@@ -120,7 +120,7 @@ type ResolvedHandoffPlan = {
 class RunnerHandoffPolicyError extends AgentEngineExecutionError {
   constructor(message: string) {
     super(message, {
-      classification: "bad_request"
+      classification: "policy_denied"
     });
   }
 }
@@ -935,15 +935,29 @@ function buildEngineTurnOutcome(
 
 function buildFailedEngineTurnOutcome(
   context: EffectiveRuntimeContext,
-  error: unknown
+  error: unknown,
+  result?: AgentEngineTurnResult
 ): EngineTurnOutcome {
   return engineTurnOutcomeSchema.parse({
+    ...(result?.engineSessionId
+      ? { engineSessionId: result.engineSessionId }
+      : {}),
+    ...(result?.engineVersion ? { engineVersion: result.engineVersion } : {}),
     failure: buildEngineFailure(context, error),
+    ...(result?.permissionObservations
+      ? { permissionObservations: result.permissionObservations }
+      : {}),
     ...(buildEngineProviderMetadataFromContext(context)
       ? { providerMetadata: buildEngineProviderMetadataFromContext(context) }
+      : result?.providerMetadata
+        ? { providerMetadata: result.providerMetadata }
+        : {}),
+    ...(result?.providerStopReason
+      ? { providerStopReason: result.providerStopReason }
       : {}),
     stopReason: "error",
-    toolExecutions: []
+    toolExecutions: result?.toolExecutions ?? [],
+    ...(result?.usage ? { usage: result.usage } : {})
   });
 }
 
@@ -1886,7 +1900,7 @@ export class RunnerService {
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
       const sourceChangeBaseline = await prepareSourceChangeHarvest(this.context);
-      let result: AgentEngineTurnResult;
+      let result: AgentEngineTurnResult | undefined;
       let handoffPlans: ResolvedHandoffPlan[] = [];
 
       try {
@@ -1906,7 +1920,11 @@ export class RunnerService {
         }
         turnRecord = {
           ...turnRecord,
-          engineOutcome: buildFailedEngineTurnOutcome(this.context, error),
+          engineOutcome: buildFailedEngineTurnOutcome(
+            this.context,
+            error,
+            result
+          ),
           ...(sourceChangeCandidate
             ? { sourceChangeCandidateIds: [sourceChangeCandidate.candidateId] }
             : {}),
@@ -1915,6 +1933,15 @@ export class RunnerService {
         };
         await writeRunnerTurnRecord(statePaths, turnRecord);
         throw error;
+      }
+
+      if (!result) {
+        throw new AgentEngineExecutionError(
+          `Engine for node '${this.context.binding.node.nodeId}' did not return a turn result.`,
+          {
+            classification: "unknown_provider_error"
+          }
+        );
       }
 
       const sourceChangeHarvestResult = await harvestSourceChanges(

@@ -723,6 +723,10 @@ Current partial implementation:
 - malformed or oversized action blocks now produce a bounded `bad_request`
   engine result with provider stop reason
   `entangle_action_directive_parse_error`;
+- syntactically valid but unauthorized or unroutable handoff directives now
+  fail as `policy_denied` while preserving bounded engine session/version,
+  provider stop reason, permission, tool, and usage evidence on the failed turn
+  outcome;
 - OpenCode-backed handoff is therefore available through the same runner-owned
   Entangle validation path as injected engines, but live OpenCode permission
   approval mapping, approval-request directives, publication directives, and
