@@ -3062,3 +3062,20 @@ conversation count, and `--keep-running` prints an inbox command so manual
 OpenCode testing can immediately inspect the User Node projection after sending
 a signed task. The harness now also prints a filtered `host events list`
 command for `runner.turn.updated` events on the assigned builder node.
+
+## [2026-04-26] planning | Realigned User Node runtime boundary
+
+Added `references/258-human-interface-runtime-realignment-plan.md` and updated
+the federated runtime plan to keep Studio as the admin/operator surface while
+moving participant workflows into a dedicated User Client launched by a running
+User Node `human_interface` runtime.
+
+The next fast product path is now explicit: make User Nodes assignable to
+`human_interface` runners, start a minimal Human Interface Runtime from the
+joined runner, expose a User Client endpoint through Host projection, and then
+expand durable inbox/outbox, approvals, artifact review, and OpenCode runtime
+depth.
+
+The plan also records that multi-user support is a placement requirement:
+different human graph nodes can run on different `human_interface` runners, so
+each human participant may reside where their assigned node runtime is running.

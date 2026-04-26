@@ -16,23 +16,30 @@ User nodes are now partially runtime-capable:
 
 Still missing:
 
-- Studio approval decisions submit operator-side mutations instead of calling
-  the signed User Node message surface;
+- Host still rejects assigning `nodeKind: "user"` to a runner, even though
+  `runtimeKind: "human_interface"` exists in the shared runner contracts;
+- there is no Human Interface Runtime that starts when a User Node is running;
+- there is no dedicated User Client exposed by that runtime;
+- Studio approval decisions still include operator-side mutation paths instead
+  of being only signed User Node protocol behavior;
 - Host approval mutation still writes local approval records;
-- CLI approvals use the same legacy Host mutation path;
-- there is no durable user-node inbox, outbox, or conversation projection.
+- there is no durable user-node inbox/outbox message-history projection.
 
 ## Target Model
 
 A User Node is a graph actor with stable identity.
 
-It may be driven by a Human Interface Runtime, a Studio gateway, a CLI gateway,
-or another future client. The gateway is responsible for letting the human read
-messages and sign user-node outbound messages according to policy.
+It should be driven by a Human Interface Runtime when running. The Human
+Interface Runtime exposes the User Client used by the human participant. CLI
+may remain a development/headless gateway, but Studio is the operator control
+room and should not become the primary User Node chat client.
 
 User Node capabilities:
 
 - stable Nostr pubkey;
+- assignable `human_interface` runtime;
+- runtime-owned User Client endpoint;
+- placement on a specific runner/machine through Host assignment;
 - inbox/outbox;
 - conversation list;
 - task launch to connected nodes;
@@ -56,19 +63,29 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - `services/host/src/state.ts`
 - `services/host/src/session-launch.ts`
 - `services/runner/src/service.ts`
+- `services/runner/src/join-service.ts`
+- `services/runner/src/assignment-materializer.ts`
+- new runner Human Interface Runtime module
 - `packages/host-client/src/index.ts`
 - `apps/cli/src/index.ts`
 - `apps/studio/src/App.tsx`
+- new `apps/user-client` or equivalent Human Interface client app
 
 ## Concrete Changes Required
 
 - Add `UserNodeIdentityRecord` and key-ref contracts.
 - Add Host APIs for listing user-node identities and projected inbox state.
-- Add a User Interaction Gateway service boundary that can sign as a user node.
+- Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
+- Add a User Interaction Gateway/Human Interface Runtime service boundary that
+  can sign as a user node.
+- Start a User Client when a User Node runtime is assigned and running.
+- Expose User Client endpoint/health through runner observations and Host
+  projection.
 - Keep session launch publishing signed `task.request` from the selected User
   Node identity.
-- Move CLI and Studio `reply`, `answer`, `approve`, and `reject` flows onto the
-  signed User Node A2A message surface.
+- Move user-facing `reply`, `answer`, `approve`, and `reject` flows onto the
+  signed User Node A2A message surface. Studio should show operator visibility
+  and a link to the User Client, not own chat state.
 - Project inbound and outbound user-node conversations into Host read models.
 - Make approval records include signer pubkey, event id, and source message id.
 - Add edge-route pubkeys for user-node peers.
@@ -78,6 +95,9 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 
 - User Node identity creation/persistence tests.
 - Multiple user-node graph tests.
+- Human Interface Runtime assignment tests.
+- Multiple Human Interface Runtime placement tests.
+- User Client endpoint projection tests.
 - Signed user task launch tests.
 - Signed reply and answer tests.
 - Signed approval.response tests.
@@ -99,8 +119,9 @@ from canonical behavior.
 ## Risks And Mitigations
 
 - Risk: Studio becomes the source of truth for chat state.
-  Mitigation: Studio reads Host projection and sends signed messages through
-  the user-node gateway.
+  Mitigation: Studio remains operator-only for this boundary; the running Human
+  Interface Runtime owns the User Client surface and Host only projects signed
+  state.
 - Risk: user-node keys are stored unsafely.
   Mitigation: use key refs and profile-specific secret storage; never expose
   private keys in Host API responses.
@@ -109,6 +130,9 @@ from canonical behavior.
 
 ## Open Questions
 
-- Should the first local User Interaction Gateway be embedded in Host for dev
-  convenience or run as a separate process? The architecture should permit both,
-  but a separate process is cleaner for demonstrating identity separation.
+- Should the first User Client app be named `apps/user-client` or
+  `apps/human-interface`?
+- Should the first Human Interface Runtime serve the client directly from the
+  runner process or launch a separate child process?
+- When should User Node key custody move from Host-provisioned development key
+  refs to runner/local-gateway storage?

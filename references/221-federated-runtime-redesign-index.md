@@ -58,6 +58,7 @@ same-machine slice records.
 - [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 - [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
 - [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
+- [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
 
 ## Audited Scope
 
@@ -148,9 +149,9 @@ separate product or runtime profile.
 Host is an authoritative control plane with a Host Authority key. Runners start
 generic, register through signed Nostr events, receive assignments, execute
 assigned nodes, and emit signed observations. User nodes have stable identities
-and participate as graph actors through a Human Interface Runtime or User
-Interaction Gateway. Studio and CLI are Host clients and user-node gateways,
-not hidden runners.
+and participate as graph actors through a Human Interface Runtime that exposes
+a User Client. Studio is the admin/operator control room. CLI remains a
+headless/admin and development gateway, not the primary participant UI.
 
 Nostr carries signed messages, control events, observations, approvals,
 heartbeats, receipts, and artifact references. It does not carry private keys,
@@ -172,7 +173,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 7. Docker launcher adapter rebased onto the same assignment path.
 8. ProjectionStore built from signed observations instead of runtime filesystem
    reads.
-9. User Node identity records and Human Interface Runtime.
+9. User Node identity records, assignable Human Interface Runtime, and User
+   Client.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs.
@@ -185,7 +187,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 - A runner can start without graph assignment.
 - Host can trust a runner and assign a node through signed Nostr control.
 - Host and runner do not share filesystem in the federated smoke.
-- Multiple user nodes can exist in one graph.
+- Multiple user nodes can exist in one graph and can be assigned to distinct
+  `human_interface` runners on different machines or networks.
+- A running User Node exposes a User Client endpoint through Host projection.
 - User-node replies and approvals are signed by stable user-node identity.
 - Agent nodes and human nodes communicate through the same A2A model.
 - Host observes runtime state through signed events, not runner-local files.

@@ -308,6 +308,7 @@ files are the active federated redesign pack.
 256. [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 257. [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
 258. [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
+259. [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
 
 ## Role of this corpus
 

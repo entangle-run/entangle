@@ -194,8 +194,9 @@ Current status:
 
 ### Slice 9: User Node Runtime
 
-Add stable user-node identity records, gateway signing, inbox/outbox
-projection, and multi-user support.
+Add stable user-node identity records, assignable `human_interface` runtimes,
+Human Interface Runtime startup, a dedicated User Client, gateway signing,
+inbox/outbox projection, and multi-user support.
 
 Implementation record:
 
@@ -300,6 +301,9 @@ Current status:
 
 - live relay control/observe smoke is implemented;
 - separate OS process runner smoke is implemented;
+- the remaining fast product proof is a same-machine but topology-agnostic
+  demo with one assigned agent runner and one assigned User Node
+  `human_interface` runner;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

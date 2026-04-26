@@ -21,21 +21,25 @@ candidates/history, wiki publications, recovery, and event refresh.
 Missing surfaces:
 
 - transport health;
-- user-node selector;
-- full Studio user-node inbox/chat;
-- full Studio user-node reply/approve/reject controls;
+- User Node runtime assignment and Human Interface Runtime visibility;
+- User Client endpoint link/open action for running User Nodes;
+- durable user-node inbox/outbox projection;
 - Studio signed user-node task launch migration;
 - projection-backed distributed runtime status.
 
 ## Target Model
 
-Studio has two modes:
+Studio is the operator/admin surface:
 
-- Operator mode: authority, graph, resources, policies, runner registry,
-  assignments, projection health, transport health, artifacts, source, memory,
-  and lifecycle.
-- User mode: selected User Node inbox, conversations, replies, approvals,
-  artifact/source/wiki review, and session/thread context.
+- authority, graph, resources, policies, runner registry, assignments,
+  projection health, transport health, artifacts, source, memory, and
+  lifecycle;
+- User Node identity/runtime health, active conversations, pending approval
+  counts, and a link to open the User Client for a running User Node.
+
+The selected User Node inbox, conversations, replies, approvals,
+artifact/source/wiki review, and session/thread context belong in the User
+Client exposed by the Human Interface Runtime, not in Studio.
 
 CLI has matching headless surfaces:
 
@@ -56,7 +60,9 @@ CLI has matching headless surfaces:
 - `entangle-runner join --config runner.toml`
 
 Studio and CLI must talk to Host and user-node gateways. They must not directly
-command runners.
+command runners. CLI may remain a development/headless user-node gateway, but
+the product user surface should be the User Client launched for a running User
+Node.
 
 ## Impacted Modules/Files
 
@@ -66,8 +72,11 @@ command runners.
 - CLI presentation/test helpers under `apps/cli/src`
 - `apps/studio/src/App.tsx`
 - Studio helpers/tests under `apps/studio/src`
+- new `apps/user-client` or equivalent Human Interface client app
 - `services/host/src/index.ts`
 - `services/host/src/state.ts`
+- `services/runner/src/join-service.ts`
+- runner Human Interface Runtime module
 
 ## Concrete Changes Required
 
@@ -81,9 +90,12 @@ command runners.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
   User Node summary panel.
-- Add Studio user-node panel with conversation list and message detail.
-- Replace Studio approval mutation with signed user-node approval flow.
-- Replace Studio session launch with selected user-node signed launch.
+- Add Studio User Node runtime visibility and User Client open action.
+- Build the dedicated User Client for conversation list, message detail,
+  replies, and approvals.
+- Replace user-facing approval/session launch behavior with signed user-node
+  messages in the User Client. Existing Studio controls should remain operator
+  controls or debug/admin tools only.
 - Keep local commands under `entangle deployment` for local adapter operations.
 
 ## Tests Required
@@ -91,7 +103,9 @@ command runners.
 - Host-client endpoint method tests.
 - CLI parser and output tests for every new command group.
 - Studio helper tests for authority/runner/assignment/inbox projections.
-- Studio interaction tests for signed reply/approval request construction.
+- Studio tests for User Node runtime projection and User Client endpoint
+  display.
+- User Client tests for signed reply/approval request construction.
 - Regression tests for existing local runtime surfaces.
 
 ## Migration/Compatibility Notes
@@ -105,8 +119,9 @@ layout is redesigned.
 
 ## Risks And Mitigations
 
-- Risk: Studio becomes overloaded.
-  Mitigation: split operator and user-node views with clear navigation.
+- Risk: Studio becomes overloaded or turns into the User Node client.
+  Mitigation: keep Studio operator-only and put participant workflows in the
+  User Client served by the Human Interface Runtime.
 - Risk: CLI command names conflict with existing host/runtimes groups.
   Mitigation: keep old local/runtime commands and add new top-level federated
   groups.
