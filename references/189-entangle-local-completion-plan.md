@@ -58,6 +58,10 @@ The latest implementation state includes:
   render that status through the shared host-client formatter, and `entangle
   local doctor` checks both offline local state layout compatibility and live
   host-reported layout status;
+- `entangle local diagnostics` now writes a redacted JSON support bundle with
+  doctor output, bounded Docker Compose service/log captures, runner-image
+  inspection, and host status/events/runtimes/principals when the host is
+  reachable;
 - runner turns now persist bounded `engineRequestSummary` evidence for the
   assembled engine request shape, including prompt part counts, aggregate
   prompt character counts, memory, artifact, and tool counts, execution
@@ -963,6 +967,20 @@ Constraints:
 - Logs bundle must be useful without exposing secrets.
 - Bundle format must be stable enough to attach to issues or release
   validation reports.
+
+Current partial implementation:
+
+- `entangle local diagnostics` writes a schema-versioned JSON bundle to a
+  caller-selected path;
+- the bundle includes the `entangle local doctor` report, bounded captures of
+  `docker compose ps`, `docker compose logs --tail`, runner image inspection,
+  and live host status, runtimes, external principals, and recent events when
+  a host client is available;
+- command output is bounded and passed through common bearer token, token,
+  secret, password, authorization, and API-key redaction before writing the
+  bundle;
+- the remaining work is a support-bundle smoke, deeper OpenCode failure
+  extraction, and explicit release-run attachment guidance.
 
 Acceptance:
 

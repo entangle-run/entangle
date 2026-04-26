@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added Local diagnostics support bundle
+
+Advanced Entangle Local C5 by adding `entangle local diagnostics`, a read-only
+CLI command that writes a schema-versioned JSON support bundle. The bundle
+includes the Local doctor report, bounded Docker Compose service status and
+log captures, runner-image inspection, and live host status, runtime,
+external-principal, and recent-event state when the host is reachable.
+
+Captured command output is bounded and redacted for common bearer token,
+authorization, token, secret, password, and API-key shapes before it is written.
+The remaining C5 work is a smoke around bundle generation, deeper OpenCode
+failure extraction, and release-run attachment guidance.
+
 ## [2026-04-26] implementation | Added Local state layout compatibility checks
 
 Advanced the Entangle Local reliability track by introducing a version-1

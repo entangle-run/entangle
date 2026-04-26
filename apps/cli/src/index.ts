@@ -49,6 +49,7 @@ import {
   buildLocalDoctorReport,
   formatLocalDoctorText
 } from "./local-doctor-command.js";
+import { buildLocalDiagnosticsBundle } from "./local-diagnostics-bundle-command.js";
 import {
   projectGraphExportSummary,
   projectGraphImportSummary,
@@ -474,6 +475,92 @@ localCommand
       }
 
       if (report.status === "fail") {
+        process.exitCode = 1;
+      }
+    }
+  );
+
+localCommand
+  .command("diagnostics")
+  .option("--event-limit <n>", "Maximum host events to include.", "50")
+  .option("--gitea-url <url>", "Expected local Gitea URL.", "http://localhost:3001")
+  .option("--host-token <token>", "Bearer token for a protected local host.")
+  .option("--host-url <url>", "Expected local host API URL.", "http://localhost:7071")
+  .option("--log-tail <n>", "Tail lines to collect from Local Compose logs.", "200")
+  .option(
+    "--max-command-output-chars <n>",
+    "Maximum captured characters per command stream.",
+    "65536"
+  )
+  .option(
+    "--output <path>",
+    "Diagnostics bundle JSON output path.",
+    "entangle-local-diagnostics.json"
+  )
+  .option("--relay-url <url>", "Expected local Nostr relay URL.", "ws://localhost:7777")
+  .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")
+  .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
+  .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
+  .description("Write a redacted Entangle Local diagnostics bundle.")
+  .action(
+    async (
+      options: {
+        eventLimit: string;
+        giteaUrl: string;
+        hostToken?: string;
+        hostUrl: string;
+        logTail: string;
+        maxCommandOutputChars: string;
+        output: string;
+        relayUrl: string;
+        runnerImage: string;
+        skipLive?: boolean;
+        studioUrl: string;
+      }
+    ) => {
+      const normalizedToken =
+        options.hostToken?.trim() ??
+        process.env.ENTANGLE_HOST_TOKEN?.trim() ??
+        process.env.ENTANGLE_HOST_OPERATOR_TOKEN?.trim();
+      const hostClient = options.skipLive
+        ? undefined
+        : createHostClient(
+            normalizedToken && normalizedToken.length > 0
+              ? { authToken: normalizedToken, baseUrl: options.hostUrl }
+              : { baseUrl: options.hostUrl }
+          );
+      const outputPath = resolveCliPath(options.output);
+      const bundle = await buildLocalDiagnosticsBundle(
+        {
+          eventLimit: Number.parseInt(options.eventLimit, 10),
+          giteaUrl: options.giteaUrl,
+          hostUrl: options.hostUrl,
+          logTail: Number.parseInt(options.logTail, 10),
+          maxCommandOutputChars: Number.parseInt(
+            options.maxCommandOutputChars,
+            10
+          ),
+          relayUrl: options.relayUrl,
+          repositoryRoot,
+          runnerImage: options.runnerImage,
+          skipLive: options.skipLive,
+          studioUrl: options.studioUrl
+        },
+        hostClient ? { hostClient } : {}
+      );
+
+      await writeJsonDocument(outputPath, bundle);
+      printJson({
+        diagnostics: {
+          commandCount: bundle.commands.length,
+          generatedAt: bundle.generatedAt,
+          hostErrorCount: bundle.host?.errors.length ?? 0,
+          outputPath,
+          status: bundle.doctor.status
+        }
+      });
+
+      if (bundle.doctor.status === "fail") {
         process.exitCode = 1;
       }
     }

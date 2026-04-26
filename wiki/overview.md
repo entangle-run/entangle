@@ -603,7 +603,10 @@ The repository now also contains the first real implementation baseline:
   and inside the runner image, `.entangle/host`, local state layout
   compatibility, live host status, host-reported state layout status,
   host-reported runtime workspace health, git principals, Studio, Gitea, and
-  the local relay, plus strict and offline modes;
+  the local relay, plus strict and offline modes, and `entangle local
+  diagnostics` now writes a redacted JSON support bundle with doctor output,
+  bounded Compose status/logs, runner-image inspection, and live host state
+  when available;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket

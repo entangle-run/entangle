@@ -1,0 +1,261 @@
+import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import type {
+  ExternalPrincipalListResponse,
+  HostEventListResponse,
+  HostStatusResponse,
+  RuntimeContextInspectionResponse,
+  RuntimeListResponse
+} from "@entangle/types";
+import {
+  buildLocalDoctorReport,
+  type LocalDoctorDeps,
+  type LocalDoctorOptions,
+  type LocalDoctorReport
+} from "./local-doctor-command.js";
+
+export interface LocalDiagnosticsBundleOptions extends LocalDoctorOptions {
+  eventLimit?: number | undefined;
+  logTail?: number | undefined;
+  maxCommandOutputChars?: number | undefined;
+}
+
+interface LocalDiagnosticsHostClient {
+  getRuntimeContext(nodeId: string): Promise<RuntimeContextInspectionResponse>;
+  getHostStatus(): Promise<HostStatusResponse>;
+  listExternalPrincipals(): Promise<ExternalPrincipalListResponse>;
+  listHostEvents(limit?: number): Promise<HostEventListResponse>;
+  listRuntimes(): Promise<RuntimeListResponse>;
+}
+
+export interface LocalDiagnosticsBundleDeps extends LocalDoctorDeps {
+  commandRunner?: (
+    command: string,
+    args: string[],
+    options: { cwd: string }
+  ) => Pick<SpawnSyncReturns<string>, "error" | "signal" | "status" | "stderr" | "stdout">;
+  hostClient?: LocalDiagnosticsHostClient;
+  now?: () => Date;
+}
+
+export interface LocalDiagnosticsCommandCapture {
+  args: string[];
+  command: string;
+  exitCode: number | null;
+  signal?: string | undefined;
+  stderr: string;
+  stdout: string;
+  summary: string;
+}
+
+export interface LocalDiagnosticsBundle {
+  commands: LocalDiagnosticsCommandCapture[];
+  doctor: LocalDoctorReport;
+  generatedAt: string;
+  host?: {
+    errors: string[];
+    events?: HostEventListResponse | undefined;
+    externalPrincipals?: ExternalPrincipalListResponse | undefined;
+    runtimes?: RuntimeListResponse | undefined;
+    status?: HostStatusResponse | undefined;
+  };
+  profile: {
+    composeFile: string;
+    eventLimit: number;
+    logTail: number;
+    maxCommandOutputChars: number;
+    runnerImage: string;
+  };
+  redaction: {
+    applied: true;
+    placeholder: string;
+  };
+  schemaVersion: "1";
+}
+
+const localProfileComposeFile = "deploy/local/compose/docker-compose.local.yml";
+const defaultEventLimit = 50;
+const defaultLogTail = 200;
+const defaultMaxCommandOutputChars = 64 * 1024;
+const redactionPlaceholder = "<redacted>";
+
+function defaultCommandRunner(
+  command: string,
+  args: string[],
+  options: { cwd: string }
+): Pick<SpawnSyncReturns<string>, "error" | "signal" | "status" | "stderr" | "stdout"> {
+  return spawnSync(command, args, {
+    cwd: options.cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+}
+
+export function redactLocalDiagnosticsText(input: string): string {
+  return input
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, `$1${redactionPlaceholder}`)
+    .replace(
+      /((?:api[_-]?key|authorization|password|secret|token)\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,;]+)/gi,
+      `$1${redactionPlaceholder}`
+    )
+    .replace(
+      /((?:api[_-]?key|authorization|password|secret|token)"\s*:\s*)("[^"]*")/gi,
+      `$1"${redactionPlaceholder}"`
+    );
+}
+
+function truncateText(input: string, maxChars: number): string {
+  if (input.length <= maxChars) {
+    return input;
+  }
+
+  return `${input.slice(0, maxChars)}\n<truncated ${input.length - maxChars} chars>`;
+}
+
+function normalizeCommandCapture(input: {
+  args: string[];
+  command: string;
+  maxCommandOutputChars: number;
+  result: Pick<SpawnSyncReturns<string>, "error" | "signal" | "status" | "stderr" | "stdout">;
+  summary: string;
+}): LocalDiagnosticsCommandCapture {
+  const stderr = redactLocalDiagnosticsText(
+    truncateText(input.result.stderr ?? "", input.maxCommandOutputChars)
+  );
+  const stdout = redactLocalDiagnosticsText(
+    truncateText(input.result.stdout ?? "", input.maxCommandOutputChars)
+  );
+
+  return {
+    args: input.args,
+    command: input.command,
+    exitCode: input.result.status ?? null,
+    ...(input.result.signal ? { signal: input.result.signal } : {}),
+    stderr:
+      stderr.length > 0
+        ? stderr
+        : input.result.error
+          ? redactLocalDiagnosticsText(input.result.error.message)
+          : "",
+    stdout,
+    summary: input.summary
+  };
+}
+
+async function collectHostDiagnostics(input: {
+  eventLimit: number;
+  hostClient: LocalDiagnosticsHostClient | undefined;
+}): Promise<LocalDiagnosticsBundle["host"] | undefined> {
+  if (!input.hostClient) {
+    return undefined;
+  }
+
+  const errors: string[] = [];
+  const host: NonNullable<LocalDiagnosticsBundle["host"]> = {
+    errors
+  };
+
+  try {
+    host.status = await input.hostClient.getHostStatus();
+  } catch (error) {
+    errors.push(
+      `host status: ${error instanceof Error ? error.message : "request failed"}`
+    );
+  }
+
+  try {
+    host.runtimes = await input.hostClient.listRuntimes();
+  } catch (error) {
+    errors.push(
+      `runtimes: ${error instanceof Error ? error.message : "request failed"}`
+    );
+  }
+
+  try {
+    host.externalPrincipals = await input.hostClient.listExternalPrincipals();
+  } catch (error) {
+    errors.push(
+      `external principals: ${
+        error instanceof Error ? error.message : "request failed"
+      }`
+    );
+  }
+
+  try {
+    host.events = await input.hostClient.listHostEvents(input.eventLimit);
+  } catch (error) {
+    errors.push(
+      `events: ${error instanceof Error ? error.message : "request failed"}`
+    );
+  }
+
+  return host;
+}
+
+export async function buildLocalDiagnosticsBundle(
+  options: LocalDiagnosticsBundleOptions,
+  deps: LocalDiagnosticsBundleDeps = {}
+): Promise<LocalDiagnosticsBundle> {
+  const commandRunner = deps.commandRunner ?? defaultCommandRunner;
+  const eventLimit = options.eventLimit ?? defaultEventLimit;
+  const logTail = options.logTail ?? defaultLogTail;
+  const maxCommandOutputChars =
+    options.maxCommandOutputChars ?? defaultMaxCommandOutputChars;
+  const doctor = await buildLocalDoctorReport(options, deps);
+  const commandInputs = [
+    {
+      args: ["compose", "-f", localProfileComposeFile, "ps"],
+      command: "docker",
+      summary: "Local Compose services"
+    },
+    {
+      args: [
+        "compose",
+        "-f",
+        localProfileComposeFile,
+        "logs",
+        "--no-color",
+        "--tail",
+        String(logTail)
+      ],
+      command: "docker",
+      summary: "Local Compose logs"
+    },
+    {
+      args: ["image", "inspect", options.runnerImage ?? "entangle-runner:local"],
+      command: "docker",
+      summary: "Runner image inspect"
+    }
+  ];
+  const commands = commandInputs.map((commandInput) =>
+    normalizeCommandCapture({
+      ...commandInput,
+      maxCommandOutputChars,
+      result: commandRunner(commandInput.command, commandInput.args, {
+        cwd: options.repositoryRoot
+      })
+    })
+  );
+  const host = await collectHostDiagnostics({
+    eventLimit,
+    hostClient: deps.hostClient
+  });
+
+  return {
+    commands,
+    doctor,
+    generatedAt: (deps.now ?? (() => new Date()))().toISOString(),
+    ...(host ? { host } : {}),
+    profile: {
+      composeFile: localProfileComposeFile,
+      eventLimit,
+      logTail,
+      maxCommandOutputChars,
+      runnerImage: options.runnerImage ?? "entangle-runner:local"
+    },
+    redaction: {
+      applied: true,
+      placeholder: redactionPlaceholder
+    },
+    schemaVersion: "1"
+  };
+}

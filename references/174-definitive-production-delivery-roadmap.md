@@ -502,7 +502,8 @@ Incremental features:
 5. Diagnostics:
    - guided degraded-runtime explanation;
    - event trace shortcuts;
-   - local logs collection bundle.
+   - extend the first redacted JSON diagnostics bundle with release-run
+     attachment guidance and deeper engine evidence.
 
 Exit criteria:
 

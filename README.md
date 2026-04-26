@@ -652,7 +652,9 @@ This repository currently contains:
   image, `.entangle/host`, local state layout compatibility, host status,
   host-reported state layout status, runtime workspace health, git principals,
   Studio, Gitea, and the local relay, with human-readable and JSON output plus
-  strict/offline modes;
+  strict/offline modes, while `entangle local diagnostics` writes a redacted
+  JSON support bundle containing doctor output, bounded Compose status/logs,
+  runner-image inspection, and live host state when available;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
