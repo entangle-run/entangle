@@ -1332,6 +1332,130 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("projects artifact, source-change, and wiki refs from runner observations", async () => {
+    const server = await createTestServer();
+
+    try {
+      const [
+        {
+          recordArtifactRefObservation,
+          recordRunnerHello,
+          recordSourceChangeRefObservation,
+          recordWikiRefObservation
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+      const observedAt = new Date().toISOString();
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: observedAt,
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+      const artifactRef = {
+        artifactId: "artifact-alpha",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "artifact-artifact-alpha",
+          commit: "abc123",
+          path: "report.md"
+        },
+        status: "published"
+      };
+
+      await recordArtifactRefObservation({
+        artifactRef,
+        eventType: "artifact.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+      await recordSourceChangeRefObservation({
+        artifactRefs: [artifactRef],
+        candidateId: "candidate-alpha",
+        eventType: "source_change.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        status: "pending_review"
+      });
+      await recordWikiRefObservation({
+        artifactRef: {
+          artifactId: "wiki-alpha",
+          artifactKind: "knowledge_summary",
+          backend: "wiki",
+          locator: {
+            nodeId: "worker-it",
+            path: "/wiki/summaries/working-context.md"
+          },
+          status: "published"
+        },
+        eventType: "wiki.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+
+      const projectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/projection"
+      });
+      expect(projectionResponse.statusCode).toBe(200);
+      const projection = hostProjectionSnapshotSchema.parse(
+        projectionResponse.json()
+      );
+
+      expect(projection.artifactRefs[0]).toMatchObject({
+        artifactId: "artifact-alpha",
+        nodeId: "worker-it",
+        projection: {
+          source: "observation_event",
+          updatedAt: observedAt
+        },
+        runnerId: "runner-alpha"
+      });
+      expect(projection.sourceChangeRefs[0]).toMatchObject({
+        candidateId: "candidate-alpha",
+        status: "pending_review"
+      });
+      expect(projection.wikiRefs[0]).toMatchObject({
+        artifactId: "wiki-alpha",
+        nodeId: "worker-it"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("records audit events for token-protected operator mutation requests", async () => {
     process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
     process.env.ENTANGLE_HOST_OPERATOR_ID = "ops-lead";

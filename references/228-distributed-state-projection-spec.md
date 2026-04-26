@@ -2,7 +2,7 @@
 
 ## Current Repo Truth
 
-Host read models are currently derived from local files.
+Host read models are still mostly derived from local files.
 
 `services/host/src/state.ts` reads runtime context and then reads
 `context.workspace.runtimeRoot` for sessions, conversations, approvals, turns,
@@ -12,6 +12,11 @@ derived from those local records.
 
 This works for Local because Host and runner share a volume. It cannot work
 when Host and runner live on separate machines.
+
+Federated projection foundations now exist for Host Authority, runner
+registry/heartbeat, assignments, User Node identity, signed User Node messages,
+and observed artifact/source/wiki refs. The deep runtime APIs still need to be
+moved off local file reads.
 
 ## Target Model
 
@@ -52,8 +57,10 @@ and refs so Host can inspect global state without reading runner disk.
 - Define projection record schemas for runner status, assignment status,
   sessions, conversations, turns, approvals, artifacts, source changes, source
   history, wiki refs, and transport health.
-- Define observation event schemas that can update those projections.
-- Implement Host observation ingestion with signature verification.
+- Continue defining projection record schemas for sessions, conversations,
+  turns, approvals, source history, and transport health.
+- Continue implementing Host observation ingestion with signature verification
+  and event-id replay.
 - Replace Host APIs that read `runtimeRoot` with projection-backed APIs.
 - Preserve local file readers only behind explicit local debug/migration
   functions.

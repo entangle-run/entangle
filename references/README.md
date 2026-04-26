@@ -21,7 +21,9 @@ then [235-runner-registry-slice.md](235-runner-registry-slice.md) and
 and [238-local-launcher-join-adapter-slice.md](238-local-launcher-join-adapter-slice.md),
 then [239-host-projection-snapshot-slice.md](239-host-projection-snapshot-slice.md)
 and [240-user-node-identity-slice.md](240-user-node-identity-slice.md), then
-[241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md).
+[241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
+and
+[242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

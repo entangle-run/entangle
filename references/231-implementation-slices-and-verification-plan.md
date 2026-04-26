@@ -195,7 +195,22 @@ Verification:
 - Studio and CLI user action tests;
 - negative Host-signed user-message tests.
 
-### Slice 11: Engine Adapter Upgrade
+### Slice 11: Artifact, Source, And Wiki Ref Projection
+
+Add projection records and Host reducers for observed artifact refs,
+source-change refs, and wiki refs.
+
+Implementation record:
+
+- [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
+
+Verification:
+
+- projection contract tests;
+- Host reducer/projection tests;
+- no new runner filesystem read paths.
+
+### Future Slice: Engine Adapter Upgrade
 
 Keep OpenCode default. Move beyond only one-shot `opencode run` where needed
 by attaching to OpenCode server APIs for sessions, permissions, events, abort,

@@ -2791,3 +2791,15 @@ User Node A2A messages to connected runtimes.
 The new Host client method `publishUserNodeMessage()` is additive. Existing
 Studio/CLI approval controls still use the legacy mutation path until the user
 surface slice migrates them onto signed User Node messages.
+
+## [2026-04-26] implementation | Added observed artifact/source/wiki refs
+
+Added `references/242-observed-artifact-source-wiki-refs-slice.md` and
+implemented the eleventh federated pivot slice. Host projection snapshots now
+include observed artifact refs, source-change refs, and wiki refs from runner
+observation payload reducers. The reducers require the current Host Authority
+and a registered runner pubkey match before storing projection records.
+
+This is a projection substrate slice. Runner service emission, Host Nostr
+observation dispatch, and replacement of legacy runtimeRoot-backed artifact,
+source, and wiki APIs remain follow-up work.

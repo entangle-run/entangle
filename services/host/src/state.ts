@@ -137,6 +137,9 @@ import {
   nostrSecretKeySchema,
   assignmentAcceptedObservationPayloadSchema,
   assignmentRejectedObservationPayloadSchema,
+  artifactRefObservationPayloadSchema,
+  artifactRefProjectionRecordSchema,
+  type ArtifactRefProjectionRecord,
   runtimeIdentityContextSchema,
   runtimeAssignmentInspectionResponseSchema,
   type RuntimeAssignmentInspectionResponse,
@@ -153,12 +156,18 @@ import {
   type RuntimeAssignmentRevokeResponse,
   runnerJoinConfigSchema,
   type RuntimeNodeKind,
+  sourceChangeRefObservationPayloadSchema,
+  sourceChangeRefProjectionRecordSchema,
+  type SourceChangeRefProjectionRecord,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
   userNodeIdentityListResponseSchema,
   type UserNodeIdentityListResponse,
   userNodeIdentityRecordSchema,
   type UserNodeIdentityRecord,
+  wikiRefObservationPayloadSchema,
+  wikiRefProjectionRecordSchema,
+  type WikiRefProjectionRecord,
   secretRefSchema,
   sessionCancellationRequestRecordSchema,
   sessionCancellationResponseSchema,
@@ -378,6 +387,12 @@ const graphRevisionsRoot = path.join(graphRoot, "revisions");
 const nodeBindingsRoot = path.join(desiredRoot, "node-bindings");
 const runtimeIntentsRoot = path.join(desiredRoot, "runtime-intents");
 const observedRuntimesRoot = path.join(observedRoot, "runtimes");
+const observedArtifactRefsRoot = path.join(observedRoot, "artifact-refs");
+const observedSourceChangeRefsRoot = path.join(
+  observedRoot,
+  "source-change-refs"
+);
+const observedWikiRefsRoot = path.join(observedRoot, "wiki-refs");
 const runtimeRecoveryPoliciesRoot = path.join(
   desiredRoot,
   "runtime-recovery-policies"
@@ -2212,6 +2227,147 @@ export async function recordRuntimeAssignmentRejected(
   });
 }
 
+async function assertRegisteredObservationRunner(input: {
+  hostAuthorityPubkey: string;
+  runnerId: string;
+  runnerPubkey: string;
+}): Promise<RunnerRegistrationRecord> {
+  await assertCurrentHostAuthorityPubkey(input.hostAuthorityPubkey);
+  const registration = await requireRunnerRegistration(input.runnerId);
+
+  if (registration.publicKey !== input.runnerPubkey) {
+    throw new Error(
+      `Runner '${input.runnerId}' observation was signed by a different public key.`
+    );
+  }
+
+  return registration;
+}
+
+function observedArtifactRefRecordPath(input: {
+  artifactId: string;
+  nodeId: string;
+}): string {
+  return path.join(
+    observedArtifactRefsRoot,
+    `${input.nodeId}--${input.artifactId}.json`
+  );
+}
+
+function observedSourceChangeRefRecordPath(input: {
+  candidateId: string;
+  nodeId: string;
+}): string {
+  return path.join(
+    observedSourceChangeRefsRoot,
+    `${input.nodeId}--${input.candidateId}.json`
+  );
+}
+
+function observedWikiRefRecordPath(input: {
+  artifactId: string;
+  nodeId: string;
+}): string {
+  return path.join(
+    observedWikiRefsRoot,
+    `${input.nodeId}--${input.artifactId}.json`
+  );
+}
+
+export async function recordArtifactRefObservation(
+  input: unknown
+): Promise<ArtifactRefProjectionRecord> {
+  await initializeHostState();
+
+  const observation = artifactRefObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const record = artifactRefProjectionRecordSchema.parse({
+    artifactId: observation.artifactRef.artifactId,
+    artifactRef: observation.artifactRef,
+    graphId: observation.graphId,
+    hostAuthorityPubkey: observation.hostAuthorityPubkey,
+    nodeId: observation.nodeId,
+    projection: {
+      source: "observation_event",
+      updatedAt: observation.observedAt
+    },
+    runnerId: observation.runnerId,
+    runnerPubkey: observation.runnerPubkey
+  });
+
+  await writeJsonFileIfChanged(
+    observedArtifactRefRecordPath({
+      artifactId: record.artifactId,
+      nodeId: record.nodeId
+    }),
+    record
+  );
+  return record;
+}
+
+export async function recordSourceChangeRefObservation(
+  input: unknown
+): Promise<SourceChangeRefProjectionRecord> {
+  await initializeHostState();
+
+  const observation = sourceChangeRefObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const record = sourceChangeRefProjectionRecordSchema.parse({
+    artifactRefs: observation.artifactRefs,
+    candidateId: observation.candidateId,
+    graphId: observation.graphId,
+    hostAuthorityPubkey: observation.hostAuthorityPubkey,
+    nodeId: observation.nodeId,
+    projection: {
+      source: "observation_event",
+      updatedAt: observation.observedAt
+    },
+    runnerId: observation.runnerId,
+    runnerPubkey: observation.runnerPubkey,
+    status: observation.status
+  });
+
+  await writeJsonFileIfChanged(
+    observedSourceChangeRefRecordPath({
+      candidateId: record.candidateId,
+      nodeId: record.nodeId
+    }),
+    record
+  );
+  return record;
+}
+
+export async function recordWikiRefObservation(
+  input: unknown
+): Promise<WikiRefProjectionRecord> {
+  await initializeHostState();
+
+  const observation = wikiRefObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const record = wikiRefProjectionRecordSchema.parse({
+    artifactId: observation.artifactRef.artifactId,
+    artifactRef: observation.artifactRef,
+    graphId: observation.graphId,
+    hostAuthorityPubkey: observation.hostAuthorityPubkey,
+    nodeId: observation.nodeId,
+    projection: {
+      source: "observation_event",
+      updatedAt: observation.observedAt
+    },
+    runnerId: observation.runnerId,
+    runnerPubkey: observation.runnerPubkey
+  });
+
+  await writeJsonFileIfChanged(
+    observedWikiRefRecordPath({
+      artifactId: record.artifactId,
+      nodeId: record.nodeId
+    }),
+    record
+  );
+  return record;
+}
+
 export async function revokeRuntimeAssignment(input: {
   assignmentId: string;
   request?: RuntimeAssignmentRevokeRequest;
@@ -2245,14 +2401,88 @@ function assignmentProjectionSource(
     : "desired_state";
 }
 
+async function listArtifactRefProjectionRecords(): Promise<
+  ArtifactRefProjectionRecord[]
+> {
+  if (!(await pathExists(observedArtifactRefsRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedArtifactRefsRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        artifactRefProjectionRecordSchema.parse(
+          await readJsonFile(path.join(observedArtifactRefsRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.artifactId}`.localeCompare(
+      `${right.nodeId}--${right.artifactId}`
+    )
+  );
+}
+
+async function listSourceChangeRefProjectionRecords(): Promise<
+  SourceChangeRefProjectionRecord[]
+> {
+  if (!(await pathExists(observedSourceChangeRefsRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedSourceChangeRefsRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        sourceChangeRefProjectionRecordSchema.parse(
+          await readJsonFile(path.join(observedSourceChangeRefsRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.candidateId}`.localeCompare(
+      `${right.nodeId}--${right.candidateId}`
+    )
+  );
+}
+
+async function listWikiRefProjectionRecords(): Promise<WikiRefProjectionRecord[]> {
+  if (!(await pathExists(observedWikiRefsRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedWikiRefsRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        wikiRefProjectionRecordSchema.parse(
+          await readJsonFile(path.join(observedWikiRefsRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.artifactId}`.localeCompare(
+      `${right.nodeId}--${right.artifactId}`
+    )
+  );
+}
+
 export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapshot> {
   await initializeHostState();
 
   const authority = await ensureHostAuthorityMaterialized();
-  const [runnerList, assignments] = await Promise.all([
-    listRunnerRegistry(),
-    listRuntimeAssignmentRecords()
-  ]);
+  const [runnerList, assignments, artifactRefs, sourceChangeRefs, wikiRefs] =
+    await Promise.all([
+      listRunnerRegistry(),
+      listRuntimeAssignmentRecords(),
+      listArtifactRefProjectionRecords(),
+      listSourceChangeRefProjectionRecords(),
+      listWikiRefProjectionRecords()
+    ]);
   const hasStaleTrustedRunner = runnerList.runners.some(
     (runner) =>
       runner.registration.trustState === "trusted" &&
@@ -2260,6 +2490,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
   );
 
   return hostProjectionSnapshotSchema.parse({
+    artifactRefs,
     assignments: assignments.map((assignment) => ({
       assignmentId: assignment.assignmentId,
       graphId: assignment.graphId,
@@ -2298,7 +2529,9 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
       trustState: runner.registration.trustState
     })),
     schemaVersion: "1",
-    userConversations: []
+    sourceChangeRefs,
+    userConversations: [],
+    wikiRefs
   });
 }
 
@@ -4367,6 +4600,9 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(packageSourcesRoot),
     ensureDirectory(graphRevisionsRoot),
     ensureDirectory(observedRuntimesRoot),
+    ensureDirectory(observedArtifactRefsRoot),
+    ensureDirectory(observedSourceChangeRefsRoot),
+    ensureDirectory(observedWikiRefsRoot),
     ensureDirectory(observedRunnerHeartbeatRoot),
     ensureDirectory(runtimeRecoveryHistoryRoot),
     ensureDirectory(runtimeRecoveryControllersRoot),

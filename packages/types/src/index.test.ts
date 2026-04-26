@@ -418,6 +418,28 @@ describe("federated runtime contracts", () => {
       updatedAt: observedAt
     };
     const snapshot = hostProjectionSnapshotSchema.parse({
+      artifactRefs: [
+        {
+          artifactId: "artifact-alpha",
+          artifactRef: {
+            artifactId: "artifact-alpha",
+            artifactKind: "report_file",
+            backend: "git",
+            locator: {
+              branch: "artifact-artifact-alpha",
+              commit: "abc123",
+              path: "report.md"
+            },
+            status: "published"
+          },
+          graphId: "team-alpha",
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          projection,
+          runnerId: "runner-alpha",
+          runnerPubkey
+        }
+      ],
       assignments: [
         {
           assignmentId: "assignment-alpha",
@@ -445,6 +467,19 @@ describe("federated runtime contracts", () => {
         }
       ],
       schemaVersion: "1",
+      sourceChangeRefs: [
+        {
+          artifactRefs: [],
+          candidateId: "candidate-alpha",
+          graphId: "team-alpha",
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          projection,
+          runnerId: "runner-alpha",
+          runnerPubkey,
+          status: "pending_review"
+        }
+      ],
       userConversations: [
         {
           conversationId: "conv-alpha",
@@ -454,10 +489,34 @@ describe("federated runtime contracts", () => {
           unreadCount: 1,
           userNodeId: "user-main"
         }
+      ],
+      wikiRefs: [
+        {
+          artifactId: "wiki-alpha",
+          artifactRef: {
+            artifactId: "wiki-alpha",
+            artifactKind: "knowledge_summary",
+            backend: "wiki",
+            locator: {
+              nodeId: "worker-it",
+              path: "/wiki/summaries/working-context.md"
+            },
+            status: "published"
+          },
+          graphId: "team-alpha",
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          projection,
+          runnerId: "runner-alpha",
+          runnerPubkey
+        }
       ]
     });
 
+    expect(snapshot.artifactRefs[0]?.artifactId).toBe("artifact-alpha");
+    expect(snapshot.sourceChangeRefs[0]?.candidateId).toBe("candidate-alpha");
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
+    expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");
   });
 
   it("accepts Host Authority API responses and status summaries", () => {
