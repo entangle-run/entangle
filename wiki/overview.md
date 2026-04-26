@@ -42,12 +42,25 @@ closed:
 The repository is therefore no longer best described as "entering
 implementation" or as being in a control-plane-only stage.
 
+As of the 2026-04-26 federated-runtime pivot audit, the forward-looking product
+baseline is Entangle, with Local treated as the first deployment profile rather
+than the product identity. The current implementation is still materially
+local: Host writes injected runtime context, Docker runners share Host-managed
+volumes, user nodes are not stable signing runtimes, and Host derives much of
+its runtime projection by reading runner-local state. The active redesign pack
+under `references/221-federated-runtime-redesign-index.md` defines the required
+shift to Host Authority signing, generic runner registration, runtime
+assignments, signed observations, stable User Node identities, and
+projection-backed Studio/CLI surfaces.
+
 The most accurate current description is:
 
 - the architecture and contract layers are strong and largely stable;
 - the host and runner are already real local runtime components;
-- the remaining work is concentrated in a few major capability gaps rather
-  than in foundational uncertainty.
+- the remaining Local-era implementation is now subordinate to the federated
+  runtime pivot;
+- the largest gaps are Host-runner federation, stable user-node signing, and
+  projection state that does not depend on shared local filesystems.
 
 The contract-ownership layer is now also explicit:
 

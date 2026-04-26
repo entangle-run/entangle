@@ -2,6 +2,22 @@
 
 This directory is the canonical design corpus for Entangle.
 
+## Federated runtime pivot pack
+
+The current forward-looking architecture pack is
+[221-federated-runtime-redesign-index.md](221-federated-runtime-redesign-index.md).
+It supersedes the Local-only product framing for future implementation work and
+links the coordinated audit, target model, migration, and implementation
+planning files from `222-current-state-codebase-audit.md` through
+`231-implementation-slices-and-verification-plan.md`.
+
+The file numbers `221` and `222` now appear twice because the federated pivot
+handoff required exact filenames after the Local-era
+`221-source-history-replay-slice.md` and
+`222-wiki-repository-publication-slice.md` had already been created. Both sets
+remain intentional: the older files are Local implementation records; the new
+files are the active federated redesign pack.
+
 ## Reading order
 
 1. [00-executive-summary.md](00-executive-summary.md)

@@ -2650,3 +2650,19 @@ The runner remains the owner of wiki writes and local wiki snapshots. The new
 Host, shared host-client, CLI, and Studio surfaces publish only clean
 runner-owned repository state and preserve the remaining restore, promotion,
 merge, and replication work as explicit follow-up scope.
+
+## [2026-04-26] planning | Added federated runtime redesign pack
+
+Created the federated runtime pivot documentation pack from
+`references/221-federated-runtime-redesign-index.md` through
+`references/231-implementation-slices-and-verification-plan.md`. The pack
+records a fresh audit of the current Local implementation, the OpenCode
+reference shape, the target Host Authority and runner federation model, stable
+User Node identities, Nostr control/observe protocols, projection-backed Host
+state, Studio/CLI operator and user surfaces, migration from local assumptions,
+and a controlled implementation/verification plan.
+
+The durable baseline is now Entangle as the product, with Local as one
+deployment profile. Current Local docs and code remain valid implementation
+history and adapter behavior, but future runtime work should follow the
+federated pack before extending Local-only assumptions.
