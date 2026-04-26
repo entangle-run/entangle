@@ -372,6 +372,10 @@ export const runtimeArtifactPromotionResponseSchema = z.object({
   restore: runtimeArtifactRestoreRecordSchema
 });
 
+export const runtimeArtifactPromotionListResponseSchema = z.object({
+  promotions: z.array(runtimeArtifactPromotionRecordSchema)
+});
+
 export const runtimeMemoryPageKindSchema = z.enum([
   "schema",
   "summary",
@@ -632,6 +636,9 @@ export type RuntimeArtifactPromotionRecord = z.infer<
 >;
 export type RuntimeArtifactPromotionResponse = z.infer<
   typeof runtimeArtifactPromotionResponseSchema
+>;
+export type RuntimeArtifactPromotionListResponse = z.infer<
+  typeof runtimeArtifactPromotionListResponseSchema
 >;
 export type RuntimeMemoryPageKind = z.infer<typeof runtimeMemoryPageKindSchema>;
 export type RuntimeMemoryPageSummary = z.infer<typeof runtimeMemoryPageSummarySchema>;

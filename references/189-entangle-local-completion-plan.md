@@ -692,9 +692,12 @@ Current partial implementation:
   workspace through host API, shared host-client, CLI, and Studio controls when
   the operator supplies an approved `source_application` approval id scoped to
   the artifact/restore tuple;
+- artifact promotion attempts now have host API, shared host-client, CLI, and
+  Studio promotion-history inspection surfaces, including all-runtime and
+  per-artifact listing;
 - live OpenCode permission-to-approval flow, fallback/replication behavior
-  across publication targets, promotion-history inspection, wiki promotion, and
-  direct source-history replay workflows remain open.
+  across publication targets, wiki promotion, and direct source-history replay
+  workflows remain open.
 
 Acceptance:
 

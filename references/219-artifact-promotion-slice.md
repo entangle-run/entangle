@@ -21,9 +21,15 @@ workspace only with an approved, operation/resource-scoped approval.
 - Added `entangle host runtimes artifact-promote <nodeId> <artifactId>` to the
   CLI with `--restore-id`, `--approval-id`, `--overwrite`, `--promoted-by`,
   `--promotion-id`, `--reason`, and `--summary`.
+- Added persisted promotion-history inspection through
+  `GET /v1/runtimes/{nodeId}/artifact-promotions`,
+  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/promotions`, shared
+  host-client methods, and `entangle host runtimes artifact-promotions`.
 - Added Studio promotion controls in selected artifact detail. Studio selects
   the latest restored artifact workspace, requires an explicit approval id,
   keeps overwrite disabled by default, and posts through the shared host client.
+- Added Studio promotion-history presentation in selected artifact detail so
+  operators can inspect recent promotion attempts next to restore history.
 - Required an approved `source_application` approval scoped to resource
   `artifact:{artifactId}|{restoreId}` before promotion can write into the
   source workspace.
@@ -44,7 +50,6 @@ workspace only with an approved, operation/resource-scoped approval.
 
 ## Remaining Work
 
-- Promotion-history inspection.
 - Wiki restore/promotion behavior.
 - Replay/promotion flows that create source-history entries directly when the
   policy model calls for that.
@@ -56,6 +61,7 @@ Targeted and workspace verification passed:
 
 ```bash
 pnpm --filter @entangle/host-client test -- --runInBand
+pnpm --filter @entangle/host test -- --runInBand
 pnpm --filter @entangle/host-client typecheck
 pnpm --filter @entangle/cli test -- --runInBand
 pnpm --filter @entangle/cli typecheck

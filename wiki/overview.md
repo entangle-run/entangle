@@ -743,7 +743,8 @@ The current implementation-truth audit now lives in
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
   retryable target-aware source-history commit artifact publication plus
-  bounded artifact history/diff inspection and safe workspace restore for
+  bounded artifact history/diff inspection, safe workspace restore, and
+  approval-gated promotion with restore/promotion history inspection for
   materialized git artifacts, now including host-owned provisioning for
   selected non-primary `gitea_api` publication targets; the next git gaps are
   wiki promotion, direct source-history replay workflows, and explicit fallback

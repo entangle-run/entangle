@@ -88,6 +88,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactPromotionRecordSummary,
   projectRuntimeArtifactPromotionSummary,
   projectRuntimeArtifactRestoreRecordSummary,
   projectRuntimeArtifactRestoreSummary,
@@ -1866,6 +1867,37 @@ hostRuntimesCommand
           ? projectRuntimeArtifactPromotionSummary(response)
           : response
       );
+    }
+  );
+
+hostRuntimesCommand
+  .command("artifact-promotions")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--artifact-id <artifactId>", "Filter promotion records by artifact id.")
+  .option("--summary", "Print compact operator-oriented promotion summaries.")
+  .description("Inspect persisted runtime artifact promotion attempts.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        artifactId?: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = options.artifactId
+        ? await client.listRuntimeArtifactPromotionsForArtifact(
+            nodeId,
+            options.artifactId
+          )
+        : await client.listRuntimeArtifactPromotions(nodeId);
+
+      printJson({
+        promotions: options.summary
+          ? response.promotions.map(projectRuntimeArtifactPromotionRecordSummary)
+          : response.promotions
+      });
     }
   );
 

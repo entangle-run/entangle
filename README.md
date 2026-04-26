@@ -755,9 +755,10 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
-  source-history publication, and safe artifact restore model, especially
-  wiki promotion, direct source-history replay workflows, and replicated
-  fallback paths;
+  source-history publication, safe artifact restore, and approval-gated
+  promotion model with restore/promotion history inspection, especially wiki
+  promotion, direct source-history replay workflows, and replicated fallback
+  paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

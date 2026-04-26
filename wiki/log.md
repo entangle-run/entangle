@@ -2610,3 +2610,15 @@ The Studio control keeps overwrite disabled by default and remains host-first:
 the host validates the artifact/restore approval scope, restore workspace
 boundaries, unsafe paths, and target overwrite policy before mutating the node
 source workspace.
+
+## [2026-04-26] implementation | Added artifact promotion history inspection
+
+Extended `references/219-artifact-promotion-slice.md` and closed the persisted
+promotion-history inspection gap for Entangle Local artifact promotion. The host
+now exposes all-runtime and per-artifact promotion-attempt lists, the shared
+host client and CLI consume the same contracts, and Studio shows recent
+promotion attempts next to restore history in selected artifact detail.
+
+Promotion records remain runtime-local audit facts under
+`runtimeRoot/artifact-promotions`; inspection does not grant promotion rights
+or bypass the existing scoped `source_application` approval gate.

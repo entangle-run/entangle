@@ -47,6 +47,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactPromotionListResponseSchema,
   runtimeArtifactPromotionResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
@@ -4452,6 +4453,45 @@ describe("buildHostServer", () => {
           "utf8"
         )
       ).resolves.toContain("approval-artifact-promotion-alpha");
+
+      const sourceArtifactPromotionListResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/promotions"
+      });
+
+      expect(sourceArtifactPromotionListResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactPromotionListResponseSchema.parse(
+          sourceArtifactPromotionListResponse.json()
+        ).promotions
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            approvalId: "approval-artifact-promotion-alpha",
+            promotionId: "promotion-source-history-alpha"
+          })
+        ])
+      );
+
+      const allArtifactPromotionsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifact-promotions"
+      });
+
+      expect(allArtifactPromotionsResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactPromotionListResponseSchema.parse(
+          allArtifactPromotionsResponse.json()
+        ).promotions
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            artifactId: "source-source-history-source-change-turn-alpha",
+            promotionId: "promotion-source-history-alpha"
+          })
+        ])
+      );
 
       const repeatedPublishResponse = await server.inject({
         method: "POST",

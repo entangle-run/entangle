@@ -44,6 +44,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
+  runtimeArtifactPromotionListResponseSchema,
   runtimeArtifactPromotionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
@@ -451,6 +452,28 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.promotion.status).toBe("promoted");
+  });
+
+  it("accepts runtime artifact promotion list responses", () => {
+    const result = runtimeArtifactPromotionListResponseSchema.parse({
+      promotions: [
+        {
+          approvalId: "approval-promote-alpha",
+          artifactId: "source-source-history-alpha",
+          createdAt: "2026-04-24T00:02:00.000Z",
+          nodeId: "worker-it",
+          promotedFileCount: 1,
+          promotedPath: "/tmp/entangle/source",
+          promotionId: "promotion-source-alpha",
+          restoreId: "restore-source-alpha",
+          status: "promoted",
+          target: "source_workspace",
+          updatedAt: "2026-04-24T00:02:00.000Z"
+        }
+      ]
+    });
+
+    expect(result.promotions[0]?.promotionId).toBe("promotion-source-alpha");
   });
 });
 

@@ -1760,6 +1760,67 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses runtime artifact promotion history lists from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              promotions: [
+                {
+                  approvalId: "approval-promote-report",
+                  artifactId: "report-turn-001",
+                  createdAt: "2026-04-22T00:02:00.000Z",
+                  nodeId: "worker-it",
+                  promotedFileCount: 1,
+                  promotedPath: "/tmp/entangle-runner/source",
+                  promotionId: "promotion-report-turn-001",
+                  restoreId: "restore-report-turn-001",
+                  status: "promoted",
+                  target: "source_workspace",
+                  updatedAt: "2026-04-22T00:02:00.000Z"
+                }
+              ]
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.listRuntimeArtifactPromotionsForArtifact(
+        "worker-it",
+        "report-turn-001"
+      )
+    ).resolves.toMatchObject({
+      promotions: [
+        {
+          promotionId: "promotion-report-turn-001",
+          status: "promoted"
+        }
+      ]
+    });
+    await expect(
+      client.listRuntimeArtifactPromotions("worker-it")
+    ).resolves.toMatchObject({
+      promotions: [
+        {
+          artifactId: "report-turn-001"
+        }
+      ]
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/promotions",
+      "http://entangle-host.test/v1/runtimes/worker-it/artifact-promotions"
+    ]);
+  });
+
   it("parses runtime memory list and page responses from the host surface", async () => {
     const requests: string[] = [];
     const client = createHostClient({

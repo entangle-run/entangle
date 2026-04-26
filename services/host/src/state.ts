@@ -162,6 +162,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactPromotionListResponseSchema,
   runtimeArtifactPromotionRecordSchema,
   runtimeArtifactPromotionRequestSchema,
   runtimeArtifactPromotionResponseSchema,
@@ -177,6 +178,7 @@ import {
   type RuntimeArtifactDiffResponse,
   type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactPreviewResponse,
+  type RuntimeArtifactPromotionListResponse,
   type RuntimeArtifactPromotionRecord,
   type RuntimeArtifactPromotionRequest,
   type RuntimeArtifactPromotionResponse,
@@ -6370,6 +6372,51 @@ export async function listRuntimeArtifactRestoresForArtifact(input: {
   });
 }
 
+export async function listRuntimeArtifactPromotions(
+  nodeId: string
+): Promise<RuntimeArtifactPromotionListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeArtifactPromotionListResponseSchema.parse({
+    promotions: (
+      await listRuntimeArtifactPromotionRecords(context.workspace.runtimeRoot)
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  });
+}
+
+export async function listRuntimeArtifactPromotionsForArtifact(input: {
+  artifactId: string;
+  nodeId: string;
+}): Promise<RuntimeArtifactPromotionListResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+
+  if (
+    !artifacts.some(
+      (candidate) => candidate.ref.artifactId === input.artifactId
+    )
+  ) {
+    return null;
+  }
+
+  return runtimeArtifactPromotionListResponseSchema.parse({
+    promotions: (
+      await listRuntimeArtifactPromotionRecords(context.workspace.runtimeRoot)
+    )
+      .filter((promotion) => promotion.artifactId === input.artifactId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  });
+}
+
 export async function getRuntimeArtifactHistory(input: {
   artifactId: string;
   limit: number;
@@ -9162,6 +9209,28 @@ async function listRuntimeArtifactRestoreRecords(
     fileNames.map(async (fileName) =>
       runtimeArtifactRestoreRecordSchema.parse(
         await readJsonFile(path.join(restoresRoot, fileName))
+      )
+    )
+  );
+}
+
+async function listRuntimeArtifactPromotionRecords(
+  runtimeRoot: string
+): Promise<RuntimeArtifactPromotionRecord[]> {
+  const promotionsRoot = runtimeArtifactPromotionsRoot(runtimeRoot);
+
+  if (!(await pathExists(promotionsRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(promotionsRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      runtimeArtifactPromotionRecordSchema.parse(
+        await readJsonFile(path.join(promotionsRoot, fileName))
       )
     )
   );

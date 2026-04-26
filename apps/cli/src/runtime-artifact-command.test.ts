@@ -7,6 +7,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactPromotionRecordSummary,
   projectRuntimeArtifactPromotionSummary,
   projectRuntimeArtifactRestoreRecordSummary,
   projectRuntimeArtifactRestoreSummary,
@@ -366,6 +367,32 @@ describe("runtime-artifact-command", () => {
       restore: {
         restoreId: "restore-artifact-report"
       }
+    });
+  });
+
+  it("projects artifact promotion records for list summaries", () => {
+    expect(
+      projectRuntimeArtifactPromotionRecordSummary({
+        approvalId: "approval-promote-artifact-report",
+        artifactId: "artifact-report",
+        createdAt: "2026-04-24T10:04:00.000Z",
+        nodeId: "worker-it",
+        promotedFileCount: 2,
+        promotedPath: "/tmp/worker-it/source",
+        promotionId: "promotion-artifact-report",
+        restoreId: "restore-artifact-report",
+        status: "promoted",
+        target: "source_workspace",
+        updatedAt: "2026-04-24T10:04:00.000Z"
+      })
+    ).toMatchObject({
+      approvalId: "approval-promote-artifact-report",
+      artifactId: "artifact-report",
+      promotedFileCount: 2,
+      promotionId: "promotion-artifact-report",
+      restoreId: "restore-artifact-report",
+      status: "2 files promoted",
+      target: "source_workspace"
     });
   });
 });

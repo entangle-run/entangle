@@ -16,6 +16,7 @@ import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
+  RuntimeArtifactPromotionRecord,
   RuntimeArtifactPromotionResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeArtifactRestoreRecord,
@@ -334,5 +335,43 @@ export function projectRuntimeArtifactPromotionSummary(
             target: response.promotion.target
           },
     restore: projectRuntimeArtifactRestoreRecordSummary(response.restore)
+  };
+}
+
+export interface RuntimeArtifactCliPromotionRecordSummary {
+  approvalId: string;
+  artifactId: string;
+  createdAt: string;
+  promotedFileCount?: number;
+  promotedPath?: string;
+  promotionId: string;
+  restoreId: string;
+  status: string;
+  target: RuntimeArtifactPromotionRecord["target"];
+  unavailableReason?: string;
+  updatedAt: string;
+}
+
+export function projectRuntimeArtifactPromotionRecordSummary(
+  promotion: RuntimeArtifactPromotionRecord
+): RuntimeArtifactCliPromotionRecordSummary {
+  return {
+    approvalId: promotion.approvalId,
+    artifactId: promotion.artifactId,
+    createdAt: promotion.createdAt,
+    ...(promotion.promotedFileCount !== undefined
+      ? { promotedFileCount: promotion.promotedFileCount }
+      : {}),
+    ...(promotion.promotedPath
+      ? { promotedPath: promotion.promotedPath }
+      : {}),
+    promotionId: promotion.promotionId,
+    restoreId: promotion.restoreId,
+    status: formatRuntimeArtifactPromotionStatus(promotion),
+    target: promotion.target,
+    ...(promotion.unavailableReason
+      ? { unavailableReason: promotion.unavailableReason }
+      : {}),
+    updatedAt: promotion.updatedAt
   };
 }

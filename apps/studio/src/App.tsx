@@ -43,6 +43,7 @@ import type {
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactInspectionResponse,
+  RuntimeArtifactPromotionRecord,
   RuntimeArtifactPromotionResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeArtifactRestoreRecord,
@@ -494,6 +495,9 @@ export function App() {
   >([]);
   const [selectedArtifactPromotion, setSelectedArtifactPromotion] =
     useState<RuntimeArtifactPromotionResponse | null>(null);
+  const [selectedArtifactPromotions, setSelectedArtifactPromotions] = useState<
+    RuntimeArtifactPromotionRecord[]
+  >([]);
   const [artifactPromotionApprovalId, setArtifactPromotionApprovalId] =
     useState("");
   const [artifactPromotionOverwrite, setArtifactPromotionOverwrite] =
@@ -866,13 +870,15 @@ export function App() {
   const loadSelectedArtifactInspection = useCallback(
     async (nodeId: string, artifactId: string) => {
       try {
-        const [inspection, preview, history, diff, restores] = await Promise.all([
-          client.getRuntimeArtifact(nodeId, artifactId),
-          client.getRuntimeArtifactPreview(nodeId, artifactId),
-          client.getRuntimeArtifactHistory(nodeId, artifactId, { limit: 8 }),
-          client.getRuntimeArtifactDiff(nodeId, artifactId),
-          client.listRuntimeArtifactRestoresForArtifact(nodeId, artifactId)
-        ]);
+        const [inspection, preview, history, diff, restores, promotions] =
+          await Promise.all([
+            client.getRuntimeArtifact(nodeId, artifactId),
+            client.getRuntimeArtifactPreview(nodeId, artifactId),
+            client.getRuntimeArtifactHistory(nodeId, artifactId, { limit: 8 }),
+            client.getRuntimeArtifactDiff(nodeId, artifactId),
+            client.listRuntimeArtifactRestoresForArtifact(nodeId, artifactId),
+            client.listRuntimeArtifactPromotionsForArtifact(nodeId, artifactId)
+          ]);
 
         if (
           selectedRuntimeIdRef.current !== nodeId ||
@@ -887,6 +893,7 @@ export function App() {
           setSelectedArtifactHistory(history);
           setSelectedArtifactDiff(diff);
           setSelectedArtifactRestores(restores.restores);
+          setSelectedArtifactPromotions(promotions.promotions);
           setArtifactDetailError(null);
         });
       } catch (caught: unknown) {
@@ -905,6 +912,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionApprovalId("");
           setArtifactPromotionOverwrite(false);
           setArtifactPromotionError(null);
@@ -1186,6 +1194,10 @@ export function App() {
             client.listRuntimeArtifactRestoresForArtifact(
               nodeId,
               currentSelectedArtifactId
+            ),
+            client.listRuntimeArtifactPromotionsForArtifact(
+              nodeId,
+              currentSelectedArtifactId
             )
           ])
         )
@@ -1195,6 +1207,7 @@ export function App() {
     const selectedArtifactHistoryResult = selectedArtifactResults?.[2] ?? null;
     const selectedArtifactDiffResult = selectedArtifactResults?.[3] ?? null;
     const selectedArtifactRestoresResult = selectedArtifactResults?.[4] ?? null;
+    const selectedArtifactPromotionsResult = selectedArtifactResults?.[5] ?? null;
     const currentSelectedTurnId = selectedTurnId;
     const shouldRefreshSelectedTurn =
       currentSelectedTurnId !== null &&
@@ -1369,6 +1382,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionApprovalId("");
           setArtifactPromotionOverwrite(false);
           setArtifactPromotionError(null);
@@ -1383,6 +1397,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionApprovalId("");
           setArtifactPromotionOverwrite(false);
           setArtifactPromotionError(null);
@@ -1393,13 +1408,17 @@ export function App() {
           selectedArtifactPreviewResult?.status === "fulfilled" &&
           selectedArtifactHistoryResult?.status === "fulfilled" &&
           selectedArtifactDiffResult?.status === "fulfilled" &&
-          selectedArtifactRestoresResult?.status === "fulfilled"
+          selectedArtifactRestoresResult?.status === "fulfilled" &&
+          selectedArtifactPromotionsResult?.status === "fulfilled"
         ) {
           setSelectedArtifactInspection(selectedArtifactResult.value);
           setSelectedArtifactPreview(selectedArtifactPreviewResult.value);
           setSelectedArtifactHistory(selectedArtifactHistoryResult.value);
           setSelectedArtifactDiff(selectedArtifactDiffResult.value);
           setSelectedArtifactRestores(selectedArtifactRestoresResult.value.restores);
+          setSelectedArtifactPromotions(
+            selectedArtifactPromotionsResult.value.promotions
+          );
           setArtifactDetailError(null);
         } else if (selectedArtifactResult?.status === "rejected") {
           setSelectedArtifactInspection(null);
@@ -1409,6 +1428,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
@@ -1424,6 +1444,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
@@ -1439,6 +1460,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
@@ -1454,6 +1476,7 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
@@ -1469,11 +1492,28 @@ export function App() {
           setSelectedArtifactRestore(null);
           setSelectedArtifactRestores([]);
           setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
           setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactRestoresResult.reason,
               "Unknown error while loading artifact restore history."
+            )
+          );
+        } else if (selectedArtifactPromotionsResult?.status === "rejected") {
+          setSelectedArtifactInspection(null);
+          setSelectedArtifactPreview(null);
+          setSelectedArtifactHistory(null);
+          setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
+          setSelectedArtifactRestores([]);
+          setSelectedArtifactPromotion(null);
+          setSelectedArtifactPromotions([]);
+          setArtifactPromotionError(null);
+          setArtifactDetailError(
+            normalizeError(
+              selectedArtifactPromotionsResult.reason,
+              "Unknown error while loading artifact promotion history."
             )
           );
         }
@@ -1493,6 +1533,7 @@ export function App() {
         setSelectedArtifactRestore(null);
         setSelectedArtifactRestores([]);
         setSelectedArtifactPromotion(null);
+        setSelectedArtifactPromotions([]);
         setArtifactPromotionApprovalId("");
         setArtifactPromotionOverwrite(false);
         setArtifactPromotionError(null);
@@ -2003,6 +2044,7 @@ export function App() {
       setSelectedArtifactRestore(null);
       setSelectedArtifactRestores([]);
       setSelectedArtifactPromotion(null);
+      setSelectedArtifactPromotions([]);
       setArtifactPromotionApprovalId("");
       setArtifactPromotionOverwrite(false);
       setArtifactPromotionError(null);
@@ -2281,6 +2323,11 @@ export function App() {
         setSelectedArtifactDiff(null);
         setSelectedArtifactRestore(null);
         setSelectedArtifactRestores([]);
+        setSelectedArtifactPromotion(null);
+        setSelectedArtifactPromotions([]);
+        setArtifactPromotionApprovalId("");
+        setArtifactPromotionOverwrite(false);
+        setArtifactPromotionError(null);
         setArtifactError(null);
         setArtifactDetailError(null);
       });
@@ -2396,6 +2443,14 @@ export function App() {
       startTransition(() => {
         setSelectedArtifactPromotion(response);
         setSelectedArtifactInspection({ artifact: response.artifact });
+        setSelectedArtifactPromotions((promotions) => [
+          response.promotion,
+          ...promotions.filter(
+            (promotion) =>
+              promotion.promotionId !== response.promotion.promotionId ||
+              promotion.updatedAt !== response.promotion.updatedAt
+          )
+        ]);
         setSelectedArtifactRestores((restores) => [
           response.restore,
           ...restores.filter(
@@ -2825,6 +2880,7 @@ export function App() {
       setSelectedArtifactRestore(null);
       setSelectedArtifactRestores([]);
       setSelectedArtifactPromotion(null);
+      setSelectedArtifactPromotions([]);
       setArtifactPromotionApprovalId("");
       setArtifactPromotionOverwrite(false);
       setArtifactPromotionError(null);
@@ -2884,6 +2940,7 @@ export function App() {
     setSelectedArtifactRestore(null);
     setSelectedArtifactRestores([]);
     setSelectedArtifactPromotion(null);
+    setSelectedArtifactPromotions([]);
     setArtifactPromotionApprovalId("");
     setArtifactPromotionOverwrite(false);
     setArtifactPromotionError(null);
@@ -6061,6 +6118,29 @@ export function App() {
                                 </div>
                               ) : null}
                             </dl>
+                          ) : null}
+
+                          {selectedArtifactPromotions.length > 0 ? (
+                            <ul className="detail-list">
+                              {selectedArtifactPromotions
+                                .slice(0, 4)
+                                .map((promotion, index) => (
+                                  <li
+                                    key={`${promotion.promotionId}-${promotion.updatedAt}-${index}`}
+                                  >
+                                    {promotion.promotionId} ·{" "}
+                                    {formatRuntimeArtifactPromotionStatus(
+                                      promotion
+                                    )}{" "}
+                                    · {promotion.updatedAt}
+                                  </li>
+                                ))}
+                            </ul>
+                          ) : selectedArtifactInspection.artifact.ref.backend ===
+                            "git" ? (
+                            <div className="inline-empty-state">
+                              <p>No promotion attempts recorded.</p>
+                            </div>
                           ) : null}
                         </div>
 

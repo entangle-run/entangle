@@ -37,6 +37,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactPromotionListResponseSchema,
   runtimeArtifactPromotionRequestSchema,
   runtimeArtifactPromotionResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
@@ -104,6 +105,7 @@ import {
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeArtifactPreviewResponse,
+  type RuntimeArtifactPromotionListResponse,
   type RuntimeArtifactPromotionRequest,
   type RuntimeArtifactPromotionResponse,
   type RuntimeArtifactRestoreListResponse,
@@ -706,6 +708,27 @@ export function createHostClient(options: HostClientOptions) {
           `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/restores`
         ),
         runtimeArtifactRestoreListResponseSchema
+      );
+    },
+
+    async listRuntimeArtifactPromotions(
+      nodeId: string
+    ): Promise<RuntimeArtifactPromotionListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/artifact-promotions`),
+        runtimeArtifactPromotionListResponseSchema
+      );
+    },
+
+    async listRuntimeArtifactPromotionsForArtifact(
+      nodeId: string,
+      artifactId: string
+    ): Promise<RuntimeArtifactPromotionListResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/promotions`
+        ),
+        runtimeArtifactPromotionListResponseSchema
       );
     },
 
