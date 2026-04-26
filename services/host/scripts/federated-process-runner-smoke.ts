@@ -20,6 +20,7 @@ import {
   runtimeAssignmentOfferResponseSchema,
   runtimeContextInspectionResponseSchema,
   sessionRecordSchema,
+  userNodeConversationResponseSchema,
   userNodeMessagePublishResponseSchema,
   type RunnerJoinConfig
 } from "@entangle/types";
@@ -1254,6 +1255,19 @@ async function main(): Promise<void> {
       "user-node-projection",
       `user=${projectedUserConversation.userNodeId}; peer=${projectedUserConversation.peerNodeId}`
     );
+    const userConversationDetail = userNodeConversationResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+      })
+    );
+    assertCondition(
+      userConversationDetail.messages.some(
+        (message) => message.eventId === userMessage.eventId
+      ),
+      "User Node conversation detail must include the published User Node message."
+    );
+    printPass("user-node-message-history", userMessage.conversationId);
 
     const reviewerUserMessage = userNodeMessagePublishResponseSchema.parse(
       await hostRequest({
@@ -1363,6 +1377,23 @@ async function main(): Promise<void> {
     printPass(
       "reviewer-user-node-projection",
       `user=${projectedReviewerUserConversation.userNodeId}; peer=${projectedReviewerUserConversation.peerNodeId}`
+    );
+    const reviewerUserConversationDetail =
+      userNodeConversationResponseSchema.parse(
+        await hostRequest({
+          baseUrl: hostBaseUrl,
+          path: `/v1/user-nodes/reviewer-user/inbox/${reviewerUserMessage.conversationId}`
+        })
+      );
+    assertCondition(
+      reviewerUserConversationDetail.messages.some(
+        (message) => message.eventId === reviewerUserMessage.eventId
+      ),
+      "Reviewer User Node conversation detail must include the published User Node message."
+    );
+    printPass(
+      "reviewer-user-node-message-history",
+      reviewerUserMessage.conversationId
     );
 
     runGit(["init", "--bare", path.join(tempRoot, "git", "smoke.git")]);

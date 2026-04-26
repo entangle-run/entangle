@@ -28,6 +28,37 @@ export const userNodeInboxResponseSchema = z.object({
   userNodeId: identifierSchema
 });
 
+export const userNodeMessageDirectionSchema = z.enum(["inbound", "outbound"]);
+
+export const userNodeMessageRecordSchema = z.object({
+  artifactRefs: z.array(artifactRefSchema).default([]),
+  conversationId: identifierSchema,
+  createdAt: nonEmptyStringSchema,
+  direction: userNodeMessageDirectionSchema,
+  eventId: nostrEventIdSchema,
+  fromNodeId: identifierSchema,
+  fromPubkey: nostrPublicKeySchema,
+  messageType: nonEmptyStringSchema,
+  peerNodeId: identifierSchema,
+  publishedRelays: z.array(nonEmptyStringSchema).default([]),
+  relayUrls: z.array(nonEmptyStringSchema).default([]),
+  schemaVersion: z.literal("1"),
+  sessionId: identifierSchema,
+  summary: nonEmptyStringSchema,
+  toNodeId: identifierSchema,
+  toPubkey: nostrPublicKeySchema,
+  turnId: identifierSchema,
+  userNodeId: identifierSchema
+});
+
+export const userNodeConversationResponseSchema = z.object({
+  conversation: userConversationProjectionRecordSchema.optional(),
+  conversationId: identifierSchema,
+  generatedAt: nonEmptyStringSchema,
+  messages: z.array(userNodeMessageRecordSchema).default([]),
+  userNodeId: identifierSchema
+});
+
 export const userNodeMessagePublishTypeSchema = z.enum([
   "task.request",
   "question",
@@ -86,6 +117,15 @@ export type UserNodeIdentityInspectionResponse = z.infer<
   typeof userNodeIdentityInspectionResponseSchema
 >;
 export type UserNodeInboxResponse = z.infer<typeof userNodeInboxResponseSchema>;
+export type UserNodeConversationResponse = z.infer<
+  typeof userNodeConversationResponseSchema
+>;
+export type UserNodeMessageDirection = z.infer<
+  typeof userNodeMessageDirectionSchema
+>;
+export type UserNodeMessageRecord = z.infer<
+  typeof userNodeMessageRecordSchema
+>;
 export type UserNodeMessagePublishRequest = z.input<
   typeof userNodeMessagePublishRequestSchema
 >;

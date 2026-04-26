@@ -100,10 +100,12 @@ import {
   resolvePrimaryGitRepositoryTarget,
   secretRefSchema,
   userInteractionGatewayRecordSchema,
+  userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeIdentityRecordSchema,
   userNodeInboxResponseSchema,
+  userNodeMessageRecordSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
 } from "./index.js";
@@ -288,6 +290,36 @@ describe("federated runtime contracts", () => {
         userNodeId: "user-main"
       }).conversations[0]?.conversationId
     ).toBe("conversation-alpha");
+
+    const messageRecord = userNodeMessageRecordSchema.parse({
+      artifactRefs: [],
+      conversationId: "conversation-alpha",
+      createdAt: observedAt,
+      direction: "outbound",
+      eventId:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      fromNodeId: "user-main",
+      fromPubkey: userNodePubkey,
+      messageType: "question",
+      peerNodeId: "worker-it",
+      publishedRelays: ["ws://localhost:7777"],
+      relayUrls: ["ws://localhost:7777"],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      summary: "Check the build.",
+      toNodeId: "worker-it",
+      toPubkey: runnerPubkey,
+      turnId: "turn-alpha",
+      userNodeId: "user-main"
+    });
+    expect(
+      userNodeConversationResponseSchema.parse({
+        conversationId: "conversation-alpha",
+        generatedAt: observedAt,
+        messages: [messageRecord],
+        userNodeId: "user-main"
+      }).messages[0]?.summary
+    ).toBe("Check the build.");
   });
 
   it("accepts signed User Node message publish contracts", () => {

@@ -3149,3 +3149,27 @@ responses, published signed messages from both User Nodes to the builder,
 asserted distinct User Node pubkeys, verified both sessions/conversations in
 the agent runner state, projected both User Node conversations through Host,
 and checked Host/agent-runner/two-User-runner filesystem isolation.
+
+## [2026-04-26] implementation | Added User Node outbound message history
+
+Added `references/261-user-node-message-history-slice.md`. Host now records
+outbound User Node messages published through `/v1/user-nodes/:nodeId/messages`
+under observed state and exposes them through
+`/v1/user-nodes/:nodeId/inbox/:conversationId`.
+
+The shared host client exposes `getUserNodeConversation()`, CLI `inbox show`
+uses the conversation detail endpoint, and the Human Interface Runtime renders
+recorded outbound messages for the selected thread. This is intentionally the
+first outbox/history subset; inbound agent-to-user message records, delivery
+state, approval controls, and artifact review remain separate work.
+
+Focused typechecks, focused tests, package lints, and
+`pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000`
+passed after the change. The process smoke now verifies outbound message
+history for both User Nodes and preserves Host/runner/User-runner filesystem
+isolation.
+
+The smoke also exposed a runtime projection race where an older `starting`
+observation could overwrite a newer `running` observation. Host runtime-status
+observation writes are now serialized and stale startup observations are ignored
+when a current running projection is already present.

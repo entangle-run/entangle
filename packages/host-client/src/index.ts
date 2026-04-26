@@ -92,6 +92,7 @@ import {
   sessionLaunchRequestSchema,
   sessionLaunchResponseSchema,
   sessionListResponseSchema,
+  userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeInboxResponseSchema,
@@ -189,6 +190,7 @@ import {
   type SessionLaunchRequest,
   type SessionLaunchResponse,
   type SessionListResponse,
+  type UserNodeConversationResponse,
   type UserNodeIdentityInspectionResponse,
   type UserNodeIdentityListResponse,
   type UserNodeInboxResponse,
@@ -439,6 +441,18 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}/inbox`),
         userNodeInboxResponseSchema
+      );
+    },
+
+    async getUserNodeConversation(
+      nodeId: string,
+      conversationId: string
+    ): Promise<UserNodeConversationResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/user-nodes/${nodeId}/inbox/${conversationId}`
+        ),
+        userNodeConversationResponseSchema
       );
     },
 

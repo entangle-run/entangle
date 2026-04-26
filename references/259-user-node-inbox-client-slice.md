@@ -101,6 +101,8 @@ Verification record:
 - follow-up multi-user process smoke passed with two User Node runner
   processes, two User Client state checks, and two signed publishes with
   distinct User Node pubkeys.
+- follow-up message-history slice adds conversation detail records for outbound
+  User Node messages and renders them in the User Client.
 
 ## Migration/Compatibility Notes
 

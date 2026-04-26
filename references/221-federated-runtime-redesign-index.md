@@ -61,6 +61,7 @@ same-machine slice records.
 - [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
 - [259-user-node-inbox-client-slice.md](259-user-node-inbox-client-slice.md)
 - [260-multi-user-human-runtime-smoke-slice.md](260-multi-user-human-runtime-smoke-slice.md)
+- [261-user-node-message-history-slice.md](261-user-node-message-history-slice.md)
 
 ## Audited Scope
 
@@ -119,8 +120,9 @@ The repository is not fully federated:
   Nodes, and Host projection can expose the runtime's `clientUrl`;
 - user nodes have stable identities, a User Node-specific inbox API, projected
   conversation surfaces, and a first usable runner-served User Client with
-  thread selection and message publishing, but durable per-message inbox/outbox,
-  artifact review, and approval workflow migration are still incomplete;
+  thread selection, outbound message history, and message publishing, but
+  inbound agent-to-user message history, artifact review, and approval workflow
+  migration are still incomplete;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
@@ -241,7 +243,7 @@ Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
 follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
-The next blocking implementation areas are durable per-message inbox/outbox,
-approval/artifact review in the User Client, replacing remaining deep
+The next blocking implementation areas are inbound agent-to-user message
+history, approval/artifact review in the User Client, replacing remaining deep
 filesystem-backed runtime inspection paths, and turning the process smoke into
 the full multi-machine distributed proof.

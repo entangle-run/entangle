@@ -165,14 +165,20 @@ import {
   type SourceChangeRefProjectionRecord,
   sessionUpdatedObservationPayloadSchema,
   turnUpdatedObservationPayloadSchema,
+  type ParsedUserNodeMessagePublishRequest,
+  type UserNodeConversationResponse,
+  userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
   userNodeIdentityListResponseSchema,
   type UserNodeIdentityListResponse,
   userNodeIdentityRecordSchema,
+  userNodeMessageRecordSchema,
   userConversationProjectionRecordSchema,
   type UserConversationProjectionRecord,
   type UserNodeIdentityRecord,
+  type UserNodeMessagePublishResponse,
+  type UserNodeMessageRecord,
   wikiRefObservationPayloadSchema,
   wikiRefProjectionRecordSchema,
   type WikiRefProjectionRecord,
@@ -423,6 +429,10 @@ const observedConversationActivityRoot = path.join(
   observedRoot,
   "conversation-activity"
 );
+const observedUserNodeMessagesRoot = path.join(
+  observedRoot,
+  "user-node-messages"
+);
 const observedRunnerTurnActivityRoot = path.join(
   observedRoot,
   "runner-turn-activity"
@@ -438,6 +448,7 @@ const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
+let runtimeStatusObservationQueue: Promise<void> = Promise.resolve();
 const defaultHostAuthorityKeyRef = "secret://host-authority/main";
 const runtimeContextFileName = "effective-runtime-context.json";
 const runnerJoinConfigFileName = "runner-join.json";
@@ -2739,6 +2750,37 @@ export async function recordWikiRefObservation(
 export async function recordRuntimeStatusObservation(
   input: unknown
 ): Promise<ObservedRuntimeRecord> {
+  const queued = runtimeStatusObservationQueue.then(() =>
+    recordRuntimeStatusObservationInner(input)
+  );
+
+  runtimeStatusObservationQueue = queued.then(
+    () => undefined,
+    () => undefined
+  );
+
+  return queued;
+}
+
+function shouldIgnoreRuntimeStatusObservation(input: {
+  existing: ObservedRuntimeRecord;
+  nextObservedAt: string;
+  nextObservedState: RuntimeObservedState;
+}): boolean {
+  if (input.nextObservedAt < input.existing.lastSeenAt) {
+    return true;
+  }
+
+  return (
+    input.nextObservedAt === input.existing.lastSeenAt &&
+    input.existing.observedState === "running" &&
+    input.nextObservedState === "starting"
+  );
+}
+
+async function recordRuntimeStatusObservationInner(
+  input: unknown
+): Promise<ObservedRuntimeRecord> {
   await initializeHostState();
 
   const observation = runtimeStatusObservationPayloadSchema.parse(input);
@@ -2746,6 +2788,18 @@ export async function recordRuntimeStatusObservation(
   const existingObservedRecord = await readObservedRuntimeRecord(
     observation.nodeId
   );
+
+  if (
+    existingObservedRecord &&
+    shouldIgnoreRuntimeStatusObservation({
+      existing: existingObservedRecord,
+      nextObservedAt: observation.observedAt,
+      nextObservedState: observation.observedState
+    })
+  ) {
+    return existingObservedRecord;
+  }
+
   const graphRevisionId =
     observation.graphRevisionId ?? existingObservedRecord?.graphRevisionId;
 
@@ -3220,6 +3274,127 @@ export async function getUserNodeIdentity(
   return userNodeIdentityInspectionResponseSchema.parse({
     gateways: [],
     userNode
+  });
+}
+
+function observedUserNodeMessageRecordPath(input: {
+  eventId: string;
+  userNodeId: string;
+}): string {
+  return path.join(
+    observedUserNodeMessagesRoot,
+    `${input.userNodeId}--${input.eventId}.json`
+  );
+}
+
+async function listUserNodeMessageRecords(input: {
+  conversationId?: string;
+  userNodeId: string;
+}): Promise<UserNodeMessageRecord[]> {
+  await initializeHostState();
+
+  if (!(await pathExists(observedUserNodeMessagesRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedUserNodeMessagesRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        userNodeMessageRecordSchema.parse(
+          await readJsonFile(path.join(observedUserNodeMessagesRoot, entry))
+        )
+      )
+  );
+
+  return records
+    .filter(
+      (record) =>
+        record.userNodeId === input.userNodeId &&
+        (!input.conversationId ||
+          record.conversationId === input.conversationId)
+    )
+    .sort((left, right) => {
+      const timeOrder = left.createdAt.localeCompare(right.createdAt);
+
+      if (timeOrder !== 0) {
+        return timeOrder;
+      }
+
+      return left.eventId.localeCompare(right.eventId);
+    });
+}
+
+export async function recordUserNodePublishedMessage(input: {
+  recordedAt?: string;
+  request: ParsedUserNodeMessagePublishRequest;
+  response: UserNodeMessagePublishResponse;
+}): Promise<UserNodeMessageRecord> {
+  await initializeHostState();
+
+  const record = userNodeMessageRecordSchema.parse({
+    artifactRefs: input.request.artifactRefs,
+    conversationId: input.response.conversationId,
+    createdAt: input.recordedAt ?? nowIsoString(),
+    direction: "outbound",
+    eventId: input.response.eventId,
+    fromNodeId: input.response.fromNodeId,
+    fromPubkey: input.response.fromPubkey,
+    messageType: input.response.messageType,
+    peerNodeId: input.response.targetNodeId,
+    publishedRelays: input.response.publishedRelays,
+    relayUrls: input.response.relayUrls,
+    schemaVersion: "1",
+    sessionId: input.response.sessionId,
+    summary: input.request.summary,
+    toNodeId: input.response.targetNodeId,
+    toPubkey: input.response.toPubkey,
+    turnId: input.response.turnId,
+    userNodeId: input.response.fromNodeId
+  });
+
+  await writeJsonFileIfChanged(
+    observedUserNodeMessageRecordPath({
+      eventId: record.eventId,
+      userNodeId: record.userNodeId
+    }),
+    record
+  );
+
+  return record;
+}
+
+export async function getUserNodeConversation(
+  nodeId: string,
+  conversationId: string
+): Promise<UserNodeConversationResponse | undefined> {
+  await initializeHostState();
+
+  const [inspection, projection, messages] = await Promise.all([
+    getUserNodeIdentity(nodeId),
+    getHostProjectionSnapshot(),
+    listUserNodeMessageRecords({
+      conversationId,
+      userNodeId: nodeId
+    })
+  ]);
+
+  if (!inspection) {
+    return undefined;
+  }
+
+  const conversation = projection.userConversations.find(
+    (candidate) =>
+      candidate.userNodeId === nodeId &&
+      candidate.conversationId === conversationId
+  );
+
+  return userNodeConversationResponseSchema.parse({
+    ...(conversation ? { conversation } : {}),
+    conversationId,
+    generatedAt: nowIsoString(),
+    messages,
+    userNodeId: nodeId
   });
 }
 
@@ -5262,6 +5437,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(gitRepositoryTargetsRoot),
     ensureDirectory(observedRunnerTurnActivityRoot),
     ensureDirectory(observedSessionActivityRoot),
+    ensureDirectory(observedUserNodeMessagesRoot),
     ensureDirectory(reconciliationHistoryRoot),
     ensureDirectory(path.join(observedRoot, "health")),
     ensureDirectory(controlPlaneTraceRoot),

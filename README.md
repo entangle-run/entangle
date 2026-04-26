@@ -131,9 +131,9 @@ This repository currently contains:
 - stable User Node identities that can be assigned to `human_interface`
   runners, portable User Node bootstrap bundles, a runner-served Human
   Interface Runtime/User Client with `/health`, `/api/state`, projected
-  conversation list, selected-thread metadata, and Host-backed message
-  publishing, plus projection of the User Client endpoint through Host, CLI,
-  and Studio;
+  conversation list, selected-thread metadata, recorded outbound message
+  history, and Host-backed message publishing, plus projection of the User
+  Client endpoint through Host, CLI, and Studio;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
   Nostr public keys are injected as non-secret route metadata, and runner turn
   requests now receive a bounded peer-route summary for controlled

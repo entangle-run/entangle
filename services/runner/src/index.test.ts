@@ -470,6 +470,42 @@ describe("runner runtime context", () => {
         }
 
         if (
+          request.method === "GET" &&
+          request.url === "/v1/user-nodes/user-main/inbox/conversation-alpha"
+        ) {
+          response.end(
+            JSON.stringify({
+              conversationId: "conversation-alpha",
+              generatedAt: "2026-04-26T12:03:00.000Z",
+              messages: [
+                {
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:01:00.000Z",
+                  direction: "outbound",
+                  eventId:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  fromNodeId: "user-main",
+                  fromPubkey: runnerPublicKey,
+                  messageType: "question",
+                  peerNodeId: "worker-it",
+                  publishedRelays: ["ws://strfry:7777"],
+                  relayUrls: ["ws://strfry:7777"],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Previous user message.",
+                  toNodeId: "worker-it",
+                  toPubkey: remotePublicKey,
+                  turnId: "turn-alpha",
+                  userNodeId: "user-main"
+                }
+              ],
+              userNodeId: "user-main"
+            })
+          );
+          return;
+        }
+
+        if (
           request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
@@ -568,7 +604,9 @@ describe("runner runtime context", () => {
       const pageResponse = await fetch(
         new URL("/?conversationId=conversation-alpha", handle.clientUrl)
       );
-      expect(await pageResponse.text()).toContain("conversation-alpha");
+      const pageBody = await pageResponse.text();
+      expect(pageBody).toContain("conversation-alpha");
+      expect(pageBody).toContain("Previous user message.");
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
         body: new URLSearchParams({

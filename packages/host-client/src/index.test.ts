@@ -195,6 +195,36 @@ describe("createHostClient", () => {
             generatedAt: "2026-04-26T12:00:00.000Z",
             userNodeId: "user-main"
           };
+        } else if (
+          url.endsWith("/v1/user-nodes/user-main/inbox/conversation-alpha")
+        ) {
+          body = {
+            conversationId: "conversation-alpha",
+            generatedAt: "2026-04-26T12:00:00.000Z",
+            messages: [
+              {
+                conversationId: "conversation-alpha",
+                createdAt: "2026-04-26T12:00:00.000Z",
+                direction: "outbound",
+                eventId: publishResponse.eventId,
+                fromNodeId: "user-main",
+                fromPubkey: userNode.publicKey,
+                messageType: "approval.response",
+                peerNodeId: "worker-it",
+                publishedRelays: ["ws://localhost:7777"],
+                relayUrls: ["ws://localhost:7777"],
+                schemaVersion: "1",
+                sessionId: "session-alpha",
+                summary: "Approved.",
+                toNodeId: "worker-it",
+                toPubkey:
+                  "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                turnId: "turn-alpha",
+                userNodeId: "user-main"
+              }
+            ],
+            userNodeId: "user-main"
+          };
         } else {
           body = {
             gateways: [],
@@ -233,6 +263,15 @@ describe("createHostClient", () => {
       ]
     });
     await expect(
+      client.getUserNodeConversation("user-main", "conversation-alpha")
+    ).resolves.toMatchObject({
+      messages: [
+        {
+          summary: "Approved."
+        }
+      ]
+    });
+    await expect(
       client.publishUserNodeMessage("user-main", {
         approval: {
           approvalId: "approval-alpha",
@@ -253,6 +292,7 @@ describe("createHostClient", () => {
       "http://entangle-host.test/v1/user-nodes",
       "http://entangle-host.test/v1/user-nodes/user-main",
       "http://entangle-host.test/v1/user-nodes/user-main/inbox",
+      "http://entangle-host.test/v1/user-nodes/user-main/inbox/conversation-alpha",
       "http://entangle-host.test/v1/user-nodes/user-main/messages"
     ]);
   });

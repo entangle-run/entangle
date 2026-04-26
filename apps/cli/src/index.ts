@@ -1225,12 +1225,11 @@ inboxCommand
     command: Command
   ) => {
     const client = createCliHostClient(command);
-    const inbox = await client.getUserNodeInbox(options.userNode);
-    const conversation = inbox.conversations.find(
-      (candidate) =>
-        candidate.userNodeId === options.userNode &&
-        candidate.conversationId === conversationId
+    const detail = await client.getUserNodeConversation(
+      options.userNode,
+      conversationId
     );
+    const conversation = detail.conversation;
 
     if (!conversation) {
       throw new Error(
@@ -1240,8 +1239,14 @@ inboxCommand
 
     printJson(
       options.summary
-        ? { conversation: projectUserConversationSummary(conversation) }
-        : { conversation }
+        ? {
+            conversation: projectUserConversationSummary(conversation),
+            messageCount: detail.messages.length
+          }
+        : {
+            conversation,
+            messages: detail.messages
+          }
     );
   });
 

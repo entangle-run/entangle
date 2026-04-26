@@ -40,6 +40,9 @@ Recently added:
 - the runner-served User Client now has a conversation list, selected thread
   metadata, `/api/state`, and conversation/session-preserving message
   publishing.
+- Host exposes User Node conversation detail with recorded outbound messages,
+  CLI `inbox show` uses that detail endpoint, and the User Client renders
+  recorded messages for the selected thread.
 
 ## Target Model
 
@@ -109,9 +112,9 @@ Node.
   assignment/health panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
-  list, selected thread metadata, and reply/answer publishing; durable message
-  history, approval controls, artifact review, and the full bundled client app
-  remain open.
+  list, selected thread metadata, recorded outbound messages, and reply/answer
+  publishing; inbound message history, approval controls, artifact review, and
+  the full bundled client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

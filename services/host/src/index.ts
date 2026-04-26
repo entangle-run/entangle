@@ -104,6 +104,7 @@ import {
   sessionLaunchRequestSchema,
   sessionLaunchResponseSchema,
   sessionListResponseSchema,
+  userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeInboxResponseSchema,
@@ -141,6 +142,7 @@ import {
   getRuntimeSourceChangeCandidateInspection,
   getRuntimeSourceHistoryInspection,
   getRuntimeTurnInspection,
+  getUserNodeConversation,
   getUserNodeIdentity,
   getUserNodeSigningMaterial,
   getExternalPrincipalInspection,
@@ -198,6 +200,7 @@ import {
   setRuntimeRecoveryPolicy,
   trustRunnerRegistration,
   recordHostOperatorRequestCompleted,
+  recordUserNodePublishedMessage,
   subscribeToHostEvents,
   upsertExternalPrincipal,
   validateCatalogCandidate,
@@ -666,6 +669,29 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     });
   });
 
+  server.get(
+    "/v1/user-nodes/:nodeId/inbox/:conversationId",
+    async (request, reply) => {
+      const params = request.params as {
+        conversationId: string;
+        nodeId: string;
+      };
+      const nodeId = identifierSchema.parse(params.nodeId);
+      const conversationId = identifierSchema.parse(params.conversationId);
+      const inspection = await getUserNodeConversation(nodeId, conversationId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `User Node '${nodeId}' was not found.`
+        });
+      }
+
+      return userNodeConversationResponseSchema.parse(inspection);
+    }
+  );
+
   server.post("/v1/user-nodes/:nodeId/messages", async (request) => {
     const params = request.params as { nodeId: string };
     const nodeId = identifierSchema.parse(params.nodeId);
@@ -722,7 +748,7 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         nodeId
       });
 
-      return userNodeMessagePublishResponseSchema.parse(
+      const published = userNodeMessagePublishResponseSchema.parse(
         await publishUserNodeA2AMessage({
           request: messageRequest,
           runtimeContext,
@@ -733,6 +759,13 @@ export async function buildHostServer(options: HostServerOptions = {}) {
           }
         })
       );
+
+      await recordUserNodePublishedMessage({
+        request: messageRequest,
+        response: published
+      });
+
+      return published;
     } catch (error: unknown) {
       throw new HostHttpError({
         code: "conflict",

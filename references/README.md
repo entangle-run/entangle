@@ -311,6 +311,7 @@ files are the active federated redesign pack.
 259. [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
 260. [259-user-node-inbox-client-slice.md](259-user-node-inbox-client-slice.md)
 261. [260-multi-user-human-runtime-smoke-slice.md](260-multi-user-human-runtime-smoke-slice.md)
+262. [261-user-node-message-history-slice.md](261-user-node-message-history-slice.md)
 
 ## Role of this corpus
 

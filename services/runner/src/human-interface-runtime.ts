@@ -3,11 +3,13 @@ import type { AddressInfo } from "node:net";
 import type {
   EffectiveRuntimeContext,
   RunnerJoinHostApi,
+  UserNodeConversationResponse,
   UserConversationProjectionRecord,
   UserNodeMessagePublishResponse,
   UserNodeMessagePublishType
 } from "@entangle/types";
 import {
+  userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
@@ -193,6 +195,50 @@ async function buildUserClientState(input: {
   };
 }
 
+async function fetchUserNodeConversation(input: {
+  conversationId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  userNodeId: string;
+}): Promise<{
+  detail?: UserNodeConversationResponse;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for conversation history."
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/user-nodes/${encodeURIComponent(input.userNodeId)}/inbox/${encodeURIComponent(input.conversationId)}`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host conversation request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: userNodeConversationResponseSchema.parse(await response.json())
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host conversation request failed."
+    };
+  }
+}
+
 async function publishUserNodeMessage(input: {
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -253,6 +299,13 @@ async function renderHome(input: {
           conversation.conversationId === input.selectedConversationId
       )
     : undefined;
+  const selectedConversationHistory = selectedConversation
+    ? await fetchUserNodeConversation({
+        conversationId: selectedConversation.conversationId,
+        hostApi: input.hostApi,
+        userNodeId: state.userNodeId
+      })
+    : undefined;
   const selectedTargetNodeId =
     selectedConversation?.peerNodeId ?? state.targets[0]?.nodeId ?? "";
   const targetOptions = state.targets
@@ -303,6 +356,18 @@ async function renderHome(input: {
         <div><dt>Last message</dt><dd>${escapeHtml(selectedConversation.lastMessageType ?? "unknown")}</dd></div>
       </dl>`
     : `<p class="empty">No conversation selected.</p>`;
+  const messageHistory = selectedConversationHistory?.detail?.messages.length
+    ? selectedConversationHistory.detail.messages
+        .map(
+          (message) =>
+            `<article class="message">
+              <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
+              <div>${escapeHtml(message.summary)}</div>
+              <div class="message-meta">${escapeHtml(message.eventId)}</div>
+            </article>`
+        )
+        .join("")
+    : `<p class="empty">No recorded User Node messages yet.</p>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -338,6 +403,9 @@ async function renderHome(input: {
       .conversation { color: inherit; display: grid; gap: 3px; text-decoration: none; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 10px; font-size: 12px; }
       .conversation.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
       .conversation-main { font-size: 14px; font-weight: 700; }
+      .message { border-top: 1px solid var(--line); display: grid; gap: 6px; padding: 12px 0; }
+      .message:first-child { border-top: 0; padding-top: 0; }
+      .message-meta { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
       dt { color: var(--muted); font-size: 13px; }
@@ -372,6 +440,11 @@ async function renderHome(input: {
           <section>
             <h2>Selected Thread</h2>
             ${selectedConversationPanel}
+          </section>
+          ${selectedConversationHistory?.error ? `<section class="error">${escapeHtml(selectedConversationHistory.error)}</section>` : ""}
+          <section>
+            <h2>Messages</h2>
+            ${messageHistory}
           </section>
           <section>
             <h2>Message</h2>

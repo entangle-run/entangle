@@ -88,6 +88,7 @@ import {
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
+  userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeIdentityListResponseSchema,
   sourceChangeCandidateRecordSchema,
@@ -3243,6 +3244,22 @@ describe("buildHostServer", () => {
       expect(inboxResponse.statusCode).toBe(200);
       expect(userNodeInboxResponseSchema.parse(inboxResponse.json())).toMatchObject({
         conversations: [],
+        userNodeId: "user-main"
+      });
+
+      const conversationResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox/conversation-alpha"
+      });
+      expect(conversationResponse.statusCode).toBe(200);
+      expect(
+        userNodeConversationResponseSchema.parse(conversationResponse.json())
+      ).toMatchObject({
+        conversationId: "conversation-alpha",
+        messages: [],
         userNodeId: "user-main"
       });
 

@@ -40,6 +40,9 @@ The current implementation has the first federated execution path:
   Client uses it to render a conversation list, selected thread metadata, and
   conversation/session-preserving message publication. The client also exposes
   `/api/state` for automation and for replacing the shell with a richer app.
+- Host now records outbound messages published through the User Node gateway,
+  exposes them through conversation detail, and the User Client renders those
+  messages for the selected thread.
 - The process-boundary smoke now includes two User Nodes assigned to two
   distinct `human_interface` runners, each exposing its own User Client and
   publishing with a distinct stable User Node pubkey.
@@ -47,7 +50,7 @@ The current implementation has the first federated execution path:
 The current implementation still does not have the final User Node client:
 
 - The current User Client is a usable runner-served shell, not a complete
-  message-history/approval/artifact-review application.
+  full inbound-message-history/approval/artifact-review application.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface is summary-level; it is not a
   durable inbox/outbox message-history model.
@@ -203,8 +206,8 @@ and signs through the User Node gateway boundary, not through Studio.
 
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
-selected thread metadata, `/api/state`, and message publication that keeps the
-selected conversation/session context.
+selected thread metadata, recorded outbound messages, `/api/state`, and message
+publication that keeps the selected conversation/session context.
 
 Impacted modules:
 
@@ -337,7 +340,7 @@ The fastest path to a product the user can test is:
    path.
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
-7. Expand durable message history, approvals, artifact review, and OpenCode
+7. Expand inbound message history, approvals, artifact review, and OpenCode
    parity.
 
 This order avoids polishing admin surfaces before the product has the missing
