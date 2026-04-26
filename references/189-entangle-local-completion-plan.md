@@ -97,7 +97,7 @@ The latest implementation state includes:
   controls, node-configured source mutation approval gates, host-scoped
   operator approval decisions, and bounded artifact history/diff inspection
   plus safe restore into artifact workspace restore directories for supported
-  materialized git artifacts;
+  materialized git artifacts through host, CLI, and Studio surfaces;
 - generic host runtime inspection status for the effective agent-runtime mode,
   engine profile, state scope, last engine version, last engine session, last
   permission decision, last engine turn, and bounded engine failure evidence.
@@ -603,9 +603,9 @@ Tasks:
 - Materialize report artifacts from engine output and workspace state.
 - Link produced artifacts to turns, sessions, messages, and git refs.
 - Add artifact history/diff host API, host-client, CLI, and Studio surfaces.
-- Add safe artifact restore host API, host-client, and CLI surfaces, then add
-  approval-gated replay/promotion and Studio controls once the safe restore
-  record model is proven.
+- Add safe artifact restore host API, host-client, CLI, and Studio surfaces,
+  then add approval-gated replay/promotion once the safe restore record model
+  is proven.
 - Add bounded previews for harvested text/code outputs.
 
 Constraints:
@@ -673,14 +673,14 @@ Current partial implementation:
 - materialized git artifacts now have bounded host-owned history and diff
   inspection through host API, host-client, CLI, and Studio surfaces;
 - materialized git artifacts now have a first safe host-owned restore path
-  through host API, host-client, and CLI surfaces; restore attempts are
+  through host API, host-client, CLI, and Studio surfaces; restore attempts are
   persisted under runtime state, git files are streamed into
   `artifactWorkspaceRoot/restores/{restoreId}`, existing targets are not
   overwritten by default, and unsupported/unsafe restore attempts return
   structured unavailable records rather than widening filesystem access;
 - live OpenCode permission-to-approval flow, non-primary target
-  provisioning/fallback behavior, Studio restore controls, and approval-gated
-  artifact replay/promotion workflow remain open.
+  provisioning/fallback behavior, and approval-gated artifact replay/promotion
+  workflow remain open.
 
 Acceptance:
 

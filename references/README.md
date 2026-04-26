@@ -220,6 +220,7 @@ This directory is the canonical design corpus for Entangle.
 214. [213-engine-prompt-policy-workspace-context-slice.md](213-engine-prompt-policy-workspace-context-slice.md)
 215. [214-opencode-action-directive-bridge-slice.md](214-opencode-action-directive-bridge-slice.md)
 216. [215-runtime-artifact-restore-slice.md](215-runtime-artifact-restore-slice.md)
+217. [216-studio-artifact-restore-slice.md](216-studio-artifact-restore-slice.md)
 
 ## Role of this corpus
 

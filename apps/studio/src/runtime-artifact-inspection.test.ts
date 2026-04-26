@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
-  RuntimeArtifactHistoryResponse
+  RuntimeArtifactHistoryResponse,
+  RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 import {
   formatRuntimeArtifactDetailLines,
@@ -11,6 +12,7 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
@@ -108,5 +110,26 @@ describe("studio runtime artifact inspection helpers", () => {
     expect(formatRuntimeArtifactDiffStatus(diff)).toBe(
       "000000000000..1234567890ab · 31 bytes"
     );
+  });
+
+  it("formats artifact restore inspection states", () => {
+    const restore: RuntimeArtifactRestoreResponse["restore"] = {
+      artifactId: "artifact-report",
+      createdAt: "2026-04-24T11:01:00.000Z",
+      mode: "restore_workspace",
+      nodeId: "worker-it",
+      restoreId: "restore-artifact-report",
+      restoredFileCount: 3,
+      restoredPath: "/tmp/entangle/restores/restore-artifact-report",
+      source: {
+        backend: "git",
+        commit: "1234567890abcdef1234567890abcdef12345678",
+        path: "artifacts/artifact-report.md"
+      },
+      status: "restored",
+      updatedAt: "2026-04-24T11:01:00.000Z"
+    };
+
+    expect(formatRuntimeArtifactRestoreStatus(restore)).toBe("3 files restored");
   });
 });

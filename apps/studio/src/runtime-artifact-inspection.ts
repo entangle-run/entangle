@@ -5,6 +5,7 @@ export {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation as sortRuntimeArtifacts
 } from "@entangle/host-client";

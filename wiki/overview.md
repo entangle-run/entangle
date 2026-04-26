@@ -171,12 +171,13 @@ The repository now also contains the first real implementation baseline:
   before accepting a supplied approval id, with a host/CLI/Studio operator
   decision path for creating scoped approvals or deciding pending approvals,
   with bounded host/CLI/Studio history and diff inspection for supported
-  materialized git artifacts, plus a first safe host/CLI restore path that
-  materializes git-backed runtime artifacts into explicit artifact workspace
-  restore directories without overwriting existing targets by default, and
-  with runner-owned local git snapshots of `memory/wiki` into each node's
-  `wiki-repository` workspace after completed turns, including durable sync
-  outcomes on turns, host events, CLI output, and Studio turn inspection, plus
+  materialized git artifacts, plus a first safe host/CLI/Studio restore path
+  that materializes git-backed runtime artifacts into explicit artifact
+  workspace restore directories without overwriting existing targets by
+  default, and with runner-owned local git snapshots of `memory/wiki` into
+  each node's `wiki-repository` workspace after completed turns, including
+  durable sync outcomes on turns, host events, CLI output, and Studio turn
+  inspection, plus
   `entangle local doctor` runtime wiki repository health warnings for
   uninitialized, dirty, or uncommitted snapshots, and with
   bounded engine-request summaries on executable turns so CLI and Studio turn
@@ -528,8 +529,8 @@ The repository now also contains the first real implementation baseline:
   Studio consuming the same formatting and the CLI exposing compact
   `host runtimes artifact --summary` and `host runtimes artifacts --summary`
   output, including shared selected-artifact preview, history, and diff
-  status formatting plus restore status formatting for headless restore
-  operations;
+  status formatting plus restore status formatting for headless and visual
+  restore operations;
 - shared graph-topology presentation helpers in `packages/host-client`, with
   Studio consuming the same graph revision, managed-node, and edge vocabulary
   and the CLI exposing compact `--summary` output for active graph, graph

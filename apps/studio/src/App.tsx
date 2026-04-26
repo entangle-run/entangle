@@ -44,6 +44,7 @@ import type {
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactInspectionResponse,
   RuntimeArtifactPreviewResponse,
+  RuntimeArtifactRestoreResponse,
   RuntimeInspectionResponse,
   RuntimeMemoryInspectionResponse,
   RuntimeMemoryPageInspectionResponse,
@@ -157,6 +158,7 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
+  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
@@ -479,8 +481,11 @@ export function App() {
     useState<RuntimeArtifactHistoryResponse | null>(null);
   const [selectedArtifactDiff, setSelectedArtifactDiff] =
     useState<RuntimeArtifactDiffResponse | null>(null);
+  const [selectedArtifactRestore, setSelectedArtifactRestore] =
+    useState<RuntimeArtifactRestoreResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
+  const [pendingArtifactRestore, setPendingArtifactRestore] = useState(false);
   const [selectedMemory, setSelectedMemory] =
     useState<RuntimeMemoryInspectionResponse | null>(null);
   const [selectedMemoryPagePath, setSelectedMemoryPagePath] =
@@ -869,6 +874,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(
             normalizeError(caught, "Unknown error while loading artifact detail.")
           );
@@ -1321,6 +1327,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(null);
         } else if (!shouldRefreshSelectedArtifact) {
           setSelectedArtifactId(null);
@@ -1328,6 +1335,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(null);
         } else if (
           selectedArtifactResult?.status === "fulfilled" &&
@@ -1345,6 +1353,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactResult.reason,
@@ -1356,6 +1365,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactPreviewResult.reason,
@@ -1367,6 +1377,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactHistoryResult.reason,
@@ -1378,6 +1389,7 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
+          setSelectedArtifactRestore(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactDiffResult.reason,
@@ -1398,6 +1410,7 @@ export function App() {
         setSelectedArtifactPreview(null);
         setSelectedArtifactHistory(null);
         setSelectedArtifactDiff(null);
+        setSelectedArtifactRestore(null);
         setArtifactDetailError(null);
       }
 
@@ -1818,6 +1831,7 @@ export function App() {
       setSelectedArtifactPreview(null);
       setSelectedArtifactHistory(null);
       setSelectedArtifactDiff(null);
+      setSelectedArtifactRestore(null);
       setArtifactDetailError(null);
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
@@ -2090,6 +2104,7 @@ export function App() {
         setSelectedArtifactPreview(null);
         setSelectedArtifactHistory(null);
         setSelectedArtifactDiff(null);
+        setSelectedArtifactRestore(null);
         setArtifactError(null);
         setArtifactDetailError(null);
       });
@@ -2113,6 +2128,57 @@ export function App() {
     selectedRuntimeId,
     selectedSourceHistoryId,
     selectedSourceHistoryInspection
+  ]);
+
+  const restoreSelectedRuntimeArtifact = useCallback(async () => {
+    if (
+      !selectedRuntimeId ||
+      !selectedArtifactId ||
+      selectedArtifactInspection?.artifact.ref.backend !== "git"
+    ) {
+      return;
+    }
+
+    try {
+      setPendingArtifactRestore(true);
+      setArtifactDetailError(null);
+      const response = await client.restoreRuntimeArtifact(
+        selectedRuntimeId,
+        selectedArtifactId,
+        {
+          reason: "Studio artifact restore"
+        }
+      );
+
+      startTransition(() => {
+        setSelectedArtifactRestore(response);
+        setSelectedArtifactInspection({ artifact: response.artifact });
+        setSelectedArtifacts((artifacts) =>
+          sortRuntimeArtifacts([
+            response.artifact,
+            ...artifacts.filter(
+              (artifact) =>
+                artifact.ref.artifactId !== response.artifact.ref.artifactId
+            )
+          ])
+        );
+        setArtifactError(null);
+        setArtifactDetailError(null);
+      });
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setArtifactDetailError(
+          normalizeError(caught, "Unknown error while restoring artifact.")
+        );
+      });
+    } finally {
+      setPendingArtifactRestore(false);
+    }
+  }, [
+    client,
+    selectedArtifactId,
+    selectedArtifactInspection,
+    selectedRuntimeId
   ]);
 
   const selectGraphRevision = useCallback(
@@ -2502,6 +2568,7 @@ export function App() {
       setSelectedArtifactPreview(null);
       setSelectedArtifactHistory(null);
       setSelectedArtifactDiff(null);
+      setSelectedArtifactRestore(null);
       setArtifactDetailError(null);
       setTurnError(null);
       setSelectedTurns([]);
@@ -2551,6 +2618,7 @@ export function App() {
     setSelectedArtifactPreview(null);
     setSelectedArtifactHistory(null);
     setSelectedArtifactDiff(null);
+    setSelectedArtifactRestore(null);
     setArtifactDetailError(null);
     setTurnError(null);
     setSelectedTurns([]);
@@ -5433,6 +5501,77 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        <div className="artifact-preview-panel">
+                          <div className="section-header">
+                            <h3>Artifact Restore</h3>
+                            <span className="panel-caption">
+                              {selectedArtifactRestore
+                                ? formatRuntimeArtifactRestoreStatus(
+                                    selectedArtifactRestore.restore
+                                  )
+                                : selectedArtifactInspection.artifact.ref.backend ===
+                                    "git"
+                                  ? "ready"
+                                  : "unavailable"}
+                            </span>
+                          </div>
+                          <div className="action-row">
+                            <button
+                              className="action-button"
+                              disabled={
+                                pendingArtifactRestore ||
+                                selectedArtifactInspection.artifact.ref.backend !==
+                                  "git"
+                              }
+                              onClick={() => {
+                                void restoreSelectedRuntimeArtifact();
+                              }}
+                              type="button"
+                            >
+                              {pendingArtifactRestore
+                                ? "Restoring..."
+                                : "Restore artifact"}
+                            </button>
+                          </div>
+
+                          {selectedArtifactRestore ? (
+                            <dl className="status-list compact-list">
+                              <div>
+                                <dt>Restore</dt>
+                                <dd>{selectedArtifactRestore.restore.restoreId}</dd>
+                              </div>
+                              <div>
+                                <dt>Status</dt>
+                                <dd>{selectedArtifactRestore.restore.status}</dd>
+                              </div>
+                              {selectedArtifactRestore.restore.restoredPath ? (
+                                <div>
+                                  <dt>Path</dt>
+                                  <dd>
+                                    {selectedArtifactRestore.restore.restoredPath}
+                                  </dd>
+                                </div>
+                              ) : null}
+                              {selectedArtifactRestore.restore.unavailableReason ? (
+                                <div>
+                                  <dt>Reason</dt>
+                                  <dd>
+                                    {
+                                      selectedArtifactRestore.restore
+                                        .unavailableReason
+                                    }
+                                  </dd>
+                                </div>
+                              ) : null}
+                            </dl>
+                          ) : selectedArtifactInspection.artifact.ref.backend !==
+                            "git" ? (
+                            <div className="inline-empty-state">
+                              <p>Non-git artifact backend.</p>
+                            </div>
+                          ) : null}
+                        </div>
 
                         <div className="artifact-preview-panel">
                           <div className="section-header">
