@@ -38,6 +38,25 @@ pnpm ops:check-local:strict
 Strict mode fails if Docker, Docker Compose, the Docker daemon, or the local
 Compose configuration are unavailable.
 
+## Conservative Repair
+
+Preview conservative repair actions without changing local state:
+
+```sh
+pnpm --filter @entangle/cli dev local repair --skip-live
+```
+
+Apply only actions marked safe:
+
+```sh
+pnpm --filter @entangle/cli dev local repair --skip-live --apply-safe
+```
+
+The first repair foundation can initialize the `.entangle/host` directory
+skeleton or stamp a missing current `state-layout.json` marker. It does not
+delete observed runtime state, workspaces, artifacts, source repositories, wiki
+memory, secrets, or external service state.
+
 ## Bootstrap
 
 Build the runner image first. `entangle-host` uses this image when it

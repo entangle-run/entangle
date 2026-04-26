@@ -66,6 +66,10 @@ The latest implementation state includes:
   versioned Local state backup path for `.entangle/host`, selected Local
   profile config snapshots, explicit `.entangle-secrets` exclusion, dry-run
   validation, and restore-time state-layout compatibility checks;
+- `entangle local repair` now provides a dry-run-first conservative repair
+  surface with `--apply-safe` for only safe host-state skeleton initialization
+  and missing current layout-marker recovery, writing local repair records
+  under `.entangle/host/traces/local-repairs`;
 - runner turns now persist bounded `engineRequestSummary` evidence for the
   assembled engine request shape, including prompt part counts, aggregate
   prompt character counts, memory, artifact, and tool counts, execution
@@ -894,6 +898,26 @@ Constraints:
 - Repair must never silently delete user work, repositories, artifacts, or
   wiki memory.
 - Destructive reset remains explicit and separately named.
+
+Current partial implementation:
+
+- `entangle local repair` now runs the doctor checks and builds a conservative
+  repair plan, with dry-run behavior by default and human-readable or JSON
+  output;
+- `--apply-safe` applies only actions marked safe, currently limited to
+  initializing the `.entangle/host` directory skeleton and stamping a missing
+  current `state-layout.json` marker;
+- safe repair writes a local trace record under
+  `.entangle/host/traces/local-repairs` with schema version, action summaries,
+  and run status;
+- unsupported future, unsupported legacy, or unreadable state-layout records
+  are blocked and require manual backup/version resolution instead of mutation;
+- repair does not delete observed runtime records, runner workspaces, source
+  repositories, artifacts, wiki repositories, secrets, Docker volumes, Gitea
+  internals, or relay state;
+- remaining work is host-level stale-runtime repair, orphaned runner-state
+  classification, old Gitea profile-state guidance, safe config drift repair,
+  and live repair smoke coverage.
 
 Acceptance:
 

@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added conservative Local repair foundation
+
+Advanced Entangle Local L4 reliability with `entangle local repair`. The command
+runs the Local doctor, builds a conservative repair plan, defaults to dry-run
+output, and applies only actions marked safe when `--apply-safe` is supplied.
+
+The first safe actions initialize the `.entangle/host` directory skeleton or
+stamp a missing current `state-layout.json` marker. Applied repairs write a
+schema-versioned trace record under `.entangle/host/traces/local-repairs`.
+Unsupported future, unsupported legacy, and unreadable layout records remain
+blocked/manual rather than mutated.
+
 ## [2026-04-26] implementation | Added Local backup and restore foundation
 
 Advanced Entangle Local L4 reliability with `entangle local backup` and

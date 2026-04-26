@@ -55,6 +55,10 @@ import {
   restoreLocalBackup
 } from "./local-backup-command.js";
 import {
+  buildLocalRepairReport,
+  formatLocalRepairText
+} from "./local-repair-command.js";
+import {
   projectGraphExportSummary,
   projectGraphImportSummary,
   projectGraphRevisionInspectionSummary,
@@ -468,6 +472,72 @@ localCommand
       printJson({
         restore: summary
       });
+    }
+  );
+
+localCommand
+  .command("repair")
+  .option("--apply-safe", "Apply only conservative repair actions marked safe.")
+  .option("--gitea-url <url>", "Expected local Gitea URL.", "http://localhost:3001")
+  .option("--host-token <token>", "Bearer token for a protected local host.")
+  .option("--host-url <url>", "Expected local host API URL.", "http://localhost:7071")
+  .option("--json", "Print the full machine-readable repair report.")
+  .option("--relay-url <url>", "Expected local Nostr relay URL.", "ws://localhost:7777")
+  .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")
+  .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
+  .option("--strict", "Treat optional local infrastructure warnings as failures.")
+  .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
+  .description("Preview or apply conservative Entangle Local repair actions.")
+  .action(
+    async (
+      options: {
+        applySafe?: boolean;
+        giteaUrl: string;
+        hostToken?: string;
+        hostUrl: string;
+        json?: boolean;
+        relayUrl: string;
+        runnerImage: string;
+        skipLive?: boolean;
+        strict?: boolean;
+        studioUrl: string;
+      }
+    ) => {
+      const normalizedToken =
+        options.hostToken?.trim() ??
+        process.env.ENTANGLE_HOST_TOKEN?.trim() ??
+        process.env.ENTANGLE_HOST_OPERATOR_TOKEN?.trim();
+      const hostClient = options.skipLive
+        ? undefined
+        : createHostClient(
+            normalizedToken && normalizedToken.length > 0
+              ? { authToken: normalizedToken, baseUrl: options.hostUrl }
+              : { baseUrl: options.hostUrl }
+          );
+      const report = await buildLocalRepairReport(
+        {
+          applySafe: options.applySafe,
+          giteaUrl: options.giteaUrl,
+          hostUrl: options.hostUrl,
+          relayUrl: options.relayUrl,
+          repositoryRoot,
+          runnerImage: options.runnerImage,
+          skipLive: options.skipLive,
+          strict: options.strict,
+          studioUrl: options.studioUrl
+        },
+        hostClient ? { hostClient } : {}
+      );
+
+      if (options.json) {
+        printJson(report);
+      } else {
+        process.stdout.write(formatLocalRepairText(report));
+      }
+
+      if (report.status === "blocked") {
+        process.exitCode = 1;
+      }
     }
   );
 

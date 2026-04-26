@@ -608,7 +608,9 @@ The repository now also contains the first real implementation baseline:
   bounded Compose status/logs, runner-image inspection, and live host state
   when available, while `entangle local backup` and `entangle local restore`
   provide the first versioned `.entangle/host` backup and validated restore
-  path without bundling local secrets;
+  path without bundling local secrets, and `entangle local repair` provides a
+  dry-run-first conservative repair surface for safe host-state initialization
+  and missing layout-marker recovery;
 - an active local profile smoke through `pnpm ops:smoke-local`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket

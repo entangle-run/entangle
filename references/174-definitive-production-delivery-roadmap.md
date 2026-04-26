@@ -489,11 +489,17 @@ Incremental features:
 2. Local repair:
    - repair stale local runtime state where safe;
    - detect old Gitea profile state;
-   - recommend destructive reset only explicitly.
+   - recommend destructive reset only explicitly;
+   - current foundation: `entangle local repair` previews by default and
+     applies only safe host-state skeleton or missing layout-marker repairs
+     with `--apply-safe`.
 3. Backup and restore:
    - export local state bundle;
    - restore local state bundle;
-   - document what is included and excluded.
+   - document what is included and excluded;
+   - current foundation: `entangle local backup` and `entangle local restore`
+     use a versioned `.entangle/host` bundle, exclude `.entangle-secrets`, and
+     validate state-layout compatibility before restore.
 4. Upgrade path:
    - extend the active version-1 local state layout marker into rehearsed
      migrations;

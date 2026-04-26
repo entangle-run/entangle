@@ -292,6 +292,10 @@ This repository currently contains:
   `entangle local restore`, using a versioned directory bundle for
   `.entangle/host`, selected Local profile config snapshots, explicit secret
   exclusion, and restore-time state-layout compatibility checks;
+- a first conservative Local repair command through `entangle local repair`,
+  defaulting to dry-run previews and applying only safe host-state
+  initialization or missing layout-marker repairs when `--apply-safe` is
+  supplied;
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
@@ -664,7 +668,9 @@ This repository currently contains:
   runner-image inspection, and live host state when available, and `entangle
   local backup` / `entangle local restore` now provide the first versioned
   `.entangle/host` backup and validated restore path without bundling local
-  secrets;
+  secrets, while `entangle local repair` provides a dry-run-first conservative
+  repair surface for safe host-state initialization and missing layout-marker
+  recovery;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
