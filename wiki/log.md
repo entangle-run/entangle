@@ -2840,3 +2840,17 @@ active codebase. The canonical runtime profile is now only `"federated"`, Host
 state layout records parse only product marker `entangle`, and the old Local
 Preview graph fixture has been renamed to the deployment-agnostic Federated
 Preview example under `examples/federated-preview/`.
+
+## [2026-04-26] implementation | Added Host control observation bridge
+
+Added `references/245-host-control-observation-bridge-slice.md` and the
+Host-side `HostFederatedControlPlane`. The bridge ingests signed runner
+observation events, records runner hello/heartbeat state, acknowledges hello
+events with signed Host control payloads, routes assignment accepted/rejected
+observations into assignment state, and publishes assignment offer/revoke
+control payloads through the federated transport abstraction.
+
+This is still a bridge, not complete distributed execution. Host startup wiring,
+policy-based relay selection, and runner assignment materialization remain the
+next gaps before the same-machine adapter and remote runners can share one
+canonical control/observe execution path.

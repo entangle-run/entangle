@@ -45,6 +45,7 @@ same-machine slice records.
 - [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
 - [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 - [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
+- [245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
 
 ## Audited Scope
 
