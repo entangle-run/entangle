@@ -252,7 +252,11 @@ export async function createConfiguredRunnerJoinService(
   const service = new RunnerJoinService({
     ...(input.clock ? { clock: input.clock } : {}),
     config,
-    materializer: input.materializer ?? createFileSystemAssignmentMaterializer(),
+    materializer:
+      input.materializer ??
+      createFileSystemAssignmentMaterializer({
+        ...(config.hostApi ? { hostApi: config.hostApi } : {})
+      }),
     ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
     runnerPubkey: publicKey,
     transport

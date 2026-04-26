@@ -333,6 +333,13 @@ describe("federated runtime contracts", () => {
         agentEngineKinds: ["opencode_server"],
         runtimeKinds: ["agent_runner"]
       },
+      hostApi: {
+        auth: {
+          envVar: "ENTANGLE_HOST_TOKEN",
+          mode: "bearer_env"
+        },
+        baseUrl: "http://host.test"
+      },
       hostAuthorityPubkey: authorityPubkey,
       identity: {
         publicKey: runnerPubkey,
@@ -348,6 +355,7 @@ describe("federated runtime contracts", () => {
 
     expect(config.authRequired).toBe(false);
     expect(config.capabilities.maxAssignments).toBe(1);
+    expect(config.hostApi?.baseUrl).toBe("http://host.test");
     expect(config.identity.publicKey).toBe(runnerPubkey);
   });
 

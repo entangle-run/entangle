@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
@@ -37,6 +37,8 @@ afterEach(async () => {
   delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH;
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
   delete process.env.ENTANGLE_RUNNER_STATE_ROOT;
+  delete process.env.ENTANGLE_HOST_TOKEN;
+  vi.unstubAllGlobals();
   await cleanupRuntimeFixtures();
 });
 
@@ -488,6 +490,75 @@ describe("runner runtime context", () => {
       },
       schemaVersion: "1"
     });
+
+    await configured.service.stop();
+  });
+
+  it("fetches Host runtime context when join config declares a Host API", async () => {
+    const runtimeFixture = await createRuntimeFixture();
+    const fixture = await createRunnerJoinFixture({
+      hostApi: {
+        auth: {
+          envVar: "ENTANGLE_HOST_TOKEN",
+          mode: "bearer_env"
+        },
+        baseUrl: "http://host.test"
+      }
+    });
+    const runnerStateRoot = path.join(path.dirname(fixture.configPath), "runner-state");
+    const transport = new FakeRunnerJoinTransport();
+    const fetchMock = vi.fn(
+      (url: string | URL | Request, init?: RequestInit) => {
+        const requestUrl = url instanceof Request ? url.url : url.toString();
+
+        expect(requestUrl).toBe("http://host.test/v1/runtimes/worker-it/context");
+        expect(init?.headers).toMatchObject({
+          accept: "application/json",
+          authorization: "Bearer host-token"
+        });
+
+        return Promise.resolve(
+          new Response(JSON.stringify(runtimeFixture.context), {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          })
+        );
+      }
+    );
+    process.env.ENTANGLE_HOST_TOKEN = "host-token";
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+    process.env.ENTANGLE_RUNNER_STATE_ROOT = runnerStateRoot;
+    vi.stubGlobal("fetch", fetchMock);
+
+    const configured = await createConfiguredRunnerJoinService(
+      fixture.configPath,
+      {
+        clock: () => "2026-04-26T12:00:00.000Z",
+        nonceFactory: () => "nonce-alpha",
+        transport
+      }
+    );
+
+    await configured.service.start();
+    await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
+
+    const hostRuntimeContextPath = path.join(
+      runnerStateRoot,
+      "assignments",
+      "assignment-alpha",
+      "host-runtime-context.json"
+    );
+    expect(JSON.parse(await readFile(hostRuntimeContextPath, "utf8"))).toMatchObject({
+      binding: {
+        node: {
+          nodeId: "worker-it"
+        }
+      },
+      schemaVersion: "1"
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 
     await configured.service.stop();
   });

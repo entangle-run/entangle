@@ -380,6 +380,7 @@ export async function createRuntimeFixture(input: {
 export async function createRunnerJoinFixture(
   input: {
     capabilities?: RunnerCapability;
+    hostApi?: RunnerJoinConfig["hostApi"];
     hostAuthorityPubkey?: string;
     relayUrls?: string[];
     runnerId?: string;
@@ -403,6 +404,7 @@ export async function createRunnerJoinFixture(
       supportsLocalWorkspace: true,
       supportsNip59: true
     },
+    ...(input.hostApi ? { hostApi: input.hostApi } : {}),
     hostAuthorityPubkey: input.hostAuthorityPubkey ?? hostPublicKey,
     identity: {
       publicKey: input.runnerPublicKeyOverride ?? runnerPublicKey,

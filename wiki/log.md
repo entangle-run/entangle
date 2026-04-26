@@ -2890,9 +2890,11 @@ Added `references/248-runner-default-assignment-materializer-slice.md` and
 `services/runner/src/assignment-materializer.ts`. Generic joined runners now
 have a default filesystem materializer, so valid signed assignment offers are
 recorded in runner-owned storage and accepted instead of being rejected because
-no materializer was injected.
+no materializer was injected. Runner join config can also declare a Host API
+bootstrap endpoint; when present, the materializer fetches and persists the
+Host-projected runtime context beside the assignment record.
 
 This closes the first runner-side gap after Host control startup. It does not
-yet fetch full graph/package/resource snapshots or start the assigned node
-runtime from the materialized assignment; those remain the next runner
-execution slices.
+yet rebase that context into fully executable runner-owned workspaces or start
+the assigned node runtime from the materialized assignment; those remain the
+next runner execution slices.

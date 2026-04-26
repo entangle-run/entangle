@@ -37,13 +37,19 @@ Implemented in this slice:
 - added `ENTANGLE_RUNNER_STATE_ROOT` support for runner-owned assignment state;
 - persisted `assignment.json`, `control-event.json`, and
   `materialization.json` per assignment;
+- added optional Host API bootstrap metadata in runner join config;
+- fetched and persisted `host-runtime-context.json` from the Host API when the
+  join config declares a Host API endpoint;
 - wired the materializer as the default for `createConfiguredRunnerJoinService`;
 - updated runner tests so default join mode accepts and records assignments
   rather than rejecting valid offers.
 
 Deferred:
 
-- fetching Host-signed graph/resource/package snapshots;
+- converting Host runtime context into a fully runner-rebased executable
+  context;
+- fetching Host-signed graph/resource/package snapshots without Host API
+  bootstrap;
 - starting the full node runtime service from the accepted assignment;
 - durable runtime status observations from materialized node execution;
 - per-assignment workspace and memory/wiki repository initialization;
@@ -54,20 +60,30 @@ Deferred:
 - `pnpm --filter @entangle/runner typecheck`
 - `pnpm --filter @entangle/runner test`
 - `pnpm --filter @entangle/runner lint`
+- `pnpm --filter @entangle/types typecheck`
+- `pnpm --filter @entangle/types test`
 - `pnpm typecheck`
 - `pnpm lint`
-- `pnpm test`
+- package-level tests for all workspace packages
 - `git diff --check`
 - stale product marker and path search for removed same-product naming markers.
 
 Verification record:
 
 - targeted runner typecheck passed;
-- targeted runner tests passed;
+- targeted runner tests passed with 95 tests;
 - targeted runner lint passed;
+- targeted types typecheck passed;
+- targeted types tests passed;
 - `pnpm typecheck` passed;
 - `pnpm lint` passed;
-- `pnpm test` passed;
+- package-level tests passed for `@entangle/agent-engine`,
+  `@entangle/package-scaffold`, `@entangle/nostr-fabric`,
+  `@entangle/host-client`, `@entangle/validator`, `@entangle/host`,
+  `@entangle/studio`, `@entangle/cli`, and `@entangle/runner`;
+- root `pnpm test` was attempted twice and hung inside Turbo after the
+  validator task had already passed when run directly; the hung Turbo processes
+  were terminated and this remains a verification-tooling issue to revisit;
 - `git diff --check` passed;
 - stale product marker and path searches for removed same-product naming and
   runtime profile defaults returned no hits.

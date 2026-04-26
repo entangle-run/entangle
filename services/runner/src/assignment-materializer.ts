@@ -1,9 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
+  EffectiveRuntimeContext,
   EntangleControlEvent,
-  RuntimeAssignmentRecord
+  RuntimeAssignmentRecord,
+  RunnerJoinHostApi
 } from "@entangle/types";
+import { runtimeContextInspectionResponseSchema } from "@entangle/types";
 import type {
   RunnerAssignmentMaterializationResult,
   RunnerAssignmentMaterializer
@@ -11,6 +14,7 @@ import type {
 
 export type FileSystemAssignmentMaterializerInput = {
   clock?: () => string;
+  hostApi?: RunnerJoinHostApi;
   stateRoot?: string;
 };
 
@@ -18,6 +22,7 @@ export type AssignmentMaterializationRecord = {
   assignment: RuntimeAssignmentRecord;
   assignmentPath: string;
   controlEventPath: string;
+  hostRuntimeContextPath?: string;
   materializedAt: string;
   materializationPath: string;
   schemaVersion: "1";
@@ -49,10 +54,48 @@ async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+async function fetchHostRuntimeContext(input: {
+  assignment: RuntimeAssignmentRecord;
+  hostApi: RunnerJoinHostApi;
+}): Promise<EffectiveRuntimeContext> {
+  const headers: Record<string, string> = {
+    accept: "application/json"
+  };
+
+  if (input.hostApi.auth?.mode === "bearer_env") {
+    const token = process.env[input.hostApi.auth.envVar]?.trim();
+
+    if (!token) {
+      throw new Error(
+        `Host API bearer token is missing from env var '${input.hostApi.auth.envVar}'.`
+      );
+    }
+
+    headers.authorization = `Bearer ${token}`;
+  }
+
+  const url = new URL(
+    `/v1/runtimes/${encodeURIComponent(input.assignment.nodeId)}/context`,
+    input.hostApi.baseUrl
+  );
+  const response = await fetch(url, {
+    headers
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Host runtime context fetch failed for node '${input.assignment.nodeId}' with HTTP ${response.status}.`
+    );
+  }
+
+  return runtimeContextInspectionResponseSchema.parse(await response.json());
+}
+
 export async function materializeAssignmentToFileSystem(input: {
   assignment: RuntimeAssignmentRecord;
   clock?: () => string;
   controlEvent: EntangleControlEvent;
+  hostApi?: RunnerJoinHostApi;
   stateRoot?: string;
 }): Promise<AssignmentMaterializationRecord> {
   const materializedAt = input.clock?.() ?? new Date().toISOString();
@@ -63,11 +106,21 @@ export async function materializeAssignmentToFileSystem(input: {
   );
   const assignmentPath = path.join(assignmentRoot, "assignment.json");
   const controlEventPath = path.join(assignmentRoot, "control-event.json");
+  const hostRuntimeContextPath = input.hostApi
+    ? path.join(assignmentRoot, "host-runtime-context.json")
+    : undefined;
   const materializationPath = path.join(assignmentRoot, "materialization.json");
+  const hostRuntimeContext = input.hostApi
+    ? await fetchHostRuntimeContext({
+        assignment: input.assignment,
+        hostApi: input.hostApi
+      })
+    : undefined;
   const record: AssignmentMaterializationRecord = {
     assignment: input.assignment,
     assignmentPath,
     controlEventPath,
+    ...(hostRuntimeContextPath ? { hostRuntimeContextPath } : {}),
     materializedAt,
     materializationPath,
     schemaVersion: "1"
@@ -76,6 +129,9 @@ export async function materializeAssignmentToFileSystem(input: {
   await Promise.all([
     writeJsonFile(assignmentPath, input.assignment),
     writeJsonFile(controlEventPath, input.controlEvent),
+    ...(hostRuntimeContext && hostRuntimeContextPath
+      ? [writeJsonFile(hostRuntimeContextPath, hostRuntimeContext)]
+      : []),
     writeJsonFile(materializationPath, record)
   ]);
 
@@ -93,6 +149,7 @@ export function createFileSystemAssignmentMaterializer(
       assignment,
       ...(input.clock ? { clock: input.clock } : {}),
       controlEvent,
+      ...(input.hostApi ? { hostApi: input.hostApi } : {}),
       ...(input.stateRoot ? { stateRoot: input.stateRoot } : {})
     });
 

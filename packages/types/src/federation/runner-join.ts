@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { nostrPublicKeySchema } from "../common/crypto.js";
 import {
+  httpUrlSchema,
   identifierSchema,
   nonEmptyStringSchema,
   websocketUrlSchema
@@ -13,9 +14,20 @@ export const runnerJoinIdentitySchema = z.object({
   secretDelivery: runtimeSecretDeliverySchema
 });
 
+export const runnerJoinHostApiSchema = z.object({
+  auth: z
+    .object({
+      envVar: nonEmptyStringSchema,
+      mode: z.literal("bearer_env")
+    })
+    .optional(),
+  baseUrl: httpUrlSchema
+});
+
 export const runnerJoinConfigSchema = z.object({
   authRequired: z.boolean().default(false),
   capabilities: runnerCapabilitySchema,
+  hostApi: runnerJoinHostApiSchema.optional(),
   hostAuthorityPubkey: nostrPublicKeySchema,
   identity: runnerJoinIdentitySchema,
   relayUrls: z.array(websocketUrlSchema).min(1),
@@ -35,5 +47,6 @@ export const runnerJoinStatusSchema = z.object({
 });
 
 export type RunnerJoinIdentity = z.infer<typeof runnerJoinIdentitySchema>;
+export type RunnerJoinHostApi = z.infer<typeof runnerJoinHostApiSchema>;
 export type RunnerJoinConfig = z.infer<typeof runnerJoinConfigSchema>;
 export type RunnerJoinStatus = z.infer<typeof runnerJoinStatusSchema>;
