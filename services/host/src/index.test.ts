@@ -43,6 +43,10 @@ import {
   packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
+  runtimeAssignmentInspectionResponseSchema,
+  runtimeAssignmentListResponseSchema,
+  runtimeAssignmentOfferResponseSchema,
+  runtimeAssignmentRevokeResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeArtifactDiffResponseSchema,
@@ -1179,6 +1183,126 @@ describe("buildHostServer", () => {
         url: "/v1/runners/runner-missing"
       });
       expect(missingResponse.statusCode).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("offers, accepts, lists, inspects, and revokes runtime assignments", async () => {
+    const server = await createTestServer();
+
+    try {
+      const [
+        {
+          recordRunnerHello,
+          recordRuntimeAssignmentAccepted
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+      const runnerId = "runner-alpha";
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      const trustResponse = await server.inject({
+        method: "POST",
+        url: `/v1/runners/${runnerId}/trust`
+      });
+      expect(trustResponse.statusCode).toBe(200);
+
+      const offerResponse = await server.inject({
+        method: "POST",
+        payload: {
+          assignmentId: "assignment-alpha",
+          leaseDurationSeconds: 600,
+          nodeId: "worker-it",
+          runnerId
+        },
+        url: "/v1/assignments"
+      });
+      expect(offerResponse.statusCode).toBe(200);
+      const offered = runtimeAssignmentOfferResponseSchema.parse(
+        offerResponse.json()
+      ).assignment;
+      expect(offered).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId,
+        runtimeKind: "agent_runner",
+        status: "offered"
+      });
+      expect(offered.lease?.expiresAt).toBeDefined();
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/assignments"
+      });
+      expect(
+        runtimeAssignmentListResponseSchema.parse(listResponse.json())
+          .assignments[0]?.assignmentId
+      ).toBe("assignment-alpha");
+
+      await recordRuntimeAssignmentAccepted({
+        acceptedAt: new Date().toISOString(),
+        assignmentId: "assignment-alpha",
+        eventType: "assignment.accepted",
+        hostAuthorityPubkey,
+        lease: offered.lease,
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/assignments/assignment-alpha"
+      });
+      expect(
+        runtimeAssignmentInspectionResponseSchema.parse(
+          inspectionResponse.json()
+        ).assignment.status
+      ).toBe("accepted");
+
+      const revokeResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "Operator reassignment"
+        },
+        url: "/v1/assignments/assignment-alpha/revoke"
+      });
+      expect(revokeResponse.statusCode).toBe(200);
+      expect(
+        runtimeAssignmentRevokeResponseSchema.parse(revokeResponse.json())
+          .assignment.status
+      ).toBe("revoked");
     } finally {
       await server.close();
     }

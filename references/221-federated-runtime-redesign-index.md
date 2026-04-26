@@ -35,6 +35,7 @@ because the handoff required these exact filenames. The existing
 - [233-host-authority-store-slice.md](233-host-authority-store-slice.md)
 - [234-nostr-control-observe-transport-slice.md](234-nostr-control-observe-transport-slice.md)
 - [235-runner-registry-slice.md](235-runner-registry-slice.md)
+- [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
 
 ## Audited Scope
 
@@ -175,6 +176,6 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 3 are implemented in this branch, and Slice 4
+Plan readiness: Slices 1 through 4 are implemented in this branch, and Slice 5
 is implemented in the current working tree pending end-of-slice audit and
 atomic commit.

@@ -13,6 +13,12 @@ import {
   graphMutationResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
+  runtimeAssignmentInspectionResponseSchema,
+  runtimeAssignmentListResponseSchema,
+  runtimeAssignmentOfferRequestSchema,
+  runtimeAssignmentOfferResponseSchema,
+  runtimeAssignmentRevokeRequestSchema,
+  runtimeAssignmentRevokeResponseSchema,
   hostAuthorityExportResponseSchema,
   hostAuthorityImportRequestSchema,
   hostAuthorityImportResponseSchema,
@@ -98,6 +104,12 @@ import {
   type GraphMutationResponse,
   type GraphRevisionInspectionResponse,
   type GraphRevisionListResponse,
+  type RuntimeAssignmentInspectionResponse,
+  type RuntimeAssignmentListResponse,
+  type RuntimeAssignmentOfferRequest,
+  type RuntimeAssignmentOfferResponse,
+  type RuntimeAssignmentRevokeRequest,
+  type RuntimeAssignmentRevokeResponse,
   type HostAuthorityExportResponse,
   type HostAuthorityImportRequest,
   type HostAuthorityImportResponse,
@@ -466,6 +478,57 @@ export function createHostClient(options: HostClientOptions) {
           body: JSON.stringify(canonicalRequest)
         }),
         runnerRevokeMutationResponseSchema
+      );
+    },
+
+    async listAssignments(): Promise<RuntimeAssignmentListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/assignments`),
+        runtimeAssignmentListResponseSchema
+      );
+    },
+
+    async getAssignment(
+      assignmentId: string
+    ): Promise<RuntimeAssignmentInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/assignments/${assignmentId}`),
+        runtimeAssignmentInspectionResponseSchema
+      );
+    },
+
+    async offerAssignment(
+      request: RuntimeAssignmentOfferRequest
+    ): Promise<RuntimeAssignmentOfferResponse> {
+      const canonicalRequest = runtimeAssignmentOfferRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/assignments`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        runtimeAssignmentOfferResponseSchema
+      );
+    },
+
+    async revokeAssignment(
+      assignmentId: string,
+      request: RuntimeAssignmentRevokeRequest = {}
+    ): Promise<RuntimeAssignmentRevokeResponse> {
+      const canonicalRequest = runtimeAssignmentRevokeRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/assignments/${assignmentId}/revoke`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        runtimeAssignmentRevokeResponseSchema
       );
     },
 

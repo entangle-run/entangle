@@ -2718,3 +2718,11 @@ host-client plus CLI runner surfaces.
 Runner observation ingestion is implemented as Host state reducers for hello
 and heartbeat. Relay subscription wiring and assignment lifecycle remain
 deferred to the following slices.
+
+## [2026-04-26] implementation | Added assignment lifecycle
+
+Added `references/236-assignment-lifecycle-slice.md` and implemented the fifth
+federated pivot slice. Host now stores runtime assignment offers and revokes
+separately from local runtime intent, requires trusted runners before creating
+offers, records assignment accept/reject observations, and exposes assignment
+list/get/offer/revoke Host API plus host-client methods.

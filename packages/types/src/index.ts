@@ -13,6 +13,7 @@ export * from "./federation/runner.js";
 export * from "./graph/effective-bindings.js";
 export * from "./graph/graph-spec.js";
 export * from "./host-api/control-plane.js";
+export * from "./host-api/assignments.js";
 export * from "./host-api/authority.js";
 export * from "./host-api/edges.js";
 export * from "./host-api/events.js";

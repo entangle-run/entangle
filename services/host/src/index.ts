@@ -18,6 +18,12 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  runtimeAssignmentInspectionResponseSchema,
+  runtimeAssignmentListResponseSchema,
+  runtimeAssignmentOfferRequestSchema,
+  runtimeAssignmentOfferResponseSchema,
+  runtimeAssignmentRevokeRequestSchema,
+  runtimeAssignmentRevokeResponseSchema,
   hostAuthorityExportResponseSchema,
   hostAuthorityImportRequestSchema,
   hostAuthorityImportResponseSchema,
@@ -112,6 +118,7 @@ import {
   getHostAuthorityInspection,
   getNodeInspection,
   getRunnerRegistryEntry,
+  getRuntimeAssignment,
   getRuntimeContext,
   getRuntimeInspection,
   getRuntimeApprovalInspection,
@@ -149,6 +156,7 @@ import {
   initializeHostState,
   importHostAuthority,
   listRunnerRegistry,
+  listRuntimeAssignments,
   listRuntimeInspections,
   listSessions,
   listPackageSources,
@@ -163,12 +171,14 @@ import {
   replaceEdge,
   replaceManagedNode,
   reviewRuntimeSourceChangeCandidate,
+  offerRuntimeAssignment,
   publishRuntimeSourceHistory,
   publishRuntimeWikiRepository,
   replayRuntimeSourceHistory,
   requestRuntimeBoundSessionCancellation,
   requestSessionCancellation,
   revokeRunnerRegistration,
+  revokeRuntimeAssignment,
   setRuntimeDesiredState,
   setRuntimeRecoveryPolicy,
   trustRunnerRegistration,
@@ -642,6 +652,84 @@ export async function buildHostServer() {
       await revokeRunnerRegistration({
         request: mutation,
         runnerId
+      })
+    );
+  });
+
+  server.get("/v1/assignments", async () =>
+    runtimeAssignmentListResponseSchema.parse(await listRuntimeAssignments())
+  );
+
+  server.get("/v1/assignments/:assignmentId", async (request, reply) => {
+    const params = request.params as { assignmentId: string };
+    const assignmentId = identifierSchema.parse(params.assignmentId);
+    const inspection = await getRuntimeAssignment(assignmentId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime assignment '${assignmentId}' was not found.`
+      });
+    }
+
+    return runtimeAssignmentInspectionResponseSchema.parse(inspection);
+  });
+
+  server.post("/v1/assignments", async (request) => {
+    const mutation = parseRequestInput(
+      runtimeAssignmentOfferRequestSchema,
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message:
+          "Request body did not match the expected runtime assignment offer schema."
+      }
+    );
+
+    try {
+      return runtimeAssignmentOfferResponseSchema.parse(
+        await offerRuntimeAssignment(mutation)
+      );
+    } catch (error) {
+      throw new HostHttpError({
+        code: "conflict",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime assignment offer could not be created.",
+        statusCode: 409
+      });
+    }
+  });
+
+  server.post("/v1/assignments/:assignmentId/revoke", async (request, reply) => {
+    const params = request.params as { assignmentId: string };
+    const assignmentId = identifierSchema.parse(params.assignmentId);
+    const existing = await getRuntimeAssignment(assignmentId);
+
+    if (!existing) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime assignment '${assignmentId}' was not found.`
+      });
+    }
+
+    const mutation = parseRequestInput(
+      runtimeAssignmentRevokeRequestSchema,
+      request.body ?? {},
+      {
+        detailsKey: "bodyIssues",
+        message:
+          "Request body did not match the expected runtime assignment revoke schema."
+      }
+    );
+
+    return runtimeAssignmentRevokeResponseSchema.parse(
+      await revokeRuntimeAssignment({
+        assignmentId,
+        request: mutation
       })
     );
   });

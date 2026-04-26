@@ -44,6 +44,9 @@ import {
   nodeInspectionResponseSchema,
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
+  runtimeAssignmentListResponseSchema,
+  runtimeAssignmentOfferRequestSchema,
+  runtimeAssignmentRevokeResponseSchema,
   runnerRegistrationRecordSchema,
   runnerRegistryEntrySchema,
   runnerRegistryListResponseSchema,
@@ -473,6 +476,40 @@ describe("federated runtime contracts", () => {
         }
       }).runner.registration.trustState
     ).toBe("trusted");
+  });
+
+  it("accepts runtime assignment host API contracts", () => {
+    const assignment = runtimeAssignmentRecordSchema.parse({
+      ...buildOfferedAssignment(),
+      lease: {
+        expiresAt: "2026-04-26T11:00:00.000Z",
+        issuedAt: observedAt,
+        leaseId: "lease-alpha",
+        renewBy: "2026-04-26T10:48:00.000Z"
+      }
+    });
+
+    expect(
+      runtimeAssignmentListResponseSchema.parse({
+        assignments: [assignment],
+        generatedAt: observedAt
+      }).assignments[0]?.assignmentId
+    ).toBe("assignment-alpha");
+    expect(
+      runtimeAssignmentOfferRequestSchema.parse({
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      }).leaseDurationSeconds
+    ).toBe(3600);
+    expect(
+      runtimeAssignmentRevokeResponseSchema.parse({
+        assignment: {
+          ...assignment,
+          revokedAt: observedAt,
+          status: "revoked"
+        }
+      }).assignment.status
+    ).toBe("revoked");
   });
 });
 

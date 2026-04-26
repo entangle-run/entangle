@@ -426,6 +426,136 @@ describe("createHostClient", () => {
     });
   });
 
+  it("calls runtime assignment list, inspect, offer, and revoke surfaces", async () => {
+    const assignment = {
+      assignmentId: "assignment-alpha",
+      assignmentRevision: 0,
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-rev-1",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lease: {
+        expiresAt: "2026-04-26T11:00:00.000Z",
+        issuedAt: "2026-04-26T10:00:00.000Z",
+        leaseId: "lease-alpha",
+        renewBy: "2026-04-26T10:48:00.000Z"
+      },
+      nodeId: "worker-it",
+      offeredAt: "2026-04-26T10:00:00.000Z",
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      runtimeKind: "agent_runner",
+      schemaVersion: "1",
+      status: "offered",
+      updatedAt: "2026-04-26T10:00:00.000Z"
+    };
+    const requests: Array<{
+      body?: string;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        if (url.endsWith("/revoke")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                assignment: {
+                  ...assignment,
+                  revokedAt: "2026-04-26T10:05:00.000Z",
+                  status: "revoked"
+                }
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        if (url.endsWith("/v1/assignments") && init?.method === "POST") {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({ assignment }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        if (url.endsWith("/v1/assignments")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                assignments: [assignment],
+                generatedAt: "2026-04-26T10:01:00.000Z"
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({ assignment }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.listAssignments()).resolves.toMatchObject({
+      assignments: [
+        {
+          assignmentId: "assignment-alpha"
+        }
+      ]
+    });
+    await expect(client.getAssignment("assignment-alpha")).resolves.toMatchObject({
+      assignment: {
+        status: "offered"
+      }
+    });
+    await expect(
+      client.offerAssignment({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      })
+    ).resolves.toMatchObject({
+      assignment: {
+        assignmentId: "assignment-alpha"
+      }
+    });
+    await expect(
+      client.revokeAssignment("assignment-alpha", { reason: "operator" })
+    ).resolves.toMatchObject({
+      assignment: {
+        status: "revoked"
+      }
+    });
+
+    expect(requests.map((request) => request.url)).toEqual([
+      "http://entangle-host.test/v1/assignments",
+      "http://entangle-host.test/v1/assignments/assignment-alpha",
+      "http://entangle-host.test/v1/assignments",
+      "http://entangle-host.test/v1/assignments/assignment-alpha/revoke"
+    ]);
+    expect(JSON.parse(requests[2]!.body ?? "{}")).toMatchObject({
+      assignmentId: "assignment-alpha",
+      leaseDurationSeconds: 3600
+    });
+  });
+
   it("deletes package sources through the host package-source surface", async () => {
     const requests: Array<{ method?: string; url: string }> = [];
     const client = createHostClient({

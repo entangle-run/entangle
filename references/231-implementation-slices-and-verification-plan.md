@@ -107,6 +107,10 @@ Verification:
 Implement assignment offer, accept, reject, revoke, and lease handling. Keep
 assignment state separate from Docker runtime state.
 
+Implementation record:
+
+- [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
+
 Verification:
 
 - assignment reducer tests;

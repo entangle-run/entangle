@@ -133,7 +133,23 @@ import {
   type GitRepositoryProvisioningRecord,
   type RuntimeDesiredState,
   nostrSecretKeySchema,
+  assignmentAcceptedObservationPayloadSchema,
+  assignmentRejectedObservationPayloadSchema,
   runtimeIdentityContextSchema,
+  runtimeAssignmentInspectionResponseSchema,
+  type RuntimeAssignmentInspectionResponse,
+  runtimeAssignmentListResponseSchema,
+  type RuntimeAssignmentListResponse,
+  runtimeAssignmentOfferRequestSchema,
+  runtimeAssignmentOfferResponseSchema,
+  type RuntimeAssignmentOfferResponse,
+  runtimeAssignmentRecordSchema,
+  type RuntimeAssignmentRecord,
+  runtimeAssignmentRevokeRequestSchema,
+  type RuntimeAssignmentRevokeRequest,
+  runtimeAssignmentRevokeResponseSchema,
+  type RuntimeAssignmentRevokeResponse,
+  type RuntimeNodeKind,
   secretRefSchema,
   sessionCancellationRequestRecordSchema,
   sessionCancellationResponseSchema,
@@ -343,6 +359,7 @@ const hostAuthorityRecordPath = path.join(
   "host-authority.json"
 );
 const runnerRegistryRoot = path.join(desiredRoot, "runner-registry");
+const runtimeAssignmentsRoot = path.join(desiredRoot, "runtime-assignments");
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
 const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
@@ -1710,6 +1727,284 @@ export async function revokeRunnerRegistration(input: {
 
   return runnerRevokeMutationResponseSchema.parse({
     runner: await buildRunnerRegistryEntry(revoked)
+  });
+}
+
+function runtimeAssignmentRecordPath(assignmentId: string): string {
+  return path.join(runtimeAssignmentsRoot, `${assignmentId}.json`);
+}
+
+async function readRuntimeAssignmentRecord(
+  assignmentId: string
+): Promise<RuntimeAssignmentRecord | undefined> {
+  const recordPath = runtimeAssignmentRecordPath(assignmentId);
+
+  if (!(await pathExists(recordPath))) {
+    return undefined;
+  }
+
+  return runtimeAssignmentRecordSchema.parse(await readJsonFile(recordPath));
+}
+
+async function writeRuntimeAssignmentRecord(
+  record: RuntimeAssignmentRecord
+): Promise<void> {
+  await writeJsonFile(runtimeAssignmentRecordPath(record.assignmentId), record);
+}
+
+async function listRuntimeAssignmentRecords(): Promise<RuntimeAssignmentRecord[]> {
+  if (!(await pathExists(runtimeAssignmentsRoot))) {
+    return [];
+  }
+
+  const entries = await readdir(runtimeAssignmentsRoot);
+  const records = await Promise.all(
+    entries
+      .filter((entry) => entry.endsWith(".json"))
+      .map((entry) =>
+        readJsonFile(path.join(runtimeAssignmentsRoot, entry)).then((record) =>
+          runtimeAssignmentRecordSchema.parse(record)
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    left.assignmentId.localeCompare(right.assignmentId)
+  );
+}
+
+async function requireRuntimeAssignmentRecord(
+  assignmentId: string
+): Promise<RuntimeAssignmentRecord> {
+  const assignment = await readRuntimeAssignmentRecord(assignmentId);
+
+  if (!assignment) {
+    throw new Error(`Runtime assignment '${assignmentId}' was not found.`);
+  }
+
+  return assignment;
+}
+
+function inferRuntimeKindForNode(node: NodeBinding): RuntimeNodeKind {
+  if (node.nodeKind === "user") {
+    throw new Error(`User node '${node.nodeId}' cannot be assigned to a runner.`);
+  }
+
+  return node.nodeKind === "service" ? "service_runner" : "agent_runner";
+}
+
+function addSecondsIso(timestamp: string, seconds: number): string {
+  return new Date(Date.parse(timestamp) + seconds * 1000).toISOString();
+}
+
+function buildAssignmentLease(input: {
+  durationSeconds: number;
+  issuedAt: string;
+}) {
+  const renewAfterSeconds = Math.max(1, Math.floor(input.durationSeconds * 0.8));
+
+  return {
+    expiresAt: addSecondsIso(input.issuedAt, input.durationSeconds),
+    issuedAt: input.issuedAt,
+    leaseId: sanitizeIdentifier(`lease-${randomUUID()}`),
+    renewBy: addSecondsIso(input.issuedAt, renewAfterSeconds)
+  };
+}
+
+export async function listRuntimeAssignments(): Promise<RuntimeAssignmentListResponse> {
+  await initializeHostState();
+
+  return runtimeAssignmentListResponseSchema.parse({
+    assignments: await listRuntimeAssignmentRecords(),
+    generatedAt: nowIsoString()
+  });
+}
+
+export async function getRuntimeAssignment(
+  assignmentId: string
+): Promise<RuntimeAssignmentInspectionResponse | undefined> {
+  await initializeHostState();
+
+  const assignment = await readRuntimeAssignmentRecord(assignmentId);
+
+  if (!assignment) {
+    return undefined;
+  }
+
+  return runtimeAssignmentInspectionResponseSchema.parse({
+    assignment
+  });
+}
+
+export async function offerRuntimeAssignment(
+  input: unknown
+): Promise<RuntimeAssignmentOfferResponse> {
+  await initializeHostState();
+
+  const request = runtimeAssignmentOfferRequestSchema.parse(input);
+  const activeGraph = await readActiveGraphState();
+
+  if (!activeGraph.graph || !activeGraph.activeRevisionId) {
+    throw new Error("Cannot offer a runtime assignment without an active graph.");
+  }
+
+  const node = activeGraph.graph.nodes.find(
+    (candidate) => candidate.nodeId === request.nodeId
+  );
+
+  if (!node) {
+    throw new Error(`Node '${request.nodeId}' was not found in the active graph.`);
+  }
+
+  const runtimeKind = inferRuntimeKindForNode(node);
+  const runner = await requireRunnerRegistration(request.runnerId);
+
+  if (runner.trustState !== "trusted") {
+    throw new Error(
+      `Runner '${request.runnerId}' must be trusted before it can receive assignments.`
+    );
+  }
+
+  if (!runner.capabilities.runtimeKinds.includes(runtimeKind)) {
+    throw new Error(
+      `Runner '${request.runnerId}' does not advertise runtime kind '${runtimeKind}'.`
+    );
+  }
+
+  const authority = await ensureHostAuthorityMaterialized();
+
+  if (runner.hostAuthorityPubkey !== authority.publicKey) {
+    throw new Error(
+      `Runner '${request.runnerId}' is registered for a different Host Authority.`
+    );
+  }
+
+  const offeredAt = nowIsoString();
+  const assignmentId =
+    request.assignmentId ??
+    sanitizeIdentifier(`assignment-${node.nodeId}-${runner.runnerId}-${randomUUID()}`);
+  const assignment = runtimeAssignmentRecordSchema.parse({
+    assignmentId,
+    assignmentRevision: 0,
+    graphId: activeGraph.graph.graphId,
+    graphRevisionId: activeGraph.activeRevisionId,
+    hostAuthorityPubkey: authority.publicKey,
+    lease: buildAssignmentLease({
+      durationSeconds: request.leaseDurationSeconds,
+      issuedAt: offeredAt
+    }),
+    nodeId: node.nodeId,
+    offeredAt,
+    ...(request.policyRevisionId
+      ? { policyRevisionId: request.policyRevisionId }
+      : {}),
+    runnerId: runner.runnerId,
+    runnerPubkey: runner.publicKey,
+    runtimeKind,
+    schemaVersion: "1",
+    status: "offered",
+    updatedAt: offeredAt
+  });
+
+  await writeRuntimeAssignmentRecord(assignment);
+
+  return runtimeAssignmentOfferResponseSchema.parse({
+    assignment
+  });
+}
+
+export async function recordRuntimeAssignmentAccepted(
+  input: unknown
+): Promise<RuntimeAssignmentInspectionResponse> {
+  await initializeHostState();
+
+  const accepted = assignmentAcceptedObservationPayloadSchema.parse(input);
+  await assertCurrentHostAuthorityPubkey(accepted.hostAuthorityPubkey);
+
+  const assignment = await requireRuntimeAssignmentRecord(accepted.assignmentId);
+
+  if (
+    assignment.runnerId !== accepted.runnerId ||
+    assignment.runnerPubkey !== accepted.runnerPubkey
+  ) {
+    throw new Error(
+      `Assignment '${accepted.assignmentId}' acceptance did not match the assigned runner.`
+    );
+  }
+
+  const updated = runtimeAssignmentRecordSchema.parse({
+    ...assignment,
+    acceptedAt: accepted.acceptedAt,
+    assignmentRevision: assignment.assignmentRevision + 1,
+    ...(accepted.lease ? { lease: accepted.lease } : {}),
+    status: "accepted",
+    updatedAt: accepted.acceptedAt
+  });
+
+  await writeRuntimeAssignmentRecord(updated);
+
+  return runtimeAssignmentInspectionResponseSchema.parse({
+    assignment: updated
+  });
+}
+
+export async function recordRuntimeAssignmentRejected(
+  input: unknown
+): Promise<RuntimeAssignmentInspectionResponse> {
+  await initializeHostState();
+
+  const rejected = assignmentRejectedObservationPayloadSchema.parse(input);
+  await assertCurrentHostAuthorityPubkey(rejected.hostAuthorityPubkey);
+
+  const assignment = await requireRuntimeAssignmentRecord(rejected.assignmentId);
+
+  if (
+    assignment.runnerId !== rejected.runnerId ||
+    assignment.runnerPubkey !== rejected.runnerPubkey
+  ) {
+    throw new Error(
+      `Assignment '${rejected.assignmentId}' rejection did not match the assigned runner.`
+    );
+  }
+
+  const updated = runtimeAssignmentRecordSchema.parse({
+    ...assignment,
+    assignmentRevision: assignment.assignmentRevision + 1,
+    rejectedAt: rejected.rejectedAt,
+    rejectionReason: rejected.rejectionReason,
+    status: "rejected",
+    updatedAt: rejected.rejectedAt
+  });
+
+  await writeRuntimeAssignmentRecord(updated);
+
+  return runtimeAssignmentInspectionResponseSchema.parse({
+    assignment: updated
+  });
+}
+
+export async function revokeRuntimeAssignment(input: {
+  assignmentId: string;
+  request?: RuntimeAssignmentRevokeRequest;
+}): Promise<RuntimeAssignmentRevokeResponse> {
+  await initializeHostState();
+
+  const request = runtimeAssignmentRevokeRequestSchema.parse(input.request ?? {});
+  const assignment = await requireRuntimeAssignmentRecord(input.assignmentId);
+  const revokedAt = nowIsoString();
+  const revoked = runtimeAssignmentRecordSchema.parse({
+    ...assignment,
+    assignmentRevision: assignment.assignmentRevision + 1,
+    ...(request.reason ? { revocationReason: request.reason } : {}),
+    revokedAt,
+    status: "revoked",
+    updatedAt: revokedAt
+  });
+
+  await writeRuntimeAssignmentRecord(revoked);
+
+  return runtimeAssignmentRevokeResponseSchema.parse({
+    assignment: revoked
   });
 }
 
@@ -3721,6 +4016,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(secretRefsRoot),
     ensureDirectory(hostAuthorityRoot),
     ensureDirectory(runnerRegistryRoot),
+    ensureDirectory(runtimeAssignmentsRoot),
     ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
