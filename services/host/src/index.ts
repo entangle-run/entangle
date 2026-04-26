@@ -18,6 +18,10 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  hostAuthorityExportResponseSchema,
+  hostAuthorityImportRequestSchema,
+  hostAuthorityImportResponseSchema,
+  hostAuthorityInspectionResponseSchema,
   identifierSchema,
   hostEventListQuerySchema,
   hostEventListResponseSchema,
@@ -98,6 +102,8 @@ import {
   deleteExternalPrincipal,
   deleteManagedNode,
   deletePackageSource,
+  exportHostAuthority,
+  getHostAuthorityInspection,
   getNodeInspection,
   getRuntimeContext,
   getRuntimeInspection,
@@ -134,6 +140,7 @@ import {
   getRuntimeMemoryPageInspection,
   getSessionInspection,
   initializeHostState,
+  importHostAuthority,
   listRuntimeInspections,
   listSessions,
   listPackageSources,
@@ -503,6 +510,51 @@ export async function buildHostServer() {
   server.get("/v1/host/status", async () =>
     hostStatusResponseSchema.parse(await buildHostStatus())
   );
+
+  server.get("/v1/authority", async () =>
+    hostAuthorityInspectionResponseSchema.parse(await getHostAuthorityInspection())
+  );
+
+  server.get("/v1/authority/export", async () => {
+    try {
+      return hostAuthorityExportResponseSchema.parse(await exportHostAuthority());
+    } catch (error) {
+      throw new HostHttpError({
+        code: "conflict",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Host Authority export is not available.",
+        statusCode: 409
+      });
+    }
+  });
+
+  server.put("/v1/authority/import", async (request) => {
+    const importRequest = parseRequestInput(
+      hostAuthorityImportRequestSchema,
+      request.body,
+      {
+        detailsKey: "bodyIssues",
+        message: "Request body did not match the expected Host Authority import schema."
+      }
+    );
+
+    try {
+      return hostAuthorityImportResponseSchema.parse(
+        await importHostAuthority(importRequest)
+      );
+    } catch (error) {
+      throw new HostHttpError({
+        code: "bad_request",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Host Authority import failed.",
+        statusCode: 400
+      });
+    }
+  });
 
   server.get("/v1/catalog", async () =>
     catalogInspectionResponseSchema.parse(await getCatalogInspection())

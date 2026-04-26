@@ -32,6 +32,7 @@ because the handoff required these exact filenames. The existing
 ## Implementation Records
 
 - [232-federated-contracts-slice.md](232-federated-contracts-slice.md)
+- [233-host-authority-store-slice.md](233-host-authority-store-slice.md)
 
 ## Audited Scope
 
@@ -172,5 +173,5 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slice 1 contracts are implemented in this branch; the plan is
-ready for Slice 2 after the Slice 1 audit and atomic commit complete.
+Plan readiness: Slices 1 and 2 are implemented in this branch; the plan is
+ready for Slice 3 after the Slice 2 audit and atomic commit complete.

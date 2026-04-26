@@ -40,6 +40,10 @@ import {
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
   currentLocalStateLayoutVersion,
+  entangleNostrRumorKind,
+  entangleSignedEnvelopeSchema,
+  type EntangleProtocolDomain,
+  type EntangleSignedEnvelope,
   observedApprovalActivityRecordSchema,
   observedArtifactActivityRecordSchema,
   observedConversationActivityRecordSchema,
@@ -53,6 +57,15 @@ import {
   type EffectiveNodeBinding,
   type HostEventListResponse,
   type HostEventRecord,
+  hostAuthorityExportResponseSchema,
+  type HostAuthorityExportResponse,
+  hostAuthorityImportRequestSchema,
+  hostAuthorityImportResponseSchema,
+  type HostAuthorityImportResponse,
+  type HostAuthorityInspectionResponse,
+  hostAuthorityInspectionResponseSchema,
+  type HostAuthorityRecord,
+  hostAuthorityRecordSchema,
   gitRepositoryProvisioningRecordSchema,
   type AgentPackageManifest,
   agentPackageManifestSchema,
@@ -119,6 +132,7 @@ import {
   resolveGitPrincipalBindingForService,
   type GitRepositoryProvisioningRecord,
   type RuntimeDesiredState,
+  nostrSecretKeySchema,
   runtimeIdentityContextSchema,
   secretRefSchema,
   sessionCancellationRequestRecordSchema,
@@ -268,7 +282,13 @@ import {
   validateGraphDocument,
   validatePackageDirectory
 } from "@entangle/validator";
-import { generateSecretKey, getPublicKey } from "nostr-tools";
+import {
+  finalizeEvent,
+  generateSecretKey,
+  getPublicKey,
+  type EventTemplate,
+  type NostrEvent
+} from "nostr-tools";
 import { GiteaApiClient } from "./gitea-api-client.js";
 import {
   createRuntimeBackend,
@@ -296,6 +316,11 @@ const reservedPackageSourceIds = new Set(["store"]);
 const localStateLayoutRecordPath = path.join(hostStateRoot, "state-layout.json");
 const catalogPath = path.join(desiredRoot, "catalog.json");
 const externalPrincipalsRoot = path.join(desiredRoot, "external-principals");
+const hostAuthorityRoot = path.join(desiredRoot, "authority");
+const hostAuthorityRecordPath = path.join(
+  hostAuthorityRoot,
+  "host-authority.json"
+);
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
 const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
@@ -331,6 +356,7 @@ const reconciliationHistoryRoot = path.join(reconciliationRoot, "history");
 const controlPlaneTraceRoot = path.join(tracesRoot, "control-plane");
 const runtimeIdentitiesRoot = path.join(secretStateRoot, "runtime-identities");
 const secretRefsRoot = path.join(secretStateRoot, "refs");
+const defaultHostAuthorityKeyRef = "secret://host-authority/main";
 const runtimeContextFileName = "effective-runtime-context.json";
 const artifactPreviewMaxBytes = 16 * 1024;
 const artifactDiffMaxBytes = 64 * 1024;
@@ -1090,6 +1116,131 @@ function resolveSecretRefStoragePath(secretRef: string): string | undefined {
   return path.join(secretRefsRoot, ...segments);
 }
 
+async function writeSecretRefValue(
+  secretRef: string,
+  value: string
+): Promise<string> {
+  const storagePath = resolveSecretRefStoragePath(secretRef);
+
+  if (!storagePath) {
+    throw new Error(`Secret reference '${secretRef}' is not valid.`);
+  }
+
+  await writeSecretFile(storagePath, `${value.trim()}\n`);
+  return storagePath;
+}
+
+function parseNostrSecretKeyBytes(secretKey: string): Uint8Array {
+  const parsedSecretKey = nostrSecretKeySchema.parse(secretKey.trim());
+  return Uint8Array.from(Buffer.from(parsedSecretKey, "hex"));
+}
+
+function buildDefaultHostAuthorityRecord(input: {
+  publicKey: string;
+  timestamp: string;
+}): HostAuthorityRecord {
+  return hostAuthorityRecordSchema.parse({
+    authorityId: sanitizeIdentifier(
+      `host-authority-${input.publicKey.slice(0, 12)}`
+    ),
+    createdAt: input.timestamp,
+    displayName: "Default Host Authority",
+    keyRef: defaultHostAuthorityKeyRef,
+    publicKey: input.publicKey,
+    schemaVersion: "1",
+    status: "active",
+    updatedAt: input.timestamp
+  });
+}
+
+async function readHostAuthorityRecordFile(): Promise<
+  HostAuthorityRecord | undefined
+> {
+  if (!(await pathExists(hostAuthorityRecordPath))) {
+    return undefined;
+  }
+
+  return hostAuthorityRecordSchema.parse(await readJsonFile(hostAuthorityRecordPath));
+}
+
+async function readHostAuthoritySecretKey(
+  authority: HostAuthorityRecord
+): Promise<string | undefined> {
+  if (!authority.keyRef) {
+    return undefined;
+  }
+
+  return readSecretRefValue(authority.keyRef);
+}
+
+async function inspectHostAuthoritySecret(
+  authority: HostAuthorityRecord
+): Promise<HostAuthorityInspectionResponse["secret"]> {
+  const secretKey = await readHostAuthoritySecretKey(authority);
+
+  if (!secretKey) {
+    return {
+      ...(authority.keyRef ? { keyRef: authority.keyRef } : {}),
+      status: "missing"
+    };
+  }
+
+  try {
+    const publicKey = getPublicKey(parseNostrSecretKeyBytes(secretKey));
+
+    return {
+      ...(authority.keyRef ? { keyRef: authority.keyRef } : {}),
+      status: publicKey === authority.publicKey ? "available" : "mismatched"
+    };
+  } catch {
+    return {
+      ...(authority.keyRef ? { keyRef: authority.keyRef } : {}),
+      status: "mismatched"
+    };
+  }
+}
+
+async function ensureHostAuthorityMaterialized(): Promise<HostAuthorityRecord> {
+  const existingAuthority = await readHostAuthorityRecordFile();
+
+  if (existingAuthority) {
+    return existingAuthority;
+  }
+
+  const secretKey = generateSecretKey();
+  const secretKeyHex = Buffer.from(secretKey).toString("hex");
+  const publicKey = getPublicKey(secretKey);
+  const timestamp = nowIsoString();
+  const authority = buildDefaultHostAuthorityRecord({
+    publicKey,
+    timestamp
+  });
+
+  await writeSecretRefValue(authority.keyRef ?? defaultHostAuthorityKeyRef, secretKeyHex);
+  await writeJsonFile(hostAuthorityRecordPath, authority);
+  return authority;
+}
+
+async function readAvailableHostAuthoritySecret(): Promise<{
+  authority: HostAuthorityRecord;
+  secretKey: string;
+}> {
+  const authority = await ensureHostAuthorityMaterialized();
+  const secret = await inspectHostAuthoritySecret(authority);
+  const secretKey = await readHostAuthoritySecretKey(authority);
+
+  if (secret.status !== "available" || !secretKey) {
+    throw new Error(
+      `Host Authority '${authority.authorityId}' does not have an available matching secret.`
+    );
+  }
+
+  return {
+    authority,
+    secretKey
+  };
+}
+
 async function resolveSecretBinding(secretRef: string): Promise<{
   delivery?: {
     filePath: string;
@@ -1126,6 +1277,115 @@ async function readSecretRefValue(secretRef: string): Promise<string | undefined
 
   const secretValue = (await readFile(storagePath, "utf8")).trim();
   return secretValue.length > 0 ? secretValue : undefined;
+}
+
+export async function getHostAuthorityInspection(): Promise<HostAuthorityInspectionResponse> {
+  await initializeHostState();
+
+  const authority = await ensureHostAuthorityMaterialized();
+  const secret = await inspectHostAuthoritySecret(authority);
+
+  return hostAuthorityInspectionResponseSchema.parse({
+    authority,
+    checkedAt: nowIsoString(),
+    secret
+  });
+}
+
+export async function exportHostAuthority(): Promise<HostAuthorityExportResponse> {
+  await initializeHostState();
+
+  const { authority, secretKey } = await readAvailableHostAuthoritySecret();
+
+  return hostAuthorityExportResponseSchema.parse({
+    authority,
+    exportedAt: nowIsoString(),
+    secretKey
+  });
+}
+
+export async function importHostAuthority(
+  input: unknown
+): Promise<HostAuthorityImportResponse> {
+  await initializeHostState();
+
+  const request = hostAuthorityImportRequestSchema.parse(input);
+  const secretKeyBytes = parseNostrSecretKeyBytes(request.secretKey);
+  const publicKey = getPublicKey(secretKeyBytes);
+
+  if (publicKey !== request.authority.publicKey) {
+    throw new Error(
+      "Imported Host Authority secret key does not match authority.publicKey."
+    );
+  }
+
+  const importedAt = nowIsoString();
+  const authority = hostAuthorityRecordSchema.parse({
+    ...request.authority,
+    keyRef: request.authority.keyRef ?? defaultHostAuthorityKeyRef,
+    updatedAt: importedAt
+  });
+
+  await writeSecretRefValue(
+    authority.keyRef ?? defaultHostAuthorityKeyRef,
+    request.secretKey
+  );
+  await writeJsonFile(hostAuthorityRecordPath, authority);
+
+  return hostAuthorityImportResponseSchema.parse({
+    authority,
+    importedAt
+  });
+}
+
+export async function signHostAuthorityEventTemplate(
+  eventTemplate: EventTemplate
+): Promise<NostrEvent> {
+  const { secretKey } = await readAvailableHostAuthoritySecret();
+
+  return finalizeEvent(eventTemplate, parseNostrSecretKeyBytes(secretKey));
+}
+
+export async function signHostAuthorityPayloadEnvelope(input: {
+  causationEventId?: string;
+  correlationId?: string;
+  payload: unknown;
+  protocol: EntangleProtocolDomain;
+  recipientPubkey?: string;
+}): Promise<EntangleSignedEnvelope> {
+  const payloadJson = JSON.stringify(input.payload);
+  const payloadHash = createHash("sha256").update(payloadJson).digest("hex");
+  const tags = [
+    ["protocol", input.protocol],
+    ["payload_hash", payloadHash]
+  ];
+
+  if (input.recipientPubkey) {
+    tags.push(["p", input.recipientPubkey]);
+  }
+
+  const createdAt = nowIsoString();
+  const signedEvent = await signHostAuthorityEventTemplate({
+    content: payloadJson,
+    created_at: Math.floor(new Date(createdAt).getTime() / 1000),
+    kind: entangleNostrRumorKind,
+    tags
+  });
+
+  return entangleSignedEnvelopeSchema.parse({
+    ...(input.causationEventId
+      ? { causationEventId: input.causationEventId }
+      : {}),
+    ...(input.correlationId ? { correlationId: input.correlationId } : {}),
+    createdAt,
+    eventId: signedEvent.id,
+    payloadHash,
+    protocol: input.protocol,
+    ...(input.recipientPubkey ? { recipientPubkey: input.recipientPubkey } : {}),
+    schemaVersion: "1",
+    signature: signedEvent.sig,
+    signerPubkey: signedEvent.pubkey
+  });
 }
 
 async function resolveGitPrincipalRuntimeBindings(
@@ -3134,6 +3394,7 @@ export async function initializeHostState(): Promise<void> {
   await Promise.all([
     ensureDirectory(runtimeIdentitiesRoot),
     ensureDirectory(secretRefsRoot),
+    ensureDirectory(hostAuthorityRoot),
     ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
@@ -3157,6 +3418,8 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(path.join(cacheRoot, "projections")),
     ensureDirectory(path.join(cacheRoot, "temp"))
   ]);
+
+  await ensureHostAuthorityMaterialized();
 
   if (!(await pathExists(catalogPath))) {
     const defaultCatalog = buildDefaultCatalog();
@@ -12099,6 +12362,7 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
+  const authorityInspection = await getHostAuthorityInspection();
   const stateLayout = await inspectLocalStateLayout({
     materializeIfMissing: true
   });
@@ -12137,6 +12401,7 @@ export async function buildHostStatus() {
     });
   const hostStatus =
     stateLayout.status !== "current" ||
+    authorityInspection.secret.status !== "available" ||
     reconciliationSnapshot.degradedRuntimeCount > 0 ||
     sessionDiagnostics.consistencyFindingCount > 0
       ? "degraded"
@@ -12145,6 +12410,13 @@ export async function buildHostStatus() {
         : "healthy";
 
   return {
+    authority: {
+      authorityId: authorityInspection.authority.authorityId,
+      publicKey: authorityInspection.authority.publicKey,
+      secretStatus: authorityInspection.secret.status,
+      status: authorityInspection.authority.status,
+      updatedAt: authorityInspection.authority.updatedAt
+    },
     service: "entangle-host" as const,
     status: hostStatus,
     graphRevisionId: graphInspection.activeRevisionId,

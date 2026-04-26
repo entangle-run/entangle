@@ -29,6 +29,9 @@ import {
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
   gitRepositoryProvisioningRecordSchema,
+  hostAuthorityExportResponseSchema,
+  hostAuthorityImportResponseSchema,
+  hostAuthorityInspectionResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -996,6 +999,73 @@ describe("buildHostServer", () => {
         }
       })
     ).rejects.toThrow("newer than the supported layout 1");
+  });
+
+  it("materializes, exports, imports, and reports Host Authority state", async () => {
+    const server = await createTestServer();
+
+    try {
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+
+      expect(authorityResponse.statusCode).toBe(200);
+      const authorityInspection = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      );
+      expect(authorityInspection.authority.status).toBe("active");
+      expect(authorityInspection.secret.status).toBe("available");
+
+      const statusResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+      const status = hostStatusResponseSchema.parse(statusResponse.json());
+      expect(status.authority).toMatchObject({
+        authorityId: authorityInspection.authority.authorityId,
+        publicKey: authorityInspection.authority.publicKey,
+        secretStatus: "available",
+        status: "active"
+      });
+
+      const exportResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority/export"
+      });
+      expect(exportResponse.statusCode).toBe(200);
+      const authorityExport = hostAuthorityExportResponseSchema.parse(
+        exportResponse.json()
+      );
+      expect(authorityExport.secretKey).toMatch(/^[0-9a-f]{64}$/);
+
+      const importResponse = await server.inject({
+        method: "PUT",
+        payload: authorityExport,
+        url: "/v1/authority/import"
+      });
+      expect(importResponse.statusCode).toBe(200);
+      expect(
+        hostAuthorityImportResponseSchema.parse(importResponse.json()).authority
+          .publicKey
+      ).toBe(authorityExport.authority.publicKey);
+
+      const mismatchedImportResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          ...authorityExport,
+          secretKey:
+            "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        url: "/v1/authority/import"
+      });
+      expect(mismatchedImportResponse.statusCode).toBe(400);
+      expect(hostErrorResponseSchema.parse(mismatchedImportResponse.json())).toMatchObject({
+        code: "bad_request"
+      });
+    } finally {
+      await server.close();
+    }
   });
 
   it("records audit events for token-protected operator mutation requests", async () => {

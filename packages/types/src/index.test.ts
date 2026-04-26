@@ -26,6 +26,9 @@ import {
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
   hostAuthorityRecordSchema,
+  hostAuthorityExportResponseSchema,
+  hostAuthorityImportRequestSchema,
+  hostAuthorityInspectionResponseSchema,
   hostErrorResponseSchema,
   hostProjectionSnapshotSchema,
   hostEventRecordSchema,
@@ -340,6 +343,82 @@ describe("federated runtime contracts", () => {
     });
 
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
+  });
+
+  it("accepts Host Authority API responses and status summaries", () => {
+    const authority = hostAuthorityRecordSchema.parse({
+      authorityId: "authority-main",
+      createdAt: observedAt,
+      keyRef: "secret://host-authority/main",
+      publicKey: authorityPubkey,
+      schemaVersion: "1",
+      status: "active",
+      updatedAt: observedAt
+    });
+    const inspection = hostAuthorityInspectionResponseSchema.parse({
+      authority,
+      checkedAt: observedAt,
+      secret: {
+        keyRef: "secret://host-authority/main",
+        status: "available"
+      }
+    });
+
+    expect(inspection.secret.status).toBe("available");
+    expect(
+      hostAuthorityExportResponseSchema.parse({
+        authority,
+        exportedAt: observedAt,
+        secretKey:
+          "1111111111111111111111111111111111111111111111111111111111111111"
+      }).authority.publicKey
+    ).toBe(authorityPubkey);
+    expect(
+      hostAuthorityImportRequestSchema.parse({
+        authority,
+        secretKey:
+          "1111111111111111111111111111111111111111111111111111111111111111"
+      }).authority.authorityId
+    ).toBe("authority-main");
+    expect(
+      hostStatusResponseSchema.parse({
+        authority: {
+          authorityId: "authority-main",
+          publicKey: authorityPubkey,
+          secretStatus: "available",
+          status: "active",
+          updatedAt: observedAt
+        },
+        reconciliation: {
+          backendKind: "memory",
+          blockedRuntimeCount: 0,
+          degradedRuntimeCount: 0,
+          failedRuntimeCount: 0,
+          findingCodes: [],
+          issueCount: 0,
+          managedRuntimeCount: 0,
+          runningRuntimeCount: 0,
+          stoppedRuntimeCount: 0,
+          transitioningRuntimeCount: 0
+        },
+        runtimeCounts: {
+          desired: 0,
+          observed: 0,
+          running: 0
+        },
+        service: "entangle-host",
+        stateLayout: {
+          checkedAt: observedAt,
+          currentLayoutVersion: 1,
+          minimumSupportedLayoutVersion: 1,
+          recordedAt: observedAt,
+          recordedLayoutVersion: 1,
+          status: "current"
+        },
+        status: "healthy",
+        timestamp: observedAt
+      }).authority?.authorityId
+    ).toBe("authority-main");
   });
 });
 

@@ -175,6 +175,104 @@ describe("createHostClient", () => {
     });
   });
 
+  it("calls Host Authority inspect, export, and import surfaces", async () => {
+    const authority = {
+      authorityId: "authority-main",
+      createdAt: "2026-04-26T10:00:00.000Z",
+      keyRef: "secret://host-authority/main",
+      publicKey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      schemaVersion: "1",
+      status: "active",
+      updatedAt: "2026-04-26T10:00:00.000Z"
+    };
+    const requests: Array<{
+      body?: string;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        if (url.endsWith("/v1/authority/export")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                authority,
+                exportedAt: "2026-04-26T10:01:00.000Z",
+                secretKey:
+                  "1111111111111111111111111111111111111111111111111111111111111111"
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        if (url.endsWith("/v1/authority/import")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                authority,
+                importedAt: "2026-04-26T10:02:00.000Z"
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              authority,
+              checkedAt: "2026-04-26T10:00:00.000Z",
+              secret: {
+                keyRef: "secret://host-authority/main",
+                status: "available"
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.getHostAuthority()).resolves.toMatchObject({
+      authority: {
+        authorityId: "authority-main"
+      },
+      secret: {
+        status: "available"
+      }
+    });
+    const exported = await client.exportHostAuthority();
+    await expect(client.importHostAuthority(exported)).resolves.toMatchObject({
+      importedAt: "2026-04-26T10:02:00.000Z"
+    });
+
+    expect(requests.map((request) => request.url)).toEqual([
+      "http://entangle-host.test/v1/authority",
+      "http://entangle-host.test/v1/authority/export",
+      "http://entangle-host.test/v1/authority/import"
+    ]);
+    expect(requests[2]).toMatchObject({
+      method: "PUT"
+    });
+    expect(JSON.parse(requests[2]!.body ?? "{}")).toMatchObject({
+      authority: {
+        authorityId: "authority-main"
+      }
+    });
+  });
+
   it("deletes package sources through the host package-source surface", async () => {
     const requests: Array<{ method?: string; url: string }> = [];
     const client = createHostClient({

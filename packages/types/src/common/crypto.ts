@@ -14,6 +14,10 @@ export const nostrPublicKeySchema = z.string().regex(/^[0-9a-f]{64}$/, {
   message: "Expected a lowercase 64-character Nostr public key."
 });
 
+export const nostrSecretKeySchema = z.string().regex(/^[0-9a-f]{64}$/, {
+  message: "Expected a lowercase 64-character Nostr secret key."
+});
+
 export const nostrEventIdSchema = z.string().regex(/^[0-9a-f]{64}$/, {
   message: "Expected a lowercase 64-character Nostr event id."
 });
@@ -25,5 +29,6 @@ export const nostrSignatureSchema = z.string().regex(/^[0-9a-f]{128}$/, {
 export type LowercaseHex = z.infer<typeof lowercaseHexSchema>;
 export type Sha256Digest = z.infer<typeof sha256DigestSchema>;
 export type NostrPublicKey = z.infer<typeof nostrPublicKeySchema>;
+export type NostrSecretKey = z.infer<typeof nostrSecretKeySchema>;
 export type NostrEventId = z.infer<typeof nostrEventIdSchema>;
 export type NostrSignature = z.infer<typeof nostrSignatureSchema>;

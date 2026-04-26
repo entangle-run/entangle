@@ -22,6 +22,7 @@ import {
   edgeReplacementRequestSchema,
   externalPrincipalMutationRequestSchema,
   graphSpecSchema,
+  hostAuthorityImportRequestSchema,
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
@@ -71,6 +72,11 @@ import {
   projectSortedGraphEdgeSummaries
 } from "./graph-output.js";
 import { buildCliMutationDryRun } from "./mutation-dry-run.js";
+import {
+  projectHostAuthorityExportSummary,
+  projectHostAuthorityImportSummary,
+  projectHostAuthoritySummary
+} from "./authority-output.js";
 import {
   buildNodeAgentRuntimeReplacementRequest,
   type NodeAgentRuntimeConfigurationOptions
@@ -726,6 +732,83 @@ hostCommand
       options.summary ? { status: projectHostStatusSummary(response) } : response
     );
   });
+
+const authorityCommand = program
+  .command("authority")
+  .description("Inspect and move the Host Authority identity.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  );
+
+authorityCommand
+  .command("show")
+  .option("--summary", "Print a compact Host Authority summary.")
+  .description("Show the current Host Authority public record and secret status.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const response = await client.getHostAuthority();
+    printJson(
+      options.summary
+        ? { authority: projectHostAuthoritySummary(response) }
+        : response
+    );
+  });
+
+authorityCommand
+  .command("export")
+  .option("--output <file>", "Write the portable authority export JSON to a file.")
+  .option("--summary", "Print a compact export summary instead of the secret payload.")
+  .description("Export the current Host Authority record and secret key.")
+  .action(
+    async (
+      options: { output?: string; summary?: boolean },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.exportHostAuthority();
+
+      if (options.output) {
+        await writeJsonDocument(resolveCliPath(options.output), response);
+      }
+
+      printJson(
+        options.summary || options.output
+          ? { authority: projectHostAuthorityExportSummary(response) }
+          : response
+      );
+    }
+  );
+
+authorityCommand
+  .command("import")
+  .argument("<file>", "Path to an authority export JSON file.")
+  .option("--summary", "Print a compact import summary.")
+  .description("Import a Host Authority record and secret key.")
+  .action(
+    async (
+      file: string,
+      options: { summary?: boolean },
+      command: Command
+    ) => {
+      const request = hostAuthorityImportRequestSchema.parse(
+        await readJsonDocument(resolveCliPath(file))
+      );
+      const client = createCliHostClient(command);
+      const response = await client.importHostAuthority(request);
+      printJson(
+        options.summary
+          ? { authority: projectHostAuthorityImportSummary(response) }
+          : response
+      );
+    }
+  );
 
 const hostEventsCommand = hostCommand
   .command("events")

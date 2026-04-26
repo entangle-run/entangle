@@ -62,6 +62,10 @@ Verification:
 Add Host Authority state, key generation, status, export/import, and signature
 helpers. Add Host API and client read surfaces.
 
+Implementation record:
+
+- [233-host-authority-store-slice.md](233-host-authority-store-slice.md)
+
 Verification:
 
 - Host unit tests;

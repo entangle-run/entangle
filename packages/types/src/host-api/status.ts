@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { hostAuthoritySummarySchema } from "./authority.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 
@@ -34,6 +35,7 @@ export const localStateLayoutInspectionSchema = z.object({
 });
 
 export const hostStatusResponseSchema = z.object({
+  authority: hostAuthoritySummarySchema.optional(),
   service: z.literal("entangle-host"),
   status: z.enum(["starting", "healthy", "degraded"]),
   graphRevisionId: identifierSchema.optional(),

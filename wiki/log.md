@@ -2681,3 +2681,16 @@ documents. This is still an additive contract slice: Host and runner behavior
 remain on the current local adapter until the next slices wire authority
 storage, Nostr control/observe transport, registry, assignment lifecycle, and
 projection reducers.
+
+## [2026-04-26] implementation | Added Host Authority store and surfaces
+
+Added `references/233-host-authority-store-slice.md` and implemented the
+second federated pivot slice. Host now materializes a stable Host Authority
+record and Nostr secret on first startup, reports authority status through Host
+status, exposes authority inspect/export/import routes, and has internal
+Host Authority signing helpers for later control events.
+
+The shared host client and CLI now expose authority show/export/import
+surfaces over the same Host boundary. This remains an authority foundation
+slice: runner registry, assignment control, and Nostr control/observe transport
+are still deferred to the following slices.

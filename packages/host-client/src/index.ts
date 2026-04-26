@@ -13,6 +13,10 @@ import {
   graphMutationResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
+  hostAuthorityExportResponseSchema,
+  hostAuthorityImportRequestSchema,
+  hostAuthorityImportResponseSchema,
+  hostAuthorityInspectionResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -88,6 +92,10 @@ import {
   type GraphMutationResponse,
   type GraphRevisionInspectionResponse,
   type GraphRevisionListResponse,
+  type HostAuthorityExportResponse,
+  type HostAuthorityImportRequest,
+  type HostAuthorityImportResponse,
+  type HostAuthorityInspectionResponse,
   type HostEventListResponse,
   type HostEventRecord,
   type HostStatusResponse,
@@ -363,6 +371,37 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/host/status`),
         hostStatusResponseSchema
+      );
+    },
+
+    async getHostAuthority(): Promise<HostAuthorityInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/authority`),
+        hostAuthorityInspectionResponseSchema
+      );
+    },
+
+    async exportHostAuthority(): Promise<HostAuthorityExportResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/authority/export`),
+        hostAuthorityExportResponseSchema
+      );
+    },
+
+    async importHostAuthority(
+      request: HostAuthorityImportRequest
+    ): Promise<HostAuthorityImportResponse> {
+      const canonicalRequest = hostAuthorityImportRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/authority/import`, {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(canonicalRequest)
+        }),
+        hostAuthorityImportResponseSchema
       );
     },
 
