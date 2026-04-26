@@ -108,7 +108,6 @@ export const runtimeInspectionResponseSchema = z
     agentRuntime: runtimeAgentRuntimeInspectionSchema.optional(),
     backendKind: runtimeBackendKindSchema,
     contextAvailable: z.boolean(),
-    contextPath: filesystemPathSchema.optional(),
     desiredState: runtimeDesiredStateSchema,
     graphId: identifierSchema,
     graphRevisionId: identifierSchema,

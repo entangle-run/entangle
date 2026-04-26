@@ -894,8 +894,6 @@ describe("createHostClient", () => {
               runtime: {
                 backendKind: "docker",
                 contextAvailable: true,
-                contextPath:
-                  "/tmp/runtime/worker-it/effective-runtime-context.json",
                 desiredState: "running",
                 graphId: "team-alpha",
                 graphRevisionId: "team-alpha-20260423-000000",
@@ -931,7 +929,6 @@ describe("createHostClient", () => {
           runtime: {
             backendKind: "docker",
             contextAvailable: true,
-            contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
             desiredState: "running",
             graphId: "team-alpha",
             graphRevisionId: "team-alpha-20260423-000000",
@@ -997,7 +994,6 @@ describe("createHostClient", () => {
             runtime: {
               backendKind: "docker",
               contextAvailable: true,
-              contextPath: "/tmp/runtime/reviewer-it/effective-runtime-context.json",
               desiredState: "running",
               graphId: "team-alpha",
               graphRevisionId: "team-alpha-20260423-000001",
@@ -1038,7 +1034,6 @@ describe("createHostClient", () => {
             runtime: {
               backendKind: "docker",
               contextAvailable: true,
-              contextPath: "/tmp/runtime/reviewer-it/effective-runtime-context.json",
               desiredState: "running",
               graphId: "team-alpha",
               graphRevisionId: "team-alpha-20260423-000002",
@@ -1120,7 +1115,6 @@ describe("createHostClient", () => {
             body: JSON.stringify({
               backendKind: "docker",
               contextAvailable: true,
-              contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
               desiredState: "running",
               graphId: "team-alpha",
               graphRevisionId: "team-alpha-20260423-000000",
@@ -1160,7 +1154,6 @@ describe("createHostClient", () => {
               currentRuntime: {
                 backendKind: "docker",
                 contextAvailable: true,
-                contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
                 desiredState: "running",
                 graphId: "team-alpha",
                 graphRevisionId: "team-alpha-20260424-000001",
@@ -1175,8 +1168,6 @@ describe("createHostClient", () => {
                   runtime: {
                     backendKind: "docker",
                     contextAvailable: true,
-                    contextPath:
-                      "/tmp/runtime/worker-it/effective-runtime-context.json",
                     desiredState: "running",
                     graphId: "team-alpha",
                     graphRevisionId: "team-alpha-20260424-000001",
@@ -1258,7 +1249,6 @@ describe("createHostClient", () => {
               runtime: {
                 backendKind: "docker",
                 contextAvailable: true,
-                contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
                 desiredState: "running",
                 graphId: "team-alpha",
                 graphRevisionId: "team-alpha-20260424-000001",

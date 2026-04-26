@@ -55,6 +55,7 @@ same-machine slice records.
 - [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
 - [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
 - [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
+- [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 
 ## Audited Scope
 
@@ -119,6 +120,9 @@ The repository is not fully federated:
 - Host projection now exposes runtime projection records from observed runtime
   state, intents, and assignment records without invoking backend
   reconciliation;
+- Host public runtime inspection responses no longer expose `contextPath`;
+  Host keeps that path only as private process state for the remaining
+  filesystem-backed detail readers;
 - `ops:smoke-federated-live-relay` now proves the federated control/observe path
   against a real relay and projects a git-backed artifact ref;
 - `ops:smoke-federated-process-runner` now starts a real joined runner process,
@@ -209,7 +213,7 @@ The plan was checked against the actual repo after writing:
 - no code implementation is included in this documentation slice.
 
 Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
-follow-up slices are implemented in this branch. The next blocking
-implementation areas are replacing remaining deep filesystem-backed runtime
-inspection paths and turning the process smoke into the full multi-machine
-distributed proof.
+follow-up slices and the public runtime API path boundary are implemented in
+this branch. The next blocking implementation areas are replacing remaining
+deep filesystem-backed runtime inspection paths and turning the process smoke
+into the full multi-machine distributed proof.

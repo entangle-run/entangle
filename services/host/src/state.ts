@@ -460,7 +460,11 @@ type RuntimeResolution = {
   binding: EffectiveNodeBinding;
   context: EffectiveRuntimeContext | undefined;
   primaryGitRepositoryProvisioning: GitRepositoryProvisioningRecord | undefined;
-  inspection: RuntimeInspectionResponse;
+  inspection: RuntimeInspectionInternal;
+};
+
+type RuntimeInspectionInternal = RuntimeInspectionResponse & {
+  contextPath?: string;
 };
 
 let runtimeBackendOverride:
@@ -471,7 +475,7 @@ const hostEventSubscribers = new Set<(event: HostEventRecord) => void>();
 
 type CurrentGraphRuntimeSynchronizationResult = {
   nodes: NodeInspectionResponse[];
-  runtimes: RuntimeInspectionResponse[];
+  runtimes: RuntimeInspectionInternal[];
   snapshot: ReturnType<typeof reconciliationSnapshotSchema.parse>;
 };
 
@@ -4495,10 +4499,11 @@ function buildRuntimeRecoveryComparable(input: {
   inspection: RuntimeInspectionResponse;
   lastError: string | undefined;
 }) {
-  const provisioning = input.inspection.primaryGitRepositoryProvisioning;
-  const workspaceHealth = input.inspection.workspaceHealth
+  const inspection = runtimeInspectionResponseSchema.parse(input.inspection);
+  const provisioning = inspection.primaryGitRepositoryProvisioning;
+  const workspaceHealth = inspection.workspaceHealth
     ? {
-        ...input.inspection.workspaceHealth,
+        ...inspection.workspaceHealth,
         checkedAt: ""
       }
     : undefined;
@@ -4506,7 +4511,7 @@ function buildRuntimeRecoveryComparable(input: {
   return {
     ...(input.lastError ? { lastError: input.lastError } : {}),
     runtime: {
-      ...input.inspection,
+      ...inspection,
       workspaceHealth,
       primaryGitRepositoryProvisioning: provisioning
         ? {
@@ -4561,14 +4566,14 @@ function buildRuntimeInspectionFromState(input: {
   runtimeHandle: string | undefined;
   statusMessage: string | undefined;
   workspaceHealth: RuntimeWorkspaceHealth | undefined;
-}): RuntimeInspectionResponse {
-  return runtimeInspectionResponseSchema.parse({
+}): RuntimeInspectionInternal {
+  const contextPath = input.context
+    ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName)
+    : undefined;
+  const inspection = runtimeInspectionResponseSchema.parse({
     agentRuntime: input.agentRuntime,
     backendKind: input.backendKind,
     contextAvailable: Boolean(input.context),
-    contextPath: input.context
-      ? path.join(input.context.workspace.injectedRoot, runtimeContextFileName)
-      : undefined,
     desiredState: input.desiredState,
     graphId: input.graphId,
     graphRevisionId: input.graphRevisionId,
@@ -4582,6 +4587,11 @@ function buildRuntimeInspectionFromState(input: {
     statusMessage: input.statusMessage,
     workspaceHealth: input.workspaceHealth
   });
+
+  return {
+    ...inspection,
+    ...(contextPath ? { contextPath } : {})
+  };
 }
 
 async function buildRuntimeAgentRuntimeInspection(
@@ -4670,7 +4680,7 @@ async function reconcileObservedRuntimeState(input: {
   restartGeneration: number;
   runtimeIdentitySecret: string | undefined;
 }): Promise<{
-  inspection: RuntimeInspectionResponse;
+  inspection: RuntimeInspectionInternal;
   observedRecord: ObservedRuntimeRecord;
 }> {
   const runtimeBackend = getRuntimeBackend();
@@ -6185,7 +6195,7 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
     GitRepositoryProvisioningRecord
   >();
   const nodeInspections: NodeInspectionResponse[] = [];
-  const inspections: RuntimeInspectionResponse[] = [];
+  const inspections: RuntimeInspectionInternal[] = [];
 
   for (const nodeId of await listObservedRuntimeNodeIds()) {
     if (!activeNodeIds.has(nodeId)) {
@@ -6583,6 +6593,13 @@ export async function deleteEdge(
 export async function getRuntimeInspection(
   nodeId: string
 ): Promise<RuntimeInspectionResponse | null> {
+  const runtime = await getRuntimeInspectionInternal(nodeId);
+  return runtime ? runtimeInspectionResponseSchema.parse(runtime) : null;
+}
+
+async function getRuntimeInspectionInternal(
+  nodeId: string
+): Promise<RuntimeInspectionInternal | null> {
   const { runtimes } = await synchronizeCurrentGraphRuntimeState();
   return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
 }
@@ -6590,7 +6607,7 @@ export async function getRuntimeInspection(
 export async function getRuntimeContext(
   nodeId: string
 ): Promise<EffectiveRuntimeContext | null> {
-  const inspection = await getRuntimeInspection(nodeId);
+  const inspection = await getRuntimeInspectionInternal(nodeId);
 
   if (!inspection?.contextPath || !inspection.contextAvailable) {
     return null;
@@ -12523,7 +12540,7 @@ async function synchronizeArtifactActivityObservation(input: {
 }
 
 async function synchronizeRuntimeActivityEvents(input: {
-  runtimes: RuntimeInspectionResponse[];
+  runtimes: RuntimeInspectionInternal[];
 }): Promise<void> {
   const activeApprovalActivityIds = new Set<string>();
   const activeArtifactActivityIds = new Set<string>();
@@ -13761,7 +13778,8 @@ export async function setRuntimeDesiredState(
   await writeJsonFile(path.join(runtimeIntentsRoot, `${nodeId}.json`), intent);
 
   const { runtimes } = await synchronizeCurrentGraphRuntimeState();
-  return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
+  const runtime = runtimes.find((candidate) => candidate.nodeId === nodeId);
+  return runtime ? runtimeInspectionResponseSchema.parse(runtime) : null;
 }
 
 export async function restartRuntime(
@@ -13802,7 +13820,8 @@ export async function restartRuntime(
   } satisfies RuntimeRestartRequestedEventInput);
 
   const { runtimes } = await synchronizeCurrentGraphRuntimeState();
-  return runtimes.find((runtime) => runtime.nodeId === nodeId) ?? null;
+  const runtime = runtimes.find((candidate) => candidate.nodeId === nodeId);
+  return runtime ? runtimeInspectionResponseSchema.parse(runtime) : null;
 }
 
 export async function setRuntimeRecoveryPolicy(input: {

@@ -305,6 +305,7 @@ files are the active federated redesign pack.
 253. [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
 254. [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
 255. [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
+256. [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 
 ## Role of this corpus
 

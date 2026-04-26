@@ -2989,3 +2989,16 @@ The smoke passed against the federated dev `strfry` service on
 `ws://localhost:7777`. It is still a same-machine process smoke; the remaining
 hardening path is a separate-process and eventually multi-machine distributed
 demo.
+
+## [2026-04-26] implementation | Removed public runtime context path leakage
+
+Added `references/255-public-runtime-api-path-boundary-slice.md` and removed
+`contextPath` from the public runtime inspection contract. Host now keeps the
+materialized context path only in a private `RuntimeInspectionInternal` shape
+for remaining detail readers, while Host API, host-client, Studio, and CLI
+runtime summaries stay path-free.
+
+Runtime recovery fingerprinting now normalizes through the public runtime
+schema before hashing, so private Host-only fields cannot create duplicate
+recovery snapshots. The remaining filesystem-backed detail endpoints are still
+tracked as projection-migration work.

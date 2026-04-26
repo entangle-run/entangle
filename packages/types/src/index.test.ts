@@ -823,6 +823,7 @@ describe("runtime inspection host API contracts", () => {
       },
       backendKind: "docker",
       contextAvailable: true,
+      contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
       desiredState: "running",
       graphId: "team-alpha",
       graphRevisionId: "team-alpha-20260425-080000",
@@ -845,6 +846,7 @@ describe("runtime inspection host API contracts", () => {
     });
 
     expect(result.agentRuntime?.engineProfileRef).toBe("opencode-default");
+    expect("contextPath" in result).toBe(false);
     expect(result.agentRuntime?.lastEngineSessionId).toBe(
       "opencode-session-alpha"
     );
@@ -2720,7 +2722,6 @@ describe("runtime recovery contracts", () => {
       currentRuntime: {
         backendKind: "docker",
         contextAvailable: true,
-        contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
         desiredState: "running",
         graphId: "team-alpha",
         graphRevisionId: "team-alpha-20260424-000001",
@@ -2735,7 +2736,6 @@ describe("runtime recovery contracts", () => {
           runtime: {
             backendKind: "docker",
             contextAvailable: true,
-            contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
             desiredState: "running",
             graphId: "team-alpha",
             graphRevisionId: "team-alpha-20260424-000001",
@@ -2983,7 +2983,6 @@ describe("node inspection contracts", () => {
       runtime: {
         backendKind: "docker",
         contextAvailable: true,
-        contextPath: "/tmp/runtime/worker-it/effective-runtime-context.json",
         desiredState: "running",
         graphId: "team-alpha",
         graphRevisionId: "team-alpha-20260423-000000",

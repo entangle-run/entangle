@@ -158,12 +158,20 @@ off direct runtime file reads.
 Implementation record:
 
 - [239-host-projection-snapshot-slice.md](239-host-projection-snapshot-slice.md)
+- [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
+- [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 
 Verification:
 
 - projection reducer tests;
 - Host API parity tests;
 - CLI/Studio regression tests.
+
+Current status:
+
+- runtime projection is public through Host/CLI/Studio;
+- public runtime inspection no longer exposes `contextPath`;
+- deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime
 

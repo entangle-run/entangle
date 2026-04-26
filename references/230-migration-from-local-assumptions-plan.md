@@ -61,7 +61,7 @@ deployment adapter while keeping distributed semantics independent.
   - semantic assignment context;
   - materialized workspace layout;
   - debug-only local context path.
-- Move `contextPath` and `runtimeRoot` out of canonical Host API responses.
+- Keep `contextPath` and `runtimeRoot` out of canonical Host API responses.
 - Replace Host local file observation with ProjectionStore.
 - Change direct Host writes for approval/cancellation to signed control/user
   events.
@@ -88,7 +88,11 @@ Classified results:
   - `apps/cli/src/local-*.ts`;
   - Docker Engine client and local launcher code while it remains an adapter.
 - Invalid local-only assumptions for the target architecture:
-  - Host API contracts exposing `contextPath`;
+- Host API contracts exposing `contextPath`:
+  - fixed for public runtime inspection responses by
+    [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md);
+  - still present as Host-internal process state and explicit context
+    inspection/debug routes;
   - runtime state contracts exposing `runtimeContextPath`;
   - Host state code reading `context.workspace.runtimeRoot` for canonical
     projection;

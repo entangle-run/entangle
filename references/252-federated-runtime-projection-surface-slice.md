@@ -95,8 +95,9 @@ observed runtime records remain compatible because `runnerId` and
 `assignmentId` are optional.
 
 The runtime projection intentionally avoids `contextPath`, `runtimeRoot`, and
-workspace paths. Those remain compatibility details of older runtime inspection
-APIs, not the federated projection surface.
+workspace paths. Public runtime inspection responses now also omit
+`contextPath`; Host keeps that value only as private process state for the
+remaining detail readers and explicit context inspection/debug routes.
 
 ## Risks And Mitigations
 
