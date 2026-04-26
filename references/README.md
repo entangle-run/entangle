@@ -16,7 +16,8 @@ Federated implementation records start at
 [233-host-authority-store-slice.md](233-host-authority-store-slice.md) and
 [234-nostr-control-observe-transport-slice.md](234-nostr-control-observe-transport-slice.md),
 then [235-runner-registry-slice.md](235-runner-registry-slice.md) and
-[236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md).
+[236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md), then
+[237-generic-runner-bootstrap-slice.md](237-generic-runner-bootstrap-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

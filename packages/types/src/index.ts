@@ -9,6 +9,7 @@ export * from "./common/validation.js";
 export * from "./engine/turn-contract.js";
 export * from "./federation/assignment.js";
 export * from "./federation/authority.js";
+export * from "./federation/runner-join.js";
 export * from "./federation/runner.js";
 export * from "./graph/effective-bindings.js";
 export * from "./graph/graph-spec.js";

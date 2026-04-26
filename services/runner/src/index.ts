@@ -2,9 +2,23 @@ import { pathToFileURL } from "node:url";
 import { type AgentEngine } from "@entangle/agent-engine";
 import type {
   AgentEngineTurnResult,
-  EffectiveRuntimeContext
+  EffectiveRuntimeContext,
+  RunnerJoinConfig,
+  RunnerJoinStatus
 } from "@entangle/types";
 import { getPublicKey } from "nostr-tools";
+import {
+  loadRunnerJoinConfig,
+  parseNostrSecretKey,
+  resolveRunnerJoinConfigPath,
+  resolveRunnerJoinIdentity
+} from "./join-config.js";
+import {
+  createRunnerJoinTransport,
+  RunnerJoinService,
+  type RunnerAssignmentMaterializer,
+  type RunnerJoinTransport
+} from "./join-service.js";
 import { NostrRunnerTransport } from "./nostr-transport.js";
 import {
   buildAgentEngineTurnRequest,
@@ -17,20 +31,6 @@ import type { RunnerMemorySynthesizer } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
 import type { RunnerTransport } from "./transport.js";
 import { createOpenCodeAgentEngine } from "./opencode-engine.js";
-
-function parseNostrSecretKey(secretHex: string | undefined): Uint8Array | undefined {
-  if (!secretHex) {
-    return undefined;
-  }
-
-  const normalized = secretHex.trim();
-
-  if (!/^[0-9a-fA-F]{64}$/.test(normalized)) {
-    return undefined;
-  }
-
-  return Uint8Array.from(Buffer.from(normalized, "hex"));
-}
 
 function resolveRunnerIdentity(
   runtimeContext: EffectiveRuntimeContext
@@ -65,6 +65,63 @@ function resolveRunnerIdentity(
   return {
     publicKey,
     secretKey: configuredSecretKey
+  };
+}
+
+export type RunnerCliMode =
+  | {
+      joinConfigPath?: string;
+      mode: "join";
+    }
+  | {
+      mode: "local-context";
+      runtimeContextPath?: string;
+    };
+
+export function parseRunnerCliMode(
+  argv: string[] = process.argv.slice(2),
+  env: NodeJS.ProcessEnv = process.env
+): RunnerCliMode {
+  const [command, ...args] = argv;
+
+  if (command === "join") {
+    const configFlagIndex = args.indexOf("--config");
+
+    return {
+      ...(configFlagIndex >= 0 && args[configFlagIndex + 1]
+        ? { joinConfigPath: args[configFlagIndex + 1] }
+        : args[0] && args[0] !== "--config"
+          ? { joinConfigPath: args[0] }
+          : {}),
+      mode: "join"
+    };
+  }
+
+  if (command === "run" || command === "local-context") {
+    const contextFlagIndex = args.indexOf("--context");
+
+    return {
+      mode: "local-context",
+      ...(contextFlagIndex >= 0 && args[contextFlagIndex + 1]
+        ? { runtimeContextPath: args[contextFlagIndex + 1] }
+        : args[0] && args[0] !== "--context"
+          ? { runtimeContextPath: args[0] }
+          : {})
+    };
+  }
+
+  if (env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH) {
+    return {
+      joinConfigPath: env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH,
+      mode: "join"
+    };
+  }
+
+  return {
+    mode: "local-context",
+    ...(env.ENTANGLE_RUNTIME_CONTEXT_PATH
+      ? { runtimeContextPath: env.ENTANGLE_RUNTIME_CONTEXT_PATH }
+      : {})
   };
 }
 
@@ -169,6 +226,45 @@ export async function createConfiguredRunnerService(
   };
 }
 
+export async function createConfiguredRunnerJoinService(
+  joinConfigPath?: string,
+  input: {
+    clock?: () => string;
+    materializer?: RunnerAssignmentMaterializer;
+    nonceFactory?: () => string;
+    transport?: RunnerJoinTransport;
+  } = {}
+): Promise<{
+  config: RunnerJoinConfig;
+  configPath: string;
+  publicKey: string;
+  service: RunnerJoinService;
+}> {
+  const configPath = resolveRunnerJoinConfigPath(joinConfigPath);
+  const config = await loadRunnerJoinConfig(configPath);
+  const { publicKey, secretKey } = await resolveRunnerJoinIdentity(config);
+  const transport =
+    input.transport ??
+    createRunnerJoinTransport({
+      secretKey
+    });
+  const service = new RunnerJoinService({
+    ...(input.clock ? { clock: input.clock } : {}),
+    config,
+    ...(input.materializer ? { materializer: input.materializer } : {}),
+    ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
+    runnerPubkey: publicKey,
+    transport
+  });
+
+  return {
+    config,
+    configPath,
+    publicKey,
+    service
+  };
+}
+
 export async function runRunnerOnce(input: {
   engine?: AgentEngine;
   runtimeContextPath?: string;
@@ -246,11 +342,58 @@ export async function runRunnerServiceUntilSignal(input: {
   };
 }
 
+export async function runGenericRunnerUntilSignal(input: {
+  abortSignal?: AbortSignal;
+  clock?: () => string;
+  joinConfigPath?: string;
+  materializer?: RunnerAssignmentMaterializer;
+  nonceFactory?: () => string;
+  transport?: RunnerJoinTransport;
+} = {}): Promise<
+  RunnerJoinStatus & {
+    configPath: string;
+  }
+> {
+  const configured = await createConfiguredRunnerJoinService(
+    input.joinConfigPath,
+    {
+      ...(input.clock ? { clock: input.clock } : {}),
+      ...(input.materializer ? { materializer: input.materializer } : {}),
+      ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
+      ...(input.transport ? { transport: input.transport } : {})
+    }
+  );
+  const status = await configured.service.start();
+
+  try {
+    await waitForAbortSignal(input.abortSignal);
+  } finally {
+    await configured.service.stop();
+  }
+
+  return {
+    ...status,
+    configPath: configured.configPath
+  };
+}
+
 async function main(): Promise<void> {
   const abortController = createProcessAbortController();
-  const runner = await runRunnerServiceUntilSignal({
-    abortSignal: abortController.signal
-  });
+  const mode = parseRunnerCliMode();
+  const runner =
+    mode.mode === "join"
+      ? await runGenericRunnerUntilSignal({
+          abortSignal: abortController.signal,
+          ...(mode.joinConfigPath
+            ? { joinConfigPath: mode.joinConfigPath }
+            : {})
+        })
+      : await runRunnerServiceUntilSignal({
+          abortSignal: abortController.signal,
+          ...(mode.runtimeContextPath
+            ? { runtimeContextPath: mode.runtimeContextPath }
+            : {})
+        });
   console.log(JSON.stringify(runner, null, 2));
 }
 

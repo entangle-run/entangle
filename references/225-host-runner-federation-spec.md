@@ -99,5 +99,6 @@ fields accepted for compatibility.
 
 ## Open Questions
 
-- Should first runner join config be TOML, JSON, or both? TOML is operator
-  friendly; JSON is simpler for existing TypeScript schemas.
+- The first runner join config is JSON because it can be validated directly by
+  the shared Zod schema and does not add a TOML dependency. A TOML-facing CLI
+  wrapper remains a possible operator convenience layer.

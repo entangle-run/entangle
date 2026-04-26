@@ -48,6 +48,7 @@ import {
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeResponseSchema,
   runnerRegistrationRecordSchema,
+  runnerJoinConfigSchema,
   runnerRegistryEntrySchema,
   runnerRegistryListResponseSchema,
   runnerTrustMutationResponseSchema,
@@ -239,6 +240,30 @@ describe("federated runtime contracts", () => {
         status: "active"
       }).lease?.leaseId
     ).toBe("lease-alpha");
+  });
+
+  it("accepts generic runner join config without graph context", () => {
+    const config = runnerJoinConfigSchema.parse({
+      capabilities: {
+        agentEngineKinds: ["opencode_server"],
+        runtimeKinds: ["agent_runner"]
+      },
+      hostAuthorityPubkey: authorityPubkey,
+      identity: {
+        publicKey: runnerPubkey,
+        secretDelivery: {
+          envVar: "ENTANGLE_RUNNER_NOSTR_SECRET_KEY",
+          mode: "env_var"
+        }
+      },
+      relayUrls: ["ws://127.0.0.1:7777"],
+      runnerId: "runner-alpha",
+      schemaVersion: "1"
+    });
+
+    expect(config.authRequired).toBe(false);
+    expect(config.capabilities.maxAssignments).toBe(1);
+    expect(config.identity.publicKey).toBe(runnerPubkey);
   });
 
   it("accepts signed control assignment offers from Host Authority", () => {

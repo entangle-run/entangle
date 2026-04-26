@@ -120,7 +120,14 @@ Verification:
 ### Slice 6: Generic Runner Bootstrap
 
 Allow runner to start from join config without graph context, receive
-assignment, materialize context locally, and start node service.
+assignment offers, and emit signed receipts, acceptance, or rejection. This
+slice introduces an explicit materializer boundary; the real federated
+materializer that fetches Host-signed graph/resource snapshots and starts the
+node service is the next runner-runtime slice.
+
+Implementation record:
+
+- [237-generic-runner-bootstrap-slice.md](237-generic-runner-bootstrap-slice.md)
 
 Verification:
 

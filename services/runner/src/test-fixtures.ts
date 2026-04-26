@@ -7,7 +7,9 @@ import {
   type ArtifactRef,
   type EffectiveRuntimeContext,
   type EntangleA2AResponsePolicy,
-  type PackageToolCatalog
+  type PackageToolCatalog,
+  type RunnerCapability,
+  type RunnerJoinConfig
 } from "@entangle/types";
 import { getPublicKey } from "nostr-tools";
 import type { RunnerInboundEnvelope } from "./transport.js";
@@ -22,8 +24,11 @@ export const runnerSecretHex =
   "1111111111111111111111111111111111111111111111111111111111111111";
 export const remoteSecretHex =
   "2222222222222222222222222222222222222222222222222222222222222222";
+export const hostSecretHex =
+  "3333333333333333333333333333333333333333333333333333333333333333";
 export const runnerPublicKey = getPublicKey(parseHexSecret(runnerSecretHex));
 export const remotePublicKey = getPublicKey(parseHexSecret(remoteSecretHex));
+export const hostPublicKey = getPublicKey(parseHexSecret(hostSecretHex));
 
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
@@ -369,6 +374,53 @@ export async function createRuntimeFixture(input: {
       input.remotePublication === "missing_repo"
         ? remoteRepositoryPath
         : undefined
+  };
+}
+
+export async function createRunnerJoinFixture(
+  input: {
+    capabilities?: RunnerCapability;
+    hostAuthorityPubkey?: string;
+    relayUrls?: string[];
+    runnerId?: string;
+    runnerPublicKeyOverride?: string;
+  } = {}
+): Promise<{
+  config: RunnerJoinConfig;
+  configPath: string;
+}> {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-runner-join-"));
+  createdDirectories.push(tempRoot);
+
+  const configPath = path.join(tempRoot, "runner-join.json");
+  const config: RunnerJoinConfig = {
+    authRequired: false,
+    capabilities: input.capabilities ?? {
+      agentEngineKinds: ["opencode_server"],
+      labels: [],
+      maxAssignments: 1,
+      runtimeKinds: ["agent_runner"],
+      supportsLocalWorkspace: true,
+      supportsNip59: true
+    },
+    hostAuthorityPubkey: input.hostAuthorityPubkey ?? hostPublicKey,
+    identity: {
+      publicKey: input.runnerPublicKeyOverride ?? runnerPublicKey,
+      secretDelivery: {
+        envVar: "ENTANGLE_RUNNER_NOSTR_SECRET_KEY",
+        mode: "env_var"
+      }
+    },
+    relayUrls: input.relayUrls ?? ["ws://127.0.0.1:7777"],
+    runnerId: input.runnerId ?? "runner-alpha",
+    schemaVersion: "1"
+  };
+
+  await writeJsonFile(configPath, config);
+
+  return {
+    config,
+    configPath
   };
 }
 

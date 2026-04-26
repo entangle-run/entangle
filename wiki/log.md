@@ -2726,3 +2726,18 @@ federated pivot slice. Host now stores runtime assignment offers and revokes
 separately from local runtime intent, requires trusted runners before creating
 offers, records assignment accept/reject observations, and exposes assignment
 list/get/offer/revoke Host API plus host-client methods.
+
+## [2026-04-26] implementation | Added generic runner join bootstrap
+
+Added `references/237-generic-runner-bootstrap-slice.md` and implemented the
+sixth federated pivot slice. The runner now has a generic `join` startup mode
+backed by `RunnerJoinConfig`, derives its Nostr identity from env-var or
+mounted-file secret delivery, publishes signed `runner.hello`, subscribes to
+Host control events, and emits assignment receipts plus signed accepted or
+rejected observations.
+
+The existing `effective-runtime-context.json` path remains as explicit
+`local-context` compatibility. Assignment execution is now behind an injected
+federated materializer boundary, so a generic runner without materialization
+rejects assignment offers instead of falsely reporting that a node runtime has
+started.
