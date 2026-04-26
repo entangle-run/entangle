@@ -745,6 +745,11 @@ async function main(): Promise<void> {
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- host projection --summary`
       );
+      console.log("Manual User Node inbox command:");
+      console.log(
+        `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
+          `inbox list --user-node user --summary`
+      );
       console.log("Press Ctrl-C to stop Host and runner processes.");
       await waitForShutdownSignal();
     }

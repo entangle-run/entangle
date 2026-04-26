@@ -23,6 +23,8 @@ Host projection without reading runner-local files.
 - `services/host/src/federated-control-plane.ts`
 - `services/host/src/state.ts`
 - `services/host/scripts/federated-process-runner-smoke.ts`
+- `apps/cli/src/projection-output.ts`
+- `apps/cli/src/projection-output.test.ts`
 - `README.md`
 - `deploy/federated-dev/README.md`
 - `references/221-federated-runtime-redesign-index.md`
@@ -49,7 +51,10 @@ Implemented in this slice:
   `userConversations` when the active graph identifies either side as a User
   Node;
 - extended the process runner smoke to assert Host projection contains the User
-  Node conversation after signed relay intake.
+  Node conversation after signed relay intake;
+- surfaced the projected User Node conversation count in compact CLI Host
+  projection output and printed an inbox-inspection command from the manual
+  `--keep-running` harness.
 
 ## Tests Required
 
@@ -60,6 +65,9 @@ Implemented in this slice:
 - `pnpm --filter @entangle/host lint`
 - `pnpm --filter @entangle/runner typecheck`
 - `pnpm --filter @entangle/runner lint`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli test -- projection-output.test.ts`
+- `pnpm --filter @entangle/cli lint`
 - `pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777`
 
 Verification record:

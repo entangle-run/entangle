@@ -24,6 +24,7 @@ export type HostProjectionCliSummary = {
   runtimes: RuntimeProjectionCliSummary[];
   runnerCount: number;
   runningRuntimeCount: number;
+  userConversationCount: number;
 };
 
 export function sortRuntimeProjectionsForCli(
@@ -67,6 +68,7 @@ export function projectHostProjectionSummary(
     runnerCount: projection.runners.length,
     runningRuntimeCount: projection.runtimes.filter(
       (runtime) => runtime.observedState === "running"
-    ).length
+    ).length,
+    userConversationCount: projection.userConversations.length
   };
 }

@@ -52,7 +52,21 @@ const projection: HostProjectionSnapshot = {
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],
-  userConversations: [],
+  userConversations: [
+    {
+      conversationId: "conversation-alpha",
+      graphId: "team-alpha",
+      lastMessageAt: "2026-04-26T12:00:00.000Z",
+      peerNodeId: "worker-b",
+      pendingApprovalIds: [],
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:00:00.000Z"
+      },
+      unreadCount: 0,
+      userNodeId: "user-main"
+    }
+  ],
   wikiRefs: []
 };
 
@@ -80,6 +94,7 @@ describe("projection CLI output", () => {
       failedRuntimeCount: 0,
       runtimeCount: 2,
       runningRuntimeCount: 1,
+      userConversationCount: 1,
       runtimes: [
         {
           nodeId: "worker-a",

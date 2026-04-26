@@ -166,7 +166,8 @@ pnpm ops:smoke-federated-process-runner -- --keep-running
 
 The smoke leaves Host and the joined runner alive, keeps the temporary state
 root, and prints CLI commands for publishing a signed `task.request` to the
-assigned builder node. Stop it with `Ctrl-C` when the manual test is done.
+assigned builder node and inspecting the User Node inbox projection. Stop it
+with `Ctrl-C` when the manual test is done.
 
 To verify the support-bundle path against an already-running federated dev
 profile, run:

@@ -3054,3 +3054,8 @@ activity when the active graph identifies a User Node participant. The process
 runner smoke now verifies the full no-LLM path: signed User Node publish,
 runner-owned intake, runner-signed observation, and Host projection of the User
 Node conversation.
+
+Follow-up: the CLI projection summary now reports the projected User Node
+conversation count, and `--keep-running` prints an inbox command so manual
+OpenCode testing can immediately inspect the User Node projection after sending
+a signed task.
