@@ -44,7 +44,7 @@ multiple networks.
 
 - `README.md`
 - `deploy/README.md`
-- `deploy/local/README.md`
+- `deploy/federated-dev/README.md`
 - `references/174-definitive-production-delivery-roadmap.md`
 - `references/177-r1-local-operator-release-ledger.md`
 - `references/178-product-line-roadmap-readiness-audit.md`
@@ -76,7 +76,7 @@ multiple networks.
 
 ## Migration/Compatibility Notes
 
-Existing `entangle local ...` commands can remain where they operate the
+Existing `entangle deployment ...` commands can remain where they operate the
 same-machine deployment adapter. They must not imply a separate product, graph
 mode, or runtime profile.
 
@@ -89,7 +89,7 @@ superseded. Current public docs should prefer Entangle.
   Mitigation: do naming migration after authority, runner, projection, and
   user-node foundations are underway.
 - Risk: local users lose clear setup instructions.
-  Mitigation: keep `deploy/local` and local commands explicit.
+  Mitigation: keep `deploy/federated-dev` and local commands explicit.
 - Risk: messaging sounds like generic multi-agent workflow software.
   Mitigation: emphasize federation, identity, signed messages, git artifacts,
   and operator projection.

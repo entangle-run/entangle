@@ -47,7 +47,7 @@ entangle/
 | `services/runner` | Per-node runtime process with Nostr transport, model execution, artifact handoff, git backend, memory synthesis, turn/session state. | `services/runner/src/*`. |
 | `apps/cli` | Commander CLI for offline validation, package creation, graph inspection, and host operations. | `apps/cli/src/index.ts`. |
 | `apps/studio` | React/Vite visual client for host status, graph, packages, nodes, edges, runtime lifecycle, sessions, artifacts, and live events. | `apps/studio/src/App.tsx`, `apps/studio/src/App.css`. |
-| `deploy` | Dockerfiles and local Docker Compose topology for host, studio, runner image, strfry relay, and Gitea. | `deploy/docker-compose.local.yml`, `deploy/*.Dockerfile`. |
+| `deploy` | Dockerfiles and local Docker Compose topology for host, studio, runner image, strfry relay, and Gitea. | `deploy/docker-compose.federated-dev.yml`, `deploy/*.Dockerfile`. |
 
 ## Current Architecture Overview
 
@@ -179,7 +179,7 @@ Interpretation: Studio validates the product direction, but it should be rebuilt
 ### Studio And CLI Control
 
 1. Studio or CLI calls host HTTP endpoints.
-2. Host mutates local state and appends events.
+2. Host mutates Entangle state and appends events.
 3. Studio subscribes to WebSocket events and polls selected resources.
 4. CLI can stream events and inspect sessions headlessly.
 
@@ -232,9 +232,9 @@ Limitations:
 
 Fact: there is no conventional database schema. Persistent state is local file state under `.entangle`, including desired state, observed runtime state, graph/catalog/package information, events, and sessions.
 
-Fact: current non-secret local state shows a graph named `team-alpha` with `user-main`, `worker-it`, and a delegation edge. The observed worker runtime is stopped and degraded due missing model endpoint credential.
+Fact: current non-secret Entangle state shows a graph named `team-alpha` with `user-main`, `worker-it`, and a delegation edge. The observed worker runtime is stopped and degraded due missing model endpoint credential.
 
-Interpretation: the local state model is appropriate for bootstrap and demos, but production needs a relational store, event log, audit log, indexing, migrations, backups, and tenant isolation.
+Interpretation: the Entangle state model is appropriate for bootstrap and demos, but production needs a relational store, event log, audit log, indexing, migrations, backups, and tenant isolation.
 
 ## External Services And Integrations
 

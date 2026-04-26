@@ -90,7 +90,7 @@ The host now uses the following sequence for `gitea_api` targets:
 This is the correct first slice because it:
 
 - avoids hidden ownership heuristics;
-- avoids admin-only user-provisioning endpoints in the common local profile;
+- avoids admin-only user-provisioning endpoints in the common federated dev profile;
 - remains reconstructible from persisted runtime state and target metadata.
 
 ## 5. Provisioning semantics are idempotent at the control-plane level

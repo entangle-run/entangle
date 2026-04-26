@@ -34,7 +34,7 @@ Entangle should treat admitted package contents as immutable host-managed store
 objects and expose those contents into a node workspace through a host-managed
 package surface.
 
-For the current local profile, that means:
+For the current federated dev profile, that means:
 
 - hash admitted package contents deterministically;
 - materialize them once into a package store under `.entangle/host/imports`;

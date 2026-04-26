@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Scope
 
-This L2 Local Workbench slice adds host-backed active-graph validation to
+This L2 Federated Workbench slice adds host-backed active-graph validation to
 Studio.
 
 Implemented:

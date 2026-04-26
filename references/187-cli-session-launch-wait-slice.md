@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Scope
 
-This L2 Local Workbench slice improves the headless session launch workflow
+This L2 Federated Workbench slice improves the headless session launch workflow
 without changing the host API.
 
 Implemented:

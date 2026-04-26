@@ -136,7 +136,7 @@ Verification:
 
 ### Slice 7: Local Adapter Rebase
 
-Change Docker local profile to launch generic runners and assign them through
+Change Docker federated dev profile to launch generic runners and assign them through
 the same protocol. Shared volumes may remain only for local launcher state, not
 canonical Host observation.
 
@@ -285,7 +285,7 @@ Minimum full pivot gates:
 - host-client tests;
 - CLI tests;
 - Studio tests;
-- local profile smoke;
+- federated dev profile smoke;
 - distributed smoke.
 
 ## Migration/Compatibility Notes

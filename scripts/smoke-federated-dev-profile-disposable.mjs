@@ -4,11 +4,11 @@ import { spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { localProfileComposeFile } from "./local-profile-paths.mjs";
+import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
-const composeFile = localProfileComposeFile;
+const composeFile = federatedDevProfileComposeFile;
 const defaultTimeoutMs = 180_000;
 const defaultProbeTimeoutMs = 5_000;
 
@@ -72,7 +72,7 @@ async function waitForSmoke() {
     const result = run(
       process.execPath,
       [
-        "scripts/smoke-local-profile.mjs",
+        "scripts/smoke-federated-dev-profile.mjs",
         `--timeout-ms=${probeTimeoutMs}`
       ],
       { capture: true }
@@ -92,7 +92,7 @@ async function waitForSmoke() {
 
   throw new Error(
     [
-      `Local profile smoke did not pass within ${timeoutMs}ms.`,
+      `Federated dev profile smoke did not pass within ${timeoutMs}ms.`,
       lastOutput ? `Last smoke output:\n${lastOutput}` : undefined
     ]
       .filter(Boolean)
@@ -102,7 +102,7 @@ async function waitForSmoke() {
 
 function downCompose() {
   if (keepRunning) {
-    console.log("Keeping local Compose profile running because --keep-running was set.");
+    console.log("Keeping federated dev Compose profile running because --keep-running was set.");
     return;
   }
 
@@ -116,7 +116,7 @@ function downCompose() {
 
   if (result.status !== 0) {
     console.error(
-      `Local Compose profile teardown failed with exit code ${result.status ?? "unknown"}.`
+      `Federated dev Compose profile teardown failed with exit code ${result.status ?? "unknown"}.`
     );
   }
 }
@@ -124,8 +124,8 @@ function downCompose() {
 let shouldTearDown = false;
 
 try {
-  requireSuccess("Local profile strict preflight", "pnpm", [
-    "ops:check-local:strict"
+  requireSuccess("Federated dev profile strict preflight", "pnpm", [
+    "ops:check-federated-dev:strict"
   ]);
 
   if (!skipBuild) {
@@ -141,7 +141,7 @@ try {
   }
 
   shouldTearDown = true;
-  requireSuccess("Local profile startup", "docker", [
+  requireSuccess("Federated dev profile startup", "docker", [
     "compose",
     "-f",
     composeFile,
@@ -158,11 +158,11 @@ try {
 
   if (includeRuntime) {
     requireSuccess("Runtime lifecycle smoke", process.execPath, [
-      "scripts/smoke-local-runtime.mjs"
+      "scripts/smoke-federated-dev-runtime.mjs"
     ]);
   }
 
-  console.log("Disposable local profile smoke passed.");
+  console.log("Disposable federated dev profile smoke passed.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

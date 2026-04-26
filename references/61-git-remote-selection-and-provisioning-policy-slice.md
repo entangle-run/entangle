@@ -124,7 +124,7 @@ for future widening such as:
 
 ## 5. Local deployment implications
 
-The local Compose profile now sets:
+The federated dev Compose profile now sets:
 
 - `ENTANGLE_DEFAULT_GIT_REMOTE_BASE`
 

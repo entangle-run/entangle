@@ -6,7 +6,7 @@ function createRuntime(): RuntimeInspectionResponse {
   return {
     agentRuntime: {
       engineKind: "opencode_server",
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       lastEngineSessionId: "opencode-session-alpha",
       lastEngineVersion: "0.10.0",
       lastPermissionDecision: "rejected",
@@ -86,7 +86,7 @@ describe("runtime inspection CLI summary projection", () => {
       "workspace degraded · source_workspace:unwritable"
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
-      "agent runtime coding_agent / opencode_server / local-opencode"
+      "agent runtime coding_agent / opencode_server / opencode-default"
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "last engine version 0.10.0"

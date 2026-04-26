@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-This slice advances Entangle B4/C1 by teaching `entangle local doctor`
+This slice advances Entangle B4/C1 by teaching `entangle deployment doctor`
 to inspect node wiki repositories as real runtime state after the first
 runner-owned wiki repository sync.
 
@@ -28,8 +28,8 @@ The audit read the mandatory repository state files:
 
 The implementation audit inspected:
 
-- `apps/cli/src/local-doctor-command.ts`;
-- `apps/cli/src/local-doctor-command.test.ts`;
+- `apps/cli/src/deployment-doctor-command.ts`;
+- `apps/cli/src/deployment-doctor-command.test.ts`;
 - host-client runtime context access;
 - runtime context workspace layout contracts;
 - runtime workspace-health list behavior.
@@ -75,5 +75,5 @@ Focused verification performed during implementation:
 ```bash
 pnpm --filter @entangle/cli typecheck
 pnpm --filter @entangle/cli lint
-pnpm --filter @entangle/cli test -- local-doctor-command.test.ts
+pnpm --filter @entangle/cli test -- deployment-doctor-command.test.ts
 ```

@@ -7,17 +7,17 @@ topology has been started.
 
 The previous preflight slice proved that required files, tooling, Docker,
 Docker Compose, daemon access, and Compose configuration were available. It did
-not prove that a running local profile was reachable through the surfaces an
+not prove that a running federated dev profile was reachable through the surfaces an
 operator actually uses.
 
 ## Implemented behavior
 
-- Added `scripts/smoke-local-profile.mjs`.
+- Added `scripts/smoke-federated-dev-profile.mjs`.
 - Added package script:
-  - `pnpm ops:smoke-local`
+  - `pnpm ops:smoke-federated-dev`
 - The smoke validates:
   - the expected Compose services are running;
-  - the `entangle-runner:local` image exists;
+  - the `entangle-runner:federated-dev` image exists;
   - `GET /v1/host/status` returns the expected host status shape;
   - `GET /v1/events?limit=1` returns an event-list envelope;
   - Studio serves the Vite application shell;
@@ -46,12 +46,12 @@ It also supports:
 ## Design notes
 
 This smoke is intentionally not part of repository-wide `pnpm verify` because
-it requires a running Docker-backed local profile. Ordinary CI remains portable
+it requires a running Docker-backed federated dev profile. Ordinary CI remains portable
 through socketless host tests and package-level verification.
 
 The next delivery-hardening step is a disposable Compose smoke mode that can
-build, start, validate, and tear down an isolated local profile in CI.
+build, start, validate, and tear down an isolated federated dev profile in CI.
 
 ## Verification
 
-- `node --check scripts/smoke-local-profile.mjs`
+- `node --check scripts/smoke-federated-dev-profile.mjs`

@@ -19,7 +19,7 @@ operator runtime on a technical workstation. It includes a local host control
 plane, per-node runners, local Nostr relay transport, local Gitea/git-backed
 artifact handoff, graph-bound runner handoff, approval lifecycle handling,
 Studio and CLI inspection over host truth, and preflight/smoke checks for the
-Local profile.
+Federated dev profile.
 
 This is not Entangle GA. It is the first released Local baseline.
 
@@ -29,15 +29,15 @@ L1 supports these local operator workflows:
 
 - install dependencies from the lockfile with `pnpm install --frozen-lockfile`;
 - run repository quality gates with `pnpm verify`;
-- run strict local profile preflight with `pnpm ops:check-local:strict`;
+- run strict federated dev profile preflight with `pnpm ops:check-federated-dev:strict`;
 - build the host, runner, CLI, shared packages, and Studio with `pnpm build`;
-- build the local runner image through the Local Compose profile;
+- build the local runner image through the Federated dev Compose profile;
 - start the stable local services: Studio, host, `strfry`, and Gitea;
-- inspect active local service readiness with `pnpm ops:smoke-local`;
-- run disposable Local profile validation with
-  `pnpm ops:smoke-local:disposable`;
+- inspect active local service readiness with `pnpm ops:smoke-federated-dev`;
+- run disposable Federated dev profile validation with
+  `pnpm ops:smoke-federated-dev:disposable`;
 - run disposable runtime validation with
-  `pnpm ops:smoke-local:disposable:runtime`;
+  `pnpm ops:smoke-federated-dev:disposable:runtime`;
 - inspect host status, graph, package sources, principals, runtimes, sessions,
   artifacts, approvals, turns, recovery, and events through the CLI;
 - inspect graph and runtime state through Studio over the host boundary;
@@ -83,11 +83,11 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm ops:check-local:strict
-pnpm ops:smoke-local:disposable:runtime
-pnpm ops:smoke-local:disposable --skip-build --keep-running
-pnpm ops:smoke-local
-docker compose -f deploy/local/compose/docker-compose.local.yml down --volumes
+pnpm ops:check-federated-dev:strict
+pnpm ops:smoke-federated-dev:disposable:runtime
+pnpm ops:smoke-federated-dev:disposable --skip-build --keep-running
+pnpm ops:smoke-federated-dev
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml down --volumes
 ```
 
 All commands passed.
@@ -96,8 +96,8 @@ The disposable runtime smoke proved:
 
 - strict local preflight;
 - runner image build;
-- Local Compose startup for Studio, host, `strfry`, and Gitea;
-- active local profile smoke;
+- Federated dev Compose startup for Studio, host, `strfry`, and Gitea;
+- active federated dev profile smoke;
 - local Gitea bootstrap with a disposable user and HTTPS token;
 - host catalog mutation for a disposable model endpoint and git service
   binding;
@@ -116,7 +116,7 @@ The disposable runtime smoke proved:
 
 ## Local Prerequisites
 
-The L1 local profile expects:
+The L1 federated dev profile expects:
 
 - Node.js `>=22`;
 - pnpm `>=10`;
@@ -129,7 +129,7 @@ The L1 local profile expects:
   - Gitea SSH: `2222`;
   - `strfry`: `7777`.
 
-The default local profile is tokenless for development ergonomics. A bootstrap
+The default federated dev profile is tokenless for development ergonomics. A bootstrap
 operator token can be enabled with `ENTANGLE_HOST_OPERATOR_TOKEN`, and the CLI
 and Studio can propagate that token. This is local hardening, not production
 identity or authorization.
@@ -141,16 +141,16 @@ Recommended local bootstrap:
 ```bash
 pnpm install --frozen-lockfile
 pnpm verify
-pnpm ops:check-local:strict
-docker compose -f deploy/local/compose/docker-compose.local.yml --profile runner-build build runner-image
-docker compose -f deploy/local/compose/docker-compose.local.yml up --build studio host strfry gitea
-pnpm ops:smoke-local
+pnpm ops:check-federated-dev:strict
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml --profile runner-build build runner-image
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml up --build studio host strfry gitea
+pnpm ops:smoke-federated-dev
 ```
 
 For a full disposable proof path:
 
 ```bash
-pnpm ops:smoke-local:disposable:runtime
+pnpm ops:smoke-federated-dev:disposable:runtime
 ```
 
 Default local URLs:
@@ -173,7 +173,7 @@ L1 intentionally does not include:
 - artifact preview/history workbench;
 - memory workbench;
 - local doctor, repair, backup, restore, or upgrade tooling;
-- guaranteed migration support for older local state volumes;
+- guaranteed migration support for older Entangle state volumes;
 - production persistence;
 - production authentication or authorization;
 - production sandbox or scheduler;
@@ -186,7 +186,7 @@ owner-level delegated-session synthesis is future work.
 
 The Local runtime profile still carries the legacy machine value
 `hackathon_local`. That is not a public product claim, but it should be retired
-before Local Workbench or Local GA.
+before Federated Workbench or Local GA.
 
 Studio currently builds as one production bundle that exceeds Vite's default
 500 kB chunk-size warning. This is not an L1 correctness failure, but it should
@@ -197,7 +197,7 @@ be revisited before the Local workbench becomes the primary product surface.
 L1 is the first tagged Local operator baseline. There is no supported
 cross-release local-state migration contract before this release.
 
-Local state for the Compose profile lives in Docker volumes:
+Entangle state for the Compose profile lives in Docker volumes:
 
 - `entangle-host-state`;
 - `entangle-secret-state`;
@@ -205,25 +205,25 @@ Local state for the Compose profile lives in Docker volumes:
 - `compose_strfry-data`.
 
 Keep those volumes when preserving local packages, runtime identities, Gitea
-data, relay data, imported host state, and local secrets. Remove them only when
-intentionally resetting the Local profile.
+data, relay data, imported host state, and Entangle secrets. Remove them only when
+intentionally resetting the Federated dev profile.
 
 ## Rollback And Reset
 
-To stop the local profile without deleting state:
+To stop the federated dev profile without deleting state:
 
 ```bash
-docker compose -f deploy/local/compose/docker-compose.local.yml down
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml down
 ```
 
-To reset the local profile by deleting local state volumes:
+To reset the federated dev profile by deleting Entangle state volumes:
 
 ```bash
-docker compose -f deploy/local/compose/docker-compose.local.yml down --volumes
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml down --volumes
 ```
 
 Rollback to an earlier repository state should be paired with an explicit
-choice about local volumes. Older code may not understand newer Local state
+choice about local volumes. Older code may not understand newer Entangle state
 layout, and L1 does not provide automatic downgrade migrations.
 
 ## Non-Goals

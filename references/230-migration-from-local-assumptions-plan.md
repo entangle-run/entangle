@@ -49,7 +49,7 @@ deployment adapter while keeping distributed semantics independent.
 - `services/host/src/state.ts`
 - `services/host/src/runtime-backend.ts`
 - `services/runner/src/index.ts`
-- `deploy/local/**`
+- `deploy/federated-dev/**`
 - `scripts/*.mjs`
 - tests and examples with `runtimeProfile: "federated"`
 
@@ -81,8 +81,8 @@ rg "runtimeProfile.*single-machine|contextPath|runtimeRoot|shared volume|effecti
 Classified results:
 
 - Valid deployment adapter/debug usage:
-  - `deploy/local/**`;
-  - `scripts/check-local-profile.mjs`;
+  - `deploy/federated-dev/**`;
+  - `scripts/check-federated-dev-profile.mjs`;
   - `scripts/smoke-local-*.mjs`;
   - `scripts/federated-preview-demo.mjs`;
   - `apps/cli/src/local-*.ts`;

@@ -75,7 +75,7 @@ export type RunnerCliMode =
       mode: "join";
     }
   | {
-      mode: "local-context";
+      mode: "runtime-context";
       runtimeContextPath?: string;
     };
 
@@ -98,11 +98,11 @@ export function parseRunnerCliMode(
     };
   }
 
-  if (command === "run" || command === "local-context") {
+  if (command === "run" || command === "runtime-context") {
     const contextFlagIndex = args.indexOf("--context");
 
     return {
-      mode: "local-context",
+      mode: "runtime-context",
       ...(contextFlagIndex >= 0 && args[contextFlagIndex + 1]
         ? { runtimeContextPath: args[contextFlagIndex + 1] }
         : args[0] && args[0] !== "--context"
@@ -119,7 +119,7 @@ export function parseRunnerCliMode(
   }
 
   return {
-    mode: "local-context",
+    mode: "runtime-context",
     ...(env.ENTANGLE_RUNTIME_CONTEXT_PATH
       ? { runtimeContextPath: env.ENTANGLE_RUNTIME_CONTEXT_PATH }
       : {})

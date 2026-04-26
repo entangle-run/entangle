@@ -34,7 +34,7 @@ The runner continuously:
 - does not report itself as subscription-ready until the configured readable
   relay set has been connected successfully for the active transport mode;
 - watches inbound messages;
-- tracks session-local state;
+- tracks session-Entangle state;
 - manages memory updates;
 - maintains workspace integrity;
 - enforces edge-local policy.
@@ -153,7 +153,7 @@ That implemented slice currently includes:
 - a deterministic transport abstraction used in local tests;
 - a real Nostr transport adapter using NIP-59 gift wrapping plus an
   Entangle-specific wrapped rumor kind;
-- a file-backed runner-local state store for session, conversation, and turn
+- a file-backed runner-Entangle state store for session, conversation, and turn
   records;
 - recipient-bound subscription at the runner-service boundary;
 - machine-readable A2A payload validation before lifecycle mutation;

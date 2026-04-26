@@ -368,7 +368,7 @@ describe("runner runtime context", () => {
         ENTANGLE_RUNTIME_CONTEXT_PATH: "/tmp/context.json"
       })
     ).toEqual({
-      mode: "local-context",
+      mode: "runtime-context",
       runtimeContextPath: "/tmp/context.json"
     });
   });

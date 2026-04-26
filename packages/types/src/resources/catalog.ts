@@ -161,8 +161,8 @@ export const agentEngineProfileSchema = z
   });
 
 export const defaultOpenCodeAgentEngineProfile = {
-  id: "local-opencode",
-  displayName: "Local OpenCode",
+  id: "opencode-default",
+  displayName: "OpenCode",
   kind: "opencode_server" as const,
   executable: "opencode",
   stateScope: "node" as const

@@ -317,7 +317,7 @@ describe("OpenCode runner engine adapter", () => {
   it("extracts Entangle action handoffs from OpenCode text blocks", () => {
     const extraction = extractEntangleActionDirectives([
       [
-        "Prepared the local changes and delegated review.",
+        "Prepared the source changes and delegated review.",
         "```entangle-actions",
         JSON.stringify({
           handoffDirectives: [
@@ -333,7 +333,7 @@ describe("OpenCode runner engine adapter", () => {
     ]);
 
     expect(extraction).toMatchObject({
-      assistantMessages: ["Prepared the local changes and delegated review."],
+      assistantMessages: ["Prepared the source changes and delegated review."],
       errors: [],
       handoffDirectives: [
         {

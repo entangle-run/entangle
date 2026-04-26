@@ -272,7 +272,7 @@ Completed in the current repository state:
 31. an optional bootstrap host operator-token boundary where
     `ENTANGLE_HOST_OPERATOR_TOKEN` enables bearer-token enforcement on host
     HTTP routes, and the shared host client, CLI, and Studio can propagate the
-    same token for local profiles that require a closed control-plane surface.
+    same token for federated dev profiles that require a closed control-plane surface.
 32. a typed bootstrap operator request audit primitive where token-protected
     host mutation requests now emit `host.operator_request.completed`
     `security` events with non-secret request metadata, response status, auth
@@ -503,15 +503,15 @@ Completed in the current repository state:
 - local operator bootstrap is now documented under `deploy/README.md`, with
   non-strict and strict preflight commands for validating the complete local
   profile before starting the Compose topology;
-- active local smoke coverage is available through `pnpm ops:smoke-local` for
+- active local smoke coverage is available through `pnpm ops:smoke-federated-dev` for
   running Compose services, the local runner image, host status/events, Studio,
   Gitea HTTP reachability, and the local Nostr relay WebSocket path;
-- disposable local profile smoke coverage is available through
-  `pnpm ops:smoke-local:disposable`, covering strict preflight, runner image
+- disposable federated dev profile smoke coverage is available through
+  `pnpm ops:smoke-federated-dev:disposable`, covering strict preflight, runner image
   build, stable service startup, active smoke readiness probing, and teardown;
 - Docker-backed runtime lifecycle smoke coverage is available through
-  `pnpm ops:smoke-local:runtime` and
-  `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
+  `pnpm ops:smoke-federated-dev:runtime` and
+  `pnpm ops:smoke-federated-dev:disposable:runtime`, covering temporary package
   admission, local Gitea disposable user/token bootstrap, smoke graph
   application, local model-secret binding, two managed runner starts,
   restart-generation recreation, restart event persistence, real NIP-59 task

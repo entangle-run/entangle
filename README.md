@@ -24,7 +24,7 @@ architecture discovery.
   Canonical example graphs and packages. The active Federated Preview assets
   live under `examples/federated-preview/`.
 - `deploy/`
-  Deployment profiles. The current same-machine profile is `deploy/local/`;
+  Deployment profiles. The current same-machine profile is `deploy/federated-dev/`;
   future remote or managed deployment material should be added only when the
   roadmap reaches those gates.
 - `releases/`
@@ -124,7 +124,7 @@ This repository currently contains:
 - a first OpenCode-first per-node agent-runtime contract where deployment
   catalogs carry `agentEngineProfiles`, graph and node bindings carry
   `agentRuntime`, effective runtime context carries the resolved
-  `agentRuntimeContext`, local defaults point at `local-opencode`, and per-node
+  `agentRuntimeContext`, defaults point at `opencode-default`, and per-node
   source, engine-state, and wiki-repository workspace roots are materialized,
   with the runner now able to execute the first safe OpenCode CLI/process
   adapter for primary node turns while isolating OpenCode DB/config/XDG state
@@ -163,7 +163,7 @@ This repository currently contains:
   through the same host boundary, plus runner-owned local git snapshots of
   `memory/wiki` into each node's `wiki-repository` workspace after completed
   turns, with durable sync outcomes carried through runner turns, host events,
-  CLI output, and Studio turn inspection, and with `entangle local doctor`
+  CLI output, and Studio turn inspection, and with `entangle deployment doctor`
   now warning on uninitialized, dirty, or uncommitted runtime wiki
   repositories, plus a host-mediated wiki-repository publication path that
   turns a clean node wiki HEAD into a `knowledge_summary` git artifact with
@@ -296,36 +296,36 @@ This repository currently contains:
   `build -> deploy` path used by the service images, with image-build
   assertions for service and workspace package `dist/` payloads;
 - a documented local operator bootstrap profile under `deploy/`, backed by
-  `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
+  `pnpm ops:check-federated-dev` and `pnpm ops:check-federated-dev:strict` preflight checks
   for toolchain, Docker, Docker Compose, daemon access, and Compose config
   validity;
 - an explicit deployment profile layout where active same-machine deployment material
-  lives under `deploy/local/`, with scripts sharing profile paths through
-  `scripts/local-profile-paths.mjs`;
+  lives under `deploy/federated-dev/`, with scripts sharing profile paths through
+  `scripts/federated-dev-profile-paths.mjs`;
 - an explicit release-control area under `releases/`, with the released Local
   L1 operator-baseline packet pointing back to the canonical R1/L1 ledger;
-- an active same-machine profile smoke through `pnpm ops:smoke-local` that checks the
+- an active same-machine profile smoke through `pnpm ops:smoke-federated-dev` that checks the
   running Compose services, runner image presence, host JSON APIs, Studio HTTP,
   Gitea HTTP reachability, and the local `strfry` Nostr WebSocket path;
-- a same-machine diagnostics smoke through `pnpm ops:smoke-local:diagnostics` that
+- a same-machine diagnostics smoke through `pnpm ops:smoke-federated-dev:diagnostics` that
   writes a temporary redacted diagnostics bundle against a running
   same-machine profile and validates its stable top-level shape;
-- a same-machine reliability smoke through `pnpm ops:smoke-local:reliability` that
+- a same-machine reliability smoke through `pnpm ops:smoke-federated-dev:reliability` that
   creates a temporary backup bundle, validates restore dry-run, and verifies
   repair dry-run output against an initialized same-machine profile;
-- first same-machine backup/restore commands through `entangle local backup` and
-  `entangle local restore`, using a versioned directory bundle for
+- first same-machine backup/restore commands through `entangle deployment backup` and
+  `entangle deployment restore`, using a versioned directory bundle for
   `.entangle/host`, selected same-machine profile config snapshots, explicit secret
   exclusion, and restore-time state-layout compatibility checks;
-- a first conservative same-machine repair command through `entangle local repair`,
+- a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization or missing layout-marker repairs when `--apply-safe` is
   supplied;
-- a disposable same-machine profile smoke through `pnpm ops:smoke-local:disposable`
+- a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
-- a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-local:runtime`
-  and `pnpm ops:smoke-local:disposable:runtime` that admits a disposable
+- a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
+  and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,
   applies a smoke graph with two managed worker runtimes and a local
   model-secret binding, verifies restart generation recreation plus the
@@ -336,12 +336,12 @@ This repository currently contains:
   materialization, verifies downstream retrieval of the upstream artifact by
   `ArtifactRef`, and stops both runtimes;
 - a released Federated Preview demo path through `pnpm ops:demo-federated-preview` that
-  starts the Local Compose profile, verifies local services, runs the runtime
+  starts the Federated dev Compose profile, verifies local services, runs the runtime
   path through canonical `examples/federated-preview/` package assets, publishes
   through the local relay, writes git-backed artifacts to local Gitea, and
   leaves the profile running for Studio and CLI inspection, with
   `pnpm ops:demo-federated-preview:reset` as the reset path;
-- a released L2 Local Workbench implementation with `entangle package
+- a released L2 Federated Workbench implementation with `entangle package
   inspect`, package tool-catalog validation, `entangle graph diff`,
   root-relative CLI path handling under `pnpm --filter @entangle/cli dev`,
   `entangle host sessions launch` through the host API over host-resolved
@@ -609,7 +609,7 @@ This repository currently contains:
 - a deeper Studio runtime-turn inspection slice where visual operators can
   select persisted runner turns, inspect host-backed turn detail, and see
   engine outcome, artifact linkage, trigger, phase, and memory-synthesis
-  status without reading runner-local state files;
+  status without reading runner-Entangle state files;
 - the first bounded Studio graph-mutation slice where operators can now select,
   create, replace, and delete graph edges through host-owned edge resource
   routes instead of keeping Studio read-only on topology;
@@ -682,20 +682,20 @@ This repository currently contains:
   engine profile, and default-agent overrides, while Studio's Managed Node
   Editor now loads catalog engine profiles and writes the same graph-backed
   `agentRuntime` fields through the shared host-client node mutation boundary;
-- the first same-machine reliability diagnostic slice where `entangle local doctor`
+- the first same-machine reliability diagnostic slice where `entangle deployment doctor`
   performs read-only checks over same-machine profile files, Node/pnpm/Docker/Compose,
   the runner image, OpenCode availability on the host and inside the runner
-  image, `.entangle/host`, local state layout compatibility, host status,
+  image, `.entangle/host`, Entangle state layout compatibility, host status,
   host-reported state layout status, runtime workspace health, git principals,
   Studio, Gitea, and the local relay, with human-readable and JSON output plus
-  strict/offline modes, while `entangle local diagnostics` writes a redacted
+  strict/offline modes, while `entangle deployment diagnostics` writes a redacted
   JSON support bundle containing doctor output, bounded Compose status/logs,
   runner-image inspection, live host state, and bounded runtime evidence for
   turns, engine failures, permission decisions, approval blockers, and artifact
-  counts when available, and `entangle local backup` / `entangle local restore`
+  counts when available, and `entangle deployment backup` / `entangle deployment restore`
   now provide the first versioned
   `.entangle/host` backup and validated restore path without bundling local
-  secrets, while `entangle local repair` provides a dry-run-first conservative
+  secrets, while `entangle deployment repair` provides a dry-run-first conservative
   repair surface for safe host-state initialization and missing layout-marker
   recovery;
 - the next bounded Studio completion slice where the operator can now select

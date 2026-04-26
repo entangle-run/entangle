@@ -70,7 +70,7 @@ The current local-first connection resolution order is:
 3. `DOCKER_HOST`
 4. default Unix socket `/var/run/docker.sock`
 
-The preferred local profile remains:
+The preferred federated dev profile remains:
 
 - Docker socket mounted into the host container;
 - host using that socket through the first-party Engine API client.

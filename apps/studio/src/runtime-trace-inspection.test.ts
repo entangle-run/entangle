@@ -16,7 +16,7 @@ describe("studio runtime trace inspection helpers", () => {
         conversationId: "conv-alpha",
         followupCount: 1,
         graphId: "team-alpha",
-        initiator: "remote",
+        initiator: "peer",
         nodeId: "worker-it",
         peerNodeId: "lead-it",
         schemaVersion: "1",

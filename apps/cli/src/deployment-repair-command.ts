@@ -2,43 +2,43 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  currentLocalStateLayoutVersion,
-  localStateLayoutRecordSchema,
-  minimumSupportedLocalStateLayoutVersion,
-  type LocalStateLayoutInspection
+  currentStateLayoutVersion,
+  stateLayoutRecordSchema,
+  minimumSupportedStateLayoutVersion,
+  type StateLayoutInspection
 } from "@entangle/types";
 import {
-  buildLocalDoctorReport,
-  type LocalDoctorDeps,
-  type LocalDoctorOptions,
-  type LocalDoctorReport
-} from "./local-doctor-command.js";
+  buildDeploymentDoctorReport,
+  type DeploymentDoctorDeps,
+  type DeploymentDoctorOptions,
+  type DeploymentDoctorReport
+} from "./deployment-doctor-command.js";
 
-export type LocalRepairActionRisk = "safe" | "manual";
-export type LocalRepairActionStatus =
+export type DeploymentRepairActionRisk = "safe" | "manual";
+export type DeploymentRepairActionStatus =
   | "applied"
   | "blocked"
   | "manual"
   | "pending"
   | "skipped";
 
-export interface LocalRepairAction {
+export interface DeploymentRepairAction {
   actionId: string;
   category: string;
   detail: string;
-  risk: LocalRepairActionRisk;
-  status: LocalRepairActionStatus;
+  risk: DeploymentRepairActionRisk;
+  status: DeploymentRepairActionStatus;
   summary: string;
 }
 
-export interface LocalRepairOptions extends LocalDoctorOptions {
+export interface DeploymentRepairOptions extends DeploymentDoctorOptions {
   applySafe?: boolean | undefined;
 }
 
-export interface LocalRepairReport {
-  actions: LocalRepairAction[];
+export interface DeploymentRepairReport {
+  actions: DeploymentRepairAction[];
   applied: boolean;
-  doctor: LocalDoctorReport;
+  doctor: DeploymentDoctorReport;
   generatedAt: string;
   repairRecordPath?: string | undefined;
   status: "blocked" | "clean" | "manual" | "repaired" | "would_repair";
@@ -68,16 +68,16 @@ function repairTimestampPathSegment(timestamp: string): string {
 function buildCurrentStateLayoutRecord(timestamp: string) {
   return {
     createdAt: timestamp,
-    layoutVersion: currentLocalStateLayoutVersion,
+    layoutVersion: currentStateLayoutVersion,
     product: "entangle",
     schemaVersion: "1",
     updatedAt: timestamp
   };
 }
 
-function inspectLocalStateLayout(repositoryRoot: string): {
+function inspectStateLayout(repositoryRoot: string): {
   recordedLayoutVersion?: number | undefined;
-  status: LocalStateLayoutInspection["status"];
+  status: StateLayoutInspection["status"];
 } {
   const hostStatePath = path.join(repositoryRoot, hostStateRelativePath);
   const layoutPath = path.join(hostStatePath, "state-layout.json");
@@ -103,7 +103,7 @@ function inspectLocalStateLayout(repositoryRoot: string): {
     };
   }
 
-  const parseResult = localStateLayoutRecordSchema.safeParse(rawRecord);
+  const parseResult = stateLayoutRecordSchema.safeParse(rawRecord);
   if (!parseResult.success) {
     return {
       status: "unreadable"
@@ -111,21 +111,21 @@ function inspectLocalStateLayout(repositoryRoot: string): {
   }
 
   const record = parseResult.data;
-  if (record.layoutVersion > currentLocalStateLayoutVersion) {
+  if (record.layoutVersion > currentStateLayoutVersion) {
     return {
       recordedLayoutVersion: record.layoutVersion,
       status: "unsupported_future"
     };
   }
 
-  if (record.layoutVersion < minimumSupportedLocalStateLayoutVersion) {
+  if (record.layoutVersion < minimumSupportedStateLayoutVersion) {
     return {
       recordedLayoutVersion: record.layoutVersion,
       status: "unsupported_legacy"
     };
   }
 
-  if (record.layoutVersion < currentLocalStateLayoutVersion) {
+  if (record.layoutVersion < currentStateLayoutVersion) {
     return {
       recordedLayoutVersion: record.layoutVersion,
       status: "upgrade_available"
@@ -140,11 +140,11 @@ function inspectLocalStateLayout(repositoryRoot: string): {
 
 function buildRepairActions(input: {
   repositoryRoot: string;
-}): LocalRepairAction[] {
-  const actions: LocalRepairAction[] = [];
+}): DeploymentRepairAction[] {
+  const actions: DeploymentRepairAction[] = [];
   const hostStatePath = path.join(input.repositoryRoot, hostStateRelativePath);
   const hostStateExists = existsSync(hostStatePath);
-  const layout = inspectLocalStateLayout(input.repositoryRoot);
+  const layout = inspectStateLayout(input.repositoryRoot);
 
   if (!hostStateExists) {
     actions.push({
@@ -154,7 +154,7 @@ function buildRepairActions(input: {
         "Create .entangle/host, the standard host state directory skeleton, and the current state-layout.json marker.",
       risk: "safe",
       status: "pending",
-      summary: "Initialize Local host state skeleton"
+      summary: "Initialize Entangle host state skeleton"
     });
     return actions;
   }
@@ -166,7 +166,7 @@ function buildRepairActions(input: {
       detail: "Write the current state-layout.json marker without modifying existing state files.",
       risk: "safe",
       status: "pending",
-      summary: "Stamp missing Local state layout"
+      summary: "Stamp missing Entangle state layout"
     });
   }
 
@@ -175,10 +175,10 @@ function buildRepairActions(input: {
       actionId: "inspect_unreadable_state_layout",
       category: "state",
       detail:
-        "state-layout.json exists but cannot be parsed as the current Entangle local profile layout record.",
+        "state-layout.json exists but cannot be parsed as the current Entangle deployment profile layout record.",
       risk: "manual",
       status: "blocked",
-      summary: "Inspect unreadable Local state layout"
+      summary: "Inspect unreadable Entangle state layout"
     });
   }
 
@@ -194,7 +194,7 @@ function buildRepairActions(input: {
         "back up .entangle/host and use a compatible Entangle version before repair.",
       risk: "manual",
       status: "blocked",
-      summary: "Resolve unsupported Local state layout"
+      summary: "Resolve unsupported Entangle state layout"
     });
   }
 
@@ -202,13 +202,13 @@ function buildRepairActions(input: {
 }
 
 async function applySafeRepairActions(input: {
-  actions: LocalRepairAction[];
+  actions: DeploymentRepairAction[];
   generatedAt: string;
   repositoryRoot: string;
-}): Promise<LocalRepairAction[]> {
+}): Promise<DeploymentRepairAction[]> {
   const hostStatePath = path.join(input.repositoryRoot, hostStateRelativePath);
   const layoutPath = path.join(hostStatePath, "state-layout.json");
-  const appliedActions: LocalRepairAction[] = [];
+  const appliedActions: DeploymentRepairAction[] = [];
 
   for (const action of input.actions) {
     if (action.risk !== "safe" || action.status !== "pending") {
@@ -258,17 +258,17 @@ async function applySafeRepairActions(input: {
 }
 
 async function writeRepairRecord(input: {
-  actions: LocalRepairAction[];
+  actions: DeploymentRepairAction[];
   generatedAt: string;
   repositoryRoot: string;
-  status: LocalRepairReport["status"];
-  summary: LocalRepairReport["summary"];
+  status: DeploymentRepairReport["status"];
+  summary: DeploymentRepairReport["summary"];
 }): Promise<string> {
   const repairRecordPath = path.join(
     input.repositoryRoot,
     hostStateRelativePath,
     "traces",
-    "local-repairs",
+    "deployment-repairs",
     `repair-${repairTimestampPathSegment(input.generatedAt)}.json`
   );
   await mkdir(path.dirname(repairRecordPath), { recursive: true });
@@ -291,9 +291,9 @@ async function writeRepairRecord(input: {
 }
 
 function summarizeRepairActions(
-  actions: LocalRepairAction[]
-): LocalRepairReport["summary"] {
-  return actions.reduce<LocalRepairReport["summary"]>(
+  actions: DeploymentRepairAction[]
+): DeploymentRepairReport["summary"] {
+  return actions.reduce<DeploymentRepairReport["summary"]>(
     (summary, action) => ({
       ...summary,
       [action.status]: summary[action.status] + 1
@@ -310,8 +310,8 @@ function summarizeRepairActions(
 
 function resolveRepairStatus(input: {
   applySafe: boolean | undefined;
-  summary: LocalRepairReport["summary"];
-}): LocalRepairReport["status"] {
+  summary: DeploymentRepairReport["summary"];
+}): DeploymentRepairReport["status"] {
   if (input.summary.blocked > 0) {
     return "blocked";
   }
@@ -331,12 +331,12 @@ function resolveRepairStatus(input: {
   return "clean";
 }
 
-export async function buildLocalRepairReport(
-  options: LocalRepairOptions,
-  deps: LocalDoctorDeps = {}
-): Promise<LocalRepairReport> {
+export async function buildDeploymentRepairReport(
+  options: DeploymentRepairOptions,
+  deps: DeploymentDoctorDeps = {}
+): Promise<DeploymentRepairReport> {
   const generatedAt = (deps.now ?? (() => new Date()))().toISOString();
-  const doctor = await buildLocalDoctorReport(options, deps);
+  const doctor = await buildDeploymentDoctorReport(options, deps);
   const plannedActions = buildRepairActions({
     repositoryRoot: options.repositoryRoot
   });
@@ -374,10 +374,10 @@ export async function buildLocalRepairReport(
   };
 }
 
-export function formatLocalRepairText(report: LocalRepairReport): string {
+export function formatDeploymentRepairText(report: DeploymentRepairReport): string {
   const mode = report.applied ? "apply-safe" : "dry-run";
   const lines = [
-    `Entangle local profile repair: ${report.status} (${mode}; ${report.summary.applied} applied, ${report.summary.pending} pending, ${report.summary.blocked} blocked, ${report.summary.manual} manual)`
+    `Entangle deployment profile repair: ${report.status} (${mode}; ${report.summary.applied} applied, ${report.summary.pending} pending, ${report.summary.blocked} blocked, ${report.summary.manual} manual)`
   ];
 
   if (report.repairRecordPath) {
@@ -391,7 +391,7 @@ export function formatLocalRepairText(report: LocalRepairReport): string {
   }
 
   if (report.actions.length === 0) {
-    lines.push("No conservative local repair actions are currently needed.");
+    lines.push("No conservative deployment repair actions are currently needed.");
   }
 
   return `${lines.join("\n")}\n`;

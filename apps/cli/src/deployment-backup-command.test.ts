@@ -3,9 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  createLocalBackup,
-  restoreLocalBackup
-} from "./local-backup-command.js";
+  createDeploymentBackup,
+  restoreDeploymentBackup
+} from "./deployment-backup-command.js";
 
 const temporaryRoots: string[] = [];
 
@@ -49,27 +49,27 @@ async function seedRepository(root: string): Promise<void> {
   });
   await writeText(path.join(root, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
   await writeText(
-    path.join(root, "deploy/local/compose/docker-compose.local.yml"),
+    path.join(root, "deploy/federated-dev/compose/docker-compose.federated-dev.yml"),
     "services: {}\n"
   );
   await writeText(
-    path.join(root, "deploy/local/config/strfry.local.conf"),
+    path.join(root, "deploy/federated-dev/config/strfry.federated-dev.conf"),
     "relay {}\n"
   );
   await writeText(
-    path.join(root, "deploy/local/config/nginx.studio.conf"),
+    path.join(root, "deploy/federated-dev/config/nginx.studio.conf"),
     "events {}\n"
   );
   await writeText(
-    path.join(root, "deploy/local/docker/host.Dockerfile"),
+    path.join(root, "deploy/federated-dev/docker/host.Dockerfile"),
     "FROM node:22\n"
   );
   await writeText(
-    path.join(root, "deploy/local/docker/runner.Dockerfile"),
+    path.join(root, "deploy/federated-dev/docker/runner.Dockerfile"),
     "FROM node:22\n"
   );
   await writeText(
-    path.join(root, "deploy/local/docker/studio.Dockerfile"),
+    path.join(root, "deploy/federated-dev/docker/studio.Dockerfile"),
     "FROM node:22\n"
   );
   await writeJson(path.join(root, ".entangle/host/state-layout.json"), {
@@ -94,13 +94,13 @@ afterEach(async () => {
   );
 });
 
-describe("local backup command helpers", () => {
-  it("creates a versioned backup bundle without local secrets", async () => {
+describe("deployment backup command helpers", () => {
+  it("creates a versioned backup bundle without Entangle secrets", async () => {
     const repositoryRoot = await createTempRoot("entangle-backup-repo-");
     const outputPath = path.join(await createTempRoot("entangle-backup-out-"), "bundle");
     await seedRepository(repositoryRoot);
 
-    const summary = await createLocalBackup({
+    const summary = await createDeploymentBackup({
       now: () => new Date("2026-04-26T00:00:00.000Z"),
       outputPath,
       repositoryRoot
@@ -137,18 +137,18 @@ describe("local backup command helpers", () => {
     });
   });
 
-  it("restores state into a clean Local repository after dry-run validation", async () => {
+  it("restores state into a clean Entangle repository after dry-run validation", async () => {
     const sourceRepositoryRoot = await createTempRoot("entangle-backup-source-");
     const targetRepositoryRoot = await createTempRoot("entangle-backup-target-");
     const outputPath = path.join(await createTempRoot("entangle-backup-bundle-"), "bundle");
     await seedRepository(sourceRepositoryRoot);
 
-    await createLocalBackup({
+    await createDeploymentBackup({
       outputPath,
       repositoryRoot: sourceRepositoryRoot
     });
 
-    const dryRun = await restoreLocalBackup({
+    const dryRun = await restoreDeploymentBackup({
       dryRun: true,
       inputPath: outputPath,
       now: () => new Date("2026-04-26T00:00:00.000Z"),
@@ -163,7 +163,7 @@ describe("local backup command helpers", () => {
       await pathExists(path.join(targetRepositoryRoot, ".entangle/host/state-layout.json"))
     ).toBe(false);
 
-    const restore = await restoreLocalBackup({
+    const restore = await restoreDeploymentBackup({
       inputPath: outputPath,
       repositoryRoot: targetRepositoryRoot
     });
@@ -234,7 +234,7 @@ describe("local backup command helpers", () => {
     });
 
     await expect(
-      restoreLocalBackup({
+      restoreDeploymentBackup({
         inputPath: bundleRoot,
         repositoryRoot: targetRepositoryRoot
       })

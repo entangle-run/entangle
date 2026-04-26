@@ -141,7 +141,7 @@ describe("graph node mutation helpers", () => {
     const node = createManagedNode("worker-it", "IT Worker");
     node.agentRuntime = {
       defaultAgent: "build",
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       mode: "coding_agent"
     };
     node.autonomy.canInitiateSessions = true;
@@ -150,7 +150,7 @@ describe("graph node mutation helpers", () => {
     expect(buildManagedNodeEditorDraft(node)).toEqual({
       agentRuntime: {
         defaultAgent: "build",
-        engineProfileRef: "local-opencode",
+        engineProfileRef: "opencode-default",
         mode: "coding_agent"
       },
       autonomy: {
@@ -172,13 +172,13 @@ describe("graph node mutation helpers", () => {
   it("builds canonical create and replacement requests", () => {
     const draft = buildManagedNodeEditorDraft(createManagedNode("worker-it", "IT Worker"));
     draft.agentRuntime = {
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       mode: "disabled"
     };
 
     expect(buildManagedNodeCreateRequest(draft)).toMatchObject({
       agentRuntime: {
-        engineProfileRef: "local-opencode",
+        engineProfileRef: "opencode-default",
         mode: "disabled"
       },
       displayName: "IT Worker",
@@ -188,7 +188,7 @@ describe("graph node mutation helpers", () => {
     });
     expect(buildManagedNodeReplacementRequest(draft)).toMatchObject({
       agentRuntime: {
-        engineProfileRef: "local-opencode",
+        engineProfileRef: "opencode-default",
         mode: "disabled"
       },
       displayName: "IT Worker",

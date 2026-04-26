@@ -69,11 +69,11 @@ long-lived-runner lifecycle.
 
 The batch also found and fixed a real deployment flaw:
 
-- the local Compose `strfry` service previously attempted to run without a
+- the federated dev Compose `strfry` service previously attempted to run without a
   config file;
 - the container existed, but the relay was not actually usable.
 
-The local deployment profile now mounts an explicit `strfry.local.conf` and
+The local deployment profile now mounts an explicit `strfry.federated-dev.conf` and
 passes it to `strfry` in the Compose service definition.
 
 The local relay config currently fixes:
@@ -81,7 +81,7 @@ The local relay config currently fixes:
 - an explicit database path;
 - bind address `0.0.0.0`;
 - local relay port `7777`;
-- NIP-42 disabled for the first local profile.
+- NIP-42 disabled for the first federated dev profile.
 
 ## 5. Verification performed
 

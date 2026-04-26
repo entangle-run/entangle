@@ -42,7 +42,7 @@ The runner now validates every directive before emitting any handoff:
 When valid, the runner publishes a `task.handoff` message to the resolved peer
 pubkey, includes only the requested artifact refs, and records the outbound
 conversation before publishing so immediate downstream responses do not race
-with local state creation.
+with Entangle state creation.
 
 ## State and observability changes
 

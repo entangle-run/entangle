@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { localProfileComposeFile } from "./local-profile-paths.mjs";
+import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
 
 const args = process.argv.slice(2);
 const skipBuild = args.includes("--skip-build");
@@ -78,19 +78,19 @@ if (reset) {
   run("docker", [
     "compose",
     "-f",
-    localProfileComposeFile,
+    federatedDevProfileComposeFile,
     "down",
     "--volumes"
   ]);
   console.log("Federated Preview demo state reset.");
 } else {
-  run("pnpm", ["ops:check-local:strict"]);
+  run("pnpm", ["ops:check-federated-dev:strict"]);
 
   if (!skipBuild) {
     run("docker", [
       "compose",
       "-f",
-      localProfileComposeFile,
+      federatedDevProfileComposeFile,
       "--profile",
       "runner-build",
       "build",
@@ -101,7 +101,7 @@ if (reset) {
   run("docker", [
     "compose",
     "-f",
-    localProfileComposeFile,
+    federatedDevProfileComposeFile,
     "up",
     "--build",
     "-d",
@@ -111,6 +111,6 @@ if (reset) {
     "gitea"
   ]);
   waitForHttp(giteaUrl, "gitea-ready");
-  run("pnpm", ["ops:smoke-local"]);
-  run("node", ["scripts/smoke-local-runtime.mjs", "--preview-demo"]);
+  run("pnpm", ["ops:smoke-federated-dev"]);
+  run("node", ["scripts/smoke-federated-dev-runtime.mjs", "--preview-demo"]);
 }

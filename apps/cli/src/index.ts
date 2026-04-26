@@ -53,18 +53,18 @@ import {
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { projectHostStatusSummary } from "./host-status-output.js";
 import {
-  buildLocalDoctorReport,
-  formatLocalDoctorText
-} from "./local-doctor-command.js";
-import { buildLocalDiagnosticsBundle } from "./local-diagnostics-bundle-command.js";
+  buildDeploymentDoctorReport,
+  formatDeploymentDoctorText
+} from "./deployment-doctor-command.js";
+import { buildDeploymentDiagnosticsBundle } from "./deployment-diagnostics-bundle-command.js";
 import {
-  createLocalBackup,
-  restoreLocalBackup
-} from "./local-backup-command.js";
+  createDeploymentBackup,
+  restoreDeploymentBackup
+} from "./deployment-backup-command.js";
 import {
-  buildLocalRepairReport,
-  formatLocalRepairText
-} from "./local-repair-command.js";
+  buildDeploymentRepairReport,
+  formatDeploymentRepairText
+} from "./deployment-repair-command.js";
 import {
   projectGraphExportSummary,
   projectGraphImportSummary,
@@ -460,22 +460,22 @@ packageCommand
     });
   });
 
-const localCommand = program
-  .command("local")
-  .description("Inspect and operate the Entangle local deployment profile.");
+const deploymentCommand = program
+  .command("deployment")
+  .description("Inspect and operate an Entangle deployment profile.");
 
-localCommand
+deploymentCommand
   .command("backup")
   .option("--force", "Replace an existing backup output directory.")
   .option(
     "--output <path>",
-    "Entangle local profile backup bundle output directory.",
+    "Entangle deployment profile backup bundle output directory.",
     "entangle-backup"
   )
-  .description("Create a versioned Entangle local profile backup bundle without local secrets.")
+  .description("Create a versioned Entangle deployment profile backup bundle without Entangle secrets.")
   .action(
     async (options: { force?: boolean; output: string }) => {
-      const summary = await createLocalBackup({
+      const summary = await createDeploymentBackup({
         force: options.force,
         outputPath: resolveCliPath(options.output),
         repositoryRoot
@@ -487,12 +487,12 @@ localCommand
     }
   );
 
-localCommand
+deploymentCommand
   .command("restore")
-  .argument("<bundle>", "Path to an Entangle local profile backup bundle directory.")
+  .argument("<bundle>", "Path to an Entangle deployment profile backup bundle directory.")
   .option("--dry-run", "Validate the backup and report what would be restored.")
   .option("--force", "Replace the current .entangle/host state directory.")
-  .description("Restore .entangle/host from a validated Entangle local profile backup bundle.")
+  .description("Restore .entangle/host from a validated Entangle deployment profile backup bundle.")
   .action(
     async (
       bundle: string,
@@ -501,7 +501,7 @@ localCommand
         force?: boolean;
       }
     ) => {
-      const summary = await restoreLocalBackup({
+      const summary = await restoreDeploymentBackup({
         dryRun: options.dryRun,
         force: options.force,
         inputPath: resolveCliPath(bundle),
@@ -514,19 +514,19 @@ localCommand
     }
   );
 
-localCommand
+deploymentCommand
   .command("repair")
   .option("--apply-safe", "Apply only conservative repair actions marked safe.")
-  .option("--gitea-url <url>", "Expected local Gitea URL.", "http://localhost:3001")
-  .option("--host-token <token>", "Bearer token for a protected local host.")
-  .option("--host-url <url>", "Expected local host API URL.", "http://localhost:7071")
+  .option("--gitea-url <url>", "Expected Gitea URL.", "http://localhost:3001")
+  .option("--host-token <token>", "Bearer token for a protected host.")
+  .option("--host-url <url>", "Expected host API URL.", "http://localhost:7071")
   .option("--json", "Print the full machine-readable repair report.")
-  .option("--relay-url <url>", "Expected local Nostr relay URL.", "ws://localhost:7777")
-  .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")
+  .option("--relay-url <url>", "Expected Nostr relay URL.", "ws://localhost:7777")
+  .option("--runner-image <image>", "Expected runner image.", "entangle-runner:federated-dev")
   .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
-  .option("--strict", "Treat optional local infrastructure warnings as failures.")
-  .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
-  .description("Preview or apply conservative Entangle local profile repair actions.")
+  .option("--strict", "Treat optional deployment infrastructure warnings as failures.")
+  .option("--studio-url <url>", "Expected Studio URL.", "http://localhost:3000")
+  .description("Preview or apply conservative Entangle deployment profile repair actions.")
   .action(
     async (
       options: {
@@ -553,7 +553,7 @@ localCommand
               ? { authToken: normalizedToken, baseUrl: options.hostUrl }
               : { baseUrl: options.hostUrl }
           );
-      const report = await buildLocalRepairReport(
+      const report = await buildDeploymentRepairReport(
         {
           applySafe: options.applySafe,
           giteaUrl: options.giteaUrl,
@@ -571,7 +571,7 @@ localCommand
       if (options.json) {
         printJson(report);
       } else {
-        process.stdout.write(formatLocalRepairText(report));
+        process.stdout.write(formatDeploymentRepairText(report));
       }
 
       if (report.status === "blocked") {
@@ -580,18 +580,18 @@ localCommand
     }
   );
 
-localCommand
+deploymentCommand
   .command("doctor")
-  .option("--gitea-url <url>", "Expected local Gitea URL.", "http://localhost:3001")
-  .option("--host-token <token>", "Bearer token for a protected local host.")
-  .option("--host-url <url>", "Expected local host API URL.", "http://localhost:7071")
+  .option("--gitea-url <url>", "Expected Gitea URL.", "http://localhost:3001")
+  .option("--host-token <token>", "Bearer token for a protected host.")
+  .option("--host-url <url>", "Expected host API URL.", "http://localhost:7071")
   .option("--json", "Print the full machine-readable doctor report.")
-  .option("--relay-url <url>", "Expected local Nostr relay URL.", "ws://localhost:7777")
-  .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")
+  .option("--relay-url <url>", "Expected Nostr relay URL.", "ws://localhost:7777")
+  .option("--runner-image <image>", "Expected runner image.", "entangle-runner:federated-dev")
   .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
-  .option("--strict", "Treat optional local infrastructure warnings as failures.")
-  .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
-  .description("Run a read-only Entangle local profile doctor diagnostic.")
+  .option("--strict", "Treat optional deployment infrastructure warnings as failures.")
+  .option("--studio-url <url>", "Expected Studio URL.", "http://localhost:3000")
+  .description("Run a read-only Entangle deployment profile doctor diagnostic.")
   .action(
     async (
       options: {
@@ -617,7 +617,7 @@ localCommand
               ? { authToken: normalizedToken, baseUrl: options.hostUrl }
               : { baseUrl: options.hostUrl }
           );
-      const report = await buildLocalDoctorReport(
+      const report = await buildDeploymentDoctorReport(
         {
           giteaUrl: options.giteaUrl,
           hostUrl: options.hostUrl,
@@ -634,7 +634,7 @@ localCommand
       if (options.json) {
         printJson(report);
       } else {
-        process.stdout.write(formatLocalDoctorText(report));
+        process.stdout.write(formatDeploymentDoctorText(report));
       }
 
       if (report.status === "fail") {
@@ -643,13 +643,13 @@ localCommand
     }
   );
 
-localCommand
+deploymentCommand
   .command("diagnostics")
   .option("--event-limit <n>", "Maximum host events to include.", "50")
-  .option("--gitea-url <url>", "Expected local Gitea URL.", "http://localhost:3001")
-  .option("--host-token <token>", "Bearer token for a protected local host.")
-  .option("--host-url <url>", "Expected local host API URL.", "http://localhost:7071")
-  .option("--log-tail <n>", "Tail lines to collect from Local Compose logs.", "200")
+  .option("--gitea-url <url>", "Expected Gitea URL.", "http://localhost:3001")
+  .option("--host-token <token>", "Bearer token for a protected host.")
+  .option("--host-url <url>", "Expected host API URL.", "http://localhost:7071")
+  .option("--log-tail <n>", "Tail lines to collect from Federated dev Compose logs.", "200")
   .option(
     "--max-command-output-chars <n>",
     "Maximum captured characters per command stream.",
@@ -660,11 +660,11 @@ localCommand
     "Diagnostics bundle JSON output path.",
     "entangle-diagnostics.json"
   )
-  .option("--relay-url <url>", "Expected local Nostr relay URL.", "ws://localhost:7777")
-  .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")
+  .option("--relay-url <url>", "Expected Nostr relay URL.", "ws://localhost:7777")
+  .option("--runner-image <image>", "Expected runner image.", "entangle-runner:federated-dev")
   .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
-  .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
-  .description("Write a redacted Entangle local profile diagnostics bundle.")
+  .option("--studio-url <url>", "Expected Studio URL.", "http://localhost:3000")
+  .description("Write a redacted Entangle deployment profile diagnostics bundle.")
   .action(
     async (
       options: {
@@ -693,7 +693,7 @@ localCommand
               : { baseUrl: options.hostUrl }
           );
       const outputPath = resolveCliPath(options.output);
-      const bundle = await buildLocalDiagnosticsBundle(
+      const bundle = await buildDeploymentDiagnosticsBundle(
         {
           eventLimit: Number.parseInt(options.eventLimit, 10),
           giteaUrl: options.giteaUrl,
@@ -1453,7 +1453,7 @@ hostEventsCommand
     "--summary",
     "Print structured runtime-trace summaries instead of raw host event objects."
   )
-  .description("List typed host events from entangle-host with optional local filtering.")
+  .description("List typed host events from entangle-host with optional client-side filtering.")
   .action(
     async (
       options: {
@@ -1640,7 +1640,7 @@ hostPackageSourcesCommand
     "Print the canonical package-admission request without mutating the host."
   )
   .description(
-    "Admit a canonical local package path or archive into entangle-host desired state."
+    "Admit a canonical filesystem package path or archive into entangle-host desired state."
   )
   .action(
     async (
@@ -3690,7 +3690,7 @@ hostSessionsCommand
     "60000"
   )
   .description(
-    "Launch a local task session through entangle-host using host-resolved runtime context."
+    "Launch a task session through entangle-host using host-resolved runtime context."
   )
   .action(
     async (
@@ -3764,7 +3764,7 @@ const graphCommand = program
 
 const graphTemplatesCommand = graphCommand
   .command("templates")
-  .description("Export built-in graph templates for local workbench flows.");
+  .description("Export built-in graph templates for federated workbench flows.");
 
 graphTemplatesCommand
   .command("list")

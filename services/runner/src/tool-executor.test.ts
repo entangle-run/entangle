@@ -604,7 +604,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object",
               properties: {
@@ -663,7 +663,7 @@ describe("runner builtin tool executor", () => {
         conversationId: "conv-alpha",
         followupCount: 1,
         graphId: "graph-alpha",
-        initiator: "local",
+        initiator: "self",
         localNodeId: "worker-it",
         localPubkey,
         openedAt: "2026-04-24T10:00:00.000Z",
@@ -683,7 +683,7 @@ describe("runner builtin tool executor", () => {
         conversationId: "conv-beta",
         followupCount: 0,
         graphId: "graph-alpha",
-        initiator: "remote",
+        initiator: "peer",
         localNodeId: "worker-it",
         localPubkey,
         openedAt: "2026-04-24T10:02:00.000Z",
@@ -836,7 +836,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -861,7 +861,7 @@ describe("runner builtin tool executor", () => {
       sessionId: "session-alpha",
       tool: {
         id: "inspect_session_state",
-        description: "Inspect bounded local state for the current session.",
+        description: "Inspect bounded Entangle state for the current session.",
         inputSchema: {
           type: "object"
         }
@@ -947,7 +947,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -967,7 +967,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -990,7 +990,7 @@ describe("runner builtin tool executor", () => {
       sessionId: "session-alpha",
       tool: {
         id: "inspect_session_state",
-        description: "Inspect bounded local state for the current session.",
+        description: "Inspect bounded Entangle state for the current session.",
         inputSchema: {
           type: "object"
         }
@@ -1015,7 +1015,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -1035,7 +1035,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -1058,7 +1058,7 @@ describe("runner builtin tool executor", () => {
       sessionId: "session-alpha",
       tool: {
         id: "inspect_session_state",
-        description: "Inspect bounded local state for the current session.",
+        description: "Inspect bounded Entangle state for the current session.",
         inputSchema: {
           type: "object"
         }
@@ -1075,7 +1075,7 @@ describe("runner builtin tool executor", () => {
       sessionId: "session-alpha",
       tool: {
         id: "inspect_session_state",
-        description: "Inspect bounded local state for the current session.",
+        description: "Inspect bounded Entangle state for the current session.",
         inputSchema: {
           type: "object"
         }
@@ -1101,14 +1101,14 @@ describe("runner builtin tool executor", () => {
     );
   });
 
-  it("returns a deterministic not-found payload when inspect_session_state has no local session record", async () => {
+  it("returns a deterministic not-found payload when inspect_session_state has no session record", async () => {
     const fixture = await createRuntimeFixture({
       toolCatalog: {
         schemaVersion: "1",
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -1128,7 +1128,7 @@ describe("runner builtin tool executor", () => {
         tools: [
           {
             id: "inspect_session_state",
-            description: "Inspect bounded local state for the current session.",
+            description: "Inspect bounded Entangle state for the current session.",
             inputSchema: {
               type: "object"
             },
@@ -1149,7 +1149,7 @@ describe("runner builtin tool executor", () => {
       sessionId: "session-alpha",
       tool: {
         id: "inspect_session_state",
-        description: "Inspect bounded local state for the current session.",
+        description: "Inspect bounded Entangle state for the current session.",
         inputSchema: {
           type: "object"
         }

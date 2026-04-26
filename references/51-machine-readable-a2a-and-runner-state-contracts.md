@@ -1,7 +1,7 @@
 # Machine-Readable A2A and Runner State Contracts
 
 This document records the point where Entangle's application protocol and
-runner-local state stopped being only descriptive reference material and became
+runner-Entangle state stopped being only descriptive reference material and became
 owned by `packages/types` and `packages/validator`.
 
 ## Why this batch matters
@@ -100,12 +100,12 @@ routes before any `task.handoff` message is constructed.
 These are not the full semantic model of Entangle, but they are a meaningful
 floor under the protocol.
 
-## Runner-local state coverage
+## Runner-Entangle state coverage
 
 The runner now has canonical record shapes for:
 
-- session-local state;
-- conversation-local state;
+- session-Entangle state;
+- conversation-Entangle state;
 - approval gates;
 - bounded runner turn tracking.
 

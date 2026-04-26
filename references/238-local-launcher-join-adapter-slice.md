@@ -18,7 +18,7 @@ generic join bootstrap path.
 Local deployment should become an adapter over the same runner bootstrap shape
 used by remote machines:
 
-- Host materializes local compatibility context for the current Local profile;
+- Host materializes local compatibility context for the current Federated dev profile;
 - Host also writes a runner join config beside the local context;
 - Docker can launch the runner in `local-context` mode or `join` mode;
 - `local-context` remains the default until assignment materialization and Host

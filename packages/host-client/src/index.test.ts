@@ -1674,7 +1674,7 @@ describe("createHostClient", () => {
                 secretRef: "secret://git/worker-it/ssh",
                 attribution: {
                   displayName: "Worker IT",
-                  email: "worker-it@entangle.local"
+                  email: "worker-it@entangle.example"
                 },
                 signing: {
                   mode: "none"
@@ -2888,7 +2888,7 @@ describe("createHostClient", () => {
         publication: {
           publishedAt: "2026-04-24T00:04:00.000Z",
           remoteName: "entangle-gitea",
-          remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+          remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
           state: "published"
         },
         requestedAt: "2026-04-24T00:04:00.000Z",
@@ -2907,7 +2907,7 @@ describe("createHostClient", () => {
       publication: {
         publishedAt: "2026-04-24T00:04:00.000Z",
         remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       ref: {
@@ -3134,7 +3134,7 @@ describe("createHostClient", () => {
       publication: {
         publishedAt: "2026-04-24T00:06:00.000Z",
         remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       publicationId: "wiki-publication-alpha",

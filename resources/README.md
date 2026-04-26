@@ -33,7 +33,7 @@ project deliberately changes policy later.
 | `openclaw` | `https://github.com/openclaw/openclaw.git` | Large open-source agent runtime with persistent memory, runtime services, and multi-agent operational patterns. | Cloned outside active worktree | `81ca7bc40b09dbb6386fc5c1cecf237c5f11004a` |
 | `a2a` | `https://github.com/a2aproject/A2A.git` | Secondary interoperability reference for agent-to-agent communication across opaque agentic systems. Useful for capability discovery, long-running task semantics, and future gateway design. | Cloned outside active worktree | `7ff10041597b9c8a736a477e1890d2c79173bbcf` |
 | `mcp` | `https://github.com/modelcontextprotocol/modelcontextprotocol.git` | Secondary protocol reference for tool/runtime boundaries, schema discipline, and external interoperability surfaces. Useful for understanding where Entangle should align with MCP and where it should remain separate. | Cloned outside active worktree | `8b266219b19cf5e85e44b6c45dd81733cb65f131` |
-| `strfry` | `https://github.com/hoytech/strfry.git` | Primary relay implementation candidate for the Entangle local profile: mature, fast, and simple to run as a dedicated local or containerized relay. | Cloned outside active worktree | `825e325cf93be03718cca157298392cba27d102f` |
+| `strfry` | `https://github.com/hoytech/strfry.git` | Primary relay implementation candidate for the Entangle deployment profile: mature, fast, and simple to run as a dedicated local or containerized relay. | Cloned outside active worktree | `825e325cf93be03718cca157298392cba27d102f` |
 | `khatru` | `https://github.com/fiatjaf/khatru.git` | Secondary relay-framework reference for future custom relay logic, AUTH policies, or programmable event acceptance. Upstream is in maintenance mode, so treat it as a reference rather than a foundation. | Cloned outside active worktree | `9f99b9827a6e030bbcefc48f7af68bfe7eea1a27` |
 | `qmd` | `https://github.com/tobi/qmd.git` | Optional markdown-native search engine for the Entangle wiki and future memory/search tooling. Not part of the core runtime. | Cloned outside active worktree | `e8de7cab0284c5d64bd64f5928b49d3a2d9a01f3` |
 
@@ -108,7 +108,7 @@ done
 
 The project will almost certainly use more stack components than are cloned here, but some of them are better treated as services than as source references. The clearest example is the git server.
 
-For the Entangle local profile and likely for the first serious implementation:
+For the Entangle deployment profile and likely for the first serious implementation:
 
 - use a `Gitea` container or another off-the-shelf git service;
 - do not treat the git server source as a primary design reference unless Entangle later needs deep integration with its internals.

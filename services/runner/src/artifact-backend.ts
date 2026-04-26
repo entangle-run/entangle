@@ -297,7 +297,7 @@ export async function buildGitCommandEnvForRemoteOperation(input: {
     transportKind: "file" | "https" | "ssh";
   };
 }): Promise<NodeJS.ProcessEnv | undefined> {
-  // Bounded local/test profiles may target a directly mounted bare repository path.
+  // Bounded test profiles may target a directly mounted bare repository path.
   // Those remotes do not require transport-level credentials.
   if (!input.target.remoteUrl.includes("://")) {
     return undefined;

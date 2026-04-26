@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Scope
 
-This L2 Local Workbench slice adds a safer headless graph import/export
+This L2 Federated Workbench slice adds a safer headless graph import/export
 workflow over the existing host graph API.
 
 Implemented:

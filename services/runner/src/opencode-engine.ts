@@ -211,7 +211,7 @@ export function buildOpenCodePrompt(request: AgentEngineTurnRequest): string {
   if (request.artifactInputs.length > 0) {
     sections.push(
       [
-        "## Local Artifact Inputs",
+        "## Materialized Artifact Inputs",
         ...request.artifactInputs.map((artifactInput) =>
           [
             `- ${artifactInput.artifactId}`,

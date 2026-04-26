@@ -79,7 +79,7 @@ export const artifactMaterializationSchema = z
     (value) => value.localPath !== undefined || value.repoPath !== undefined,
     {
       message:
-        "Artifact materialization metadata must include at least one local path."
+        "Artifact materialization metadata must include at least one materialized path."
     }
   );
 

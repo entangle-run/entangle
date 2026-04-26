@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildLocalDiagnosticsBundle,
-  redactLocalDiagnosticsText,
-  type LocalDiagnosticsBundleDeps
-} from "./local-diagnostics-bundle-command.js";
+  buildDeploymentDiagnosticsBundle,
+  redactDeploymentDiagnosticsText,
+  type DeploymentDiagnosticsBundleDeps
+} from "./deployment-diagnostics-bundle-command.js";
 
-function createDeps(): LocalDiagnosticsBundleDeps {
+function createDeps(): DeploymentDiagnosticsBundleDeps {
   return {
     commandRunner: (command, args) => ({
       status: 0,
@@ -243,9 +243,9 @@ function createDeps(): LocalDiagnosticsBundleDeps {
   };
 }
 
-describe("local diagnostics bundle helpers", () => {
+describe("deployment diagnostics bundle helpers", () => {
   it("redacts common secret shapes in diagnostic text", () => {
-    const redacted = redactLocalDiagnosticsText(
+    const redacted = redactDeploymentDiagnosticsText(
       'Authorization: Bearer abc.def\n"token": "secret-value"\npassword=hunter2'
     );
 
@@ -255,8 +255,8 @@ describe("local diagnostics bundle helpers", () => {
     expect(redacted).not.toContain("secret-value");
   });
 
-  it("builds a redacted read-only Local diagnostics bundle", async () => {
-    const bundle = await buildLocalDiagnosticsBundle(
+  it("builds a redacted read-only Deployment diagnostics bundle", async () => {
+    const bundle = await buildDeploymentDiagnosticsBundle(
       {
         eventLimit: 3,
         logTail: 10,

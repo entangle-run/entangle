@@ -1,4 +1,4 @@
-# L2 Local Workbench
+# L2 Federated Workbench
 
 Status: released.
 
@@ -79,7 +79,7 @@ pnpm --filter @entangle/cli dev package inspect examples/federated-preview/agent
 pnpm --filter @entangle/cli dev graph diff examples/federated-preview/graph.json examples/federated-preview/graph.json
 pnpm --filter @entangle/cli dev host graph import examples/federated-preview/graph.json --dry-run
 pnpm --filter @entangle/cli dev host graph export /tmp/entangle-active-graph.json
-pnpm --filter @entangle/cli dev host sessions launch federated-preview-planner "Prepare a local workbench report." --wait
+pnpm --filter @entangle/cli dev host sessions launch federated-preview-planner "Prepare a federated workbench report." --wait
 pnpm --filter @entangle/cli dev host runtimes artifacts federated-preview-planner --session-id <session-id> --summary
 pnpm --filter @entangle/cli dev host runtimes artifact federated-preview-planner <artifact-id> --preview
 pnpm --filter @entangle/cli dev host runtimes memory federated-preview-planner --summary
@@ -127,17 +127,17 @@ pnpm --filter @entangle/cli dev host runtimes memory-page --help
 git diff --check
 pnpm verify
 pnpm build
-pnpm ops:check-local:strict
-pnpm ops:smoke-local:disposable --skip-build --keep-running
-pnpm ops:smoke-local
-docker compose -f deploy/local/compose/docker-compose.local.yml down --volumes
+pnpm ops:check-federated-dev:strict
+pnpm ops:smoke-federated-dev:disposable --skip-build --keep-running
+pnpm ops:smoke-federated-dev
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml down --volumes
 ```
 
 All listed commands passed. `pnpm verify` includes `pnpm lint`,
 `pnpm typecheck`, and `pnpm test`. `pnpm build` completed with the existing
 Vite chunk-size warning for Studio.
 
-The final Docker-backed gate reused the Local Compose profile and verified
+The final Docker-backed gate reused the Federated dev Compose profile and verified
 host, Studio, Gitea, and `strfry` readiness plus active local smoke. The
 kept-running profile was torn down with volumes after verification.
 

@@ -99,7 +99,7 @@ describe("DockerEngineClient", () => {
         };
       }
 
-      if (request.path === "/v1.51/images/entangle-runner%3Alocal/json") {
+      if (request.path === "/v1.51/images/entangle-runner%3Afederated-dev/json") {
         return {
           body: {
             Id: "sha256:image"
@@ -113,7 +113,7 @@ describe("DockerEngineClient", () => {
           body: {
             Config: {
               Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/state/context.json"],
-              Image: "entangle-runner:local",
+              Image: "entangle-runner:federated-dev",
               Labels: {
                 "io.entangle.graph_revision_id": "rev-1",
                 "io.entangle.runtime_context_path": "/state/context.json"
@@ -168,7 +168,7 @@ describe("DockerEngineClient", () => {
     };
     const client = new DockerEngineClient(connection);
 
-    await expect(client.inspectImage("entangle-runner:local")).resolves.toBe(true);
+    await expect(client.inspectImage("entangle-runner:federated-dev")).resolves.toBe(true);
     await expect(client.inspectContainer("runner")).resolves.toMatchObject({
       Id: "container-123"
     });
@@ -176,7 +176,7 @@ describe("DockerEngineClient", () => {
       client.createContainer({
         containerName: "runner",
         env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/state/context.json"],
-        image: "entangle-runner:local",
+        image: "entangle-runner:federated-dev",
         labels: {
           "io.entangle.graph_revision_id": "rev-1"
         },
@@ -195,7 +195,7 @@ describe("DockerEngineClient", () => {
 
     expect(requests.map((entry) => entry.path)).toEqual([
       "/version",
-      "/v1.51/images/entangle-runner%3Alocal/json",
+      "/v1.51/images/entangle-runner%3Afederated-dev/json",
       "/v1.51/containers/runner/json",
       "/v1.51/containers/create?name=runner",
       "/v1.51/containers/runner/start",
@@ -213,7 +213,7 @@ describe("DockerEngineClient", () => {
         ],
         NetworkMode: "entangle"
       },
-      Image: "entangle-runner:local",
+      Image: "entangle-runner:federated-dev",
       Labels: {
         "io.entangle.graph_revision_id": "rev-1"
       }

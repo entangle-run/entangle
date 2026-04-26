@@ -95,7 +95,7 @@ function buildHttpsRuntimeContext(input: {
             secretRef: "secret://git/worker-it/https-token",
             attribution: {
               displayName: "Worker IT HTTPS Git Principal",
-              email: "worker-it@entangle.local"
+              email: "worker-it@entangle.example"
             },
             signing: {
               mode: "none"
@@ -113,7 +113,7 @@ function buildHttpsRuntimeContext(input: {
           authMode: "https_token",
           baseUrl: "https://gitea.example",
           defaultNamespace: "team-alpha",
-          displayName: "Local Gitea",
+          displayName: "Gitea",
           id: "gitea",
           provisioning: {
             mode: "preexisting"
@@ -477,7 +477,7 @@ describe("RunnerService", () => {
     const handoffReportPath = downstreamRequest.artifactInputs[0]?.localPath;
     if (!handoffReportPath) {
       throw new Error(
-        "Expected the downstream engine request to include a local artifact path."
+        "Expected the downstream engine request to include a materialized artifact path."
       );
     }
 
@@ -711,7 +711,7 @@ describe("RunnerService", () => {
       const downstreamArtifactPath = downstreamRequest.artifactInputs[0]?.localPath;
 
       if (!downstreamArtifactPath) {
-        throw new Error("Expected a downstream local artifact path.");
+        throw new Error("Expected a downstream materialized artifact path.");
       }
 
       await expect(readFile(downstreamArtifactPath, "utf8")).resolves.toContain(
@@ -778,7 +778,7 @@ describe("RunnerService", () => {
       engine: {
         executeTurn() {
           return Promise.resolve({
-            assistantMessages: ["Prepared a handoff outside local policy."],
+            assistantMessages: ["Prepared a handoff outside node policy."],
             engineSessionId: "engine-session-policy-denied",
             engineVersion: "0.10.0",
             handoffDirectives: [
@@ -847,7 +847,7 @@ describe("RunnerService", () => {
     }
   });
 
-  it("materializes engine approval request directives as pending local gates", async () => {
+  it("materializes engine approval request directives as pending approval gates", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
     const context = await loadRuntimeContext(fixture.contextPath);
@@ -1243,7 +1243,7 @@ describe("RunnerService", () => {
       conversationId: "conv-alpha",
       followupCount: 0,
       graphId: "graph-alpha",
-      initiator: "remote",
+      initiator: "peer",
       lastInboundMessageId: requestMessageId,
       lastMessageType: "task.request",
       localNodeId: "worker-it",
@@ -1410,7 +1410,7 @@ describe("RunnerService", () => {
     expect(sessionRecord?.waitingApprovalIds).toEqual(["approval-request-alpha"]);
   });
 
-  it("rejects malformed approval requests before writing local lifecycle state", async () => {
+  it("rejects malformed approval requests before writing lifecycle state", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
 
@@ -1471,7 +1471,7 @@ describe("RunnerService", () => {
     expect(sessionRecord).toBeUndefined();
   });
 
-  it("does not create phantom local state for orphan approval responses", async () => {
+  it("does not create phantom Entangle state for orphan approval responses", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
 
@@ -1569,7 +1569,7 @@ describe("RunnerService", () => {
       conversationId: "conv-approval-response",
       followupCount: 0,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastOutboundMessageId: approvalRequestMessageId,
       lastMessageType: "approval.request",
       localNodeId: "worker-it",
@@ -1689,7 +1689,7 @@ describe("RunnerService", () => {
       conversationId: "conv-approval-rejected",
       followupCount: 0,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastOutboundMessageId: approvalRequestMessageId,
       lastMessageType: "approval.request",
       localNodeId: "worker-it",
@@ -1809,7 +1809,7 @@ describe("RunnerService", () => {
       conversationId: "conv-alpha",
       followupCount: 0,
       graphId: "graph-alpha",
-      initiator: "remote",
+      initiator: "peer",
       lastInboundMessageId: requestMessageId,
       lastMessageType: "task.request",
       localNodeId: "worker-it",
@@ -2683,12 +2683,12 @@ describe("RunnerService", () => {
       }
     );
     expect(authorEmail.status).toBe(0);
-    expect(authorEmail.stdout.trim()).toBe("worker-it@entangle.local");
+    expect(authorEmail.stdout.trim()).toBe("worker-it@entangle.example");
 
     await service.stop();
   });
 
-  it("preserves the local artifact and records publication failure when the remote is unavailable", async () => {
+  it("preserves the materialized artifact and records publication failure when the remote is unavailable", async () => {
     const fixture = await createRuntimeFixture({
       remotePublication: "missing_repo"
     });
@@ -2907,7 +2907,7 @@ describe("RunnerService", () => {
       conversationId: "conv-closed",
       followupCount: 1,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastMessageType: "task.result",
       localNodeId: "worker-it",
       localPubkey: runtimeContext.identityContext.publicKey,
@@ -2928,7 +2928,7 @@ describe("RunnerService", () => {
       conversationId: "conv-open",
       followupCount: 0,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastMessageType: "task.handoff",
       localNodeId: "worker-it",
       localPubkey: runtimeContext.identityContext.publicKey,
@@ -2992,7 +2992,7 @@ describe("RunnerService", () => {
       conversationId: "conv-closed",
       followupCount: 1,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastInboundMessageId: lastMessageId,
       lastMessageType: "task.result",
       localNodeId: "worker-it",
@@ -3058,7 +3058,7 @@ describe("RunnerService", () => {
       conversationId: "conv-closed",
       followupCount: 1,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastInboundMessageId: lastMessageId,
       lastMessageType: "task.result",
       localNodeId: "worker-it",
@@ -3137,7 +3137,7 @@ describe("RunnerService", () => {
       conversationId: "conv-closed",
       followupCount: 1,
       graphId: "graph-alpha",
-      initiator: "local",
+      initiator: "self",
       lastInboundMessageId: lastMessageId,
       lastMessageType: "task.result",
       localNodeId: "worker-it",

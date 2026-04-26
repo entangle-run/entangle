@@ -84,7 +84,7 @@ command runners.
 - Add Studio user-node panel with conversation list and message detail.
 - Replace Studio approval mutation with signed user-node approval flow.
 - Replace Studio session launch with selected user-node signed launch.
-- Keep local commands under `entangle local` for local adapter operations.
+- Keep local commands under `entangle deployment` for local adapter operations.
 
 ## Tests Required
 

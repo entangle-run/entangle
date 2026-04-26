@@ -56,13 +56,13 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
   return {
     agentRuntimeContext: {
       engineProfile: {
-        id: "local-opencode",
-        displayName: "Local OpenCode",
+        id: "opencode-default",
+        displayName: "OpenCode",
         kind: "opencode_server",
         executable: "opencode",
         stateScope: "node"
       },
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       mode: "coding_agent"
     },
     artifactContext: {
@@ -156,7 +156,7 @@ describe("host session launch helpers", () => {
           "1111111111111111111111111111111111111111111111111111111111111111",
         request: {
           artifactRefs: [],
-          summary: "Prepare a local report.",
+          summary: "Prepare a report.",
           targetNodeId: "builder"
         },
         runtimeContext: buildRuntimeContext(),
@@ -166,7 +166,7 @@ describe("host session launch helpers", () => {
     ).toMatchObject({
       fromNodeId: "user-main",
       graphId: "federated-preview",
-      intent: "Prepare a local report.",
+      intent: "Prepare a report.",
       messageType: "task.request",
       sessionId: "session-alpha",
       toNodeId: "builder",
@@ -174,7 +174,7 @@ describe("host session launch helpers", () => {
         metadata: {
           launchedBy: "user-node-gateway"
         },
-        summary: "Prepare a local report."
+        summary: "Prepare a report."
       }
     });
   });
@@ -191,7 +191,7 @@ describe("host session launch helpers", () => {
       request: {
         conversationId: "conversation-alpha",
         sessionId: "session-alpha",
-        summary: "Prepare a local report.",
+        summary: "Prepare a report.",
         targetNodeId: "builder",
         turnId: "turn-alpha"
       },

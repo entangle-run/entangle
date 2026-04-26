@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-Give the Local Workbench a first visual graph-diff surface while keeping CLI
+Give the Federated Workbench a first visual graph-diff surface while keeping CLI
 and Studio on one shared graph-diff implementation.
 
 ## Implemented Surface
@@ -29,7 +29,7 @@ This is a client-side graph revision comparison. It does not add:
 - a validation drawer for candidate graph JSON;
 - automatic rollback or restore of historical revisions.
 
-Those remain Local Workbench follow-up work.
+Those remain Federated Workbench follow-up work.
 
 ## Verification
 
@@ -47,9 +47,9 @@ pnpm --filter @entangle/studio typecheck
 pnpm --filter @entangle/studio lint
 pnpm verify
 pnpm build
-pnpm ops:check-local:strict
-pnpm ops:smoke-local:disposable --skip-build --keep-running
-pnpm ops:smoke-local
+pnpm ops:check-federated-dev:strict
+pnpm ops:smoke-federated-dev:disposable --skip-build --keep-running
+pnpm ops:smoke-federated-dev
 ```
 
 All listed commands passed on 2026-04-25.

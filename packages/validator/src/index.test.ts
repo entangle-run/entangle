@@ -96,13 +96,13 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
   return {
     agentRuntimeContext: {
       engineProfile: {
-        id: "local-opencode",
-        displayName: "Local OpenCode",
+        id: "opencode-default",
+        displayName: "OpenCode",
         kind: "opencode_server",
         executable: "opencode",
         stateScope: "node"
       },
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       mode: "coding_agent"
     },
     artifactContext: {
@@ -132,9 +132,9 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
       gitServices: [
         {
           id: "gitea",
-          displayName: "Local Gitea",
-          baseUrl: "https://gitea.local",
-          remoteBase: "ssh://git@gitea.local:22",
+          displayName: "Gitea",
+          baseUrl: "https://gitea.example",
+          remoteBase: "ssh://git@gitea.example:22",
           transportKind: "ssh",
           authMode: "ssh_key",
           defaultNamespace: "team-alpha",
@@ -148,7 +148,7 @@ function buildRuntimeContext(): EffectiveRuntimeContext {
         gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "preexisting",
-        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
         repositoryName: "graph-alpha",
         transportKind: "ssh"
       },
@@ -390,8 +390,8 @@ describe("validateDeploymentResourceCatalogDocument", () => {
       catalogId: "local",
       agentEngineProfiles: [
         {
-          id: "local-opencode",
-          displayName: "Local OpenCode",
+          id: "opencode-default",
+          displayName: "OpenCode",
           kind: "opencode_server",
           executable: "opencode"
         }
@@ -587,9 +587,9 @@ describe("validateGraphDocument", () => {
           gitServices: [
             {
               id: "gitea",
-              displayName: "Local Gitea",
-              baseUrl: "https://gitea.local",
-              remoteBase: "ssh://git@gitea.local:22",
+              displayName: "Gitea",
+              baseUrl: "https://gitea.example",
+              remoteBase: "ssh://git@gitea.example:22",
               transportKind: "ssh",
               authMode: "ssh_key",
               provisioning: {
@@ -668,8 +668,8 @@ describe("validateGraphDocument", () => {
         modelEndpoints: [],
         agentEngineProfiles: [
           {
-            id: "local-opencode",
-            displayName: "Local OpenCode",
+            id: "opencode-default",
+            displayName: "OpenCode",
             kind: "opencode_server",
             executable: "opencode"
           }
@@ -707,9 +707,9 @@ describe("validateGraphDocument", () => {
           gitServices: [
             {
               id: "gitea",
-              displayName: "Local Gitea",
-              baseUrl: "https://gitea.local",
-              remoteBase: "ssh://git@gitea.local:22",
+              displayName: "Gitea",
+              baseUrl: "https://gitea.example",
+              remoteBase: "ssh://git@gitea.example:22",
               transportKind: "ssh",
               authMode: "ssh_key",
               provisioning: {
@@ -752,9 +752,9 @@ describe("validateGraphDocument", () => {
           gitServices: [
             {
               id: "gitea",
-              displayName: "Local Gitea",
-              baseUrl: "https://gitea.local",
-              remoteBase: "ssh://git@gitea.local:22",
+              displayName: "Gitea",
+              baseUrl: "https://gitea.example",
+              remoteBase: "ssh://git@gitea.example:22",
               transportKind: "ssh",
               authMode: "ssh_key",
               provisioning: {
@@ -764,8 +764,8 @@ describe("validateGraphDocument", () => {
             {
               id: "backup-gitea",
               displayName: "Backup Gitea",
-              baseUrl: "https://backup.gitea.local",
-              remoteBase: "ssh://git@backup.gitea.local:22",
+              baseUrl: "https://backup.gitea.example",
+              remoteBase: "ssh://git@backup.gitea.example:22",
               transportKind: "ssh",
               authMode: "ssh_key",
               provisioning: {
@@ -1096,8 +1096,8 @@ describe("validateRuntimeArtifactRefs", () => {
     context.artifactContext.gitServices.push({
       id: "backup-gitea",
       displayName: "Backup Gitea",
-      baseUrl: "https://backup.gitea.local",
-      remoteBase: "ssh://git@backup.gitea.local:22",
+      baseUrl: "https://backup.gitea.example",
+      remoteBase: "ssh://git@backup.gitea.example:22",
       transportKind: "ssh",
       authMode: "ssh_key",
       provisioning: {

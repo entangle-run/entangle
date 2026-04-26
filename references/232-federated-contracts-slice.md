@@ -132,9 +132,9 @@ rg "runtimeProfile.*single-machine|contextPath|runtimeRoot|shared volume|effecti
 
 Classification:
 
-- valid local adapter/debug usage: `deploy/local`, local smoke scripts,
-  Docker runtime backend code, runner-local state paths, runner memory/artifact
-  helpers, and current local profile operational checks;
+- valid local adapter/debug usage: `deploy/federated-dev`, local smoke scripts,
+  Docker runtime backend code, runner-Entangle state paths, runner memory/artifact
+  helpers, and current federated dev profile operational checks;
 - docs needing later migration: old single-machine planning files, historical
   slice records, and existing wiki log history;
 - invalid local-only assumptions already captured for later slices:

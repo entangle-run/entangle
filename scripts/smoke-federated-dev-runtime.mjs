@@ -11,13 +11,13 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { localProfileComposeFile } from "./local-profile-paths.mjs";
+import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   ".."
 );
-const composeFile = localProfileComposeFile;
+const composeFile = federatedDevProfileComposeFile;
 const defaultHostUrl = "http://localhost:7071";
 const defaultRelayUrl = "ws://localhost:7777";
 const defaultTimeoutMs = 120_000;
@@ -59,7 +59,7 @@ const modelEndpointId = previewDemo
 const modelStubContainerName = previewDemo
   ? "entangle-preview-model"
   : `entangle-runtime-smoke-model-${runSuffix}`;
-const secretRef = `secret://local/${modelEndpointId}`;
+const secretRef = `secret://federated-dev/${modelEndpointId}`;
 const gitPrincipalId = previewDemo
   ? "federated-preview-git"
   : `runtime-smoke-git-${runSuffix}`;
@@ -215,14 +215,14 @@ async function writeJsonFile(filePath, value) {
 
 function buildModelStubServerSource() {
   const expectedToken = JSON.stringify(smokeSecret);
-  const runLabel = previewDemo ? "Local preview" : "Runtime smoke";
+  const runLabel = previewDemo ? "Federated Preview" : "Runtime smoke";
   const focus = previewDemo
     ? "Validate the Federated Preview operator path."
-    : "Validate the local Entangle runtime message path.";
+    : "Validate the federated dev Entangle runtime message path.";
   const stableFact = previewDemo
-    ? "The Federated Preview demo uses canonical package assets with a local model stub."
-    : "The local runtime smoke uses a disposable model endpoint and package source.";
-  const summary = `The ${previewDemo ? "Federated Preview demo" : "local runtime smoke"} exercised message intake, model execution, artifact materialization, and memory synthesis.`;
+    ? "The Federated Preview demo uses canonical package assets with a development model stub."
+    : "The federated dev runtime smoke uses a disposable model endpoint and package source.";
+  const summary = `The ${previewDemo ? "Federated Preview demo" : "federated dev runtime smoke"} exercised message intake, model execution, artifact materialization, and memory synthesis.`;
 
   return `
 const http = require("node:http");
@@ -255,13 +255,13 @@ function buildMemorySummaryArguments() {
     consolidatedNextActions: [],
     consolidatedOpenQuestions: [],
     decisions: [${JSON.stringify(`${runLabel} completed through the OpenAI-compatible adapter.`)}],
-    executionInsights: ["Provider-backed execution and memory synthesis completed against the local model stub."],
+    executionInsights: ["Provider-backed execution and memory synthesis completed against the development model stub."],
     focus: ${JSON.stringify(focus)},
     nextActions: [],
     openQuestions: [],
     replacedNextActions: [],
     replacedOpenQuestions: [],
-    resolutions: [${JSON.stringify(`The ${previewDemo ? "local preview" : "local smoke"} task completed successfully.`)}],
+    resolutions: [${JSON.stringify(`The ${previewDemo ? "federated preview" : "federated dev smoke"} task completed successfully.`)}],
     sessionInsights: ["The runner processed a NIP-59 task request for the session."],
     stableFacts: [${JSON.stringify(stableFact)}],
     summary: ${JSON.stringify(summary)}
@@ -542,7 +542,7 @@ async function writeSmokePackage(packageRoot) {
         toolsPath: "runtime/tools.json"
       },
       metadata: {
-        description: "Disposable package used by the local runtime lifecycle smoke.",
+        description: "Disposable package used by the federated dev runtime lifecycle smoke.",
         tags: ["smoke"]
       }
     }),
@@ -1178,7 +1178,7 @@ async function main() {
     const publishedTask = await publishSmokeTask({
       artifactRefs: [],
       conversationId: smokeConversationId,
-      intent: "Validate the local runtime message path.",
+      intent: "Validate the federated runtime message path.",
       nodeId: workerNodeId,
       runtimeContext,
       summary:
@@ -1197,7 +1197,7 @@ async function main() {
     const downstreamTask = await publishSmokeTask({
       artifactRefs: [messageRun.artifact.ref],
       conversationId: downstreamConversationId,
-      intent: "Validate the local runtime artifact handoff path.",
+      intent: "Validate the federated runtime artifact handoff path.",
       nodeId: downstreamNodeId,
       runtimeContext: downstreamRuntimeContext,
       summary:
@@ -1257,7 +1257,7 @@ async function main() {
         ].join("\n")
       );
     } else {
-      console.log("Local runtime lifecycle, message, and git handoff smoke passed.");
+      console.log("Federated dev runtime lifecycle, message, and git handoff smoke passed.");
     }
   } finally {
     if (tempRoot) {

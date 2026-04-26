@@ -7,12 +7,12 @@ function createNodeInspection(): NodeInspectionResponse {
     binding: {
       bindingId: "revision-worker",
       externalPrincipals: [],
-      graphId: "local-team",
+      graphId: "team-alpha",
       graphRevisionId: "revision",
       node: {
         agentRuntime: {
           defaultAgent: "build",
-          engineProfileRef: "local-opencode",
+          engineProfileRef: "opencode-default",
           mode: "coding_agent"
         },
         autonomy: {
@@ -57,13 +57,13 @@ describe("node agent runtime CLI helpers", () => {
     expect(
       buildNodeAgentRuntimeReplacementRequest(createNodeInspection(), {
         defaultAgent: "review",
-        engineProfileRef: "local-opencode-fast",
+        engineProfileRef: "opencode-default-fast",
         mode: "coding_agent"
       })
     ).toMatchObject({
       agentRuntime: {
         defaultAgent: "review",
-        engineProfileRef: "local-opencode-fast",
+        engineProfileRef: "opencode-default-fast",
         mode: "coding_agent"
       },
       autonomy: {

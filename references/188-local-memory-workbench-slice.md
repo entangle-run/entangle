@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Scope
 
-This L2 Local Workbench slice exposes runner-owned runtime memory for operator
+This L2 Federated Workbench slice exposes runner-owned runtime memory for operator
 inspection without changing runner memory ownership or workspace structure.
 
 Implemented:

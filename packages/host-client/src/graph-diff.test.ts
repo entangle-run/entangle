@@ -85,7 +85,7 @@ describe("buildGraphDiff", () => {
           }
         }
       ],
-      name: "Local Workbench",
+      name: "Federated Workbench",
       nodes: [
         {
           ...fromGraph.nodes[0]!,

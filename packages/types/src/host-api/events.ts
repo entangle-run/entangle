@@ -379,7 +379,7 @@ export const conversationTraceEventSchema = hostEventBaseSchema.extend({
   conversationId: identifierSchema,
   followupCount: z.number().int().nonnegative(),
   graphId: identifierSchema,
-  initiator: z.enum(["local", "remote"]),
+  initiator: z.enum(["self", "peer"]),
   lastMessageType: nonEmptyStringSchema.optional(),
   nodeId: identifierSchema,
   peerNodeId: identifierSchema,

@@ -5,9 +5,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
-  localProfileComposeFile,
-  requiredLocalProfilePaths
-} from "./local-profile-paths.mjs";
+  federatedDevProfileComposeFile,
+  requiredFederatedDevProfilePaths
+} from "./federated-dev-profile-paths.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -47,13 +47,13 @@ function checkCommand(name, command, args, options = {}) {
   return false;
 }
 
-for (const requiredPath of requiredLocalProfilePaths) {
+for (const requiredPath of requiredFederatedDevProfilePaths) {
   addCheck(
     `path:${requiredPath}`,
     existsSync(path.join(repositoryRoot, requiredPath)) ? "pass" : "fail",
     existsSync(path.join(repositoryRoot, requiredPath))
       ? "found"
-      : "missing required local profile file"
+      : "missing required federated dev profile file"
   );
 }
 
@@ -90,12 +90,12 @@ if (dockerAvailable) {
 
   if (composeAvailable) {
     checkCommand(
-      "compose:local-config",
+      "compose:federated-dev-config",
       "docker",
       [
         "compose",
         "-f",
-        localProfileComposeFile,
+        federatedDevProfileComposeFile,
         "config",
         "--quiet"
       ],
@@ -116,14 +116,14 @@ for (const check of checks) {
 if (hasFailure || (strict && hasWarning)) {
   console.error(
     strict
-      ? "Local profile preflight failed in strict mode."
-      : "Local profile preflight failed."
+      ? "Federated dev profile preflight failed in strict mode."
+      : "Federated dev profile preflight failed."
   );
   process.exit(1);
 }
 
 console.log(
   hasWarning
-    ? "Local profile preflight completed with warnings."
-    : "Local profile preflight passed."
+    ? "Federated dev profile preflight completed with warnings."
+    : "Federated dev profile preflight passed."
 );

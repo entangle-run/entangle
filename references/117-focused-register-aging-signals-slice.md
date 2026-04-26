@@ -23,7 +23,7 @@ not as runner-owned state.
 ### 1. Runner-owned focused-register carry state now exists
 
 The runner now persists a separate focused-register state file under
-runtime-local state.
+runtime-Entangle state.
 
 That state tracks, per focused register entry:
 

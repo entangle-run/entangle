@@ -180,11 +180,11 @@ class DockerRuntimeBackend implements RuntimeBackend {
   private readonly bootstrapMode =
     process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP?.trim() === "join"
       ? "join"
-      : "local-context";
+      : "runtime-context";
   private readonly dockerClient: DockerEngineApi;
   private readonly networkName = process.env.ENTANGLE_DOCKER_NETWORK?.trim();
   private readonly runnerImage =
-    process.env.ENTANGLE_DOCKER_RUNNER_IMAGE?.trim() || "entangle-runner:local";
+    process.env.ENTANGLE_DOCKER_RUNNER_IMAGE?.trim() || "entangle-runner:federated-dev";
   private readonly secretMount: RuntimeMountStrategy;
   private readonly stateMount: RuntimeMountStrategy;
 

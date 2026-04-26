@@ -13,7 +13,7 @@ and the L1/R1 ledger in
   `v0.1-local-operator-baseline`
 - [L1.5 Local Operator Preview](l1.5-local-operator-preview.md) —
   `v0.1.5-local-operator-preview`
-- [L2 Local Workbench](l2-local-workbench.md) —
+- [L2 Federated Workbench](l2-local-workbench.md) —
   `v0.2-local-workbench`
 
 ## Planned Release Train

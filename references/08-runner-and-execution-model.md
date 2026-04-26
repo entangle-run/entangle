@@ -6,7 +6,7 @@ Entangle only becomes real once a node is more than a folder. The `AgentRunner` 
 
 - an agent package,
 - a graph-local binding,
-- local secrets,
+- Entangle secrets,
 - Nostr identity,
 - memory,
 - artifacts,

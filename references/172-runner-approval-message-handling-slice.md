@@ -79,7 +79,7 @@ Coverage now asserts that:
   fails the blocked session.
 - malformed approval metadata is rejected at the A2A validator boundary before
   runner-local lifecycle state is written.
-- orphan approval responses with no matching local state are absorbed without
+- orphan approval responses with no matching Entangle state are absorbed without
   creating local session, conversation, or approval records.
 
 ## Result

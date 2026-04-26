@@ -13,7 +13,7 @@ function buildContainerInspection(
   return {
     Config: {
       Env: [],
-      Image: "entangle-runner:local",
+      Image: "entangle-runner:federated-dev",
       Labels: {},
       ...input.Config
     },
@@ -84,7 +84,7 @@ describe("createRuntimeBackend", () => {
         buildContainerInspection({
           Config: {
             Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/context.json"],
-            Image: "entangle-runner:local",
+            Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
               "io.entangle.restart_generation": "0",
@@ -122,7 +122,7 @@ describe("createRuntimeBackend", () => {
     expect(createContainerInput).toBeDefined();
     expect(createContainerInput).toMatchObject({
       containerName: "entangle-runner-worker-it",
-      image: "entangle-runner:local",
+      image: "entangle-runner:federated-dev",
       mounts: [
         {
           source: "entangle-host-state",
@@ -185,7 +185,7 @@ describe("createRuntimeBackend", () => {
     });
   });
 
-  it("can launch a local Docker runner in generic join bootstrap mode", async () => {
+  it("can launch a Docker runner in generic join bootstrap mode", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
     process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "join";
 
@@ -199,7 +199,7 @@ describe("createRuntimeBackend", () => {
             Env: [
               "ENTANGLE_RUNNER_JOIN_CONFIG_PATH=/entangle-state/runner-join.json"
             ],
-            Image: "entangle-runner:local",
+            Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
               "io.entangle.restart_generation": "0",
@@ -266,7 +266,7 @@ describe("createRuntimeBackend", () => {
         buildContainerInspection({
           Config: {
             Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/old.json"],
-            Image: "entangle-runner:local",
+            Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-0",
               "io.entangle.restart_generation": "0",
@@ -279,7 +279,7 @@ describe("createRuntimeBackend", () => {
         buildContainerInspection({
           Config: {
             Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/new.json"],
-            Image: "entangle-runner:local",
+            Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
               "io.entangle.restart_generation": "0",
@@ -327,7 +327,7 @@ describe("createRuntimeBackend", () => {
         buildContainerInspection({
           Config: {
             Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/context.json"],
-            Image: "entangle-runner:local",
+            Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
               "io.entangle.restart_generation": "0",
@@ -340,7 +340,7 @@ describe("createRuntimeBackend", () => {
         buildContainerInspection({
           Config: {
             Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/context.json"],
-            Image: "entangle-runner:local",
+            Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
               "io.entangle.restart_generation": "1",

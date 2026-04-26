@@ -63,7 +63,7 @@ memory through the existing bounded synthesis path, but they do not write the
 wiki repository directly.
 
 The repository snapshot deliberately does not expose runtime-local filesystem
-paths in protocol locators. It is runtime-local state for inspection and
+paths in protocol locators. It is runtime-Entangle state for inspection and
 future backup/restore behavior, not a new A2A artifact locator.
 
 The snapshot is local-only. Remote publication, restore replay, migration from

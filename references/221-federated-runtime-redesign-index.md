@@ -50,6 +50,7 @@ same-machine slice records.
 - [247-host-startup-control-plane-wiring-slice.md](247-host-startup-control-plane-wiring-slice.md)
 - [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
 - [249-runtime-status-observation-projection-slice.md](249-runtime-status-observation-projection-slice.md)
+- [250-federated-dev-deployment-naming-cleanup-slice.md](250-federated-dev-deployment-naming-cleanup-slice.md)
 
 ## Audited Scope
 
@@ -60,7 +61,7 @@ Current audit read or searched:
 - canonical reference docs from `00` through `45`, with deeper passes over
   graph, protocol, runner, state-machine, Host, client, identity, runtime
   context, engine, deployment, quality, and agent-engine boundary specs;
-- Local implementation slice docs from runtime materialization through wiki
+- same-machine implementation slice docs from runtime materialization through wiki
   repository publication, especially `180`, `189`, `193`, `194`, `209`,
   `210`, `214`, `220`, `221`, and `222`;
 - package contracts in `packages/types`, including graph, resources, runtime
@@ -75,9 +76,9 @@ Current audit read or searched:
 - CLI command surface and tests in `apps/cli`;
 - Studio app, session launch, approval, graph, event refresh, runtime
   inspection, and tests in `apps/studio`;
-- local deployment material under `deploy/` and operational smokes under
+- federated dev deployment material under `deploy/` and operational smokes under
   `scripts/`;
-- local OpenCode reference code under
+- checked-out OpenCode reference code under
   `/Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources/opencode`,
   including CLI `run`, `serve`, server routes, session, permissions, agent
   config, task subagent tool, and security notes.
@@ -94,12 +95,12 @@ The repository is not fully federated:
 
 - `runtimeProfileSchema` now uses `"federated"`;
 - Host state layout declares product `"entangle"`;
-- Host still materializes local workspaces and writes
+- Host still materializes launcher-owned workspaces and writes
   `effective-runtime-context.json`;
 - Docker runners mount shared Host and secret volumes;
 - Host can publish signed assignment control payloads and project
   runner-signed runtime status observations, but node runtime start/stop still
-  has a local launcher path that must be demoted to an adapter;
+  has a Docker launcher path that must be demoted to an adapter;
 - Host still reconstructs some sessions, approvals, source history, and wiki
   details by reading runner-owned runtime paths;
 - Host session launch now signs `task.request` with stable User Node identity
@@ -112,7 +113,7 @@ The repository is not fully federated:
   paths, and tests cover the bridge, but runner node execution is not yet
   started from the materialized assignment path;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
-  a local launcher adapter.
+  a Docker launcher adapter.
 
 ## Target Model
 
@@ -143,7 +144,7 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 4. Runner registry with hello, trust, revoke, heartbeat, and stale status.
 5. Runtime assignment lifecycle with leases and receipts.
 6. Generic runner bootstrap without preloaded graph context.
-7. Local launcher adapter rebased onto the same assignment path.
+7. Docker launcher adapter rebased onto the same assignment path.
 8. ProjectionStore built from signed observations instead of runtime filesystem
    reads.
 9. User Node identity records and Human Interface Runtime.
@@ -164,7 +165,7 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 - Agent nodes and human nodes communicate through the same A2A model.
 - Host observes runtime state through signed events, not runner-local files.
 - Artifacts, source changes, and wiki memory are passed by refs/hashes.
-- Docker/local remains an adapter, not the privileged architecture.
+- Docker same-machine launch remains an adapter, not the privileged architecture.
 - Studio and CLI reflect the same Host projection.
 - Public docs say Entangle as product identity.
 - New contracts have schema and validator tests.
@@ -177,9 +178,9 @@ No uncertainty blocks the first implementation slice. The plan assumes:
 
 - v1 supports one active Host Authority instance to avoid split brain;
 - breaking changes are acceptable because the project is pre-release;
-- pre-release local state can be regenerated instead of preserving old
+- pre-release Entangle state can be regenerated instead of preserving old
   local-product markers;
-- Host may provision local dev key material initially, but Host must not be the
+- Host may provision development key material initially, but Host must not be the
   conceptual signer for user-node messages;
 - remote OpenCode server integration is preferred over only one-shot CLI for
   permission and long-running turn parity.
@@ -197,5 +198,4 @@ The plan was checked against the actual repo after writing:
 Plan readiness: Slices 1 through 14 plus startup/materialization follow-up
 slices are implemented in this branch. The next blocking implementation areas
 are assignment-driven node execution, projection surfacing for federated
-runtime state, removal of remaining same-machine command naming, and a live
-relay/git distributed smoke.
+runtime state, and a live relay/git distributed smoke.

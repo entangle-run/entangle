@@ -2,9 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import {
-  currentLocalStateLayoutVersion,
-  localStateLayoutRecordSchema,
-  minimumSupportedLocalStateLayoutVersion,
+  currentStateLayoutVersion,
+  stateLayoutRecordSchema,
+  minimumSupportedStateLayoutVersion,
   type ExternalPrincipalListResponse,
   type HostStatusResponse,
   type RuntimeContextInspectionResponse,
@@ -12,21 +12,21 @@ import {
   type RuntimeListResponse
 } from "@entangle/types";
 
-export type LocalDoctorCheckStatus = "pass" | "warn" | "fail";
-export type LocalDoctorOverallStatus = LocalDoctorCheckStatus;
+export type DeploymentDoctorCheckStatus = "pass" | "warn" | "fail";
+export type DeploymentDoctorOverallStatus = DeploymentDoctorCheckStatus;
 
-export interface LocalDoctorCheck {
+export interface DeploymentDoctorCheck {
   category: string;
   detail: string;
   remediation?: string | undefined;
-  status: LocalDoctorCheckStatus;
+  status: DeploymentDoctorCheckStatus;
   summary: string;
 }
 
-export interface LocalDoctorReport {
-  checks: LocalDoctorCheck[];
+export interface DeploymentDoctorReport {
+  checks: DeploymentDoctorCheck[];
   generatedAt: string;
-  status: LocalDoctorOverallStatus;
+  status: DeploymentDoctorOverallStatus;
   summary: {
     fail: number;
     pass: number;
@@ -34,7 +34,7 @@ export interface LocalDoctorReport {
   };
 }
 
-export interface LocalDoctorOptions {
+export interface DeploymentDoctorOptions {
   giteaUrl?: string | undefined;
   hostUrl?: string | undefined;
   relayUrl?: string | undefined;
@@ -45,14 +45,14 @@ export interface LocalDoctorOptions {
   studioUrl?: string | undefined;
 }
 
-interface LocalDoctorHostClient {
+interface DeploymentDoctorHostClient {
   getRuntimeContext(nodeId: string): Promise<RuntimeContextInspectionResponse>;
   getHostStatus(): Promise<HostStatusResponse>;
   listExternalPrincipals(): Promise<ExternalPrincipalListResponse>;
   listRuntimes(): Promise<RuntimeListResponse>;
 }
 
-export interface LocalDoctorDeps {
+export interface DeploymentDoctorDeps {
   commandRunner?: (
     command: string,
     args: string[],
@@ -61,20 +61,20 @@ export interface LocalDoctorDeps {
   connectWebSocket?: (url: string) => Promise<string>;
   fileExists?: (filePath: string) => boolean;
   fetchUrl?: (url: string) => Promise<string>;
-  hostClient?: LocalDoctorHostClient;
+  hostClient?: DeploymentDoctorHostClient;
   now?: () => Date;
   readFile?: (filePath: string) => string;
 }
 
-const localProfileComposeFile = "deploy/local/compose/docker-compose.local.yml";
+const federatedDevProfileComposeFile = "deploy/federated-dev/compose/docker-compose.federated-dev.yml";
 
-const requiredLocalProfilePaths = [
-  localProfileComposeFile,
-  "deploy/local/config/nginx.studio.conf",
-  "deploy/local/config/strfry.local.conf",
-  "deploy/local/docker/host.Dockerfile",
-  "deploy/local/docker/runner.Dockerfile",
-  "deploy/local/docker/studio.Dockerfile",
+const requiredFederatedDevProfilePaths = [
+  federatedDevProfileComposeFile,
+  "deploy/federated-dev/config/nginx.studio.conf",
+  "deploy/federated-dev/config/strfry.federated-dev.conf",
+  "deploy/federated-dev/docker/host.Dockerfile",
+  "deploy/federated-dev/docker/runner.Dockerfile",
+  "deploy/federated-dev/docker/studio.Dockerfile",
   "package.json",
   "pnpm-lock.yaml"
 ];
@@ -105,8 +105,8 @@ function normalizeCommandOutput(
 }
 
 function runCommand(
-  deps: Required<Pick<LocalDoctorDeps, "commandRunner">>,
-  options: LocalDoctorOptions,
+  deps: Required<Pick<DeploymentDoctorDeps, "commandRunner">>,
+  options: DeploymentDoctorOptions,
   command: string,
   args: string[]
 ) {
@@ -115,20 +115,20 @@ function runCommand(
   });
 }
 
-function addCheck(checks: LocalDoctorCheck[], check: LocalDoctorCheck): void {
+function addCheck(checks: DeploymentDoctorCheck[], check: DeploymentDoctorCheck): void {
   checks.push(check);
 }
 
-function optionalFailureStatus(strict: boolean | undefined): LocalDoctorCheckStatus {
+function optionalFailureStatus(strict: boolean | undefined): DeploymentDoctorCheckStatus {
   return strict ? "fail" : "warn";
 }
 
-function buildLocalStateLayoutCheck(input: {
-  fileExists: NonNullable<LocalDoctorDeps["fileExists"]>;
+function buildStateLayoutCheck(input: {
+  fileExists: NonNullable<DeploymentDoctorDeps["fileExists"]>;
   hostStateFound: boolean;
-  options: LocalDoctorOptions;
-  readFile: NonNullable<LocalDoctorDeps["readFile"]>;
-}): LocalDoctorCheck {
+  options: DeploymentDoctorOptions;
+  readFile: NonNullable<DeploymentDoctorDeps["readFile"]>;
+}): DeploymentDoctorCheck {
   const stateLayoutPath = path.join(
     input.options.repositoryRoot,
     ".entangle",
@@ -140,9 +140,9 @@ function buildLocalStateLayoutCheck(input: {
     return {
       category: "state",
       detail: "no .entangle/host yet",
-      remediation: "Start entangle-host once to initialize Local state.",
+      remediation: "Start entangle-host once to initialize Entangle state.",
       status: "warn",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
@@ -150,9 +150,9 @@ function buildLocalStateLayoutCheck(input: {
     return {
       category: "state",
       detail: "missing .entangle/host/state-layout.json",
-      remediation: "Start the upgraded entangle-host once to stamp the current Local state layout.",
+      remediation: "Start the upgraded entangle-host once to stamp the current Entangle state layout.",
       status: "warn",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
@@ -164,51 +164,51 @@ function buildLocalStateLayoutCheck(input: {
       category: "state",
       detail:
         error instanceof Error ? error.message : "state layout record is unreadable",
-      remediation: "Inspect .entangle/host/state-layout.json before starting the Entangle local profile.",
+      remediation: "Inspect .entangle/host/state-layout.json before starting the Entangle deployment profile.",
       status: "fail",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
-  const parseResult = localStateLayoutRecordSchema.safeParse(rawRecord);
+  const parseResult = stateLayoutRecordSchema.safeParse(rawRecord);
   if (!parseResult.success) {
     return {
       category: "state",
-      detail: "state layout record does not match the Entangle local profile schema",
+      detail: "state layout record does not match the Entangle deployment profile schema",
       remediation: "Back up .entangle/host, then inspect or repair state-layout.json.",
       status: "fail",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
   const record = parseResult.data;
-  if (record.layoutVersion > currentLocalStateLayoutVersion) {
+  if (record.layoutVersion > currentStateLayoutVersion) {
     return {
       category: "state",
-      detail: `layout ${record.layoutVersion} is newer than supported layout ${currentLocalStateLayoutVersion}`,
-      remediation: "Upgrade Entangle before using this Local state directory.",
+      detail: `layout ${record.layoutVersion} is newer than supported layout ${currentStateLayoutVersion}`,
+      remediation: "Upgrade Entangle before using this Entangle state directory.",
       status: "fail",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
-  if (record.layoutVersion < minimumSupportedLocalStateLayoutVersion) {
+  if (record.layoutVersion < minimumSupportedStateLayoutVersion) {
     return {
       category: "state",
-      detail: `layout ${record.layoutVersion} is older than minimum supported layout ${minimumSupportedLocalStateLayoutVersion}`,
-      remediation: "Use a compatible Entangle version or restore a supported Local state backup.",
+      detail: `layout ${record.layoutVersion} is older than minimum supported layout ${minimumSupportedStateLayoutVersion}`,
+      remediation: "Use a compatible Entangle version or restore a supported Entangle state backup.",
       status: "fail",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
-  if (record.layoutVersion < currentLocalStateLayoutVersion) {
+  if (record.layoutVersion < currentStateLayoutVersion) {
     return {
       category: "state",
-      detail: `layout ${record.layoutVersion} can be upgraded to ${currentLocalStateLayoutVersion}`,
+      detail: `layout ${record.layoutVersion} can be upgraded to ${currentStateLayoutVersion}`,
       remediation: "Back up .entangle/host, then start entangle-host to run the layout upgrade.",
       status: "warn",
-      summary: "Local state layout"
+      summary: "Entangle state layout"
     };
   }
 
@@ -216,13 +216,13 @@ function buildLocalStateLayoutCheck(input: {
     category: "state",
     detail: `layout ${record.layoutVersion} current`,
     status: "pass",
-    summary: "Local state layout"
+    summary: "Entangle state layout"
   };
 }
 
 function classifyLiveStateLayoutStatus(
   status: HostStatusResponse["stateLayout"]["status"]
-): LocalDoctorCheckStatus {
+): DeploymentDoctorCheckStatus {
   if (status === "current") {
     return "pass";
   }
@@ -241,10 +241,10 @@ function classifyLiveStateLayoutStatus(
 function checkCommand(input: {
   args: string[];
   category: string;
-  checks: LocalDoctorCheck[];
+  checks: DeploymentDoctorCheck[];
   command: string;
-  deps: Required<Pick<LocalDoctorDeps, "commandRunner">>;
-  options: LocalDoctorOptions;
+  deps: Required<Pick<DeploymentDoctorDeps, "commandRunner">>;
+  options: DeploymentDoctorOptions;
   remediation: string;
   summary: string;
   required?: boolean;
@@ -315,10 +315,10 @@ function formatWikiRepositoryIssue(
 }
 
 async function inspectRuntimeWikiRepository(input: {
-  commandRunner: NonNullable<LocalDoctorDeps["commandRunner"]>;
-  fileExists: NonNullable<LocalDoctorDeps["fileExists"]>;
-  hostClient: LocalDoctorHostClient;
-  options: LocalDoctorOptions;
+  commandRunner: NonNullable<DeploymentDoctorDeps["commandRunner"]>;
+  fileExists: NonNullable<DeploymentDoctorDeps["fileExists"]>;
+  hostClient: DeploymentDoctorHostClient;
+  options: DeploymentDoctorOptions;
   runtime: RuntimeInspectionResponse;
 }): Promise<RuntimeWikiRepositoryInspection> {
   if (!input.runtime.contextAvailable) {
@@ -417,11 +417,11 @@ async function inspectRuntimeWikiRepository(input: {
 }
 
 async function addRuntimeWikiRepositoryChecks(input: {
-  checks: LocalDoctorCheck[];
-  commandRunner: NonNullable<LocalDoctorDeps["commandRunner"]>;
-  fileExists: NonNullable<LocalDoctorDeps["fileExists"]>;
-  hostClient: LocalDoctorHostClient;
-  options: LocalDoctorOptions;
+  checks: DeploymentDoctorCheck[];
+  commandRunner: NonNullable<DeploymentDoctorDeps["commandRunner"]>;
+  fileExists: NonNullable<DeploymentDoctorDeps["fileExists"]>;
+  hostClient: DeploymentDoctorHostClient;
+  options: DeploymentDoctorOptions;
   runtimes: RuntimeInspectionResponse[];
 }): Promise<void> {
   const inspections = await Promise.all(
@@ -494,13 +494,13 @@ async function defaultConnectWebSocket(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocketCtor(url);
     const timeout = setTimeout(() => {
-      socket.close(1000, "entangle local doctor timeout");
+      socket.close(1000, "entangle deployment doctor timeout");
       reject(new Error("WebSocket connection timed out."));
     }, 2_000);
 
     socket.onopen = () => {
       clearTimeout(timeout);
-      socket.close(1000, "entangle local doctor complete");
+      socket.close(1000, "entangle deployment doctor complete");
       resolve("connected");
     };
     socket.onerror = () => {
@@ -510,8 +510,8 @@ async function defaultConnectWebSocket(url: string): Promise<string> {
   });
 }
 
-function summarizeReport(checks: LocalDoctorCheck[]): LocalDoctorReport["summary"] {
-  return checks.reduce<LocalDoctorReport["summary"]>(
+function summarizeReport(checks: DeploymentDoctorCheck[]): DeploymentDoctorReport["summary"] {
+  return checks.reduce<DeploymentDoctorReport["summary"]>(
     (summary, check) => ({
       ...summary,
       [check.status]: summary[check.status] + 1
@@ -524,7 +524,7 @@ function summarizeReport(checks: LocalDoctorCheck[]): LocalDoctorReport["summary
   );
 }
 
-function overallStatus(summary: LocalDoctorReport["summary"]): LocalDoctorOverallStatus {
+function overallStatus(summary: DeploymentDoctorReport["summary"]): DeploymentDoctorOverallStatus {
   if (summary.fail > 0) {
     return "fail";
   }
@@ -537,15 +537,15 @@ function overallStatus(summary: LocalDoctorReport["summary"]): LocalDoctorOveral
 }
 
 async function addLiveChecks(input: {
-  checks: LocalDoctorCheck[];
+  checks: DeploymentDoctorCheck[];
   deps: Required<
     Pick<
-      LocalDoctorDeps,
+      DeploymentDoctorDeps,
       "commandRunner" | "connectWebSocket" | "fetchUrl" | "fileExists"
     >
   > &
-    Pick<LocalDoctorDeps, "hostClient">;
-  options: LocalDoctorOptions;
+    Pick<DeploymentDoctorDeps, "hostClient">;
+  options: DeploymentDoctorOptions;
 }): Promise<void> {
   if (input.options.skipLive) {
     addCheck(input.checks, {
@@ -574,7 +574,7 @@ async function addLiveChecks(input: {
         remediation:
           status.stateLayout.status === "current"
             ? undefined
-            : "Back up .entangle/host, then resolve the reported Local state layout issue before continuing.",
+            : "Back up .entangle/host, then resolve the reported Entangle state layout issue before continuing.",
         status: classifyLiveStateLayoutStatus(status.stateLayout.status),
         summary: "Host state layout"
       });
@@ -582,7 +582,7 @@ async function addLiveChecks(input: {
       addCheck(input.checks, {
         category: "host",
         detail: error instanceof Error ? error.message : "host status failed",
-        remediation: "Start the Local profile or pass the correct --host-url and token.",
+        remediation: "Start the Federated dev profile or pass the correct --host-url and token.",
         status: "warn",
         summary: "Host API"
       });
@@ -669,7 +669,7 @@ async function addLiveChecks(input: {
       addCheck(input.checks, {
         category: service.category,
         detail: error instanceof Error ? error.message : `${service.url} failed`,
-        remediation: `Start the Local profile and verify ${service.url}.`,
+        remediation: `Start the Federated dev profile and verify ${service.url}.`,
         status: "warn",
         summary: service.summary
       });
@@ -688,18 +688,18 @@ async function addLiveChecks(input: {
     addCheck(input.checks, {
       category: "relay",
       detail: error instanceof Error ? error.message : "relay connection failed",
-      remediation: `Start the Local profile and verify ${relayUrl}.`,
+      remediation: `Start the Federated dev profile and verify ${relayUrl}.`,
       status: "warn",
       summary: "Nostr relay"
     });
   }
 }
 
-export async function buildLocalDoctorReport(
-  options: LocalDoctorOptions,
-  deps: LocalDoctorDeps = {}
-): Promise<LocalDoctorReport> {
-  const checks: LocalDoctorCheck[] = [];
+export async function buildDeploymentDoctorReport(
+  options: DeploymentDoctorOptions,
+  deps: DeploymentDoctorDeps = {}
+): Promise<DeploymentDoctorReport> {
+  const checks: DeploymentDoctorCheck[] = [];
   const fileExists = deps.fileExists ?? existsSync;
   const readFile =
     deps.readFile ?? ((filePath: string) => readFileSync(filePath, "utf8"));
@@ -712,13 +712,13 @@ export async function buildLocalDoctorReport(
         stdio: ["ignore", "pipe", "pipe"]
       }));
 
-  for (const requiredPath of requiredLocalProfilePaths) {
+  for (const requiredPath of requiredFederatedDevProfilePaths) {
     const absolutePath = path.join(options.repositoryRoot, requiredPath);
     const found = fileExists(absolutePath);
     addCheck(checks, {
       category: "profile",
-      detail: found ? "found" : "missing required Local profile file",
-      remediation: found ? undefined : "Restore the Local deployment profile file.",
+      detail: found ? "found" : "missing required Federated dev profile file",
+      remediation: found ? undefined : "Restore the federated dev profile file.",
       status: found ? "pass" : "fail",
       summary: requiredPath
     });
@@ -782,20 +782,20 @@ export async function buildLocalDoctorReport(
 
     if (composeAvailable) {
       checkCommand({
-        args: ["compose", "-f", localProfileComposeFile, "config", "--quiet"],
+        args: ["compose", "-f", federatedDevProfileComposeFile, "config", "--quiet"],
         category: "container",
         checks,
         command: "docker",
         deps: commandDeps,
         options,
-        remediation: "Fix the Local Compose profile before starting the Entangle local profile.",
-        summary: "Local Compose config"
+        remediation: "Fix the Federated dev Compose profile before starting the Entangle deployment profile.",
+        summary: "Federated dev Compose config"
       });
     }
   }
 
   checkCommand({
-    args: ["image", "inspect", options.runnerImage ?? "entangle-runner:local"],
+    args: ["image", "inspect", options.runnerImage ?? "entangle-runner:federated-dev"],
     category: "runner",
     checks,
     command: "docker",
@@ -813,7 +813,7 @@ export async function buildLocalDoctorReport(
         "--rm",
         "--entrypoint",
         "opencode",
-        options.runnerImage ?? "entangle-runner:local",
+        options.runnerImage ?? "entangle-runner:federated-dev",
         "--version"
       ],
       category: "runner",
@@ -843,13 +843,13 @@ export async function buildLocalDoctorReport(
   addCheck(checks, {
     category: "state",
     detail: hostStateFound ? "found .entangle/host" : "no .entangle/host yet",
-    remediation: hostStateFound ? undefined : "Start entangle-host once to initialize Local state.",
+    remediation: hostStateFound ? undefined : "Start entangle-host once to initialize Entangle state.",
     status: hostStateFound ? "pass" : "warn",
-    summary: "Local host state"
+    summary: "Entangle host state"
   });
   addCheck(
     checks,
-    buildLocalStateLayoutCheck({
+    buildStateLayoutCheck({
       fileExists,
       hostStateFound,
       options,
@@ -878,9 +878,9 @@ export async function buildLocalDoctorReport(
   };
 }
 
-export function formatLocalDoctorText(report: LocalDoctorReport): string {
+export function formatDeploymentDoctorText(report: DeploymentDoctorReport): string {
   const lines = [
-    `Entangle local profile doctor: ${report.status} (${report.summary.pass} pass, ${report.summary.warn} warn, ${report.summary.fail} fail)`
+    `Entangle deployment profile doctor: ${report.status} (${report.summary.pass} pass, ${report.summary.warn} warn, ${report.summary.fail} fail)`
   ];
 
   for (const check of report.checks) {

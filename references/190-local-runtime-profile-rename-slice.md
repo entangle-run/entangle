@@ -62,7 +62,7 @@ pnpm --filter @entangle/cli test
 pnpm --filter @entangle/studio test
 pnpm --filter @entangle/host test
 pnpm --filter @entangle/runner test
-node --check scripts/smoke-local-runtime.mjs
+node --check scripts/smoke-federated-dev-runtime.mjs
 pnpm --filter @entangle/types build
 pnpm --filter @entangle/validator build
 pnpm --filter @entangle/cli dev validate package examples/federated-preview/agent-package

@@ -79,9 +79,9 @@ This makes the runtime context materially more useful:
 - future remote publication code can fail explicitly when the delivery status
   is `missing`.
 
-## 4. Secret resolution model for the current local profile
+## 4. Secret resolution model for the current federated dev profile
 
-The current local profile resolves a secret reference by mapping:
+The current federated dev profile resolves a secret reference by mapping:
 
 - `secret://git/worker-it/ssh`
 
@@ -106,7 +106,7 @@ This is important because:
   surfaces;
 - git SSH credentials now have a clear operational path into the runtime.
 
-The local Compose profile now makes that mount explicit through:
+The federated dev Compose profile now makes that mount explicit through:
 
 - `ENTANGLE_DOCKER_SECRET_STATE_VOLUME`
 - `ENTANGLE_DOCKER_SECRET_STATE_TARGET`

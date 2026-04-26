@@ -53,7 +53,7 @@ instead of a host-local untyped JSON blob.
 
 ## 3. Backward compatibility
 
-This slice had to preserve older local state already written by earlier host
+This slice had to preserve older Entangle state already written by earlier host
 versions.
 
 The host now supports two persisted revision-file forms when reading history:

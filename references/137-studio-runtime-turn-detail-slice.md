@@ -27,7 +27,7 @@ durable turn drilldown even though the host already owned the resource.
 
 ## Design notes
 
-Studio remains a host client. It does not read runner-local state files, infer
+Studio remains a host client. It does not read runner-Entangle state files, infer
 turn truth from event history, or maintain a client-owned turn model.
 
 The live trace panel remains the best surface for streaming activity. The

@@ -216,7 +216,7 @@ function buildWorkspaceBoundaryPromptPart(
     "Workspace boundaries:",
     `- source workspace: ${
       context.workspace.sourceWorkspaceRoot
-        ? "configured for node-local code edits"
+        ? "configured for node-owned code edits"
         : "not configured"
     }`,
     "- artifact workspace: runner-owned materialization and outbound handoff surface",
@@ -226,7 +226,7 @@ function buildWorkspaceBoundaryPromptPart(
         ? "configured as runner-owned memory snapshot"
         : "not configured"
     }`,
-    "- outbound work must use Entangle artifact refs or messages, not runtime-local filesystem paths"
+    "- outbound work must use Entangle artifact refs or messages, not runtime-owned filesystem paths"
   ].join("\n");
 }
 

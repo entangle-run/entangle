@@ -47,7 +47,7 @@ baseline is Entangle. Same-machine deployment is the first deployment topology,
 not the product identity or a separate runtime profile. The current
 implementation is still materially single-host in places: Host writes injected
 runtime context, Docker runners share Host-managed volumes, and Host still
-derives much of its runtime projection by reading runner-local state. The active
+derives much of its runtime projection by reading runner-Entangle state. The active
 redesign pack under `references/221-federated-runtime-redesign-index.md`
 defines the required shift to Host Authority signing, generic runner
 registration, runtime assignments, signed observations, stable User Node
@@ -77,7 +77,7 @@ The repository now also contains the first real implementation baseline:
 - `packages/types`, `validator`, `host-client`, `agent-engine`, and
   `package-scaffold`;
 - a first same-machine Compose profile and service Dockerfiles;
-- an explicit `deploy/local/` profile layout for Entangle same-machine deployment
+- an explicit `deploy/federated-dev/` profile layout for Entangle same-machine deployment
   material, with shared script path constants instead of duplicated local
   Compose paths;
 - an explicit `releases/` area for release-control packets, starting with the
@@ -140,7 +140,7 @@ The repository now also contains the first real implementation baseline:
   `pnpm ops:demo-federated-preview`, which reuses the real local host, runner,
   relay, model-stub, and Gitea/git-backed artifact path for an inspectable
   preview session;
-- a released L2 Local Workbench slice with CLI package inspection, package
+- a released L2 Federated Workbench slice with CLI package inspection, package
   tool-catalog validation, offline graph diffing, root-relative path handling
   for `pnpm --filter @entangle/cli dev`, headless session launch through the
   host API over host-resolved runtime context and the local relay, optional
@@ -194,7 +194,7 @@ The repository now also contains the first real implementation baseline:
   each node's `wiki-repository` workspace after completed turns, including
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus
-  `entangle local doctor` runtime wiki repository health warnings for
+  `entangle deployment doctor` runtime wiki repository health warnings for
   uninitialized, dirty, or uncommitted snapshots, plus host-mediated
   wiki-repository publication as `knowledge_summary` git artifacts with
   durable publication records, `wiki_repository.published` events, and
@@ -583,7 +583,7 @@ The repository now also contains the first real implementation baseline:
   gate drift, and drift from session history, while persisting those
   observations under observed host state and emitting them only when the durable
   observed fingerprint changes;
-- a deterministic runner transport abstraction, file-backed runner-local state
+- a deterministic runner transport abstraction, file-backed runner-Entangle state
   store, and long-lived `RunnerService` that subscribes by recipient pubkey,
   validates inbound A2A payloads, persists session/conversation/turn records,
   and emits bounded `task.result` replies when required;
@@ -621,41 +621,41 @@ The repository now also contains the first real implementation baseline:
   semantics, a static Nginx Studio runtime, and verified host/runner portable
   deploy payloads built from the real `build -> deploy` path;
 - a documented same-machine operator bootstrap profile under `deploy/`, backed by
-  `pnpm ops:check-local` and `pnpm ops:check-local:strict` preflight checks
+  `pnpm ops:check-federated-dev` and `pnpm ops:check-federated-dev:strict` preflight checks
   for same-machine profile files, Node/pnpm, Docker, Docker Compose, daemon access,
   and Compose config validity;
-- a first same-machine reliability doctor through `entangle local doctor`, with
+- a first same-machine reliability doctor through `entangle deployment doctor`, with
   read-only human-readable and JSON diagnostics for same-machine profile files,
   Node/pnpm/Docker/Compose, the runner image, OpenCode availability on the host
-  and inside the runner image, `.entangle/host`, local state layout
+  and inside the runner image, `.entangle/host`, Entangle state layout
   compatibility, live host status, host-reported state layout status,
   host-reported runtime workspace health, git principals, Studio, Gitea, and
-  the local relay, plus strict and offline modes, and `entangle local
+  the local relay, plus strict and offline modes, and `entangle deployment
   diagnostics` now writes a redacted JSON support bundle with doctor output,
   bounded Compose status/logs, runner-image inspection, live host state, and
   bounded runtime evidence for turns, engine failures, permission decisions,
-  approval blockers, and artifact counts when available, while `entangle local
-  backup` and `entangle local restore`
+  approval blockers, and artifact counts when available, while `entangle deployment
+  backup` and `entangle deployment restore`
   provide the first versioned `.entangle/host` backup and validated restore
-  path without bundling local secrets, and `entangle local repair` provides a
+  path without bundling Entangle secrets, and `entangle deployment repair` provides a
   dry-run-first conservative repair surface for safe host-state initialization
   and missing layout-marker recovery;
-- an active same-machine profile smoke through `pnpm ops:smoke-local`, covering
+- an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
   subscription path;
-- a same-machine diagnostics smoke through `pnpm ops:smoke-local:diagnostics`,
+- a same-machine diagnostics smoke through `pnpm ops:smoke-federated-dev:diagnostics`,
   which writes a temporary redacted diagnostics bundle against a running
   same-machine profile and validates its stable top-level shape;
-- a same-machine reliability smoke through `pnpm ops:smoke-local:reliability`,
+- a same-machine reliability smoke through `pnpm ops:smoke-federated-dev:reliability`,
   which creates a temporary same-machine backup bundle, validates restore dry-run, and
   checks repair dry-run output against an initialized same-machine profile;
-- a disposable same-machine profile smoke through `pnpm ops:smoke-local:disposable`,
+- a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;
 - a Docker-backed runtime lifecycle smoke through
-  `pnpm ops:smoke-local:runtime` and
-  `pnpm ops:smoke-local:disposable:runtime`, covering disposable package
+  `pnpm ops:smoke-federated-dev:runtime` and
+  `pnpm ops:smoke-federated-dev:disposable:runtime`, covering disposable package
   admission, local Gitea disposable user/token bootstrap, smoke graph
   application, local model-secret binding, two managed runner starts,
   restart-generation recreation, restart event persistence, real NIP-59 task

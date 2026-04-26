@@ -8,10 +8,10 @@ The runnable preview command is:
 pnpm ops:demo-federated-preview
 ```
 
-It starts the Local Compose profile, verifies the running local services, runs
-the local runtime path through the host, publishes a NIP-59 task through the
-local relay, writes a git-backed artifact to local Gitea, and runs a downstream
-artifact handoff. The command leaves the Local profile running so Studio and
+It starts the Federated dev Compose profile, verifies the running deployment services, runs
+the federated dev runtime path through the host, publishes a NIP-59 task through the
+development relay, writes a git-backed artifact to development Gitea, and runs a downstream
+artifact handoff. The command leaves the Federated dev profile running so Studio and
 the CLI can inspect the completed session.
 
 Reset the preview state with:
@@ -25,7 +25,7 @@ pnpm ops:demo-federated-preview:reset
 - `agent-package/` is the package admitted by the preview demo.
 - `graph.json` is the canonical Federated Preview graph shape.
 - `catalog.model-stub.json` is the model-stub catalog shape used by the demo
-  flow after the Local profile is running.
+  flow after the Federated dev profile is running.
 
 The preview graph includes a user node, planner node, builder node, direct
 delegation edges for the runnable task path, a planner-to-builder handoff edge,

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Add a Docker-backed smoke that proves the local profile can materialize,
+Add a Docker-backed smoke that proves the federated dev profile can materialize,
 restart, and stop a real managed runner, not only expose host and service
 readiness endpoints.
 
@@ -13,11 +13,11 @@ runtime backend lifecycle against an actual node.
 
 ## Implemented behavior
 
-- Added `scripts/smoke-local-runtime.mjs`.
+- Added `scripts/smoke-federated-dev-runtime.mjs`.
 - Added package scripts:
-  - `pnpm ops:smoke-local:runtime`
-  - `pnpm ops:smoke-local:disposable:runtime`
-- Added `--include-runtime` to `scripts/smoke-local-profile-disposable.mjs`.
+  - `pnpm ops:smoke-federated-dev:runtime`
+  - `pnpm ops:smoke-federated-dev:disposable:runtime`
+- Added `--include-runtime` to `scripts/smoke-federated-dev-profile-disposable.mjs`.
 - The runtime smoke:
   - creates a temporary AgentPackage on the operator machine;
   - starts a temporary OpenAI-compatible model stub on the same Docker network;
@@ -58,7 +58,7 @@ runtime backend lifecycle against an actual node.
 The first message-path run exposed two real deployment issues that the earlier
 lifecycle-only probe could miss:
 
-- the local Compose state and secret volumes now use explicit names
+- the federated dev Compose state and secret volumes now use explicit names
   (`entangle-host-state`, `entangle-secret-state`) so host-managed runner
   containers created through the Docker Engine API mount the same volumes as
   the Compose-managed host container;
@@ -75,9 +75,9 @@ The runtime smoke is still outside `pnpm verify` because it requires Docker,
 Compose, live host services, the local relay, a runner image, and mutable host
 state.
 
-The direct `pnpm ops:smoke-local:runtime` command is intentionally stateful: it
+The direct `pnpm ops:smoke-federated-dev:runtime` command is intentionally stateful: it
 applies a temporary catalog and graph to the active host. Operators should
-prefer `pnpm ops:smoke-local:disposable:runtime` for routine verification
+prefer `pnpm ops:smoke-federated-dev:disposable:runtime` for routine verification
 because the disposable wrapper tears down the host state volume afterward.
 
 This slice now proves lifecycle/restart behavior plus a Docker/Gitea-backed
@@ -87,6 +87,6 @@ published `ArtifactRef` before producing its own report.
 
 ## Verification
 
-- `node --check scripts/smoke-local-runtime.mjs`
-- `node --check scripts/smoke-local-profile-disposable.mjs`
-- `pnpm ops:smoke-local:disposable:runtime`
+- `node --check scripts/smoke-federated-dev-runtime.mjs`
+- `node --check scripts/smoke-federated-dev-profile-disposable.mjs`
+- `pnpm ops:smoke-federated-dev:disposable:runtime`

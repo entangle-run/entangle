@@ -11,20 +11,20 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import {
-  currentLocalStateLayoutVersion,
-  localStateLayoutRecordSchema,
-  minimumSupportedLocalStateLayoutVersion,
-  type LocalStateLayoutInspection
+  currentStateLayoutVersion,
+  stateLayoutRecordSchema,
+  minimumSupportedStateLayoutVersion,
+  type StateLayoutInspection
 } from "@entangle/types";
 
-export interface LocalBackupOptions {
+export interface DeploymentBackupOptions {
   force?: boolean | undefined;
   now?: (() => Date) | undefined;
   outputPath: string;
   repositoryRoot: string;
 }
 
-export interface LocalRestoreOptions {
+export interface DeploymentRestoreOptions {
   dryRun?: boolean | undefined;
   force?: boolean | undefined;
   inputPath: string;
@@ -32,7 +32,7 @@ export interface LocalRestoreOptions {
   repositoryRoot: string;
 }
 
-export interface LocalBackupCopyStats {
+export interface DeploymentBackupCopyStats {
   bytes: number;
   directories: number;
   files: number;
@@ -40,7 +40,7 @@ export interface LocalBackupCopyStats {
   symlinks: number;
 }
 
-export interface LocalBackupManifest {
+export interface DeploymentBackupManifest {
   config: {
     includedPaths: string[];
     missingPaths: string[];
@@ -67,33 +67,33 @@ export interface LocalBackupManifest {
       minimumSupportedLayoutVersion: number;
       recordedAt?: string | undefined;
       recordedLayoutVersion?: number | undefined;
-      status: LocalStateLayoutInspection["status"];
+      status: StateLayoutInspection["status"];
     };
     originalPath: ".entangle/host";
     path: "state/host";
-    stats: LocalBackupCopyStats;
+    stats: DeploymentBackupCopyStats;
   };
 }
 
-export interface LocalBackupSummary {
+export interface DeploymentBackupSummary {
   configIncludedPathCount: number;
   configMissingPathCount: number;
   createdAt: string;
   manifestPath: string;
   outputPath: string;
-  stateLayoutStatus: LocalStateLayoutInspection["status"];
+  stateLayoutStatus: StateLayoutInspection["status"];
   stateLayoutVersion?: number | undefined;
-  stateStats: LocalBackupCopyStats;
+  stateStats: DeploymentBackupCopyStats;
 }
 
-export interface LocalRestoreSummary {
+export interface DeploymentRestoreSummary {
   dryRun: boolean;
   inputPath: string;
   inspectedAt: string;
   restored: boolean;
-  stateLayoutStatus: LocalStateLayoutInspection["status"];
+  stateLayoutStatus: StateLayoutInspection["status"];
   stateLayoutVersion?: number | undefined;
-  stateStats: LocalBackupCopyStats;
+  stateStats: DeploymentBackupCopyStats;
   targetPath: string;
   warnings: string[];
 }
@@ -101,21 +101,21 @@ export interface LocalRestoreSummary {
 const manifestFileName = "manifest.json";
 const backupStatePath = "state/host";
 const backupConfigPath = "config";
-const localHostStatePath = ".entangle/host";
-const localSecretsPath = ".entangle-secrets";
+const hostStateRelativePath = ".entangle/host";
+const secretsPath = ".entangle-secrets";
 
-const localBackupConfigPaths = [
+const deploymentBackupConfigPaths = [
   "package.json",
   "pnpm-lock.yaml",
-  "deploy/local/compose/docker-compose.local.yml",
-  "deploy/local/config/nginx.studio.conf",
-  "deploy/local/config/strfry.local.conf",
-  "deploy/local/docker/host.Dockerfile",
-  "deploy/local/docker/runner.Dockerfile",
-  "deploy/local/docker/studio.Dockerfile"
+  "deploy/federated-dev/compose/docker-compose.federated-dev.yml",
+  "deploy/federated-dev/config/nginx.studio.conf",
+  "deploy/federated-dev/config/strfry.federated-dev.conf",
+  "deploy/federated-dev/docker/host.Dockerfile",
+  "deploy/federated-dev/docker/runner.Dockerfile",
+  "deploy/federated-dev/docker/studio.Dockerfile"
 ];
 
-function emptyCopyStats(): LocalBackupCopyStats {
+function emptyCopyStats(): DeploymentBackupCopyStats {
   return {
     bytes: 0,
     directories: 0,
@@ -126,9 +126,9 @@ function emptyCopyStats(): LocalBackupCopyStats {
 }
 
 function mergeCopyStats(
-  target: LocalBackupCopyStats,
-  source: LocalBackupCopyStats
-): LocalBackupCopyStats {
+  target: DeploymentBackupCopyStats,
+  source: DeploymentBackupCopyStats
+): DeploymentBackupCopyStats {
   target.bytes += source.bytes;
   target.directories += source.directories;
   target.files += source.files;
@@ -175,51 +175,51 @@ function resolveSafeBundlePath(bundleRoot: string, relativePath: string): string
   return path.resolve(bundleRoot, relativePath);
 }
 
-function classifyLocalStateLayoutRecord(
+function classifyStateLayoutRecord(
   rawRecord: unknown
 ): Pick<
-  LocalBackupManifest["state"]["layout"],
+  DeploymentBackupManifest["state"]["layout"],
   | "currentLayoutVersion"
   | "minimumSupportedLayoutVersion"
   | "recordedAt"
   | "recordedLayoutVersion"
   | "status"
 > {
-  const parseResult = localStateLayoutRecordSchema.safeParse(rawRecord);
+  const parseResult = stateLayoutRecordSchema.safeParse(rawRecord);
 
   if (!parseResult.success) {
     return {
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       status: "unreadable"
     };
   }
 
   const record = parseResult.data;
-  if (record.layoutVersion > currentLocalStateLayoutVersion) {
+  if (record.layoutVersion > currentStateLayoutVersion) {
     return {
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       recordedAt: record.updatedAt,
       recordedLayoutVersion: record.layoutVersion,
       status: "unsupported_future"
     };
   }
 
-  if (record.layoutVersion < minimumSupportedLocalStateLayoutVersion) {
+  if (record.layoutVersion < minimumSupportedStateLayoutVersion) {
     return {
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       recordedAt: record.updatedAt,
       recordedLayoutVersion: record.layoutVersion,
       status: "unsupported_legacy"
     };
   }
 
-  if (record.layoutVersion < currentLocalStateLayoutVersion) {
+  if (record.layoutVersion < currentStateLayoutVersion) {
     return {
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       recordedAt: record.updatedAt,
       recordedLayoutVersion: record.layoutVersion,
       status: "upgrade_available"
@@ -227,33 +227,33 @@ function classifyLocalStateLayoutRecord(
   }
 
   return {
-    currentLayoutVersion: currentLocalStateLayoutVersion,
-    minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+    currentLayoutVersion: currentStateLayoutVersion,
+    minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
     recordedAt: record.updatedAt,
     recordedLayoutVersion: record.layoutVersion,
     status: "current"
   };
 }
 
-async function inspectLocalStateLayout(
+async function inspectStateLayout(
   hostStatePath: string
-): Promise<LocalBackupManifest["state"]["layout"]> {
+): Promise<DeploymentBackupManifest["state"]["layout"]> {
   const layoutPath = path.join(hostStatePath, "state-layout.json");
 
   if (!(await pathExists(layoutPath))) {
     return {
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       status: "missing"
     };
   }
 
   try {
-    return classifyLocalStateLayoutRecord(await readJsonFile(layoutPath));
+    return classifyStateLayoutRecord(await readJsonFile(layoutPath));
   } catch {
     return {
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       status: "unreadable"
     };
   }
@@ -263,7 +263,7 @@ async function copyEntryVerbatim(input: {
   relativePath?: string | undefined;
   sourcePath: string;
   targetPath: string;
-}): Promise<LocalBackupCopyStats> {
+}): Promise<DeploymentBackupCopyStats> {
   const entry = await lstat(input.sourcePath);
   const stats = emptyCopyStats();
 
@@ -318,7 +318,7 @@ async function copyConfigSnapshot(input: {
   const includedPaths: string[] = [];
   const missingPaths: string[] = [];
 
-  for (const relativePath of localBackupConfigPaths) {
+  for (const relativePath of deploymentBackupConfigPaths) {
     const sourcePath = path.join(input.repositoryRoot, relativePath);
 
     if (!(await pathExists(sourcePath))) {
@@ -367,59 +367,59 @@ async function readRepositoryPackageMetadata(repositoryRoot: string): Promise<{
   }
 }
 
-function validateBackupManifest(rawManifest: unknown): LocalBackupManifest {
+function validateBackupManifest(rawManifest: unknown): DeploymentBackupManifest {
   if (!rawManifest || typeof rawManifest !== "object") {
     throw new Error("Backup manifest is not a JSON object.");
   }
 
-  const manifest = rawManifest as Partial<LocalBackupManifest>;
+  const manifest = rawManifest as Partial<DeploymentBackupManifest>;
   if (
     manifest.schemaVersion !== "1" ||
     manifest.product !== "entangle-backup"
   ) {
     throw new Error(
-      "Backup manifest is not an Entangle local profile backup manifest."
+      "Backup manifest is not an Entangle deployment profile backup manifest."
     );
   }
 
   if (
     manifest.state?.path !== backupStatePath ||
-    manifest.restore?.stateTargetPath !== localHostStatePath
+    manifest.restore?.stateTargetPath !== hostStateRelativePath
   ) {
-    throw new Error("Backup manifest does not describe a supported Local state bundle.");
+    throw new Error("Backup manifest does not describe a supported Entangle state bundle.");
   }
 
   if (manifest.exclusions?.secretsIncluded !== false) {
-    throw new Error("Backup manifest does not explicitly exclude local secrets.");
+    throw new Error("Backup manifest does not explicitly exclude Entangle secrets.");
   }
 
-  return manifest as LocalBackupManifest;
+  return manifest as DeploymentBackupManifest;
 }
 
 function assertRestorableLayout(
-  layout: LocalBackupManifest["state"]["layout"]
+  layout: DeploymentBackupManifest["state"]["layout"]
 ): void {
   if (layout.status === "current" || layout.status === "upgrade_available") {
     return;
   }
 
   throw new Error(
-    `Cannot restore Entangle local profile backup with state layout status '${layout.status}'.`
+    `Cannot restore Entangle deployment profile backup with state layout status '${layout.status}'.`
   );
 }
 
-export async function createLocalBackup(
-  options: LocalBackupOptions
-): Promise<LocalBackupSummary> {
+export async function createDeploymentBackup(
+  options: DeploymentBackupOptions
+): Promise<DeploymentBackupSummary> {
   const createdAt = (options.now ?? (() => new Date()))().toISOString();
   const outputPath = path.resolve(options.outputPath);
-  const hostStatePath = path.join(options.repositoryRoot, localHostStatePath);
+  const hostStatePath = path.join(options.repositoryRoot, hostStateRelativePath);
   const stateBundlePath = path.join(outputPath, backupStatePath);
   const configBundlePath = path.join(outputPath, backupConfigPath);
 
   if (!(await pathExists(hostStatePath))) {
     throw new Error(
-      "Cannot create Entangle local profile backup because .entangle/host does not exist."
+      "Cannot create Entangle deployment profile backup because .entangle/host does not exist."
     );
   }
 
@@ -444,8 +444,8 @@ export async function createLocalBackup(
     repositoryRoot: options.repositoryRoot,
     targetRoot: configBundlePath
   });
-  const layout = await inspectLocalStateLayout(stateBundlePath);
-  const manifest: LocalBackupManifest = {
+  const layout = await inspectStateLayout(stateBundlePath);
+  const manifest: DeploymentBackupManifest = {
     config: {
       ...config,
       path: backupConfigPath
@@ -458,18 +458,18 @@ export async function createLocalBackup(
         "Gitea service data outside .entangle/host",
         "strfry relay data outside .entangle/host"
       ],
-      paths: [localSecretsPath],
+      paths: [secretsPath],
       secretsIncluded: false
     },
     product: "entangle-backup",
     repository: await readRepositoryPackageMetadata(options.repositoryRoot),
     restore: {
-      stateTargetPath: localHostStatePath
+      stateTargetPath: hostStateRelativePath
     },
     schemaVersion: "1",
     state: {
       layout,
-      originalPath: localHostStatePath,
+      originalPath: hostStateRelativePath,
       path: backupStatePath,
       stats: stateStats
     }
@@ -489,20 +489,20 @@ export async function createLocalBackup(
   };
 }
 
-export async function restoreLocalBackup(
-  options: LocalRestoreOptions
-): Promise<LocalRestoreSummary> {
+export async function restoreDeploymentBackup(
+  options: DeploymentRestoreOptions
+): Promise<DeploymentRestoreSummary> {
   const inspectedAt = (options.now ?? (() => new Date()))().toISOString();
   const inputPath = path.resolve(options.inputPath);
   const manifest = validateBackupManifest(
     await readJsonFile(path.join(inputPath, manifestFileName))
   );
   const stateBundlePath = resolveSafeBundlePath(inputPath, manifest.state.path);
-  const targetPath = path.join(options.repositoryRoot, localHostStatePath);
+  const targetPath = path.join(options.repositoryRoot, hostStateRelativePath);
   const targetExists = await pathExists(targetPath);
-  const layout = await inspectLocalStateLayout(stateBundlePath);
+  const layout = await inspectStateLayout(stateBundlePath);
   const warnings = [
-    "Local secrets are not included in Entangle local profile backups; restore or recreate .entangle-secrets separately if needed.",
+    "Entangle secrets are not included in Entangle deployment profile backups; restore or recreate .entangle-secrets separately if needed.",
     "External service state such as Docker volumes, Gitea internals, and relay data is not restored by this command."
   ];
 
@@ -518,7 +518,7 @@ export async function restoreLocalBackup(
 
   if (targetExists && !options.force && !options.dryRun) {
     throw new Error(
-      `Target Local state '${targetPath}' already exists. Use --force to replace it.`
+      `Target Entangle state '${targetPath}' already exists. Use --force to replace it.`
     );
   }
 

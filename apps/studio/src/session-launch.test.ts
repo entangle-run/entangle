@@ -30,7 +30,7 @@ describe("studio session launch helpers", () => {
   it("creates a selected-runtime default draft", () => {
     expect(createDefaultSessionLaunchDraft(createRuntime())).toEqual({
       intent: "",
-      summary: "Inspect local state for worker-it."
+      summary: "Inspect Entangle state for worker-it."
     });
   });
 
@@ -38,13 +38,13 @@ describe("studio session launch helpers", () => {
     expect(
       isSessionLaunchDraftReady(createRuntime(), {
         intent: "",
-        summary: " Inspect local state. "
+        summary: " Inspect Entangle state. "
       })
     ).toBe(true);
     expect(
       isSessionLaunchDraftReady(createRuntime({ contextAvailable: false }), {
         intent: "",
-        summary: "Inspect local state."
+        summary: "Inspect Entangle state."
       })
     ).toBe(false);
     expect(
@@ -59,21 +59,21 @@ describe("studio session launch helpers", () => {
     expect(
       buildSessionLaunchRequest(createRuntime(), {
         intent: "  Review the runtime trace. ",
-        summary: " Inspect local state. "
+        summary: " Inspect Entangle state. "
       })
     ).toEqual({
       intent: "Review the runtime trace.",
-      summary: "Inspect local state.",
+      summary: "Inspect Entangle state.",
       targetNodeId: "worker-it"
     });
 
     expect(
       buildSessionLaunchRequest(createRuntime(), {
         intent: " ",
-        summary: " Inspect local state. "
+        summary: " Inspect Entangle state. "
       })
     ).toEqual({
-      summary: "Inspect local state.",
+      summary: "Inspect Entangle state.",
       targetNodeId: "worker-it"
     });
   });

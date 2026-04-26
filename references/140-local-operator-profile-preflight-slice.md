@@ -8,7 +8,7 @@ Compose topology.
 Before this slice, the Compose files and Dockerfiles existed, but the complete
 bootstrap path was scattered across project memory and prior implementation
 notes. Operators did not have one documented preflight command that checked the
-local profile shape before running the system.
+federated dev profile shape before running the system.
 
 ## Implemented behavior
 
@@ -21,12 +21,12 @@ local profile shape before running the system.
   - operator token notes;
   - runtime state volume notes;
   - reset commands.
-- Added `scripts/check-local-profile.mjs`.
+- Added `scripts/check-federated-dev-profile.mjs`.
 - Added package scripts:
-  - `pnpm ops:check-local`
-  - `pnpm ops:check-local:strict`
+  - `pnpm ops:check-federated-dev`
+  - `pnpm ops:check-federated-dev:strict`
 - The preflight validates:
-  - local profile files;
+  - federated dev profile files;
   - Node version;
   - `pnpm` availability;
   - Docker availability;
@@ -45,9 +45,9 @@ preflight layer, not a live smoke test.
 
 The next operations-hardening step should be an active smoke that starts the
 stable services, builds the runner image, and proves host, relay, git, and
-runner interactions over the local profile.
+runner interactions over the federated dev profile.
 
 ## Verification
 
-- `pnpm ops:check-local`
-- `pnpm ops:check-local:strict`
+- `pnpm ops:check-federated-dev`
+- `pnpm ops:check-federated-dev:strict`

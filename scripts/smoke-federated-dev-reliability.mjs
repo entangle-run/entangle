@@ -84,17 +84,17 @@ const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-reliability-"));
 const backupPath = path.join(tempRoot, "backup");
 
 try {
-  const backup = runCli(["local", "backup", "--output", backupPath]);
+  const backup = runCli(["deployment", "backup", "--output", backupPath]);
   assertBackupSummary(backup);
 
-  const restore = runCli(["local", "restore", backupPath, "--dry-run"]);
+  const restore = runCli(["deployment", "restore", backupPath, "--dry-run"]);
   assertRestoreDryRunSummary(restore);
 
-  const repair = runCli(["local", "repair", "--skip-live", "--json"]);
+  const repair = runCli(["deployment", "repair", "--skip-live", "--json"]);
   assertRepairDryRunReport(repair);
 
   console.log(
-    `Local reliability smoke passed: backup files=${backup.backup.stateStats.files}, repair=${repair.status}.`
+    `Deployment reliability smoke passed: backup files=${backup.backup.stateStats.files}, repair=${repair.status}.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

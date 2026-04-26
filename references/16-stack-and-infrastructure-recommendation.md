@@ -87,7 +87,7 @@ Recommended shape:
 - React
 - TypeScript
 - graph visualization using a mature graph UI library such as React Flow / `@xyflow/react`
-- local state management kept simple and explicit
+- Entangle state management kept simple and explicit
 
 Studio should be a control plane and graph viewer, not the place where the core runtime logic lives.
 

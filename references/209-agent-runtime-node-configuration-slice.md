@@ -43,7 +43,7 @@ The CLI now adds:
 ```bash
 entangle host nodes agent-runtime <nodeId> \
   --mode coding_agent \
-  --engine-profile-ref local-opencode \
+  --engine-profile-ref opencode-default \
   --default-agent build \
   --summary
 ```

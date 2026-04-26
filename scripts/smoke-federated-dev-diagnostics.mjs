@@ -68,7 +68,7 @@ try {
       "--filter",
       "@entangle/cli",
       "dev",
-      "local",
+      "deployment",
       "diagnostics",
       "--output",
       outputPath,
@@ -97,7 +97,7 @@ try {
   if (result.status !== 0) {
     throw new Error(
       [
-        `Local diagnostics command failed with exit code ${result.status ?? "unknown"}.`,
+        `Deployment diagnostics command failed with exit code ${result.status ?? "unknown"}.`,
         formatOutput(result)
       ]
         .filter(Boolean)
@@ -110,7 +110,7 @@ try {
 
   assertDiagnosticsBundle(bundle);
   console.log(
-    `Local diagnostics smoke passed: ${bundle.commands.length} command captures, doctor=${bundle.doctor.status}.`
+    `Deployment diagnostics smoke passed: ${bundle.commands.length} command captures, doctor=${bundle.doctor.status}.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

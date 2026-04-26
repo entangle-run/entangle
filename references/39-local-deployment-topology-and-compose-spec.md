@@ -77,15 +77,15 @@ The Compose layer should not own:
 
 ### `strfry`
 
-- primary relay service for the local profile;
+- primary relay service for the federated dev profile;
 - referenced by the deployment resource catalog as a relay profile.
-- must be started with an explicit mounted config file in the local Compose
+- must be started with an explicit mounted config file in the federated dev Compose
   profile; a config-less `strfry relay` command is not a valid local deployment
   baseline.
 
 ### `gitea`
 
-- primary git service for the local profile;
+- primary git service for the federated dev profile;
 - referenced by the deployment resource catalog as a git service profile.
 
 ## 4.1 Host runtime-backend access
@@ -221,8 +221,8 @@ The hackathon should use:
 
 This gives the cleanest demo while remaining faithful to the architecture.
 
-The active local profile lives under `deploy/local/`, with the Compose file at
-`deploy/local/compose/docker-compose.local.yml`. Scripts should consume shared
+The active federated dev profile lives under `deploy/federated-dev/`, with the Compose file at
+`deploy/federated-dev/compose/docker-compose.federated-dev.yml`. Scripts should consume shared
 path constants rather than duplicating that path in multiple places.
 
 ## 12. What should stay outside the main product runtime
@@ -267,7 +267,7 @@ The preferred first serious stance is:
 - keep the Studio runtime image static and minimal by serving the built bundle
   with Nginx instead of running `vite preview` in production-like profiles.
 
-This matters because Entangle's local profile is not only a convenience stack.
+This matters because Entangle's federated dev profile is not only a convenience stack.
 It is the first serious operational expression of the product boundary.
 
 ## 15. Build-context discipline
@@ -275,7 +275,7 @@ It is the first serious operational expression of the product boundary.
 The Docker build context should exclude repository areas that are not required
 to produce runtime images.
 
-At minimum, the local profile should exclude:
+At minimum, the federated dev profile should exclude:
 
 - live host state under `.entangle/`;
 - live secrets under `.entangle-secrets/`;

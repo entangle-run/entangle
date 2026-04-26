@@ -35,7 +35,7 @@ import {
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
   hostStatusResponseSchema,
-  localStateLayoutRecordSchema,
+  stateLayoutRecordSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
@@ -707,7 +707,7 @@ describe("federated runtime contracts", () => {
 });
 
 describe("session cancellation contracts", () => {
-  it("accepts runtime-local cancellation records and host responses", () => {
+  it("accepts runtime-owned cancellation records and host responses", () => {
     const cancellation = sessionCancellationRequestRecordSchema.parse({
       cancellationId: "cancel-alpha",
       graphId: "team-alpha",
@@ -746,8 +746,8 @@ describe("runtime inspection host API contracts", () => {
       agentRuntime: {
         defaultAgent: "general",
         engineKind: "opencode_server",
-        engineProfileDisplayName: "Local OpenCode",
-        engineProfileRef: "local-opencode",
+        engineProfileDisplayName: "OpenCode",
+        engineProfileRef: "opencode-default",
         lastEngineSessionId: "opencode-session-alpha",
         lastEngineStopReason: "completed",
         lastEngineVersion: "0.10.0",
@@ -802,7 +802,7 @@ describe("runtime inspection host API contracts", () => {
       }
     });
 
-    expect(result.agentRuntime?.engineProfileRef).toBe("local-opencode");
+    expect(result.agentRuntime?.engineProfileRef).toBe("opencode-default");
     expect(result.agentRuntime?.lastEngineSessionId).toBe(
       "opencode-session-alpha"
     );
@@ -1265,7 +1265,7 @@ describe("source change candidate host API contracts", () => {
     ).toBe("pending_review");
     expect(
       runtimeSourceChangeCandidateReviewMutationRequestSchema.parse({
-        reason: "Reviewed by the local operator.",
+        reason: "Reviewed by the operator.",
         reviewedBy: "operator-alpha",
         status: "accepted"
       }).status
@@ -1274,7 +1274,7 @@ describe("source change candidate host API contracts", () => {
       runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
         approvalId: "approval-source-apply-alpha",
         appliedBy: "operator-alpha",
-        reason: "Accepted for the local source history."
+        reason: "Accepted for the source history."
       })
     ).toMatchObject({
       approvalId: "approval-source-apply-alpha",
@@ -1315,7 +1315,7 @@ describe("source change candidate host API contracts", () => {
         publication: {
           publishedAt: "2026-04-24T00:04:00.000Z",
           remoteName: "entangle-gitea",
-          remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+          remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
           state: "published"
         },
         requestedAt: "2026-04-24T00:04:00.000Z",
@@ -1324,7 +1324,7 @@ describe("source change candidate host API contracts", () => {
         targetNamespace: "team-alpha",
         targetRepositoryName: "graph-alpha"
       },
-      reason: "Accepted for the local source history.",
+      reason: "Accepted for the source history.",
       sourceChangeSummary: candidate.sourceChangeSummary,
       sourceHistoryId: "source-history-source-change-turn-alpha",
       turnId: "turn-alpha",
@@ -1349,7 +1349,7 @@ describe("source change candidate host API contracts", () => {
       publication: {
         publishedAt: "2026-04-24T00:04:00.000Z",
         remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       ref: {
@@ -1433,7 +1433,7 @@ describe("source change candidate host API contracts", () => {
       publication: {
         publishedAt: "2026-04-24T00:06:00.000Z",
         remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       ref: {
@@ -1465,7 +1465,7 @@ describe("source change candidate host API contracts", () => {
       publication: {
         publishedAt: "2026-04-24T00:06:00.000Z",
         remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
         state: "published"
       },
       publicationId: "wiki-publication-alpha",
@@ -1507,7 +1507,7 @@ describe("source change candidate host API contracts", () => {
             appliedBy: "operator-alpha",
             commit: "commit-alpha",
             mode: "already_in_workspace",
-            reason: "Accepted for the local source history.",
+            reason: "Accepted for the source history.",
             sourceHistoryId: "source-history-source-change-turn-alpha"
           },
           review: {
@@ -1959,7 +1959,7 @@ describe("external principal contracts", () => {
       secretRef: "secret://git/worker-it/ssh",
       attribution: {
         displayName: "Worker IT",
-        email: "worker-it@entangle.local"
+        email: "worker-it@entangle.example"
       },
       signing: {
         mode: "none"
@@ -2360,7 +2360,7 @@ describe("host event contracts", () => {
         "Source change candidate 'source-change-turn-alpha' for runtime 'worker-it' was reviewed as 'accepted'.",
       nodeId: "worker-it",
       previousStatus: "pending_review",
-      reason: "Reviewed by the local operator.",
+      reason: "Reviewed by the operator.",
       reviewedAt: "2026-04-24T00:00:02.000Z",
       reviewedBy: "operator-alpha",
       schemaVersion: "1",
@@ -2403,7 +2403,7 @@ describe("host event contracts", () => {
       nodeId: "worker-it",
       publicationState: "published",
       remoteName: "entangle-gitea",
-      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
       schemaVersion: "1",
       sourceHistoryBranch:
         "worker-it/source-history/source-history-source-change-turn-alpha",
@@ -2447,7 +2447,7 @@ describe("host event contracts", () => {
       publicationId: "wiki-publication-alpha",
       publicationState: "published",
       remoteName: "entangle-gitea",
-      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
       schemaVersion: "1",
       targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
@@ -2558,7 +2558,7 @@ describe("host event contracts", () => {
       eventId: "conversation-worker-it-001",
       followupCount: 1,
       graphId: "graph-alpha",
-      initiator: "remote",
+      initiator: "peer",
       lastMessageType: "task.request",
       message: "Conversation 'conv-alpha' on node 'worker-it' is now 'working'.",
       nodeId: "worker-it",
@@ -2817,13 +2817,13 @@ describe("reconciliation contracts", () => {
     };
 
     expect(
-      localStateLayoutRecordSchema.parse({
+      stateLayoutRecordSchema.parse({
         ...baseRecord,
         product: "entangle"
       }).product
     ).toBe("entangle");
     expect(() =>
-      localStateLayoutRecordSchema.parse({
+      stateLayoutRecordSchema.parse({
         ...baseRecord,
         product: "other-product"
       })
@@ -2964,7 +2964,7 @@ describe("git service contracts", () => {
   it("accepts an SSH git service with an explicit remote base", () => {
     const result = gitServiceProfileSchema.parse({
       id: "gitea",
-      displayName: "Local Gitea",
+      displayName: "Gitea",
       baseUrl: "http://gitea:3000",
       remoteBase: "ssh://git@gitea:22",
       transportKind: "ssh",
@@ -2983,7 +2983,7 @@ describe("git service contracts", () => {
     expect(
       gitServiceProfileSchema.safeParse({
         id: "gitea",
-        displayName: "Local Gitea",
+        displayName: "Gitea",
         baseUrl: "http://gitea:3000",
         remoteBase: "http://gitea:3000",
         transportKind: "ssh",
@@ -2998,7 +2998,7 @@ describe("git service contracts", () => {
       gitServices: [
         gitServiceProfileSchema.parse({
           id: "gitea",
-          displayName: "Local Gitea",
+          displayName: "Gitea",
           baseUrl: "http://gitea:3000",
           remoteBase: "ssh://git@gitea:22",
           transportKind: "ssh",
@@ -3032,7 +3032,7 @@ describe("git service contracts", () => {
         gitServices: [
           gitServiceProfileSchema.parse({
             id: "gitea",
-            displayName: "Local Gitea",
+            displayName: "Gitea",
             baseUrl: "http://gitea:3000",
             remoteBase: "ssh://git@gitea:22",
             transportKind: "ssh",
@@ -3082,7 +3082,7 @@ describe("git service contracts", () => {
         gitServices: [
           gitServiceProfileSchema.parse({
             id: "gitea",
-            displayName: "Local Gitea",
+            displayName: "Gitea",
             baseUrl: "http://gitea:3000",
             remoteBase: "ssh://git@gitea:22",
             transportKind: "ssh",
@@ -3399,15 +3399,15 @@ describe("model runtime context contracts", () => {
 describe("agent runtime contracts", () => {
   it("accepts OpenCode as a process-backed agent engine profile", () => {
     const result = agentEngineProfileSchema.parse({
-      id: "local-opencode",
-      displayName: "Local OpenCode",
+      id: "opencode-default",
+      displayName: "OpenCode",
       kind: "opencode_server",
       executable: "opencode",
       defaultAgent: "build"
     });
 
     expect(result).toMatchObject({
-      id: "local-opencode",
+      id: "opencode-default",
       kind: "opencode_server",
       stateScope: "node"
     });
@@ -3416,8 +3416,8 @@ describe("agent runtime contracts", () => {
   it("rejects process-backed agent engine profiles without an endpoint", () => {
     expect(
       agentEngineProfileSchema.safeParse({
-        id: "local-opencode",
-        displayName: "Local OpenCode",
+        id: "opencode-default",
+        displayName: "OpenCode",
         kind: "opencode_server"
       }).success
     ).toBe(false);
@@ -3426,11 +3426,11 @@ describe("agent runtime contracts", () => {
   it("resolves node agent runtime from graph and catalog defaults", () => {
     const catalog = deploymentResourceCatalogSchema.parse({
       schemaVersion: "1",
-      catalogId: "local-catalog",
+      catalogId: "default-catalog",
       agentEngineProfiles: [
         {
-          id: "local-opencode",
-          displayName: "Local OpenCode",
+          id: "opencode-default",
+          displayName: "OpenCode",
           kind: "opencode_server",
           executable: "opencode",
           defaultAgent: "build"
@@ -3438,7 +3438,7 @@ describe("agent runtime contracts", () => {
       ],
       defaults: {
         relayProfileRefs: [],
-        agentEngineProfileRef: "local-opencode"
+        agentEngineProfileRef: "opencode-default"
       }
     });
     const graph = graphSpecSchema.parse({
@@ -3467,7 +3467,7 @@ describe("agent runtime contracts", () => {
 
     expect(resolveEffectiveAgentRuntime(graph.nodes[0]!, graph, catalog)).toEqual({
       mode: "coding_agent",
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       defaultAgent: "build"
     });
   });

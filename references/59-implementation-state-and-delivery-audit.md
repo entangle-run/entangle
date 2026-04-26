@@ -83,7 +83,7 @@ The most important stable conclusions remain:
 
 - canonical `zod` contracts in `packages/types` for graph, catalog, runtime
   context, A2A payloads, artifact records, external principals, host DTOs, and
-  runner-local state;
+  runner-Entangle state;
 - canonical host-event DTOs for persisted inspection and WebSocket streaming;
 - canonical graph-revision DTOs for active revision records, revision history
   metadata, and revision inspection responses;
@@ -289,7 +289,7 @@ service topology, not the runner artifact contract itself.
 ### Still missing or incomplete
 
 - broader secret-delivery backends and lifecycle handling beyond the current
-  mounted-file local profile.
+  mounted-file federated dev profile.
 
 ### Assessment
 
@@ -491,7 +491,7 @@ delivery.
   the host API;
 - Studio runtime-turn drilldown on top of the existing host runtime-turn read
   model, where one persisted runner turn can now be selected and expanded into
-  host-backed detail without reading runner-local state files or reconstructing
+  host-backed detail without reading runner-Entangle state files or reconstructing
   turn state from events;
 - bounded Studio graph edge mutation on top of the host-owned edge resource
   surface, including live edge selection plus create/replace/delete flows;
@@ -599,17 +599,17 @@ priority widening.
 - static Nginx-based Studio runtime image;
 - local `strfry` profile and local `Gitea` profile in Compose;
 - documented local operator bootstrap under `deploy/README.md`;
-- local profile preflight commands through `pnpm ops:check-local` and
-  `pnpm ops:check-local:strict`;
-- active local profile smoke through `pnpm ops:smoke-local` for service
+- federated dev profile preflight commands through `pnpm ops:check-federated-dev` and
+  `pnpm ops:check-federated-dev:strict`;
+- active federated dev profile smoke through `pnpm ops:smoke-federated-dev` for service
   presence, runner image presence, host APIs, Studio, Gitea HTTP, and relay
   WebSocket reachability;
-- disposable local profile smoke through `pnpm ops:smoke-local:disposable` for
+- disposable federated dev profile smoke through `pnpm ops:smoke-federated-dev:disposable` for
   strict preflight, runner image build, stable service startup, active smoke
   readiness probing, and teardown;
 - Docker-backed runtime lifecycle smoke through
-  `pnpm ops:smoke-local:runtime` and
-  `pnpm ops:smoke-local:disposable:runtime`, covering temporary package
+  `pnpm ops:smoke-federated-dev:runtime` and
+  `pnpm ops:smoke-federated-dev:disposable:runtime`, covering temporary package
   admission, local Gitea disposable user/token bootstrap, smoke graph
   application, local model-secret binding, two managed runner starts,
   restart-generation recreation, restart event persistence, real NIP-59 task
@@ -617,7 +617,7 @@ priority widening.
   credential-checking model stub, completed host session and runner-turn
   inspection, published git-backed artifact materialization, downstream
   artifact retrieval by `ArtifactRef`, and stop;
-- explicit local Compose volume names for the host state and secret volumes so
+- explicit federated dev Compose volume names for the host state and secret volumes so
   host-managed runner containers created through the Docker Engine API mount
   the same state and secret roots as the Compose-managed host service;
 - a runner runtime image that includes the git and SSH client tooling required
@@ -633,7 +633,7 @@ priority widening.
 
 - stronger end-to-end CI coverage across relay, host, runner, and git service;
 - non-disposable upgrade and repair coverage for already-running local
-  profiles whose Gitea data volume predates the installed-mode local profile.
+  profiles whose Gitea data volume predates the installed-mode federated dev profile.
 
 ### Assessment
 
@@ -664,7 +664,7 @@ The current best delivery order is:
    engine-outcome surface, broader provider/runtime metadata, and any later
    model-guided runtime/memory deepening that builds on the now stronger
    bounded builtin tool surface;
-2. harden end-to-end deployment coverage beyond the disposable local profile,
+2. harden end-to-end deployment coverage beyond the disposable federated dev profile,
    especially non-disposable upgrade and repair behavior;
 3. widen headless operational ergonomics only where later delivery justifies
    more CLI depth;

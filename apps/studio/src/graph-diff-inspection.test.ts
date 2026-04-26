@@ -66,7 +66,7 @@ function createDiff(): GraphDiffSummary {
     to: {
       edgeCount: 1,
       graphId: "federated-preview",
-      name: "Local Workbench",
+      name: "Federated Workbench",
       nodeCount: 1,
       runtimeProfile: "federated"
     },

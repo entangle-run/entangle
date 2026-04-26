@@ -31,7 +31,7 @@ That means the host is responsible for:
 
 The runner is no longer allowed to silently invent protocol identity on its own.
 
-## Implemented local profile
+## Implemented federated dev profile
 
 The current local operator profile now uses:
 
@@ -58,7 +58,7 @@ secret transport.
 
 ## Storage separation
 
-The local Compose profile now mounts:
+The federated dev Compose profile now mounts:
 
 - one shared runtime-state volume for host state and runner workspaces;
 - one separate host-only secret volume for runtime identities.
@@ -81,7 +81,7 @@ This turns identity mismatches into hard runtime errors instead of silent drift.
 
 ## Remaining limitation
 
-The current first serious local profile still uses env-var delivery for the
+The current first serious federated dev profile still uses env-var delivery for the
 Nostr secret inside the runner container.
 
 That is acceptable for the current local boundary because:

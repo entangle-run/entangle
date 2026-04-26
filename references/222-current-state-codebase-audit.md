@@ -17,7 +17,7 @@ as only one deployment topology.
 - `nodeKindSchema` with `"user"` plus agent/service kinds;
 - `runtimeProfileSchema` as `"federated"`;
 - `GraphSpec.defaults.runtimeProfile` defaulting to `"federated"`;
-- `agentEngineProfiles` with default `local-opencode`;
+- `agentEngineProfiles` with default `opencode-default`;
 - `EffectiveRuntimeContext` with concrete workspace paths including
   `runtimeRoot`, `engineStateRoot`, `sourceWorkspaceRoot`, and
   `wikiRepositoryRoot`;
@@ -79,7 +79,7 @@ inbox listing, and signed User Node reply/approval message publication. Studio
 still needs full chat composition and replacement of older approval/session
 controls.
 
-`deploy/local` is intentionally a same-machine deployment adapter:
+`deploy/federated-dev` is intentionally a same-machine deployment adapter:
 
 - Host owns Docker runner creation;
 - Host mounts Docker socket;
@@ -134,7 +134,7 @@ runtime model:
 - `packages/host-client/src/index.ts`
 - `apps/cli/src/index.ts`
 - `apps/studio/src/App.tsx`
-- `deploy/local/**`
+- `deploy/federated-dev/**`
 - `scripts/smoke-local-*.mjs`
 
 ## Concrete Changes Required

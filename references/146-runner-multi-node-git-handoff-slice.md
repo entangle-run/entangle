@@ -29,7 +29,7 @@ profile with bootstrapped Gitea and two managed runner containers.
 
 ## Original boundary decisions
 
-The test uses a local bare git remote because the current local Compose Gitea
+The test uses a local bare git remote because the current federated dev Compose Gitea
 service is only readiness-checked as a web surface; it is not yet bootstrapped
 with an authenticated user, token, repository namespace, and git transport
 principal suitable for end-to-end publication and retrieval.
@@ -41,7 +41,7 @@ Gitea bootstrap exists in the deployment profile.
 ## Follow-up status
 
 The deployment-grade gap identified by this slice is now closed by the
-runtime lifecycle smoke. `pnpm ops:smoke-local:disposable:runtime` now
+runtime lifecycle smoke. `pnpm ops:smoke-federated-dev:disposable:runtime` now
 bootstraps local Gitea, starts two managed runner containers, publishes an
 upstream git-backed artifact, and verifies downstream retrieval by
 `ArtifactRef` over the real host, relay, runtime, model, git, and artifact
@@ -50,4 +50,4 @@ surfaces.
 ## Verification
 
 - `pnpm --filter @entangle/runner test -- --runInBand`
-- `pnpm ops:smoke-local:disposable:runtime`
+- `pnpm ops:smoke-federated-dev:disposable:runtime`

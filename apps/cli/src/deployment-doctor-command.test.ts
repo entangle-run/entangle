@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildLocalDoctorReport,
-  formatLocalDoctorText,
-  type LocalDoctorDeps
-} from "./local-doctor-command.js";
+  buildDeploymentDoctorReport,
+  formatDeploymentDoctorText,
+  type DeploymentDoctorDeps
+} from "./deployment-doctor-command.js";
 
-function createPassingDeps(): LocalDoctorDeps {
+function createPassingDeps(): DeploymentDoctorDeps {
   return {
     commandRunner: (command, args) => ({
       status: 0,
@@ -73,12 +73,12 @@ function createPassingDeps(): LocalDoctorDeps {
             defaultAgent: "build",
             engineProfile: {
               executable: "opencode",
-              displayName: "Local OpenCode",
-              id: "local-opencode",
+              displayName: "OpenCode",
+              id: "opencode-default",
               kind: "opencode_server",
               stateScope: "node"
             },
-            engineProfileRef: "local-opencode",
+            engineProfileRef: "opencode-default",
             mode: "coding_agent"
           },
           artifactContext: {
@@ -201,9 +201,9 @@ function createPassingDeps(): LocalDoctorDeps {
   };
 }
 
-describe("local doctor command helpers", () => {
-  it("builds a passing report when local profile and live checks pass", async () => {
-    const report = await buildLocalDoctorReport(
+describe("deployment doctor command helpers", () => {
+  it("builds a passing report when federated dev profile and live checks pass", async () => {
+    const report = await buildDeploymentDoctorReport(
       {
         repositoryRoot: "/repo"
       },
@@ -243,7 +243,7 @@ describe("local doctor command helpers", () => {
         expect.objectContaining({
           category: "state",
           status: "pass",
-          summary: "Local state layout"
+          summary: "Entangle state layout"
         }),
         expect.objectContaining({
           category: "state",
@@ -254,8 +254,8 @@ describe("local doctor command helpers", () => {
     );
   });
 
-  it("treats optional local infrastructure as warning by default and failure in strict mode", async () => {
-    const deps: LocalDoctorDeps = {
+  it("treats optional deployment infrastructure as warning by default and failure in strict mode", async () => {
+    const deps: DeploymentDoctorDeps = {
       ...createPassingDeps(),
       commandRunner: (command) => ({
         status: command === "docker" ? 1 : 0,
@@ -264,14 +264,14 @@ describe("local doctor command helpers", () => {
       })
     };
 
-    const defaultReport = await buildLocalDoctorReport(
+    const defaultReport = await buildDeploymentDoctorReport(
       {
         repositoryRoot: "/repo",
         skipLive: true
       },
       deps
     );
-    const strictReport = await buildLocalDoctorReport(
+    const strictReport = await buildDeploymentDoctorReport(
       {
         repositoryRoot: "/repo",
         skipLive: true,
@@ -291,7 +291,7 @@ describe("local doctor command helpers", () => {
   });
 
   it("renders human-readable output with remediation lines", async () => {
-    const report = await buildLocalDoctorReport(
+    const report = await buildDeploymentDoctorReport(
       {
         repositoryRoot: "/repo",
         skipLive: true,
@@ -303,12 +303,12 @@ describe("local doctor command helpers", () => {
       }
     );
 
-    expect(formatLocalDoctorText(report)).toContain("FAIL profile:pnpm-lock.yaml");
-    expect(formatLocalDoctorText(report)).toContain("remediation:");
+    expect(formatDeploymentDoctorText(report)).toContain("FAIL profile:pnpm-lock.yaml");
+    expect(formatDeploymentDoctorText(report)).toContain("remediation:");
   });
 
   it("warns when a runtime wiki repository has uncommitted changes", async () => {
-    const report = await buildLocalDoctorReport(
+    const report = await buildDeploymentDoctorReport(
       {
         repositoryRoot: "/repo"
       },
@@ -339,8 +339,8 @@ describe("local doctor command helpers", () => {
     expect(wikiRepositoryCheck?.detail).toContain("dirty: worker-it");
   });
 
-  it("fails when the local state layout is newer than the current binary", async () => {
-    const report = await buildLocalDoctorReport(
+  it("fails when the Entangle state layout is newer than the current binary", async () => {
+    const report = await buildDeploymentDoctorReport(
       {
         repositoryRoot: "/repo",
         skipLive: true
@@ -360,7 +360,7 @@ describe("local doctor command helpers", () => {
 
     expect(report.status).toBe("fail");
     expect(
-      report.checks.find((check) => check.summary === "Local state layout")
+      report.checks.find((check) => check.summary === "Entangle state layout")
     ).toMatchObject({
       category: "state",
       status: "fail"

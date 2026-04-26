@@ -170,14 +170,14 @@ export async function createRuntimeFixture(input: {
     agentRuntimeContext: {
       defaultAgent: "general",
       engineProfile: {
-        id: "local-opencode",
-        displayName: "Local OpenCode",
+        id: "opencode-default",
+        displayName: "OpenCode",
         kind: "opencode_server",
         executable: "opencode",
         defaultAgent: "general",
         stateScope: "node"
       },
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       mode: "coding_agent"
     },
     artifactContext: {
@@ -195,7 +195,7 @@ export async function createRuntimeFixture(input: {
             secretRef: "secret://git/worker-it/ssh",
             attribution: {
               displayName: "Worker IT Git Principal",
-              email: "worker-it@entangle.local"
+              email: "worker-it@entangle.example"
             },
             signing: {
               mode: "none"
@@ -214,7 +214,7 @@ export async function createRuntimeFixture(input: {
       gitServices: [
         {
           id: "gitea",
-          displayName: "Local Gitea",
+          displayName: "Gitea",
           baseUrl: "http://gitea:3000",
           remoteBase: "ssh://git@gitea:22",
           transportKind: "ssh",
@@ -243,7 +243,7 @@ export async function createRuntimeFixture(input: {
         nodeKind: "worker",
         agentRuntime: {
           defaultAgent: "general",
-          engineProfileRef: "local-opencode",
+          engineProfileRef: "opencode-default",
           mode: "coding_agent"
         },
         packageSourceRef: "worker-it-source",
@@ -444,7 +444,7 @@ export async function createPublishedGitArtifact(input: {
 
   await runGitCommand(workingRoot, ["clone", input.remoteRepositoryPath, checkoutPath]);
   await runGitCommand(checkoutPath, ["config", "user.name", "Remote Worker"]);
-  await runGitCommand(checkoutPath, ["config", "user.email", "remote-worker@entangle.local"]);
+  await runGitCommand(checkoutPath, ["config", "user.email", "remote-worker@entangle.example"]);
   await runGitCommand(checkoutPath, ["checkout", "-B", branch]);
   await mkdir(path.dirname(path.join(checkoutPath, filePath)), { recursive: true });
   await writeFile(

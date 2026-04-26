@@ -16,8 +16,8 @@ function createRuntime(
     agentRuntime: {
       defaultAgent: "general",
       engineKind: "opencode_server",
-      engineProfileDisplayName: "Local OpenCode",
-      engineProfileRef: "local-opencode",
+      engineProfileDisplayName: "OpenCode",
+      engineProfileRef: "opencode-default",
       lastEngineSessionId: "opencode-session-alpha",
       lastEngineStopReason: "completed",
       lastEngineVersion: "0.10.0",
@@ -66,7 +66,7 @@ function createRuntime(
         gitServiceRef: "gitea",
         namespace: "team-alpha",
         provisioningMode: "gitea_api",
-        remoteUrl: "http://gitea.local/team-alpha/runtime.git",
+        remoteUrl: "http://gitea.example/team-alpha/runtime.git",
         repositoryName: "runtime",
         transportKind: "https"
       }
@@ -129,7 +129,7 @@ describe("runtime inspection presentation helpers", () => {
       "git provisioning ready · created no · gitea/team-alpha/runtime"
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
-      "agent runtime coding_agent / opencode_server / local-opencode"
+      "agent runtime coding_agent / opencode_server / opencode-default"
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last engine session opencode-session-alpha"

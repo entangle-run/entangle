@@ -148,7 +148,7 @@ capabilities.
 The local deployment model already required the host to create runner
 containers dynamically. The audit made the hidden implication explicit:
 
-- in the local Compose profile, `entangle-host` should have explicit access to
+- in the federated dev Compose profile, `entangle-host` should have explicit access to
   the Docker Engine through an operator-owned control path such as the Docker
   socket.
 
@@ -303,7 +303,7 @@ In practical terms, the repository is ready to move into:
 - `services/runner`
 - `apps/studio`
 - `apps/cli`
-- `deploy/local`
+- `deploy/federated-dev`
 
 ## Recommended next move
 

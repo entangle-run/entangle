@@ -2,7 +2,7 @@
 
 ## [2026-04-26] implementation | Added runtime evidence to diagnostics bundle
 
-Deepened `entangle local diagnostics` with bounded per-runtime evidence from
+Deepened `entangle deployment diagnostics` with bounded per-runtime evidence from
 existing host surfaces. The support bundle now includes turn counts, latest
 turn summaries, redacted engine failure classification/messages, permission
 decisions, pending approval ids, and artifact counts for each runtime when the
@@ -10,14 +10,14 @@ host is reachable.
 
 ## [2026-04-26] implementation | Added Local reliability smoke
 
-Added `pnpm ops:smoke-local:reliability` for initialized Entangle
-profiles. The smoke creates a temporary `entangle local backup` bundle,
-validates `entangle local restore --dry-run`, checks `entangle local repair
+Added `pnpm ops:smoke-federated-dev:reliability` for initialized Entangle
+profiles. The smoke creates a temporary `entangle deployment backup` bundle,
+validates `entangle deployment restore --dry-run`, checks `entangle deployment repair
 --skip-live --json`, and removes the temporary backup bundle after the check.
 
 ## [2026-04-26] implementation | Added conservative Local repair foundation
 
-Advanced Entangle L4 reliability with `entangle local repair`. The command
+Advanced Entangle L4 reliability with `entangle deployment repair`. The command
 runs the Local doctor, builds a conservative repair plan, defaults to dry-run
 output, and applies only actions marked safe when `--apply-safe` is supplied.
 
@@ -29,28 +29,28 @@ blocked/manual rather than mutated.
 
 ## [2026-04-26] implementation | Added Local backup and restore foundation
 
-Advanced Entangle L4 reliability with `entangle local backup` and
-`entangle local restore`. Backups now create a schema-versioned directory
-bundle containing `.entangle/host`, selected Local profile config snapshots,
+Advanced Entangle L4 reliability with `entangle deployment backup` and
+`entangle deployment restore`. Backups now create a schema-versioned directory
+bundle containing `.entangle/host`, selected Federated dev profile config snapshots,
 copy statistics, package metadata, state-layout status, and explicit exclusions
 for `.entangle-secrets` and external service state.
 
 Restore now validates the manifest and bundled `state-layout.json`, supports
-`--dry-run`, refuses incompatible Local state layout versions, and refuses to
+`--dry-run`, refuses incompatible Entangle state layout versions, and refuses to
 replace an existing `.entangle/host` without `--force`. Focused CLI coverage
 exercises backup creation, dry-run restore, clean restore, secret exclusion,
 and unsupported-future layout rejection.
 
 ## [2026-04-26] implementation | Added diagnostics bundle smoke
 
-Added `pnpm ops:smoke-local:diagnostics` for already-running Entangle
-profiles. The smoke runs `entangle local diagnostics`, writes a temporary
+Added `pnpm ops:smoke-federated-dev:diagnostics` for already-running Entangle
+profiles. The smoke runs `entangle deployment diagnostics`, writes a temporary
 redacted JSON support bundle, validates the stable top-level shape, and removes
 the temporary bundle after the check.
 
 ## [2026-04-26] implementation | Added Local diagnostics support bundle
 
-Advanced Entangle C5 by adding `entangle local diagnostics`, a read-only
+Advanced Entangle C5 by adding `entangle deployment diagnostics`, a read-only
 CLI command that writes a schema-versioned JSON support bundle. The bundle
 includes the Local doctor report, bounded Docker Compose service status and
 log captures, runner-image inspection, and live host status, runtime,
@@ -61,17 +61,17 @@ authorization, token, secret, password, and API-key shapes before it is written.
 The remaining C5 work is a smoke around bundle generation, deeper OpenCode
 failure extraction, and release-run attachment guidance.
 
-## [2026-04-26] implementation | Added Local state layout compatibility checks
+## [2026-04-26] implementation | Added Entangle state layout compatibility checks
 
 Advanced the Entangle reliability track by introducing a version-1
-`.entangle/host/state-layout.json` marker for host-owned Local state. The host
+`.entangle/host/state-layout.json` marker for host-owned Entangle state. The host
 now materializes the marker on first startup and refuses unreadable,
 unsupported legacy, or unsupported future layout records before mutating state.
 
 `GET /v1/host/status` now exposes machine-readable state layout status. The
 shared host-client formatter, CLI host status summary, Studio Host Status
-panel, and `entangle local doctor` consume the same status; the doctor also
-checks offline local state layout compatibility when the host is not running.
+panel, and `entangle deployment doctor` consume the same status; the doctor also
+checks offline Entangle state layout compatibility when the host is not running.
 
 Verification covered focused typecheck/lint/tests for the touched packages and
 passed `CI=1 TURBO_DAEMON=false pnpm verify`.
@@ -84,7 +84,7 @@ node engine is OpenCode, so the Local runner image now installs pinned
 The pin matches the local OpenCode resource checkout at
 `0595c289046d7f45d82a563ad0c76b3ccfca050b`.
 
-`entangle local doctor` now also checks `opencode --version` inside the
+`entangle deployment doctor` now also checks `opencode --version` inside the
 configured runner image, so the diagnostic verifies availability where runner
 turns execute, not only on the host PATH.
 
@@ -153,12 +153,12 @@ bounded prefix plus UUID.
 ## [2026-04-25] implementation | Added Local doctor foundation
 
 Started Entangle L4 reliability workstream C1 with a read-only
-`entangle local doctor` command. The command reports severity-ranked Local
+`entangle deployment doctor` command. The command reports severity-ranked Local
 profile diagnostics in human-readable or JSON form and supports `--strict` for
 release/smoke preparation plus `--skip-live` for offline checks.
 
-The first doctor checks required Local profile files, Node 22+, `pnpm`, Docker,
-Docker Compose, Docker daemon, Local Compose config, `entangle-runner:local`,
+The first doctor checks required Federated dev profile files, Node 22+, `pnpm`, Docker,
+Docker Compose, Docker daemon, Federated dev Compose config, `entangle-runner:federated-dev`,
 OpenCode availability, `.entangle/host`, live host status, host-reported
 runtime workspace health, git principal records, Studio, Gitea, and the local
 relay. Added `references/207-local-doctor-foundation-slice.md`.
@@ -498,7 +498,7 @@ observability.
 Started the L3 Agentic Node Runtime foundation. Deployment catalogs now require
 at least one agent engine profile, graph and node bindings can select
 `agentRuntime`, effective runtime context exposes the resolved
-`agentRuntimeContext`, and the local host default is `local-opencode` with
+`agentRuntimeContext`, and the host default is `opencode-default` with
 OpenCode as the node coding engine profile.
 
 The old one-turn model adapter is no longer exposed as a node runtime profile.
@@ -506,7 +506,7 @@ It remains only as internal implementation code outside the public node runtime
 catalog. The host also materializes per-node `source`, `engine-state`, and
 `wiki-repository` workspace roots for the coding-agent integration.
 
-## [2026-04-25] release | Closed L2 Local Workbench
+## [2026-04-25] release | Closed L2 Federated Workbench
 
 Closed L2 as `v0.2-local-workbench`. The final L2 slice added read-only
 runtime memory inspection over existing runner-owned memory files, including
@@ -599,7 +599,7 @@ template export, and exported graph inspection commands.
 
 ## [2026-04-25] implementation | Added Studio graph revision diff
 
-Closed the next L2 Local Workbench graph slice by moving the graph diff engine
+Closed the next L2 Federated Workbench graph slice by moving the graph diff engine
 from the CLI into `packages/host-client`, keeping `entangle graph diff` on that
 shared implementation, and adding a Studio `Diff Against Active` card for
 selected graph revisions.
@@ -611,13 +611,13 @@ flow, validation drawer, rollback, or restore path.
 
 Verification passed with focused host-client, CLI, and Studio test,
 typecheck, and lint commands. The full post-slice gate also passed with
-`pnpm verify`, `pnpm build`, `pnpm ops:check-local:strict`,
-`pnpm ops:smoke-local:disposable --skip-build --keep-running`, and
-`pnpm ops:smoke-local`.
+`pnpm verify`, `pnpm build`, `pnpm ops:check-federated-dev:strict`,
+`pnpm ops:smoke-federated-dev:disposable --skip-build --keep-running`, and
+`pnpm ops:smoke-federated-dev`.
 
 ## [2026-04-25] implementation | Added Studio session launch
 
-Closed the next L2 Local Workbench parity slice by adding selected-runtime
+Closed the next L2 Federated Workbench parity slice by adding selected-runtime
 session launch to Studio. The Runtime Sessions panel now builds a summary and
 optional intent draft, calls the shared host-client `launchSession(...)`
 method, records the launch response, selects the launched session id, and
@@ -630,13 +630,13 @@ publish directly to Nostr or read runner-local context files.
 Verification passed with `pnpm --filter @entangle/studio test`,
 `pnpm --filter @entangle/studio typecheck`, and
 `pnpm --filter @entangle/studio lint`. The full post-slice gate also passed
-with `pnpm verify`, `pnpm build`, `pnpm ops:check-local:strict`,
-`pnpm ops:smoke-local:disposable --skip-build`, and
-`pnpm ops:smoke-local` after clearing an unrelated Docker Desktop restart loop.
+with `pnpm verify`, `pnpm build`, `pnpm ops:check-federated-dev:strict`,
+`pnpm ops:smoke-federated-dev:disposable --skip-build`, and
+`pnpm ops:smoke-federated-dev` after clearing an unrelated Docker Desktop restart loop.
 
-## [2026-04-25] implementation | Started L2 Local Workbench
+## [2026-04-25] implementation | Started L2 Federated Workbench
 
-Added the first L2 Local Workbench implementation slice. The CLI now has
+Added the first L2 Federated Workbench implementation slice. The CLI now has
 `entangle package inspect`, `entangle graph diff`, and
 `entangle host sessions launch`, with launch now routed through a host API
 endpoint instead of a direct CLI relay publish. Package validation now parses
@@ -657,7 +657,7 @@ Federated Preview assets, `pnpm ops:demo-federated-preview`, reset guidance, CLI
 inspection evidence, and a release packet under
 `releases/local/l1.5-local-operator-preview.md`.
 
-The preview command was verified from reset local state and proved the Local
+The preview command was verified from reset Entangle state and proved the Local
 host, runner lifecycle, local relay, model-stub execution, Gitea/git-backed
 artifact publication, downstream artifact retrieval, Studio HTTP load, and CLI
 inspection path. The release remains Local-only and does not claim Local GA,
@@ -725,7 +725,7 @@ to invent destinations.
 
 ## [2026-04-24] operations | Proved Docker/Gitea multi-node handoff smoke
 
-`pnpm ops:smoke-local:disposable:runtime` now bootstraps local Gitea in
+`pnpm ops:smoke-federated-dev:disposable:runtime` now bootstraps local Gitea in
 installed mode, creates a disposable user and HTTPS token, binds that token as
 both the host provisioning credential and runner git principal, starts two
 managed runner containers, and proves that the downstream runtime can retrieve
@@ -750,7 +750,7 @@ runners.
 
 ## [2026-04-24] operations | Added provider-backed runtime message smoke
 
-`pnpm ops:smoke-local:runtime` now goes beyond lifecycle probing: after
+`pnpm ops:smoke-federated-dev:runtime` now goes beyond lifecycle probing: after
 restart verification it publishes a real NIP-59 `task.request` through the
 local relay, runs the managed runner against a credential-checking
 OpenAI-compatible model stub, verifies completed host session and runner-turn
@@ -763,17 +763,17 @@ needed by the git-backed artifact backend.
 
 ## [2026-04-24] operations | Added Docker-backed runtime lifecycle smoke
 
-`pnpm ops:smoke-local:runtime` now exercises a running local profile by
+`pnpm ops:smoke-federated-dev:runtime` now exercises a running federated dev profile by
 admitting a disposable package, applying a temporary graph with a local
 model-secret binding, starting a real Docker-backed runner, verifying restart
 generation recreation plus the durable restart host event, and stopping the
 runtime. The disposable profile can run the same check through
-`pnpm ops:smoke-local:disposable:runtime`.
+`pnpm ops:smoke-federated-dev:disposable:runtime`.
 
-## [2026-04-24] operations | Added disposable local profile smoke
+## [2026-04-24] operations | Added disposable federated dev profile smoke
 
-`pnpm ops:smoke-local:disposable` now runs strict preflight, builds the local
-runner image, starts the stable local Compose services, waits for the active
+`pnpm ops:smoke-federated-dev:disposable` now runs strict preflight, builds the local
+runner image, starts the stable federated dev Compose services, waits for the active
 smoke to pass, and tears the profile down with volumes by default. The loop also
 repairs host and runner image payload assembly so their production images carry
 the built service and workspace-package `dist/` outputs, excludes local
@@ -794,17 +794,17 @@ messages. The diagnostics are written into runner memory, included in
 model-guided synthesis context, surfaced through shared runtime-trace detail,
 and shown in Studio runner-turn detail.
 
-## [2026-04-24] operations | Added active local profile smoke
+## [2026-04-24] operations | Added active federated dev profile smoke
 
-The local operator profile now has `pnpm ops:smoke-local` for validating a
+The local operator profile now has `pnpm ops:smoke-federated-dev` for validating a
 running Compose profile. The smoke checks service presence, runner image
 presence, host status/events, Studio HTTP, Gitea HTTP reachability, and the
 local `strfry` Nostr WebSocket subscription path.
 
 ## [2026-04-24] operations | Added local operator profile preflight
 
-The local Compose profile now has `deploy/README.md` plus
-`pnpm ops:check-local` and `pnpm ops:check-local:strict`. The preflight checks
+The federated dev Compose profile now has `deploy/README.md` plus
+`pnpm ops:check-federated-dev` and `pnpm ops:check-federated-dev:strict`. The preflight checks
 profile files, Node/pnpm, Docker, Docker Compose, daemon access, and Compose
 config validity before an operator starts the full local topology.
 
@@ -828,7 +828,7 @@ Studio now consumes the host-owned runtime-turn inspection surface. Visual
 operators can list persisted turns for the selected runtime, select one turn,
 and inspect host-backed detail including phase, trigger, artifact linkage,
 engine outcome, tool-execution summary, and memory-synthesis status without
-reading runner-local state files.
+reading runner-Entangle state files.
 
 ## [2026-04-24] implementation | Added runtime turn inspection
 
@@ -1311,9 +1311,9 @@ that produced session, conversation, and turn records under the runtime root.
 
 ## [2026-04-22] fix | Corrected the local strfry Compose profile to mount a real relay config
 
-Found that the local Compose relay service was not actually usable because it
+Found that the federated dev Compose relay service was not actually usable because it
 started `strfry` without a config file. Added an explicit
-`deploy/local/config/strfry.local.conf`, mounted it into the Compose service, and
+`deploy/federated-dev/config/strfry.federated-dev.conf`, mounted it into the Compose service, and
 revalidated local relay reachability through `nostr-tools` before rerunning the
 end-to-end runner smoke.
 
@@ -1506,7 +1506,7 @@ Extended the quality baseline so package-local typed linting over test files no 
 
 ## [2026-04-22] verification | Smoke-validated the Docker runtime backend against a real runner container
 
-Built the local `entangle-runner:local` image, admitted a package, applied a graph under the Docker backend profile, and confirmed that `entangle-host` created and observed a real runner container as `running`. Cleaned up the temporary runtime afterward.
+Built the local `entangle-runner:federated-dev` image, admitted a package, applied a graph under the Docker backend profile, and confirmed that `entangle-host` created and observed a real runner container as `running`. Cleaned up the temporary runtime afterward.
 
 ## [2026-04-22] implementation | Replaced Docker CLI shell-outs with a first-party Docker Engine API client
 
@@ -1522,7 +1522,7 @@ Refined package materialization so admitted package contents are now hashed and 
 
 ## [2026-04-22] implementation | Added deterministic runner transport and the first long-lived local intake loop
 
-Extended `entangle-runner` beyond bootstrap-only execution. Added a deterministic transport abstraction, a file-backed runner-local state store, and a long-lived `RunnerService` that subscribes by recipient pubkey, validates inbound A2A payloads, advances session and conversation state through the canonical lifecycle, builds engine turn requests from inbound context, and emits bounded `task.result` replies when required. Tightened the runner tests around wrong-recipient rejection, no-response flows, idempotent startup, and persisted turn/state records.
+Extended `entangle-runner` beyond bootstrap-only execution. Added a deterministic transport abstraction, a file-backed runner-Entangle state store, and a long-lived `RunnerService` that subscribes by recipient pubkey, validates inbound A2A payloads, advances session and conversation state through the canonical lifecycle, builds engine turn requests from inbound context, and emits bounded `task.result` replies when required. Tightened the runner tests around wrong-recipient rejection, no-response flows, idempotent startup, and persisted turn/state records.
 
 ## [2026-04-23] audit | Reconciled the planning corpus with the implemented runtime slices
 
@@ -1950,7 +1950,7 @@ Closed the next host-surface diagnostics slice by widening host-derived
 `session.updated` events and observed session activity records with
 `activeConversationIds`, `rootArtifactIds`, and `lastMessageType`. Runtime
 trace consumers can now distinguish currently open work from historical
-session status without re-reading runner-local state directly.
+session status without re-reading runner-Entangle state directly.
 
 The shared host-client runtime-trace presentation now renders active
 conversation count, root artifact count, and the last message type for session
@@ -2364,7 +2364,7 @@ development: finish Local first, then begin Cloud, then package the
 stable production core as Entangle Enterprise.
 
 The Local product line now has its own incremental release train from L1 local
-operator baseline through L1.5 local operator preview, L2 local workbench, L3
+operator baseline through L1.5 local operator preview, L2 federated workbench, L3
 local reliability, and L4 Local GA. The R1 ledger now points to L1.5 as
 the next release instead of production foundation, preventing later-product
 infrastructure from displacing completion of the first final product.
@@ -2383,15 +2383,15 @@ milestone, and that execution should now proceed through L1 release closure
 before any L1.5, Cloud, or Enterprise work begins.
 
 `git diff --check` and `pnpm verify` passed after the audit changes.
-`pnpm ops:check-local:strict` also passed when run with Docker socket access;
+`pnpm ops:check-federated-dev:strict` also passed when run with Docker socket access;
 the sandboxed attempt failed only because the Docker daemon socket was not
 available inside the sandbox.
 
 ## [2026-04-25] organization | Partitioned local deployment and release packets
 
-Moved the active local deployment profile under `deploy/local/`, added
+Moved the active local deployment profile under `deploy/federated-dev/`, added
 `deploy/README.md` as the deployment-profile index, and introduced
-`scripts/local-profile-paths.mjs` so local preflight and smoke scripts consume
+`scripts/federated-dev-profile-paths.mjs` so local preflight and smoke scripts consume
 one shared Compose/config/Dockerfile path definition.
 
 Added `releases/` as a release-control area distinct from the canonical
@@ -2401,7 +2401,7 @@ itself remains intact; `apps/`, `services/`, and `packages/` were not moved,
 and no active Cloud or Enterprise deployment profile was introduced.
 
 Verified the reorganization with script syntax checks, Compose config
-validation against `deploy/local/compose/docker-compose.local.yml`, strict
+validation against `deploy/federated-dev/compose/docker-compose.federated-dev.yml`, strict
 local preflight with Docker socket access, and `pnpm verify`.
 
 ## [2026-04-25] implementation | Exposed node agent-runtime configuration
@@ -2434,7 +2434,7 @@ remote publication workflow.
 ## [2026-04-25] implementation | Added doctor checks for runtime wiki repositories
 
 Added `references/211-local-doctor-wiki-repository-health-slice.md` and
-extended `entangle local doctor` so live diagnostics inspect each available
+extended `entangle deployment doctor` so live diagnostics inspect each available
 runtime context's `wiki-repository` workspace. The doctor now warns when a
 runtime wiki repository is not configured, not initialized, dirty, missing a
 HEAD commit, unavailable through runtime context, or failing git inspection.
@@ -2911,3 +2911,17 @@ This closes another Host-side filesystem assumption for runtime observability.
 The runner still needs to emit these status events from assignment-driven node
 execution, and Studio/CLI still need the federated runtime projection surfaced
 through their normal Host read paths.
+
+## [2026-04-26] implementation | Renamed active deployment surfaces to federated dev
+
+Added `references/250-federated-dev-deployment-naming-cleanup-slice.md` and
+removed the remaining same-machine-era names from active operator surfaces. The
+active Compose profile now lives under `deploy/federated-dev`, root operations
+use `ops:check-federated-dev` and `ops:smoke-federated-dev:*`, and the CLI
+reliability group is now `entangle deployment` instead of the previous same-machine command group.
+
+The default engine and catalog IDs are now `opencode-default` and
+`default-catalog`, the default runner image is
+`entangle-runner:federated-dev`, and state-layout contracts no longer export
+`localStateLayout*` names. Conversation initiator values are now `self/peer`
+instead of `local/remote`.

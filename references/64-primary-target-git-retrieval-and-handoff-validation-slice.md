@@ -8,7 +8,7 @@ The scope of this slice is deliberately narrow and explicit:
 - it supports retrieval of published git artifacts from the receiving node's
   resolved primary repository target;
 - it validates git handoff compatibility before retrieval;
-- it persists retrieval success and failure as artifact-local state;
+- it persists retrieval success and failure as artifact-Entangle state;
 - it passes retrieved local artifact inputs into the engine turn request;
 - it does not yet widen retrieval to non-primary repositories or service-side
   provisioning flows.

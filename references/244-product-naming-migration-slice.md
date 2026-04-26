@@ -41,7 +41,7 @@ profile for local execution.
 - `packages/host-client/src/*`
 - `packages/package-scaffold/src/index.ts`
 - `packages/validator/src/index.test.ts`
-- `deploy/local/**`
+- `deploy/federated-dev/**`
 - `scripts/*.mjs`
 - `examples/federated-preview/**`
 - `releases/**`
@@ -94,7 +94,7 @@ Deferred to later slices:
 - `pnpm --filter @entangle/studio test`
 - `pnpm --filter @entangle/studio lint`
 - `node --check scripts/federated-preview-demo.mjs`
-- `node --check scripts/smoke-local-runtime.mjs`
+- `node --check scripts/smoke-federated-dev-runtime.mjs`
 - `pnpm --filter @entangle/cli dev validate package examples/federated-preview/agent-package`
 - `pnpm --filter @entangle/cli dev validate graph examples/federated-preview/graph.json`
 - `pnpm exec tsx -e "...validateDeploymentResourceCatalogDocument(...examples/federated-preview/catalog.model-stub.json...)"`

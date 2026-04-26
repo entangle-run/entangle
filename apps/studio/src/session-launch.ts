@@ -13,7 +13,7 @@ export function createDefaultSessionLaunchDraft(
 ): SessionLaunchDraft {
   return {
     intent: "",
-    summary: runtime ? `Inspect local state for ${runtime.nodeId}.` : ""
+    summary: runtime ? `Inspect Entangle state for ${runtime.nodeId}.` : ""
   };
 }
 

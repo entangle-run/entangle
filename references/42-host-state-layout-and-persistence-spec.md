@@ -14,7 +14,7 @@ Tracked repository source and mutable local host state must remain separate.
 That means:
 
 - source code and canonical documents stay in the repository tree;
-- live runtime state stays in a host-managed local state root;
+- live runtime state stays in a host-managed Entangle state root;
 - package sources admitted into the live system are represented as package
   source records, not as implicit filesystem assumptions;
 - traces and reconciliation state are durable enough for debugging and restart,
@@ -249,7 +249,7 @@ Ignored:
 - runtime traces
 - observed-state snapshots
 - caches
-- local secrets
+- Entangle secrets
 
 This is the right split between product source and operator state.
 
@@ -270,7 +270,7 @@ This is the minimum disciplined recovery model for a real local control plane.
 
 The active Local implementation writes `state-layout.json` with product
 `entangle`, schema version `1`, and layout version `1`. `GET
-/v1/host/status`, shared host-client formatters, Studio, and `entangle local
+/v1/host/status`, shared host-client formatters, Studio, and `entangle deployment
 doctor` expose the same machine-readable layout status so upgrade checks are
 visible before repair, backup, or restore operations become available.
 
@@ -292,7 +292,7 @@ The state model should outlive any one Docker convenience choice.
 
 For the hackathon:
 
-- `.entangle/` as the default local state root is sufficient;
+- `.entangle/` as the default Entangle state root is sufficient;
 - JSONL trace persistence is sufficient;
 - one live graph in `desired/graph/current.json` plus revision history is
   sufficient;
@@ -309,7 +309,7 @@ Reject these directions:
 - mixing desired state, observed state, and trace data into one generic JSON
   file;
 - writing mutable live state back into tracked package templates by default;
-- treating running containers as the only source of truth for local state.
+- treating running containers as the only source of truth for Entangle state.
 
 ## 14. Final recommendation
 

@@ -12,9 +12,9 @@ deployment changes.
 
 ## Changes
 
-- Moved the active deployment profile under `deploy/local/`.
+- Moved the active deployment profile under `deploy/federated-dev/`.
 - Kept `deploy/README.md` as the deployment-profile index.
-- Added `scripts/local-profile-paths.mjs` so local profile scripts share path
+- Added `scripts/federated-dev-profile-paths.mjs` so federated dev profile scripts share path
   constants instead of duplicating the Compose and Dockerfile paths.
 - Added `releases/` as the release-control area.
 - Added `releases/local/l1-local-operator-baseline.md` as the Local L1 release
@@ -46,13 +46,13 @@ The safe reorganization is therefore internal:
 
 Checks run for this slice:
 
-- `node --check scripts/check-local-profile.mjs`
-- `node --check scripts/smoke-local-profile.mjs`
-- `node --check scripts/smoke-local-profile-disposable.mjs`
-- `node --check scripts/smoke-local-runtime.mjs`
-- `node --check scripts/local-profile-paths.mjs`
-- `docker compose -f deploy/local/compose/docker-compose.local.yml config --quiet`
-- `pnpm ops:check-local:strict`
+- `node --check scripts/check-federated-dev-profile.mjs`
+- `node --check scripts/smoke-federated-dev-profile.mjs`
+- `node --check scripts/smoke-federated-dev-profile-disposable.mjs`
+- `node --check scripts/smoke-federated-dev-runtime.mjs`
+- `node --check scripts/federated-dev-profile-paths.mjs`
+- `docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml config --quiet`
+- `pnpm ops:check-federated-dev:strict`
 - `pnpm verify`
 
 Result: all passed on 2026-04-25. The strict local preflight was run with

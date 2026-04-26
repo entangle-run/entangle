@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-Close the first Local Workbench parity gap between CLI and Studio session
+Close the first Federated Workbench parity gap between CLI and Studio session
 launch without moving Nostr publishing or runtime-context resolution into the
 browser client.
 
@@ -47,9 +47,9 @@ pnpm --filter @entangle/studio typecheck
 pnpm --filter @entangle/studio lint
 pnpm verify
 pnpm build
-pnpm ops:check-local:strict
-pnpm ops:smoke-local:disposable --skip-build
-pnpm ops:smoke-local
+pnpm ops:check-federated-dev:strict
+pnpm ops:smoke-federated-dev:disposable --skip-build
+pnpm ops:smoke-federated-dev
 ```
 
 All listed commands passed on 2026-04-25. The first disposable-smoke attempt

@@ -268,7 +268,7 @@ describe("runtime trace helpers", () => {
       message: "Published source history.",
       nodeId: "worker-it",
       publicationState: "published",
-      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
       schemaVersion: "1",
       sourceHistoryBranch:
         "worker-it/source-history/source-history-source-change-turn-alpha",
@@ -282,7 +282,7 @@ describe("runtime trace helpers", () => {
         "Candidate: source-change-turn-alpha",
         "Artifact: source-source-history-source-change-turn-alpha",
         "Publication: published",
-        "Remote: ssh://git@gitea.local:22/team-alpha/graph-alpha.git"
+        "Remote: ssh://git@gitea.example:22/team-alpha/graph-alpha.git"
       ],
       label:
         "Source history source-history-source-change-turn-alpha publication published"
@@ -332,7 +332,7 @@ describe("runtime trace helpers", () => {
       nodeId: "worker-it",
       publicationId: "wiki-publication-alpha",
       publicationState: "published",
-      remoteUrl: "ssh://git@gitea.local:22/team-alpha/graph-alpha.git",
+      remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
       schemaVersion: "1",
       timestamp: "2026-04-24T11:00:06.000Z",
       type: "wiki_repository.published"
@@ -344,7 +344,7 @@ describe("runtime trace helpers", () => {
         "Artifact: wiki-repository-worker-it-wiki-commit",
         "State: published",
         "Branch: worker-it/wiki-repository/entangle-wiki",
-        "Remote: ssh://git@gitea.local:22/team-alpha/graph-alpha.git"
+        "Remote: ssh://git@gitea.example:22/team-alpha/graph-alpha.git"
       ],
       label: "Wiki repository worker-it publication published"
     });

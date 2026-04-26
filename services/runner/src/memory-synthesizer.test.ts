@@ -63,7 +63,7 @@ async function seedCurrentSessionState(input: {
     conversationId: "conv-alpha",
     followupCount: 1,
     graphId: "graph-alpha",
-    initiator: "local",
+    initiator: "self",
     localNodeId: "worker-it",
     localPubkey: input.publicKey,
     openedAt: "2026-04-24T11:00:00.000Z",

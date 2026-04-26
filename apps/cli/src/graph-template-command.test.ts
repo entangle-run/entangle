@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getGraphTemplate, listGraphTemplates } from "./graph-template-command.js";
 
 describe("graph template command helpers", () => {
-  it("lists the canonical local preview graph template", () => {
+  it("lists the canonical federated preview graph template", () => {
     expect(listGraphTemplates()).toEqual([
       expect.objectContaining({
         graphPath: "examples/federated-preview/graph.json",

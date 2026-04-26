@@ -22,7 +22,7 @@
   "metadata": {
     "description": "Canonical package used by the Entangle Preview demo.",
     "tags": [
-      "local",
+      "federated-dev",
       "preview"
     ]
   }

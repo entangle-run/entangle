@@ -37,7 +37,7 @@
       "adapterKind": "openai_compatible",
       "baseUrl": "http://entangle-preview-model:8080/v1",
       "authMode": "api_key_bearer",
-      "secretRef": "secret://local/federated-preview-model",
+      "secretRef": "secret://federated-dev/federated-preview-model",
       "defaultModel": "federated-preview-model"
     }
   ],

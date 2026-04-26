@@ -4,7 +4,7 @@ This directory is organized by deployment profile.
 
 ## Active Profiles
 
-- [local](local/README.md) — Entangle local operator profile for a single
+- [local](local/README.md) — Entangle deployment operator profile for a single
   workstation, backed by Docker Compose, `strfry`, Gitea, `entangle-host`,
   Studio, and host-managed local runners.
 
@@ -18,5 +18,5 @@ profile clean.
 ## Path Policy
 
 Operational scripts should consume profile paths from
-`scripts/local-profile-paths.mjs` instead of hardcoding the Local Compose,
+`scripts/federated-dev-profile-paths.mjs` instead of hardcoding the Federated dev Compose,
 Dockerfile, or config paths in multiple places.

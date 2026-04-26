@@ -11,14 +11,14 @@ loop needed for repeatable integration hardening.
 
 ## Implemented behavior
 
-- Added `scripts/smoke-local-profile-disposable.mjs`.
+- Added `scripts/smoke-federated-dev-profile-disposable.mjs`.
 - Added package script:
-  - `pnpm ops:smoke-local:disposable`
+  - `pnpm ops:smoke-federated-dev:disposable`
 - The disposable smoke:
-  - runs `pnpm ops:check-local:strict`;
-  - builds `entangle-runner:local` through the `runner-build` Compose profile;
+  - runs `pnpm ops:check-federated-dev:strict`;
+  - builds `entangle-runner:federated-dev` through the `runner-build` Compose profile;
   - starts `studio`, `host`, `strfry`, and `gitea` in detached mode;
-  - repeatedly runs `scripts/smoke-local-profile.mjs` until it passes or the
+  - repeatedly runs `scripts/smoke-federated-dev-profile.mjs` until it passes or the
     readiness timeout expires;
   - tears down the Compose profile with volumes by default.
 
@@ -36,7 +36,7 @@ The disposable smoke remains outside `pnpm verify` because it requires Docker,
 port availability, image builds, and live services.
 
 The script does not introduce a second deployment profile. It orchestrates the
-existing local Compose profile and reuses the active smoke as the readiness
+existing federated dev Compose profile and reuses the active smoke as the readiness
 oracle.
 
 Early disposable smoke runs exposed stale-image failure modes in the local
@@ -47,8 +47,8 @@ package `dist/` outputs before producing runtime images.
 
 ## Verification
 
-- `node --check scripts/smoke-local-profile-disposable.mjs`
-- `pnpm ops:check-local:strict`
-- `pnpm ops:smoke-local:disposable`
+- `node --check scripts/smoke-federated-dev-profile-disposable.mjs`
+- `pnpm ops:check-federated-dev:strict`
+- `pnpm ops:smoke-federated-dev:disposable`
 - host and runner image payload import probes
 - `pnpm verify`

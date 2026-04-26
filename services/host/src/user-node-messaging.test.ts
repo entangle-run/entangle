@@ -10,13 +10,13 @@ function buildRuntimeContext(publicKey: string): EffectiveRuntimeContext {
   return {
     agentRuntimeContext: {
       engineProfile: {
-        id: "local-opencode",
-        displayName: "Local OpenCode",
+        id: "opencode-default",
+        displayName: "OpenCode",
         kind: "opencode_server",
         executable: "opencode",
         stateScope: "node"
       },
-      engineProfileRef: "local-opencode",
+      engineProfileRef: "opencode-default",
       mode: "coding_agent"
     },
     artifactContext: {

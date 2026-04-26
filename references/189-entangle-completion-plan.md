@@ -17,7 +17,7 @@ Completed:
 
 - L1 Local Operator Baseline.
 - L1.5 Local Operator Preview.
-- L2 Local Workbench.
+- L2 Federated Workbench.
 
 In progress:
 
@@ -50,7 +50,7 @@ The latest implementation state includes:
 - runner-owned local git snapshots of each node's `memory/wiki` tree into the
   materialized `wiki-repository` workspace after completed turns, with durable
   turn-level sync outcomes and host/CLI/Studio presentation;
-- `entangle local doctor` live checks now inspect runtime wiki repositories for
+- `entangle deployment doctor` live checks now inspect runtime wiki repositories for
   initialization, clean working trees, branch availability, and committed HEADs
   when runtime context is available;
 - clean runtime wiki repository HEADs can now be published through the host as
@@ -61,21 +61,21 @@ The latest implementation state includes:
 - host state now carries an explicit `state-layout.json` compatibility record,
   `GET /v1/host/status` exposes machine-readable layout status, CLI/Studio
   render that status through the shared host-client formatter, and `entangle
-  local doctor` checks both offline local state layout compatibility and live
+  local doctor` checks both offline Entangle state layout compatibility and live
   host-reported layout status;
-- `entangle local diagnostics` now writes a redacted JSON support bundle with
+- `entangle deployment diagnostics` now writes a redacted JSON support bundle with
   doctor output, bounded Docker Compose service/log captures, runner-image
   inspection, host status/events/runtimes/principals, and bounded per-runtime
   turn/approval/artifact evidence when the host is reachable;
-- `entangle local backup` and `entangle local restore` now provide the first
-  versioned Local state backup path for `.entangle/host`, selected Local
+- `entangle deployment backup` and `entangle deployment restore` now provide the first
+  versioned Entangle state backup path for `.entangle/host`, selected Local
   profile config snapshots, explicit `.entangle-secrets` exclusion, dry-run
   validation, and restore-time state-layout compatibility checks;
-- `entangle local repair` now provides a dry-run-first conservative repair
+- `entangle deployment repair` now provides a dry-run-first conservative repair
   surface with `--apply-safe` for only safe host-state skeleton initialization
   and missing current layout-marker recovery, writing local repair records
   under `.entangle/host/traces/local-repairs`;
-- `pnpm ops:smoke-local:reliability` now covers the initialized-profile,
+- `pnpm ops:smoke-federated-dev:reliability` now covers the initialized-profile,
   non-destructive backup, restore dry-run, and repair dry-run path;
 - runner turns now persist bounded `engineRequestSummary` evidence for the
   assembled engine request shape, including prompt part counts, aggregate
@@ -363,8 +363,8 @@ Acceptance:
 
 - New scaffolds emit `local` and no longer emit `hackathon_local`.
 - Active examples use `local` and no longer use `hackathon_local`.
-- Validator accepts the new Local profile.
-- Tests and smokes use the new Local profile.
+- Validator accepts the new Federated dev profile.
+- Tests and smokes use the new Federated dev profile.
 
 ### A2. Update public project language
 
@@ -471,7 +471,7 @@ Current partial implementation:
 - the Local runner image now installs pinned `opencode-ai@1.14.20` and runs
   `opencode --version` during image build, using the version observed in the
   local OpenCode resource checkout;
-- `entangle local doctor` now probes `opencode --version` inside the configured
+- `entangle deployment doctor` now probes `opencode --version` inside the configured
   runner image in addition to the host PATH so default-engine availability is
   checked where runner turns actually execute;
 - host-written session cancellation requests are now persisted under
@@ -596,7 +596,7 @@ Current partial implementation:
   `committed`, `unchanged`, `not_configured`, or `failed` sync outcomes on
   runner turns, host observed activity, host events, CLI output, and Studio
   turn inspection;
-- `entangle local doctor` now reports wiki repository initialization, dirty
+- `entangle deployment doctor` now reports wiki repository initialization, dirty
   working trees, missing HEAD commits, and git inspection failures as runtime
   workspace warnings without mutating node memory.
 - clean wiki repository HEADs can now be published as `knowledge_summary` git
@@ -745,7 +745,7 @@ Current partial implementation:
   inbound response/constraint controls;
 - non-executable coordination messages such as `task.result`,
   `conversation.close`, and approval lifecycle messages are handled as
-  runner-local state updates rather than fresh engine turns where applicable;
+  runner-Entangle state updates rather than fresh engine turns where applicable;
 - each executable turn now persists bounded `engineRequestSummary` evidence
   with prompt part counts, aggregate prompt character counts, memory, artifact,
   and tool counts, execution limits, peer-route inclusion, context-inclusion
@@ -890,12 +890,12 @@ Acceptance:
 
 Goal: Entangle becomes robust enough for repeated technical use.
 
-### C1. Build `entangle local doctor`
+### C1. Build `entangle deployment doctor`
 
 Tasks:
 
 - Add a CLI command that checks Node, pnpm, Docker, Compose, host, Studio,
-  relay, Gitea, runner image, local state layout, OpenCode availability, model
+  relay, Gitea, runner image, Entangle state layout, OpenCode availability, model
   secrets if used, git principals, and workspace health.
 - Provide human-readable and JSON output.
 - Add severity levels and remediation hints.
@@ -908,10 +908,10 @@ Constraints:
 
 Current partial implementation:
 
-- `entangle local doctor` now provides a read-only operator diagnostic with
+- `entangle deployment doctor` now provides a read-only operator diagnostic with
   human-readable and JSON output;
-- the first doctor checks required Local profile files, Node 22+, `pnpm`,
-  Docker CLI, Docker Compose, Docker daemon, Local Compose config, the local
+- the first doctor checks required Federated dev profile files, Node 22+, `pnpm`,
+  Docker CLI, Docker Compose, Docker daemon, Federated dev Compose config, the local
   runner image, OpenCode availability on the host and inside the runner image,
   `.entangle/host`, live host status, host-reported runtime workspace health,
   runtime wiki repository health, host-managed git principals, Studio, Gitea,
@@ -945,7 +945,7 @@ Constraints:
 
 Current partial implementation:
 
-- `entangle local repair` now runs the doctor checks and builds a conservative
+- `entangle deployment repair` now runs the doctor checks and builds a conservative
   repair plan, with dry-run behavior by default and human-readable or JSON
   output;
 - `--apply-safe` applies only actions marked safe, currently limited to
@@ -965,7 +965,7 @@ Current partial implementation:
 
 Acceptance:
 
-- Common stale Local states can be repaired or explained conservatively.
+- Common stale Entangle states can be repaired or explained conservatively.
 
 ### C3. Add backup and restore
 
@@ -987,21 +987,21 @@ Constraints:
 
 Current partial implementation:
 
-- `entangle local backup` creates a schema-versioned directory bundle
+- `entangle deployment backup` creates a schema-versioned directory bundle
   containing `.entangle/host`, including runtime state, workspaces, git
   artifact repositories, and node wiki repositories;
-- the backup manifest records selected Local profile config snapshots,
-  release/package metadata, copy statistics, local state layout status, and
+- the backup manifest records selected Federated dev profile config snapshots,
+  release/package metadata, copy statistics, Entangle state layout status, and
   explicit exclusions for `.entangle-secrets`, Docker volumes, Gitea internals,
   and relay state;
-- `entangle local restore` validates the backup manifest and bundled
+- `entangle deployment restore` validates the backup manifest and bundled
   `state-layout.json` before writing, supports `--dry-run`, and refuses to
   replace an existing `.entangle/host` unless `--force` is supplied;
 - focused CLI coverage exercises backup creation, dry-run restore, clean
   restore into another Local root, secret exclusion, and unsupported-future
   state-layout rejection;
 - remaining work is an operator-facing live backup/restore smoke against a
-  realistic Local profile and restore rehearsal documentation for release
+  realistic Federated dev profile and restore rehearsal documentation for release
   validation.
 
 Acceptance:
@@ -1013,7 +1013,7 @@ Acceptance:
 
 Tasks:
 
-- Version the local state layout.
+- Version the Entangle state layout.
 - Add startup compatibility checks.
 - Add migration notes between L2, L3, L4, and GA.
 - Add machine-readable upgrade status.
@@ -1029,18 +1029,18 @@ Current partial implementation:
 - the host materializes `.entangle/host/state-layout.json` for Entangle
   layout version 1 and refuses unreadable, unsupported legacy, or unsupported
   future layout records during host-state initialization;
-- `GET /v1/host/status` now includes machine-readable local state layout
+- `GET /v1/host/status` now includes machine-readable Entangle state layout
   status, and the shared host-client, CLI host status summary, and Studio Host
   Status panel render the same status;
-- `entangle local doctor` now performs an offline check for missing, malformed,
-  future, legacy, or current local state layout records and a live check for
+- `entangle deployment doctor` now performs an offline check for missing, malformed,
+  future, legacy, or current Entangle state layout records and a live check for
   the host-reported state layout status;
 - migration implementation and upgrade rehearsal from previous Local release
   state remain open.
 
 Acceptance:
 
-- Entangle can detect unsupported or outdated local state before causing
+- Entangle can detect unsupported or outdated Entangle state before causing
   damage.
 
 ### C5. Add diagnostics and logs bundle
@@ -1061,9 +1061,9 @@ Constraints:
 
 Current partial implementation:
 
-- `entangle local diagnostics` writes a schema-versioned JSON bundle to a
+- `entangle deployment diagnostics` writes a schema-versioned JSON bundle to a
   caller-selected path;
-- the bundle includes the `entangle local doctor` report, bounded captures of
+- the bundle includes the `entangle deployment doctor` report, bounded captures of
   `docker compose ps`, `docker compose logs --tail`, runner image inspection,
   live host status, runtimes, external principals, recent events, and bounded
   runtime evidence when a host client is available;
@@ -1096,16 +1096,16 @@ Constraints:
 
 Current partial implementation:
 
-- `pnpm ops:smoke-local:diagnostics` now runs against an already-running Local
-  profile, writes a temporary redacted `entangle local diagnostics` JSON
+- `pnpm ops:smoke-federated-dev:diagnostics` now runs against an already-running Local
+  profile, writes a temporary redacted `entangle deployment diagnostics` JSON
   bundle, validates the stable top-level schema, and removes the temporary
   file after the check;
 - focused backup/restore helper coverage now validates dry-run restore, clean
   restore, secret exclusion, and incompatible state-layout rejection, but a
   destructive restore smoke remains open;
-- `pnpm ops:smoke-local:reliability` now runs against an initialized Local
-  profile, creates a temporary `entangle local backup` bundle, validates
-  `entangle local restore --dry-run`, checks `entangle local repair --skip-live
+- `pnpm ops:smoke-federated-dev:reliability` now runs against an initialized Local
+  profile, creates a temporary `entangle deployment backup` bundle, validates
+  `entangle deployment restore --dry-run`, checks `entangle deployment repair --skip-live
   --json`, and removes the temporary backup bundle after the check.
 
 Acceptance:
@@ -1122,7 +1122,7 @@ Goal: release Entangle as a complete local/developer product.
 Tasks:
 
 - Document clean install from clone or release package.
-- Add first-run setup for local profile.
+- Add first-run setup for federated dev profile.
 - Add model/OpenCode setup guidance.
 - Add a single recommended demo path.
 - Ensure a technical user can complete the flow without reading source code.
@@ -1204,7 +1204,7 @@ Tasks:
 - Run `git diff --check`.
 - Run `pnpm verify`.
 - Run `pnpm build`.
-- Run `pnpm ops:check-local:strict`.
+- Run `pnpm ops:check-federated-dev:strict`.
 - Run disposable and non-disposable Local smokes.
 - Run OpenCode-backed L3 smoke.
 - Run backup/restore and repair smokes.

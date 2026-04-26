@@ -4,20 +4,20 @@ import { hostAuthoritySummarySchema } from "./authority.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 
-export const currentLocalStateLayoutVersion = 1;
-export const minimumSupportedLocalStateLayoutVersion = 1;
+export const currentStateLayoutVersion = 1;
+export const minimumSupportedStateLayoutVersion = 1;
 
-export const localStateLayoutProductSchema = z.literal("entangle");
+export const stateLayoutProductSchema = z.literal("entangle");
 
-export const localStateLayoutRecordSchema = z.object({
+export const stateLayoutRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
   layoutVersion: z.number().int().nonnegative(),
-  product: localStateLayoutProductSchema,
+  product: stateLayoutProductSchema,
   schemaVersion: z.literal("1"),
   updatedAt: nonEmptyStringSchema
 });
 
-export const localStateLayoutInspectionStatusSchema = z.enum([
+export const stateLayoutInspectionStatusSchema = z.enum([
   "current",
   "missing",
   "upgrade_available",
@@ -26,14 +26,14 @@ export const localStateLayoutInspectionStatusSchema = z.enum([
   "unreadable"
 ]);
 
-export const localStateLayoutInspectionSchema = z.object({
+export const stateLayoutInspectionSchema = z.object({
   checkedAt: nonEmptyStringSchema,
   currentLayoutVersion: z.number().int().nonnegative(),
   detail: nonEmptyStringSchema.optional(),
   minimumSupportedLayoutVersion: z.number().int().nonnegative(),
   recordedAt: nonEmptyStringSchema.optional(),
   recordedLayoutVersion: z.number().int().nonnegative().optional(),
-  status: localStateLayoutInspectionStatusSchema
+  status: stateLayoutInspectionStatusSchema
 });
 
 export const hostStatusResponseSchema = z.object({
@@ -66,7 +66,7 @@ export const hostStatusResponseSchema = z.object({
       sessionsWithConsistencyFindings: z.number().int().nonnegative()
     })
     .optional(),
-  stateLayout: localStateLayoutInspectionSchema,
+  stateLayout: stateLayoutInspectionSchema,
   timestamp: nonEmptyStringSchema
 });
 
@@ -84,10 +84,10 @@ export const traceEventSchema = z.object({
 });
 
 export type HostStatusResponse = z.infer<typeof hostStatusResponseSchema>;
-export type LocalStateLayoutInspection = z.infer<
-  typeof localStateLayoutInspectionSchema
+export type StateLayoutInspection = z.infer<
+  typeof stateLayoutInspectionSchema
 >;
-export type LocalStateLayoutRecord = z.infer<typeof localStateLayoutRecordSchema>;
-export type LocalStateLayoutProduct = z.infer<typeof localStateLayoutProductSchema>;
+export type StateLayoutRecord = z.infer<typeof stateLayoutRecordSchema>;
+export type StateLayoutProduct = z.infer<typeof stateLayoutProductSchema>;
 export type RuntimeStatus = z.infer<typeof runtimeStatusSchema>;
 export type TraceEvent = z.infer<typeof traceEventSchema>;

@@ -298,7 +298,7 @@ export const conversationRecordSchema = z.object({
   conversationId: identifierSchema,
   followupCount: z.number().int().nonnegative().default(0),
   graphId: identifierSchema,
-  initiator: z.enum(["local", "remote"]),
+  initiator: z.enum(["self", "peer"]),
   artifactIds: z.array(identifierSchema).default([]),
   lastInboundMessageId: nostrEventIdSchema.optional(),
   lastMessageType: entangleA2AMessageTypeSchema.optional(),

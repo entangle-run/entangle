@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Scope
 
-This L2 Local Workbench slice adds bounded text preview for locally
+This L2 Federated Workbench slice adds bounded text preview for locally
 materialized runtime artifacts.
 
 Implemented:

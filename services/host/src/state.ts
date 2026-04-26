@@ -39,7 +39,7 @@ import {
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
-  currentLocalStateLayoutVersion,
+  currentStateLayoutVersion,
   entangleNostrRumorKind,
   entangleSignedEnvelopeSchema,
   type EntangleProtocolDomain,
@@ -269,11 +269,11 @@ import {
   type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
-  localStateLayoutInspectionSchema,
-  localStateLayoutRecordSchema,
-  type LocalStateLayoutInspection,
-  type LocalStateLayoutRecord,
-  minimumSupportedLocalStateLayoutVersion,
+  stateLayoutInspectionSchema,
+  stateLayoutRecordSchema,
+  type StateLayoutInspection,
+  type StateLayoutRecord,
+  minimumSupportedStateLayoutVersion,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeListResponseSchema,
@@ -369,7 +369,7 @@ const cacheRoot = path.join(hostStateRoot, "cache");
 const packageStoreRoot = path.join(importsRoot, "packages", "store");
 const reservedPackageSourceIds = new Set(["store"]);
 
-const localStateLayoutRecordPath = path.join(hostStateRoot, "state-layout.json");
+const stateLayoutRecordPath = path.join(hostStateRoot, "state-layout.json");
 const catalogPath = path.join(desiredRoot, "catalog.json");
 const externalPrincipalsRoot = path.join(desiredRoot, "external-principals");
 const hostAuthorityRoot = path.join(desiredRoot, "authority");
@@ -780,123 +780,123 @@ async function writeJsonFileIfChanged(
   return true;
 }
 
-function buildLocalStateLayoutRecord(timestamp: string) {
-  return localStateLayoutRecordSchema.parse({
+function buildStateLayoutRecord(timestamp: string) {
+  return stateLayoutRecordSchema.parse({
     createdAt: timestamp,
-    layoutVersion: currentLocalStateLayoutVersion,
+    layoutVersion: currentStateLayoutVersion,
     product: "entangle",
     schemaVersion: "1",
     updatedAt: timestamp
   });
 }
 
-function classifyLocalStateLayoutVersion(
+function classifyStateLayoutVersion(
   layoutVersion: number
-): LocalStateLayoutInspection["status"] {
-  if (layoutVersion > currentLocalStateLayoutVersion) {
+): StateLayoutInspection["status"] {
+  if (layoutVersion > currentStateLayoutVersion) {
     return "unsupported_future";
   }
 
-  if (layoutVersion < minimumSupportedLocalStateLayoutVersion) {
+  if (layoutVersion < minimumSupportedStateLayoutVersion) {
     return "unsupported_legacy";
   }
 
-  if (layoutVersion < currentLocalStateLayoutVersion) {
+  if (layoutVersion < currentStateLayoutVersion) {
     return "upgrade_available";
   }
 
   return "current";
 }
 
-function describeLocalStateLayoutStatus(
-  inspection: LocalStateLayoutInspection
+function describeStateLayoutStatus(
+  inspection: StateLayoutInspection
 ): string | undefined {
   if (inspection.status === "current") {
     return undefined;
   }
 
   if (inspection.status === "missing") {
-    return "Local state layout record is missing.";
+    return "Entangle state layout record is missing.";
   }
 
   if (inspection.status === "upgrade_available") {
-    return `Local state layout ${inspection.recordedLayoutVersion} can be upgraded to ${inspection.currentLayoutVersion}.`;
+    return `Entangle state layout ${inspection.recordedLayoutVersion} can be upgraded to ${inspection.currentLayoutVersion}.`;
   }
 
   if (inspection.status === "unsupported_legacy") {
-    return `Local state layout ${inspection.recordedLayoutVersion} is older than the minimum supported layout ${inspection.minimumSupportedLayoutVersion}.`;
+    return `Entangle state layout ${inspection.recordedLayoutVersion} is older than the minimum supported layout ${inspection.minimumSupportedLayoutVersion}.`;
   }
 
   if (inspection.status === "unsupported_future") {
-    return `Local state layout ${inspection.recordedLayoutVersion} is newer than the supported layout ${inspection.currentLayoutVersion}.`;
+    return `Entangle state layout ${inspection.recordedLayoutVersion} is newer than the supported layout ${inspection.currentLayoutVersion}.`;
   }
 
-  return inspection.detail ?? "Local state layout record could not be read.";
+  return inspection.detail ?? "Entangle state layout record could not be read.";
 }
 
-async function inspectLocalStateLayout(input: {
+async function inspectStateLayout(input: {
   materializeIfMissing: boolean;
-}): Promise<LocalStateLayoutInspection> {
+}): Promise<StateLayoutInspection> {
   const checkedAt = nowIsoString();
 
-  if (!(await pathExists(localStateLayoutRecordPath))) {
+  if (!(await pathExists(stateLayoutRecordPath))) {
     if (input.materializeIfMissing) {
-      const record = buildLocalStateLayoutRecord(checkedAt);
-      await writeJsonFile(localStateLayoutRecordPath, record);
+      const record = buildStateLayoutRecord(checkedAt);
+      await writeJsonFile(stateLayoutRecordPath, record);
 
-      return localStateLayoutInspectionSchema.parse({
+      return stateLayoutInspectionSchema.parse({
         checkedAt,
-        currentLayoutVersion: currentLocalStateLayoutVersion,
-        minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+        currentLayoutVersion: currentStateLayoutVersion,
+        minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
         recordedAt: record.updatedAt,
         recordedLayoutVersion: record.layoutVersion,
         status: "current"
       });
     }
 
-    return localStateLayoutInspectionSchema.parse({
+    return stateLayoutInspectionSchema.parse({
       checkedAt,
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      detail: "Local state layout record is missing.",
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      detail: "Entangle state layout record is missing.",
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       status: "missing"
     });
   }
 
-  let record: LocalStateLayoutRecord;
+  let record: StateLayoutRecord;
   try {
-    record = localStateLayoutRecordSchema.parse(
-      await readJsonFile(localStateLayoutRecordPath)
+    record = stateLayoutRecordSchema.parse(
+      await readJsonFile(stateLayoutRecordPath)
     );
   } catch (error) {
-    return localStateLayoutInspectionSchema.parse({
+    return stateLayoutInspectionSchema.parse({
       checkedAt,
-      currentLayoutVersion: currentLocalStateLayoutVersion,
-      detail: `Local state layout record is unreadable: ${formatUnknownError(error)}`,
-      minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+      currentLayoutVersion: currentStateLayoutVersion,
+      detail: `Entangle state layout record is unreadable: ${formatUnknownError(error)}`,
+      minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
       status: "unreadable"
     });
   }
 
-  const status = classifyLocalStateLayoutVersion(record.layoutVersion);
-  const inspection = localStateLayoutInspectionSchema.parse({
+  const status = classifyStateLayoutVersion(record.layoutVersion);
+  const inspection = stateLayoutInspectionSchema.parse({
     checkedAt,
-    currentLayoutVersion: currentLocalStateLayoutVersion,
-    minimumSupportedLayoutVersion: minimumSupportedLocalStateLayoutVersion,
+    currentLayoutVersion: currentStateLayoutVersion,
+    minimumSupportedLayoutVersion: minimumSupportedStateLayoutVersion,
     recordedAt: record.updatedAt,
     recordedLayoutVersion: record.layoutVersion,
     status
   });
-  const detail = describeLocalStateLayoutStatus(inspection);
+  const detail = describeStateLayoutStatus(inspection);
 
-  return localStateLayoutInspectionSchema.parse({
+  return stateLayoutInspectionSchema.parse({
     ...inspection,
     ...(detail ? { detail } : {})
   });
 }
 
-async function ensureLocalStateLayoutCompatible(): Promise<void> {
-  const inspection = await inspectLocalStateLayout({
+async function ensureStateLayoutCompatible(): Promise<void> {
+  const inspection = await inspectStateLayout({
     materializeIfMissing: true
   });
 
@@ -906,8 +906,8 @@ async function ensureLocalStateLayoutCompatible(): Promise<void> {
     inspection.status === "unreadable"
   ) {
     throw new Error(
-      describeLocalStateLayoutStatus(inspection) ??
-        "Local state layout is not compatible with this Entangle host."
+      describeStateLayoutStatus(inspection) ??
+        "Entangle state layout is not compatible with this Entangle host."
     );
   }
 }
@@ -920,7 +920,7 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
     process.env.ENTANGLE_DEFAULT_GIT_SERVICE_ID ?? "gitea"
   );
   const catalogId = sanitizeIdentifier(
-    process.env.ENTANGLE_CATALOG_ID ?? "local-catalog"
+    process.env.ENTANGLE_CATALOG_ID ?? "default-catalog"
   );
   const relayReadUrl =
     process.env.ENTANGLE_DEFAULT_RELAY_READ_URL ?? "ws://strfry:7777";
@@ -955,8 +955,8 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
   const agentEngineId = sanitizeIdentifier(
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID ??
       (agentEngineKind === "opencode_server"
-        ? "local-opencode"
-        : `local-${agentEngineKind}`)
+        ? "opencode-default"
+        : `default-${agentEngineKind}`)
   );
   const configuredAgentEngineExecutable =
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_EXECUTABLE?.trim();
@@ -1019,7 +1019,7 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
       {
         id: gitServiceId,
         displayName:
-          process.env.ENTANGLE_DEFAULT_GIT_SERVICE_DISPLAY_NAME ?? "Local Gitea",
+          process.env.ENTANGLE_DEFAULT_GIT_SERVICE_DISPLAY_NAME ?? "Gitea",
         baseUrl: gitBaseUrl,
         remoteBase: gitRemoteBase,
         transportKind: gitTransport,
@@ -1040,8 +1040,8 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
         displayName:
           process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME ??
           (agentEngineKind === "opencode_server"
-            ? "Local OpenCode"
-            : "Local Agent Engine"),
+            ? "OpenCode"
+            : "Agent Engine"),
         kind: agentEngineKind,
         executable: agentEngineExecutable,
         baseUrl: agentEngineBaseUrl || undefined,
@@ -1315,7 +1315,7 @@ export async function getUserNodeSigningMaterial(input: {
 
   if (!identity.keyRef) {
     throw new Error(
-      `User Node '${identity.nodeId}' does not reference local key material.`
+      `User Node '${identity.nodeId}' does not reference managed key material.`
     );
   }
 
@@ -4647,7 +4647,7 @@ function externalPrincipalRecordPath(principalId: string): string {
 
 export async function initializeHostState(): Promise<void> {
   await ensureDirectory(hostStateRoot);
-  await ensureLocalStateLayoutCompatible();
+  await ensureStateLayoutCompatible();
 
   await Promise.all([
     ensureDirectory(runtimeIdentitiesRoot),
@@ -7198,7 +7198,7 @@ function resolveArtifactPreviewPath(input: {
   if (candidatePaths.length === 0) {
     return {
       reason:
-        "Artifact preview is unavailable because the artifact has no local materialized file path."
+        "Artifact preview is unavailable because the artifact has no materialized file path."
     };
   }
 
@@ -7383,7 +7383,7 @@ async function resolveArtifactGitInspectionTarget(input: {
   if (!input.artifact.materialization?.repoPath) {
     return {
       reason:
-        "Artifact git history is unavailable because the artifact has no local repository materialization."
+        "Artifact git history is unavailable because the artifact has no repository materialization."
     };
   }
 
@@ -7407,7 +7407,7 @@ async function resolveArtifactGitInspectionTarget(input: {
   if (!(await pathExists(path.join(repoPath, ".git")))) {
     return {
       reason:
-        "Artifact git history is unavailable because the local materialization repository is missing."
+        "Artifact git history is unavailable because the materialization repository is missing."
     };
   }
 
@@ -13650,7 +13650,7 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const authorityInspection = await getHostAuthorityInspection();
-  const stateLayout = await inspectLocalStateLayout({
+  const stateLayout = await inspectStateLayout({
     materializeIfMissing: true
   });
   const runtimeInspections = await listRuntimeInspections();

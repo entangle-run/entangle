@@ -3,7 +3,7 @@
 ## Purpose
 
 Prevent valid but locally orphaned `approval.response` messages from creating
-phantom active work in runner-local state.
+phantom active work in runner-Entangle state.
 
 After approval-response metadata became part of the canonical A2A validator,
 there was still a separate lifecycle issue: a structurally valid

@@ -230,7 +230,7 @@ If yes, update this roadmap or add a decision record before continuing.
 | Local | L0 | Closure and Ledger | Freeze current state and close active slices. |
 | Local | L1 | Local Operator Baseline | Presentable local architecture proof. |
 | Local | L1.5 | Local Operator Preview | Usable local demo and technical preview. |
-| Local | L2 | Local Workbench | Productized local package, graph, session, and artifact workflows. |
+| Local | L2 | Federated Workbench | Productized local package, graph, session, and artifact workflows. |
 | Local | L3 | Agentic Node Runtime | Per-node coding-agent runtime selection, OpenCode integration path, policy bridge, git/wiki workspaces, and observability. |
 | Local | L4 | Local Reliability | Doctor, repair, backup, import/export, upgrade, and diagnostics. |
 | Local | L5 | Local GA | Complete local/developer product. |
@@ -287,7 +287,7 @@ The release packet lives in
 
 Included capabilities:
 
-- host control plane over local state;
+- host control plane over Entangle state;
 - per-node runner;
 - local Nostr relay transport;
 - git-backed artifact publish and retrieve;
@@ -315,7 +315,7 @@ Exit criteria:
 
 - the R1 ledger is complete;
 - `pnpm verify` passes;
-- `pnpm ops:check-local:strict` passes or a local blocker is recorded;
+- `pnpm ops:check-federated-dev:strict` passes or a local blocker is recorded;
 - the strongest feasible local smoke passes or is explicitly deferred;
 - README, wiki overview, roadmap, ledger, and release note agree.
 
@@ -323,7 +323,7 @@ Exit criteria:
 
 Status: released as `v0.1.5-local-operator-preview`.
 
-Target outcome: a technical user can try Entangle locally without knowing the
+Target outcome: a technical user can try Entangle deploymently without knowing the
 whole codebase.
 
 Incremental features:
@@ -345,7 +345,7 @@ Incremental features:
    - runner degraded;
    - reset and cleanup.
 4. Operator UX:
-   - clearer Studio landing state for local profile;
+   - clearer Studio landing state for federated dev profile;
    - clearer selected-runtime empty/error states;
    - CLI summary examples for host, runtime, session, approval, artifact, and
      event flows.
@@ -361,11 +361,11 @@ Exit criteria:
 - troubleshooting covers the top local failure modes;
 - no production claim is made.
 
-### L2: Local Workbench
+### L2: Federated Workbench
 
 Target tag: `v0.2-local-workbench`.
 
-Target outcome: Entangle becomes a productive local workbench, not only a
+Target outcome: Entangle becomes a productive federated workbench, not only a
 demo runtime.
 
 Incremental features:
@@ -403,7 +403,7 @@ Exit criteria:
 - users can create or import a package, instantiate it in a graph, launch a
   local session, inspect work, and export graph/package state;
 - Studio and CLI remain clients of host APIs;
-- local workbench features do not require production tenancy.
+- federated workbench features do not require production tenancy.
 
 ### L3: Agentic Node Runtime
 
@@ -490,18 +490,18 @@ Incremental features:
    - repair stale local runtime state where safe;
    - detect old Gitea profile state;
    - recommend destructive reset only explicitly;
-   - current foundation: `entangle local repair` previews by default and
+   - current foundation: `entangle deployment repair` previews by default and
      applies only safe host-state skeleton or missing layout-marker repairs
      with `--apply-safe`.
 3. Backup and restore:
-   - export local state bundle;
-   - restore local state bundle;
+   - export Entangle state bundle;
+   - restore Entangle state bundle;
    - document what is included and excluded;
-   - current foundation: `entangle local backup` and `entangle local restore`
+   - current foundation: `entangle deployment backup` and `entangle deployment restore`
      use a versioned `.entangle/host` bundle, exclude `.entangle-secrets`, and
      validate state-layout compatibility before restore.
 4. Upgrade path:
-   - extend the active version-1 local state layout marker into rehearsed
+   - extend the active version-1 Entangle state layout marker into rehearsed
      migrations;
    - migration notes between Local releases;
    - compatibility checks before startup.
@@ -514,9 +514,9 @@ Incremental features:
 Exit criteria:
 
 - repeated start/stop/restart cycles are documented and tested;
-- local state can be backed up and restored;
+- Entangle state can be backed up and restored;
 - current reliability smoke covers initialized-profile backup, restore dry-run,
-  and repair dry-run through `pnpm ops:smoke-local:reliability`;
+  and repair dry-run through `pnpm ops:smoke-federated-dev:reliability`;
 - common local drift is diagnosed without reading raw files;
 - repair behavior is conservative and never silently destroys user work.
 
@@ -530,7 +530,7 @@ Required capabilities:
 
 - polished local install path;
 - stable Docker Compose profile;
-- Studio local workbench;
+- Studio federated workbench;
 - serious CLI;
 - package scaffold, validate, import, and inspect;
 - graph templates, validation, mutation, diff, import, and export;
@@ -563,7 +563,7 @@ product and begin managed production work.
 Checks:
 
 - Local GA exit criteria are met;
-- Local state and production state boundaries are documented;
+- Entangle state and production state boundaries are documented;
 - reusable contracts are stable enough to carry forward;
 - product positioning distinguishes Local from Cloud.
 
@@ -837,7 +837,7 @@ Evolution:
 
 Evolution:
 
-- Local: local workbench;
+- Local: federated workbench;
 - Cloud: multi-user operations console;
 - Enterprise: same console with customer-operated identity and infrastructure
   constraints.
@@ -915,7 +915,7 @@ L1.5 shipped:
 
 - canonical demo package, graph, and model-stub catalog assets now live under
   `examples/federated-preview/`;
-- `pnpm ops:demo-federated-preview` starts the Local profile and runs the preview
+- `pnpm ops:demo-federated-preview` starts the Federated dev profile and runs the preview
   runtime path through the same host, runner, relay, model-stub, and
   Gitea/git-backed artifact flow as the runtime smoke;
 - `pnpm ops:demo-federated-preview:reset` is the explicit reset path for preview
@@ -953,7 +953,7 @@ Assuming disciplined sequencing:
 | --- | --- | --- |
 | Local | L1 local operator baseline | late April 2026 |
 | Local | L1.5 local operator preview | early May 2026 |
-| Local | L2 local workbench | May 2026 |
+| Local | L2 federated workbench | May 2026 |
 | Local | L3 agentic node runtime | May to June 2026 |
 | Local | L4 local reliability | June 2026 |
 | Local | L5 Local GA | June to July 2026 |

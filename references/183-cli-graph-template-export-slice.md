@@ -4,7 +4,7 @@ Date: 2026-04-25.
 
 ## Purpose
 
-Add a concrete graph template workflow for Local Workbench without introducing
+Add a concrete graph template workflow for Federated Workbench without introducing
 a new host contract before the existing graph apply/validate path needs it.
 
 ## Implemented Surface

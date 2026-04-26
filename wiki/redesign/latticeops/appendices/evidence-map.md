@@ -29,7 +29,7 @@ This appendix lists repository evidence used for major analysis claims. It disti
 | `apps/cli/src/index.ts` | Commander CLI coverage for validation, scaffolding, graph inspection, and host operations. |
 | `apps/studio/src/App.tsx` | Studio feature surface, direct host API usage, React Flow graph, runtime/session views. |
 | `apps/studio/src/App.css` | Studio styling approach. |
-| `deploy/docker-compose.local.yml` | Local deployment topology with host, studio, strfry, Gitea, runner image. |
+| `deploy/docker-compose.federated-dev.yml` | Local deployment topology with host, studio, strfry, Gitea, runner image. |
 | `.github/workflows/ci.yml` | CI pipeline commands. |
 | `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json` | Build, workspace, task, and TypeScript configuration. |
 
@@ -62,7 +62,7 @@ Interpretation: the repository is actively used as a local runtime baseline and 
 | --- | --- |
 | Host setup | No visible authentication or RBAC middleware in host API. |
 | Docker Compose | Host mounts Docker socket for local runner lifecycle. |
-| Git ignore patterns | `.entangle` and secret-like local state are ignored. |
+| Git ignore patterns | `.entangle` and secret-like Entangle state are ignored. |
 | Runner config | Secrets are supplied by environment or mounted files. |
 | Transport references | Nostr signed coordination is a core runtime concept. |
 

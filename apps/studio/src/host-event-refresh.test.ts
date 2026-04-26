@@ -79,7 +79,7 @@ describe("host-event-refresh", () => {
       conversationId: "conv-alpha",
       followupCount: 1,
       graphId: "team-alpha",
-      initiator: "local",
+      initiator: "self",
       lastMessageType: "task.request",
       message: "Conversation 'conv-alpha' on node 'worker-it' changed.",
       nodeId: "worker-it",

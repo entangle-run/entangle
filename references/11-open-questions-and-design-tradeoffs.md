@@ -9,7 +9,7 @@ and future-facing areas where Entangle may widen after the first serious build.
 
 ## 1. Package binding versus package purity
 
-How much graph-local state should be injected into a package workspace versus kept fully external?
+How much graph-Entangle state should be injected into a package workspace versus kept fully external?
 
 Current recommendation:
 

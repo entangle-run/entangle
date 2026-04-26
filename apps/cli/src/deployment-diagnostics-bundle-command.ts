@@ -10,19 +10,19 @@ import type {
   RuntimeTurnListResponse
 } from "@entangle/types";
 import {
-  buildLocalDoctorReport,
-  type LocalDoctorDeps,
-  type LocalDoctorOptions,
-  type LocalDoctorReport
-} from "./local-doctor-command.js";
+  buildDeploymentDoctorReport,
+  type DeploymentDoctorDeps,
+  type DeploymentDoctorOptions,
+  type DeploymentDoctorReport
+} from "./deployment-doctor-command.js";
 
-export interface LocalDiagnosticsBundleOptions extends LocalDoctorOptions {
+export interface DeploymentDiagnosticsBundleOptions extends DeploymentDoctorOptions {
   eventLimit?: number | undefined;
   logTail?: number | undefined;
   maxCommandOutputChars?: number | undefined;
 }
 
-interface LocalDiagnosticsHostClient {
+interface DeploymentDiagnosticsHostClient {
   getRuntimeContext(nodeId: string): Promise<RuntimeContextInspectionResponse>;
   getHostStatus(): Promise<HostStatusResponse>;
   listRuntimeApprovals(nodeId: string): Promise<RuntimeApprovalListResponse>;
@@ -33,17 +33,17 @@ interface LocalDiagnosticsHostClient {
   listRuntimes(): Promise<RuntimeListResponse>;
 }
 
-export interface LocalDiagnosticsBundleDeps extends LocalDoctorDeps {
+export interface DeploymentDiagnosticsBundleDeps extends DeploymentDoctorDeps {
   commandRunner?: (
     command: string,
     args: string[],
     options: { cwd: string }
   ) => Pick<SpawnSyncReturns<string>, "error" | "signal" | "status" | "stderr" | "stdout">;
-  hostClient?: LocalDiagnosticsHostClient;
+  hostClient?: DeploymentDiagnosticsHostClient;
   now?: () => Date;
 }
 
-export interface LocalDiagnosticsCommandCapture {
+export interface DeploymentDiagnosticsCommandCapture {
   args: string[];
   command: string;
   exitCode: number | null;
@@ -53,15 +53,15 @@ export interface LocalDiagnosticsCommandCapture {
   summary: string;
 }
 
-export interface LocalDiagnosticsBundle {
-  commands: LocalDiagnosticsCommandCapture[];
-  doctor: LocalDoctorReport;
+export interface DeploymentDiagnosticsBundle {
+  commands: DeploymentDiagnosticsCommandCapture[];
+  doctor: DeploymentDoctorReport;
   generatedAt: string;
   host?: {
     errors: string[];
     events?: HostEventListResponse | undefined;
     externalPrincipals?: ExternalPrincipalListResponse | undefined;
-    runtimeEvidence?: LocalDiagnosticsRuntimeEvidence[] | undefined;
+    runtimeEvidence?: DeploymentDiagnosticsRuntimeEvidence[] | undefined;
     runtimes?: RuntimeListResponse | undefined;
     status?: HostStatusResponse | undefined;
   };
@@ -79,7 +79,7 @@ export interface LocalDiagnosticsBundle {
   schemaVersion: "1";
 }
 
-export interface LocalDiagnosticsRuntimeEvidence {
+export interface DeploymentDiagnosticsRuntimeEvidence {
   approvalCount?: number | undefined;
   artifactCount?: number | undefined;
   errors: string[];
@@ -99,7 +99,7 @@ export interface LocalDiagnosticsRuntimeEvidence {
   turnCount?: number | undefined;
 }
 
-const localProfileComposeFile = "deploy/local/compose/docker-compose.local.yml";
+const federatedDevProfileComposeFile = "deploy/federated-dev/compose/docker-compose.federated-dev.yml";
 const defaultEventLimit = 50;
 const defaultLogTail = 200;
 const defaultMaxCommandOutputChars = 64 * 1024;
@@ -117,7 +117,7 @@ function defaultCommandRunner(
   });
 }
 
-export function redactLocalDiagnosticsText(input: string): string {
+export function redactDeploymentDiagnosticsText(input: string): string {
   return input
     .replace(/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, `$1${redactionPlaceholder}`)
     .replace(
@@ -144,11 +144,11 @@ function normalizeCommandCapture(input: {
   maxCommandOutputChars: number;
   result: Pick<SpawnSyncReturns<string>, "error" | "signal" | "status" | "stderr" | "stdout">;
   summary: string;
-}): LocalDiagnosticsCommandCapture {
-  const stderr = redactLocalDiagnosticsText(
+}): DeploymentDiagnosticsCommandCapture {
+  const stderr = redactDeploymentDiagnosticsText(
     truncateText(input.result.stderr ?? "", input.maxCommandOutputChars)
   );
-  const stdout = redactLocalDiagnosticsText(
+  const stdout = redactDeploymentDiagnosticsText(
     truncateText(input.result.stdout ?? "", input.maxCommandOutputChars)
   );
 
@@ -161,7 +161,7 @@ function normalizeCommandCapture(input: {
       stderr.length > 0
         ? stderr
         : input.result.error
-          ? redactLocalDiagnosticsText(input.result.error.message)
+          ? redactDeploymentDiagnosticsText(input.result.error.message)
           : "",
     stdout,
     summary: input.summary
@@ -170,15 +170,15 @@ function normalizeCommandCapture(input: {
 
 async function collectHostDiagnostics(input: {
   eventLimit: number;
-  hostClient: LocalDiagnosticsHostClient | undefined;
+  hostClient: DeploymentDiagnosticsHostClient | undefined;
   runtimeEvidenceLimit: number;
-}): Promise<LocalDiagnosticsBundle["host"] | undefined> {
+}): Promise<DeploymentDiagnosticsBundle["host"] | undefined> {
   if (!input.hostClient) {
     return undefined;
   }
 
   const errors: string[] = [];
-  const host: NonNullable<LocalDiagnosticsBundle["host"]> = {
+  const host: NonNullable<DeploymentDiagnosticsBundle["host"]> = {
     errors
   };
 
@@ -228,14 +228,14 @@ async function collectHostDiagnostics(input: {
 }
 
 async function collectRuntimeEvidence(input: {
-  hostClient: LocalDiagnosticsHostClient;
+  hostClient: DeploymentDiagnosticsHostClient;
   runtimeEvidenceLimit: number;
   runtimes: RuntimeListResponse;
-}): Promise<LocalDiagnosticsRuntimeEvidence[]> {
-  const evidence: LocalDiagnosticsRuntimeEvidence[] = [];
+}): Promise<DeploymentDiagnosticsRuntimeEvidence[]> {
+  const evidence: DeploymentDiagnosticsRuntimeEvidence[] = [];
 
   for (const runtime of input.runtimes.runtimes) {
-    const runtimeEvidence: LocalDiagnosticsRuntimeEvidence = {
+    const runtimeEvidence: DeploymentDiagnosticsRuntimeEvidence = {
       errors: [],
       nodeId: runtime.nodeId
     };
@@ -252,7 +252,7 @@ async function collectRuntimeEvidence(input: {
             ? {
                 engineFailureClassification:
                   turn.engineOutcome.failure.classification,
-                engineFailureMessage: redactLocalDiagnosticsText(
+                engineFailureMessage: redactDeploymentDiagnosticsText(
                   turn.engineOutcome.failure.message
                 )
               }
@@ -304,37 +304,37 @@ async function collectRuntimeEvidence(input: {
   return evidence;
 }
 
-export async function buildLocalDiagnosticsBundle(
-  options: LocalDiagnosticsBundleOptions,
-  deps: LocalDiagnosticsBundleDeps = {}
-): Promise<LocalDiagnosticsBundle> {
+export async function buildDeploymentDiagnosticsBundle(
+  options: DeploymentDiagnosticsBundleOptions,
+  deps: DeploymentDiagnosticsBundleDeps = {}
+): Promise<DeploymentDiagnosticsBundle> {
   const commandRunner = deps.commandRunner ?? defaultCommandRunner;
   const eventLimit = options.eventLimit ?? defaultEventLimit;
   const logTail = options.logTail ?? defaultLogTail;
   const maxCommandOutputChars =
     options.maxCommandOutputChars ?? defaultMaxCommandOutputChars;
-  const doctor = await buildLocalDoctorReport(options, deps);
+  const doctor = await buildDeploymentDoctorReport(options, deps);
   const commandInputs = [
     {
-      args: ["compose", "-f", localProfileComposeFile, "ps"],
+      args: ["compose", "-f", federatedDevProfileComposeFile, "ps"],
       command: "docker",
-      summary: "Local Compose services"
+      summary: "Federated dev Compose services"
     },
     {
       args: [
         "compose",
         "-f",
-        localProfileComposeFile,
+        federatedDevProfileComposeFile,
         "logs",
         "--no-color",
         "--tail",
         String(logTail)
       ],
       command: "docker",
-      summary: "Local Compose logs"
+      summary: "Federated dev Compose logs"
     },
     {
-      args: ["image", "inspect", options.runnerImage ?? "entangle-runner:local"],
+      args: ["image", "inspect", options.runnerImage ?? "entangle-runner:federated-dev"],
       command: "docker",
       summary: "Runner image inspect"
     }
@@ -360,11 +360,11 @@ export async function buildLocalDiagnosticsBundle(
     generatedAt: (deps.now ?? (() => new Date()))().toISOString(),
     ...(host ? { host } : {}),
     profile: {
-      composeFile: localProfileComposeFile,
+      composeFile: federatedDevProfileComposeFile,
       eventLimit,
       logTail,
       maxCommandOutputChars,
-      runnerImage: options.runnerImage ?? "entangle-runner:local"
+      runnerImage: options.runnerImage ?? "entangle-runner:federated-dev"
     },
     redaction: {
       applied: true,

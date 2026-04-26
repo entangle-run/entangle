@@ -13,7 +13,7 @@ artifact references.
 - The local Gitea Compose service now starts in non-interactive installed mode
   for disposable profiles by setting sqlite, `INSTALL_LOCK`, and disabled
   public registration defaults.
-- `scripts/smoke-local-runtime.mjs` now waits for the Gitea API, creates a
+- `scripts/smoke-federated-dev-runtime.mjs` now waits for the Gitea API, creates a
   disposable Gitea user through the Gitea CLI as the `git` user, and captures a
   disposable access token.
 - The smoke writes that token into the host secret volume as both:
@@ -36,13 +36,13 @@ This smoke still belongs outside `pnpm verify` because it depends on Docker,
 Compose, Gitea, strfry, a runner image, mutable host state, and runtime
 containers.
 
-The direct `pnpm ops:smoke-local:runtime` path mutates whichever local host
+The direct `pnpm ops:smoke-federated-dev:runtime` path mutates whichever local host
 profile is running. The disposable wrapper remains the recommended path because
-it starts from a fresh Gitea volume and tears down all local state afterward.
+it starts from a fresh Gitea volume and tears down all Entangle state afterward.
 
 ## Remaining hardening
 
-- CI-grade execution for the full local profile, if the CI environment can
+- CI-grade execution for the full federated dev profile, if the CI environment can
   provide Docker reliably.
 - Non-disposable upgrade and repair behavior for local Gitea volumes created
   before the installed-mode defaults were added.
@@ -52,7 +52,7 @@ it starts from a fresh Gitea volume and tears down all local state afterward.
 
 ## Verification
 
-- `node --check scripts/smoke-local-runtime.mjs`
-- `docker compose -f deploy/local/compose/docker-compose.local.yml config >/dev/null`
-- `pnpm ops:smoke-local:disposable:runtime --skip-build`
-- `pnpm ops:smoke-local:disposable:runtime`
+- `node --check scripts/smoke-federated-dev-runtime.mjs`
+- `docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml config >/dev/null`
+- `pnpm ops:smoke-federated-dev:disposable:runtime --skip-build`
+- `pnpm ops:smoke-federated-dev:disposable:runtime`

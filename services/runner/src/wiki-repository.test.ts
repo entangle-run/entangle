@@ -70,7 +70,7 @@ describe("wiki repository sync", () => {
       { encoding: "utf8" }
     );
     expect(authorEmail.status).toBe(0);
-    expect(authorEmail.stdout.trim()).toBe("worker-it@entangle.local");
+    expect(authorEmail.stdout.trim()).toBe("worker-it@entangle.example");
 
     const secondSync = await syncWikiRepository(context, {
       turnId: "turn-beta"

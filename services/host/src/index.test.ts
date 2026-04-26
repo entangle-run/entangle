@@ -415,7 +415,7 @@ function buildGitPrincipalRecord(
     secretRef: overrides.secretRef ?? "secret://git/worker-it/ssh",
     attribution: {
       displayName: "Worker IT",
-      email: overrides.attributionEmail ?? "worker-it@entangle.local"
+      email: overrides.attributionEmail ?? "worker-it@entangle.example"
     },
     signing: {
       mode: "none" as const
@@ -619,22 +619,22 @@ function buildProvisioningCatalog(input: {
 }) {
   return {
     schemaVersion: "1",
-    catalogId: "local-catalog",
+    catalogId: "default-catalog",
     relays: [
       {
         id: "preview-relay",
         displayName: "Preview Relay",
-        readUrls: ["ws://relay.local"],
-        writeUrls: ["ws://relay.local"],
+        readUrls: ["ws://relay.example"],
+        writeUrls: ["ws://relay.example"],
         authMode: "none"
       }
     ],
     gitServices: [
       {
         id: "gitea",
-        displayName: "Local Gitea",
+        displayName: "Gitea",
         baseUrl: input.apiBaseUrl,
-        remoteBase: "ssh://git@gitea.local:22",
+        remoteBase: "ssh://git@gitea.example:22",
         transportKind: "ssh",
         authMode: "ssh_key",
         defaultNamespace: "team-alpha",
@@ -1024,7 +1024,7 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("refuses to start against a newer local state layout", async () => {
+  it("refuses to start against a newer Entangle state layout", async () => {
     await expect(
       createTestServer({
         stateLayoutRecord: {
@@ -1245,7 +1245,7 @@ describe("buildHostServer", () => {
           return Promise.resolve();
         }
       },
-      federatedControlRelayUrls: ["ws://relay.local"]
+      federatedControlRelayUrls: ["ws://relay.example"]
     });
 
     try {
@@ -1323,7 +1323,7 @@ describe("buildHostServer", () => {
           assignmentId: "assignment-alpha",
           runnerId
         },
-        relayUrls: ["ws://relay.local"]
+        relayUrls: ["ws://relay.example"]
       });
 
       const listResponse = await server.inject({
@@ -1396,7 +1396,7 @@ describe("buildHostServer", () => {
           status: "revoked"
         },
         reason: "Operator reassignment",
-        relayUrls: ["ws://relay.local"]
+        relayUrls: ["ws://relay.example"]
       });
     } finally {
       await server.close();
@@ -2725,10 +2725,10 @@ describe("buildHostServer", () => {
       expect(runtimeContext).toMatchObject({
         agentRuntimeContext: {
           engineProfile: {
-            id: "local-opencode",
+            id: "opencode-default",
             kind: "opencode_server"
           },
-          engineProfileRef: "local-opencode",
+          engineProfileRef: "opencode-default",
           mode: "coding_agent"
         },
         binding: {
@@ -3530,22 +3530,22 @@ describe("buildHostServer", () => {
         method: "PUT",
         payload: {
           schemaVersion: "1",
-          catalogId: "local-catalog",
+          catalogId: "default-catalog",
           relays: [
             {
               id: "preview-relay",
               displayName: "Preview Relay",
-              readUrls: ["ws://relay.local"],
-              writeUrls: ["ws://relay.local"],
+              readUrls: ["ws://relay.example"],
+              writeUrls: ["ws://relay.example"],
               authMode: "none"
             }
           ],
           gitServices: [
             {
               id: "gitea",
-              displayName: "Local Gitea",
-              baseUrl: "https://gitea.local",
-              remoteBase: "ssh://git@gitea.local:22",
+              displayName: "Gitea",
+              baseUrl: "https://gitea.example",
+              remoteBase: "ssh://git@gitea.example:22",
               transportKind: "ssh",
               authMode: "ssh_key",
               defaultNamespace: "main-team",
@@ -3556,8 +3556,8 @@ describe("buildHostServer", () => {
             {
               id: "backup-gitea",
               displayName: "Backup Gitea",
-              baseUrl: "https://backup.gitea.local",
-              remoteBase: "ssh://git@backup.gitea.local:22",
+              baseUrl: "https://backup.gitea.example",
+              remoteBase: "ssh://git@backup.gitea.example:22",
               transportKind: "ssh",
               authMode: "ssh_key",
               defaultNamespace: "backup-team",
@@ -4585,7 +4585,7 @@ describe("buildHostServer", () => {
         payload: {
           approvalId: "approval-source-application-alpha",
           appliedBy: "operator-alpha",
-          reason: "Promote the accepted change into local source history."
+          reason: "Promote the accepted change into source history."
         },
         url:
           "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
@@ -4602,7 +4602,7 @@ describe("buildHostServer", () => {
         candidateId: "source-change-turn-alpha",
         mode: "applied_to_workspace",
         nodeId: "worker-it",
-        reason: "Promote the accepted change into local source history.",
+        reason: "Promote the accepted change into source history.",
         sourceHistoryId: "source-history-source-change-turn-alpha"
       });
       expect(sourceHistoryEntry.commit).toMatch(/^[0-9a-f]{40}$/);
@@ -5727,7 +5727,7 @@ describe("buildHostServer", () => {
           conversationId: "conv-alpha",
           followupCount: 1,
           graphId: "team-alpha",
-          initiator: "remote",
+          initiator: "peer",
           lastInboundMessageId:
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           lastMessageType: "task.request",
@@ -5758,7 +5758,7 @@ describe("buildHostServer", () => {
           conversationId: "conv-closed",
           followupCount: 1,
           graphId: "team-alpha",
-          initiator: "remote",
+          initiator: "peer",
           lastInboundMessageId:
             "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           lastMessageType: "task.result",
@@ -5789,7 +5789,7 @@ describe("buildHostServer", () => {
           conversationId: "conv-extra",
           followupCount: 0,
           graphId: "team-alpha",
-          initiator: "local",
+          initiator: "self",
           lastOutboundMessageId:
             "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
           lastMessageType: "task.handoff",
@@ -6401,7 +6401,7 @@ describe("buildHostServer", () => {
           conversationId: "conv-alpha",
           followupCount: 1,
           graphId: "team-alpha",
-          initiator: "remote",
+          initiator: "peer",
           lastInboundMessageId:
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           lastMessageType: "task.request",
@@ -7260,7 +7260,7 @@ describe("buildHostServer", () => {
         response.json()
       );
       expect(runtimeContext.agentRuntimeContext).toMatchObject({
-        engineProfileRef: "local-opencode",
+        engineProfileRef: "opencode-default",
         mode: "coding_agent"
       });
       expect(runtimeContext.modelContext.auth?.status).toBe("missing");
@@ -7274,7 +7274,7 @@ describe("buildHostServer", () => {
         runtimeInspectionResponseSchema.parse(runtimeResponse.json()).agentRuntime
       ).toMatchObject({
         engineKind: "opencode_server",
-        engineProfileRef: "local-opencode",
+        engineProfileRef: "opencode-default",
         mode: "coding_agent",
         stateScope: "node"
       });

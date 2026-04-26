@@ -38,9 +38,9 @@ That interface currently defines:
 The first implementation is an in-memory deterministic transport used for local
 integration tests.
 
-### 2. runner-local state store
+### 2. runner-Entangle state store
 
-The runner now owns a file-backed local state store rooted under the materialized
+The runner now owns a file-backed Entangle state store rooted under the materialized
 runtime root.
 
 The current store persists:

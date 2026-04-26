@@ -262,7 +262,7 @@ export class NostrRunnerTransport implements RunnerTransport {
     const relaySelection = resolveSubscribeRelayUrls(this.context);
 
     if (relaySelection.relayUrls.length === 0) {
-      throw new Error("No readable relay URLs are available for the local node.");
+      throw new Error("No readable relay URLs are available for the current node.");
     }
 
     return ensureReadableRelayConnections(this.pool, relaySelection.relayUrls).then(

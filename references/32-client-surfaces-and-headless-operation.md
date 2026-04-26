@@ -102,7 +102,7 @@ Unsafe direct operations include:
 
 The preferred architecture is:
 
-- `entangle-host` owns applied local state;
+- `entangle-host` owns applied Entangle state;
 - `entangle-studio` talks to the host for runtime-affecting operations;
 - `entangle-cli` talks to the host for runtime-affecting operations;
 - `entangle-validator` remains usable directly on files without the host;

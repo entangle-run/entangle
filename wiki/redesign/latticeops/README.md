@@ -54,6 +54,6 @@ The analysis used repository evidence first: source files, package manifests, te
 
 Claims are separated as follows:
 
-- Fact: directly visible in repository code, tests, configuration, documentation, or current local state.
+- Fact: directly visible in repository code, tests, configuration, documentation, or current Entangle state.
 - Interpretation: inferred from repository structure and documented direction.
 - Recommendation: proposed for the redesigned product, not a statement about the current implementation.

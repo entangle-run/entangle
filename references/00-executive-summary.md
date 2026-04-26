@@ -14,7 +14,7 @@ In Entangle:
 - each agent is a node;
 - nodes are connected by typed, policy-bound edges;
 - messages are signed Nostr events;
-- each node has local state, local memory, a runtime, and a workspace;
+- each node has Entangle state, local memory, a runtime, and a workspace;
 - sessions activate only part of the graph, producing a visible execution subgraph.
 
 ## Why this matters
@@ -49,7 +49,7 @@ The minimum convincing proof is:
    than one edge;
 3. the nodes communicate over Nostr using signed messages;
 4. the nodes collaborate on persistent artifacts, preferably using git;
-5. each node runs as a true agent runtime with memory, tools, and local state;
+5. each node runs as a true agent runtime with memory, tools, and Entangle state;
 6. the user can observe the session subgraph and the resulting artifacts in real time.
 
 ## Design rule

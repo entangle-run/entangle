@@ -58,7 +58,7 @@ The system is constructing the runtime execution subgraph and work decomposition
 #### `active`
 
 At least one conversation or work path is active in the runtime subgraph.
-In runner-local state, `activeConversationIds` should be reconciled from
+In runner-Entangle state, `activeConversationIds` should be reconciled from
 non-terminal conversation records rather than treated as append-only history.
 Resolved, rejected, closed, or expired conversations must not keep a session
 active by themselves.
@@ -281,7 +281,7 @@ The runner or agent engine performs tool or artifact operations.
 
 #### `persisting`
 
-The runner updates wiki memory, logs, and other durable local state.
+The runner updates wiki memory, logs, and other durable Entangle state.
 
 #### `emitting`
 

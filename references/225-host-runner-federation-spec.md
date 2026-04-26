@@ -47,8 +47,8 @@ Host must not need shared filesystem access to understand runner state.
 - `services/runner/src/service.ts`
 - `services/runner/src/transport.ts`
 - `services/runner/src/nostr-transport.ts`
-- `deploy/local/**`
-- `scripts/smoke-local-runtime.mjs`
+- `deploy/federated-dev/**`
+- `scripts/smoke-federated-dev-runtime.mjs`
 
 ## Concrete Changes Required
 
@@ -79,7 +79,7 @@ Host must not need shared filesystem access to understand runner state.
 ## Migration/Compatibility Notes
 
 `RuntimeBackend` should be renamed or wrapped as `LocalLauncherAdapter` in the
-target model. Memory and Docker backends remain useful for tests/local profile,
+target model. Memory and Docker backends remain useful for tests/federated dev profile,
 but they should launch generic runners and let Host assignment protocol do the
 semantic work.
 

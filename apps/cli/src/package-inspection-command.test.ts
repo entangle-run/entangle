@@ -20,8 +20,8 @@ async function createTemporaryPackage(): Promise<string> {
     `${JSON.stringify(
       {
         schemaVersion: "1",
-        packageId: "local-builder",
-        name: "Local Builder",
+        packageId: "fixture-builder",
+        name: "Fixture Builder",
         version: "0.1.0",
         packageKind: "template",
         defaultNodeKind: "worker",
@@ -40,7 +40,7 @@ async function createTemporaryPackage(): Promise<string> {
           toolsPath: "runtime/tools.json"
         },
         metadata: {
-          tags: ["local"]
+          tags: ["federated-dev"]
         }
       },
       null,
@@ -75,9 +75,9 @@ describe("inspectPackageDirectory", () => {
     expect(inspection.manifest).toMatchObject({
       capabilities: ["write-reports"],
       defaultNodeKind: "worker",
-      name: "Local Builder",
-      packageId: "local-builder",
-      tags: ["local"]
+      name: "Fixture Builder",
+      packageId: "fixture-builder",
+      tags: ["federated-dev"]
     });
     expect(inspection.validation.ok).toBe(true);
     expect(inspection.toolCatalog).toEqual({

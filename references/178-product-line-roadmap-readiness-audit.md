@@ -100,7 +100,7 @@ trees. The repository currently has 53 source test files under `apps`,
 One code naming issue was intentionally deferred at the time of this audit: the
 machine contract still exposed `hackathon_local` as the only runtime profile.
 That was not a current product-name claim, but it needed retirement before the
-productized Local profile could be considered clean. The active runtime profile
+productized Federated dev profile could be considered clean. The active runtime profile
 was later renamed to `local` in the Entangle completion workstream.
 
 ## Remaining L1 Release Blockers
@@ -111,7 +111,7 @@ but L1 is not ready to tag until:
 - the R1/L1 release note exists;
 - the release note records exact verification and smoke evidence;
 - `pnpm verify` passes for the final release batch;
-- `pnpm ops:check-local:strict` passes or records a concrete local blocker;
+- `pnpm ops:check-federated-dev:strict` passes or records a concrete local blocker;
 - the strongest feasible local smoke passes or is explicitly deferred with a
   release-note reason;
 - `git status --short` is clean or only explicitly deferred user work remains.
@@ -122,7 +122,7 @@ The audit reran the readiness gates that are useful before starting the plan:
 
 - `git diff --check`: passed;
 - `pnpm verify`: passed;
-- `pnpm ops:check-local:strict`: passed with Docker socket access.
+- `pnpm ops:check-federated-dev:strict`: passed with Docker socket access.
 
 The initial sandboxed preflight attempt failed only because the sandbox could
 not access `/Users/vincenzo/.docker/run/docker.sock`. The same preflight passed

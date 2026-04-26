@@ -4,9 +4,9 @@
 
 The Host currently has bootstrap operator-token auth and runtime-owned Nostr
 identities for non-user nodes, but it does not persist a first-class Host
-Authority identity. `initializeHostState()` creates local state directories,
+Authority identity. `initializeHostState()` creates Entangle state directories,
 default resource catalog data, graph state, runtime intents, runtime identity
-secrets, and local layout markers. Host status reports local state layout,
+secrets, and local layout markers. Host status reports Entangle state layout,
 runtime reconciliation, runtime counts, and session diagnostics, but not Host
 Authority status.
 
@@ -106,7 +106,7 @@ Docker, shared volumes, `runtimeRoot`, or `effective-runtime-context.json`.
 
 ## Migration/Compatibility Notes
 
-The slice is additive for existing local state. Hosts with no authority record
+The slice is additive for existing Entangle state. Hosts with no authority record
 receive a generated default authority. Imported authority records can replace
 that local default because the product is still pre-release. Existing runtime
 node identities are not migrated in this slice.

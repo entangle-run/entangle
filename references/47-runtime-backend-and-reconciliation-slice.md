@@ -45,7 +45,7 @@ node workspace.
 That was better than linking directly to an arbitrary external path, but it is
 still not the right long-term basis for:
 
-- deduplicated local state;
+- deduplicated Entangle state;
 - stable recovery;
 - backend-managed sibling runtimes;
 - clear separation between immutable package content and mutable node state.
@@ -110,9 +110,9 @@ That surface now includes:
 This makes the host status endpoint closer to a real control-plane health
 surface.
 
-## 6. Docker-backed local profile
+## 6. Docker-backed federated dev profile
 
-The local Compose profile is now aligned with the runtime backend model:
+The federated dev Compose profile is now aligned with the runtime backend model:
 
 - the host receives explicit Docker runtime configuration;
 - host state is mounted at a stable shared path;
@@ -122,7 +122,7 @@ The local Compose profile is now aligned with the runtime backend model:
 - the Compose network is made explicit and stable for host-managed runners.
 
 This still does not mean the product is Docker-only. It means the first serious
-local profile is finally explicit enough to support a Docker-backed runtime
+federated dev profile is finally explicit enough to support a Docker-backed runtime
 backend without hidden assumptions.
 
 ## 7. Quality corrections in this slice

@@ -31,10 +31,10 @@ customer readiness, or compliance readiness.
 
 The current repository already has evidence for the core R1 promise:
 
-- host control-plane service with persistent local state;
+- host control-plane service with persistent Entangle state;
 - per-node runner service;
 - local Nostr transport through `strfry`;
-- git-backed artifact publication and retrieval through the local profile;
+- git-backed artifact publication and retrieval through the federated dev profile;
 - provider-backed model execution through the internal engine boundary;
 - host read surfaces for runtime, session, turn, approval, artifact, recovery,
   graph, node, edge, package-source, principal, status, and events;
@@ -68,7 +68,7 @@ The current repository already has evidence for the core R1 promise:
 - [x] Runtime recovery policy and history exist.
 - [x] Session inspection exists.
 - [x] Runtime artifact, approval, and turn inspection exist.
-- [x] Release note identifies local-file state as an R1-local profile, not a
+- [x] Release note identifies local-file state as an R1-federated dev profile, not a
   production persistence model.
 
 ### Runner
@@ -104,7 +104,7 @@ The current repository already has evidence for the core R1 promise:
 
 ### Deployment
 
-- [x] Local Compose profile exists.
+- [x] Federated dev Compose profile exists.
 - [x] Strict local preflight exists.
 - [x] Active local smoke exists.
 - [x] Disposable local smoke exists.
@@ -118,15 +118,15 @@ Required before tagging:
 
 ```bash
 pnpm verify
-pnpm ops:check-local:strict
+pnpm ops:check-federated-dev:strict
 ```
 
 Required when Docker, relay, Gitea, runtime lifecycle, package admission, or
 artifact handoff behavior changed since the last smoke:
 
 ```bash
-pnpm ops:smoke-local:disposable
-pnpm ops:smoke-local:disposable:runtime
+pnpm ops:smoke-federated-dev:disposable
+pnpm ops:smoke-federated-dev:disposable:runtime
 ```
 
 The smoke commands may be skipped only with an explicit release-note statement
@@ -146,12 +146,12 @@ smoke gates:
 - `pnpm test`: passed;
 - `pnpm build`: passed after one manually stopped transient local
   Vite/Rolldown idle run and a successful immediate retry;
-- `pnpm ops:check-local:strict`: passed with Docker daemon access;
-- `pnpm ops:smoke-local:disposable:runtime`: passed;
-- `pnpm ops:smoke-local:disposable --skip-build --keep-running`: passed;
-- `pnpm ops:smoke-local`: passed against the kept-running local profile.
+- `pnpm ops:check-federated-dev:strict`: passed with Docker daemon access;
+- `pnpm ops:smoke-federated-dev:disposable:runtime`: passed;
+- `pnpm ops:smoke-federated-dev:disposable --skip-build --keep-running`: passed;
+- `pnpm ops:smoke-federated-dev`: passed against the kept-running federated dev profile.
 
-The disposable runtime smoke proved the active local profile smoke, two
+The disposable runtime smoke proved the active federated dev profile smoke, two
 host-managed runners, restart event evidence, NIP-59 task intake,
 provider-backed OpenAI-compatible execution against a local model stub,
 git-backed artifact publication, downstream artifact retrieval by
@@ -186,7 +186,7 @@ The R1 release note must include:
 - Docker and local-tooling prerequisites;
 - clear non-goals;
 - known limitations;
-- upgrade notes for local state;
+- upgrade notes for Entangle state;
 - rollback guidance for local operator state;
 - next release target: `L1.5 Local Operator Preview`.
 

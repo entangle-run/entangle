@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { localProfileComposeFile } from "./local-profile-paths.mjs";
+import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
 
 const defaultHostUrl = "http://localhost:7071";
 const defaultStudioUrl = "http://localhost:3000";
@@ -186,7 +186,7 @@ function validateStudioHtml(body) {
 
 function validateGiteaHtml(body) {
   if (!/gitea|install/i.test(body)) {
-    throw new Error("Gitea response did not look like the local web surface.");
+    throw new Error("Gitea response did not look like the Gitea web surface.");
   }
 
   return "web surface reachable";
@@ -201,7 +201,7 @@ function checkComposeServices() {
   const result = run("docker", [
     "compose",
     "-f",
-    localProfileComposeFile,
+    federatedDevProfileComposeFile,
     "ps",
     "--status",
     "running",
@@ -252,7 +252,7 @@ function checkRunnerImage() {
   const result = run("docker", [
     "image",
     "inspect",
-    "entangle-runner:local",
+    "entangle-runner:federated-dev",
     "--format",
     "{{.Id}}"
   ]);
@@ -261,7 +261,7 @@ function checkRunnerImage() {
     addCheck(
       "runner:image",
       "fail",
-      "missing entangle-runner:local; build it with the runner-build Compose profile"
+      "missing entangle-runner:federated-dev; build it with the runner-build Compose profile"
     );
     return;
   }
@@ -289,7 +289,7 @@ async function checkRelay() {
 
           settled = true;
           try {
-            socket.close(1000, "local smoke complete");
+            socket.close(1000, "federated dev smoke complete");
           } catch {
             // Ignore close failures after the check has already completed.
           }
@@ -372,8 +372,8 @@ for (const check of checks) {
 }
 
 if (hasFailure) {
-  console.error("Local profile smoke failed.");
+  console.error("Federated dev profile smoke failed.");
   process.exit(1);
 }
 
-console.log("Local profile smoke passed.");
+console.log("Federated dev profile smoke passed.");

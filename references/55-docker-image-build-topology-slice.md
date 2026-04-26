@@ -35,7 +35,7 @@ The repository now carries an explicit `.dockerignore` that excludes:
 - build artifacts and node_modules directories
 
 This matters because the local image profile should not silently ingest live
-runtime state, local secrets, or the research corpus into service images.
+runtime state, Entangle secrets, or the research corpus into service images.
 
 ## 2. Explicit pnpm installation and cache semantics
 
@@ -60,7 +60,7 @@ real instead of only decorative.
 
 `apps/studio` is no longer treated as a dev-server style runtime.
 
-The local profile now builds Studio with Vite in a Node build stage and serves
+The federated dev profile now builds Studio with Vite in a Node build stage and serves
 the produced static bundle from `nginx:1.29-alpine` using an explicit SPA
 fallback config.
 
@@ -117,7 +117,7 @@ This slice was verified in four layers:
 2. repository-wide `pnpm verify`;
 3. `build -> deploy` portable payload verification for both host and runner;
 4. image builds for:
-   - `entangle-runner:local`
+   - `entangle-runner:federated-dev`
    - `compose-host`
    - `compose-studio`
 

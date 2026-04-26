@@ -71,7 +71,7 @@ The runner records:
 
 ### 3. The wiki stays human-readable
 
-Transition history remains in runtime-local state under
+Transition history remains in runtime-Entangle state under
 `memory-state/focused-register-state.json`.
 
 It is not injected into:

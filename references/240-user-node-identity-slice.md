@@ -98,7 +98,7 @@ Verification record for the implemented slice:
 ## End-Of-Slice Audit
 
 This slice does not add Host reads from runner-local runtime files and does not
-add new Docker or shared-volume assumptions. The only local state introduced is
+add new Docker or shared-volume assumptions. The only Entangle state introduced is
 Host-owned identity metadata and secret-ref-backed key material for the local
 development custody profile.
 

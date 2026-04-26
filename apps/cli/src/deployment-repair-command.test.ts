@@ -3,10 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  buildLocalRepairReport,
-  formatLocalRepairText
-} from "./local-repair-command.js";
-import type { LocalDoctorDeps } from "./local-doctor-command.js";
+  buildDeploymentRepairReport,
+  formatDeploymentRepairText
+} from "./deployment-repair-command.js";
+import type { DeploymentDoctorDeps } from "./deployment-doctor-command.js";
 
 const temporaryRoots: string[] = [];
 
@@ -29,7 +29,7 @@ async function readJson(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
 }
 
-function createRepairDeps(): LocalDoctorDeps {
+function createRepairDeps(): DeploymentDoctorDeps {
   return {
     commandRunner: (command) => ({
       status: 0,
@@ -55,11 +55,11 @@ afterEach(async () => {
   );
 });
 
-describe("local repair command helpers", () => {
+describe("deployment repair command helpers", () => {
   it("previews safe host-state initialization by default", async () => {
     const repositoryRoot = await createTempRoot("entangle-repair-preview-");
 
-    const report = await buildLocalRepairReport(
+    const report = await buildDeploymentRepairReport(
       {
         repositoryRoot,
         skipLive: true
@@ -82,13 +82,13 @@ describe("local repair command helpers", () => {
       risk: "safe",
       status: "pending"
     });
-    expect(formatLocalRepairText(report)).toContain("dry-run");
+    expect(formatDeploymentRepairText(report)).toContain("dry-run");
   });
 
   it("applies safe host-state initialization and records the repair", async () => {
     const repositoryRoot = await createTempRoot("entangle-repair-apply-");
 
-    const report = await buildLocalRepairReport(
+    const report = await buildDeploymentRepairReport(
       {
         applySafe: true,
         repositoryRoot,
@@ -130,7 +130,7 @@ describe("local repair command helpers", () => {
       updatedAt: "2026-04-26T00:00:00.000Z"
     });
 
-    const report = await buildLocalRepairReport(
+    const report = await buildDeploymentRepairReport(
       {
         applySafe: true,
         repositoryRoot,

@@ -2,7 +2,7 @@ services:
   studio:
     build:
       context: ../../..
-      dockerfile: deploy/local/docker/studio.Dockerfile
+      dockerfile: deploy/federated-dev/docker/studio.Dockerfile
     environment:
       VITE_ENTANGLE_HOST_URL: ${ENTANGLE_STUDIO_HOST_API_URL:-http://localhost:7071}
     ports:
@@ -16,14 +16,14 @@ services:
   host:
     build:
       context: ../../..
-      dockerfile: deploy/local/docker/host.Dockerfile
+      dockerfile: deploy/federated-dev/docker/host.Dockerfile
     environment:
       ENTANGLE_HOST_PORT: ${ENTANGLE_HOST_PORT:-7071}
       ENTANGLE_HOME: /entangle-state/.entangle
       ENTANGLE_SECRETS_HOME: /entangle-secrets
       ENTANGLE_RUNTIME_BACKEND: docker
       ENTANGLE_DOCKER_NETWORK: entangle
-      ENTANGLE_DOCKER_RUNNER_IMAGE: entangle-runner:local
+      ENTANGLE_DOCKER_RUNNER_IMAGE: entangle-runner:federated-dev
       ENTANGLE_DOCKER_SHARED_STATE_TARGET: /entangle-state
       ENTANGLE_DOCKER_SHARED_STATE_VOLUME: entangle-host-state
       ENTANGLE_DOCKER_SECRET_STATE_TARGET: /entangle-secrets
@@ -41,10 +41,10 @@ services:
   runner-image:
     profiles:
       - runner-build
-    image: entangle-runner:local
+    image: entangle-runner:federated-dev
     build:
       context: ../../..
-      dockerfile: deploy/local/docker/runner.Dockerfile
+      dockerfile: deploy/federated-dev/docker/runner.Dockerfile
     command:
       - "true"
     networks:
@@ -59,7 +59,7 @@ services:
     ports:
       - "${ENTANGLE_STRFRY_PORT:-7777}:7777"
     volumes:
-      - ../config/strfry.local.conf:/etc/strfry.conf:ro
+      - ../config/strfry.federated-dev.conf:/etc/strfry.conf:ro
       - strfry-data:/app/strfry-db
     networks:
       - entangle
