@@ -46,6 +46,7 @@ same-machine slice records.
 - [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 - [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
 - [245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
+- [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
 
 ## Audited Scope
 

@@ -284,6 +284,7 @@ files are the active federated redesign pack.
 244. [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 245. [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
 246. [245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
+247. [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
 
 ## Role of this corpus
 

@@ -21,6 +21,7 @@
     "ops:smoke-local:reliability": "node scripts/smoke-local-reliability.mjs",
     "ops:smoke-local:disposable": "node scripts/smoke-local-profile-disposable.mjs",
     "ops:smoke-local:disposable:runtime": "node scripts/smoke-local-profile-disposable.mjs --include-runtime",
+    "ops:smoke-federated-control": "node scripts/smoke-federated-control-plane.mjs",
     "ops:smoke-local:runtime": "node scripts/smoke-local-runtime.mjs",
     "ops:demo-federated-preview": "node scripts/federated-preview-demo.mjs",
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",

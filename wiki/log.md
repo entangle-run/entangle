@@ -2854,3 +2854,18 @@ This is still a bridge, not complete distributed execution. Host startup wiring,
 policy-based relay selection, and runner assignment materialization remain the
 next gaps before the same-machine adapter and remote runners can share one
 canonical control/observe execution path.
+
+## [2026-04-26] verification | Added federated control plane smoke
+
+Added `references/246-federated-control-plane-smoke-slice.md` and
+`pnpm ops:smoke-federated-control`. The smoke runs Host state and runner
+materialization in separate temporary roots, starts a generic runner from
+`runner-join.json`, sends signed runner observations over an in-memory
+control/observe bus, publishes signed Host control events, accepts an
+assignment in runner-owned storage, and verifies Host projection marks the
+assignment as observation-sourced.
+
+This is not the final distributed smoke because it does not use a live relay or
+real remote process boundary, but it is now a fast regression gate for the
+federated protocol semantics that the same-machine deployment adapter must
+eventually use.
