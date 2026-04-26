@@ -147,8 +147,11 @@ export async function publishUserNodeA2AMessage(input: {
       publishParams.onauth = buildAuthSigner(input.userNode.secretKey);
     }
 
-    const publishedRelays = await Promise.all(
+    const publishResults = await Promise.all(
       pool.publish(relaySelection.relayUrls, wrappedEvent, publishParams)
+    );
+    const publishedRelays = publishResults.map((result, index) =>
+      result.trim() ? result : relaySelection.relayUrls[index]!
     );
 
     return {

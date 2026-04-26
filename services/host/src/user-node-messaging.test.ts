@@ -174,4 +174,36 @@ describe("User Node A2A publishing", () => {
     const message = JSON.parse(rumor.content) as { fromPubkey?: string };
     expect(message.fromPubkey).toBe(getPublicKey(userSecretKey));
   });
+
+  it("falls back to requested relay URLs when the pool returns empty publish results", async () => {
+    const userSecretKey = generateSecretKey();
+    const workerSecretKey = generateSecretKey();
+    const response = await publishUserNodeA2AMessage({
+      pool: {
+        destroy: vi.fn(),
+        publish: vi.fn((relayUrls: string[]) =>
+          relayUrls.map(() => Promise.resolve(""))
+        )
+      },
+      request: {
+        artifactRefs: [],
+        messageType: "question",
+        responsePolicy: {
+          closeOnResult: false,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        summary: "Can you receive this signed message?",
+        targetNodeId: "worker-it"
+      },
+      runtimeContext: buildRuntimeContext(getPublicKey(workerSecretKey)),
+      userNode: {
+        nodeId: "user-main",
+        publicKey: getPublicKey(userSecretKey),
+        secretKey: userSecretKey
+      }
+    });
+
+    expect(response.publishedRelays).toEqual(["ws://localhost:7777"]);
+  });
 });

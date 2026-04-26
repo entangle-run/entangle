@@ -13,6 +13,12 @@ Follow-up slice
 replaces the raw context fetch in default joined runners with a portable
 bootstrap bundle.
 
+This slice now also covers the first no-LLM functional A2A intake proof: after
+the real joined runner process starts an assigned node runtime, Host publishes a
+message signed by the stable User Node identity through the configured relay,
+and the runner persists the received session and conversation under
+runner-owned runtime state.
+
 Host JSON state writes also used direct file replacement. The process smoke
 exposed a real race where close `runtime.status` observations could make a
 projection read observe a partially rewritten JSON record.
@@ -29,6 +35,10 @@ The federated regression path should prove a real runner OS process can:
   Host API path, not through Nostr;
 - start the assigned node runtime with the normal runner starter;
 - emit signed assignment and runtime observations through the relay;
+- receive signed User Node messages through the same Nostr A2A transport used
+  by normal graph communication;
+- persist received coordination state in runner-owned session and conversation
+  records without requiring a live model-provider call;
 - let Host projection observe the runtime without reading runner-owned paths.
 
 This is still a same-workstation smoke. It is a stronger process-boundary proof
@@ -74,7 +84,16 @@ Implemented in this slice:
 - added a smoke that starts an actual runner process, uses a real relay, trusts
   the runner, assigns a node through Host API, and verifies accepted assignment,
   running runtime projection, runner-owned materialized context, local git
-  backend setup, and Host/runner filesystem isolation.
+  backend setup, and Host/runner filesystem isolation;
+- made the smoke use per-run graph, runner, assignment, session, conversation,
+  and turn identifiers so persistent relays do not mix current evidence with
+  stale smoke events;
+- extended the smoke to publish a signed `question` message from the graph's
+  User Node to the assigned builder node, then verify the runner persisted the
+  corresponding session and conversation in its runtime state;
+- normalized blank relay publish acknowledgements from `nostr-tools` to the
+  configured relay URL so a successful live publish cannot fail DTO validation
+  because the underlying pool returned an empty string.
 
 Deferred:
 
@@ -86,6 +105,8 @@ Deferred:
 - routing normal turn-produced artifact/source/wiki observations from the
   runner service into projection during real task execution.
 - replacing inline bootstrap snapshots with git/object refs for large packages.
+- automated live OpenCode/model-provider assertions. The current smoke stops at
+  signed message intake so it stays usable without provider keys.
 
 ## Tests Required
 
@@ -109,7 +130,8 @@ Verification record:
 - wrapper syntax check passed;
 - one-file TypeScript check for the process smoke passed;
 - process runner smoke passed against the federated dev `strfry` relay on
-  `ws://localhost:7777`;
+  `ws://localhost:7777`, including signed User Node publish and runner
+  session/conversation intake;
 - root `pnpm typecheck` passed;
 - root `pnpm lint` passed;
 - `git diff --check` passed;

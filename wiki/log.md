@@ -3019,3 +3019,19 @@ Follow-up: `packages/host-client` and CLI now expose the same portable bundle
 through `getRuntimeBootstrapBundle()` and
 `entangle host runtimes bootstrap-bundle <nodeId>`, while the older runtime
 context command is labeled as debug-oriented.
+
+## [2026-04-26] implementation | Added no-LLM User Node intake to process smoke
+
+Extended `pnpm ops:smoke-federated-process-runner` so the runnable federated
+path now verifies more than startup. The smoke uses per-run identifiers,
+starts Host and a real joined runner process with separate state roots, assigns
+the builder node through signed control events, starts the assigned runtime
+from a portable bootstrap bundle, publishes a signed `question` message from
+the User Node over the live relay, and verifies that the runner persisted the
+received session and conversation.
+
+The slice also normalizes blank live relay publish acknowledgements from
+`nostr-tools` to the configured relay URL, avoiding false Host API conflicts
+after successful User Node message publication. Live OpenCode/model-provider
+execution remains intentionally manual for now so the smoke can run without API
+keys.

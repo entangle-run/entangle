@@ -14,10 +14,13 @@ import {
   graphMutationResponseSchema,
   hostProjectionSnapshotSchema,
   packageSourceInspectionResponseSchema,
+  conversationRecordSchema,
   runnerJoinConfigSchema,
   runnerRegistryInspectionResponseSchema,
   runtimeAssignmentOfferResponseSchema,
   runtimeContextInspectionResponseSchema,
+  sessionRecordSchema,
+  userNodeMessagePublishResponseSchema,
   type RunnerJoinConfig
 } from "@entangle/types";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
@@ -240,6 +243,18 @@ async function main(): Promise<void> {
   const tempRoot = await mkdtemp(
     path.join(os.tmpdir(), "entangle-process-runner-smoke-")
   );
+  const runId = path
+    .basename(tempRoot)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(-48);
+  const assignmentId = `assignment-${runId}`;
+  const conversationId = `conversation-${runId}`;
+  const graphId = `graph-${runId}`;
+  const runnerId = `runner-${runId}`;
+  const sessionId = `session-${runId}`;
+  const turnId = `turn-${runId}`;
   const hostHome = path.join(tempRoot, "host-home");
   const hostSecrets = path.join(tempRoot, "host-secrets");
   const runnerRoot = path.join(tempRoot, "runner-root");
@@ -360,7 +375,7 @@ async function main(): Promise<void> {
               }
             }
           ],
-          graphId: "process-runner-smoke-graph",
+          graphId,
           name: "Process Runner Smoke Graph",
           nodes: [
             {
@@ -421,7 +436,7 @@ async function main(): Promise<void> {
         }
       },
       relayUrls,
-      runnerId: "runner-process-alpha",
+      runnerId,
       schemaVersion: "1"
     });
     const joinConfigPath = path.join(runnerRoot, "runner-join.json");
@@ -476,7 +491,7 @@ async function main(): Promise<void> {
           return runnerRegistryInspectionResponseSchema.parse(
             await hostRequest({
               baseUrl: hostBaseUrl,
-              path: "/v1/runners/runner-process-alpha"
+              path: `/v1/runners/${runnerId}`
             })
           );
         } catch {
@@ -485,7 +500,7 @@ async function main(): Promise<void> {
       },
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
-    printPass("runner-hello", `runner=runner-process-alpha`);
+    printPass("runner-hello", `runner=${runnerId}`);
 
     await hostRequest({
       baseUrl: hostBaseUrl,
@@ -494,7 +509,7 @@ async function main(): Promise<void> {
         trustedBy: "smoke"
       },
       method: "POST",
-      path: "/v1/runners/runner-process-alpha/trust"
+      path: `/v1/runners/${runnerId}/trust`
     });
     printPass("runner-trust", "trusted");
 
@@ -502,10 +517,10 @@ async function main(): Promise<void> {
       await hostRequest({
         baseUrl: hostBaseUrl,
         body: {
-          assignmentId: "assignment-process-alpha",
+          assignmentId,
           leaseDurationSeconds: 3600,
           nodeId: "builder",
-          runnerId: "runner-process-alpha"
+          runnerId
         },
         method: "POST",
         path: "/v1/assignments"
@@ -578,6 +593,82 @@ async function main(): Promise<void> {
     printPass(
       "runner-materialization",
       `context=${materializedContextPath}`
+    );
+
+    const userMessage = userNodeMessagePublishResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          conversationId,
+          messageType: "question",
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 0,
+            responseRequired: false
+          },
+          sessionId,
+          summary:
+            "Process runner smoke: verify signed User Node message intake.",
+          targetNodeId: "builder",
+          turnId
+        },
+        method: "POST",
+        path: "/v1/user-nodes/user/messages"
+      })
+    );
+    printPass(
+      "user-node-publish",
+      `message=${userMessage.eventId}; relays=${userMessage.publishedRelays.length}`
+    );
+
+    const userMessageIntake = await waitFor(
+      "runner user message intake",
+      async () => {
+        if (runnerExit) {
+          throw new Error(
+            `Runner process exited before User Node message intake: ${JSON.stringify(runnerExit)}\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+          );
+        }
+
+        try {
+          const [sessionRecord, conversationRecord] = await Promise.all([
+            readFile(
+              path.join(
+                materializedContext.workspace.runtimeRoot,
+                "sessions",
+                `${userMessage.sessionId}.json`
+              ),
+              "utf8"
+            ).then((content) =>
+              sessionRecordSchema.parse(JSON.parse(content) as unknown)
+            ),
+            readFile(
+              path.join(
+                materializedContext.workspace.runtimeRoot,
+                "conversations",
+                `${userMessage.conversationId}.json`
+              ),
+              "utf8"
+            ).then((content) =>
+              conversationRecordSchema.parse(JSON.parse(content) as unknown)
+            )
+          ]);
+
+          return sessionRecord.lastMessageId === userMessage.eventId &&
+            conversationRecord.lastInboundMessageId === userMessage.eventId &&
+            conversationRecord.peerNodeId === "user" &&
+            conversationRecord.localNodeId === "builder"
+            ? { conversationRecord, sessionRecord }
+            : undefined;
+        } catch {
+          return undefined;
+        }
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "user-node-intake",
+      `session=${userMessageIntake.sessionRecord.sessionId}; conversation=${userMessageIntake.conversationRecord.conversationId}`
     );
 
     runGit(["init", "--bare", path.join(tempRoot, "git", "smoke.git")]);

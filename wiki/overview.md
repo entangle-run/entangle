@@ -644,6 +644,12 @@ The repository now also contains the first real implementation baseline:
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
   subscription path;
+- a functional federated process smoke through
+  `pnpm ops:smoke-federated-process-runner`, covering Host plus a real joined
+  runner process with separate state roots, signed assignment over a live relay,
+  portable bootstrap materialization, signed runtime observations, and signed
+  User Node message intake persisted by the assigned runner without requiring a
+  live model-provider call;
 - a same-machine diagnostics smoke through `pnpm ops:smoke-federated-dev:diagnostics`,
   which writes a temporary redacted diagnostics bundle against a running
   same-machine profile and validates its stable top-level shape;

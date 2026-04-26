@@ -67,6 +67,23 @@ That means:
   product matures;
 - no deliberate shortcuts that would invalidate later features such as remote node attachment, richer transport policies, multi-relay operation, or stronger governance.
 
+## Fast Functional Smoke
+
+The quickest no-LLM verification path starts the federated dev relay and runs
+the process runner smoke:
+
+```bash
+docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml up -d strfry
+pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777
+```
+
+That smoke starts Host and a real joined runner process with separate state
+roots, assigns a node through signed control events, observes runtime state
+through signed runner observations, publishes a signed User Node message through
+the relay, and verifies that the assigned runner persisted the received
+conversation. Live OpenCode/model-provider behavior remains intentionally
+manual until API-backed provider testing is available.
+
 ## Current Status
 
 This repository currently contains:
@@ -216,6 +233,12 @@ This repository currently contains:
   `conversation.close` as state updates rather than fresh engine turns and
   deriving session `activeConversationIds` from open conversation records
   instead of leaving them as append-only history;
+- a functional federated smoke path where a real joined runner process starts
+  from a generic join config, receives assignment control over a live relay,
+  materializes a portable bootstrap bundle under runner-owned state, starts the
+  assigned node runtime, emits signed runtime observations, receives a signed
+  User Node message over Nostr, and persists the resulting session and
+  conversation without requiring a model-provider API call;
 - a first git-backed artifact materialization slice in the runner, where each
   completed turn can persist a structured `ArtifactRecord`, write a durable
   report file into a node-local git workspace, commit it, and attach the

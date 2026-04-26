@@ -132,7 +132,9 @@ The repository is not fully federated:
 - `ops:smoke-federated-process-runner` now starts a real joined runner process,
   has it fetch authenticated runtime bootstrap context from Host API,
   materializes runner-owned workspace paths, starts the assigned node runtime,
-  and reports signed runtime status through the relay;
+  reports signed runtime status through the relay, publishes a signed User Node
+  message to the assigned node, and verifies runner-owned
+  session/conversation intake without requiring a live model-provider call;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 

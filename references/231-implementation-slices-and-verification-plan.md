@@ -154,6 +154,14 @@ Verification:
 - local runtime smoke;
 - no-shared-observation assertions.
 
+Current status:
+
+- `ops:smoke-federated-process-runner` now starts a real joined runner process,
+  assigns a node through the Host control plane, starts the assigned runtime
+  from a portable bootstrap bundle, publishes a signed User Node message over
+  the live relay, and verifies runner-owned session/conversation intake without
+  requiring model-provider credentials.
+
 ### Slice 8: ProjectionStore
 
 Create projection reducers and Host APIs backed by signed observations.
