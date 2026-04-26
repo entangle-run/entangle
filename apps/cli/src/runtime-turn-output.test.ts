@@ -34,6 +34,7 @@ describe("runtime turn CLI output", () => {
       nodeId: "worker-it",
       phase: "persisting",
       producedArtifactIds: ["artifact-report"],
+      requestedApprovalIds: ["approval-source-apply-alpha"],
       sessionId: "session-alpha",
       sourceChangeCandidateIds: ["source-change-turn-alpha"],
       sourceChangeSummary: {
@@ -72,6 +73,7 @@ describe("runtime turn CLI output", () => {
     expect(summary.detailLines).toEqual(
       expect.arrayContaining([
         "handoff messages none",
+        "approval requests approval-source-apply-alpha",
         "source change candidates source-change-turn-alpha",
         "source changes 1 file (+3/-1)",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",

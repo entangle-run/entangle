@@ -168,9 +168,13 @@ This repository currently contains:
   workspace-boundary, autonomy/source-mutation policy, and inbound
   response/constraint control context for the node-local coding engine, plus
   an Entangle action contract that lets OpenCode propose validated handoff
-  directives through bounded `entangle-actions` output blocks, with
-  unauthorized or unroutable handoffs classified as `policy_denied` while
-  preserving bounded engine evidence;
+  directives and policy-scoped approval request directives through bounded
+  `entangle-actions` output blocks, with unauthorized or unroutable handoffs
+  classified as `policy_denied` while preserving bounded engine evidence, and
+  with engine-requested approvals materialized as pending runner approval
+  records that move the session/conversation lifecycle to
+  `waiting_approval`/`awaiting_approval` without granting the engine the
+  gated side effect;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

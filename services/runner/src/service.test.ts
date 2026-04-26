@@ -720,6 +720,120 @@ describe("RunnerService", () => {
     }
   });
 
+  it("materializes engine approval request directives as pending local gates", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            approvalRequestDirectives: [
+              {
+                approvalId: "approval-engine-source-apply",
+                approverNodeIds: ["operator-alpha"],
+                operation: "source_application",
+                reason: "Approve applying the source change candidate.",
+                resource: {
+                  id: "source-change-engine-alpha",
+                  kind: "source_change_candidate",
+                  label: "source-change-engine-alpha"
+                }
+              }
+            ],
+            assistantMessages: [
+              "Prepared a source change candidate and requested approval."
+            ],
+            providerStopReason: "opencode_process_exit_0",
+            stopReason: "completed",
+            toolExecutions: [
+              {
+                outcome: "success",
+                sequence: 1,
+                toolCallId: "tool-approval-request",
+                toolId: "bash"
+              }
+            ],
+            toolRequests: []
+          });
+        }
+      },
+      transport
+    });
+
+    await service.start();
+
+    try {
+      const result = await service.handleInboundEnvelope(
+        buildInboundTaskRequest({
+          conversationId: "engine-approval-conv",
+          intent: "prepare_source_change",
+          sessionId: "engine-approval-session",
+          summary: "Prepare source changes and request approval before applying.",
+          turnId: "engine-approval-turn"
+        })
+      );
+
+      const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
+      const [approvalRecord, conversationRecord, sessionRecord, turnRecord] =
+        await Promise.all([
+          readApprovalRecord(statePaths, "approval-engine-source-apply"),
+          readConversationRecord(statePaths, "engine-approval-conv"),
+          readSessionRecord(statePaths, "engine-approval-session"),
+          listRunnerTurnRecords(statePaths).then((records) => records[0])
+        ]);
+
+      expect(result).toEqual({
+        handled: true,
+        handoffs: [],
+        response: undefined
+      });
+      expect(
+        transport
+          .listPublishedEnvelopes()
+          .some((envelope) => envelope.message.messageType === "task.result")
+      ).toBe(false);
+      expect(approvalRecord).toMatchObject({
+        approvalId: "approval-engine-source-apply",
+        approverNodeIds: ["operator-alpha"],
+        conversationId: "engine-approval-conv",
+        operation: "source_application",
+        reason: "Approve applying the source change candidate.",
+        requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-change-engine-alpha",
+          kind: "source_change_candidate"
+        },
+        sessionId: "engine-approval-session",
+        status: "pending"
+      });
+      expect(conversationRecord?.status).toBe("awaiting_approval");
+      expect(sessionRecord?.status).toBe("waiting_approval");
+      expect(sessionRecord?.waitingApprovalIds).toEqual([
+        "approval-engine-source-apply"
+      ]);
+      expect(turnRecord?.phase).toBe("blocked");
+      expect(turnRecord?.requestedApprovalIds).toEqual([
+        "approval-engine-source-apply"
+      ]);
+      expect(turnRecord?.engineOutcome).toMatchObject({
+        providerStopReason: "opencode_process_exit_0",
+        stopReason: "completed",
+        toolExecutions: [
+          {
+            outcome: "success",
+            toolCallId: "tool-approval-request",
+            toolId: "bash"
+          }
+        ]
+      });
+    } finally {
+      await service.stop();
+    }
+  });
+
   it("keeps a delegated session active until every outbound handoff conversation closes", async () => {
     const upstreamFixture = await createRuntimeFixture({
       remotePublication: "bare_repo"

@@ -15,10 +15,12 @@ import {
 import {
   agentEngineTurnRequestSchema,
   agentEngineTurnResultSchema,
+  engineApprovalRequestDirectiveSchema,
   engineHandoffDirectiveSchema,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
   type EffectiveRuntimeContext,
+  type EngineApprovalRequestDirective,
   type EngineHandoffDirective,
   type EnginePermissionObservation,
   type EngineToolExecutionObservation
@@ -397,6 +399,7 @@ function collectError(event: OpenCodeRunEvent, errors: string[]): void {
 
 type EntangleActionDirectiveExtraction = {
   assistantMessages: string[];
+  approvalRequestDirectives: EngineApprovalRequestDirective[];
   errors: string[];
   handoffDirectives: EngineHandoffDirective[];
 };
@@ -404,6 +407,7 @@ type EntangleActionDirectiveExtraction = {
 export function extractEntangleActionDirectives(
   assistantMessages: string[]
 ): EntangleActionDirectiveExtraction {
+  const approvalRequestDirectives: EngineApprovalRequestDirective[] = [];
   const errors: string[] = [];
   const handoffDirectives: EngineHandoffDirective[] = [];
   const sanitizedMessages = assistantMessages
@@ -424,20 +428,50 @@ export function extractEntangleActionDirectives(
             return "";
           }
 
-          const directives = engineHandoffDirectiveSchema.array().safeParse(
-            parsed.handoffDirectives
-          );
+          const hasHandoffDirectives = "handoffDirectives" in parsed;
+          const hasApprovalRequestDirectives =
+            "approvalRequestDirectives" in parsed;
 
-          if (!directives.success) {
+          if (!hasHandoffDirectives && !hasApprovalRequestDirectives) {
             errors.push(
-              `Entangle handoff directives are invalid: ${directives.error.issues
-                .map((issue) => issue.message)
-                .join("; ")}`
+              "Entangle action block must include handoffDirectives or approvalRequestDirectives."
             );
             return "";
           }
 
-          handoffDirectives.push(...directives.data);
+          if (hasHandoffDirectives) {
+            const directives = engineHandoffDirectiveSchema.array().safeParse(
+              parsed.handoffDirectives
+            );
+
+            if (!directives.success) {
+              errors.push(
+                `Entangle handoff directives are invalid: ${directives.error.issues
+                  .map((issue) => issue.message)
+                  .join("; ")}`
+              );
+              return "";
+            }
+
+            handoffDirectives.push(...directives.data);
+          }
+
+          if (hasApprovalRequestDirectives) {
+            const directives = engineApprovalRequestDirectiveSchema
+              .array()
+              .safeParse(parsed.approvalRequestDirectives);
+
+            if (!directives.success) {
+              errors.push(
+                `Entangle approval request directives are invalid: ${directives.error.issues
+                  .map((issue) => issue.message)
+                  .join("; ")}`
+              );
+              return "";
+            }
+
+            approvalRequestDirectives.push(...directives.data);
+          }
         } catch (error) {
           errors.push(
             `Entangle action block is not valid JSON: ${extractErrorMessage(error)}`
@@ -452,6 +486,7 @@ export function extractEntangleActionDirectives(
 
   return {
     assistantMessages: sanitizedMessages,
+    approvalRequestDirectives,
     errors,
     handoffDirectives
   };
@@ -858,6 +893,8 @@ export function createOpenCodeAgentEngine(input: {
 
       return agentEngineTurnResultSchema.parse({
         assistantMessages: actionDirectives.assistantMessages,
+        approvalRequestDirectives:
+          actionDirectives.approvalRequestDirectives,
         ...(engineVersion ? { engineVersion } : {}),
         ...(output.engineSessionId
           ? { engineSessionId: output.engineSessionId }

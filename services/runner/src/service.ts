@@ -6,6 +6,7 @@ import type {
   ApprovalRecord,
   ConversationLifecycleState,
   ConversationRecord,
+  EngineApprovalRequestDirective,
   EngineArtifactInput,
   EngineHandoffDirective,
   EngineProviderMetadata,
@@ -115,6 +116,11 @@ type ResolvedHandoffRoute = {
 type ResolvedHandoffPlan = {
   directive: EngineHandoffDirective;
   route: ResolvedHandoffRoute;
+};
+
+type MaterializedApprovalRequests = {
+  approvalRecords: ApprovalRecord[];
+  waitingApprovalIds: string[];
 };
 
 class RunnerHandoffPolicyError extends AgentEngineExecutionError {
@@ -578,6 +584,173 @@ function resolveHandoffPlans(
       }
     };
   });
+}
+
+function buildEngineApprovalRequestId(input: {
+  directive: EngineApprovalRequestDirective;
+  index: number;
+  turnId: string;
+}): string {
+  return (
+    input.directive.approvalId ??
+    `approval-${input.turnId}-${String(input.index + 1).padStart(3, "0")}`
+  );
+}
+
+function policyResourcesMatch(
+  left: ApprovalRecord["resource"],
+  right: ApprovalRecord["resource"]
+): boolean {
+  if (!left && !right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.id === right.id && left.kind === right.kind;
+}
+
+function assertEngineApprovalRequestCompatible(input: {
+  approvalId: string;
+  context: EffectiveRuntimeContext;
+  directive: EngineApprovalRequestDirective;
+  envelope: RunnerInboundEnvelope;
+  existingApproval: ApprovalRecord;
+}): void {
+  if (input.existingApproval.graphId !== input.envelope.message.graphId) {
+    throw new AgentEngineExecutionError(
+      `Engine approval request '${input.approvalId}' belongs to graph '${input.existingApproval.graphId}', not '${input.envelope.message.graphId}'.`,
+      {
+        classification: "bad_request"
+      }
+    );
+  }
+
+  if (
+    input.existingApproval.requestedByNodeId !==
+    input.context.binding.node.nodeId
+  ) {
+    throw new AgentEngineExecutionError(
+      `Engine approval request '${input.approvalId}' was requested by node '${input.existingApproval.requestedByNodeId}', not '${input.context.binding.node.nodeId}'.`,
+      {
+        classification: "bad_request"
+      }
+    );
+  }
+
+  if (input.existingApproval.sessionId !== input.envelope.message.sessionId) {
+    throw new AgentEngineExecutionError(
+      `Engine approval request '${input.approvalId}' belongs to session '${input.existingApproval.sessionId}', not '${input.envelope.message.sessionId}'.`,
+      {
+        classification: "bad_request"
+      }
+    );
+  }
+
+  if (
+    input.existingApproval.operation &&
+    input.existingApproval.operation !== input.directive.operation
+  ) {
+    throw new AgentEngineExecutionError(
+      `Engine approval request '${input.approvalId}' is scoped to operation '${input.existingApproval.operation}', not '${input.directive.operation}'.`,
+      {
+        classification: "bad_request"
+      }
+    );
+  }
+
+  if (
+    !policyResourcesMatch(
+      input.existingApproval.resource,
+      input.directive.resource
+    )
+  ) {
+    throw new AgentEngineExecutionError(
+      `Engine approval request '${input.approvalId}' has a conflicting resource scope.`,
+      {
+        classification: "bad_request"
+      }
+    );
+  }
+}
+
+async function materializeEngineApprovalRequests(input: {
+  context: EffectiveRuntimeContext;
+  directives: EngineApprovalRequestDirective[];
+  envelope: RunnerInboundEnvelope;
+  statePaths: RunnerStatePaths;
+  turnId: string;
+}): Promise<MaterializedApprovalRequests> {
+  const approvalRecords: ApprovalRecord[] = [];
+  const waitingApprovalIds: string[] = [];
+
+  for (const [index, directive] of input.directives.entries()) {
+    const approvalId = buildEngineApprovalRequestId({
+      directive,
+      index,
+      turnId: input.turnId
+    });
+    const existingApproval = await readApprovalRecord(
+      input.statePaths,
+      approvalId
+    );
+
+    if (existingApproval) {
+      assertEngineApprovalRequestCompatible({
+        approvalId,
+        context: input.context,
+        directive,
+        envelope: input.envelope,
+        existingApproval
+      });
+
+      if (existingApproval.status === "approved") {
+        approvalRecords.push(existingApproval);
+        continue;
+      }
+
+      if (existingApproval.status !== "pending") {
+        throw new AgentEngineExecutionError(
+          `Engine approval request '${approvalId}' is '${existingApproval.status}' and cannot be reused as a pending gate.`,
+          {
+            classification: "policy_denied"
+          }
+        );
+      }
+    }
+
+    const requestedAt = existingApproval?.requestedAt ?? nowIsoString();
+    const approvalRecord: ApprovalRecord = {
+      approvalId,
+      approverNodeIds: existingApproval
+        ? mergeIdentifierLists(
+            existingApproval.approverNodeIds,
+            directive.approverNodeIds
+          )
+        : directive.approverNodeIds,
+      conversationId: input.envelope.message.conversationId,
+      graphId: input.envelope.message.graphId,
+      operation: directive.operation,
+      reason: directive.reason,
+      requestedAt,
+      requestedByNodeId: input.context.binding.node.nodeId,
+      ...(directive.resource ? { resource: directive.resource } : {}),
+      sessionId: input.envelope.message.sessionId,
+      status: "pending",
+      updatedAt: nowIsoString()
+    };
+
+    await writeApprovalRecord(input.statePaths, approvalRecord);
+    approvalRecords.push(approvalRecord);
+    waitingApprovalIds.push(approvalId);
+  }
+
+  return {
+    approvalRecords,
+    waitingApprovalIds
+  };
 }
 
 function dedupeArtifactRefs(artifactRefs: ArtifactRef[]): ArtifactRef[] {
@@ -1804,6 +1977,7 @@ export class RunnerService {
       nodeId: this.context.binding.node.nodeId,
       phase: "receiving",
       producedArtifactIds: [],
+      requestedApprovalIds: [],
       sessionId: envelope.message.sessionId,
       sourceChangeCandidateIds: [],
       startedAt: envelope.receivedAt,
@@ -2002,6 +2176,107 @@ export class RunnerService {
         )
       };
       await writeSessionRecord(statePaths, currentSession);
+      const materializedApprovalRequests =
+        result.approvalRequestDirectives.length > 0
+          ? await materializeEngineApprovalRequests({
+              context: this.context,
+              directives: result.approvalRequestDirectives,
+              envelope,
+              statePaths,
+              turnId: turnRecord.turnId
+            })
+          : {
+              approvalRecords: [],
+              waitingApprovalIds: []
+            };
+
+      if (materializedApprovalRequests.approvalRecords.length > 0) {
+        turnRecord = {
+          ...turnRecord,
+          requestedApprovalIds: materializedApprovalRequests.approvalRecords.map(
+            (approvalRecord) => approvalRecord.approvalId
+          ),
+          updatedAt: nowIsoString()
+        };
+        await writeRunnerTurnRecord(statePaths, turnRecord);
+      }
+
+      const memoryUpdate = await performPostTurnMemoryUpdate({
+        consumedArtifactIds,
+        context: this.context,
+        envelope,
+        producedArtifactIds,
+        result,
+        turnId: turnRecord.turnId
+      });
+      const memorySynthesisInput = {
+        artifactInputs: [
+          ...retrievedArtifacts.artifactInputs,
+          ...buildArtifactInputsFromMaterializedRecords(
+            materializedArtifacts.artifacts
+          )
+        ],
+        artifactRefs: [
+          ...envelope.message.work.artifactRefs,
+          ...materializedArtifacts.artifacts.map((artifactRecord) => artifactRecord.ref)
+        ],
+        consumedArtifactIds,
+        envelope,
+        producedArtifactIds,
+        recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+        result,
+        statePaths,
+        taskPagePath: memoryUpdate.taskPagePath,
+        turnRecord,
+        turnId: turnRecord.turnId
+      };
+
+      if (materializedApprovalRequests.waitingApprovalIds.length > 0) {
+        currentSession = {
+          ...currentSession,
+          waitingApprovalIds: mergeIdentifierLists(
+            currentSession.waitingApprovalIds,
+            materializedApprovalRequests.waitingApprovalIds
+          )
+        };
+        await writeSessionRecord(statePaths, currentSession);
+        currentSession = isAllowedSessionLifecycleTransition(
+          currentSession.status,
+          "waiting_approval"
+        )
+          ? await transitionSessionStatus(
+              statePaths,
+              currentSession,
+              "waiting_approval",
+              {
+                lastMessageId: envelope.eventId,
+                lastMessageType: envelope.message.messageType
+              }
+            )
+          : currentSession;
+        currentConversation = await this.transitionConversationToAwaitingApproval({
+          conversation: currentConversation,
+          lastInboundMessageId: envelope.eventId,
+          lastMessageType: envelope.message.messageType,
+          statePaths
+        });
+        turnRecord = await writeRunnerPhase(statePaths, turnRecord, "blocked");
+        turnRecord = await this.runOptionalMemorySynthesis({
+          ...memorySynthesisInput,
+          turnRecord
+        });
+        turnRecord = await this.syncWikiRepositoryForTurn({
+          statePaths,
+          turnRecord
+        });
+
+        return {
+          handled: true,
+          handoffs: [],
+          response: undefined
+        };
+      }
+
       let publishedHandoffs: RunnerPublishedEnvelope[] = [];
 
       if (handoffPlans.length > 0) {
@@ -2058,35 +2333,6 @@ export class RunnerService {
         };
         await writeRunnerTurnRecord(statePaths, turnRecord);
       }
-      const memoryUpdate = await performPostTurnMemoryUpdate({
-        consumedArtifactIds,
-        context: this.context,
-        envelope,
-        producedArtifactIds,
-        result,
-        turnId: turnRecord.turnId
-      });
-      const memorySynthesisInput = {
-        artifactInputs: [
-          ...retrievedArtifacts.artifactInputs,
-          ...buildArtifactInputsFromMaterializedRecords(
-            materializedArtifacts.artifacts
-          )
-        ],
-        artifactRefs: [
-          ...envelope.message.work.artifactRefs,
-          ...materializedArtifacts.artifacts.map((artifactRecord) => artifactRecord.ref)
-        ],
-        consumedArtifactIds,
-        envelope,
-        producedArtifactIds,
-        recentWorkSummaryPath: memoryUpdate.summaryPagePath,
-        result,
-        statePaths,
-        taskPagePath: memoryUpdate.taskPagePath,
-        turnRecord,
-        turnId: turnRecord.turnId
-      };
 
       currentConversation = await transitionConversationStatus(
         statePaths,
@@ -2116,7 +2362,10 @@ export class RunnerService {
           );
         }
 
-        turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
+        turnRecord = await this.runOptionalMemorySynthesis({
+          ...memorySynthesisInput,
+          turnRecord
+        });
         turnRecord = await this.syncWikiRepositoryForTurn({
           statePaths,
           turnRecord
@@ -2163,7 +2412,10 @@ export class RunnerService {
         session: currentSession,
         statePaths
       });
-      turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
+      turnRecord = await this.runOptionalMemorySynthesis({
+        ...memorySynthesisInput,
+        turnRecord
+      });
       turnRecord = await this.syncWikiRepositoryForTurn({
         statePaths,
         turnRecord

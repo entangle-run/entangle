@@ -341,6 +341,7 @@ export const runnerTurnRecordSchema = z.object({
   nodeId: identifierSchema,
   phase: runnerPhaseSchema,
   producedArtifactIds: z.array(identifierSchema).default([]),
+  requestedApprovalIds: z.array(identifierSchema).default([]),
   sessionId: identifierSchema.optional(),
   sourceChangeCandidateIds: z.array(identifierSchema).default([]),
   sourceChangeSummary: sourceChangeSummarySchema.optional(),

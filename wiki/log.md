@@ -1,5 +1,24 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Materialized engine-requested approval gates
+
+Advanced Entangle Local B7/B3 by extending the OpenCode `entangle-actions`
+bridge beyond handoffs. `AgentEngineTurnResult` now accepts generic
+`approvalRequestDirectives`, the OpenCode adapter validates those directives
+from bounded action blocks, and runner turns record `requestedApprovalIds`.
+
+When an engine asks for approval, the runner now writes a pending approval
+record with operation/resource evidence, moves the active session to
+`waiting_approval`, moves the active conversation to `awaiting_approval`, and
+does not publish a task result while the gate is pending. This keeps Entangle
+policy and lifecycle state authoritative without giving the coding engine
+direct authority over the gated side effect.
+
+Focused verification covered types contracts, OpenCode action parsing, and the
+runner lifecycle path for approval-request directives. Live OpenCode
+permission pause/resume and post-approval engine resumption remain open B3/B7
+work.
+
 ## [2026-04-25] implementation | Added operator scoped approval decisions
 
 Advanced Entangle Local L3 approval governance with an explicit host mutation

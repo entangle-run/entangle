@@ -500,10 +500,16 @@ Current partial implementation:
   source mutation workflows or deciding an existing pending approval without
   respecifying its scope; the shared host client, CLI, and Studio consume the
   same mutation path;
+- engine results can now carry generic `approvalRequestDirectives`; the
+  OpenCode adapter validates them from bounded `entangle-actions` blocks, and
+  the runner materializes them as pending approval records with
+  operation/resource evidence, links the ids to the runner turn, and moves the
+  active session/conversation to `waiting_approval`/`awaiting_approval`
+  without granting the gated side effect;
 - this does not yet create durable approval records from live OpenCode
-  permission requests or feed approval decisions back into OpenCode because the
-  current one-shot `opencode run` lifecycle auto-rejects unless unsafe bypass
-  is enabled.
+  permission requests or feed approval decisions back into a paused OpenCode
+  process because the current one-shot `opencode run` lifecycle auto-rejects
+  unless unsafe bypass is enabled.
 
 Acceptance:
 
@@ -720,6 +726,10 @@ Current partial implementation:
   assistant text, validates `handoffDirectives` with the canonical engine
   schema, strips the machine-action block from human assistant messages, and
   returns validated directives on `AgentEngineTurnResult`;
+- the same action-block bridge now validates `approvalRequestDirectives` into
+  generic engine approval requests, and the runner materializes those requests
+  as pending local approval records before pausing the session/conversation
+  lifecycle on `waiting_approval`/`awaiting_approval`;
 - malformed or oversized action blocks now produce a bounded `bad_request`
   engine result with provider stop reason
   `entangle_action_directive_parse_error`;
@@ -727,10 +737,10 @@ Current partial implementation:
   fail as `policy_denied` while preserving bounded engine session/version,
   provider stop reason, permission, tool, and usage evidence on the failed turn
   outcome;
-- OpenCode-backed handoff is therefore available through the same runner-owned
-  Entangle validation path as injected engines, but live OpenCode permission
-  approval mapping, approval-request directives, publication directives, and
-  external cancellation remain open.
+- OpenCode-backed handoff and engine-requested approval gates are therefore
+  available through runner-owned Entangle validation/materialization paths, but
+  live OpenCode permission approval mapping, post-approval engine resumption,
+  publication directives, and external cancellation remain open.
 
 Acceptance:
 

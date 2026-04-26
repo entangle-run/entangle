@@ -8,7 +8,10 @@ import {
   identifierSchema,
   nonEmptyStringSchema
 } from "../common/primitives.js";
-import { policyOperationSchema } from "../common/policy.js";
+import {
+  policyOperationSchema,
+  policyResourceScopeSchema
+} from "../common/policy.js";
 import { entangleA2AResponsePolicySchema } from "../protocol/a2a.js";
 import { modelEndpointAdapterKindSchema } from "../resources/catalog.js";
 
@@ -197,6 +200,14 @@ export const engineHandoffDirectiveSchema = z
     }
   });
 
+export const engineApprovalRequestDirectiveSchema = z.object({
+  approvalId: identifierSchema.optional(),
+  approverNodeIds: z.array(identifierSchema).default([]),
+  operation: enginePolicyOperationSchema,
+  reason: nonEmptyStringSchema,
+  resource: policyResourceScopeSchema.optional()
+});
+
 export const agentEngineTurnRequestSchema = z.object({
   sessionId: identifierSchema,
   nodeId: identifierSchema,
@@ -221,6 +232,9 @@ export const agentEngineTurnRequestSchema = z.object({
 export const agentEngineTurnResultSchema = z
   .object({
     assistantMessages: z.array(nonEmptyStringSchema).default([]),
+    approvalRequestDirectives: z
+      .array(engineApprovalRequestDirectiveSchema)
+      .default([]),
     engineSessionId: nonEmptyStringSchema.optional(),
     engineVersion: nonEmptyStringSchema.optional(),
     failure: engineTurnFailureSchema.optional(),
@@ -266,6 +280,9 @@ export type EngineHandoffArtifactInclusion = z.infer<
   typeof engineHandoffArtifactInclusionSchema
 >;
 export type EngineHandoffDirective = z.infer<typeof engineHandoffDirectiveSchema>;
+export type EngineApprovalRequestDirective = z.infer<
+  typeof engineApprovalRequestDirectiveSchema
+>;
 export type EngineArtifactInput = z.infer<typeof engineArtifactInputSchema>;
 export type AgentEngineTurnRequest = z.infer<typeof agentEngineTurnRequestSchema>;
 export type AgentEngineTurnResult = z.infer<typeof agentEngineTurnResultSchema>;

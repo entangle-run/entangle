@@ -65,6 +65,7 @@ export function formatRuntimeTurnDetailLines(
   turn: RunnerTurnRecord
 ): string[] {
   const handoffMessageIds = turn.emittedHandoffMessageIds ?? [];
+  const requestedApprovalIds = turn.requestedApprovalIds ?? [];
   const lines = [
     `started ${turn.startedAt}`,
     `updated ${turn.updatedAt}`,
@@ -90,6 +91,7 @@ export function formatRuntimeTurnDetailLines(
     `consumed artifacts ${formatIdList(turn.consumedArtifactIds)}`,
     `produced artifacts ${formatIdList(turn.producedArtifactIds)}`,
     `handoff messages ${formatIdList(handoffMessageIds)}`,
+    `approval requests ${formatIdList(requestedApprovalIds)}`,
     `source change candidates ${formatIdList(turn.sourceChangeCandidateIds)}`,
     `source changes ${formatSourceChangeSummary(turn.sourceChangeSummary)}`
   );

@@ -3141,6 +3141,7 @@ describe("buildHostServer", () => {
         nodeId: "worker-it",
         phase: "emitting",
         producedArtifactIds: ["report-turn-001"],
+        requestedApprovalIds: [],
         sessionId: "session-alpha",
         sourceChangeCandidateIds: [],
         startedAt: "2026-04-24T10:00:00.000Z",

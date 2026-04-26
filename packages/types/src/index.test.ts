@@ -798,6 +798,50 @@ describe("agent engine turn contracts", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts policy-scoped approval request directives", () => {
+    const result = agentEngineTurnResultSchema.parse({
+      approvalRequestDirectives: [
+        {
+          approvalId: "approval-source-publication-alpha",
+          approverNodeIds: ["operator-alpha"],
+          operation: "source_publication",
+          reason: "Approve source publication before pushing shared history.",
+          resource: {
+            id: "source-history-alpha",
+            kind: "source_history",
+            label: "source-history-alpha"
+          }
+        }
+      ],
+      assistantMessages: ["Prepared source history and requested approval."],
+      stopReason: "completed"
+    });
+
+    expect(result.approvalRequestDirectives[0]).toMatchObject({
+      approvalId: "approval-source-publication-alpha",
+      approverNodeIds: ["operator-alpha"],
+      operation: "source_publication",
+      resource: {
+        id: "source-history-alpha",
+        kind: "source_history"
+      }
+    });
+  });
+
+  it("rejects approval request directives without an operation", () => {
+    const result = agentEngineTurnResultSchema.safeParse({
+      approvalRequestDirectives: [
+        {
+          reason: "Approve the action before continuing."
+        }
+      ],
+      assistantMessages: ["Requested approval."],
+      stopReason: "completed"
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("artifact contracts", () => {

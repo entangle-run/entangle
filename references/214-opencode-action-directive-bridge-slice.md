@@ -43,7 +43,9 @@ states that Entangle validates every directive before performing it.
 The OpenCode adapter now extracts bounded `entangle-actions` blocks from
 assistant text, removes those machine-action blocks from the human assistant
 message, validates `handoffDirectives` through the canonical engine handoff
-schema, and returns validated directives on `AgentEngineTurnResult`.
+schema, validates `approvalRequestDirectives` through the canonical engine
+approval request schema, and returns validated directives on
+`AgentEngineTurnResult`.
 
 Malformed or oversized action blocks produce a bounded `bad_request` engine
 result with provider stop reason `entangle_action_directive_parse_error`.
@@ -59,14 +61,25 @@ runner preserves bounded engine session id, engine version, provider stop
 reason, permission observations, tool observations, and usage evidence on the
 failed turn outcome.
 
+The approval follow-up added the first B7/B3 approval-request bridge. Engine
+results can now carry `approvalRequestDirectives` with operation, reason,
+optional resource scope, optional explicit approval id, and optional approver
+ids. The runner materializes those directives as pending runner approval
+records, links the approval ids to `RunnerTurnRecord.requestedApprovalIds`,
+moves the active session to `waiting_approval`, moves the active conversation
+to `awaiting_approval`, and returns no task result while the gate is pending.
+This records the requested gate without granting the engine the side effect it
+asked approval for.
+
 ## Boundary Decisions
 
 - OpenCode does not get direct authority to message peers or publish artifacts.
 - The action block is adapter input, not a protocol contract.
 - The public host, graph, and A2A contracts remain engine-agnostic.
 - Entangle action blocks are not persisted as raw prompt/output evidence.
-- The first supported action directive is handoff. Approval-request and
-  publication directives remain future B7/B3 work.
+- Supported action directives are now handoff and local approval request.
+  Publication directives, live OpenCode permission pause/resume, and
+  post-approval engine resumption remain future B7/B3 work.
 
 ## Focused Verification
 
@@ -75,10 +88,13 @@ The focused implementation checks covered:
 - TypeScript typechecking for `@entangle/types`, `@entangle/runner`, and
   `@entangle/host-client`.
 - OpenCode adapter tests for valid action extraction, action-block
-  sanitization, malformed directive classification, and standard JSON-event
-  parsing.
+- sanitization, approval-request directive extraction, malformed directive
+  classification, and standard JSON-event parsing.
 - Runner service tests for policy-denied handoff directives preserving bounded
   engine evidence on failed turn outcomes.
+- Runner service tests for engine-requested approval directives materializing
+  pending approval records and pausing session/conversation lifecycle without
+  publishing a task result.
 
 The full repository verification for this slice must still pass before the
 batch is considered closed.

@@ -302,6 +302,47 @@ describe("OpenCode runner engine adapter", () => {
     });
   });
 
+  it("extracts Entangle action approval requests from OpenCode text blocks", () => {
+    const extraction = extractEntangleActionDirectives([
+      [
+        "Prepared the source history and requested approval.",
+        "```entangle-actions",
+        JSON.stringify({
+          approvalRequestDirectives: [
+            {
+              approvalId: "approval-source-publication-alpha",
+              approverNodeIds: ["operator-alpha"],
+              operation: "source_publication",
+              reason: "Approve publication before pushing source history.",
+              resource: {
+                id: "source-history-alpha",
+                kind: "source_history"
+              }
+            }
+          ]
+        }),
+        "```"
+      ].join("\n")
+    ]);
+
+    expect(extraction).toMatchObject({
+      approvalRequestDirectives: [
+        {
+          approvalId: "approval-source-publication-alpha",
+          approverNodeIds: ["operator-alpha"],
+          operation: "source_publication",
+          reason: "Approve publication before pushing source history.",
+          resource: {
+            id: "source-history-alpha",
+            kind: "source_history"
+          }
+        }
+      ],
+      assistantMessages: ["Prepared the source history and requested approval."],
+      errors: []
+    });
+  });
+
   it("parses OpenCode Entangle action blocks into handoff directives", async () => {
     const fixture = await createRuntimeFixture();
     const mock = createMockOpenCodeSpawn({
@@ -352,6 +393,67 @@ describe("OpenCode runner engine adapter", () => {
         },
         summary: "Review the implementation artifact.",
         targetNodeId: "reviewer-it"
+      }
+    ]);
+  });
+
+  it("parses OpenCode Entangle action blocks into approval request directives", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: [
+                  "I prepared the source change candidate.",
+                  "```entangle-actions",
+                  JSON.stringify({
+                    approvalRequestDirectives: [
+                      {
+                        approvalId: "approval-source-apply-alpha",
+                        operation: "source_application",
+                        reason: "Approve applying the source change candidate.",
+                        resource: {
+                          id: "source-change-alpha",
+                          kind: "source_change_candidate"
+                        }
+                      }
+                    ]
+                  }),
+                  "```"
+                ].join("\n")
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest());
+
+    expect(result.assistantMessages).toEqual([
+      "I prepared the source change candidate."
+    ]);
+    expect(result.approvalRequestDirectives).toEqual([
+      {
+        approvalId: "approval-source-apply-alpha",
+        approverNodeIds: [],
+        operation: "source_application",
+        reason: "Approve applying the source change candidate.",
+        resource: {
+          id: "source-change-alpha",
+          kind: "source_change_candidate"
+        }
       }
     ]);
   });
