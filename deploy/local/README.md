@@ -142,6 +142,17 @@ The diagnostics smoke writes a temporary redacted `entangle local diagnostics`
 JSON bundle, validates its stable top-level shape, and removes the temporary
 file after the check.
 
+To verify the non-destructive reliability support path against an initialized
+Local profile, run:
+
+```sh
+pnpm ops:smoke-local:reliability
+```
+
+The reliability smoke creates a temporary `entangle local backup` bundle,
+validates `entangle local restore --dry-run`, runs `entangle local repair
+--skip-live --json`, and removes the temporary backup bundle after the check.
+
 Environment overrides:
 
 - `ENTANGLE_HOST_URL` or `ENTANGLE_LOCAL_HOST_URL`

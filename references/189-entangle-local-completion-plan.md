@@ -70,6 +70,8 @@ The latest implementation state includes:
   surface with `--apply-safe` for only safe host-state skeleton initialization
   and missing current layout-marker recovery, writing local repair records
   under `.entangle/host/traces/local-repairs`;
+- `pnpm ops:smoke-local:reliability` now covers the initialized-profile,
+  non-destructive backup, restore dry-run, and repair dry-run path;
 - runner turns now persist bounded `engineRequestSummary` evidence for the
   assembled engine request shape, including prompt part counts, aggregate
   prompt character counts, memory, artifact, and tool counts, execution
@@ -1056,7 +1058,11 @@ Current partial implementation:
   file after the check;
 - focused backup/restore helper coverage now validates dry-run restore, clean
   restore, secret exclusion, and incompatible state-layout rejection, but a
-  live repeated-use backup/restore smoke remains open.
+  destructive restore smoke remains open;
+- `pnpm ops:smoke-local:reliability` now runs against an initialized Local
+  profile, creates a temporary `entangle local backup` bundle, validates
+  `entangle local restore --dry-run`, checks `entangle local repair --skip-live
+  --json`, and removes the temporary backup bundle after the check.
 
 Acceptance:
 

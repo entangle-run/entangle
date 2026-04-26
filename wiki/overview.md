@@ -618,6 +618,9 @@ The repository now also contains the first real implementation baseline:
 - a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics`, which
   writes a temporary redacted diagnostics bundle against a running Local
   profile and validates its stable top-level shape;
+- a Local reliability smoke through `pnpm ops:smoke-local:reliability`, which
+  creates a temporary Local backup bundle, validates restore dry-run, and
+  checks repair dry-run output against an initialized Local profile;
 - a disposable local profile smoke through `pnpm ops:smoke-local:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;

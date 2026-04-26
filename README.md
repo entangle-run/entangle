@@ -288,6 +288,9 @@ This repository currently contains:
 - a Local diagnostics smoke through `pnpm ops:smoke-local:diagnostics` that
   writes a temporary redacted diagnostics bundle against a running Local
   profile and validates its stable top-level shape;
+- a Local reliability smoke through `pnpm ops:smoke-local:reliability` that
+  creates a temporary backup bundle, validates restore dry-run, and verifies
+  repair dry-run output against an initialized Local profile;
 - first Local backup/restore commands through `entangle local backup` and
   `entangle local restore`, using a versioned directory bundle for
   `.entangle/host`, selected Local profile config snapshots, explicit secret

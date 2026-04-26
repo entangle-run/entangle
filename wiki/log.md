@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Added Local reliability smoke
+
+Added `pnpm ops:smoke-local:reliability` for initialized Entangle Local
+profiles. The smoke creates a temporary `entangle local backup` bundle,
+validates `entangle local restore --dry-run`, checks `entangle local repair
+--skip-live --json`, and removes the temporary backup bundle after the check.
+
 ## [2026-04-26] implementation | Added conservative Local repair foundation
 
 Advanced Entangle Local L4 reliability with `entangle local repair`. The command

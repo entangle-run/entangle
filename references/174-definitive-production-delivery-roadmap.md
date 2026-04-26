@@ -515,6 +515,8 @@ Exit criteria:
 
 - repeated start/stop/restart cycles are documented and tested;
 - local state can be backed up and restored;
+- current reliability smoke covers initialized-profile backup, restore dry-run,
+  and repair dry-run through `pnpm ops:smoke-local:reliability`;
 - common local drift is diagnosed without reading raw files;
 - repair behavior is conservative and never silently destroys user work.
 
