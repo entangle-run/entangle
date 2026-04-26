@@ -175,8 +175,9 @@ The repository now also contains the first real implementation baseline:
   materialized git artifacts, plus a first safe host/CLI/Studio restore path
   that materializes git-backed runtime artifacts into explicit artifact
   workspace restore directories without overwriting existing targets by
-  default, with host/CLI/Studio restore-attempt history inspection, and with
-  runner-owned local git snapshots of `memory/wiki` into
+  default, with host/CLI/Studio restore-attempt history inspection and a first
+  approval-gated host/CLI promotion path from successful restores into the
+  source workspace, and with runner-owned local git snapshots of `memory/wiki` into
   each node's `wiki-repository` workspace after completed turns, including
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus
@@ -742,8 +743,8 @@ The current implementation-truth audit now lives in
   bounded artifact history/diff inspection and safe workspace restore for
   materialized git artifacts, now including host-owned provisioning for
   selected non-primary `gitea_api` publication targets; the next git gaps are
-  approval-gated restore/replay promotion semantics and explicit fallback or
-  replication behavior, while the next deployment-grade gap is non-disposable
+  wiki promotion, direct source-history replay workflows, and explicit fallback
+  or replication behavior, while the next deployment-grade gap is non-disposable
   local-profile upgrade and repair behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled

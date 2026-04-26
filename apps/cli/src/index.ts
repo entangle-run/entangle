@@ -87,6 +87,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactPromotionSummary,
   projectRuntimeArtifactRestoreRecordSummary,
   projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
@@ -1812,6 +1813,58 @@ hostRuntimesCommand
           ? response.restores.map(projectRuntimeArtifactRestoreRecordSummary)
           : response.restores
       });
+    }
+  );
+
+hostRuntimesCommand
+  .command("artifact-promote")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<artifactId>", "Artifact identifier to promote.")
+  .requiredOption(
+    "--restore-id <restoreId>",
+    "Restored artifact workspace identifier to promote."
+  )
+  .requiredOption(
+    "--approval-id <approvalId>",
+    "Approved source_application approval scoped to the artifact restore."
+  )
+  .option("--overwrite", "Replace existing source workspace files.")
+  .option("--promoted-by <nodeId>", "Node or operator identifier promoting the artifact.")
+  .option("--promotion-id <promotionId>", "Stable promotion identifier.")
+  .option("--reason <reason>", "Operator reason for the promotion attempt.")
+  .option("--summary", "Print a compact operator-oriented promotion summary.")
+  .description("Promote a restored runtime artifact into the source workspace.")
+  .action(
+    async (
+      nodeId: string,
+      artifactId: string,
+      options: {
+        approvalId: string;
+        overwrite?: boolean;
+        promotedBy?: string;
+        promotionId?: string;
+        reason?: string;
+        restoreId: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.promoteRuntimeArtifact(nodeId, artifactId, {
+        approvalId: options.approvalId,
+        overwrite: options.overwrite ?? false,
+        ...(options.promotedBy ? { promotedBy: options.promotedBy } : {}),
+        ...(options.promotionId ? { promotionId: options.promotionId } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        restoreId: options.restoreId,
+        target: "source_workspace"
+      });
+
+      printJson(
+        options.summary
+          ? projectRuntimeArtifactPromotionSummary(response)
+          : response
+      );
     }
   );
 

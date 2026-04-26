@@ -2553,3 +2553,15 @@ active source-history records reference the target. If provisioning or the
 subsequent git push cannot complete, the host keeps the local artifact truth
 and records a failed publication instead of hiding the failure behind fallback
 behavior.
+
+## [2026-04-26] implementation | Added approval-gated artifact promotion
+
+Added `references/219-artifact-promotion-slice.md` and advanced B5 of the
+Entangle Local completion plan. Git-backed artifacts that were safely restored
+into the artifact restore workspace can now be promoted into the node source
+workspace through a host-mediated `artifact-promote` flow.
+
+Promotion requires an approved `source_application` approval scoped to the
+artifact/restore tuple, records a durable promotion attempt, rejects unsafe
+restore paths and symlinks, and refuses to overwrite existing source files
+unless overwrite is explicitly requested.

@@ -111,7 +111,7 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 agent-runtime status summary plus bounded request-shape evidence for executable
 turns, but Entangle Local still lacks the complete policy bridge, live OpenCode
 permission approval mapping, approval-gated artifact replay/promotion
-workflow, full git/wiki backup/restore/publication workflow, external
+workflow beyond the first source-workspace promotion path, full git/wiki backup/restore/publication workflow, external
 cancellation bridge, deeper doctor remediation, and richer runtime evidence
 panels required for L3 acceptance.
 
@@ -469,7 +469,8 @@ Current partial implementation:
   checked where runner turns actually execute;
 - this does not yet complete external cancellation, permission mapping, full
   degraded-runtime status DTOs, attached server lifecycle, policy-gated source
-  publication, or approval-gated artifact replay/promotion workflow.
+  publication, or the broader artifact replay/promotion workflow beyond the
+  first approval-gated source-workspace promotion path.
 
 Acceptance:
 
@@ -605,7 +606,7 @@ Tasks:
 - Add artifact history/diff host API, host-client, CLI, and Studio surfaces.
 - Add safe artifact restore host API, host-client, CLI, and Studio surfaces,
   including restore-attempt history inspection, then add approval-gated
-  replay/promotion once the safe restore record model is proven.
+  source-workspace promotion for successful restores.
 - Add bounded previews for harvested text/code outputs.
 
 Constraints:
@@ -680,8 +681,8 @@ Current partial implementation:
   overwritten by default, and unsupported/unsafe restore attempts return
   structured unavailable records rather than widening filesystem access;
 - live OpenCode permission-to-approval flow, fallback/replication behavior
-  across publication targets, and approval-gated artifact replay/promotion
-  workflow remain open.
+  across publication targets, Studio promotion controls, wiki promotion, and
+  direct source-history replay workflows remain open.
 
 Acceptance:
 

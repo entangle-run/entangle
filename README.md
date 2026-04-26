@@ -235,7 +235,10 @@ This repository currently contains:
   restore-attempt history through
   `GET /v1/runtimes/{nodeId}/artifact-restores` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/restores`, with matching
-  host-client, CLI, and Studio coverage;
+  host-client, CLI, and Studio coverage, and an approval-gated
+  `POST /v1/runtimes/{nodeId}/artifacts/{artifactId}/promote` path that can
+  copy a successful restore into the source workspace through the shared host
+  and CLI boundary;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -747,7 +750,8 @@ The highest-value remaining gaps are:
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
   source-history publication, and safe artifact restore model, especially
-  approval-gated replay/promotion semantics and replicated fallback paths;
+  wiki promotion, direct source-history replay workflows, and replicated
+  fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

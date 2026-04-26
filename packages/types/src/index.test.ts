@@ -44,6 +44,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   resolvedSecretBindingSchema,
   runtimeArtifactInspectionResponseSchema,
+  runtimeArtifactPromotionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
@@ -358,6 +359,62 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.restores[0]?.restoreId).toBe("restore-report-turn-001");
+  });
+
+  it("accepts runtime artifact promotion responses", () => {
+    const result = runtimeArtifactPromotionResponseSchema.parse({
+      artifact: {
+        createdAt: "2026-04-24T00:00:00.000Z",
+        ref: {
+          artifactId: "source-source-history-alpha",
+          artifactKind: "commit",
+          backend: "git",
+          createdByNodeId: "worker-it",
+          locator: {
+            branch: "worker-it/source-history/source-history-alpha",
+            commit: "abc123",
+            gitServiceRef: "local-gitea",
+            namespace: "team-alpha",
+            path: ".",
+            repositoryName: "team-alpha"
+          },
+          preferred: true,
+          status: "materialized"
+        },
+        updatedAt: "2026-04-24T00:00:00.000Z"
+      },
+      promotion: {
+        approvalId: "approval-promote-alpha",
+        artifactId: "source-source-history-alpha",
+        createdAt: "2026-04-24T00:02:00.000Z",
+        nodeId: "worker-it",
+        promotedFileCount: 1,
+        promotedPath: "/tmp/entangle/source",
+        promotionId: "promotion-source-alpha",
+        restoreId: "restore-source-alpha",
+        status: "promoted",
+        target: "source_workspace",
+        updatedAt: "2026-04-24T00:02:00.000Z"
+      },
+      restore: {
+        artifactId: "source-source-history-alpha",
+        createdAt: "2026-04-24T00:01:00.000Z",
+        mode: "restore_workspace",
+        nodeId: "worker-it",
+        restoreId: "restore-source-alpha",
+        restoredFileCount: 1,
+        restoredPath: "/tmp/entangle/artifacts/restores/restore-source-alpha",
+        source: {
+          backend: "git",
+          commit: "abc123",
+          path: "."
+        },
+        status: "restored",
+        updatedAt: "2026-04-24T00:01:00.000Z"
+      }
+    });
+
+    expect(result.promotion.status).toBe("promoted");
   });
 });
 

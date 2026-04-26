@@ -47,6 +47,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactPromotionResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -4375,6 +4376,81 @@ describe("buildHostServer", () => {
           })
         ])
       );
+
+      await writeFile(
+        path.join(sourceWorkspaceRoot, "worker.ts"),
+        "export const generated = false;\n",
+        "utf8"
+      );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-artifact-promotion-alpha.json"
+        ),
+        approvalRecordSchema.parse({
+          approvalId: "approval-artifact-promotion-alpha",
+          approverNodeIds: ["operator-alpha"],
+          graphId: runtimeContext.binding.graphId,
+          operation: "source_application",
+          reason: "Approve artifact promotion into the source workspace.",
+          requestedAt: "2026-04-24T00:02:00.000Z",
+          requestedByNodeId: "worker-it",
+          resource: {
+            id:
+              "source-source-history-source-change-turn-alpha|restore-source-history-alpha",
+            kind: "artifact",
+            label:
+              "source-source-history-source-change-turn-alpha from restore restore-source-history-alpha"
+          },
+          sessionId: "session-alpha",
+          status: "approved",
+          updatedAt: "2026-04-24T00:02:01.000Z"
+        })
+      );
+
+      const sourceArtifactPromotionResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-artifact-promotion-alpha",
+          overwrite: true,
+          promotedBy: "operator-alpha",
+          promotionId: "promotion-source-history-alpha",
+          reason: "Promote restored source artifact into the source workspace.",
+          restoreId: "restore-source-history-alpha"
+        },
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/promote"
+      });
+
+      expect(sourceArtifactPromotionResponse.statusCode).toBe(200);
+      const sourceArtifactPromotion =
+        runtimeArtifactPromotionResponseSchema.parse(
+          sourceArtifactPromotionResponse.json()
+        );
+      expect(sourceArtifactPromotion.promotion).toMatchObject({
+        approvalId: "approval-artifact-promotion-alpha",
+        artifactId: "source-source-history-source-change-turn-alpha",
+        promotedBy: "operator-alpha",
+        promotedFileCount: 1,
+        promotionId: "promotion-source-history-alpha",
+        restoreId: "restore-source-history-alpha",
+        status: "promoted",
+        target: "source_workspace"
+      });
+      await expect(
+        readFile(path.join(sourceWorkspaceRoot, "worker.ts"), "utf8")
+      ).resolves.toBe("export const generated = true;\n");
+      await expect(
+        readFile(
+          path.join(
+            runtimeContext.workspace.runtimeRoot,
+            "artifact-promotions",
+            "promotion-source-history-alpha.json"
+          ),
+          "utf8"
+        )
+      ).resolves.toContain("approval-artifact-promotion-alpha");
 
       const repeatedPublishResponse = await server.inject({
         method: "POST",

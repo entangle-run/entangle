@@ -15,6 +15,7 @@ import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
+  RuntimeArtifactPromotionResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeArtifactRestoreRecord,
   RuntimeArtifactRestoreResponse
@@ -275,5 +276,74 @@ export function projectRuntimeArtifactRestoreRecordSummary(
       ? { unavailableReason: restore.unavailableReason }
       : {}),
     updatedAt: restore.updatedAt
+  };
+}
+
+export interface RuntimeArtifactCliPromotionSummaryRecord {
+  artifact: RuntimeArtifactCliSummaryRecord;
+  promotion:
+    | {
+        approvalId: string;
+        available: true;
+        promotedFileCount: number;
+        promotedPath: string;
+        promotionId: string;
+        restoreId: string;
+        status: string;
+        target: RuntimeArtifactPromotionResponse["promotion"]["target"];
+      }
+    | {
+        approvalId: string;
+        available: false;
+        promotionId: string;
+        reason: string;
+        restoreId: string;
+        status: string;
+        target: RuntimeArtifactPromotionResponse["promotion"]["target"];
+      };
+  restore: RuntimeArtifactCliRestoreRecordSummary;
+}
+
+function formatRuntimeArtifactPromotionStatus(
+  promotion: RuntimeArtifactPromotionResponse["promotion"]
+): string {
+  if (promotion.status === "promoted") {
+    return `${promotion.promotedFileCount ?? 0} file${
+      promotion.promotedFileCount === 1 ? "" : "s"
+    } promoted`;
+  }
+
+  return promotion.unavailableReason ?? "Artifact promotion is unavailable.";
+}
+
+export function projectRuntimeArtifactPromotionSummary(
+  response: RuntimeArtifactPromotionResponse
+): RuntimeArtifactCliPromotionSummaryRecord {
+  return {
+    artifact: projectRuntimeArtifactSummary(response.artifact),
+    promotion:
+      response.promotion.status === "promoted"
+        ? {
+            approvalId: response.promotion.approvalId,
+            available: true,
+            promotedFileCount: response.promotion.promotedFileCount ?? 0,
+            promotedPath: response.promotion.promotedPath ?? "",
+            promotionId: response.promotion.promotionId,
+            restoreId: response.promotion.restoreId,
+            status: formatRuntimeArtifactPromotionStatus(response.promotion),
+            target: response.promotion.target
+          }
+        : {
+            approvalId: response.promotion.approvalId,
+            available: false,
+            promotionId: response.promotion.promotionId,
+            reason:
+              response.promotion.unavailableReason ??
+              "Artifact promotion is unavailable.",
+            restoreId: response.promotion.restoreId,
+            status: formatRuntimeArtifactPromotionStatus(response.promotion),
+            target: response.promotion.target
+          },
+    restore: projectRuntimeArtifactRestoreRecordSummary(response.restore)
   };
 }

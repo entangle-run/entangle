@@ -1515,6 +1515,108 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runtime artifact promotion requests to the host surface", async () => {
+    const requests: Array<{ body: string | undefined; method: string; url: string }> =
+      [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: typeof init?.body === "string" ? init.body : undefined,
+          method: init?.method ?? "GET",
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-22T00:00:00.000Z",
+                ref: {
+                  artifactId: "report-turn-001",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  createdByNodeId: "worker-it",
+                  locator: {
+                    branch: "main",
+                    commit: "abc123",
+                    gitServiceRef: "local-gitea",
+                    namespace: "team-alpha",
+                    path: "reports/session-alpha/turn-001.md",
+                    repositoryName: "team-alpha"
+                  },
+                  preferred: true,
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-22T00:00:00.000Z"
+              },
+              promotion: {
+                approvalId: "approval-promote-report",
+                artifactId: "report-turn-001",
+                createdAt: "2026-04-22T00:02:00.000Z",
+                nodeId: "worker-it",
+                promotedFileCount: 1,
+                promotedPath: "/tmp/entangle/source",
+                promotionId: "promotion-report-turn-001",
+                restoreId: "restore-report-turn-001",
+                status: "promoted",
+                target: "source_workspace",
+                updatedAt: "2026-04-22T00:02:00.000Z"
+              },
+              restore: {
+                artifactId: "report-turn-001",
+                createdAt: "2026-04-22T00:01:00.000Z",
+                mode: "restore_workspace",
+                nodeId: "worker-it",
+                restoreId: "restore-report-turn-001",
+                restoredFileCount: 1,
+                restoredPath:
+                  "/tmp/entangle-runner/workspace/restores/restore-report-turn-001",
+                source: {
+                  backend: "git",
+                  commit: "abc123",
+                  path: "reports/session-alpha/turn-001.md"
+                },
+                status: "restored",
+                updatedAt: "2026-04-22T00:01:00.000Z"
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.promoteRuntimeArtifact("worker-it", "report-turn-001", {
+        approvalId: "approval-promote-report",
+        overwrite: true,
+        promotionId: "promotion-report-turn-001",
+        restoreId: "restore-report-turn-001"
+      })
+    ).resolves.toMatchObject({
+      promotion: {
+        promotedFileCount: 1,
+        status: "promoted"
+      }
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          approvalId: "approval-promote-report",
+          overwrite: true,
+          promotionId: "promotion-report-turn-001",
+          restoreId: "restore-report-turn-001",
+          target: "source_workspace"
+        }),
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/promote"
+      }
+    ]);
+  });
+
   it("parses runtime artifact restore history lists from the host surface", async () => {
     const requests: string[] = [];
     const client = createHostClient({

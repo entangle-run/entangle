@@ -159,6 +159,9 @@ import {
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactPromotionRecordSchema,
+  runtimeArtifactPromotionRequestSchema,
+  runtimeArtifactPromotionResponseSchema,
   runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreRecordSchema,
   runtimeArtifactRestoreRequestSchema,
@@ -171,6 +174,9 @@ import {
   type RuntimeArtifactDiffResponse,
   type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactPreviewResponse,
+  type RuntimeArtifactPromotionRecord,
+  type RuntimeArtifactPromotionRequest,
+  type RuntimeArtifactPromotionResponse,
   type RuntimeArtifactRestoreRecord,
   type RuntimeArtifactRestoreListResponse,
   type RuntimeArtifactRestoreRequest,
@@ -5615,6 +5621,29 @@ function buildRuntimeArtifactRestoreId(input: {
   return `${prefix}-${suffix}`;
 }
 
+function buildRuntimeArtifactPromotionId(input: {
+  artifactId: string;
+  promotionId?: string | undefined;
+  restoreId: string;
+}): string {
+  if (input.promotionId) {
+    return input.promotionId;
+  }
+
+  const base = sanitizeIdentifier(
+    `promote-${input.artifactId}-${input.restoreId}-${randomUUID().slice(0, 8)}`
+  );
+
+  if (base.length <= 100) {
+    return base;
+  }
+
+  const suffix = randomUUID().slice(0, 8);
+  const prefix = base.slice(0, 91).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${suffix}`;
+}
+
 function buildRuntimeArtifactRestoreSource(
   artifact: ArtifactRecord
 ): RuntimeArtifactRestoreRecord["source"] {
@@ -5868,6 +5897,255 @@ async function persistRuntimeArtifactRestoreRecord(input: {
   return record;
 }
 
+async function persistRuntimeArtifactPromotionRecord(input: {
+  context: EffectiveRuntimeContext;
+  record: RuntimeArtifactPromotionRecord;
+}): Promise<RuntimeArtifactPromotionRecord> {
+  const record = runtimeArtifactPromotionRecordSchema.parse(input.record);
+  const promotionsRoot = runtimeArtifactPromotionsRoot(
+    input.context.workspace.runtimeRoot
+  );
+
+  await mkdir(promotionsRoot, { recursive: true });
+  await writeFile(
+    await allocateRuntimeArtifactPromotionRecordPath({
+      promotionId: record.promotionId,
+      runtimeRoot: input.context.workspace.runtimeRoot
+    }),
+    `${JSON.stringify(record, null, 2)}\n`,
+    "utf8"
+  );
+
+  return record;
+}
+
+function buildArtifactPromotionApprovalResource(input: {
+  artifactId: string;
+  restoreId: string;
+}): PolicyResourceScope {
+  return {
+    id: `${input.artifactId}|${input.restoreId}`,
+    kind: "artifact",
+    label: `${input.artifactId} from restore ${input.restoreId}`
+  };
+}
+
+function resolveRuntimeArtifactPromotionSource(input: {
+  context: EffectiveRuntimeContext;
+  restore: RuntimeArtifactRestoreRecord;
+}): { restorePath: string } | { reason: string } {
+  if (input.restore.status !== "restored" || !input.restore.restoredPath) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the selected restore record is not restored."
+    };
+  }
+
+  const restorePath = path.resolve(input.restore.restoredPath);
+  const restoresRoot = path.resolve(
+    input.context.workspace.artifactWorkspaceRoot,
+    "restores"
+  );
+
+  if (!isPathInsideRoot({ candidatePath: restorePath, rootPath: restoresRoot })) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the restore path is outside the runtime artifact restore workspace."
+    };
+  }
+
+  return { restorePath };
+}
+
+async function listRestoredArtifactPromotionFiles(input: {
+  restorePath: string;
+  sourceWorkspaceRoot: string;
+}): Promise<
+  | Array<{
+      relativePath: string;
+      sourcePath: string;
+      targetPath: string;
+    }>
+  | { reason: string }
+> {
+  const files: Array<{
+    relativePath: string;
+    sourcePath: string;
+    targetPath: string;
+  }> = [];
+
+  async function walk(directoryPath: string): Promise<{ reason: string } | null> {
+    const entries = await readdir(directoryPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const sourcePath = path.join(directoryPath, entry.name);
+
+      if (entry.isSymbolicLink()) {
+        return {
+          reason:
+            "Artifact promotion is unavailable because the restore workspace contains a symbolic link."
+        };
+      }
+
+      if (entry.isDirectory()) {
+        const result = await walk(sourcePath);
+
+        if (result) {
+          return result;
+        }
+
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        return {
+          reason:
+            "Artifact promotion is unavailable because the restore workspace contains a non-file entry."
+        };
+      }
+
+      const relativePath = path.relative(input.restorePath, sourcePath);
+      const targetPath = path.resolve(input.sourceWorkspaceRoot, relativePath);
+
+      if (
+        relativePath.startsWith("..") ||
+        path.isAbsolute(relativePath) ||
+        !isPathInsideRoot({
+          candidatePath: targetPath,
+          rootPath: input.sourceWorkspaceRoot
+        })
+      ) {
+        return {
+          reason:
+            "Artifact promotion is unavailable because the restore workspace contains an unsafe path."
+        };
+      }
+
+      files.push({
+        relativePath,
+        sourcePath,
+        targetPath
+      });
+    }
+
+    return null;
+  }
+
+  const result = await walk(input.restorePath);
+
+  if (result) {
+    return result;
+  }
+
+  if (files.length === 0) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the restore workspace does not contain any files."
+    };
+  }
+
+  return files;
+}
+
+async function promoteRuntimeArtifactRestoreToSourceWorkspace(input: {
+  context: EffectiveRuntimeContext;
+  overwrite: boolean;
+  restore: RuntimeArtifactRestoreRecord;
+}): Promise<
+  | {
+      promotedFileCount: number;
+      promotedPath: string;
+    }
+  | { reason: string }
+> {
+  const sourceWorkspaceRoot = input.context.workspace.sourceWorkspaceRoot;
+
+  if (!sourceWorkspaceRoot) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the runtime has no source workspace root."
+    };
+  }
+
+  if (
+    !isPathInsideRoot({
+      candidatePath: sourceWorkspaceRoot,
+      rootPath: input.context.workspace.root
+    })
+  ) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the source workspace is outside the node workspace root."
+    };
+  }
+
+  const sourceWorkspaceStats = await stat(sourceWorkspaceRoot).catch(() => null);
+
+  if (!sourceWorkspaceStats?.isDirectory()) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the source workspace is not available as a directory."
+    };
+  }
+
+  const promotionSource = resolveRuntimeArtifactPromotionSource({
+    context: input.context,
+    restore: input.restore
+  });
+
+  if ("reason" in promotionSource) {
+    return promotionSource;
+  }
+
+  const restoreStats = await stat(promotionSource.restorePath).catch(() => null);
+
+  if (!restoreStats?.isDirectory()) {
+    return {
+      reason:
+        "Artifact promotion is unavailable because the restore workspace is not available as a directory."
+    };
+  }
+
+  const files = await listRestoredArtifactPromotionFiles({
+    restorePath: promotionSource.restorePath,
+    sourceWorkspaceRoot
+  });
+
+  if ("reason" in files) {
+    return files;
+  }
+
+  if (!input.overwrite) {
+    for (const file of files) {
+      if (await pathExists(file.targetPath)) {
+        return {
+          reason:
+            `Artifact promotion is unavailable because target path '${file.relativePath}' already exists. ` +
+            "Retry with overwrite enabled to replace existing files."
+        };
+      }
+    }
+  }
+
+  for (const file of files) {
+    await mkdir(path.dirname(file.targetPath), { recursive: true });
+
+    if (input.overwrite) {
+      await rm(file.targetPath, { force: true, recursive: true });
+    }
+
+    await cp(file.sourcePath, file.targetPath, {
+      force: false,
+      recursive: false
+    });
+  }
+
+  return {
+    promotedFileCount: files.length,
+    promotedPath: sourceWorkspaceRoot
+  };
+}
+
 export async function restoreRuntimeArtifact(input: {
   artifactId: string;
   nodeId: string;
@@ -5936,6 +6214,103 @@ export async function restoreRuntimeArtifact(input: {
 
   return runtimeArtifactRestoreResponseSchema.parse({
     artifact,
+    restore
+  });
+}
+
+export async function promoteRuntimeArtifact(input: {
+  artifactId: string;
+  nodeId: string;
+  request: RuntimeArtifactPromotionRequest;
+}): Promise<RuntimeArtifactPromotionResponse | null> {
+  const request = runtimeArtifactPromotionRequestSchema.parse(input.request);
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+  const artifact = artifacts.find(
+    (candidate) => candidate.ref.artifactId === input.artifactId
+  );
+
+  if (!artifact) {
+    return null;
+  }
+
+  const restores = await listRuntimeArtifactRestoreRecords(
+    context.workspace.runtimeRoot
+  );
+  const restore = restores.find(
+    (candidate) =>
+      candidate.artifactId === input.artifactId &&
+      candidate.restoreId === request.restoreId &&
+      candidate.status === "restored"
+  );
+
+  if (!restore) {
+    return null;
+  }
+
+  const promotionId = buildRuntimeArtifactPromotionId({
+    artifactId: input.artifactId,
+    promotionId: request.promotionId,
+    restoreId: request.restoreId
+  });
+  const createdAt = nowIsoString();
+  const baseRecord = {
+    approvalId: request.approvalId,
+    artifactId: input.artifactId,
+    createdAt,
+    nodeId: input.nodeId,
+    ...(request.promotedBy ? { promotedBy: request.promotedBy } : {}),
+    promotionId,
+    ...(request.reason ? { reason: request.reason } : {}),
+    restoreId: request.restoreId,
+    target: request.target,
+    updatedAt: createdAt
+  };
+  const approvalResolution = await resolveApprovedSourceMutationApproval({
+    approvalId: request.approvalId,
+    context,
+    expectedOperation: "source_application",
+    expectedResource: buildArtifactPromotionApprovalResource({
+      artifactId: input.artifactId,
+      restoreId: request.restoreId
+    }),
+    operation: "source application",
+    required: true
+  });
+  const result = approvalResolution.ok
+    ? await promoteRuntimeArtifactRestoreToSourceWorkspace({
+        context,
+        overwrite: request.overwrite,
+        restore
+      })
+    : {
+        reason: approvalResolution.message
+      };
+  const promotion = await persistRuntimeArtifactPromotionRecord({
+    context,
+    record:
+      "reason" in result
+        ? {
+            ...baseRecord,
+            status: "unavailable",
+            unavailableReason: result.reason
+          }
+        : {
+            ...baseRecord,
+            promotedFileCount: result.promotedFileCount,
+            promotedPath: result.promotedPath,
+            status: "promoted"
+          }
+  });
+
+  return runtimeArtifactPromotionResponseSchema.parse({
+    artifact,
+    promotion,
     restore
   });
 }
@@ -8748,11 +9123,25 @@ function runtimeArtifactRestoresRoot(runtimeRoot: string): string {
   return path.join(runtimeRoot, "artifact-restores");
 }
 
+function runtimeArtifactPromotionsRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "artifact-promotions");
+}
+
 function runtimeArtifactRestoreRecordPath(
   runtimeRoot: string,
   restoreId: string
 ): string {
   return path.join(runtimeArtifactRestoresRoot(runtimeRoot), `${restoreId}.json`);
+}
+
+function runtimeArtifactPromotionRecordPath(
+  runtimeRoot: string,
+  promotionId: string
+): string {
+  return path.join(
+    runtimeArtifactPromotionsRoot(runtimeRoot),
+    `${promotionId}.json`
+  );
 }
 
 async function allocateRuntimeArtifactRestoreRecordPath(input: {
@@ -8782,6 +9171,36 @@ async function allocateRuntimeArtifactRestoreRecordPath(input: {
   return path.join(
     runtimeArtifactRestoresRoot(input.runtimeRoot),
     `${input.restoreId}-${Date.now()}.json`
+  );
+}
+
+async function allocateRuntimeArtifactPromotionRecordPath(input: {
+  promotionId: string;
+  runtimeRoot: string;
+}): Promise<string> {
+  const primaryPath = runtimeArtifactPromotionRecordPath(
+    input.runtimeRoot,
+    input.promotionId
+  );
+
+  if (!(await pathExists(primaryPath))) {
+    return primaryPath;
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidatePath = path.join(
+      runtimeArtifactPromotionsRoot(input.runtimeRoot),
+      `${input.promotionId}-${randomUUID().slice(0, 8)}.json`
+    );
+
+    if (!(await pathExists(candidatePath))) {
+      return candidatePath;
+    }
+  }
+
+  return path.join(
+    runtimeArtifactPromotionsRoot(input.runtimeRoot),
+    `${input.promotionId}-${Date.now()}.json`
   );
 }
 
