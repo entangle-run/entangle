@@ -3,7 +3,8 @@ import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
 import {
   buildAgentEngineTurnRequest,
-  loadRuntimeContext
+  loadRuntimeContext,
+  summarizeAgentEngineTurnRequest
 } from "./runtime-context.js";
 import { runRunnerOnce, runRunnerServiceUntilSignal } from "./index.js";
 import {
@@ -94,6 +95,27 @@ describe("runner runtime context", () => {
     expect(request.memoryRefs).toContain(
       path.join(context.workspace.memoryRoot, "schema", "AGENTS.md")
     );
+
+    const summary = summarizeAgentEngineTurnRequest(request, {
+      generatedAt: "2026-04-25T00:00:00.000Z"
+    });
+
+    expect(summary).toMatchObject({
+      artifactInputCount: 0,
+      artifactRefCount: 0,
+      executionLimits: {
+        maxOutputTokens: 1536,
+        maxToolTurns: 5
+      },
+      generatedAt: "2026-04-25T00:00:00.000Z",
+      interactionPromptPartCount: 5,
+      peerRouteContextIncluded: false,
+      systemPromptPartCount: 4,
+      toolDefinitionCount: 1
+    });
+    expect(summary.interactionPromptCharacterCount).toBeGreaterThan(0);
+    expect(summary.memoryRefCount).toBeGreaterThan(0);
+    expect(summary.systemPromptCharacterCount).toBeGreaterThan(0);
   });
 
   it("includes bounded peer route context in engine turn requests", async () => {
@@ -121,6 +143,12 @@ describe("runner runtime context", () => {
     expect(interactionPrompt).toContain("reviewer-it");
     expect(interactionPrompt).toContain(`pubkey=${remotePublicKey}`);
     expect(interactionPrompt).toContain("relation=reviews");
+
+    expect(
+      summarizeAgentEngineTurnRequest(request, {
+        generatedAt: "2026-04-25T00:00:00.000Z"
+      }).peerRouteContextIncluded
+    ).toBe(true);
   });
 
   it("executes one stub-engine turn from an injected runtime context", async () => {

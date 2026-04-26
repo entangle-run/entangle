@@ -39,7 +39,8 @@ import {
 import {
   buildAgentEngineTurnRequest,
   loadPackageToolCatalog,
-  mapPackageToolCatalogToEngineToolDefinitions
+  mapPackageToolCatalogToEngineToolDefinitions,
+  summarizeAgentEngineTurnRequest
 } from "./runtime-context.js";
 import {
   type RunnerStatePaths,
@@ -1873,6 +1874,15 @@ export class RunnerService {
         inboundMessage: envelope.message,
         toolDefinitions: await this.resolveToolDefinitions()
       });
+      const engineRequestSummaryGeneratedAt = nowIsoString();
+      turnRecord = {
+        ...turnRecord,
+        engineRequestSummary: summarizeAgentEngineTurnRequest(turnRequest, {
+          generatedAt: engineRequestSummaryGeneratedAt
+        }),
+        updatedAt: engineRequestSummaryGeneratedAt
+      };
+      await writeRunnerTurnRecord(statePaths, turnRecord);
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
       const sourceChangeBaseline = await prepareSourceChangeHarvest(this.context);

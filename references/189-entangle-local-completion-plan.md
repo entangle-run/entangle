@@ -53,6 +53,11 @@ The latest implementation state includes:
 - `entangle local doctor` live checks now inspect runtime wiki repositories for
   initialization, clean working trees, branch availability, and committed HEADs
   when runtime context is available;
+- runner turns now persist bounded `engineRequestSummary` evidence for the
+  assembled engine request shape, including prompt part counts, aggregate
+  prompt character counts, memory, artifact, and tool counts, execution
+  limits, and peer-route inclusion without storing raw prompt text or runtime
+  paths;
 - runner-owned source workspace change harvesting with bounded changed-file
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
@@ -76,11 +81,12 @@ engine version, fail early when its workspace/state roots are unavailable,
 terminate overlong OpenCode probe/run processes with classified failure
 evidence, and report OpenCode one-shot permission auto-rejections as generic
 `policy_denied` outcomes. Host, CLI, and Studio can now see a generic
-agent-runtime status summary, but Entangle Local still lacks the complete
-policy bridge, live OpenCode permission approval mapping, artifact
-restore/replay workflow, git/wiki workflow, external cancellation bridge,
-doctor-backed workspace health checks, and richer runtime evidence panels
-required for L3 acceptance.
+agent-runtime status summary plus bounded request-shape evidence for executable
+turns, but Entangle Local still lacks the complete policy bridge, live OpenCode
+permission approval mapping, artifact restore/replay workflow, full git/wiki
+backup/restore/publication workflow, external cancellation bridge, deeper
+doctor remediation, and richer runtime evidence panels required for L3
+acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -649,6 +655,22 @@ Constraints:
 
 - A2A contracts remain coordination contracts, not engine prompts.
 - Prompt detail must be enough for engine quality without leaking secrets.
+
+Current partial implementation:
+
+- runner turn assembly already includes package prompts, runtime config,
+  memory refs, peer routes, inbound task intent/summary/sender, inbound
+  artifact refs, retrieved artifact inputs, and package-declared tools;
+- non-executable coordination messages such as `task.result`,
+  `conversation.close`, and approval lifecycle messages are handled as
+  runner-local state updates rather than fresh engine turns where applicable;
+- each executable turn now persists bounded `engineRequestSummary` evidence
+  with prompt part counts, aggregate prompt character counts, memory, artifact,
+  and tool counts, execution limits, peer-route inclusion, and generation time;
+- the summary propagates through host observed activity,
+  `runner.turn.updated` events, shared host-client detail helpers, CLI output,
+  and Studio turn inspection without exposing raw prompt text, memory paths,
+  artifact contents, or engine-specific request payloads.
 
 Acceptance:
 

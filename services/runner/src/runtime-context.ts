@@ -9,6 +9,7 @@ import {
   packageToolCatalogSchema,
   type AgentEngineTurnRequest,
   type EffectiveRuntimeContext,
+  type EngineTurnRequestSummary,
   type PackageToolCatalog
 } from "@entangle/types";
 
@@ -288,4 +289,31 @@ export async function buildAgentEngineTurnRequest(
       maxOutputTokens: runtimeConfig?.toolBudget?.maxOutputTokens ?? 4096
     }
   });
+}
+
+function sumCharacterCount(parts: string[]): number {
+  return parts.reduce((total, part) => total + part.length, 0);
+}
+
+export function summarizeAgentEngineTurnRequest(
+  request: AgentEngineTurnRequest,
+  input: { generatedAt: string }
+): EngineTurnRequestSummary {
+  return {
+    artifactInputCount: request.artifactInputs.length,
+    artifactRefCount: request.artifactRefs.length,
+    executionLimits: request.executionLimits,
+    generatedAt: input.generatedAt,
+    interactionPromptCharacterCount: sumCharacterCount(
+      request.interactionPromptParts
+    ),
+    interactionPromptPartCount: request.interactionPromptParts.length,
+    memoryRefCount: request.memoryRefs.length,
+    peerRouteContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Peer routes:")
+    ),
+    systemPromptCharacterCount: sumCharacterCount(request.systemPromptParts),
+    systemPromptPartCount: request.systemPromptParts.length,
+    toolDefinitionCount: request.toolDefinitions.length
+  };
 }

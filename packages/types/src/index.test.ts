@@ -1299,6 +1299,22 @@ describe("host event contracts", () => {
           outputTokens: 12
         }
       },
+      engineRequestSummary: {
+        artifactInputCount: 1,
+        artifactRefCount: 1,
+        executionLimits: {
+          maxOutputTokens: 4096,
+          maxToolTurns: 8
+        },
+        generatedAt: "2026-04-24T00:00:01.000Z",
+        interactionPromptCharacterCount: 840,
+        interactionPromptPartCount: 7,
+        memoryRefCount: 6,
+        peerRouteContextIncluded: true,
+        systemPromptCharacterCount: 220,
+        systemPromptPartCount: 4,
+        toolDefinitionCount: 3
+      },
       memorySynthesisOutcome: {
         status: "succeeded",
         updatedAt: "2026-04-24T00:00:01.000Z",
@@ -1441,6 +1457,7 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.memorySynthesisOutcome?.updatedSummaryPagePaths).toHaveLength(
       6
     );
+    expect(runnerTurnEvent.engineRequestSummary?.memoryRefCount).toBe(6);
     expect(runnerTurnEvent.memoryRepositorySyncOutcome?.status).toBe("committed");
     expect(runnerTurnEvent.sourceChangeSummary?.fileCount).toBe(1);
     expect(runnerTurnEvent.sourceChangeCandidateIds).toEqual([

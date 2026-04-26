@@ -107,6 +107,24 @@ export function formatRuntimeTurnDetailLines(
     );
   }
 
+  if (turn.engineRequestSummary) {
+    const summary = turn.engineRequestSummary;
+
+    lines.push(
+      `engine request ${formatCount(summary.systemPromptPartCount, "system part")} / ` +
+        `${formatCount(summary.interactionPromptPartCount, "task part")} (` +
+        `${formatCount(summary.memoryRefCount, "memory ref")}, ` +
+        `${formatCount(summary.artifactRefCount, "artifact ref")}, ` +
+        `${formatCount(summary.artifactInputCount, "artifact input")}, ` +
+        `${formatCount(summary.toolDefinitionCount, "tool")})`
+    );
+    lines.push(
+      `engine request limits ${summary.executionLimits.maxToolTurns} tool turns / ` +
+        `${summary.executionLimits.maxOutputTokens} output tokens; peer routes ` +
+        `${summary.peerRouteContextIncluded ? "included" : "not included"}`
+    );
+  }
+
   if (turn.engineOutcome) {
     const provider = turn.engineOutcome.providerMetadata;
 
@@ -219,6 +237,14 @@ export function formatRuntimeTurnDetailLines(
 
 function formatIdList(ids: string[]): string {
   return ids.length > 0 ? ids.join(", ") : "none";
+}
+
+function formatCount(
+  count: number,
+  singular: string,
+  plural = `${singular}s`
+): string {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function truncateRuntimeTurnDetail(value: string, maxLength = 96): string {

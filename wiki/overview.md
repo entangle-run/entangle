@@ -173,7 +173,11 @@ The repository now also contains the first real implementation baseline:
   `memory/wiki` into each node's `wiki-repository` workspace after completed
   turns, including durable sync outcomes on turns, host events, CLI output, and
   Studio turn inspection, plus `entangle local doctor` runtime wiki repository
-  health warnings for uninitialized, dirty, or uncommitted snapshots;
+  health warnings for uninitialized, dirty, or uncommitted snapshots, and with
+  bounded engine-request summaries on executable turns so CLI and Studio turn
+  inspection can show prompt part counts, aggregate prompt size, memory,
+  artifact, and tool counts, execution limits, and peer-route inclusion without
+  exposing raw prompt text, runtime-local paths, or engine-specific payloads;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

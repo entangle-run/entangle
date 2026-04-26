@@ -2313,3 +2313,17 @@ HEAD commit, unavailable through runtime context, or failing git inspection.
 
 The check remains read-only and diagnostic. It does not initialize, commit,
 repair, publish, or delete node memory repositories.
+
+## [2026-04-26] implementation | Added bounded engine-request summaries
+
+Added `references/212-engine-request-summary-slice.md` and advanced B6 of the
+Entangle Local completion plan. Executable runner turns now persist bounded
+`engineRequestSummary` evidence for the assembled engine request shape:
+prompt part counts, aggregate prompt character counts, memory, artifact, and
+tool counts, execution limits, peer-route inclusion, and generation time.
+
+The summary propagates through runner turn records, host observed activity,
+`runner.turn.updated` events, shared runtime-turn presentation helpers, CLI
+turn output, and Studio turn inspection. It deliberately avoids storing raw
+prompt text, memory paths, artifact contents, secret-bearing runtime context,
+or engine-specific request payloads.

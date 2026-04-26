@@ -16,6 +16,7 @@ import {
 import {
   approvalLifecycleStateSchema,
   conversationLifecycleStateSchema,
+  engineTurnRequestSummarySchema,
   memoryRepositorySyncOutcomeSchema,
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
@@ -44,6 +45,7 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   consumedArtifactIds: z.array(identifierSchema).default([]),
   conversationId: identifierSchema.optional(),
   engineOutcome: engineTurnOutcomeSchema.optional(),
+  engineRequestSummary: engineTurnRequestSummarySchema.optional(),
   emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   fingerprint: nonEmptyStringSchema,
   graphId: identifierSchema,

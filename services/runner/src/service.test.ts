@@ -2225,6 +2225,22 @@ describe("RunnerService", () => {
     expect(conversationRecord?.followupCount).toBe(1);
     expect(turnIds).toHaveLength(1);
     expect(turnRecord?.producedArtifactIds).toEqual(sessionRecord.rootArtifactIds);
+    expect(turnRecord?.engineRequestSummary).toMatchObject({
+      artifactInputCount: 0,
+      artifactRefCount: 0,
+      executionLimits: {
+        maxOutputTokens: 1536,
+        maxToolTurns: 5
+      },
+      interactionPromptPartCount: 8,
+      peerRouteContextIncluded: false,
+      systemPromptPartCount: 4,
+      toolDefinitionCount: 0
+    });
+    expect(turnRecord?.engineRequestSummary?.generatedAt.localeCompare(
+      turnRecord?.updatedAt ?? ""
+    )).toBeLessThanOrEqual(0);
+    expect(turnRecord?.engineRequestSummary?.memoryRefCount).toBeGreaterThan(0);
     expect(turnRecord?.memoryRepositorySyncOutcome?.status).toBe("committed");
     expect(artifactRecords).toHaveLength(1);
     const artifactRecord = artifactRecords[0];

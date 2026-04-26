@@ -110,6 +110,23 @@ export const memoryRepositorySyncOutcomeSchema = z.discriminatedUnion("status", 
   })
 ]);
 
+export const engineTurnRequestSummarySchema = z.object({
+  artifactInputCount: z.number().int().nonnegative(),
+  artifactRefCount: z.number().int().nonnegative(),
+  executionLimits: z.object({
+    maxOutputTokens: z.number().int().positive(),
+    maxToolTurns: z.number().int().positive()
+  }),
+  generatedAt: nonEmptyStringSchema,
+  interactionPromptCharacterCount: z.number().int().nonnegative(),
+  interactionPromptPartCount: z.number().int().nonnegative(),
+  memoryRefCount: z.number().int().nonnegative(),
+  peerRouteContextIncluded: z.boolean(),
+  systemPromptCharacterCount: z.number().int().nonnegative(),
+  systemPromptPartCount: z.number().int().nonnegative(),
+  toolDefinitionCount: z.number().int().nonnegative()
+});
+
 export const sourceChangeFileStatusSchema = z.enum([
   "added",
   "modified",
@@ -310,6 +327,7 @@ export const runnerTurnRecordSchema = z.object({
   conversationId: identifierSchema.optional(),
   consumedArtifactIds: z.array(identifierSchema).default([]),
   engineOutcome: engineTurnOutcomeSchema.optional(),
+  engineRequestSummary: engineTurnRequestSummarySchema.optional(),
   emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   graphId: identifierSchema,
   memoryRepositorySyncOutcome: memoryRepositorySyncOutcomeSchema.optional(),
@@ -417,6 +435,9 @@ export type MemorySynthesisOutcome = z.infer<
 >;
 export type MemoryRepositorySyncOutcome = z.infer<
   typeof memoryRepositorySyncOutcomeSchema
+>;
+export type EngineTurnRequestSummary = z.infer<
+  typeof engineTurnRequestSummarySchema
 >;
 export type SourceChangeFileStatus = z.infer<
   typeof sourceChangeFileStatusSchema

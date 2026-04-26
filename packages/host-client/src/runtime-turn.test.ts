@@ -54,6 +54,22 @@ function createTurn(
         outputTokens: 12
       }
     },
+    engineRequestSummary: {
+      artifactInputCount: 1,
+      artifactRefCount: 1,
+      executionLimits: {
+        maxOutputTokens: 4096,
+        maxToolTurns: 8
+      },
+      generatedAt: updatedAt,
+      interactionPromptCharacterCount: 840,
+      interactionPromptPartCount: 7,
+      memoryRefCount: 6,
+      peerRouteContextIncluded: true,
+      systemPromptCharacterCount: 220,
+      systemPromptPartCount: 4,
+      toolDefinitionCount: 3
+    },
     emittedHandoffMessageIds: [
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     ],
@@ -137,6 +153,8 @@ describe("runtime turn presentation helpers", () => {
         "source changes 2 files (+8/-2)",
         "source file modified src/worker.ts (+6/-1)",
         "source file added tests/worker.test.ts (+2/-1)",
+        "engine request 4 system parts / 7 task parts (6 memory refs, 1 artifact ref, 1 artifact input, 3 tools)",
+        "engine request limits 8 tool turns / 4096 output tokens; peer routes included",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
         "engine session engine-session-alpha",
