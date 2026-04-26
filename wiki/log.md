@@ -2275,3 +2275,16 @@ and no active Cloud or Enterprise deployment profile was introduced.
 Verified the reorganization with script syntax checks, Compose config
 validation against `deploy/local/compose/docker-compose.local.yml`, strict
 local preflight with Docker socket access, and `pnpm verify`.
+
+## [2026-04-25] implementation | Exposed node agent-runtime configuration
+
+Added `references/209-agent-runtime-node-configuration-slice.md` and closed the
+graph-backed part of B8 runtime configuration. The CLI now exposes
+`entangle host nodes agent-runtime` to set or clear node-level runtime mode,
+agent engine profile, and default-agent overrides while preserving unrelated
+managed-node bindings through the existing host replacement boundary.
+
+Studio's Managed Node Editor now loads catalog engine profiles and writes the
+same `agentRuntime` fields for managed nodes. The remaining B8 work is richer
+runtime evidence and engine-event panels, not the basic graph/node
+configuration surface.

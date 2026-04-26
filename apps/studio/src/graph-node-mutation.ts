@@ -1,5 +1,6 @@
 import type {
   ManagedNodeKind,
+  NodeAgentRuntimeMode,
   NodeBinding,
   NodeCreateRequest,
   NodeReplacementRequest,
@@ -11,6 +12,11 @@ export const managedNodeKindOptions: ManagedNodeKind[] = [
   "worker",
   "reviewer",
   "service"
+];
+
+export const managedNodeAgentRuntimeModeOptions: NodeAgentRuntimeMode[] = [
+  "coding_agent",
+  "disabled"
 ];
 
 export type ManagedNodeEditorDraft = {

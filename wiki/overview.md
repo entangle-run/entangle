@@ -479,6 +479,11 @@ The repository now also contains the first real implementation baseline:
   `POST /v1/runtimes/{nodeId}/approvals` operator decision mutation, sharing
   the same boundary through `packages/host-client`, CLI summaries/filters,
   CLI approval decisions, and Studio selected-runtime drilldown;
+- a node agent-runtime configuration surface where the CLI can set or clear
+  node-level runtime mode, engine profile, and default-agent overrides through
+  `entangle host nodes agent-runtime`, while Studio's Managed Node Editor loads
+  catalog engine profiles and writes the same graph-backed `agentRuntime`
+  fields through existing host-client node mutation methods;
 - a host-owned runner-turn inspection surface where `entangle-host` now exposes
   `GET /v1/runtimes/{nodeId}/turns` plus
   `GET /v1/runtimes/{nodeId}/turns/{turnId}` and shares the same boundary

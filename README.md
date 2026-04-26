@@ -618,6 +618,11 @@ This repository currently contains:
 - the operator scoped approval decision slice where headless and visual
   operators can create exact operation/resource-scoped approval decisions or
   approve/reject pending approval records through the shared host boundary;
+- the node agent-runtime configuration slice where headless operators can use
+  `entangle host nodes agent-runtime` to set or clear node-level runtime mode,
+  engine profile, and default-agent overrides, while Studio's Managed Node
+  Editor now loads catalog engine profiles and writes the same graph-backed
+  `agentRuntime` fields through the shared host-client node mutation boundary;
 - the first Local reliability diagnostic slice where `entangle local doctor`
   performs read-only checks over Local profile files, Node/pnpm/Docker/Compose,
   the runner image, OpenCode availability, `.entangle/host`, host status,

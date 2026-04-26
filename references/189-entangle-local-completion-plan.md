@@ -73,8 +73,8 @@ evidence, and report OpenCode one-shot permission auto-rejections as generic
 agent-runtime status summary, but Entangle Local still lacks the complete
 policy bridge, live OpenCode permission approval mapping, artifact
 restore/replay workflow, git/wiki workflow, external cancellation bridge,
-doctor-backed workspace health checks, and full runtime configuration and
-observability surface required for L3 acceptance.
+doctor-backed workspace health checks, and richer runtime evidence panels
+required for L3 acceptance.
 
 ## Initial Deep Audit Baseline
 
@@ -695,9 +695,15 @@ Current partial implementation:
 - CLI now records scoped runtime approval decisions, while Studio can
   approve/reject selected pending approvals through the shared host-client
   mutation;
-- graph/node editing support for agent-runtime selection, OpenCode availability
-probing, approval blockers, produced artifacts, richer source publication
-history views, and recent engine-event panels remain open.
+- CLI now provides `host nodes agent-runtime` for graph-backed node-level
+  runtime mode, engine-profile, and default-agent configuration with dry-run
+  support while preserving unrelated managed-node bindings;
+- Studio's Managed Node Editor now loads catalog engine profiles and writes the
+  same graph-backed `agentRuntime` fields for node-level runtime mode,
+  engine-profile, and default-agent overrides;
+- OpenCode availability probing in configuration context, approval blockers,
+  produced artifacts, richer source publication history views, and recent
+  engine-event panels remain open.
 
 Acceptance:
 

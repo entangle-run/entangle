@@ -139,11 +139,20 @@ describe("graph node mutation helpers", () => {
 
   it("hydrates drafts from managed nodes and preserves hidden bindings", () => {
     const node = createManagedNode("worker-it", "IT Worker");
+    node.agentRuntime = {
+      defaultAgent: "build",
+      engineProfileRef: "local-opencode",
+      mode: "coding_agent"
+    };
     node.autonomy.canInitiateSessions = true;
     node.resourceBindings.relayProfileRefs = ["relay-main"];
 
     expect(buildManagedNodeEditorDraft(node)).toEqual({
-      agentRuntime: {},
+      agentRuntime: {
+        defaultAgent: "build",
+        engineProfileRef: "local-opencode",
+        mode: "coding_agent"
+      },
       autonomy: {
         canInitiateSessions: true,
         canMutateGraph: false
@@ -162,14 +171,26 @@ describe("graph node mutation helpers", () => {
 
   it("builds canonical create and replacement requests", () => {
     const draft = buildManagedNodeEditorDraft(createManagedNode("worker-it", "IT Worker"));
+    draft.agentRuntime = {
+      engineProfileRef: "local-opencode",
+      mode: "disabled"
+    };
 
     expect(buildManagedNodeCreateRequest(draft)).toMatchObject({
+      agentRuntime: {
+        engineProfileRef: "local-opencode",
+        mode: "disabled"
+      },
       displayName: "IT Worker",
       nodeId: "worker-it",
       nodeKind: "worker",
       packageSourceRef: "worker-it-package"
     });
     expect(buildManagedNodeReplacementRequest(draft)).toMatchObject({
+      agentRuntime: {
+        engineProfileRef: "local-opencode",
+        mode: "disabled"
+      },
       displayName: "IT Worker",
       nodeKind: "worker",
       packageSourceRef: "worker-it-package"

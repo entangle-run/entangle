@@ -26,6 +26,7 @@ import {
 import type {
   ApprovalRecord,
   ArtifactRecord,
+  CatalogInspectionResponse,
   ExternalPrincipalInspectionResponse,
   GraphInspectionResponse,
   GraphMutationResponse,
@@ -84,6 +85,7 @@ import {
   formatManagedNodeDetail,
   formatManagedNodeLabel,
   isManagedNodeEditorDraftUninitialized,
+  managedNodeAgentRuntimeModeOptions,
   managedNodeKindOptions,
   sortManagedGraphNodes,
   type ManagedNodeEditorDraft
@@ -405,6 +407,9 @@ export function App() {
     null
   );
   const [pendingGraphValidation, setPendingGraphValidation] = useState(false);
+  const [catalogInspection, setCatalogInspection] =
+    useState<CatalogInspectionResponse | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [packageSources, setPackageSources] = useState<
     PackageSourceInspectionResponse[]
   >([]);
@@ -575,6 +580,7 @@ export function App() {
       graphResult,
       graphRevisionResult,
       runtimeListResult,
+      catalogResult,
       packageSourceResult,
       externalPrincipalResult
     ] =
@@ -583,6 +589,7 @@ export function App() {
         client.getGraph(),
         client.listGraphRevisions(),
         client.listRuntimes(),
+        client.getCatalog(),
         client.listPackageSources(),
         client.listExternalPrincipals()
       ]);
@@ -614,6 +621,19 @@ export function App() {
       setGraphInspection(graphResult.value);
       setRuntimes(runtimeListResult.value.runtimes);
       setError(null);
+
+      if (catalogResult.status === "fulfilled") {
+        setCatalogInspection(catalogResult.value);
+        setCatalogError(null);
+      } else {
+        setCatalogInspection(null);
+        setCatalogError(
+          normalizeError(
+            catalogResult.reason,
+            "Unknown error while loading deployment catalog."
+          )
+        );
+      }
 
       if (graphRevisionResult.status === "fulfilled") {
         const nextGraphRevisions = sortGraphRevisions(
@@ -2108,6 +2128,15 @@ export function App() {
     () => sortManagedGraphNodes(graphInspection?.graph),
     [graphInspection]
   );
+  const agentEngineProfiles = useMemo(
+    () =>
+      [...(catalogInspection?.catalog?.agentEngineProfiles ?? [])].sort((left, right) =>
+        `${left.displayName} ${left.id}`.localeCompare(
+          `${right.displayName} ${right.id}`
+        )
+      ),
+    [catalogInspection]
+  );
   const graphEdges = useMemo(
     () => sortGraphEdges(graphInspection?.graph?.edges ?? []),
     [graphInspection]
@@ -3192,6 +3221,7 @@ export function App() {
               </div>
 
               {packageSourceError ? <p className="error-box">{packageSourceError}</p> : null}
+              {catalogError ? <p className="error-box">{catalogError}</p> : null}
               {nodeMutationError ? <p className="error-box">{nodeMutationError}</p> : null}
 
               {graphInspection?.graph ? (
@@ -3270,11 +3300,114 @@ export function App() {
                         ))}
                       </select>
                     </label>
+
+                    <label className="field">
+                      <span>Agent runtime mode</span>
+                      <select
+                        disabled={pendingNodeMutation !== null}
+                        onChange={(event) => {
+                          const nextMode = event.target.value;
+                          setNodeDraft((current) => {
+                            const agentRuntime = { ...current.agentRuntime };
+
+                            if (nextMode === "") {
+                              delete agentRuntime.mode;
+                            } else {
+                              agentRuntime.mode =
+                                nextMode as NonNullable<
+                                  ManagedNodeEditorDraft["agentRuntime"]["mode"]
+                                >;
+                            }
+
+                            return {
+                              ...current,
+                              agentRuntime
+                            };
+                          });
+                        }}
+                        value={nodeDraft.agentRuntime.mode ?? ""}
+                      >
+                        <option value="">Inherit graph default</option>
+                        {managedNodeAgentRuntimeModeOptions.map((mode) => (
+                          <option key={mode} value={mode}>
+                            {mode}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>Agent engine profile</span>
+                      <select
+                        disabled={pendingNodeMutation !== null}
+                        onChange={(event) => {
+                          const nextProfileRef = event.target.value;
+                          setNodeDraft((current) => {
+                            const agentRuntime = { ...current.agentRuntime };
+
+                            if (nextProfileRef === "") {
+                              delete agentRuntime.engineProfileRef;
+                            } else {
+                              agentRuntime.engineProfileRef = nextProfileRef;
+                            }
+
+                            return {
+                              ...current,
+                              agentRuntime
+                            };
+                          });
+                        }}
+                        value={nodeDraft.agentRuntime.engineProfileRef ?? ""}
+                      >
+                        <option value="">Inherit/default engine profile</option>
+                        {nodeDraft.agentRuntime.engineProfileRef &&
+                        !agentEngineProfiles.some(
+                          (profile) =>
+                            profile.id === nodeDraft.agentRuntime.engineProfileRef
+                        ) ? (
+                          <option value={nodeDraft.agentRuntime.engineProfileRef}>
+                            Unknown profile ({nodeDraft.agentRuntime.engineProfileRef})
+                          </option>
+                        ) : null}
+                        {agentEngineProfiles.map((profile) => (
+                          <option key={profile.id} value={profile.id}>
+                            {profile.displayName} ({profile.id})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>Default engine agent</span>
+                      <input
+                        disabled={pendingNodeMutation !== null}
+                        onChange={(event) => {
+                          const nextDefaultAgent = event.target.value.trim();
+                          setNodeDraft((current) => {
+                            const agentRuntime = { ...current.agentRuntime };
+
+                            if (nextDefaultAgent === "") {
+                              delete agentRuntime.defaultAgent;
+                            } else {
+                              agentRuntime.defaultAgent = nextDefaultAgent;
+                            }
+
+                            return {
+                              ...current,
+                              agentRuntime
+                            };
+                          });
+                        }}
+                        placeholder="Inherit engine default"
+                        type="text"
+                        value={nodeDraft.agentRuntime.defaultAgent ?? ""}
+                      />
+                    </label>
                   </div>
 
                   <p className="editor-meta">
-                    This bounded slice edits only the managed node identity,
-                    role, display name, and package binding. Existing autonomy
+                    This editor updates managed node identity, package binding,
+                    and node-level agent-runtime overrides. Existing autonomy
                     and resource bindings are preserved on replace and use safe
                     defaults on create.
                   </p>

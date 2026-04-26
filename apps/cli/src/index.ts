@@ -60,6 +60,10 @@ import {
 } from "./graph-output.js";
 import { buildCliMutationDryRun } from "./mutation-dry-run.js";
 import {
+  buildNodeAgentRuntimeReplacementRequest,
+  type NodeAgentRuntimeConfigurationOptions
+} from "./node-agent-runtime-command.js";
+import {
   buildPackageInitOptions,
   type PackageInitCliOptions
 } from "./package-init-command.js";
@@ -1131,7 +1135,7 @@ hostNodesCommand
       options: { dryRun?: boolean },
       command: Command
     ) => {
-    const client = createCliHostClient(command);
+      const client = createCliHostClient(command);
       const request = nodeReplacementRequestSchema.parse(
         await readJsonDocument(resolveCliPath(file))
       );
@@ -1150,7 +1154,70 @@ hostNodesCommand
       }
 
       printJson(await client.replaceNode(nodeId, request));
-  });
+    }
+  );
+
+hostNodesCommand
+  .command("agent-runtime")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--mode <mode>",
+    "Set the node agent runtime mode: coding_agent or disabled."
+  )
+  .option(
+    "--inherit-mode",
+    "Clear the node-level mode override so graph defaults apply."
+  )
+  .option(
+    "--engine-profile-ref <profileRef>",
+    "Set the node-level agent engine profile reference."
+  )
+  .option(
+    "--clear-engine-profile-ref",
+    "Clear the node-level agent engine profile override."
+  )
+  .option("--default-agent <agent>", "Set the node-level default engine agent.")
+  .option("--clear-default-agent", "Clear the node-level default engine agent.")
+  .option(
+    "--dry-run",
+    "Print the canonical node-replacement request without mutating the host."
+  )
+  .option("--summary", "Print a compact operator-oriented node summary.")
+  .description("Configure the agent-runtime binding for one managed node.")
+  .action(
+    async (
+      nodeId: string,
+      options: NodeAgentRuntimeConfigurationOptions,
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const inspection = await client.getNode(nodeId);
+      const request = buildNodeAgentRuntimeReplacementRequest(
+        inspection,
+        options
+      );
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.nodes.agent_runtime.configure",
+            request,
+            target: {
+              nodeId
+            }
+          })
+        );
+        return;
+      }
+
+      const response = await client.replaceNode(nodeId, request);
+      printJson(
+        options.summary && response.node
+          ? { node: projectNodeInspectionSummary(response.node) }
+          : response
+      );
+    }
+  );
 
 hostNodesCommand
   .command("delete")
