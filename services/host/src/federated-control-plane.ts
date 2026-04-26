@@ -20,6 +20,7 @@ import {
   recordRuntimeAssignmentRejected,
   recordSessionUpdatedObservation,
   recordSourceChangeRefObservation,
+  recordTurnUpdatedObservation,
   recordWikiRefObservation
 } from "./state.js";
 
@@ -160,6 +161,15 @@ export class HostFederatedControlPlane {
 
     if (payload.eventType === "conversation.updated") {
       await recordConversationUpdatedObservation(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "turn.updated") {
+      await recordTurnUpdatedObservation(payload);
       return {
         action: "recorded",
         eventType: payload.eventType,

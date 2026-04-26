@@ -164,6 +164,7 @@ import {
   sourceChangeRefProjectionRecordSchema,
   type SourceChangeRefProjectionRecord,
   sessionUpdatedObservationPayloadSchema,
+  turnUpdatedObservationPayloadSchema,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
   userNodeIdentityListResponseSchema,
@@ -2377,6 +2378,16 @@ function observedConversationActivityRecordPath(input: {
   );
 }
 
+function observedRunnerTurnActivityRecordPath(input: {
+  nodeId: string;
+  turnId: string;
+}): string {
+  return path.join(
+    observedRunnerTurnActivityRoot,
+    `${input.nodeId}--${input.turnId}.json`
+  );
+}
+
 export async function recordSessionUpdatedObservation(
   input: unknown
 ): Promise<ObservedSessionActivityRecord | undefined> {
@@ -2518,6 +2529,98 @@ export async function recordConversationUpdatedObservation(
     type: "conversation.trace.event",
     updatedAt: record.updatedAt
   } satisfies ConversationTraceEventInput);
+
+  return record;
+}
+
+export async function recordTurnUpdatedObservation(
+  input: unknown
+): Promise<ObservedRunnerTurnActivityRecord | undefined> {
+  await initializeHostState();
+
+  const observation = turnUpdatedObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+
+  if (!observation.turn) {
+    return undefined;
+  }
+
+  const turnRecord = observation.turn;
+  const fingerprint = buildObservationFingerprint(turnRecord);
+  const existingRecord = await readObservedRunnerTurnActivityRecord(
+    observation.nodeId,
+    turnRecord.turnId
+  );
+  const record = observedRunnerTurnActivityRecordSchema.parse({
+    consumedArtifactIds: turnRecord.consumedArtifactIds,
+    conversationId: turnRecord.conversationId,
+    ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
+    ...(turnRecord.engineRequestSummary
+      ? { engineRequestSummary: turnRecord.engineRequestSummary }
+      : {}),
+    emittedHandoffMessageIds: turnRecord.emittedHandoffMessageIds,
+    fingerprint,
+    graphId: turnRecord.graphId,
+    ...(turnRecord.memoryRepositorySyncOutcome
+      ? { memoryRepositorySyncOutcome: turnRecord.memoryRepositorySyncOutcome }
+      : {}),
+    ...(turnRecord.memorySynthesisOutcome
+      ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
+      : {}),
+    nodeId: observation.nodeId,
+    phase: turnRecord.phase,
+    producedArtifactIds: turnRecord.producedArtifactIds,
+    schemaVersion: "1",
+    sessionId: turnRecord.sessionId,
+    sourceChangeCandidateIds: turnRecord.sourceChangeCandidateIds,
+    ...(turnRecord.sourceChangeSummary
+      ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
+      : {}),
+    startedAt: turnRecord.startedAt,
+    triggerKind: turnRecord.triggerKind,
+    turnId: turnRecord.turnId,
+    updatedAt: turnRecord.updatedAt
+  });
+
+  await writeJsonFileIfChanged(
+    observedRunnerTurnActivityRecordPath({
+      nodeId: record.nodeId,
+      turnId: record.turnId
+    }),
+    record
+  );
+
+  if (existingRecord?.fingerprint === record.fingerprint) {
+    return record;
+  }
+
+  await appendHostEvent({
+    category: "runner",
+    consumedArtifactIds: record.consumedArtifactIds,
+    conversationId: record.conversationId,
+    ...(record.engineOutcome ? { engineOutcome: record.engineOutcome } : {}),
+    ...(record.engineRequestSummary
+      ? { engineRequestSummary: record.engineRequestSummary }
+      : {}),
+    emittedHandoffMessageIds: record.emittedHandoffMessageIds,
+    graphId: record.graphId,
+    message:
+      `Runner turn '${record.turnId}' on node '${record.nodeId}' is now in phase ` +
+      `'${record.phase}'.`,
+    nodeId: record.nodeId,
+    phase: record.phase,
+    producedArtifactIds: record.producedArtifactIds,
+    sessionId: record.sessionId,
+    sourceChangeCandidateIds: record.sourceChangeCandidateIds,
+    ...(record.sourceChangeSummary
+      ? { sourceChangeSummary: record.sourceChangeSummary }
+      : {}),
+    startedAt: record.startedAt,
+    triggerKind: record.triggerKind,
+    turnId: record.turnId,
+    type: "runner.turn.updated",
+    updatedAt: record.updatedAt
+  } satisfies RunnerTurnUpdatedEventInput);
 
   return record;
 }

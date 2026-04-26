@@ -281,6 +281,22 @@ function createRuntimeObservationPublisher(input: {
         sessionId: record.sessionId,
         status: record.status,
         updatedAt: record.updatedAt
+      }),
+    publishTurnUpdated: (record) =>
+      publish({
+        eventType: "turn.updated",
+        graphId: record.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.nodeId,
+        observedAt: record.updatedAt,
+        phase: record.phase,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        sessionId: record.sessionId,
+        turn: record,
+        turnId: record.turnId,
+        updatedAt: record.updatedAt
       })
   };
 }

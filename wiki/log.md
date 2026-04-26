@@ -3045,15 +3045,17 @@ the Host/runner/relay/assignment setup by hand.
 ## [2026-04-26] implementation | Projected federated User Node conversations
 
 Added `references/257-federated-session-conversation-observations-slice.md`.
-Joined node runtimes now publish signed `session.updated` and
-`conversation.updated` observations through the runner observation transport,
-and Host records those observations into session/conversation activity state.
+Joined node runtimes now publish signed `session.updated`,
+`conversation.updated`, and `turn.updated` observations through the runner
+observation transport, and Host records those observations into
+session/conversation activity state plus `runner.turn.updated` events.
 
 Host projection now derives `userConversations` from observed conversation
 activity when the active graph identifies a User Node participant. The process
 runner smoke now verifies the full no-LLM path: signed User Node publish,
 runner-owned intake, runner-signed observation, and Host projection of the User
-Node conversation.
+Node conversation. Runner tests now cover turn phase observation publication
+for executable messages.
 
 Follow-up: the CLI projection summary now reports the projected User Node
 conversation count, and `--keep-running` prints an inbox command so manual

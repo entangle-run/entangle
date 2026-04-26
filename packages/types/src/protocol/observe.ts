@@ -12,6 +12,7 @@ import {
   approvalLifecycleStateSchema,
   conversationRecordSchema,
   conversationLifecycleStateSchema,
+  runnerTurnRecordSchema,
   runnerPhaseSchema,
   sessionRecordSchema,
   sessionLifecycleStateSchema,
@@ -126,6 +127,7 @@ export const turnUpdatedObservationPayloadSchema =
     nodeId: identifierSchema,
     phase: runnerPhaseSchema,
     sessionId: identifierSchema.optional(),
+    turn: runnerTurnRecordSchema.optional(),
     turnId: identifierSchema,
     updatedAt: nonEmptyStringSchema
   });

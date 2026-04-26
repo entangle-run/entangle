@@ -188,6 +188,8 @@ Current status:
 - public runtime inspection no longer exposes `contextPath`;
 - session and conversation observations now flow from joined runners to Host
   projection for the first User Node conversation path;
+- turn phase observations now flow from joined runners to Host
+  `runner.turn.updated` events;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime

@@ -1,4 +1,4 @@
-# Federated Session Conversation Observations Slice
+# Federated Session Conversation Turn Observations Slice
 
 ## Current Repo Truth
 
@@ -9,10 +9,10 @@ see that intake unless a Host-side filesystem reader inspected runner state.
 
 ## Target Model
 
-Runner-owned session and conversation activity must reach Host through signed
-`entangle.observe.v1` observations. Host should reduce those observations into
-projection state, and user-facing surfaces should be able to inspect the same
-Host projection without reading runner-local files.
+Runner-owned session, conversation, and turn activity must reach Host through
+signed `entangle.observe.v1` observations. Host should reduce those
+observations into projection and event state, and user-facing surfaces should
+be able to inspect the same Host-owned view without reading runner-local files.
 
 ## Impacted Modules/Files
 
@@ -42,11 +42,15 @@ Implemented in this slice:
   `SessionRecord`;
 - allowed `conversation.updated` observations to carry an embedded bounded
   `ConversationRecord`;
+- allowed `turn.updated` observations to carry an embedded bounded
+  `RunnerTurnRecord`;
 - added a runner service observation publisher hook;
-- wired joined runtimes to publish session and conversation observations
+- wired joined runtimes to publish session, conversation, and turn observations
   through the runner join observation transport and runner identity;
 - made Host control-plane handling record `session.updated` and
   `conversation.updated` observations;
+- made Host control-plane handling record `turn.updated` observations as
+  `runner.turn.updated` Host events;
 - added Host projection reduction from observed conversation activity to
   `userConversations` when the active graph identifies either side as a User
   Node;
@@ -64,6 +68,7 @@ Implemented in this slice:
 - `pnpm --filter @entangle/host typecheck`
 - `pnpm --filter @entangle/host lint`
 - `pnpm --filter @entangle/runner typecheck`
+- `pnpm --filter @entangle/runner test -- service.test.ts`
 - `pnpm --filter @entangle/runner lint`
 - `pnpm --filter @entangle/cli typecheck`
 - `pnpm --filter @entangle/cli test -- projection-output.test.ts`
@@ -74,6 +79,7 @@ Verification record:
 
 - typechecks passed for types, Host, and runner;
 - types contract tests passed;
+- runner tests passed, including turn-observation phase publication coverage;
 - lint passed for types, Host, and runner;
 - process runner smoke passed against `strfry` on `ws://localhost:7777`,
   including signed User Node publish, runner intake, and Host projection of the
@@ -96,6 +102,7 @@ creates rich activity projection when the embedded record is present.
 
 ## Open Questions
 
-Turn, approval, artifact, source, and wiki detail projection still need the
-same federation treatment. This slice intentionally handles the first user
-conversation projection path needed for manual product testing.
+Approval, artifact, source, and wiki detail projection still need the same
+federation treatment. This slice intentionally handles the first user
+conversation projection path plus turn phase events needed for manual product
+testing.

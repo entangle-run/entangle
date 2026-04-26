@@ -650,9 +650,47 @@ describe("federated runtime contracts", () => {
         updatedAt: observedAt
       }
     });
+    const turnObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        eventType: "turn.updated",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        phase: "receiving",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sessionId: "session-alpha",
+        turn: {
+          consumedArtifactIds: [],
+          conversationId: "conversation-alpha",
+          emittedHandoffMessageIds: [],
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          phase: "receiving",
+          producedArtifactIds: [],
+          requestedApprovalIds: [],
+          sessionId: "session-alpha",
+          sourceChangeCandidateIds: [],
+          startedAt: observedAt,
+          triggerKind: "message",
+          turnId: "turn-alpha",
+          updatedAt: observedAt
+        },
+        turnId: "turn-alpha",
+        updatedAt: observedAt
+      }
+    });
 
     expect(sessionObservation.payload.eventType).toBe("session.updated");
     expect(conversationObservation.payload.eventType).toBe("conversation.updated");
+    expect(turnObservation.payload.eventType).toBe("turn.updated");
   });
 
   it("accepts Host Authority API responses and status summaries", () => {

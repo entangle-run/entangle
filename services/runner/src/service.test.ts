@@ -7,7 +7,8 @@ import {
   entangleA2AMessageSchema,
   sessionRecordSchema,
   type AgentEngineTurnRequest,
-  type EffectiveRuntimeContext
+  type EffectiveRuntimeContext,
+  type RunnerTurnRecord
 } from "@entangle/types";
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import { loadRuntimeContext } from "./runtime-context.js";
@@ -137,6 +138,62 @@ function buildHttpsRuntimeContext(input: {
 }
 
 describe("RunnerService", () => {
+  it("publishes runner turn observations as executable message phases advance", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const observedTurns: RunnerTurnRecord[] = [];
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context,
+      engine: {
+        executeTurn() {
+          return Promise.resolve({
+            assistantMessages: ["Observed the turn."],
+            providerStopReason: "end_turn",
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: []
+          });
+        }
+      },
+      observationPublisher: {
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: (record) => {
+          observedTurns.push(record);
+          return Promise.resolve();
+        }
+      },
+      transport
+    });
+
+    await service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        conversationId: "observed-conv",
+        intent: "observe_turn",
+        sessionId: "observed-session",
+        summary: "Observe this turn.",
+        turnId: "observed-turn"
+      })
+    );
+
+    expect(observedTurns.map((record) => record.phase)).toEqual(
+      expect.arrayContaining([
+        "receiving",
+        "validating",
+        "contextualizing",
+        "reasoning",
+        "acting",
+        "persisting"
+      ])
+    );
+    expect(observedTurns.at(-1)).toMatchObject({
+      graphId: "graph-alpha",
+      nodeId: "worker-it",
+      sessionId: "observed-session"
+    });
+  });
+
   it("records source workspace changes made during an engine turn", async () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);

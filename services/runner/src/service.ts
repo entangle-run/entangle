@@ -95,6 +95,7 @@ export type RunnerServiceStartResult = {
 export type RunnerServiceObservationPublisher = {
   publishConversationUpdated(record: ConversationRecord): Promise<void>;
   publishSessionUpdated(record: SessionRecord): Promise<void>;
+  publishTurnUpdated(record: RunnerTurnRecord): Promise<void>;
 };
 
 export type RunnerServiceHandleResult =
@@ -1345,6 +1346,24 @@ export class RunnerService {
     }
   }
 
+  private async publishTurnObservation(record: RunnerTurnRecord): Promise<void> {
+    try {
+      await this.observationPublisher?.publishTurnUpdated(record);
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
+  private async writeRunnerPhase(
+    statePaths: RunnerStatePaths,
+    record: RunnerTurnRecord,
+    phase: RunnerPhase
+  ): Promise<RunnerTurnRecord> {
+    const nextRecord = await writeRunnerPhase(statePaths, record, phase);
+    await this.publishTurnObservation(nextRecord);
+    return nextRecord;
+  }
+
   private startCancellationPolling(): () => void {
     const timer = setInterval(() => {
       void this.applyExternalCancellationRequests();
@@ -2230,6 +2249,7 @@ export class RunnerService {
       updatedAt: envelope.receivedAt
     };
     await writeRunnerTurnRecord(statePaths, turnRecord);
+    await this.publishTurnObservation(turnRecord);
     const cancellationController = new AbortController();
     const stopTurnCancellationPolling = this.startCancellationPolling();
     this.activeSessionAbortControllers.set(
@@ -2240,7 +2260,11 @@ export class RunnerService {
     let currentConversation: ConversationRecord | undefined;
 
     try {
-      turnRecord = await writeRunnerPhase(statePaths, turnRecord, "validating");
+      turnRecord = await this.writeRunnerPhase(
+        statePaths,
+        turnRecord,
+        "validating"
+      );
 
       const sessionRecord =
         (await readSessionRecord(statePaths, envelope.message.sessionId)) ??
@@ -2287,7 +2311,11 @@ export class RunnerService {
       );
       await this.publishConversationObservation(currentConversation);
 
-      turnRecord = await writeRunnerPhase(statePaths, turnRecord, "contextualizing");
+      turnRecord = await this.writeRunnerPhase(
+        statePaths,
+        turnRecord,
+        "contextualizing"
+      );
       let retrievedArtifacts;
 
       try {
@@ -2344,8 +2372,8 @@ export class RunnerService {
         updatedAt: engineRequestSummaryGeneratedAt
       };
       await writeRunnerTurnRecord(statePaths, turnRecord);
-      turnRecord = await writeRunnerPhase(statePaths, turnRecord, "reasoning");
-      turnRecord = await writeRunnerPhase(statePaths, turnRecord, "acting");
+      turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "reasoning");
+      turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "acting");
       const sourceChangeBaseline = await prepareSourceChangeHarvest(this.context);
       let result: AgentEngineTurnResult | undefined;
       let handoffPlans: ResolvedHandoffPlan[] = [];
@@ -2416,7 +2444,7 @@ export class RunnerService {
         updatedAt: nowIsoString()
       };
       await writeRunnerTurnRecord(statePaths, turnRecord);
-      turnRecord = await writeRunnerPhase(statePaths, turnRecord, "persisting");
+      turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "persisting");
       const materializedArtifacts = await this.artifactBackend.materializeTurnArtifacts({
         context: this.context,
         envelope,
@@ -2537,7 +2565,7 @@ export class RunnerService {
           lastMessageType: envelope.message.messageType,
           statePaths
         });
-        turnRecord = await writeRunnerPhase(statePaths, turnRecord, "blocked");
+        turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "blocked");
         turnRecord = await this.runOptionalMemorySynthesis({
           ...memorySynthesisInput,
           turnRecord
@@ -2557,7 +2585,7 @@ export class RunnerService {
       let publishedHandoffs: RunnerPublishedEnvelope[] = [];
 
       if (handoffPlans.length > 0) {
-        turnRecord = await writeRunnerPhase(statePaths, turnRecord, "emitting");
+        turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "emitting");
         publishedHandoffs = await this.publishHandoffMessages({
           envelope,
           plans: handoffPlans,
@@ -2655,7 +2683,7 @@ export class RunnerService {
         };
       }
 
-      turnRecord = await writeRunnerPhase(statePaths, turnRecord, "emitting");
+      turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "emitting");
       const responseMessage = buildResponseMessage({
         context: this.context,
         envelope,
@@ -2732,7 +2760,11 @@ export class RunnerService {
           await writeRunnerTurnRecord(statePaths, turnRecord);
         }
 
-        turnRecord = await writeRunnerPhase(statePaths, turnRecord, "cancelled");
+        turnRecord = await this.writeRunnerPhase(
+          statePaths,
+          turnRecord,
+          "cancelled"
+        );
 
         if (currentSession) {
           await cancelSessionForRequest({
@@ -2767,7 +2799,7 @@ export class RunnerService {
         };
       }
 
-      await writeRunnerPhase(statePaths, turnRecord, "errored");
+      await this.writeRunnerPhase(statePaths, turnRecord, "errored");
 
       if (
         currentSession &&
