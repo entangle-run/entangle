@@ -206,6 +206,7 @@ Implementation record:
 - [240-user-node-identity-slice.md](240-user-node-identity-slice.md)
 - [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
 - [259-user-node-inbox-client-slice.md](259-user-node-inbox-client-slice.md)
+- [260-multi-user-human-runtime-smoke-slice.md](260-multi-user-human-runtime-smoke-slice.md)
 
 Current status:
 
@@ -225,9 +226,11 @@ Current status:
 - the User Client has a first usable server-rendered conversation list,
   selected thread metadata, `/api/state`, and message publishing that preserves
   selected conversation/session context;
+- the process-boundary smoke now proves two User Nodes assigned to two distinct
+  `human_interface` runner processes, each with its own User Client endpoint
+  and stable publishing pubkey;
 - durable per-message inbox/outbox, final bundled User Client application,
-  approval/artifact review controls, and second-User-Node smoke coverage remain
-  open.
+  approval/artifact review controls remain open.
 
 Verification:
 
@@ -332,7 +335,7 @@ Current status:
 - the same-machine but topology-agnostic fast product proof now runs with one
   assigned agent runner and one assigned User Node `human_interface` runner
   exposing and serving a User Client endpoint;
-- the remaining fast topology proof is a second User Node assigned to a second
+- the same process proof now includes a second User Node assigned to a second
   `human_interface` runner;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.

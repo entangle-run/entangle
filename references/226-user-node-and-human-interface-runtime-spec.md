@@ -37,6 +37,9 @@ User nodes are now partially runtime-capable:
   control plane, verifies User Client `/health`, and proves the signed User
   Node message reaches the agent runner without shared Host/runner filesystem
   state.
+- The same smoke now includes a second User Node assigned to a second
+  `human_interface` runner, verifies a second User Client, and proves both User
+  Nodes publish with distinct stable pubkeys.
 
 Still missing:
 
@@ -128,8 +131,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Human Interface Runtime assignment tests.
 - Multiple Human Interface Runtime placement tests.
 - User Client endpoint projection tests.
-- Process smoke coverage for one assigned agent runner plus one assigned User
-  Node runner.
+- Process smoke coverage for one assigned agent runner plus two assigned User
+  Node runners.
 - User Node inbox API tests.
 - User Client state and selected-conversation publish tests.
 - Signed user task launch tests.

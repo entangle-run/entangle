@@ -98,6 +98,9 @@ Verification record:
 - process runner smoke passed against the federated dev `strfry` relay on
   `ws://localhost:7777` after the User Client/inbox change, including
   `/api/state` verification for the assigned User Node and builder edge target.
+- follow-up multi-user process smoke passed with two User Node runner
+  processes, two User Client state checks, and two signed publishes with
+  distinct User Node pubkeys.
 
 ## Migration/Compatibility Notes
 

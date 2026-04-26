@@ -60,6 +60,7 @@ same-machine slice records.
 - [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
 - [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
 - [259-user-node-inbox-client-slice.md](259-user-node-inbox-client-slice.md)
+- [260-multi-user-human-runtime-smoke-slice.md](260-multi-user-human-runtime-smoke-slice.md)
 
 ## Audited Scope
 
@@ -145,6 +146,10 @@ The repository is not fully federated:
   publishes a signed User Node message to the assigned agent node, verifies
   runner-owned session/conversation intake, and verifies Host projection of the
   User Node conversation without requiring a live model-provider call;
+- the same process smoke now proves two distinct User Nodes assigned to two
+  distinct `human_interface` runner processes, with two User Client state
+  checks, two signed publishes with distinct User Node pubkeys, and two Host
+  projected conversations;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 
@@ -238,6 +243,5 @@ bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The next blocking implementation areas are durable per-message inbox/outbox,
 approval/artifact review in the User Client, replacing remaining deep
-filesystem-backed runtime inspection paths, proving two distinct User Nodes at
-runtime, and turning the process smoke into the full multi-machine distributed
-proof.
+filesystem-backed runtime inspection paths, and turning the process smoke into
+the full multi-machine distributed proof.

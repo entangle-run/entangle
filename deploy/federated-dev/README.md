@@ -153,11 +153,12 @@ pnpm ops:smoke-federated-process-runner
 ```
 
 This smoke starts a Host HTTP server, launches separate `entangle-runner join`
-OS processes for an agent runner and a User Node `human_interface` runner,
-assigns both nodes through signed control events, and verifies runner-owned
-materialized contexts, User Client health, Host projection, signed User Node
-message publication, runner-owned session/conversation intake, and Host
-projection of the User Node conversation from runner-signed observations.
+OS processes for an agent runner and two User Node `human_interface` runners,
+assigns all three nodes through signed control events, and verifies
+runner-owned materialized contexts, User Client health/state, Host projection,
+signed User Node message publication from two distinct User Node identities,
+runner-owned session/conversation intake, and Host projection of both User Node
+conversations from runner-signed observations.
 
 For manual OpenCode/provider testing without rebuilding the setup by hand, run:
 
@@ -165,8 +166,8 @@ For manual OpenCode/provider testing without rebuilding the setup by hand, run:
 pnpm ops:smoke-federated-process-runner -- --keep-running
 ```
 
-The smoke leaves Host and both joined runners alive, keeps the temporary state
-root, prints the User Client URL, and prints CLI commands for publishing a
+The smoke leaves Host and all joined runners alive, keeps the temporary state
+root, prints both User Client URLs, and prints CLI commands for publishing a
 signed `task.request` to the assigned builder node, inspecting the User Node
 inbox projection, and listing runner turn events. Stop it with `Ctrl-C` when
 the manual test is done.

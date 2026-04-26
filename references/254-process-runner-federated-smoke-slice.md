@@ -25,6 +25,11 @@ the graph User Node to that runner, verifies its runner-owned materialized
 runtime context, waits for a projected User Client endpoint, and checks the
 User Client `/health` route before publishing the signed User Node message.
 
+Follow-up slice
+[260-multi-user-human-runtime-smoke-slice.md](260-multi-user-human-runtime-smoke-slice.md)
+extends this to two distinct User Nodes assigned to two distinct
+`human_interface` runner processes.
+
 Host JSON state writes also used direct file replacement. The process smoke
 exposed a real race where close `runtime.status` observations could make a
 projection read observe a partially rewritten JSON record.
@@ -100,6 +105,10 @@ Implemented in this slice:
   projected running User Client endpoint, call `/health`, verify `/api/state`,
   and verify User Node runtime materialization under the second runner's state
   root;
+- extended the smoke again with a reviewer User Node and a second
+  `human_interface` runner, then verified both User Clients, two signed User
+  Node publishes with distinct pubkeys, two agent-runner conversation intakes,
+  and two Host-projected User Node conversations;
 - made the smoke use per-run graph, runner, assignment, session, conversation,
   and turn identifiers so persistent relays do not mix current evidence with
   stale smoke events;
@@ -158,6 +167,10 @@ Verification record:
   processes, User Client health and state, signed User Node publish, runner
   session/conversation intake, Host projection of the User Node conversation,
   and Host/agent-runner/User-runner filesystem isolation;
+- the multi-user extension passed against the same relay, including two
+  assigned User Node runners, two User Client state checks, two signed User
+  Node publishes with distinct pubkeys, two runner conversation intakes, two
+  Host-projected User Node conversations, and four-way filesystem isolation;
 - root `pnpm typecheck` passed;
 - root `pnpm lint` passed;
 - `git diff --check` passed;

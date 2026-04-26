@@ -264,24 +264,38 @@ async function main(): Promise<void> {
     .slice(-48);
   const assignmentId = `assignment-${runId}`;
   const userAssignmentId = `assignment-user-${runId}`;
+  const reviewerUserAssignmentId = `assignment-reviewer-user-${runId}`;
   const conversationId = `conversation-${runId}`;
+  const reviewerConversationId = `conversation-reviewer-${runId}`;
   const graphId = `graph-${runId}`;
   const runnerId = `runner-${runId}`;
   const userRunnerId = `user-runner-${runId}`;
+  const reviewerUserRunnerId = `reviewer-user-runner-${runId}`;
   const sessionId = `session-${runId}`;
+  const reviewerSessionId = `session-reviewer-${runId}`;
   const turnId = `turn-${runId}`;
+  const reviewerTurnId = `turn-reviewer-${runId}`;
   const hostHome = path.join(tempRoot, "host-home");
   const hostSecrets = path.join(tempRoot, "host-secrets");
   const runnerRoot = path.join(tempRoot, "runner-root");
   const runnerStateRoot = path.join(runnerRoot, "state");
   const userRunnerRoot = path.join(tempRoot, "user-runner-root");
   const userRunnerStateRoot = path.join(userRunnerRoot, "state");
+  const reviewerUserRunnerRoot = path.join(
+    tempRoot,
+    "reviewer-user-runner-root"
+  );
+  const reviewerUserRunnerStateRoot = path.join(
+    reviewerUserRunnerRoot,
+    "state"
+  );
   const packageRoot = path.join(tempRoot, "package-source");
   await Promise.all([
     mkdir(hostHome, { recursive: true }),
     mkdir(hostSecrets, { recursive: true }),
     mkdir(runnerStateRoot, { recursive: true }),
     mkdir(userRunnerStateRoot, { recursive: true }),
+    mkdir(reviewerUserRunnerStateRoot, { recursive: true }),
     createAgentPackage(packageRoot)
   ]);
 
@@ -309,10 +323,15 @@ async function main(): Promise<void> {
   let userRunnerProcess:
     | ChildProcessByStdio<null, Readable, Readable>
     | undefined;
+  let reviewerUserRunnerProcess:
+    | ChildProcessByStdio<null, Readable, Readable>
+    | undefined;
   let runnerStdout = "";
   let runnerStderr = "";
   let userRunnerStdout = "";
   let userRunnerStderr = "";
+  let reviewerUserRunnerStdout = "";
+  let reviewerUserRunnerStderr = "";
   let runnerExit:
     | {
         code: number | null;
@@ -325,9 +344,17 @@ async function main(): Promise<void> {
         signal: NodeJS.Signals | null;
       }
     | undefined;
+  let reviewerUserRunnerExit:
+    | {
+        code: number | null;
+        signal: NodeJS.Signals | null;
+      }
+    | undefined;
   const runnerSecretEnv = "ENTANGLE_PROCESS_RUNNER_SMOKE_RUNNER_SECRET";
   const userRunnerSecretEnv =
     "ENTANGLE_PROCESS_RUNNER_SMOKE_USER_RUNNER_SECRET";
+  const reviewerUserRunnerSecretEnv =
+    "ENTANGLE_PROCESS_RUNNER_SMOKE_REVIEWER_USER_RUNNER_SECRET";
 
   try {
     const [stateModule, hostModule, controlPlaneModule, hostTransportModule] =
@@ -404,6 +431,18 @@ async function main(): Promise<void> {
                 mode: "bidirectional_shared_set",
                 relayProfileRefs: ["preview-relay"]
               }
+            },
+            {
+              edgeId: "reviewer-user-to-builder",
+              enabled: true,
+              fromNodeId: "reviewer-user",
+              relation: "reviews",
+              toNodeId: "builder",
+              transportPolicy: {
+                channel: "process-runner-smoke",
+                mode: "bidirectional_shared_set",
+                relayProfileRefs: ["preview-relay"]
+              }
             }
           ],
           graphId,
@@ -412,6 +451,11 @@ async function main(): Promise<void> {
             {
               displayName: "User",
               nodeId: "user",
+              nodeKind: "user"
+            },
+            {
+              displayName: "Reviewer User",
+              nodeId: "reviewer-user",
               nodeKind: "user"
             },
             {
@@ -513,6 +557,52 @@ async function main(): Promise<void> {
     );
     await writeJsonFile(userRunnerJoinConfigPath, userRunnerJoinConfig);
 
+    const reviewerUserRunnerSecretKey = generateSecretKey();
+    const reviewerUserRunnerPubkey = getPublicKey(reviewerUserRunnerSecretKey);
+    const reviewerUserRunnerSecretHex = Buffer.from(
+      reviewerUserRunnerSecretKey
+    ).toString("hex");
+    const reviewerUserRunnerJoinConfig: RunnerJoinConfig =
+      runnerJoinConfigSchema.parse({
+        capabilities: {
+          agentEngineKinds: [],
+          labels: ["process-smoke", "human-interface", "reviewer-user"],
+          maxAssignments: 1,
+          runtimeKinds: ["human_interface"],
+          supportsLocalWorkspace: true,
+          supportsNip59: true
+        },
+        hostApi: {
+          auth: {
+            envVar: "ENTANGLE_HOST_TOKEN",
+            mode: "bearer_env"
+          },
+          baseUrl: hostBaseUrl,
+          runtimeIdentitySecret: {
+            mode: "host_api"
+          }
+        },
+        hostAuthorityPubkey: exportedAuthority.authority.publicKey,
+        identity: {
+          publicKey: reviewerUserRunnerPubkey,
+          secretDelivery: {
+            envVar: reviewerUserRunnerSecretEnv,
+            mode: "env_var"
+          }
+        },
+        relayUrls,
+        runnerId: reviewerUserRunnerId,
+        schemaVersion: "1"
+      });
+    const reviewerUserRunnerJoinConfigPath = path.join(
+      reviewerUserRunnerRoot,
+      "runner-join.json"
+    );
+    await writeJsonFile(
+      reviewerUserRunnerJoinConfigPath,
+      reviewerUserRunnerJoinConfig
+    );
+
     const child = spawn(
       "pnpm",
       [
@@ -585,6 +675,51 @@ async function main(): Promise<void> {
     });
     printPass("user-runner-process", `pid=${userChild.pid ?? "unknown"}`);
 
+    const reviewerUserChild = spawn(
+      "pnpm",
+      [
+        "--filter",
+        "@entangle/runner",
+        "exec",
+        "tsx",
+        "src/index.ts",
+        "join",
+        "--config",
+        reviewerUserRunnerJoinConfigPath
+      ],
+      {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          ENTANGLE_HOST_LOGGER: "false",
+          ENTANGLE_HOST_TOKEN: operatorToken,
+          ENTANGLE_RUNNER_STATE_ROOT: reviewerUserRunnerStateRoot,
+          [reviewerUserRunnerSecretEnv]: reviewerUserRunnerSecretHex
+        },
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+    reviewerUserRunnerProcess = reviewerUserChild;
+    reviewerUserChild.stdout.on("data", (chunk: Buffer | string) => {
+      reviewerUserRunnerStdout = appendBounded(
+        reviewerUserRunnerStdout,
+        chunk
+      );
+    });
+    reviewerUserChild.stderr.on("data", (chunk: Buffer | string) => {
+      reviewerUserRunnerStderr = appendBounded(
+        reviewerUserRunnerStderr,
+        chunk
+      );
+    });
+    reviewerUserChild.once("close", (code, signal) => {
+      reviewerUserRunnerExit = { code, signal };
+    });
+    printPass(
+      "reviewer-user-runner-process",
+      `pid=${reviewerUserChild.pid ?? "unknown"}`
+    );
+
     await waitFor(
       "runner registration",
       async () => {
@@ -633,6 +768,34 @@ async function main(): Promise<void> {
     );
     printPass("user-runner-hello", `runner=${userRunnerId}`);
 
+    await waitFor(
+      "Reviewer User Node runner registration",
+      async () => {
+        if (reviewerUserRunnerExit) {
+          throw new Error(
+            `Reviewer User Node runner process exited early: ${JSON.stringify(reviewerUserRunnerExit)}\nstdout:\n${reviewerUserRunnerStdout}\nstderr:\n${reviewerUserRunnerStderr}`
+          );
+        }
+
+        try {
+          return runnerRegistryInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runners/${reviewerUserRunnerId}`
+            })
+          );
+        } catch {
+          return undefined;
+        }
+      },
+      () =>
+        `\nstdout:\n${reviewerUserRunnerStdout}\nstderr:\n${reviewerUserRunnerStderr}`
+    );
+    printPass(
+      "reviewer-user-runner-hello",
+      `runner=${reviewerUserRunnerId}`
+    );
+
     await hostRequest({
       baseUrl: hostBaseUrl,
       body: {
@@ -654,6 +817,17 @@ async function main(): Promise<void> {
       path: `/v1/runners/${userRunnerId}/trust`
     });
     printPass("user-runner-trust", "trusted");
+
+    await hostRequest({
+      baseUrl: hostBaseUrl,
+      body: {
+        reason: "Federated process runner smoke reviewer User Node runner.",
+        trustedBy: "smoke"
+      },
+      method: "POST",
+      path: `/v1/runners/${reviewerUserRunnerId}/trust`
+    });
+    printPass("reviewer-user-runner-trust", "trusted");
 
     const assignment = runtimeAssignmentOfferResponseSchema.parse(
       await hostRequest({
@@ -853,6 +1027,134 @@ async function main(): Promise<void> {
       `context=${materializedUserContextPath}`
     );
 
+    const reviewerUserAssignment = runtimeAssignmentOfferResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          assignmentId: reviewerUserAssignmentId,
+          leaseDurationSeconds: 3600,
+          nodeId: "reviewer-user",
+          runnerId: reviewerUserRunnerId
+        },
+        method: "POST",
+        path: "/v1/assignments"
+      })
+    ).assignment;
+    printPass(
+      "reviewer-user-assignment-offer",
+      reviewerUserAssignment.assignmentId
+    );
+
+    const reviewerUserRuntimeProjection = await waitFor(
+      "Reviewer User Node runtime running projection",
+      async () => {
+        if (reviewerUserRunnerExit) {
+          throw new Error(
+            `Reviewer User Node runner process exited before runtime projection: ${JSON.stringify(reviewerUserRunnerExit)}\nstdout:\n${reviewerUserRunnerStdout}\nstderr:\n${reviewerUserRunnerStderr}`
+          );
+        }
+
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+        const acceptedAssignment = projection.assignments.find(
+          (candidate) =>
+            candidate.assignmentId === reviewerUserAssignment.assignmentId &&
+            candidate.status === "accepted"
+        );
+        const runningRuntime = projection.runtimes.find(
+          (candidate) =>
+            candidate.assignmentId === reviewerUserAssignment.assignmentId &&
+            candidate.nodeId === "reviewer-user" &&
+            candidate.observedState === "running" &&
+            Boolean(candidate.clientUrl)
+        );
+
+        return acceptedAssignment && runningRuntime
+          ? runningRuntime
+          : undefined;
+      },
+      () =>
+        `\nstdout:\n${reviewerUserRunnerStdout}\nstderr:\n${reviewerUserRunnerStderr}`
+    );
+    const reviewerUserClientUrl = reviewerUserRuntimeProjection.clientUrl;
+    if (!reviewerUserClientUrl) {
+      throw new Error(
+        "Reviewer User Node runtime projection must include a User Client URL."
+      );
+    }
+    printPass(
+      "reviewer-user-runtime-projection",
+      `runtime=running; client=${reviewerUserClientUrl}`
+    );
+
+    const reviewerUserHealthResponse = await fetch(
+      new URL("/health", reviewerUserClientUrl)
+    );
+    assertCondition(
+      reviewerUserHealthResponse.ok,
+      `Reviewer User Client health failed with HTTP ${reviewerUserHealthResponse.status}`
+    );
+    printPass("reviewer-user-client-health", reviewerUserClientUrl);
+
+    const reviewerUserClientStateResponse = await fetch(
+      new URL("/api/state", reviewerUserClientUrl)
+    );
+    assertCondition(
+      reviewerUserClientStateResponse.ok,
+      `Reviewer User Client state failed with HTTP ${reviewerUserClientStateResponse.status}`
+    );
+    const reviewerUserClientState =
+      (await reviewerUserClientStateResponse.json()) as {
+        targets?: Array<{ nodeId?: string }>;
+        userNodeId?: string;
+      };
+    assertCondition(
+      reviewerUserClientState.userNodeId === "reviewer-user",
+      "Reviewer User Client state must identify the assigned User Node."
+    );
+    assertCondition(
+      (reviewerUserClientState.targets ?? []).some(
+        (target) => target.nodeId === "builder"
+      ),
+      "Reviewer User Client state must expose the builder edge target."
+    );
+    printPass(
+      "reviewer-user-client-state",
+      "user=reviewer-user; target=builder"
+    );
+
+    const materializedReviewerUserContextPath = path.join(
+      reviewerUserRunnerStateRoot,
+      "assignments",
+      reviewerUserAssignment.assignmentId,
+      "runtime-context.json"
+    );
+    const materializedReviewerUserContext =
+      runtimeContextInspectionResponseSchema.parse(
+        JSON.parse(
+          await readFile(materializedReviewerUserContextPath, "utf8")
+        ) as unknown
+      );
+    assertCondition(
+      materializedReviewerUserContext.binding.node.nodeKind === "user" &&
+        materializedReviewerUserContext.binding.node.nodeId === "reviewer-user",
+      "Materialized reviewer Human Interface Runtime context must belong to the reviewer User Node."
+    );
+    assertCondition(
+      path
+        .resolve(materializedReviewerUserContext.workspace.runtimeRoot)
+        .startsWith(path.resolve(reviewerUserRunnerStateRoot)),
+      "Materialized reviewer User Node runtime root must live under the reviewer User Node runner state root."
+    );
+    printPass(
+      "reviewer-user-runner-materialization",
+      `context=${materializedReviewerUserContextPath}`
+    );
+
     const userMessage = userNodeMessagePublishResponseSchema.parse(
       await hostRequest({
         baseUrl: hostBaseUrl,
@@ -953,6 +1255,116 @@ async function main(): Promise<void> {
       `user=${projectedUserConversation.userNodeId}; peer=${projectedUserConversation.peerNodeId}`
     );
 
+    const reviewerUserMessage = userNodeMessagePublishResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          conversationId: reviewerConversationId,
+          messageType: "question",
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 0,
+            responseRequired: false
+          },
+          sessionId: reviewerSessionId,
+          summary:
+            "Process runner smoke: verify second signed User Node message intake.",
+          targetNodeId: "builder",
+          turnId: reviewerTurnId
+        },
+        method: "POST",
+        path: "/v1/user-nodes/reviewer-user/messages"
+      })
+    );
+    assertCondition(
+      reviewerUserMessage.fromNodeId === "reviewer-user",
+      "Reviewer User Node message must be signed as reviewer-user."
+    );
+    assertCondition(
+      reviewerUserMessage.fromPubkey !== userMessage.fromPubkey,
+      "Distinct User Nodes must publish with distinct stable pubkeys."
+    );
+    printPass(
+      "reviewer-user-node-publish",
+      `message=${reviewerUserMessage.eventId}; relays=${reviewerUserMessage.publishedRelays.length}`
+    );
+
+    const reviewerUserMessageIntake = await waitFor(
+      "runner reviewer user message intake",
+      async () => {
+        if (runnerExit) {
+          throw new Error(
+            `Runner process exited before reviewer User Node message intake: ${JSON.stringify(runnerExit)}\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+          );
+        }
+
+        try {
+          const [sessionRecord, conversationRecord] = await Promise.all([
+            readFile(
+              path.join(
+                materializedContext.workspace.runtimeRoot,
+                "sessions",
+                `${reviewerUserMessage.sessionId}.json`
+              ),
+              "utf8"
+            ).then((content) =>
+              sessionRecordSchema.parse(JSON.parse(content) as unknown)
+            ),
+            readFile(
+              path.join(
+                materializedContext.workspace.runtimeRoot,
+                "conversations",
+                `${reviewerUserMessage.conversationId}.json`
+              ),
+              "utf8"
+            ).then((content) =>
+              conversationRecordSchema.parse(JSON.parse(content) as unknown)
+            )
+          ]);
+
+          return sessionRecord.lastMessageId === reviewerUserMessage.eventId &&
+            conversationRecord.lastInboundMessageId ===
+              reviewerUserMessage.eventId &&
+            conversationRecord.peerNodeId === "reviewer-user" &&
+            conversationRecord.localNodeId === "builder"
+            ? { conversationRecord, sessionRecord }
+            : undefined;
+        } catch {
+          return undefined;
+        }
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "reviewer-user-node-intake",
+      `session=${reviewerUserMessageIntake.sessionRecord.sessionId}; conversation=${reviewerUserMessageIntake.conversationRecord.conversationId}`
+    );
+
+    const projectedReviewerUserConversation = await waitFor(
+      "Host reviewer User Node conversation projection",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.userConversations.find(
+          (conversation) =>
+            conversation.conversationId ===
+              reviewerUserMessage.conversationId &&
+            conversation.userNodeId === "reviewer-user" &&
+            conversation.peerNodeId === "builder"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "reviewer-user-node-projection",
+      `user=${projectedReviewerUserConversation.userNodeId}; peer=${projectedReviewerUserConversation.peerNodeId}`
+    );
+
     runGit(["init", "--bare", path.join(tempRoot, "git", "smoke.git")]);
     printPass("git-backend", `file://${path.join(tempRoot, "git")}`);
 
@@ -980,9 +1392,27 @@ async function main(): Promise<void> {
         .startsWith(`${path.resolve(runnerRoot)}${path.sep}`),
       "User Node runner root must not be inside agent runner root."
     );
+    assertCondition(
+      !path
+        .resolve(reviewerUserRunnerRoot)
+        .startsWith(`${path.resolve(hostHome)}${path.sep}`),
+      "Reviewer User Node runner root must not be inside Host home."
+    );
+    assertCondition(
+      !path
+        .resolve(reviewerUserRunnerRoot)
+        .startsWith(`${path.resolve(runnerRoot)}${path.sep}`),
+      "Reviewer User Node runner root must not be inside agent runner root."
+    );
+    assertCondition(
+      !path
+        .resolve(reviewerUserRunnerRoot)
+        .startsWith(`${path.resolve(userRunnerRoot)}${path.sep}`),
+      "Reviewer User Node runner root must not be inside first User Node runner root."
+    );
     printPass(
       "filesystem-isolation",
-      `host=${hostHome}; runner=${runnerRoot}; userRunner=${userRunnerRoot}`
+      `host=${hostHome}; runner=${runnerRoot}; userRunner=${userRunnerRoot}; reviewerUserRunner=${reviewerUserRunnerRoot}`
     );
 
     if (keepRunning) {
@@ -994,6 +1424,11 @@ async function main(): Promise<void> {
       printPass("manual-runner-state", runnerStateRoot);
       printPass("manual-user-runner-state", userRunnerStateRoot);
       printPass("manual-user-client", userClientUrl);
+      printPass(
+        "manual-reviewer-user-runner-state",
+        reviewerUserRunnerStateRoot
+      );
+      printPass("manual-reviewer-user-client", reviewerUserClientUrl);
       console.log("Manual signed task command:");
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
@@ -1011,6 +1446,8 @@ async function main(): Promise<void> {
       );
       console.log("Manual User Client URL:");
       console.log(userClientUrl);
+      console.log("Manual reviewer User Client URL:");
+      console.log(reviewerUserClientUrl);
       console.log("Manual runner turn event command:");
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
@@ -1027,6 +1464,7 @@ async function main(): Promise<void> {
   } finally {
     await stopRunnerProcess(runnerProcess);
     await stopRunnerProcess(userRunnerProcess);
+    await stopRunnerProcess(reviewerUserRunnerProcess);
     await server?.close();
     await controlPlane?.close();
 

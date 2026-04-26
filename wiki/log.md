@@ -3134,3 +3134,18 @@ Focused typechecks, focused tests, package lints, and
 `pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777`
 passed after the change. The process smoke now also verifies the User Client
 `/api/state` response for the assigned User Node and builder edge target.
+
+## [2026-04-26] verification | Proved two User Nodes on distinct runners
+
+Added `references/260-multi-user-human-runtime-smoke-slice.md` and extended
+`pnpm ops:smoke-federated-process-runner` with a second human graph node named
+`reviewer-user`. The smoke now starts Host, one agent runner, and two
+`human_interface` runner processes, each with its own runner id, key, join
+config, assignment, state root, and User Client endpoint.
+
+The smoke passed against the federated dev `strfry` relay on
+`ws://localhost:7777`. It verified both User Client `/health` and `/api/state`
+responses, published signed messages from both User Nodes to the builder,
+asserted distinct User Node pubkeys, verified both sessions/conversations in
+the agent runner state, projected both User Node conversations through Host,
+and checked Host/agent-runner/two-User-runner filesystem isolation.

@@ -40,6 +40,9 @@ The current implementation has the first federated execution path:
   Client uses it to render a conversation list, selected thread metadata, and
   conversation/session-preserving message publication. The client also exposes
   `/api/state` for automation and for replacing the shell with a richer app.
+- The process-boundary smoke now includes two User Nodes assigned to two
+  distinct `human_interface` runners, each exposing its own User Client and
+  publishing with a distinct stable User Node pubkey.
 
 The current implementation still does not have the final User Node client:
 
@@ -304,6 +307,10 @@ Then extend the demo to two User Nodes:
 - both human nodes visible in Studio as separately assigned graph actors;
 - each User Client signs as its own stable User Node identity.
 
+Status: implemented in `pnpm ops:smoke-federated-process-runner` as a
+same-machine, topology-agnostic process proof. The remaining proof is the
+multi-machine version.
+
 ### Slice I: Engine Adapter Upgrade
 
 After the graph/user runtime path is usable, deepen the OpenCode integration:
@@ -328,7 +335,8 @@ The fastest path to a product the user can test is:
 4. Show the User Client URL in Studio.
 5. Add a smoke that runs one agent node and one user node. Done for the no-LLM
    path.
-6. Add a second-user-node smoke to prove distributed human placement.
+6. Add a second-user-node smoke to prove distributed human placement. Done for
+   the same-machine process-boundary path.
 7. Expand durable message history, approvals, artifact review, and OpenCode
    parity.
 
