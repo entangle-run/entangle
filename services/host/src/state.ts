@@ -783,7 +783,7 @@ function buildLocalStateLayoutRecord(timestamp: string) {
   return localStateLayoutRecordSchema.parse({
     createdAt: timestamp,
     layoutVersion: currentLocalStateLayoutVersion,
-    product: "entangle-local",
+    product: "entangle",
     schemaVersion: "1",
     updatedAt: timestamp
   });

@@ -52,17 +52,18 @@ Entangle generalizes that model into an explicit graph:
 
 The system is not just a chat application with agents behind it. It is a graph-native runtime for AI organizations.
 
-## Entangle Local Scope Principle
+## Local Profile Scope Principle
 
-Entangle Local should not be architecturally simplified for short-term delivery.
-The correct rule is:
+Entangle's local deployment profile should not be architecturally simplified
+for short-term delivery. The correct rule is:
 
 > Keep the final architecture. Reduce only the active feature surface and the number of active components.
 
 That means:
 
 - stable types now;
-- restricted execution profile for Entangle Local while the product matures;
+- restricted execution profile for the local deployment profile while the
+  product matures;
 - no deliberate shortcuts that would invalidate later features such as remote node attachment, richer transport policies, multi-relay operation, or stronger governance.
 
 ## Current Status
@@ -151,7 +152,7 @@ This repository currently contains:
   attempts, emits `source_history.published`, and can push to the runtime's
   primary or selected git target, including host-owned provisioning for
   selected non-primary `gitea_api` targets and local `file://` git remotes for
-  Entangle Local tests, with node-configured source mutation policy now able
+  local-profile tests, with node-configured source mutation policy now able
   to require approved runtime approval ids before source application, before
   any source-history publication, or before non-primary publication targets by
   default, and with accepted approval ids persisted on source records and
@@ -363,10 +364,10 @@ This repository currently contains:
 - an explicit TypeScript project graph for the composite packages and Node
   services, with solution-build typechecking at the repository root;
 - a verified baseline where `pnpm verify` passes end to end.
-- a definitive three-product roadmap plus a released R1/L1 local-operator
-  baseline that sequence Entangle Local first, then Entangle Cloud, then
-  Entangle Enterprise, while separating the presentable local baseline from
-  later production persistence, tenancy, authorization, and compliance claims;
+- a historical three-product roadmap plus a released R1/L1 local-operator
+  baseline. The current federated runtime pivot supersedes the product identity
+  framing in that roadmap: the product is Entangle, and local is one supported
+  deployment profile;
 - a first real provider-backed internal `agent-engine` slice with an Anthropic
   adapter behind the stable engine boundary, typed error normalization, and
   tests that exercise request assembly, auth mapping, and provider-failure

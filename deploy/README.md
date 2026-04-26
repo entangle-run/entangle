@@ -4,7 +4,7 @@ This directory is organized by deployment profile.
 
 ## Active Profiles
 
-- [local](local/README.md) — Entangle Local operator profile for a single
+- [local](local/README.md) — Entangle local operator profile for a single
   workstation, backed by Docker Compose, `strfry`, Gitea, `entangle-host`,
   Studio, and host-managed local runners.
 

@@ -377,7 +377,9 @@ function validateBackupManifest(rawManifest: unknown): LocalBackupManifest {
     manifest.schemaVersion !== "1" ||
     manifest.product !== "entangle-local-backup"
   ) {
-    throw new Error("Backup manifest is not an Entangle Local backup manifest.");
+    throw new Error(
+      "Backup manifest is not an Entangle local profile backup manifest."
+    );
   }
 
   if (
@@ -402,7 +404,7 @@ function assertRestorableLayout(
   }
 
   throw new Error(
-    `Cannot restore Entangle Local backup with state layout status '${layout.status}'.`
+    `Cannot restore Entangle local profile backup with state layout status '${layout.status}'.`
   );
 }
 
@@ -417,7 +419,7 @@ export async function createLocalBackup(
 
   if (!(await pathExists(hostStatePath))) {
     throw new Error(
-      "Cannot create Entangle Local backup because .entangle/host does not exist."
+      "Cannot create Entangle local profile backup because .entangle/host does not exist."
     );
   }
 
@@ -500,7 +502,7 @@ export async function restoreLocalBackup(
   const targetExists = await pathExists(targetPath);
   const layout = await inspectLocalStateLayout(stateBundlePath);
   const warnings = [
-    "Local secrets are not included in Entangle Local backups; restore or recreate .entangle-secrets separately if needed.",
+    "Local secrets are not included in Entangle local profile backups; restore or recreate .entangle-secrets separately if needed.",
     "External service state such as Docker volumes, Gitea internals, and relay data is not restored by this command."
   ];
 

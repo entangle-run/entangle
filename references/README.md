@@ -25,7 +25,9 @@ and [240-user-node-identity-slice.md](240-user-node-identity-slice.md), then
 and
 [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md),
 then
-[243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md).
+[243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
+and
+[244-product-naming-migration-slice.md](244-product-naming-migration-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

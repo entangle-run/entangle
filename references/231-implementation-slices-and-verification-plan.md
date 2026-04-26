@@ -249,6 +249,10 @@ remain follow-up work.
 Update current product docs and user-facing copy to Entangle. Keep Local as a
 profile.
 
+Implementation record:
+
+- [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
+
 Verification:
 
 - naming audit search;

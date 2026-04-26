@@ -69,7 +69,7 @@ function buildCurrentStateLayoutRecord(timestamp: string) {
   return {
     createdAt: timestamp,
     layoutVersion: currentLocalStateLayoutVersion,
-    product: "entangle-local",
+    product: "entangle",
     schemaVersion: "1",
     updatedAt: timestamp
   };
@@ -175,7 +175,7 @@ function buildRepairActions(input: {
       actionId: "inspect_unreadable_state_layout",
       category: "state",
       detail:
-        "state-layout.json exists but cannot be parsed as the current Entangle Local layout record.",
+        "state-layout.json exists but cannot be parsed as the current Entangle local profile layout record.",
       risk: "manual",
       status: "blocked",
       summary: "Inspect unreadable Local state layout"
@@ -377,7 +377,7 @@ export async function buildLocalRepairReport(
 export function formatLocalRepairText(report: LocalRepairReport): string {
   const mode = report.applied ? "apply-safe" : "dry-run";
   const lines = [
-    `Entangle Local repair: ${report.status} (${mode}; ${report.summary.applied} applied, ${report.summary.pending} pending, ${report.summary.blocked} blocked, ${report.summary.manual} manual)`
+    `Entangle local profile repair: ${report.status} (${mode}; ${report.summary.applied} applied, ${report.summary.pending} pending, ${report.summary.blocked} blocked, ${report.summary.manual} manual)`
   ];
 
   if (report.repairRecordPath) {

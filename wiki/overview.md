@@ -77,7 +77,7 @@ The repository now also contains the first real implementation baseline:
 - `packages/types`, `validator`, `host-client`, `agent-engine`, and
   `package-scaffold`;
 - a first local Compose profile and service Dockerfiles;
-- an explicit `deploy/local/` profile layout for Entangle Local deployment
+- an explicit `deploy/local/` profile layout for Entangle local deployment
   material, with shared script path constants instead of duplicated local
   Compose paths;
 - an explicit `releases/` area for release-control packets, starting with the
@@ -687,10 +687,10 @@ The repository now also contains the first real implementation baseline:
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root.
-- a definitive three-product roadmap plus a released R1/L1 local-operator
-  baseline that sequence Entangle Local first, then Entangle Cloud, then
-  Entangle Enterprise, while separating the presentable local baseline from
-  later production persistence, tenancy, authorization, and compliance claims.
+- a historical three-product roadmap plus a released R1/L1 local-operator
+  baseline. The federated-runtime pivot supersedes the roadmap's product
+  identity framing: the product is Entangle, and local is one deployment
+  profile.
 
 The specification corpus now has five layers:
 
@@ -706,7 +706,7 @@ The central design direction is now clear:
 - graph-native, not orchestrator-only;
 - user as node;
 - agents as first-class nodes;
-- Entangle Local topology should visibly include non-flat organizational
+- Entangle's local-profile topology should visibly include non-flat organizational
   structure, not only one coordinator with flat subagents;
 - Nostr-signed messaging for coordination;
 - artifact backends for work;
@@ -716,7 +716,7 @@ The central design direction is now clear:
 - a separate host control-plane service for node admission and runtime lifecycle.
 - headless operation should remain possible through CLI and host-facing surfaces, not only through Studio.
 - the project should remain in one monorepo with explicit internal package
-  boundaries during Entangle Local and the early product phase.
+  boundaries during the local profile and early product phase.
 - relay, git service, and model endpoint configuration should come from a
   deployment-scoped resource catalog, not hardcoded runtime assumptions.
 - git-facing principals should be bound explicitly through host-managed
@@ -744,7 +744,7 @@ The central design direction is now clear:
     runtime context rather than ad hoc coupling.
 11. The engine/provider layer must stay behind an adapter boundary, not leak
     provider-native types into the runner contract.
-12. Entangle Local should preserve the final architecture while restricting active features.
+12. The Entangle local profile should preserve the final architecture while restricting active features.
 
 ## Immediate next steps
 

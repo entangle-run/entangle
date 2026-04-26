@@ -4,7 +4,8 @@
 
 Local assumptions are intentional and deep:
 
-- product/state marker `"entangle-local"`;
+- legacy product/state marker `"entangle-local"` and current marker
+  `"entangle"`;
 - `runtimeProfileSchema = z.enum(["local"])`;
 - Host-managed `.entangle/host` and `.entangle-secrets`;
 - one injected `effective-runtime-context.json`;
@@ -60,7 +61,8 @@ boundaries and keep distributed semantics independent.
 
 - Add new runtime/deployment profile values without breaking local fixtures.
 - Rename state layout product to Entangle for new state while accepting old
-  `"entangle-local"` markers.
+  `"entangle-local"` markers. This is now implemented for the local state
+  layout record.
 - Split effective runtime context:
   - semantic assignment context;
   - local materialized workspace layout;

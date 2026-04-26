@@ -43,6 +43,7 @@ because the handoff required these exact filenames. The existing
 - [241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
 - [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
 - [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
+- [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
 
 ## Audited Scope
 
@@ -182,5 +183,5 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 12 are implemented in this branch. The next
-slice is product naming and compatibility migration.
+Plan readiness: Slices 1 through 13 are implemented in this branch. The next
+slice is the distributed smoke path.

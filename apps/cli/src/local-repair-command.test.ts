@@ -111,7 +111,7 @@ describe("local repair command helpers", () => {
       await readJson(path.join(repositoryRoot, ".entangle/host/state-layout.json"))
     ).toMatchObject({
       layoutVersion: 1,
-      product: "entangle-local"
+      product: "entangle"
     });
     expect(report.repairRecordPath).toBeDefined();
     expect(await readJson(report.repairRecordPath!)).toMatchObject({

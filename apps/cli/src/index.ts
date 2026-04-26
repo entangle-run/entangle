@@ -462,17 +462,17 @@ packageCommand
 
 const localCommand = program
   .command("local")
-  .description("Inspect and operate the Entangle Local profile.");
+  .description("Inspect and operate the Entangle local deployment profile.");
 
 localCommand
   .command("backup")
   .option("--force", "Replace an existing backup output directory.")
   .option(
     "--output <path>",
-    "Entangle Local backup bundle output directory.",
+    "Entangle local profile backup bundle output directory.",
     "entangle-local-backup"
   )
-  .description("Create a versioned Entangle Local backup bundle without local secrets.")
+  .description("Create a versioned Entangle local profile backup bundle without local secrets.")
   .action(
     async (options: { force?: boolean; output: string }) => {
       const summary = await createLocalBackup({
@@ -489,10 +489,10 @@ localCommand
 
 localCommand
   .command("restore")
-  .argument("<bundle>", "Path to an Entangle Local backup bundle directory.")
+  .argument("<bundle>", "Path to an Entangle local profile backup bundle directory.")
   .option("--dry-run", "Validate the backup and report what would be restored.")
   .option("--force", "Replace the current .entangle/host state directory.")
-  .description("Restore .entangle/host from a validated Entangle Local backup bundle.")
+  .description("Restore .entangle/host from a validated Entangle local profile backup bundle.")
   .action(
     async (
       bundle: string,
@@ -526,7 +526,7 @@ localCommand
   .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
   .option("--strict", "Treat optional local infrastructure warnings as failures.")
   .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
-  .description("Preview or apply conservative Entangle Local repair actions.")
+  .description("Preview or apply conservative Entangle local profile repair actions.")
   .action(
     async (
       options: {
@@ -591,7 +591,7 @@ localCommand
   .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
   .option("--strict", "Treat optional local infrastructure warnings as failures.")
   .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
-  .description("Run a read-only Entangle Local doctor diagnostic.")
+  .description("Run a read-only Entangle local profile doctor diagnostic.")
   .action(
     async (
       options: {
@@ -664,7 +664,7 @@ localCommand
   .option("--runner-image <image>", "Expected local runner image.", "entangle-runner:local")
   .option("--skip-live", "Skip live host, Studio, Gitea, and relay checks.")
   .option("--studio-url <url>", "Expected local Studio URL.", "http://localhost:3000")
-  .description("Write a redacted Entangle Local diagnostics bundle.")
+  .description("Write a redacted Entangle local profile diagnostics bundle.")
   .action(
     async (
       options: {

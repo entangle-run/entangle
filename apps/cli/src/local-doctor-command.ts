@@ -164,7 +164,7 @@ function buildLocalStateLayoutCheck(input: {
       category: "state",
       detail:
         error instanceof Error ? error.message : "state layout record is unreadable",
-      remediation: "Inspect .entangle/host/state-layout.json before starting Entangle Local.",
+      remediation: "Inspect .entangle/host/state-layout.json before starting the Entangle local profile.",
       status: "fail",
       summary: "Local state layout"
     };
@@ -174,7 +174,7 @@ function buildLocalStateLayoutCheck(input: {
   if (!parseResult.success) {
     return {
       category: "state",
-      detail: "state layout record does not match the Entangle Local schema",
+      detail: "state layout record does not match the Entangle local profile schema",
       remediation: "Back up .entangle/host, then inspect or repair state-layout.json.",
       status: "fail",
       summary: "Local state layout"
@@ -788,7 +788,7 @@ export async function buildLocalDoctorReport(
         command: "docker",
         deps: commandDeps,
         options,
-        remediation: "Fix the Local Compose profile before starting Entangle Local.",
+        remediation: "Fix the Local Compose profile before starting the Entangle local profile.",
         summary: "Local Compose config"
       });
     }
@@ -880,7 +880,7 @@ export async function buildLocalDoctorReport(
 
 export function formatLocalDoctorText(report: LocalDoctorReport): string {
   const lines = [
-    `Entangle Local doctor: ${report.status} (${report.summary.pass} pass, ${report.summary.warn} warn, ${report.summary.fail} fail)`
+    `Entangle local profile doctor: ${report.status} (${report.summary.pass} pass, ${report.summary.warn} warn, ${report.summary.fail} fail)`
   ];
 
   for (const check of report.checks) {

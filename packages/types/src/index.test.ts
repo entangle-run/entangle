@@ -35,6 +35,7 @@ import {
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
   hostStatusResponseSchema,
+  localStateLayoutRecordSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
@@ -2781,6 +2782,28 @@ describe("reconciliation contracts", () => {
     expect(result.reconciliation.blockedRuntimeCount).toBe(1);
     expect(result.reconciliation.findingCodes).toEqual(["context_unavailable"]);
     expect(result.stateLayout.status).toBe("current");
+  });
+
+  it("accepts current and legacy local state layout product markers", () => {
+    const baseRecord = {
+      createdAt: observedAt,
+      layoutVersion: 1,
+      schemaVersion: "1",
+      updatedAt: observedAt
+    };
+
+    expect(
+      localStateLayoutRecordSchema.parse({
+        ...baseRecord,
+        product: "entangle"
+      }).product
+    ).toBe("entangle");
+    expect(
+      localStateLayoutRecordSchema.parse({
+        ...baseRecord,
+        product: "entangle-local"
+      }).product
+    ).toBe("entangle-local");
   });
 });
 

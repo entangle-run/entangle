@@ -2818,3 +2818,16 @@ assignment counts, artifact/source/wiki ref counts, User Node identities, and
 projected User Node conversations. Full Studio chat composition and replacement
 of legacy approval/session controls with signed User Node flows remain
 follow-up work.
+
+## [2026-04-26] implementation | Migrated current product naming to Entangle
+
+Added `references/244-product-naming-migration-slice.md` and implemented the
+thirteenth federated pivot slice. New Host-created and local-repair-created
+state layout records now use product marker `entangle`, while the schema still
+accepts legacy `entangle-local` markers for pre-release compatibility.
+
+Current README, resources, deployment, wiki overview, and CLI local-profile
+wording now describe Entangle as the product and local as a deployment profile.
+Historical Local-era docs, local Docker/network names, backup bundle markers,
+and compatibility fixtures are intentionally preserved as local adapter or
+history records.

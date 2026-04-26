@@ -1,4 +1,7 @@
-# Entangle Local Deployment Profile
+# Entangle local deployment profile
+
+This is the local deployment profile for Entangle. "Local" names the adapter
+and operator topology here; the product identity is Entangle.
 
 This directory contains the first complete local deployment profile for
 Entangle.

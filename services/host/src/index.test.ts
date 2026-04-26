@@ -987,12 +987,16 @@ describe("buildHostServer", () => {
         recordedLayoutVersion: 1,
         status: "current"
       });
-      await expect(
-        readFile(
+      const layoutRecord = JSON.parse(
+        await readFile(
           path.join(createdDirectories[0]!, "host", "state-layout.json"),
           "utf8"
         )
-      ).resolves.toContain('"layoutVersion": 1');
+      ) as { layoutVersion?: number; product?: string };
+      expect(layoutRecord).toMatchObject({
+        layoutVersion: 1,
+        product: "entangle"
+      });
     } finally {
       await server.close();
     }

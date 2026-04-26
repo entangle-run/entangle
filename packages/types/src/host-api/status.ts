@@ -7,10 +7,15 @@ import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
 export const currentLocalStateLayoutVersion = 1;
 export const minimumSupportedLocalStateLayoutVersion = 1;
 
+export const localStateLayoutProductSchema = z.enum([
+  "entangle",
+  "entangle-local"
+]);
+
 export const localStateLayoutRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
   layoutVersion: z.number().int().nonnegative(),
-  product: z.literal("entangle-local"),
+  product: localStateLayoutProductSchema,
   schemaVersion: z.literal("1"),
   updatedAt: nonEmptyStringSchema
 });
@@ -86,5 +91,6 @@ export type LocalStateLayoutInspection = z.infer<
   typeof localStateLayoutInspectionSchema
 >;
 export type LocalStateLayoutRecord = z.infer<typeof localStateLayoutRecordSchema>;
+export type LocalStateLayoutProduct = z.infer<typeof localStateLayoutProductSchema>;
 export type RuntimeStatus = z.infer<typeof runtimeStatusSchema>;
 export type TraceEvent = z.infer<typeof traceEventSchema>;
