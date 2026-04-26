@@ -25,6 +25,7 @@ import {
   hostAuthorityInspectionResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
+  hostProjectionSnapshotSchema,
   hostErrorResponseSchema,
   hostStatusResponseSchema,
   nodeCreateRequestSchema,
@@ -116,6 +117,7 @@ import {
   type HostAuthorityInspectionResponse,
   type HostEventListResponse,
   type HostEventRecord,
+  type HostProjectionSnapshot,
   type HostStatusResponse,
   type NodeCreateRequest,
   type NodeDeletionResponse,
@@ -395,6 +397,13 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/host/status`),
         hostStatusResponseSchema
+      );
+    },
+
+    async getProjection(): Promise<HostProjectionSnapshot> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/projection`),
+        hostProjectionSnapshotSchema
       );
     },
 

@@ -44,6 +44,8 @@ import {
   entangleSignedEnvelopeSchema,
   type EntangleProtocolDomain,
   type EntangleSignedEnvelope,
+  hostProjectionSnapshotSchema,
+  type HostProjectionSnapshot,
   observedApprovalActivityRecordSchema,
   observedArtifactActivityRecordSchema,
   observedConversationActivityRecordSchema,
@@ -2053,6 +2055,71 @@ export async function revokeRuntimeAssignment(input: {
 
   return runtimeAssignmentRevokeResponseSchema.parse({
     assignment: revoked
+  });
+}
+
+function assignmentProjectionSource(
+  assignment: RuntimeAssignmentRecord
+): "desired_state" | "observation_event" {
+  return assignment.status === "accepted" || assignment.status === "rejected"
+    ? "observation_event"
+    : "desired_state";
+}
+
+export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapshot> {
+  await initializeHostState();
+
+  const authority = await ensureHostAuthorityMaterialized();
+  const [runnerList, assignments] = await Promise.all([
+    listRunnerRegistry(),
+    listRuntimeAssignmentRecords()
+  ]);
+  const hasStaleTrustedRunner = runnerList.runners.some(
+    (runner) =>
+      runner.registration.trustState === "trusted" &&
+      (runner.liveness === "stale" || runner.liveness === "offline")
+  );
+
+  return hostProjectionSnapshotSchema.parse({
+    assignments: assignments.map((assignment) => ({
+      assignmentId: assignment.assignmentId,
+      graphId: assignment.graphId,
+      graphRevisionId: assignment.graphRevisionId,
+      hostAuthorityPubkey: assignment.hostAuthorityPubkey,
+      ...(assignment.lease?.expiresAt
+        ? { leaseExpiresAt: assignment.lease.expiresAt }
+        : {}),
+      nodeId: assignment.nodeId,
+      projection: {
+        source: assignmentProjectionSource(assignment),
+        updatedAt: assignment.updatedAt
+      },
+      runnerId: assignment.runnerId,
+      status: assignment.status
+    })),
+    freshness: hasStaleTrustedRunner ? "stale" : "current",
+    generatedAt: nowIsoString(),
+    hostAuthorityPubkey: authority.publicKey,
+    runners: runnerList.runners.map((runner) => ({
+      assignmentIds: runner.heartbeat?.assignmentIds ?? [],
+      hostAuthorityPubkey: runner.registration.hostAuthorityPubkey,
+      ...(runner.registration.lastSeenAt ?? runner.heartbeat?.lastHeartbeatAt
+        ? {
+            lastSeenAt:
+              runner.heartbeat?.lastHeartbeatAt ?? runner.registration.lastSeenAt
+          }
+        : {}),
+      operationalState: runner.heartbeat?.operationalState ?? "unknown",
+      projection: {
+        source: "observation_event",
+        updatedAt: runner.heartbeat?.updatedAt ?? runner.registration.updatedAt
+      },
+      publicKey: runner.registration.publicKey,
+      runnerId: runner.registration.runnerId,
+      trustState: runner.registration.trustState
+    })),
+    schemaVersion: "1",
+    userConversations: []
   });
 }
 

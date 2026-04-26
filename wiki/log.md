@@ -2754,3 +2754,16 @@ The Docker backend now supports `ENTANGLE_DOCKER_RUNNER_BOOTSTRAP=join`, which
 launches the runner with `ENTANGLE_RUNNER_JOIN_CONFIG_PATH` instead of
 `ENTANGLE_RUNTIME_CONTEXT_PATH`. The default remains `local-context` until Host
 control publishing and the federated assignment materializer are implemented.
+
+## [2026-04-26] implementation | Added Host projection snapshot
+
+Added `references/239-host-projection-snapshot-slice.md` and implemented the
+eighth federated pivot slice. Host now exposes `/v1/projection`, built from
+Host Authority state, runner registration/heartbeat records, and runtime
+assignment records. The projection distinguishes desired-state assignment
+records from accepted/rejected assignment observations and includes runner
+liveness, trust, operational state, and heartbeat assignment ids.
+
+The shared host client now includes `getProjection()`. This is the first
+projection surface only; deep session, turn, approval, artifact, source, and
+wiki surfaces still need migration away from runner-local file reads.

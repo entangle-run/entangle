@@ -155,6 +155,10 @@ Create projection reducers and Host APIs backed by signed observations.
 Gradually move sessions, turns, approvals, artifacts, source, and wiki surfaces
 off direct runtime file reads.
 
+Implementation record:
+
+- [239-host-projection-snapshot-slice.md](239-host-projection-snapshot-slice.md)
+
 Verification:
 
 - projection reducer tests;

@@ -102,6 +102,39 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("fetches the Host projection snapshot", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignments: [],
+              freshness: "current",
+              generatedAt: "2026-04-26T12:00:00.000Z",
+              hostAuthorityPubkey:
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              runners: [],
+              schemaVersion: "1",
+              userConversations: []
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.getProjection()).resolves.toMatchObject({
+      freshness: "current",
+      schemaVersion: "1"
+    });
+    expect(requests).toEqual(["http://entangle-host.test/v1/projection"]);
+  });
+
   it("preserves JSON headers while adding the configured host auth token", async () => {
     const requests: Array<{ headers?: Record<string, string> }> = [];
     const client = createHostClient({

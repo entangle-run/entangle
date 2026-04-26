@@ -38,6 +38,7 @@ because the handoff required these exact filenames. The existing
 - [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
 - [237-generic-runner-bootstrap-slice.md](237-generic-runner-bootstrap-slice.md)
 - [238-local-launcher-join-adapter-slice.md](238-local-launcher-join-adapter-slice.md)
+- [239-host-projection-snapshot-slice.md](239-host-projection-snapshot-slice.md)
 
 ## Audited Scope
 
@@ -178,5 +179,5 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 7 are implemented in this branch. Slice 8,
-projection from signed observations, is next.
+Plan readiness: Slices 1 through 8 are implemented in this branch. Slice 9,
+User Node runtime, is next.

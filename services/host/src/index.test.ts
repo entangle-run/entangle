@@ -35,6 +35,7 @@ import {
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
+  hostProjectionSnapshotSchema,
   hostStatusResponseSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
@@ -1291,6 +1292,27 @@ describe("buildHostServer", () => {
           inspectionResponse.json()
         ).assignment.status
       ).toBe("accepted");
+
+      const projectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/projection"
+      });
+      expect(projectionResponse.statusCode).toBe(200);
+      const projection = hostProjectionSnapshotSchema.parse(
+        projectionResponse.json()
+      );
+      expect(projection.runners[0]).toMatchObject({
+        publicKey: runnerPubkey,
+        runnerId,
+        trustState: "trusted"
+      });
+      expect(projection.assignments[0]).toMatchObject({
+        assignmentId: "assignment-alpha",
+        projection: {
+          source: "observation_event"
+        },
+        status: "accepted"
+      });
 
       const revokeResponse = await server.inject({
         method: "POST",

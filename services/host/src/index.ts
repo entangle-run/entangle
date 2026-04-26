@@ -33,6 +33,7 @@ import {
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
   hostErrorResponseSchema,
+  hostProjectionSnapshotSchema,
   nodeCreateRequestSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
@@ -116,6 +117,7 @@ import {
   deletePackageSource,
   exportHostAuthority,
   getHostAuthorityInspection,
+  getHostProjectionSnapshot,
   getNodeInspection,
   getRunnerRegistryEntry,
   getRuntimeAssignment,
@@ -529,6 +531,10 @@ export async function buildHostServer() {
 
   server.get("/v1/host/status", async () =>
     hostStatusResponseSchema.parse(await buildHostStatus())
+  );
+
+  server.get("/v1/projection", async () =>
+    hostProjectionSnapshotSchema.parse(await getHostProjectionSnapshot())
   );
 
   server.get("/v1/authority", async () =>
