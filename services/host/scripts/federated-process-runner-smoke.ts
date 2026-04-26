@@ -25,7 +25,8 @@ import {
 } from "@entangle/types";
 import { generateSecretKey, getPublicKey } from "nostr-tools";
 
-const keepTemp = process.argv.includes("--keep-temp");
+const keepRunning = process.argv.includes("--keep-running");
+const keepTemp = keepRunning || process.argv.includes("--keep-temp");
 const relayUrl =
   readFlagValue("--relay-url") ??
   process.env.ENTANGLE_RELAY_URL ??
@@ -69,6 +70,18 @@ function truncateLog(value: string, maxCharacters = 8000): string {
 function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
+  });
+}
+
+function waitForShutdownSignal(): Promise<void> {
+  return new Promise((resolve) => {
+    const shutdown = (signal: NodeJS.Signals) => {
+      console.log(`Received ${signal}; stopping process runner smoke.`);
+      resolve();
+    };
+
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
   });
 }
 
@@ -690,6 +703,27 @@ async function main(): Promise<void> {
       "filesystem-isolation",
       `host=${hostHome}; runner=${runnerRoot}`
     );
+
+    if (keepRunning) {
+      const cliEnvironment =
+        `ENTANGLE_HOST_URL=${hostBaseUrl} ` +
+        `ENTANGLE_HOST_TOKEN=${operatorToken}`;
+      printPass("manual-host", hostBaseUrl);
+      printPass("manual-token", operatorToken);
+      printPass("manual-runner-state", runnerStateRoot);
+      console.log("Manual signed task command:");
+      console.log(
+        `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
+          `user-nodes message user builder "Implement a small change and report what you changed." ` +
+          `--message-type task.request --compact`
+      );
+      console.log("Manual projection command:");
+      console.log(
+        `${cliEnvironment} pnpm --filter @entangle/cli dev -- host projection --summary`
+      );
+      console.log("Press Ctrl-C to stop Host and runner processes.");
+      await waitForShutdownSignal();
+    }
 
     if (keepTemp) {
       console.log(`Kept smoke temp root: ${tempRoot}`);

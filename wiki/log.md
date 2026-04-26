@@ -3035,3 +3035,9 @@ The slice also normalizes blank live relay publish acknowledgements from
 after successful User Node message publication. Live OpenCode/model-provider
 execution remains intentionally manual for now so the smoke can run without API
 keys.
+
+Follow-up: the same smoke now supports `--keep-running`, which leaves the Host
+server and joined runner alive after the no-LLM checks and prints CLI commands
+for sending a signed `task.request` to the assigned builder node. This gives
+manual API-backed OpenCode testing a runnable starting point without rebuilding
+the Host/runner/relay/assignment setup by hand.

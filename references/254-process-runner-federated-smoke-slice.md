@@ -91,6 +91,10 @@ Implemented in this slice:
 - extended the smoke to publish a signed `question` message from the graph's
   User Node to the assigned builder node, then verify the runner persisted the
   corresponding session and conversation in its runtime state;
+- added `--keep-running` as a manual test harness mode that leaves the Host
+  server and joined runner process alive, keeps the temporary state root, and
+  prints CLI commands for publishing a signed `task.request` to the assigned
+  builder node for API-backed OpenCode testing;
 - normalized blank relay publish acknowledgements from `nostr-tools` to the
   configured relay URL so a successful live publish cannot fail DTO validation
   because the underlying pool returned an empty string.

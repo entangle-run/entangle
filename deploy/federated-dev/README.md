@@ -154,7 +154,18 @@ pnpm ops:smoke-federated-process-runner
 
 This smoke starts a Host HTTP server, launches `entangle-runner join` as a
 separate OS process, assigns a node through signed control events, and verifies
-the runner-owned materialized context plus Host projection.
+the runner-owned materialized context, Host projection, signed User Node
+message publication, and runner-owned session/conversation intake.
+
+For manual OpenCode/provider testing without rebuilding the setup by hand, run:
+
+```sh
+pnpm ops:smoke-federated-process-runner -- --keep-running
+```
+
+The smoke leaves Host and the joined runner alive, keeps the temporary state
+root, and prints CLI commands for publishing a signed `task.request` to the
+assigned builder node. Stop it with `Ctrl-C` when the manual test is done.
 
 To verify the support-bundle path against an already-running federated dev
 profile, run:
