@@ -31,6 +31,7 @@ import type { RunnerMemorySynthesizer } from "./memory-synthesizer.js";
 import { RunnerService } from "./service.js";
 import type { RunnerTransport } from "./transport.js";
 import { createOpenCodeAgentEngine } from "./opencode-engine.js";
+import { createFileSystemAssignmentMaterializer } from "./assignment-materializer.js";
 
 function resolveRunnerIdentity(
   runtimeContext: EffectiveRuntimeContext
@@ -251,7 +252,7 @@ export async function createConfiguredRunnerJoinService(
   const service = new RunnerJoinService({
     ...(input.clock ? { clock: input.clock } : {}),
     config,
-    ...(input.materializer ? { materializer: input.materializer } : {}),
+    materializer: input.materializer ?? createFileSystemAssignmentMaterializer(),
     ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
     runnerPubkey: publicKey,
     transport

@@ -2883,3 +2883,16 @@ through the active federated bridge when Host is running with control-plane
 transport. This is still not the final distributed runtime: relay health,
 durable Host control outbox/retry, runner materialization, and a live relay
 smoke remain open.
+
+## [2026-04-26] implementation | Added default runner assignment materializer
+
+Added `references/248-runner-default-assignment-materializer-slice.md` and
+`services/runner/src/assignment-materializer.ts`. Generic joined runners now
+have a default filesystem materializer, so valid signed assignment offers are
+recorded in runner-owned storage and accepted instead of being rejected because
+no materializer was injected.
+
+This closes the first runner-side gap after Host control startup. It does not
+yet fetch full graph/package/resource snapshots or start the assigned node
+runtime from the materialized assignment; those remain the next runner
+execution slices.

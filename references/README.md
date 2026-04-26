@@ -286,6 +286,7 @@ files are the active federated redesign pack.
 246. [245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
 247. [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
 248. [247-host-startup-control-plane-wiring-slice.md](247-host-startup-control-plane-wiring-slice.md)
+249. [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
 
 ## Role of this corpus
 

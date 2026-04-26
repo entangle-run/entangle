@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
 import type {
@@ -35,6 +36,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
   delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH;
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
+  delete process.env.ENTANGLE_RUNNER_STATE_ROOT;
   await cleanupRuntimeFixtures();
 });
 
@@ -437,10 +439,12 @@ describe("runner runtime context", () => {
     await configured.service.stop();
   });
 
-  it("rejects assignment offers when no federated materializer is configured", async () => {
+  it("materializes assignment offers to runner-owned storage by default", async () => {
     const fixture = await createRunnerJoinFixture();
+    const runnerStateRoot = path.join(path.dirname(fixture.configPath), "runner-state");
     const transport = new FakeRunnerJoinTransport();
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+    process.env.ENTANGLE_RUNNER_STATE_ROOT = runnerStateRoot;
 
     const configured = await createConfiguredRunnerJoinService(
       fixture.configPath,
@@ -452,16 +456,37 @@ describe("runner runtime context", () => {
     );
 
     await configured.service.start();
-    await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
+    const assignment = buildAssignment();
+    await transport.dispatch(buildAssignmentOfferEvent(assignment));
 
     expect(transport.observations.map((payload) => payload.eventType)).toEqual([
       "runner.hello",
       "assignment.receipt",
-      "assignment.rejected"
+      "assignment.accepted"
     ]);
-    expect(transport.observations[2]).toMatchObject({
-      rejectionReason:
-        "No federated assignment materializer is configured for this runner."
+    expect(configured.service.getAcceptedAssignments()).toHaveLength(1);
+
+    const assignmentPath = path.join(
+      runnerStateRoot,
+      "assignments",
+      "assignment-alpha",
+      "assignment.json"
+    );
+    const materializationPath = path.join(
+      runnerStateRoot,
+      "assignments",
+      "assignment-alpha",
+      "materialization.json"
+    );
+    expect(JSON.parse(await readFile(assignmentPath, "utf8"))).toMatchObject({
+      assignmentId: assignment.assignmentId,
+      runnerId: assignment.runnerId
+    });
+    expect(JSON.parse(await readFile(materializationPath, "utf8"))).toMatchObject({
+      assignment: {
+        assignmentId: assignment.assignmentId
+      },
+      schemaVersion: "1"
     });
 
     await configured.service.stop();
