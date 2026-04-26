@@ -89,6 +89,7 @@ import {
   userNodeIdentityListResponseSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
+  type RuntimeAssignmentRecord,
   type RuntimeContextInspectionResponse
 } from "@entangle/types";
 
@@ -120,6 +121,18 @@ type MockFetchResponse = {
   json(): Promise<unknown>;
   status: number;
   text(): Promise<string>;
+};
+
+type TestFederatedAssignmentPublisher = {
+  publishRuntimeAssignmentOffer(input: {
+    assignment: RuntimeAssignmentRecord;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeAssignmentRevoke(input: {
+    assignment: RuntimeAssignmentRecord;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
 };
 
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
@@ -655,6 +668,8 @@ function buildProvisioningCatalog(input: {
 
 async function createTestServer(
   options: {
+    federatedControlPlane?: TestFederatedAssignmentPublisher;
+    federatedControlRelayUrls?: string[];
     includeModelEndpoint?: boolean;
     includeModelSecret?: boolean;
     runtimeBackend?: RuntimeBackend;
@@ -706,7 +721,14 @@ async function createTestServer(
   );
   await stateModule.initializeHostState();
 
-  return await hostModule.buildHostServer();
+  return await hostModule.buildHostServer({
+    ...(options.federatedControlPlane
+      ? { federatedControlPlane: options.federatedControlPlane }
+      : {}),
+    ...(options.federatedControlRelayUrls
+      ? { federatedControlRelayUrls: options.federatedControlRelayUrls }
+      : {})
+  });
 }
 
 function createMockRuntimeBackend(
@@ -1196,7 +1218,35 @@ describe("buildHostServer", () => {
   });
 
   it("offers, accepts, lists, inspects, and revokes runtime assignments", async () => {
-    const server = await createTestServer();
+    const publishedOffers: Array<{
+      assignment: RuntimeAssignmentRecord;
+      relayUrls: string[];
+    }> = [];
+    const publishedRevokes: Array<{
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+    }> = [];
+    const server = await createTestServer({
+      federatedControlPlane: {
+        publishRuntimeAssignmentOffer: (input) => {
+          publishedOffers.push({
+            assignment: input.assignment,
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeAssignmentRevoke: (input) => {
+          publishedRevokes.push({
+            assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        }
+      },
+      federatedControlRelayUrls: ["ws://relay.local"]
+    });
 
     try {
       const [
@@ -1267,6 +1317,14 @@ describe("buildHostServer", () => {
         status: "offered"
       });
       expect(offered.lease?.expiresAt).toBeDefined();
+      expect(publishedOffers).toHaveLength(1);
+      expect(publishedOffers[0]).toMatchObject({
+        assignment: {
+          assignmentId: "assignment-alpha",
+          runnerId
+        },
+        relayUrls: ["ws://relay.local"]
+      });
 
       const listResponse = await server.inject({
         method: "GET",
@@ -1331,6 +1389,15 @@ describe("buildHostServer", () => {
         runtimeAssignmentRevokeResponseSchema.parse(revokeResponse.json())
           .assignment.status
       ).toBe("revoked");
+      expect(publishedRevokes).toHaveLength(1);
+      expect(publishedRevokes[0]).toMatchObject({
+        assignment: {
+          assignmentId: "assignment-alpha",
+          status: "revoked"
+        },
+        reason: "Operator reassignment",
+        relayUrls: ["ws://relay.local"]
+      });
     } finally {
       await server.close();
     }

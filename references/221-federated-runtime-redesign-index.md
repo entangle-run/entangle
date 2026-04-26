@@ -47,6 +47,7 @@ same-machine slice records.
 - [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
 - [245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
 - [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
+- [247-host-startup-control-plane-wiring-slice.md](247-host-startup-control-plane-wiring-slice.md)
 
 ## Audited Scope
 

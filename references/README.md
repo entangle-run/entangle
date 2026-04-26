@@ -285,12 +285,13 @@ files are the active federated redesign pack.
 245. [244-product-naming-migration-slice.md](244-product-naming-migration-slice.md)
 246. [245-host-control-observation-bridge-slice.md](245-host-control-observation-bridge-slice.md)
 247. [246-federated-control-plane-smoke-slice.md](246-federated-control-plane-smoke-slice.md)
+248. [247-host-startup-control-plane-wiring-slice.md](247-host-startup-control-plane-wiring-slice.md)
 
 ## Role of this corpus
 
 These documents are intended to serve as:
 
 - the project's architectural baseline;
-- the source of truth for early Local scoping decisions;
+- the source of truth for early deployment scoping decisions;
 - the initial specification set for future implementation work;
 - the maintenance baseline that keeps the repository coherent across long-running design and implementation sessions.

@@ -82,9 +82,8 @@ Verification record:
 - `pnpm lint` passed;
 - `pnpm test` passed;
 - `git diff --check` passed;
-- stale product marker and path searches for `entangle-local`, `Entangle
-  Local`, `local-preview`, and `runtimeProfile` local defaults returned no
-  hits.
+- stale product marker and path searches for removed same-product naming and
+  runtime profile defaults returned no hits.
 
 ## Migration/Compatibility Notes
 

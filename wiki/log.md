@@ -2869,3 +2869,17 @@ This is not the final distributed smoke because it does not use a live relay or
 real remote process boundary, but it is now a fast regression gate for the
 federated protocol semantics that the same-machine deployment adapter must
 eventually use.
+
+## [2026-04-26] implementation | Wired Host startup to federated control plane
+
+Added `references/247-host-startup-control-plane-wiring-slice.md` and
+`services/host/src/host-federated-runtime.ts`. Host startup now resolves
+control/observe relay URLs from catalog default relay profiles, loads the Host
+Authority signing key, subscribes to runner observations addressed to that
+authority, and closes the subscription with the Host server lifecycle.
+
+Assignment offer and revoke API mutations now publish signed control payloads
+through the active federated bridge when Host is running with control-plane
+transport. This is still not the final distributed runtime: relay health,
+durable Host control outbox/retry, runner materialization, and a live relay
+smoke remain open.

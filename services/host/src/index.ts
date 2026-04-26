@@ -18,6 +18,7 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  type RuntimeAssignmentRecord,
   runtimeAssignmentInspectionResponseSchema,
   runtimeAssignmentListResponseSchema,
   runtimeAssignmentOfferRequestSchema,
@@ -197,6 +198,10 @@ import {
   validateCatalogCandidate,
   validateGraphCandidate
 } from "./state.js";
+import {
+  startHostFederatedControlPlane,
+  type HostFederatedRuntime
+} from "./host-federated-runtime.js";
 import { publishHostSessionLaunch } from "./session-launch.js";
 import { publishUserNodeA2AMessage } from "./user-node-messaging.js";
 
@@ -234,6 +239,28 @@ type HostEventStreamSocket = {
   on(event: "error", listener: (error: Error) => void): void;
   readyState: number;
   send(payload: string): void;
+};
+
+type HostFederatedAssignmentPublisher = {
+  publishRuntimeAssignmentOffer(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    correlationId?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeAssignmentRevoke(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+};
+
+export type HostServerOptions = {
+  federatedControlAuthRequired?: boolean;
+  federatedControlPlane?: HostFederatedAssignmentPublisher;
+  federatedControlRelayUrls?: string[];
 };
 
 function normalizeOperatorToken(token: string | undefined): string | undefined {
@@ -473,7 +500,51 @@ function isDirectExecution(): boolean {
   return typeof entrypoint === "string" && import.meta.url === pathToFileURL(entrypoint).href;
 }
 
-export async function buildHostServer() {
+async function publishRuntimeAssignmentOfferFromHost(
+  options: HostServerOptions,
+  assignment: RuntimeAssignmentRecord
+): Promise<void> {
+  if (
+    !options.federatedControlPlane ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return;
+  }
+
+  await options.federatedControlPlane.publishRuntimeAssignmentOffer({
+    assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    relayUrls: options.federatedControlRelayUrls
+  });
+}
+
+async function publishRuntimeAssignmentRevokeFromHost(
+  options: HostServerOptions,
+  assignment: RuntimeAssignmentRecord,
+  reason: string | undefined
+): Promise<void> {
+  if (
+    !options.federatedControlPlane ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return;
+  }
+
+  await options.federatedControlPlane.publishRuntimeAssignmentRevoke({
+    assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    ...(reason ? { reason } : {}),
+    relayUrls: options.federatedControlRelayUrls
+  });
+}
+
+export async function buildHostServer(options: HostServerOptions = {}) {
   const server = Fastify({
     logger: process.env.ENTANGLE_HOST_LOGGER === "false" ? false : true
   });
@@ -804,8 +875,10 @@ export async function buildHostServer() {
       }
     );
 
+    let response: { assignment: RuntimeAssignmentRecord };
+
     try {
-      return runtimeAssignmentOfferResponseSchema.parse(
+      response = runtimeAssignmentOfferResponseSchema.parse(
         await offerRuntimeAssignment(mutation)
       );
     } catch (error) {
@@ -818,6 +891,9 @@ export async function buildHostServer() {
         statusCode: 409
       });
     }
+
+    await publishRuntimeAssignmentOfferFromHost(options, response.assignment);
+    return response;
   });
 
   server.post("/v1/assignments/:assignmentId/revoke", async (request, reply) => {
@@ -843,12 +919,18 @@ export async function buildHostServer() {
       }
     );
 
-    return runtimeAssignmentRevokeResponseSchema.parse(
+    const response = runtimeAssignmentRevokeResponseSchema.parse(
       await revokeRuntimeAssignment({
         assignmentId,
         request: mutation
       })
     );
+    await publishRuntimeAssignmentRevokeFromHost(
+      options,
+      response.assignment,
+      mutation.reason
+    );
+    return response;
   });
 
   server.get("/v1/catalog", async () =>
@@ -3240,12 +3322,41 @@ export async function startHostServer(): Promise<
 > {
   const port = Number.parseInt(process.env.ENTANGLE_HOST_PORT ?? "7071", 10);
   await initializeHostState();
-  const server = await buildHostServer();
+  let federatedRuntime: HostFederatedRuntime | undefined;
 
-  await server.listen({
-    host: "0.0.0.0",
-    port
+  try {
+    federatedRuntime = await startHostFederatedControlPlane();
+  } catch (error) {
+    console.error("Failed to start Entangle federated control plane.", error);
+  }
+
+  const server = await buildHostServer({
+    ...(federatedRuntime
+      ? {
+          federatedControlPlane: federatedRuntime.controlPlane,
+          federatedControlRelayUrls: federatedRuntime.relayUrls
+        }
+      : {})
+  }).catch(async (error: unknown) => {
+    await federatedRuntime?.close();
+    throw error;
   });
+
+  if (federatedRuntime) {
+    server.addHook("onClose", async () => {
+      await federatedRuntime?.close();
+    });
+  }
+
+  try {
+    await server.listen({
+      host: "0.0.0.0",
+      port
+    });
+  } catch (error) {
+    await server.close();
+    throw error;
+  }
 
   return server;
 }

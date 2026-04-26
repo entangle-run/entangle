@@ -198,6 +198,25 @@ afterEach(async () => {
 });
 
 describe("Host federated control plane", () => {
+  it("starts observation intake from Host Authority and catalog relay defaults", async () => {
+    const { authority, hostSecretKey } = await setupHostState();
+    const runtimeModule = await import("./host-federated-runtime.js");
+    const transport = new FakeHostFederatedTransport(hostSecretKey);
+
+    const runtime = await runtimeModule.startHostFederatedControlPlane({
+      transport
+    });
+
+    expect(runtime?.relayUrls).toEqual(["ws://strfry:7777"]);
+    expect(transport.subscription).toMatchObject({
+      hostAuthorityPubkey: authority.authority.publicKey,
+      relayUrls: ["ws://strfry:7777"]
+    });
+
+    await runtime?.close();
+    expect(transport.subscription).toBeUndefined();
+  });
+
   it("records signed runner observations and publishes hello ack control events", async () => {
     const { authority, controlPlaneModule, hostSecretKey, stateModule } =
       await setupHostState();
