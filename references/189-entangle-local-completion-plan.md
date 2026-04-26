@@ -58,6 +58,10 @@ The latest implementation state includes:
   prompt character counts, memory, artifact, and tool counts, execution
   limits, and peer-route inclusion without storing raw prompt text or runtime
   paths;
+- executable runner turns now include explicit agent-runtime, workspace
+  boundary, autonomy/source-mutation policy, and inbound response/constraint
+  control prompt parts, with matching structural inclusion flags on
+  `engineRequestSummary`;
 - runner-owned source workspace change harvesting with bounded changed-file
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
@@ -661,12 +665,16 @@ Current partial implementation:
 - runner turn assembly already includes package prompts, runtime config,
   memory refs, peer routes, inbound task intent/summary/sender, inbound
   artifact refs, retrieved artifact inputs, and package-declared tools;
+- executable turn assembly now also includes agent-runtime mode/profile,
+  logical workspace ownership boundaries, autonomy/source-mutation policy, and
+  inbound response/constraint controls;
 - non-executable coordination messages such as `task.result`,
   `conversation.close`, and approval lifecycle messages are handled as
   runner-local state updates rather than fresh engine turns where applicable;
 - each executable turn now persists bounded `engineRequestSummary` evidence
   with prompt part counts, aggregate prompt character counts, memory, artifact,
-  and tool counts, execution limits, peer-route inclusion, and generation time;
+  and tool counts, execution limits, peer-route inclusion, context-inclusion
+  flags, and generation time;
 - the summary propagates through host observed activity,
   `runner.turn.updated` events, shared host-client detail helpers, CLI output,
   and Studio turn inspection without exposing raw prompt text, memory paths,

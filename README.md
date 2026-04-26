@@ -163,7 +163,10 @@ This repository currently contains:
   repositories, plus bounded engine-request summaries on executable turns so
   operators can inspect prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
-  exposing raw prompt text, runtime-local paths, or engine-specific payloads;
+  exposing raw prompt text, runtime-local paths, or engine-specific payloads,
+  while executable turn assembly now explicitly includes agent-runtime,
+  workspace-boundary, autonomy/source-mutation policy, and inbound
+  response/constraint control context for the node-local coding engine;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

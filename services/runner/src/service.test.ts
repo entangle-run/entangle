@@ -2226,16 +2226,20 @@ describe("RunnerService", () => {
     expect(turnIds).toHaveLength(1);
     expect(turnRecord?.producedArtifactIds).toEqual(sessionRecord.rootArtifactIds);
     expect(turnRecord?.engineRequestSummary).toMatchObject({
+      agentRuntimeContextIncluded: true,
       artifactInputCount: 0,
       artifactRefCount: 0,
       executionLimits: {
         maxOutputTokens: 1536,
         maxToolTurns: 5
       },
-      interactionPromptPartCount: 8,
+      inboundMessageContextIncluded: true,
+      interactionPromptPartCount: 12,
       peerRouteContextIncluded: false,
+      policyContextIncluded: true,
       systemPromptPartCount: 4,
-      toolDefinitionCount: 0
+      toolDefinitionCount: 0,
+      workspaceBoundaryContextIncluded: true
     });
     expect(turnRecord?.engineRequestSummary?.generatedAt.localeCompare(
       turnRecord?.updatedAt ?? ""

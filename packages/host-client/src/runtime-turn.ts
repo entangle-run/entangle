@@ -123,6 +123,12 @@ export function formatRuntimeTurnDetailLines(
         `${summary.executionLimits.maxOutputTokens} output tokens; peer routes ` +
         `${summary.peerRouteContextIncluded ? "included" : "not included"}`
     );
+    lines.push(
+      `engine context agent ${formatIncluded(summary.agentRuntimeContextIncluded)}, ` +
+        `workspace ${formatIncluded(summary.workspaceBoundaryContextIncluded)}, ` +
+        `policy ${formatIncluded(summary.policyContextIncluded)}, ` +
+        `inbound ${formatIncluded(summary.inboundMessageContextIncluded)}`
+    );
   }
 
   if (turn.engineOutcome) {
@@ -245,6 +251,10 @@ function formatCount(
   plural = `${singular}s`
 ): string {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatIncluded(included: boolean): string {
+  return included ? "included" : "not included";
 }
 
 function truncateRuntimeTurnDetail(value: string, maxLength = 96): string {

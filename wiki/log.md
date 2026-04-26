@@ -2327,3 +2327,17 @@ The summary propagates through runner turn records, host observed activity,
 turn output, and Studio turn inspection. It deliberately avoids storing raw
 prompt text, memory paths, artifact contents, secret-bearing runtime context,
 or engine-specific request payloads.
+
+## [2026-04-26] implementation | Added policy and workspace prompt context
+
+Added `references/213-engine-prompt-policy-workspace-context-slice.md` and
+continued B6 of the Entangle Local completion plan. Executable runner turns
+now include explicit prompt context for agent-runtime mode/profile, logical
+workspace ownership boundaries, autonomy policy, source-mutation approval
+policy, and inbound response/constraint controls.
+
+`engineRequestSummary` now records whether agent-runtime, workspace-boundary,
+policy, and inbound-control context were included, with backward-compatible
+defaults for summaries written by the previous slice. Shared runtime-turn
+presentation now exposes those inclusion signals to CLI and Studio turn
+inspection.

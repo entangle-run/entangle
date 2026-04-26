@@ -111,6 +111,7 @@ export const memoryRepositorySyncOutcomeSchema = z.discriminatedUnion("status", 
 ]);
 
 export const engineTurnRequestSummarySchema = z.object({
+  agentRuntimeContextIncluded: z.boolean().default(false),
   artifactInputCount: z.number().int().nonnegative(),
   artifactRefCount: z.number().int().nonnegative(),
   executionLimits: z.object({
@@ -118,13 +119,16 @@ export const engineTurnRequestSummarySchema = z.object({
     maxToolTurns: z.number().int().positive()
   }),
   generatedAt: nonEmptyStringSchema,
+  inboundMessageContextIncluded: z.boolean().default(false),
   interactionPromptCharacterCount: z.number().int().nonnegative(),
   interactionPromptPartCount: z.number().int().nonnegative(),
   memoryRefCount: z.number().int().nonnegative(),
   peerRouteContextIncluded: z.boolean(),
+  policyContextIncluded: z.boolean().default(false),
   systemPromptCharacterCount: z.number().int().nonnegative(),
   systemPromptPartCount: z.number().int().nonnegative(),
-  toolDefinitionCount: z.number().int().nonnegative()
+  toolDefinitionCount: z.number().int().nonnegative(),
+  workspaceBoundaryContextIncluded: z.boolean().default(false)
 });
 
 export const sourceChangeFileStatusSchema = z.enum([

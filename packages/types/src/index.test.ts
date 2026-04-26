@@ -1300,6 +1300,7 @@ describe("host event contracts", () => {
         }
       },
       engineRequestSummary: {
+        agentRuntimeContextIncluded: true,
         artifactInputCount: 1,
         artifactRefCount: 1,
         executionLimits: {
@@ -1307,13 +1308,16 @@ describe("host event contracts", () => {
           maxToolTurns: 8
         },
         generatedAt: "2026-04-24T00:00:01.000Z",
+        inboundMessageContextIncluded: true,
         interactionPromptCharacterCount: 840,
         interactionPromptPartCount: 7,
         memoryRefCount: 6,
         peerRouteContextIncluded: true,
+        policyContextIncluded: true,
         systemPromptCharacterCount: 220,
         systemPromptPartCount: 4,
-        toolDefinitionCount: 3
+        toolDefinitionCount: 3,
+        workspaceBoundaryContextIncluded: true
       },
       memorySynthesisOutcome: {
         status: "succeeded",
@@ -1456,6 +1460,9 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.memorySynthesisOutcome?.status).toBe("succeeded");
     expect(runnerTurnEvent.memorySynthesisOutcome?.updatedSummaryPagePaths).toHaveLength(
       6
+    );
+    expect(runnerTurnEvent.engineRequestSummary?.policyContextIncluded).toBe(
+      true
     );
     expect(runnerTurnEvent.engineRequestSummary?.memoryRefCount).toBe(6);
     expect(runnerTurnEvent.memoryRepositorySyncOutcome?.status).toBe("committed");

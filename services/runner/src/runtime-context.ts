@@ -194,6 +194,71 @@ function buildPeerRoutePromptPart(
     .join("\n");
 }
 
+function formatBoolean(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
+function buildAgentRuntimePromptPart(context: EffectiveRuntimeContext): string {
+  const engineProfile = context.agentRuntimeContext.engineProfile;
+
+  return (
+    `Agent runtime: mode=${context.agentRuntimeContext.mode}, ` +
+    `engineProfile=${engineProfile.id} (${engineProfile.kind}), ` +
+    `defaultAgent=${context.agentRuntimeContext.defaultAgent ?? "none"}, ` +
+    `stateScope=${engineProfile.stateScope}`
+  );
+}
+
+function buildWorkspaceBoundaryPromptPart(
+  context: EffectiveRuntimeContext
+): string {
+  return [
+    "Workspace boundaries:",
+    `- source workspace: ${
+      context.workspace.sourceWorkspaceRoot
+        ? "configured for node-local code edits"
+        : "not configured"
+    }`,
+    "- artifact workspace: runner-owned materialization and outbound handoff surface",
+    "- memory wiki: runner-owned durable memory; use provided memory refs as context",
+    `- wiki repository: ${
+      context.workspace.wikiRepositoryRoot
+        ? "configured as runner-owned memory snapshot"
+        : "not configured"
+    }`,
+    "- outbound work must use Entangle artifact refs or messages, not runtime-local filesystem paths"
+  ].join("\n");
+}
+
+function buildPolicyPromptPart(context: EffectiveRuntimeContext): string {
+  const { autonomy, notes, sourceMutation } = context.policyContext;
+  const noteSummaries = notes.slice(0, 5).map((note) => `- note: ${note}`);
+
+  return [
+    "Policy context:",
+    `- can initiate sessions: ${formatBoolean(autonomy.canInitiateSessions)}`,
+    `- can mutate graph: ${formatBoolean(autonomy.canMutateGraph)}`,
+    `- source application requires approval: ${formatBoolean(sourceMutation.applyRequiresApproval)}`,
+    `- source publication requires approval: ${formatBoolean(sourceMutation.publishRequiresApproval)}`,
+    `- non-primary source publication requires approval: ${formatBoolean(sourceMutation.nonPrimaryPublishRequiresApproval)}`,
+    ...noteSummaries
+  ].join("\n");
+}
+
+function buildInboundControlPromptPart(
+  message: EntangleA2AMessage
+): string {
+  return [
+    "Inbound controls:",
+    `- message type: ${message.messageType}`,
+    `- response required: ${formatBoolean(message.responsePolicy.responseRequired)}`,
+    `- close on result: ${formatBoolean(message.responsePolicy.closeOnResult)}`,
+    `- max followups: ${message.responsePolicy.maxFollowups}`,
+    `- approval required before action: ${formatBoolean(message.constraints.approvalRequiredBeforeAction)}`,
+    `- inbound artifact refs: ${message.work.artifactRefs.length}`
+  ].join("\n");
+}
+
 export async function loadPackageToolCatalog(
   context: EffectiveRuntimeContext
 ): Promise<PackageToolCatalog> {
@@ -267,12 +332,16 @@ export async function buildAgentEngineTurnRequest(
           ? `${context.artifactContext.primaryGitRepositoryTarget.namespace}/${context.artifactContext.primaryGitRepositoryTarget.repositoryName}`
           : "none"
       }`,
+      buildAgentRuntimePromptPart(context),
+      buildWorkspaceBoundaryPromptPart(context),
+      buildPolicyPromptPart(context),
       ...(peerRoutePromptPart ? [peerRoutePromptPart] : []),
       ...(input.inboundMessage
         ? [
             `Inbound intent: ${input.inboundMessage.intent}`,
             `Inbound summary: ${input.inboundMessage.work.summary}`,
-            `Inbound sender: ${input.inboundMessage.fromNodeId} (${input.inboundMessage.fromPubkey})`
+            `Inbound sender: ${input.inboundMessage.fromNodeId} (${input.inboundMessage.fromPubkey})`,
+            buildInboundControlPromptPart(input.inboundMessage)
           ]
         : [])
     ],
@@ -300,10 +369,16 @@ export function summarizeAgentEngineTurnRequest(
   input: { generatedAt: string }
 ): EngineTurnRequestSummary {
   return {
+    agentRuntimeContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Agent runtime:")
+    ),
     artifactInputCount: request.artifactInputs.length,
     artifactRefCount: request.artifactRefs.length,
     executionLimits: request.executionLimits,
     generatedAt: input.generatedAt,
+    inboundMessageContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Inbound controls:")
+    ),
     interactionPromptCharacterCount: sumCharacterCount(
       request.interactionPromptParts
     ),
@@ -312,8 +387,14 @@ export function summarizeAgentEngineTurnRequest(
     peerRouteContextIncluded: request.interactionPromptParts.some((part) =>
       part.startsWith("Peer routes:")
     ),
+    policyContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Policy context:")
+    ),
     systemPromptCharacterCount: sumCharacterCount(request.systemPromptParts),
     systemPromptPartCount: request.systemPromptParts.length,
-    toolDefinitionCount: request.toolDefinitions.length
+    toolDefinitionCount: request.toolDefinitions.length,
+    workspaceBoundaryContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Workspace boundaries:")
+    )
   };
 }

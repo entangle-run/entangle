@@ -8,6 +8,7 @@ import {
 } from "./runtime-context.js";
 import { runRunnerOnce, runRunnerServiceUntilSignal } from "./index.js";
 import {
+  buildInboundTaskRequest,
   cleanupRuntimeFixtures,
   createRuntimeFixture,
   remotePublicKey,
@@ -77,6 +78,15 @@ describe("runner runtime context", () => {
     expect(request.interactionPromptParts[0]).toContain(
       "Interaction prompt from package."
     );
+    expect(request.interactionPromptParts.join("\n")).toContain(
+      "Agent runtime:"
+    );
+    expect(request.interactionPromptParts.join("\n")).toContain(
+      "Workspace boundaries:"
+    );
+    expect(request.interactionPromptParts.join("\n")).toContain(
+      "Policy context:"
+    );
     expect(request.toolDefinitions).toEqual([
       {
         description: "Inspect a retrieved inbound artifact by artifact id.",
@@ -101,6 +111,7 @@ describe("runner runtime context", () => {
     });
 
     expect(summary).toMatchObject({
+      agentRuntimeContextIncluded: true,
       artifactInputCount: 0,
       artifactRefCount: 0,
       executionLimits: {
@@ -108,10 +119,13 @@ describe("runner runtime context", () => {
         maxToolTurns: 5
       },
       generatedAt: "2026-04-25T00:00:00.000Z",
-      interactionPromptPartCount: 5,
+      inboundMessageContextIncluded: false,
+      interactionPromptPartCount: 8,
       peerRouteContextIncluded: false,
+      policyContextIncluded: true,
       systemPromptPartCount: 4,
-      toolDefinitionCount: 1
+      toolDefinitionCount: 1,
+      workspaceBoundaryContextIncluded: true
     });
     expect(summary.interactionPromptCharacterCount).toBeGreaterThan(0);
     expect(summary.memoryRefCount).toBeGreaterThan(0);
@@ -149,6 +163,23 @@ describe("runner runtime context", () => {
         generatedAt: "2026-04-25T00:00:00.000Z"
       }).peerRouteContextIncluded
     ).toBe(true);
+  });
+
+  it("includes bounded inbound control context in engine turn requests", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const request = await buildAgentEngineTurnRequest(context, {
+      inboundMessage: buildInboundTaskRequest().message
+    });
+    const interactionPrompt = request.interactionPromptParts.join("\n");
+    const summary = summarizeAgentEngineTurnRequest(request, {
+      generatedAt: "2026-04-25T00:00:00.000Z"
+    });
+
+    expect(interactionPrompt).toContain("Inbound controls:");
+    expect(interactionPrompt).toContain("response required: yes");
+    expect(interactionPrompt).toContain("approval required before action: no");
+    expect(summary.inboundMessageContextIncluded).toBe(true);
   });
 
   it("executes one stub-engine turn from an injected runtime context", async () => {

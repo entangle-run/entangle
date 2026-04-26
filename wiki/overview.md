@@ -177,7 +177,10 @@ The repository now also contains the first real implementation baseline:
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
-  exposing raw prompt text, runtime-local paths, or engine-specific payloads;
+  exposing raw prompt text, runtime-local paths, or engine-specific payloads,
+  while executable turn assembly now explicitly includes agent-runtime,
+  workspace-boundary, autonomy/source-mutation policy, and inbound
+  response/constraint control context for the node-local coding engine;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package
