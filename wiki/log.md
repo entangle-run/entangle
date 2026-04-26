@@ -2622,3 +2622,18 @@ promotion attempts next to restore history in selected artifact detail.
 Promotion records remain runtime-local audit facts under
 `runtimeRoot/artifact-promotions`; inspection does not grant promotion rights
 or bypass the existing scoped `source_application` approval gate.
+
+## [2026-04-26] implementation | Added direct source-history replay
+
+Added `references/221-source-history-replay-slice.md` and advanced B5 of the
+Entangle Local completion plan. Source-history entries can now be replayed
+directly into a node source workspace through host, shared host-client, CLI, and
+Studio surfaces without requiring the indirect publish -> restore -> promote
+artifact path.
+
+Replay remains policy-bound and conservative. It uses the existing
+`source_application` approval policy with resource `source_history:{id}`,
+records every replay attempt under `runtimeRoot/source-history-replays`, emits
+`source_history.replayed`, writes only when the current workspace still matches
+the recorded base tree, and records diverged workspaces as unavailable instead
+of overwriting user work.

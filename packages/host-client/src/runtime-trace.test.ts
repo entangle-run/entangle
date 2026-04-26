@@ -288,4 +288,34 @@ describe("runtime trace helpers", () => {
         "Source history source-history-source-change-turn-alpha publication published"
     });
   });
+
+  it("describes source history replay events", () => {
+    const event: HostEventRecord = {
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "commit-alpha",
+      eventId: "evt-source-history-replayed",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      historyId: "source-history-source-change-turn-alpha",
+      message: "Replayed source history.",
+      nodeId: "worker-it",
+      replayId: "replay-source-history-alpha",
+      replayStatus: "replayed",
+      schemaVersion: "1",
+      timestamp: "2026-04-24T11:00:05.000Z",
+      turnId: "turn-alpha",
+      type: "source_history.replayed"
+    };
+
+    expect(describeRuntimeTraceEvent(event)).toEqual({
+      detailLines: [
+        "Candidate: source-change-turn-alpha",
+        "Replay: replay-source-history-alpha",
+        "Status: replayed",
+        "Commit: commit-alpha"
+      ],
+      label: "Source history source-history-source-change-turn-alpha replay replayed"
+    });
+  });
 });

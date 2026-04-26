@@ -184,6 +184,21 @@ describe("host-event-refresh", () => {
       turnId: "turn-alpha",
       type: "source_history.published"
     };
+    const sourceHistoryReplayedEvent: HostEventRecord = {
+      ...baseEvent,
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "commit-alpha",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424t100000z",
+      historyId: "source-history-source-change-turn-alpha",
+      message: "Replayed source history for 'worker-it'.",
+      nodeId: "worker-it",
+      replayId: "replay-source-history-alpha",
+      replayStatus: "replayed",
+      turnId: "turn-alpha",
+      type: "source_history.replayed"
+    };
     const cancellationEvent: HostEventRecord = {
       ...baseEvent,
       cancellationId: "session-cancel-alpha",
@@ -217,6 +232,12 @@ describe("host-event-refresh", () => {
     expect(
       shouldRefreshSelectedRuntimeFromHostEvent(
         sourceHistoryPublishedEvent,
+        "worker-it"
+      )
+    ).toBe(true);
+    expect(
+      shouldRefreshSelectedRuntimeFromHostEvent(
+        sourceHistoryReplayedEvent,
         "worker-it"
       )
     ).toBe(true);

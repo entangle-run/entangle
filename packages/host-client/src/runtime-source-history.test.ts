@@ -3,6 +3,7 @@ import type { SourceHistoryRecord } from "@entangle/types";
 import {
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
+  formatRuntimeSourceHistoryReplayStatus,
   sortRuntimeSourceHistoryForPresentation
 } from "./runtime-source-history.js";
 
@@ -104,5 +105,27 @@ describe("runtime source history presentation helpers", () => {
     expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
       "publication approval approval-source-publish-new"
     );
+  });
+
+  it("formats source history replay status", () => {
+    expect(
+      formatRuntimeSourceHistoryReplayStatus({
+        baseTree: "base-tree-new",
+        candidateId: "source-change-turn-new",
+        commit: "commit-new",
+        createdAt: "2026-04-24T00:05:00.000Z",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-20260424-000001",
+        headTree: "head-tree-new",
+        nodeId: "worker-it",
+        replayedFileCount: 2,
+        replayedPath: "/tmp/entangle/source",
+        replayId: "replay-source-history-new",
+        sourceHistoryId: "source-history-source-change-turn-new",
+        status: "replayed",
+        turnId: "turn-new",
+        updatedAt: "2026-04-24T00:05:00.000Z"
+      })
+    ).toBe("2 files replayed");
   });
 });

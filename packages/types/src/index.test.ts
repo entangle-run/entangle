@@ -63,6 +63,8 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublicationResponseSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
+  runtimeSourceHistoryReplayListResponseSchema,
+  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionCancellationRequestRecordSchema,
@@ -776,6 +778,37 @@ describe("source change candidate host API contracts", () => {
         entry: historyEntry
       }).artifact.ref.artifactId
     ).toBe("source-source-history-source-change-turn-alpha");
+    const sourceHistoryReplay = {
+      approvalId: "approval-source-replay-alpha",
+      baseTree: "base-tree-alpha",
+      candidateId: "source-change-turn-alpha",
+      commit: "commit-alpha",
+      createdAt: "2026-04-24T00:05:00.000Z",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      headTree: "head-tree-alpha",
+      nodeId: "worker-it",
+      reason: "Replay source history into the workspace.",
+      replayedBy: "operator-alpha",
+      replayedFileCount: 1,
+      replayedPath: "/tmp/entangle/workspace/source",
+      replayId: "replay-source-history-alpha",
+      sourceHistoryId: "source-history-source-change-turn-alpha",
+      status: "replayed",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:05:00.000Z"
+    };
+    expect(
+      runtimeSourceHistoryReplayResponseSchema.parse({
+        entry: historyEntry,
+        replay: sourceHistoryReplay
+      }).replay.status
+    ).toBe("replayed");
+    expect(
+      runtimeSourceHistoryReplayListResponseSchema.parse({
+        replays: [sourceHistoryReplay]
+      }).replays[0]?.replayId
+    ).toBe("replay-source-history-alpha");
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
@@ -1693,6 +1726,25 @@ describe("host event contracts", () => {
       turnId: "turn-alpha",
       type: "source_history.published"
     });
+    const sourceHistoryReplayedEvent = hostEventRecordSchema.parse({
+      approvalId: "approval-source-replay-alpha",
+      candidateId: "source-change-turn-alpha",
+      category: "runtime",
+      commit: "commit-alpha",
+      eventId: "evt-source-history-replayed",
+      graphId: "graph-alpha",
+      graphRevisionId: "graph-alpha-20260424-000000",
+      historyId: "source-history-source-change-turn-alpha",
+      message:
+        "Source history 'source-history-source-change-turn-alpha' for runtime 'worker-it' replayed into the source workspace.",
+      nodeId: "worker-it",
+      replayId: "replay-source-history-alpha",
+      replayStatus: "replayed",
+      schemaVersion: "1",
+      timestamp: "2026-04-24T00:00:05.000Z",
+      turnId: "turn-alpha",
+      type: "source_history.replayed"
+    });
 
     expect(sessionEvent.type).toBe("session.updated");
     expect(sessionEvent.category).toBe("session");
@@ -1741,6 +1793,8 @@ describe("host event contracts", () => {
       "approval-source-publish-alpha"
     );
     expect(sourceHistoryPublishedEvent.targetRepositoryName).toBe("graph-alpha");
+    expect(sourceHistoryReplayedEvent.type).toBe("source_history.replayed");
+    expect(sourceHistoryReplayedEvent.replayStatus).toBe("replayed");
   });
 
   it("rejects engine outcomes that claim failure without stopReason error", () => {

@@ -1,7 +1,11 @@
-import type { SourceHistoryRecord } from "@entangle/types";
+import type {
+  RuntimeSourceHistoryReplayRecord,
+  SourceHistoryRecord
+} from "@entangle/types";
 import {
   formatRuntimeSourceHistoryDetailLines,
-  formatRuntimeSourceHistoryLabel
+  formatRuntimeSourceHistoryLabel,
+  formatRuntimeSourceHistoryReplayStatus
 } from "@entangle/host-client";
 
 export function projectRuntimeSourceHistorySummary(entry: SourceHistoryRecord) {
@@ -30,5 +34,25 @@ export function projectRuntimeSourceHistorySummary(entry: SourceHistoryRecord) {
     publishedArtifactId: entry.publication?.artifactId,
     sourceHistoryId: entry.sourceHistoryId,
     turnId: entry.turnId
+  };
+}
+
+export function projectRuntimeSourceHistoryReplaySummary(
+  replay: RuntimeSourceHistoryReplayRecord
+) {
+  return {
+    baseTree: replay.baseTree,
+    candidateId: replay.candidateId,
+    commit: replay.commit,
+    createdAt: replay.createdAt,
+    headTree: replay.headTree,
+    nodeId: replay.nodeId,
+    replayedFileCount: replay.replayedFileCount,
+    replayedPath: replay.replayedPath,
+    replayId: replay.replayId,
+    sourceHistoryId: replay.sourceHistoryId,
+    status: formatRuntimeSourceHistoryReplayStatus(replay),
+    unavailableReason: replay.unavailableReason,
+    updatedAt: replay.updatedAt
   };
 }

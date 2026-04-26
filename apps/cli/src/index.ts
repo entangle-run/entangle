@@ -30,6 +30,7 @@ import {
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
+  runtimeSourceHistoryReplayRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema
@@ -124,7 +125,10 @@ import {
   projectRuntimeSourceChangeCandidateSummary,
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
-import { projectRuntimeSourceHistorySummary } from "./runtime-source-history-output.js";
+import {
+  projectRuntimeSourceHistoryReplaySummary,
+  projectRuntimeSourceHistorySummary
+} from "./runtime-source-history-output.js";
 import { projectRuntimeTurnSummary } from "./runtime-turn-output.js";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
@@ -2396,6 +2400,84 @@ hostRuntimesCommand
           ? history.map(projectRuntimeSourceHistorySummary)
           : history
       });
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-replays")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--source-history-id <sourceHistoryId>", "Filter replay records by source history id.")
+  .option("--summary", "Print compact operator-oriented replay summaries.")
+  .description("Inspect persisted source-history replay attempts.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        sourceHistoryId?: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = options.sourceHistoryId
+        ? await client.listRuntimeSourceHistoryReplaysForEntry(
+            nodeId,
+            options.sourceHistoryId
+          )
+        : await client.listRuntimeSourceHistoryReplays(nodeId);
+
+      printJson({
+        replays: options.summary
+          ? response.replays.map(projectRuntimeSourceHistoryReplaySummary)
+          : response.replays
+      });
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-replay")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<sourceHistoryId>", "Source history entry identifier to replay.")
+  .option("--approval-id <approvalId>", "Attach an approved source application approval id.")
+  .option("--replayed-by <operatorId>", "Attach the replaying operator id.")
+  .option("--reason <reason>", "Attach a replay reason.")
+  .option("--replay-id <replayId>", "Stable replay identifier.")
+  .option("--summary", "Print a compact operator-oriented replay summary.")
+  .description("Replay one source history entry into the source workspace.")
+  .action(
+    async (
+      nodeId: string,
+      sourceHistoryId: string,
+      options: {
+        approvalId?: string;
+        reason?: string;
+        replayedBy?: string;
+        replayId?: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const replay = runtimeSourceHistoryReplayRequestSchema.parse({
+        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.replayedBy ? { replayedBy: options.replayedBy } : {}),
+        ...(options.replayId ? { replayId: options.replayId } : {})
+      });
+      const response = await client.replayRuntimeSourceHistory(
+        nodeId,
+        sourceHistoryId,
+        replay
+      );
+
+      printJson(
+        options.summary
+          ? {
+              replay: projectRuntimeSourceHistoryReplaySummary(response.replay),
+              sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
+            }
+          : response
+      );
     }
   );
 

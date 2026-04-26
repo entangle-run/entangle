@@ -745,11 +745,13 @@ The current implementation-truth audit now lives in
   retryable target-aware source-history commit artifact publication plus
   bounded artifact history/diff inspection, safe workspace restore, and
   approval-gated promotion with restore/promotion history inspection for
-  materialized git artifacts, now including host-owned provisioning for
-  selected non-primary `gitea_api` publication targets; the next git gaps are
-  wiki promotion, direct source-history replay workflows, and explicit fallback
-  or replication behavior, while the next deployment-grade gap is non-disposable
-  local-profile upgrade and repair behavior for older Gitea volumes;
+  materialized git artifacts, and direct source-history replay with
+  replay-attempt history, now including host-owned provisioning for selected
+  non-primary `gitea_api` publication targets; the next git gaps are wiki
+  promotion, richer source-history merge/reconcile workflows, and explicit
+  fallback or replication behavior, while the next deployment-grade gap is
+  non-disposable local-profile upgrade and repair behavior for older Gitea
+  volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

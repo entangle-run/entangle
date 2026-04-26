@@ -1,4 +1,7 @@
-import type { SourceHistoryRecord } from "@entangle/types";
+import type {
+  RuntimeSourceHistoryReplayRecord,
+  SourceHistoryRecord
+} from "@entangle/types";
 
 export function sortRuntimeSourceHistoryForPresentation(
   history: SourceHistoryRecord[]
@@ -70,4 +73,22 @@ export function formatRuntimeSourceHistoryDetailLines(
     `deletions ${history.sourceChangeSummary.deletions}`,
     ...(history.reason ? [`reason ${history.reason}`] : [])
   ];
+}
+
+export function formatRuntimeSourceHistoryReplayStatus(
+  replay: RuntimeSourceHistoryReplayRecord
+): string {
+  if (replay.status === "replayed") {
+    const fileCount = replay.replayedFileCount ?? 0;
+    return `${fileCount} ${fileCount === 1 ? "file" : "files"} replayed`;
+  }
+
+  if (replay.status === "already_in_workspace") {
+    const fileCount = replay.replayedFileCount ?? 0;
+    return `${fileCount} ${fileCount === 1 ? "file" : "files"} already in workspace`;
+  }
+
+  return replay.unavailableReason
+    ? `unavailable: ${replay.unavailableReason}`
+    : "unavailable";
 }

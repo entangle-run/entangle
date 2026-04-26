@@ -249,6 +249,16 @@ export function describeRuntimeTraceEvent(
         ],
         label: `Source history ${event.historyId} publication ${event.publicationState}`
       };
+    case "source_history.replayed":
+      return {
+        detailLines: [
+          `Candidate: ${event.candidateId}`,
+          `Replay: ${event.replayId}`,
+          `Status: ${event.replayStatus}`,
+          `Commit: ${event.commit}`
+        ],
+        label: `Source history ${event.historyId} replay ${event.replayStatus}`
+      };
     default:
       return {
         detailLines: [],

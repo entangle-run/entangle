@@ -51,8 +51,9 @@ workspace only with an approved, operation/resource-scoped approval.
 ## Remaining Work
 
 - Wiki restore/promotion behavior.
-- Replay/promotion flows that create source-history entries directly when the
-  policy model calls for that.
+- Direct source-history replay is covered separately in
+  `references/221-source-history-replay-slice.md`; future merge/reconcile
+  replay behavior remains open.
 - Richer operator guidance for creating the exact scoped approval.
 
 ## Verification

@@ -695,9 +695,14 @@ Current partial implementation:
 - artifact promotion attempts now have host API, shared host-client, CLI, and
   Studio promotion-history inspection surfaces, including all-runtime and
   per-artifact listing;
+- source-history entries can now be replayed directly into the node source
+  workspace through host API, shared host-client, CLI, and Studio surfaces;
+  replay attempts are persisted under runtime state, require the same
+  `source_application` approval policy when configured, refuse diverged
+  workspaces, and emit `source_history.replayed` events;
 - live OpenCode permission-to-approval flow, fallback/replication behavior
-  across publication targets, wiki promotion, and direct source-history replay
-  workflows remain open.
+  across publication targets, wiki promotion, and richer source-history
+  merge/reconcile workflows remain open.
 
 Acceptance:
 

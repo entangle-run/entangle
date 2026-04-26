@@ -64,6 +64,8 @@ import {
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublicationResponseSchema,
+  runtimeSourceHistoryReplayListResponseSchema,
+  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionCancellationResponseSchema,
@@ -4493,6 +4495,91 @@ describe("buildHostServer", () => {
         ])
       );
 
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-source-history-replay-alpha.json"
+        ),
+        approvalRecordSchema.parse({
+          approvalId: "approval-source-history-replay-alpha",
+          approverNodeIds: ["operator-alpha"],
+          graphId: runtimeContext.binding.graphId,
+          operation: "source_application",
+          reason: "Approve source history replay into the source workspace.",
+          requestedAt: "2026-04-24T00:05:00.000Z",
+          requestedByNodeId: "worker-it",
+          resource: {
+            id: "source-history-source-change-turn-alpha",
+            kind: "source_history",
+            label: "source-history-source-change-turn-alpha"
+          },
+          sessionId: "session-alpha",
+          status: "approved",
+          updatedAt: "2026-04-24T00:05:01.000Z"
+        })
+      );
+
+      const sourceHistoryReplayResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-history-replay-alpha",
+          replayedBy: "operator-alpha",
+          replayId: "replay-source-history-alpha",
+          reason: "Replay the accepted source history."
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/replay"
+      });
+
+      expect(sourceHistoryReplayResponse.statusCode).toBe(200);
+      const sourceHistoryReplay = runtimeSourceHistoryReplayResponseSchema.parse(
+        sourceHistoryReplayResponse.json()
+      );
+      expect(sourceHistoryReplay.replay).toMatchObject({
+        approvalId: "approval-source-history-replay-alpha",
+        replayId: "replay-source-history-alpha",
+        sourceHistoryId: "source-history-source-change-turn-alpha",
+        status: "already_in_workspace"
+      });
+
+      const sourceHistoryReplayListResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/replays"
+      });
+
+      expect(sourceHistoryReplayListResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryReplayListResponseSchema.parse(
+          sourceHistoryReplayListResponse.json()
+        ).replays
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            replayId: "replay-source-history-alpha"
+          })
+        ])
+      );
+
+      const allSourceHistoryReplaysResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-history-replays"
+      });
+
+      expect(allSourceHistoryReplaysResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryReplayListResponseSchema.parse(
+          allSourceHistoryReplaysResponse.json()
+        ).replays
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            sourceHistoryId: "source-history-source-change-turn-alpha"
+          })
+        ])
+      );
+
       const repeatedPublishResponse = await server.inject({
         method: "POST",
         payload: {},
@@ -4595,6 +4682,23 @@ describe("buildHostServer", () => {
           })
         ])
       );
+      const sourceHistoryReplayedEvents = hostEventListResponseSchema
+        .parse(
+          (
+            await server.inject({
+              method: "GET",
+              url: "/v1/events?limit=20"
+            })
+          ).json()
+        )
+        .events.filter((event) => event.type === "source_history.replayed");
+      expect(sourceHistoryReplayedEvents).toHaveLength(1);
+      expect(sourceHistoryReplayedEvents[0]).toMatchObject({
+        approvalId: "approval-source-history-replay-alpha",
+        historyId: "source-history-source-change-turn-alpha",
+        replayId: "replay-source-history-alpha",
+        replayStatus: "already_in_workspace"
+      });
 
       const missingCandidateResponse = await server.inject({
         method: "GET",

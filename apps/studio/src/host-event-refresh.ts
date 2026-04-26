@@ -33,7 +33,8 @@ const selectedRuntimeRefreshEventTypes = new Set<HostEventRecord["type"]>([
   "approval.trace.event",
   "artifact.trace.event",
   "source_history.updated",
-  "source_history.published"
+  "source_history.published",
+  "source_history.replayed"
 ]);
 
 export function shouldRefreshOverviewFromHostEvent(

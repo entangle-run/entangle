@@ -60,6 +60,9 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublicationResponseSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
+  runtimeSourceHistoryReplayListResponseSchema,
+  runtimeSourceHistoryReplayRequestSchema,
+  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionCancellationMutationRequestSchema,
@@ -128,6 +131,9 @@ import {
   type RuntimeSourceHistoryListResponse,
   type RuntimeSourceHistoryPublicationResponse,
   type RuntimeSourceHistoryPublishMutationRequest,
+  type RuntimeSourceHistoryReplayListResponse,
+  type RuntimeSourceHistoryReplayRequest,
+  type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type SessionCancellationMutationRequest,
@@ -1010,6 +1016,27 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
+    async listRuntimeSourceHistoryReplays(
+      nodeId: string
+    ): Promise<RuntimeSourceHistoryReplayListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/source-history-replays`),
+        runtimeSourceHistoryReplayListResponseSchema
+      );
+    },
+
+    async listRuntimeSourceHistoryReplaysForEntry(
+      nodeId: string,
+      sourceHistoryId: string
+    ): Promise<RuntimeSourceHistoryReplayListResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/replays`
+        ),
+        runtimeSourceHistoryReplayListResponseSchema
+      );
+    },
+
     async publishRuntimeSourceHistory(
       nodeId: string,
       sourceHistoryId: string,
@@ -1030,6 +1057,28 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         runtimeSourceHistoryPublicationResponseSchema
+      );
+    },
+
+    async replayRuntimeSourceHistory(
+      nodeId: string,
+      sourceHistoryId: string,
+      replay: RuntimeSourceHistoryReplayRequest = {}
+    ): Promise<RuntimeSourceHistoryReplayResponse> {
+      const request = runtimeSourceHistoryReplayRequestSchema.parse(replay);
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/replay`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(request)
+          }
+        ),
+        runtimeSourceHistoryReplayResponseSchema
       );
     },
 
@@ -1340,5 +1389,6 @@ export {
 export {
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
+  formatRuntimeSourceHistoryReplayStatus,
   sortRuntimeSourceHistoryForPresentation
 } from "./runtime-source-history.js";

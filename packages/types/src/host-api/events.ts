@@ -340,6 +340,21 @@ export const sourceHistoryPublishedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("source_history.published")
 });
 
+export const sourceHistoryReplayedEventSchema = hostEventBaseSchema.extend({
+  approvalId: identifierSchema.optional(),
+  candidateId: identifierSchema,
+  category: z.literal("runtime"),
+  commit: nonEmptyStringSchema,
+  graphId: identifierSchema,
+  graphRevisionId: identifierSchema,
+  historyId: identifierSchema,
+  nodeId: identifierSchema,
+  replayId: identifierSchema,
+  replayStatus: z.enum(["already_in_workspace", "replayed", "unavailable"]),
+  turnId: identifierSchema,
+  type: z.literal("source_history.replayed")
+});
+
 export const conversationTraceEventSchema = hostEventBaseSchema.extend({
   artifactIds: z.array(identifierSchema),
   category: z.literal("session"),
@@ -431,6 +446,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   sourceChangeCandidateReviewedEventSchema,
   sourceHistoryUpdatedEventSchema,
   sourceHistoryPublishedEventSchema,
+  sourceHistoryReplayedEventSchema,
   conversationTraceEventSchema,
   approvalTraceEventSchema,
   artifactTraceEventSchema,
@@ -506,6 +522,9 @@ export type SourceHistoryUpdatedEvent = z.infer<
 >;
 export type SourceHistoryPublishedEvent = z.infer<
   typeof sourceHistoryPublishedEventSchema
+>;
+export type SourceHistoryReplayedEvent = z.infer<
+  typeof sourceHistoryReplayedEventSchema
 >;
 export type ConversationTraceEvent = z.infer<typeof conversationTraceEventSchema>;
 export type ApprovalTraceEvent = z.infer<typeof approvalTraceEventSchema>;

@@ -151,6 +151,10 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublicationResponseSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
+  runtimeSourceHistoryReplayListResponseSchema,
+  runtimeSourceHistoryReplayRecordSchema,
+  runtimeSourceHistoryReplayRequestSchema,
+  runtimeSourceHistoryReplayResponseSchema,
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
@@ -202,6 +206,10 @@ import {
   type RuntimeSourceHistoryListResponse,
   type RuntimeSourceHistoryPublicationResponse,
   type RuntimeSourceHistoryPublishMutationRequest,
+  type RuntimeSourceHistoryReplayListResponse,
+  type RuntimeSourceHistoryReplayRecord,
+  type RuntimeSourceHistoryReplayRequest,
+  type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   localStateLayoutInspectionSchema,
@@ -464,6 +472,10 @@ type SourceHistoryUpdatedEventInput = Omit<
 >;
 type SourceHistoryPublishedEventInput = Omit<
   Extract<HostEventRecord, { type: "source_history.published" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type SourceHistoryReplayedEventInput = Omit<
+  Extract<HostEventRecord, { type: "source_history.replayed" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type ConversationTraceEventInput = Omit<
@@ -6785,6 +6797,51 @@ export async function getRuntimeSourceHistoryInspection(input: {
     : null;
 }
 
+export async function listRuntimeSourceHistoryReplays(
+  nodeId: string
+): Promise<RuntimeSourceHistoryReplayListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeSourceHistoryReplayListResponseSchema.parse({
+    replays: (
+      await listRuntimeSourceHistoryReplayRecords(context.workspace.runtimeRoot)
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  });
+}
+
+export async function listRuntimeSourceHistoryReplaysForEntry(input: {
+  nodeId: string;
+  sourceHistoryId: string;
+}): Promise<RuntimeSourceHistoryReplayListResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const history = await listRuntimeSourceHistoryRecords(
+    context.workspace.runtimeRoot
+  );
+
+  if (
+    !history.some((entry) => entry.sourceHistoryId === input.sourceHistoryId)
+  ) {
+    return null;
+  }
+
+  return runtimeSourceHistoryReplayListResponseSchema.parse({
+    replays: (
+      await listRuntimeSourceHistoryReplayRecords(context.workspace.runtimeRoot)
+    )
+      .filter((replay) => replay.sourceHistoryId === input.sourceHistoryId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  });
+}
+
 export type RuntimeSourceChangeCandidateReviewMutationResult =
   | {
       inspection: RuntimeSourceChangeCandidateInspectionResponse;
@@ -7132,6 +7189,31 @@ function buildSourceHistoryId(candidateId: string): string {
   return `${prefix}-${digest}`;
 }
 
+function buildSourceHistoryReplayId(input: {
+  replayId?: string | undefined;
+  sourceHistoryId: string;
+}): string {
+  if (input.replayId) {
+    return input.replayId;
+  }
+
+  const raw = sanitizeIdentifier(
+    `replay-${input.sourceHistoryId}-${randomUUID().slice(0, 8)}`
+  );
+
+  if (raw.length <= 100) {
+    return raw;
+  }
+
+  const digest = createHash("sha256")
+    .update(`${input.sourceHistoryId}-${randomUUID()}`)
+    .digest("hex")
+    .slice(0, 12);
+  const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${digest}`;
+}
+
 async function writeCurrentSourceWorkspaceTree(input: {
   gitDir: string;
   sourceWorkspaceRoot: string;
@@ -7174,6 +7256,47 @@ async function replaceSourceWorkspaceWithTree(input: {
       workTree: input.sourceWorkspaceRoot
     }
   );
+}
+
+async function countSourceHistoryTreeFiles(input: {
+  gitDir: string;
+  runtimeRoot: string;
+  tree: string;
+}): Promise<number> {
+  const output = await runSourceHistoryGitCommandBuffer(
+    input.runtimeRoot,
+    ["ls-tree", "-r", "-z", "--name-only", input.tree],
+    {
+      gitDir: input.gitDir
+    }
+  );
+
+  return output
+    .toString("utf8")
+    .split("\0")
+    .filter((entry) => entry.length > 0).length;
+}
+
+async function persistRuntimeSourceHistoryReplayRecord(input: {
+  context: EffectiveRuntimeContext;
+  record: RuntimeSourceHistoryReplayRecord;
+}): Promise<RuntimeSourceHistoryReplayRecord> {
+  const record = runtimeSourceHistoryReplayRecordSchema.parse(input.record);
+  const replayRoot = runtimeSourceHistoryReplaysRoot(
+    input.context.workspace.runtimeRoot
+  );
+
+  await mkdir(replayRoot, { recursive: true });
+  await writeFile(
+    await allocateRuntimeSourceHistoryReplayRecordPath({
+      replayId: record.replayId,
+      runtimeRoot: input.context.workspace.runtimeRoot
+    }),
+    `${JSON.stringify(record, null, 2)}\n`,
+    "utf8"
+  );
+
+  return record;
 }
 
 async function createSourceHistoryCommit(input: {
@@ -8298,6 +8421,243 @@ export async function applyRuntimeSourceChangeCandidate(input: {
   }
 }
 
+function buildSourceHistoryReplayApprovalResource(
+  sourceHistoryId: string
+): PolicyResourceScope {
+  return {
+    id: sourceHistoryId,
+    kind: "source_history",
+    label: sourceHistoryId
+  };
+}
+
+export async function replayRuntimeSourceHistory(input: {
+  nodeId: string;
+  replay?: RuntimeSourceHistoryReplayRequest | undefined;
+  sourceHistoryId: string;
+}): Promise<RuntimeSourceHistoryReplayResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const historyRecords = await listRuntimeSourceHistoryRecords(
+    context.workspace.runtimeRoot
+  );
+  const history = historyRecords.find(
+    (historyRecord) => historyRecord.sourceHistoryId === input.sourceHistoryId
+  );
+
+  if (!history) {
+    return null;
+  }
+
+  const replay = runtimeSourceHistoryReplayRequestSchema.parse(
+    input.replay ?? {}
+  );
+  const createdAt = nowIsoString();
+  const replayId = buildSourceHistoryReplayId({
+    replayId: replay.replayId,
+    sourceHistoryId: history.sourceHistoryId
+  });
+  const baseRecord = {
+    ...(replay.approvalId ? { approvalId: replay.approvalId } : {}),
+    baseTree: history.baseTree,
+    candidateId: history.candidateId,
+    commit: history.commit,
+    createdAt,
+    graphId: history.graphId,
+    graphRevisionId: history.graphRevisionId,
+    headTree: history.headTree,
+    nodeId: input.nodeId,
+    ...(replay.reason ? { reason: replay.reason } : {}),
+    ...(replay.replayedBy ? { replayedBy: replay.replayedBy } : {}),
+    replayId,
+    sourceHistoryId: history.sourceHistoryId,
+    turnId: history.turnId,
+    updatedAt: createdAt
+  };
+  const persistUnavailable = async (
+    unavailableReason: string
+  ): Promise<RuntimeSourceHistoryReplayResponse> => {
+    const record = await persistRuntimeSourceHistoryReplayRecord({
+      context,
+      record: {
+        ...baseRecord,
+        status: "unavailable",
+        unavailableReason
+      }
+    });
+
+    await appendHostEvent({
+      ...(record.approvalId ? { approvalId: record.approvalId } : {}),
+      candidateId: record.candidateId,
+      category: "runtime",
+      commit: record.commit,
+      graphId: record.graphId,
+      graphRevisionId: record.graphRevisionId,
+      historyId: record.sourceHistoryId,
+      message:
+        `Source history '${record.sourceHistoryId}' for runtime '${input.nodeId}' ` +
+        `replay '${record.replayId}' is unavailable: ${unavailableReason}`,
+      nodeId: input.nodeId,
+      replayId: record.replayId,
+      replayStatus: record.status,
+      turnId: record.turnId,
+      type: "source_history.replayed"
+    } satisfies SourceHistoryReplayedEventInput);
+
+    return runtimeSourceHistoryReplayResponseSchema.parse({
+      entry: history,
+      replay: record
+    });
+  };
+
+  const approvalResolution = await resolveApprovedSourceMutationApproval({
+    approvalId: replay.approvalId,
+    context,
+    expectedOperation: "source_application",
+    expectedResource: buildSourceHistoryReplayApprovalResource(
+      history.sourceHistoryId
+    ),
+    operation: "source application",
+    required: context.policyContext.sourceMutation.applyRequiresApproval,
+    sessionId: history.sessionId
+  });
+
+  if (!approvalResolution.ok) {
+    return persistUnavailable(approvalResolution.message);
+  }
+
+  const sourceWorkspaceRoot = context.workspace.sourceWorkspaceRoot;
+
+  if (!sourceWorkspaceRoot) {
+    return persistUnavailable(
+      `Runtime '${input.nodeId}' does not have a configured source workspace root.`
+    );
+  }
+
+  if (
+    !isPathInsideRoot({
+      candidatePath: sourceWorkspaceRoot,
+      rootPath: context.workspace.root
+    })
+  ) {
+    return persistUnavailable(
+      `Runtime '${input.nodeId}' source workspace is outside the node workspace root.`
+    );
+  }
+
+  const gitDir = path.join(context.workspace.runtimeRoot, "source-snapshot.git");
+
+  try {
+    if (!(await pathExists(gitDir))) {
+      return persistUnavailable(
+        `Source history entry '${input.sourceHistoryId}' cannot be replayed because its shadow git repository is missing.`
+      );
+    }
+
+    const sourceWorkspaceStats = await stat(sourceWorkspaceRoot);
+
+    if (!sourceWorkspaceStats.isDirectory()) {
+      return persistUnavailable(
+        `Runtime '${input.nodeId}' source workspace is not a directory.`
+      );
+    }
+
+    await runSourceHistoryGitCommand(context.workspace.runtimeRoot, [
+      "cat-file",
+      "-e",
+      `${history.commit}^{commit}`
+    ], {
+      gitDir
+    });
+    await runSourceHistoryGitCommand(context.workspace.runtimeRoot, [
+      "cat-file",
+      "-e",
+      `${history.headTree}^{tree}`
+    ], {
+      gitDir
+    });
+
+    const currentTree = await writeCurrentSourceWorkspaceTree({
+      gitDir,
+      sourceWorkspaceRoot
+    });
+    const replayedFileCount = await countSourceHistoryTreeFiles({
+      gitDir,
+      runtimeRoot: context.workspace.runtimeRoot,
+      tree: history.headTree
+    });
+
+    if (currentTree !== history.headTree && currentTree !== history.baseTree) {
+      return persistUnavailable(
+        `Source history entry '${input.sourceHistoryId}' cannot be replayed because the source workspace changed after the recorded base tree.`
+      );
+    }
+
+    const status =
+      currentTree === history.headTree ? "already_in_workspace" : "replayed";
+
+    if (status === "replayed") {
+      await replaceSourceWorkspaceWithTree({
+        gitDir,
+        headTree: history.headTree,
+        sourceWorkspaceRoot
+      });
+      const replayedTree = await writeCurrentSourceWorkspaceTree({
+        gitDir,
+        sourceWorkspaceRoot
+      });
+
+      if (replayedTree !== history.headTree) {
+        return persistUnavailable(
+          `Source history entry '${input.sourceHistoryId}' did not replay cleanly to the source workspace.`
+        );
+      }
+    }
+
+    const record = await persistRuntimeSourceHistoryReplayRecord({
+      context,
+      record: {
+        ...baseRecord,
+        replayedFileCount,
+        replayedPath: sourceWorkspaceRoot,
+        status
+      }
+    });
+
+    await appendHostEvent({
+      ...(record.approvalId ? { approvalId: record.approvalId } : {}),
+      candidateId: record.candidateId,
+      category: "runtime",
+      commit: record.commit,
+      graphId: record.graphId,
+      graphRevisionId: record.graphRevisionId,
+      historyId: record.sourceHistoryId,
+      message:
+        `Source history '${record.sourceHistoryId}' for runtime '${input.nodeId}' ` +
+        `replay '${record.replayId}' completed with status '${record.status}'.`,
+      nodeId: input.nodeId,
+      replayId: record.replayId,
+      replayStatus: record.status,
+      turnId: record.turnId,
+      type: "source_history.replayed"
+    } satisfies SourceHistoryReplayedEventInput);
+
+    return runtimeSourceHistoryReplayResponseSchema.parse({
+      entry: history,
+      replay: record
+    });
+  } catch (error) {
+    return persistUnavailable(
+      `Source history entry '${input.sourceHistoryId}' could not be replayed: ` +
+        sanitizeRuntimePathError(context, error)
+    );
+  }
+}
+
 export async function publishRuntimeSourceHistory(input: {
   nodeId: string;
   publish: RuntimeSourceHistoryPublishMutationRequest;
@@ -9118,6 +9478,28 @@ async function listRuntimeSourceHistoryRecords(
   );
 }
 
+async function listRuntimeSourceHistoryReplayRecords(
+  runtimeRoot: string
+): Promise<RuntimeSourceHistoryReplayRecord[]> {
+  const replayRoot = runtimeSourceHistoryReplaysRoot(runtimeRoot);
+
+  if (!(await pathExists(replayRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(replayRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      runtimeSourceHistoryReplayRecordSchema.parse(
+        await readJsonFile<unknown>(path.join(replayRoot, fileName))
+      )
+    )
+  );
+}
+
 async function listRuntimeSourceHistoryPublicationTargetRecordIds(
   nodeIds: Set<string>
 ): Promise<Set<string>> {
@@ -9163,11 +9545,52 @@ function runtimeSourceHistoryRoot(runtimeRoot: string): string {
   return path.join(runtimeRoot, "source-history");
 }
 
+function runtimeSourceHistoryReplaysRoot(runtimeRoot: string): string {
+  return path.join(runtimeRoot, "source-history-replays");
+}
+
 function runtimeSourceHistoryRecordPath(
   runtimeRoot: string,
   sourceHistoryId: string
 ): string {
   return path.join(runtimeSourceHistoryRoot(runtimeRoot), `${sourceHistoryId}.json`);
+}
+
+function runtimeSourceHistoryReplayRecordPath(
+  runtimeRoot: string,
+  replayId: string
+): string {
+  return path.join(runtimeSourceHistoryReplaysRoot(runtimeRoot), `${replayId}.json`);
+}
+
+async function allocateRuntimeSourceHistoryReplayRecordPath(input: {
+  replayId: string;
+  runtimeRoot: string;
+}): Promise<string> {
+  const primaryPath = runtimeSourceHistoryReplayRecordPath(
+    input.runtimeRoot,
+    input.replayId
+  );
+
+  if (!(await pathExists(primaryPath))) {
+    return primaryPath;
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidatePath = path.join(
+      runtimeSourceHistoryReplaysRoot(input.runtimeRoot),
+      `${input.replayId}-${randomUUID().slice(0, 8)}.json`
+    );
+
+    if (!(await pathExists(candidatePath))) {
+      return candidatePath;
+    }
+  }
+
+  return path.join(
+    runtimeSourceHistoryReplaysRoot(input.runtimeRoot),
+    `${input.replayId}-${Date.now()}.json`
+  );
 }
 
 async function listRuntimeArtifactRecords(
