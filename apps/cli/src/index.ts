@@ -87,6 +87,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactRestoreRecordSummary,
   projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
@@ -1780,6 +1781,37 @@ hostRuntimesCommand
       printJson(
         options.summary ? projectRuntimeArtifactRestoreSummary(response) : response
       );
+    }
+  );
+
+hostRuntimesCommand
+  .command("artifact-restores")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--artifact-id <artifactId>", "Filter restore records by artifact id.")
+  .option("--summary", "Print compact operator-oriented restore summaries.")
+  .description("Inspect persisted runtime artifact restore attempts.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        artifactId?: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = options.artifactId
+        ? await client.listRuntimeArtifactRestoresForArtifact(
+            nodeId,
+            options.artifactId
+          )
+        : await client.listRuntimeArtifactRestores(nodeId);
+
+      printJson({
+        restores: options.summary
+          ? response.restores.map(projectRuntimeArtifactRestoreRecordSummary)
+          : response.restores
+      });
     }
   );
 

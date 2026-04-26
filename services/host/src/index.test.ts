@@ -46,6 +46,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
@@ -4096,6 +4097,38 @@ describe("buildHostServer", () => {
         restoreId: "restore-source-history-alpha",
         status: "unavailable"
       });
+
+      const sourceArtifactRestoreListResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/restores"
+      });
+
+      expect(sourceArtifactRestoreListResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactRestoreListResponseSchema.parse(
+          sourceArtifactRestoreListResponse.json()
+        ).restores.map((restore) => restore.status)
+      ).toEqual(expect.arrayContaining(["restored", "unavailable"]));
+
+      const allArtifactRestoresResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifact-restores"
+      });
+
+      expect(allArtifactRestoresResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactRestoreListResponseSchema.parse(
+          allArtifactRestoresResponse.json()
+        ).restores
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            artifactId: "source-source-history-source-change-turn-alpha",
+            restoreId: "restore-source-history-alpha"
+          })
+        ])
+      );
 
       const repeatedPublishResponse = await server.inject({
         method: "POST",

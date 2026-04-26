@@ -23,8 +23,8 @@ directly or overwriting existing work by default.
   CLI with `--restore-id`, `--overwrite`, `--requested-by`, `--reason`, and
   `--summary`.
 - Added shared host-client and CLI summary helpers for restore status.
-- Persisted restore attempt records under
-  `runtimeRoot/artifact-restores/{restoreId}.json`.
+- Persisted restore attempt records under `runtimeRoot/artifact-restores`,
+  using the requested restore id as the primary file name.
 - Restored git-backed artifact contents into
   `artifactWorkspaceRoot/restores/{restoreId}`.
 - Kept restore safe by default: existing restore targets return an
@@ -47,10 +47,10 @@ directly or overwriting existing work by default.
 
 ## Remaining Work
 
-- Studio restore controls and restore-record inspection.
 - Policy-gated restore permissions for node/operator roles.
 - Full replay semantics that can promote a restored artifact into a source
   workspace or memory repository through an approval-gated workflow.
+- Richer restore-history filtering and audit export.
 - Restore/replay behavior for wiki and future non-git artifact backends.
 - Backup/restore coordination for wiki repositories and artifact restore
   records.

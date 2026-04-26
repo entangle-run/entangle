@@ -16,6 +16,7 @@ import type {
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactPreviewResponse,
+  RuntimeArtifactRestoreRecord,
   RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 
@@ -240,5 +241,39 @@ export function projectRuntimeArtifactRestoreSummary(
             restoreId: response.restore.restoreId,
             status: formatRuntimeArtifactRestoreStatus(response.restore)
           }
+  };
+}
+
+export interface RuntimeArtifactCliRestoreRecordSummary {
+  artifactId: string;
+  createdAt: string;
+  mode: RuntimeArtifactRestoreRecord["mode"];
+  restoredFileCount?: number;
+  restoredPath?: string;
+  restoreId: string;
+  source: RuntimeArtifactRestoreRecord["source"];
+  status: string;
+  unavailableReason?: string;
+  updatedAt: string;
+}
+
+export function projectRuntimeArtifactRestoreRecordSummary(
+  restore: RuntimeArtifactRestoreRecord
+): RuntimeArtifactCliRestoreRecordSummary {
+  return {
+    artifactId: restore.artifactId,
+    createdAt: restore.createdAt,
+    mode: restore.mode,
+    ...(restore.restoredFileCount !== undefined
+      ? { restoredFileCount: restore.restoredFileCount }
+      : {}),
+    ...(restore.restoredPath ? { restoredPath: restore.restoredPath } : {}),
+    restoreId: restore.restoreId,
+    source: restore.source,
+    status: formatRuntimeArtifactRestoreStatus(restore),
+    ...(restore.unavailableReason
+      ? { unavailableReason: restore.unavailableReason }
+      : {}),
+    updatedAt: restore.updatedAt
   };
 }

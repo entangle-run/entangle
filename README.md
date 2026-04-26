@@ -230,8 +230,11 @@ This repository currently contains:
   git history, and git diff inspection for supported materialized artifacts,
   plus a first safe `POST /v1/runtimes/{nodeId}/artifacts/{artifactId}/restore`
   path that restores git-backed artifacts into an explicit artifact workspace
-  restore directory without overwriting existing targets by default, with
-  matching host-client, CLI, and Studio coverage;
+  restore directory without overwriting existing targets by default, plus
+  restore-attempt history through
+  `GET /v1/runtimes/{nodeId}/artifact-restores` and
+  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/restores`, with matching
+  host-client, CLI, and Studio coverage;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI

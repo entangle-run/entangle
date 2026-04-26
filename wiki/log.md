@@ -2521,3 +2521,20 @@ path, or unavailable reason returned by the host.
 
 The Studio action stays non-destructive: it does not request overwrite, so
 existing restore targets remain protected by the host restore policy.
+
+## [2026-04-26] implementation | Added runtime artifact restore history
+
+Added `references/217-runtime-artifact-restore-history-slice.md` and closed the
+first audit-read surface for runtime artifact restore attempts. The host now
+exposes node-wide and artifact-scoped restore history, the shared host client
+and CLI can inspect those records, and Studio loads recent restore attempts for
+the selected artifact.
+
+Restore records are now persisted as append-only audit entries for repeated
+attempts with the same requested restore id, so unavailable retries and later
+successful restores remain inspectable instead of overwriting one another.
+
+During verification, `@entangle/validator` consistently stalled under the
+default Vitest worker pool while passing immediately with the fork pool. Its
+package test script now pins `--pool=forks` so the repository-level
+`pnpm verify` gate remains deterministic.

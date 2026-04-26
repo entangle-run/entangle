@@ -604,8 +604,8 @@ Tasks:
 - Link produced artifacts to turns, sessions, messages, and git refs.
 - Add artifact history/diff host API, host-client, CLI, and Studio surfaces.
 - Add safe artifact restore host API, host-client, CLI, and Studio surfaces,
-  then add approval-gated replay/promotion once the safe restore record model
-  is proven.
+  including restore-attempt history inspection, then add approval-gated
+  replay/promotion once the safe restore record model is proven.
 - Add bounded previews for harvested text/code outputs.
 
 Constraints:

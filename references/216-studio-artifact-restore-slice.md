@@ -24,8 +24,9 @@ files directly and does not invent client-owned artifact state.
 
 ## Boundaries
 
-- Studio restore is currently action-only and shows the last response for the
-  selected artifact. It does not yet list historical restore-attempt records.
+- Studio restore-history listing is covered by the subsequent runtime artifact
+  restore history slice. This slice introduced the action and latest-response
+  view.
 - Non-git artifact backends stay disabled in the visual restore panel.
 - Replay/promotion from a restore directory into source or wiki state remains a
   separate approval-gated workflow.

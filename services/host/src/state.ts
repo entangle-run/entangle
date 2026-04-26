@@ -159,6 +159,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreListResponseSchema,
   runtimeArtifactRestoreRecordSchema,
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactRestoreResponseSchema,
@@ -171,6 +172,7 @@ import {
   type RuntimeArtifactHistoryResponse,
   type RuntimeArtifactPreviewResponse,
   type RuntimeArtifactRestoreRecord,
+  type RuntimeArtifactRestoreListResponse,
   type RuntimeArtifactRestoreRequest,
   type RuntimeArtifactRestoreResponse,
   runtimeMemoryInspectionResponseSchema,
@@ -5820,15 +5822,16 @@ async function persistRuntimeArtifactRestoreRecord(input: {
   record: RuntimeArtifactRestoreRecord;
 }): Promise<RuntimeArtifactRestoreRecord> {
   const record = runtimeArtifactRestoreRecordSchema.parse(input.record);
+  const restoresRoot = runtimeArtifactRestoresRoot(
+    input.context.workspace.runtimeRoot
+  );
 
-  await mkdir(runtimeArtifactRestoresRoot(input.context.workspace.runtimeRoot), {
-    recursive: true
-  });
+  await mkdir(restoresRoot, { recursive: true });
   await writeFile(
-    runtimeArtifactRestoreRecordPath(
-      input.context.workspace.runtimeRoot,
-      record.restoreId
-    ),
+    await allocateRuntimeArtifactRestoreRecordPath({
+      restoreId: record.restoreId,
+      runtimeRoot: input.context.workspace.runtimeRoot
+    }),
     `${JSON.stringify(record, null, 2)}\n`,
     "utf8"
   );
@@ -5905,6 +5908,51 @@ export async function restoreRuntimeArtifact(input: {
   return runtimeArtifactRestoreResponseSchema.parse({
     artifact,
     restore
+  });
+}
+
+export async function listRuntimeArtifactRestores(
+  nodeId: string
+): Promise<RuntimeArtifactRestoreListResponse | null> {
+  const context = await getRuntimeContext(nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  return runtimeArtifactRestoreListResponseSchema.parse({
+    restores: (
+      await listRuntimeArtifactRestoreRecords(context.workspace.runtimeRoot)
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  });
+}
+
+export async function listRuntimeArtifactRestoresForArtifact(input: {
+  artifactId: string;
+  nodeId: string;
+}): Promise<RuntimeArtifactRestoreListResponse | null> {
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (!context) {
+    return null;
+  }
+
+  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+
+  if (
+    !artifacts.some(
+      (candidate) => candidate.ref.artifactId === input.artifactId
+    )
+  ) {
+    return null;
+  }
+
+  return runtimeArtifactRestoreListResponseSchema.parse({
+    restores: (
+      await listRuntimeArtifactRestoreRecords(context.workspace.runtimeRoot)
+    )
+      .filter((restore) => restore.artifactId === input.artifactId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
   });
 }
 
@@ -8590,6 +8638,28 @@ async function listRuntimeArtifactRecords(
   );
 }
 
+async function listRuntimeArtifactRestoreRecords(
+  runtimeRoot: string
+): Promise<RuntimeArtifactRestoreRecord[]> {
+  const restoresRoot = runtimeArtifactRestoresRoot(runtimeRoot);
+
+  if (!(await pathExists(restoresRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(restoresRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      runtimeArtifactRestoreRecordSchema.parse(
+        await readJsonFile(path.join(restoresRoot, fileName))
+      )
+    )
+  );
+}
+
 function runtimeArtifactsRoot(runtimeRoot: string): string {
   return path.join(runtimeRoot, "artifacts");
 }
@@ -8610,6 +8680,36 @@ function runtimeArtifactRestoreRecordPath(
   restoreId: string
 ): string {
   return path.join(runtimeArtifactRestoresRoot(runtimeRoot), `${restoreId}.json`);
+}
+
+async function allocateRuntimeArtifactRestoreRecordPath(input: {
+  restoreId: string;
+  runtimeRoot: string;
+}): Promise<string> {
+  const primaryPath = runtimeArtifactRestoreRecordPath(
+    input.runtimeRoot,
+    input.restoreId
+  );
+
+  if (!(await pathExists(primaryPath))) {
+    return primaryPath;
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidatePath = path.join(
+      runtimeArtifactRestoresRoot(input.runtimeRoot),
+      `${input.restoreId}-${randomUUID().slice(0, 8)}.json`
+    );
+
+    if (!(await pathExists(candidatePath))) {
+      return candidatePath;
+    }
+  }
+
+  return path.join(
+    runtimeArtifactRestoresRoot(input.runtimeRoot),
+    `${input.restoreId}-${Date.now()}.json`
+  );
 }
 
 async function synchronizeSessionActivityObservation(input: {

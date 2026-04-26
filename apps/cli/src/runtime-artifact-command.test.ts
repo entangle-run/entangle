@@ -7,6 +7,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactRestoreRecordSummary,
   projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
@@ -285,6 +286,32 @@ describe("runtime-artifact-command", () => {
         restoreId: "restore-artifact-report",
         status: "2 files restored"
       }
+    });
+  });
+
+  it("projects artifact restore records for list summaries", () => {
+    expect(
+      projectRuntimeArtifactRestoreRecordSummary({
+        artifactId: "artifact-report",
+        createdAt: "2026-04-24T10:03:00.000Z",
+        mode: "restore_workspace",
+        nodeId: "worker-it",
+        restoreId: "restore-artifact-report",
+        restoredFileCount: 2,
+        restoredPath: "/tmp/worker-it/restores/restore-artifact-report",
+        source: {
+          backend: "git",
+          commit: "0123456789abcdef",
+          path: "reports/report.md"
+        },
+        status: "restored",
+        updatedAt: "2026-04-24T10:03:00.000Z"
+      })
+    ).toMatchObject({
+      artifactId: "artifact-report",
+      restoredFileCount: 2,
+      restoreId: "restore-artifact-report",
+      status: "2 files restored"
     });
   });
 });

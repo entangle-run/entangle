@@ -1515,6 +1515,71 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses runtime artifact restore history lists from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              restores: [
+                {
+                  artifactId: "report-turn-001",
+                  createdAt: "2026-04-22T00:01:00.000Z",
+                  mode: "restore_workspace",
+                  nodeId: "worker-it",
+                  restoreId: "restore-report-turn-001",
+                  restoredFileCount: 1,
+                  restoredPath:
+                    "/tmp/entangle-runner/workspace/restores/restore-report-turn-001",
+                  source: {
+                    backend: "git",
+                    commit: "abc123",
+                    path: "reports/session-alpha/turn-001.md"
+                  },
+                  status: "restored",
+                  updatedAt: "2026-04-22T00:01:00.000Z"
+                }
+              ]
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.listRuntimeArtifactRestoresForArtifact(
+        "worker-it",
+        "report-turn-001"
+      )
+    ).resolves.toMatchObject({
+      restores: [
+        {
+          restoreId: "restore-report-turn-001",
+          status: "restored"
+        }
+      ]
+    });
+    await expect(
+      client.listRuntimeArtifactRestores("worker-it")
+    ).resolves.toMatchObject({
+      restores: [
+        {
+          artifactId: "report-turn-001"
+        }
+      ]
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/restores",
+      "http://entangle-host.test/v1/runtimes/worker-it/artifact-restores"
+    ]);
+  });
+
   it("parses runtime memory list and page responses from the host surface", async () => {
     const requests: string[] = [];
     const client = createHostClient({
