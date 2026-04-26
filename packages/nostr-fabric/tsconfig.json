@@ -10,18 +10,9 @@
   "include": [
     "src"
   ],
-  "exclude": [
-    "src/**/*.test.ts"
-  ],
   "references": [
     {
-      "path": "../../packages/types"
-    },
-    {
-      "path": "../../packages/nostr-fabric"
-    },
-    {
-      "path": "../../packages/validator"
+      "path": "../types"
     }
   ]
 }

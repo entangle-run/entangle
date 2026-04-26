@@ -17,6 +17,7 @@
     "typecheck": "tsc -b tsconfig.json --pretty false"
   },
   "dependencies": {
+    "@entangle/nostr-fabric": "workspace:*",
     "@entangle/types": "workspace:*",
     "@entangle/validator": "workspace:*",
     "@fastify/websocket": "^11.2.0",

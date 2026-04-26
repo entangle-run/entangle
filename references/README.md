@@ -13,7 +13,8 @@ planning files from `222-current-state-codebase-audit.md` through
 
 Federated implementation records start at
 [232-federated-contracts-slice.md](232-federated-contracts-slice.md), followed by
-[233-host-authority-store-slice.md](233-host-authority-store-slice.md).
+[233-host-authority-store-slice.md](233-host-authority-store-slice.md) and
+[234-nostr-control-observe-transport-slice.md](234-nostr-control-observe-transport-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

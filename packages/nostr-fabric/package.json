@@ -1,26 +1,27 @@
 {
-  "name": "@entangle/runner",
+  "name": "@entangle/nostr-fabric",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "check": "pnpm run typecheck",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "dev": "tsx watch src/index.ts",
     "lint": "eslint src --max-warnings 0",
-    "start": "node dist/index.js",
-    "test": "vitest run --config ../../vitest.config.ts --environment node src/*.test.ts",
+    "test": "vitest run --config ../../vitest.config.ts --environment node src/index.test.ts",
     "typecheck": "tsc -b tsconfig.json --pretty false"
   },
   "dependencies": {
-    "@entangle/agent-engine": "workspace:*",
-    "@entangle/nostr-fabric": "workspace:*",
     "@entangle/types": "workspace:*",
-    "@entangle/validator": "workspace:*",
     "nostr-tools": "^2.23.3"
   }
 }

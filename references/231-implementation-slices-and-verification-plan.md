@@ -78,6 +78,10 @@ Add publish/subscribe transport for `entangle.control.v1` and
 `entangle.observe.v1`, including signing, verification, NIP-59 wrapping, and
 dedupe.
 
+Implementation record:
+
+- [234-nostr-control-observe-transport-slice.md](234-nostr-control-observe-transport-slice.md)
+
 Verification:
 
 - Host and runner transport tests;

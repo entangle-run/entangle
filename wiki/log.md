@@ -2694,3 +2694,15 @@ The shared host client and CLI now expose authority show/export/import
 surfaces over the same Host boundary. This remains an authority foundation
 slice: runner registry, assignment control, and Nostr control/observe transport
 are still deferred to the following slices.
+
+## [2026-04-26] implementation | Added Nostr control/observe transport
+
+Added `references/234-nostr-control-observe-transport-slice.md` and
+implemented the third federated pivot slice. A new shared
+`@entangle/nostr-fabric` package signs explicit inner Nostr events, wraps them
+with NIP-59 for private delivery, verifies signer roles and expected Host/runner
+identities, and deduplicates received control/observation events.
+
+Host and runner now have thin federated transport wrappers over the same
+fabric. Registry, assignment state, and projection reducers remain deferred to
+the following slices.

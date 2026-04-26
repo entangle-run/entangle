@@ -109,6 +109,15 @@ importers:
         specifier: workspace:*
         version: link:../types
 
+  packages/nostr-fabric:
+    dependencies:
+      '@entangle/types':
+        specifier: workspace:*
+        version: link:../types
+      nostr-tools:
+        specifier: ^2.23.3
+        version: 2.23.3(typescript@6.0.3)
+
   packages/package-scaffold:
     dependencies:
       '@entangle/types':
@@ -129,6 +138,9 @@ importers:
 
   services/host:
     dependencies:
+      '@entangle/nostr-fabric':
+        specifier: workspace:*
+        version: link:../../packages/nostr-fabric
       '@entangle/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -156,6 +168,9 @@ importers:
       '@entangle/agent-engine':
         specifier: workspace:*
         version: link:../../packages/agent-engine
+      '@entangle/nostr-fabric':
+        specifier: workspace:*
+        version: link:../../packages/nostr-fabric
       '@entangle/types':
         specifier: workspace:*
         version: link:../../packages/types
