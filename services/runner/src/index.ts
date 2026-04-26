@@ -3,6 +3,7 @@ import { type AgentEngine } from "@entangle/agent-engine";
 import type {
   AgentEngineTurnResult,
   EffectiveRuntimeContext,
+  EntangleObservationEventPayload,
   RunnerJoinConfig,
   RunnerJoinStatus
 } from "@entangle/types";
@@ -29,7 +30,10 @@ import {
   resolveRuntimeContextPath
 } from "./runtime-context.js";
 import type { RunnerMemorySynthesizer } from "./memory-synthesizer.js";
-import { RunnerService } from "./service.js";
+import {
+  RunnerService,
+  type RunnerServiceObservationPublisher
+} from "./service.js";
 import type { RunnerTransport } from "./transport.js";
 import { createOpenCodeAgentEngine } from "./opencode-engine.js";
 import { createFileSystemAssignmentMaterializer } from "./assignment-materializer.js";
@@ -186,6 +190,7 @@ export async function createConfiguredRunnerService(
   input: {
     engine?: AgentEngine;
     memorySynthesizer?: RunnerMemorySynthesizer;
+    observationPublisher?: RunnerServiceObservationPublisher;
     transport?: RunnerTransport;
   } = {}
 ): Promise<{
@@ -216,6 +221,9 @@ export async function createConfiguredRunnerService(
     ...(input.memorySynthesizer
       ? { memorySynthesizer: input.memorySynthesizer }
       : {}),
+    ...(input.observationPublisher
+      ? { observationPublisher: input.observationPublisher }
+      : {}),
     toolDefinitions,
     transport
   });
@@ -225,6 +233,55 @@ export async function createConfiguredRunnerService(
     publicKey,
     runtimeContext,
     service
+  };
+}
+
+function createRuntimeObservationPublisher(input: {
+  config: RunnerJoinConfig;
+  runnerPubkey: string;
+  transport: RunnerJoinTransport;
+}): RunnerServiceObservationPublisher {
+  const publish = async (payload: EntangleObservationEventPayload) => {
+    await input.transport.publishObservationEvent({
+      ...(input.config.authRequired !== undefined
+        ? { authRequired: input.config.authRequired }
+        : {}),
+      payload,
+      relayUrls: input.config.relayUrls
+    });
+  };
+
+  return {
+    publishConversationUpdated: (record) =>
+      publish({
+        conversation: record,
+        conversationId: record.conversationId,
+        eventType: "conversation.updated",
+        graphId: record.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.localNodeId,
+        observedAt: record.updatedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        status: record.status,
+        updatedAt: record.updatedAt
+      }),
+    publishSessionUpdated: (record) =>
+      publish({
+        eventType: "session.updated",
+        graphId: record.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.ownerNodeId,
+        observedAt: record.updatedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        session: record,
+        sessionId: record.sessionId,
+        status: record.status,
+        updatedAt: record.updatedAt
+      })
   };
 }
 
@@ -264,7 +321,13 @@ export async function createConfiguredRunnerJoinService(
     runtimeStarter:
       input.runtimeStarter ??
       (async ({ runtimeContextPath }) => {
-        const configured = await createConfiguredRunnerService(runtimeContextPath);
+        const configured = await createConfiguredRunnerService(runtimeContextPath, {
+          observationPublisher: createRuntimeObservationPublisher({
+            config,
+            runnerPubkey: publicKey,
+            transport
+          })
+        });
         const startResult = await configured.service.start();
 
         return {

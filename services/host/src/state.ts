@@ -140,6 +140,7 @@ import {
   artifactRefObservationPayloadSchema,
   artifactRefProjectionRecordSchema,
   type ArtifactRefProjectionRecord,
+  conversationUpdatedObservationPayloadSchema,
   runtimeProjectionRecordSchema,
   type RuntimeProjectionRecord,
   runtimeIdentityContextSchema,
@@ -162,11 +163,14 @@ import {
   sourceChangeRefObservationPayloadSchema,
   sourceChangeRefProjectionRecordSchema,
   type SourceChangeRefProjectionRecord,
+  sessionUpdatedObservationPayloadSchema,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
   userNodeIdentityListResponseSchema,
   type UserNodeIdentityListResponse,
   userNodeIdentityRecordSchema,
+  userConversationProjectionRecordSchema,
+  type UserConversationProjectionRecord,
   type UserNodeIdentityRecord,
   wikiRefObservationPayloadSchema,
   wikiRefProjectionRecordSchema,
@@ -2353,6 +2357,171 @@ function observedWikiRefRecordPath(input: {
   );
 }
 
+function observedSessionActivityRecordPath(input: {
+  nodeId: string;
+  sessionId: string;
+}): string {
+  return path.join(
+    observedSessionActivityRoot,
+    `${input.nodeId}--${input.sessionId}.json`
+  );
+}
+
+function observedConversationActivityRecordPath(input: {
+  conversationId: string;
+  nodeId: string;
+}): string {
+  return path.join(
+    observedConversationActivityRoot,
+    `${input.nodeId}--${input.conversationId}.json`
+  );
+}
+
+export async function recordSessionUpdatedObservation(
+  input: unknown
+): Promise<ObservedSessionActivityRecord | undefined> {
+  await initializeHostState();
+
+  const observation = sessionUpdatedObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const sessionRecord =
+    observation.session ??
+    sessionRecordSchema.parse({
+      activeConversationIds: [],
+      graphId: observation.graphId,
+      ownerNodeId: observation.nodeId,
+      rootArtifactIds: [],
+      sessionId: observation.sessionId,
+      status: observation.status,
+      traceId: observation.sessionId,
+      updatedAt: observation.updatedAt,
+      openedAt: observation.updatedAt,
+      waitingApprovalIds: []
+    });
+  const fingerprint = buildObservationFingerprint(sessionRecord);
+  const existingRecord = await readObservedSessionActivityRecord(
+    observation.nodeId,
+    sessionRecord.sessionId
+  );
+  const record = observedSessionActivityRecordSchema.parse({
+    activeConversationIds: sessionRecord.activeConversationIds,
+    fingerprint,
+    graphId: sessionRecord.graphId,
+    ...(sessionRecord.lastMessageType
+      ? { lastMessageType: sessionRecord.lastMessageType }
+      : {}),
+    nodeId: observation.nodeId,
+    ownerNodeId: sessionRecord.ownerNodeId,
+    rootArtifactIds: sessionRecord.rootArtifactIds,
+    schemaVersion: "1",
+    sessionId: sessionRecord.sessionId,
+    status: sessionRecord.status,
+    traceId: sessionRecord.traceId,
+    updatedAt: sessionRecord.updatedAt
+  });
+
+  await writeJsonFileIfChanged(
+    observedSessionActivityRecordPath({
+      nodeId: record.nodeId,
+      sessionId: record.sessionId
+    }),
+    record
+  );
+
+  if (existingRecord?.fingerprint === record.fingerprint) {
+    return record;
+  }
+
+  await appendHostEvent({
+    activeConversationIds: record.activeConversationIds,
+    category: "session",
+    graphId: record.graphId,
+    ...(record.lastMessageType ? { lastMessageType: record.lastMessageType } : {}),
+    message:
+      `Session '${record.sessionId}' on node '${record.nodeId}' is now ` +
+      `'${record.status}' with ${record.activeConversationIds.length} active ` +
+      "conversation(s).",
+    nodeId: record.nodeId,
+    ownerNodeId: record.ownerNodeId,
+    rootArtifactIds: record.rootArtifactIds,
+    sessionId: record.sessionId,
+    status: record.status,
+    traceId: record.traceId,
+    type: "session.updated",
+    updatedAt: record.updatedAt
+  } satisfies SessionUpdatedEventInput);
+
+  return record;
+}
+
+export async function recordConversationUpdatedObservation(
+  input: unknown
+): Promise<ObservedConversationActivityRecord | undefined> {
+  await initializeHostState();
+
+  const observation = conversationUpdatedObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+
+  if (!observation.conversation) {
+    return undefined;
+  }
+
+  const conversationRecord = observation.conversation;
+  const fingerprint = buildObservationFingerprint(conversationRecord);
+  const existingRecord = await readObservedConversationActivityRecord(
+    observation.nodeId,
+    conversationRecord.conversationId
+  );
+  const record = observedConversationActivityRecordSchema.parse({
+    artifactIds: conversationRecord.artifactIds,
+    conversationId: conversationRecord.conversationId,
+    fingerprint,
+    followupCount: conversationRecord.followupCount,
+    graphId: conversationRecord.graphId,
+    initiator: conversationRecord.initiator,
+    lastMessageType: conversationRecord.lastMessageType,
+    nodeId: observation.nodeId,
+    peerNodeId: conversationRecord.peerNodeId,
+    schemaVersion: "1",
+    sessionId: conversationRecord.sessionId,
+    status: conversationRecord.status,
+    updatedAt: conversationRecord.updatedAt
+  });
+
+  await writeJsonFileIfChanged(
+    observedConversationActivityRecordPath({
+      conversationId: record.conversationId,
+      nodeId: record.nodeId
+    }),
+    record
+  );
+
+  if (existingRecord?.fingerprint === record.fingerprint) {
+    return record;
+  }
+
+  await appendHostEvent({
+    artifactIds: record.artifactIds,
+    category: "session",
+    conversationId: record.conversationId,
+    followupCount: record.followupCount,
+    graphId: record.graphId,
+    initiator: record.initiator,
+    lastMessageType: record.lastMessageType,
+    message:
+      `Conversation '${record.conversationId}' on node '${record.nodeId}' ` +
+      `is now '${record.status}'.`,
+    nodeId: record.nodeId,
+    peerNodeId: record.peerNodeId,
+    sessionId: record.sessionId,
+    status: record.status,
+    type: "conversation.trace.event",
+    updatedAt: record.updatedAt
+  } satisfies ConversationTraceEventInput);
+
+  return record;
+}
+
 export async function recordArtifactRefObservation(
   input: unknown
 ): Promise<ArtifactRefProjectionRecord> {
@@ -2749,16 +2918,83 @@ async function listWikiRefProjectionRecords(): Promise<WikiRefProjectionRecord[]
   );
 }
 
+async function listUserConversationProjectionRecords(): Promise<
+  UserConversationProjectionRecord[]
+> {
+  const { graph } = await readActiveGraphState();
+  const userNodeIds = new Set(
+    graph?.nodes
+      .filter((node) => node.nodeKind === "user")
+      .map((node) => node.nodeId) ?? []
+  );
+
+  if (userNodeIds.size === 0 || !(await pathExists(observedConversationActivityRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedConversationActivityRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        observedConversationActivityRecordSchema.parse(
+          await readJsonFile(path.join(observedConversationActivityRoot, entry))
+        )
+      )
+  );
+
+  return records
+    .map((record) => {
+      const userNodeId = userNodeIds.has(record.peerNodeId)
+        ? record.peerNodeId
+        : userNodeIds.has(record.nodeId)
+          ? record.nodeId
+          : undefined;
+
+      if (!userNodeId) {
+        return undefined;
+      }
+
+      return userConversationProjectionRecordSchema.parse({
+        conversationId: record.conversationId,
+        graphId: record.graphId,
+        lastMessageAt: record.updatedAt,
+        peerNodeId: userNodeId === record.peerNodeId ? record.nodeId : record.peerNodeId,
+        pendingApprovalIds: [],
+        projection: {
+          source: "observation_event",
+          updatedAt: record.updatedAt
+        },
+        unreadCount: 0,
+        userNodeId
+      });
+    })
+    .filter(
+      (record): record is UserConversationProjectionRecord => record !== undefined
+    )
+    .sort((left, right) =>
+      `${left.userNodeId}--${left.conversationId}`.localeCompare(
+        `${right.userNodeId}--${right.conversationId}`
+      )
+    );
+}
+
 export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapshot> {
   await initializeHostState();
 
   const authority = await ensureHostAuthorityMaterialized();
-  const [runnerList, assignments, artifactRefs, sourceChangeRefs, wikiRefs] =
-    await Promise.all([
+  const [
+    runnerList,
+    assignments,
+    artifactRefs,
+    sourceChangeRefs,
+    userConversations,
+    wikiRefs
+  ] = await Promise.all([
       listRunnerRegistry(),
       listRuntimeAssignmentRecords(),
       listArtifactRefProjectionRecords(),
       listSourceChangeRefProjectionRecords(),
+      listUserConversationProjectionRecords(),
       listWikiRefProjectionRecords()
     ]);
   const runtimeProjections = await listRuntimeProjectionRecords({
@@ -2813,7 +3049,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     })),
     schemaVersion: "1",
     sourceChangeRefs,
-    userConversations: [],
+    userConversations,
     wikiRefs
   });
 }

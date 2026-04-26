@@ -155,7 +155,8 @@ pnpm ops:smoke-federated-process-runner
 This smoke starts a Host HTTP server, launches `entangle-runner join` as a
 separate OS process, assigns a node through signed control events, and verifies
 the runner-owned materialized context, Host projection, signed User Node
-message publication, and runner-owned session/conversation intake.
+message publication, runner-owned session/conversation intake, and Host
+projection of the User Node conversation from runner-signed observations.
 
 For manual OpenCode/provider testing without rebuilding the setup by hand, run:
 

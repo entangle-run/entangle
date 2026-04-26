@@ -92,6 +92,11 @@ export type RunnerServiceStartResult = {
   runtimeRoot: string;
 };
 
+export type RunnerServiceObservationPublisher = {
+  publishConversationUpdated(record: ConversationRecord): Promise<void>;
+  publishSessionUpdated(record: SessionRecord): Promise<void>;
+};
+
 export type RunnerServiceHandleResult =
   | {
       handled: false;
@@ -1288,6 +1293,9 @@ export class RunnerService {
   private readonly engine: AgentEngine;
   private readonly explicitToolDefinitions: EngineToolDefinition[] | undefined;
   private readonly memorySynthesizer: RunnerMemorySynthesizer | undefined;
+  private readonly observationPublisher:
+    | RunnerServiceObservationPublisher
+    | undefined;
   private readonly transport: RunnerTransport;
   private readonly activeSessionAbortControllers = new Map<
     string,
@@ -1303,6 +1311,7 @@ export class RunnerService {
     context: EffectiveRuntimeContext;
     engine?: AgentEngine;
     memorySynthesizer?: RunnerMemorySynthesizer;
+    observationPublisher?: RunnerServiceObservationPublisher;
     cancellationPollIntervalMs?: number;
     toolDefinitions?: EngineToolDefinition[];
     transport: RunnerTransport;
@@ -1314,7 +1323,26 @@ export class RunnerService {
     this.engine = input.engine ?? createStubAgentEngine();
     this.explicitToolDefinitions = input.toolDefinitions;
     this.memorySynthesizer = input.memorySynthesizer;
+    this.observationPublisher = input.observationPublisher;
     this.transport = input.transport;
+  }
+
+  private async publishSessionObservation(record: SessionRecord): Promise<void> {
+    try {
+      await this.observationPublisher?.publishSessionUpdated(record);
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
+  private async publishConversationObservation(
+    record: ConversationRecord
+  ): Promise<void> {
+    try {
+      await this.observationPublisher?.publishConversationUpdated(record);
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
   }
 
   private startCancellationPolling(): () => void {
@@ -1991,6 +2019,7 @@ export class RunnerService {
       updatedAt: envelope.receivedAt
     };
     await writeSessionRecord(statePaths, currentSession);
+    await this.publishSessionObservation(currentSession);
 
     const conversationRecord =
       (await readConversationRecord(statePaths, envelope.message.conversationId)) ??
@@ -2006,6 +2035,7 @@ export class RunnerService {
       updatedAt: envelope.receivedAt
     };
     await writeConversationRecord(statePaths, currentConversation);
+    await this.publishConversationObservation(currentConversation);
 
     if (envelope.message.messageType === "approval.request") {
       await this.handleApprovalRequestEnvelope({
@@ -2228,6 +2258,7 @@ export class RunnerService {
         lastMessageId: envelope.eventId,
         lastMessageType: envelope.message.messageType
       });
+      await this.publishSessionObservation(currentSession);
       await this.applyExternalCancellationRequests();
       const earlyCancellationRequest = resolveCancellationRequestFromAbortSignal(
         cancellationController.signal
@@ -2254,6 +2285,7 @@ export class RunnerService {
           lastMessageType: envelope.message.messageType
         }
       );
+      await this.publishConversationObservation(currentConversation);
 
       turnRecord = await writeRunnerPhase(statePaths, turnRecord, "contextualizing");
       let retrievedArtifacts;

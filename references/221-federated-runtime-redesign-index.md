@@ -57,6 +57,7 @@ same-machine slice records.
 - [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
 - [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 - [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
+- [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
 
 ## Audited Scope
 
@@ -133,8 +134,9 @@ The repository is not fully federated:
   has it fetch authenticated runtime bootstrap context from Host API,
   materializes runner-owned workspace paths, starts the assigned node runtime,
   reports signed runtime status through the relay, publishes a signed User Node
-  message to the assigned node, and verifies runner-owned
-  session/conversation intake without requiring a live model-provider call;
+  message to the assigned node, verifies runner-owned session/conversation
+  intake, and verifies Host projection of the User Node conversation without
+  requiring a live model-provider call;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 

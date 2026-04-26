@@ -91,6 +91,10 @@ Implemented in this slice:
 - extended the smoke to publish a signed `question` message from the graph's
   User Node to the assigned builder node, then verify the runner persisted the
   corresponding session and conversation in its runtime state;
+- extended the smoke again after
+  [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
+  so Host projection must contain the User Node conversation produced from
+  runner-signed observations;
 - added `--keep-running` as a manual test harness mode that leaves the Host
   server and joined runner process alive, keeps the temporary state root, and
   prints CLI commands for publishing a signed `task.request` to the assigned

@@ -648,7 +648,8 @@ The repository now also contains the first real implementation baseline:
   `pnpm ops:smoke-federated-process-runner`, covering Host plus a real joined
   runner process with separate state roots, signed assignment over a live relay,
   portable bootstrap materialization, signed runtime observations, and signed
-  User Node message intake persisted by the assigned runner without requiring a
+  User Node message intake persisted by the assigned runner and projected by
+  Host from runner-signed session/conversation observations without requiring a
   live model-provider call;
 - a same-machine diagnostics smoke through `pnpm ops:smoke-federated-dev:diagnostics`,
   which writes a temporary redacted diagnostics bundle against a running

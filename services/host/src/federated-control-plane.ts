@@ -12,11 +12,13 @@ import type {
 import type { HostFederatedNostrTransport } from "./federated-nostr-transport.js";
 import {
   recordArtifactRefObservation,
+  recordConversationUpdatedObservation,
   recordRunnerHeartbeat,
   recordRunnerHello,
   recordRuntimeStatusObservation,
   recordRuntimeAssignmentAccepted,
   recordRuntimeAssignmentRejected,
+  recordSessionUpdatedObservation,
   recordSourceChangeRefObservation,
   recordWikiRefObservation
 } from "./state.js";
@@ -140,6 +142,24 @@ export class HostFederatedControlPlane {
 
     if (payload.eventType === "runtime.status") {
       await recordRuntimeStatusObservation(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "session.updated") {
+      await recordSessionUpdatedObservation(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "conversation.updated") {
+      await recordConversationUpdatedObservation(payload);
       return {
         action: "recorded",
         eventType: payload.eventType,

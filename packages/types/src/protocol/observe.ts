@@ -10,8 +10,10 @@ import {
 import { runtimeObservedStateSchema } from "../runtime/runtime-state.js";
 import {
   approvalLifecycleStateSchema,
+  conversationRecordSchema,
   conversationLifecycleStateSchema,
   runnerPhaseSchema,
+  sessionRecordSchema,
   sessionLifecycleStateSchema,
   sourceChangeCandidateStatusSchema
 } from "../runtime/session-state.js";
@@ -97,6 +99,7 @@ export const runtimeStatusObservationPayloadSchema =
 
 export const conversationUpdatedObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
+    conversation: conversationRecordSchema.optional(),
     conversationId: identifierSchema,
     eventType: z.literal("conversation.updated"),
     graphId: identifierSchema,
@@ -110,6 +113,7 @@ export const sessionUpdatedObservationPayloadSchema =
     eventType: z.literal("session.updated"),
     graphId: identifierSchema,
     nodeId: identifierSchema,
+    session: sessionRecordSchema.optional(),
     sessionId: identifierSchema,
     status: sessionLifecycleStateSchema,
     updatedAt: nonEmptyStringSchema

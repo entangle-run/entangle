@@ -572,6 +572,89 @@ describe("federated runtime contracts", () => {
     expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");
   });
 
+  it("accepts federated session and conversation observations with embedded runner records", () => {
+    const sessionObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        eventType: "session.updated",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        session: {
+          activeConversationIds: ["conversation-alpha"],
+          graphId: "team-alpha",
+          intent: "Check signed User Node message intake.",
+          lastMessageType: "question",
+          openedAt: observedAt,
+          ownerNodeId: "worker-it",
+          rootArtifactIds: [],
+          sessionId: "session-alpha",
+          status: "active",
+          traceId: "session-alpha",
+          updatedAt: observedAt,
+          waitingApprovalIds: []
+        },
+        sessionId: "session-alpha",
+        status: "active",
+        updatedAt: observedAt
+      }
+    });
+    const conversationObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        conversation: {
+          artifactIds: [],
+          conversationId: "conversation-alpha",
+          followupCount: 0,
+          graphId: "team-alpha",
+          initiator: "peer",
+          lastInboundMessageId:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          lastMessageType: "question",
+          localNodeId: "worker-it",
+          localPubkey: runnerPubkey,
+          openedAt: observedAt,
+          peerNodeId: "user-main",
+          peerPubkey: authorityPubkey,
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 0,
+            responseRequired: false
+          },
+          sessionId: "session-alpha",
+          status: "opened",
+          updatedAt: observedAt
+        },
+        conversationId: "conversation-alpha",
+        eventType: "conversation.updated",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        status: "opened",
+        updatedAt: observedAt
+      }
+    });
+
+    expect(sessionObservation.payload.eventType).toBe("session.updated");
+    expect(conversationObservation.payload.eventType).toBe("conversation.updated");
+  });
+
   it("accepts Host Authority API responses and status summaries", () => {
     const authority = hostAuthorityRecordSchema.parse({
       authorityId: "authority-main",

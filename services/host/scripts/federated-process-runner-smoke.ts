@@ -684,6 +684,30 @@ async function main(): Promise<void> {
       `session=${userMessageIntake.sessionRecord.sessionId}; conversation=${userMessageIntake.conversationRecord.conversationId}`
     );
 
+    const projectedUserConversation = await waitFor(
+      "Host User Node conversation projection",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.userConversations.find(
+          (conversation) =>
+            conversation.conversationId === userMessage.conversationId &&
+            conversation.userNodeId === "user" &&
+            conversation.peerNodeId === "builder"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "user-node-projection",
+      `user=${projectedUserConversation.userNodeId}; peer=${projectedUserConversation.peerNodeId}`
+    );
+
     runGit(["init", "--bare", path.join(tempRoot, "git", "smoke.git")]);
     printPass("git-backend", `file://${path.join(tempRoot, "git")}`);
 

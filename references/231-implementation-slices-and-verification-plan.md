@@ -159,8 +159,9 @@ Current status:
 - `ops:smoke-federated-process-runner` now starts a real joined runner process,
   assigns a node through the Host control plane, starts the assigned runtime
   from a portable bootstrap bundle, publishes a signed User Node message over
-  the live relay, and verifies runner-owned session/conversation intake without
-  requiring model-provider credentials.
+  the live relay, verifies runner-owned session/conversation intake, and
+  verifies Host projection of the User Node conversation without requiring
+  model-provider credentials.
 
 ### Slice 8: ProjectionStore
 
@@ -173,6 +174,7 @@ Implementation record:
 - [239-host-projection-snapshot-slice.md](239-host-projection-snapshot-slice.md)
 - [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
 - [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
+- [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
 
 Verification:
 
@@ -184,6 +186,8 @@ Current status:
 
 - runtime projection is public through Host/CLI/Studio;
 - public runtime inspection no longer exposes `contextPath`;
+- session and conversation observations now flow from joined runners to Host
+  projection for the first User Node conversation path;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime
