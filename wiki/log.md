@@ -3060,4 +3060,5 @@ for executable messages.
 Follow-up: the CLI projection summary now reports the projected User Node
 conversation count, and `--keep-running` prints an inbox command so manual
 OpenCode testing can immediately inspect the User Node projection after sending
-a signed task.
+a signed task. The harness now also prints a filtered `host events list`
+command for `runner.turn.updated` events on the assigned builder node.

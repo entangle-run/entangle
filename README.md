@@ -88,7 +88,7 @@ intentionally manual until API-backed provider testing is available.
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 the joined runner process alive, keeps its temporary state root, and prints CLI
 commands for publishing a signed `task.request` to the assigned builder node
-and inspecting the User Node inbox projection.
+and inspecting the User Node inbox projection plus runner turn events.
 
 ## Current Status
 

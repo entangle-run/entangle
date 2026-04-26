@@ -750,6 +750,12 @@ async function main(): Promise<void> {
         `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
           `inbox list --user-node user --summary`
       );
+      console.log("Manual runner turn event command:");
+      console.log(
+        `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
+          `host events list --node-id builder --type-prefix runner.turn.updated ` +
+          `--limit 20 --summary`
+      );
       console.log("Press Ctrl-C to stop Host and runner processes.");
       await waitForShutdownSignal();
     }
