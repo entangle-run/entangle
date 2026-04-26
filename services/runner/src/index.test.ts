@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import type { AddressInfo } from "node:net";
 import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
 import type {
@@ -401,6 +403,223 @@ describe("runner runtime context", () => {
     } finally {
       await handle.stop();
     }
+  });
+
+  it("serves User Node inbox state and publishes selected conversation messages", async () => {
+    const fixture = await createRuntimeFixture();
+    const hostRequests: Array<{
+      authorization?: string;
+      body?: unknown;
+      method: string;
+      url: string;
+    }> = [];
+    const hostServer = createServer((request, response) => {
+      void (async () => {
+        const chunks: Buffer[] = [];
+
+        for await (const chunk of request as AsyncIterable<Uint8Array | string>) {
+          chunks.push(
+            typeof chunk === "string"
+              ? Buffer.from(chunk, "utf8")
+              : Buffer.from(chunk)
+          );
+        }
+
+        const rawBody = Buffer.concat(chunks).toString("utf8");
+        const authorization =
+          typeof request.headers.authorization === "string"
+            ? request.headers.authorization
+            : undefined;
+        const requestRecord = {
+          ...(authorization ? { authorization } : {}),
+          ...(rawBody ? { body: JSON.parse(rawBody) as unknown } : {}),
+          method: request.method ?? "GET",
+          url: request.url ?? "/"
+        };
+        hostRequests.push(requestRecord);
+        response.setHeader("content-type", "application/json; charset=utf-8");
+
+        if (
+          request.method === "GET" &&
+          request.url === "/v1/user-nodes/user-main/inbox"
+        ) {
+          response.end(
+            JSON.stringify({
+              conversations: [
+                {
+                  conversationId: "conversation-alpha",
+                  graphId: "graph-alpha",
+                  lastMessageAt: "2026-04-26T12:01:00.000Z",
+                  lastMessageType: "question",
+                  peerNodeId: "worker-it",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:01:00.000Z"
+                  },
+                  sessionId: "session-alpha",
+                  status: "working",
+                  unreadCount: 0,
+                  userNodeId: "user-main"
+                }
+              ],
+              generatedAt: "2026-04-26T12:02:00.000Z",
+              userNodeId: "user-main"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
+          request.url === "/v1/user-nodes/user-main/messages"
+        ) {
+          response.end(
+            JSON.stringify({
+              conversationId: "conversation-alpha",
+              eventId:
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              fromNodeId: "user-main",
+              fromPubkey: runnerPublicKey,
+              messageType: "answer",
+              publishedRelays: ["ws://strfry:7777"],
+              relayUrls: ["ws://strfry:7777"],
+              sessionId: "session-alpha",
+              targetNodeId: "worker-it",
+              toPubkey: remotePublicKey,
+              turnId: "turn-alpha"
+            })
+          );
+          return;
+        }
+
+        response.statusCode = 404;
+        response.end(JSON.stringify({ error: "not_found" }));
+      })();
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      hostServer.once("error", reject);
+      hostServer.listen(0, "127.0.0.1", () => {
+        hostServer.off("error", reject);
+        resolve();
+      });
+    });
+
+    const hostAddress = hostServer.address() as AddressInfo;
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        mode: "disabled"
+      },
+      binding: {
+        ...fixture.context.binding,
+        node: {
+          ...fixture.context.binding.node,
+          displayName: "User",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      },
+      relayContext: {
+        ...fixture.context.relayContext,
+        edgeRoutes: [
+          {
+            channel: "a2a",
+            edgeId: "user-to-worker",
+            peerNodeId: "worker-it",
+            peerPubkey: remotePublicKey,
+            relation: "delegates_to",
+            relayProfileRefs: ["preview-relay"]
+          }
+        ]
+      }
+    };
+    process.env.ENTANGLE_HOST_TOKEN = "host-secret";
+    const handle = await startHumanInterfaceRuntime({
+      context,
+      hostApi: {
+        auth: {
+          envVar: "ENTANGLE_HOST_TOKEN",
+          mode: "bearer_env"
+        },
+        baseUrl: `http://127.0.0.1:${hostAddress.port}`
+      }
+    });
+
+    try {
+      const stateResponse = await fetch(new URL("/api/state", handle.clientUrl));
+      expect(stateResponse.status).toBe(200);
+      await expect(stateResponse.json()).resolves.toMatchObject({
+        conversations: [
+          {
+            conversationId: "conversation-alpha",
+            peerNodeId: "worker-it"
+          }
+        ],
+        targets: [
+          {
+            nodeId: "worker-it"
+          }
+        ],
+        userNodeId: "user-main"
+      });
+
+      const pageResponse = await fetch(
+        new URL("/?conversationId=conversation-alpha", handle.clientUrl)
+      );
+      expect(await pageResponse.text()).toContain("conversation-alpha");
+
+      const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
+        body: new URLSearchParams({
+          conversationId: "conversation-alpha",
+          messageType: "answer",
+          sessionId: "session-alpha",
+          summary: "The reviewed answer is ready.",
+          targetNodeId: "worker-it"
+        }),
+        headers: {
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        method: "POST"
+      });
+      expect(publishResponse.status).toBe(200);
+    } finally {
+      await handle.stop();
+      await new Promise<void>((resolve, reject) => {
+        hostServer.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      });
+    }
+
+    expect(hostRequests).toContainEqual(
+      expect.objectContaining({
+        authorization: "Bearer host-secret",
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox"
+      })
+    );
+    const publishRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/user-nodes/user-main/messages"
+    );
+    expect(publishRequest).toMatchObject({
+      authorization: "Bearer host-secret"
+    });
+    expect(publishRequest?.body).toMatchObject({
+      conversationId: "conversation-alpha",
+      messageType: "answer",
+      sessionId: "session-alpha",
+      summary: "The reviewed answer is ready.",
+      targetNodeId: "worker-it"
+    });
   });
 
   it("can advertise a configured public Human Interface Runtime URL", async () => {

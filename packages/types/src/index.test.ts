@@ -103,6 +103,7 @@ import {
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeIdentityRecordSchema,
+  userNodeInboxResponseSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
 } from "./index.js";
@@ -265,6 +266,28 @@ describe("federated runtime contracts", () => {
         userNode
       }).gateways[0]?.gatewayId
     ).toBe("studio-main");
+
+    expect(
+      userNodeInboxResponseSchema.parse({
+        conversations: [
+          {
+            conversationId: "conversation-alpha",
+            graphId: "team-alpha",
+            lastMessageAt: observedAt,
+            peerNodeId: "worker-it",
+            pendingApprovalIds: [],
+            projection: {
+              source: "observation_event",
+              updatedAt: observedAt
+            },
+            unreadCount: 0,
+            userNodeId: "user-main"
+          }
+        ],
+        generatedAt: observedAt,
+        userNodeId: "user-main"
+      }).conversations[0]?.conversationId
+    ).toBe("conversation-alpha");
   });
 
   it("accepts signed User Node message publish contracts", () => {

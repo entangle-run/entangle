@@ -106,6 +106,7 @@ import {
   sessionListResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
+  userNodeInboxResponseSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
@@ -638,6 +639,31 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     }
 
     return userNodeIdentityInspectionResponseSchema.parse(inspection);
+  });
+
+  server.get("/v1/user-nodes/:nodeId/inbox", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const nodeId = identifierSchema.parse(params.nodeId);
+    const [inspection, projection] = await Promise.all([
+      getUserNodeIdentity(nodeId),
+      getHostProjectionSnapshot()
+    ]);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `User Node '${nodeId}' was not found.`
+      });
+    }
+
+    return userNodeInboxResponseSchema.parse({
+      conversations: projection.userConversations.filter(
+        (conversation) => conversation.userNodeId === nodeId
+      ),
+      generatedAt: projection.generatedAt,
+      userNodeId: nodeId
+    });
   });
 
   server.post("/v1/user-nodes/:nodeId/messages", async (request) => {

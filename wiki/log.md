@@ -3115,3 +3115,22 @@ topology without depending on Host/runner shared filesystem state; the next
 runtime-facing gaps are durable User Client inbox/outbox, approval/artifact
 review in the User Client, second-User-Node runtime coverage, and the eventual
 multi-machine proof.
+
+## [2026-04-26] implementation | Added User Node inbox client boundary
+
+Added `references/259-user-node-inbox-client-slice.md`. Host now exposes a
+User Node-specific inbox endpoint at `/v1/user-nodes/:nodeId/inbox`, and
+projected User Node conversations carry status, session id, last message type,
+and artifact ids when available from signed conversation observations.
+
+The shared host client exposes `getUserNodeInbox()`, CLI inbox commands use the
+new endpoint, and the Human Interface Runtime now serves a more usable User
+Client shell with `/api/state`, conversation list, selected thread metadata,
+and message publishing that preserves selected conversation/session context.
+The browser still never receives the Host bearer token; publishing remains
+server-side through the Host User Node gateway.
+
+Focused typechecks, focused tests, package lints, and
+`pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777`
+passed after the change. The process smoke now also verifies the User Client
+`/api/state` response for the assigned User Node and builder edge target.

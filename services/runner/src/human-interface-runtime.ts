@@ -3,13 +3,35 @@ import type { AddressInfo } from "node:net";
 import type {
   EffectiveRuntimeContext,
   RunnerJoinHostApi,
+  UserConversationProjectionRecord,
+  UserNodeMessagePublishResponse,
   UserNodeMessagePublishType
+} from "@entangle/types";
+import {
+  userNodeInboxResponseSchema,
+  userNodeMessagePublishResponseSchema
 } from "@entangle/types";
 
 export type HumanInterfaceRuntimeHandle = {
   clientUrl: string;
   runtimeRoot: string;
   stop(): Promise<void>;
+};
+
+type UserClientTarget = {
+  channel: string;
+  nodeId: string;
+  relation: string;
+};
+
+type UserClientState = {
+  conversations: UserConversationProjectionRecord[];
+  error?: string;
+  generatedAt?: string;
+  graphId: string;
+  graphRevisionId: string;
+  targets: UserClientTarget[];
+  userNodeId: string;
 };
 
 function escapeHtml(value: string): string {
@@ -59,6 +81,24 @@ function buildHostApiHeaders(input: RunnerJoinHostApi | undefined): Record<strin
   return headers;
 }
 
+function listTargetNodes(context: EffectiveRuntimeContext): UserClientTarget[] {
+  const targets = new Map<string, UserClientTarget>();
+
+  for (const route of context.relayContext.edgeRoutes) {
+    if (!targets.has(route.peerNodeId)) {
+      targets.set(route.peerNodeId, {
+        channel: route.channel,
+        nodeId: route.peerNodeId,
+        relation: route.relation
+      });
+    }
+  }
+
+  return [...targets.values()].sort((left, right) =>
+    left.nodeId.localeCompare(right.nodeId)
+  );
+}
+
 async function readRequestBody(request: IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
 
@@ -85,12 +125,13 @@ function writeJson(response: ServerResponse, statusCode: number, body: unknown):
   response.end(`${JSON.stringify(body, null, 2)}\n`);
 }
 
-async function fetchHostProjection(input: {
+async function fetchUserNodeInbox(input: {
   hostApi?: RunnerJoinHostApi | undefined;
   userNodeId: string;
 }): Promise<{
-  conversations: unknown[];
+  conversations: UserConversationProjectionRecord[];
   error?: string;
+  generatedAt?: string;
 }> {
   if (!input.hostApi) {
     return {
@@ -100,41 +141,67 @@ async function fetchHostProjection(input: {
   }
 
   try {
-    const response = await fetch(new URL("/v1/projection", input.hostApi.baseUrl), {
-      headers: buildHostApiHeaders(input.hostApi)
-    });
+    const response = await fetch(
+      new URL(
+        `/v1/user-nodes/${encodeURIComponent(input.userNodeId)}/inbox`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
 
     if (!response.ok) {
       return {
         conversations: [],
-        error: `Host projection request failed with HTTP ${response.status}.`
+        error: `Host inbox request failed with HTTP ${response.status}.`
       };
     }
 
-    const projection = (await response.json()) as {
-      userConversations?: Array<{ userNodeId?: string }>;
-    };
+    const inbox = userNodeInboxResponseSchema.parse(await response.json());
 
     return {
-      conversations: (projection.userConversations ?? []).filter(
-        (conversation) => conversation.userNodeId === input.userNodeId
-      )
+      conversations: inbox.conversations,
+      generatedAt: inbox.generatedAt
     };
   } catch (error) {
     return {
       conversations: [],
-      error: error instanceof Error ? error.message : "Host projection failed."
+      error: error instanceof Error ? error.message : "Host inbox request failed."
     };
   }
 }
 
+async function buildUserClientState(input: {
+  context: EffectiveRuntimeContext;
+  hostApi?: RunnerJoinHostApi | undefined;
+}): Promise<UserClientState> {
+  const userNodeId = input.context.binding.node.nodeId;
+  const inbox = await fetchUserNodeInbox({
+    hostApi: input.hostApi,
+    userNodeId
+  });
+
+  return {
+    conversations: inbox.conversations,
+    ...(inbox.error ? { error: inbox.error } : {}),
+    ...(inbox.generatedAt ? { generatedAt: inbox.generatedAt } : {}),
+    graphId: input.context.binding.graphId,
+    graphRevisionId: input.context.binding.graphRevisionId,
+    targets: listTargetNodes(input.context),
+    userNodeId
+  };
+}
+
 async function publishUserNodeMessage(input: {
+  conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   messageType: UserNodeMessagePublishType;
+  sessionId?: string | undefined;
   summary: string;
   targetNodeId: string;
   userNodeId: string;
-}): Promise<unknown> {
+}): Promise<UserNodeMessagePublishResponse> {
   if (!input.hostApi) {
     throw new Error("Host API is not configured for message publishing.");
   }
@@ -146,7 +213,9 @@ async function publishUserNodeMessage(input: {
     ),
     {
       body: JSON.stringify({
+        ...(input.conversationId ? { conversationId: input.conversationId } : {}),
         messageType: input.messageType,
+        ...(input.sessionId ? { sessionId: input.sessionId } : {}),
         summary: input.summary,
         targetNodeId: input.targetNodeId
       }),
@@ -165,87 +234,165 @@ async function publishUserNodeMessage(input: {
     );
   }
 
-  return body.trim() ? JSON.parse(body) : {};
+  return userNodeMessagePublishResponseSchema.parse(JSON.parse(body));
 }
 
 async function renderHome(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
   notice?: string;
+  selectedConversationId?: string | undefined;
 }): Promise<string> {
-  const userNodeId = input.context.binding.node.nodeId;
-  const targets = [...new Set(
-    input.context.relayContext.edgeRoutes.map((route) => route.peerNodeId)
-  )].sort((left, right) => left.localeCompare(right));
-  const projection = await fetchHostProjection({
-    hostApi: input.hostApi,
-    userNodeId
+  const state = await buildUserClientState({
+    context: input.context,
+    hostApi: input.hostApi
   });
-  const targetOptions = targets
-    .map((target) => `<option value="${escapeHtml(target)}">${escapeHtml(target)}</option>`)
+  const selectedConversation = input.selectedConversationId
+    ? state.conversations.find(
+        (conversation) =>
+          conversation.conversationId === input.selectedConversationId
+      )
+    : undefined;
+  const selectedTargetNodeId =
+    selectedConversation?.peerNodeId ?? state.targets[0]?.nodeId ?? "";
+  const targetOptions = state.targets
+    .map(
+      (target) =>
+        `<option value="${escapeHtml(target.nodeId)}" ${
+          target.nodeId === selectedTargetNodeId ? "selected" : ""
+        }>${escapeHtml(target.nodeId)} - ${escapeHtml(target.relation)}</option>`
+    )
     .join("");
-  const conversations =
-    projection.conversations.length > 0
-      ? projection.conversations
-          .map(
-            (conversation) =>
-              `<pre>${escapeHtml(JSON.stringify(conversation, null, 2))}</pre>`
-          )
+  const messageTypeDefault = selectedConversation ? "answer" : "task.request";
+  const messageTypeOptions = [
+    "task.request",
+    "question",
+    "answer",
+    "conversation.close"
+  ]
+    .map(
+      (messageType) =>
+        `<option value="${messageType}" ${
+          messageType === messageTypeDefault ? "selected" : ""
+        }>${messageType}</option>`
+    )
+    .join("");
+  const conversationList =
+    state.conversations.length > 0
+      ? state.conversations
+          .map((conversation) => {
+            const isSelected =
+              conversation.conversationId === selectedConversation?.conversationId;
+            const href = `/?conversationId=${encodeURIComponent(conversation.conversationId)}`;
+
+            return `<a class="conversation ${isSelected ? "selected" : ""}" href="${href}">
+              <span class="conversation-main">${escapeHtml(conversation.peerNodeId)}</span>
+              <span>${escapeHtml(conversation.conversationId)}</span>
+              <span>${escapeHtml(conversation.lastMessageAt ?? conversation.projection.updatedAt)}</span>
+              <span>${escapeHtml(`${conversation.pendingApprovalIds.length} approvals - ${conversation.unreadCount} unread`)}</span>
+            </a>`;
+          })
           .join("")
-      : "<p>No projected conversations yet.</p>";
+      : `<p class="empty">No projected conversations yet.</p>`;
+  const selectedConversationPanel = selectedConversation
+    ? `<dl class="detail-list">
+        <div><dt>Conversation</dt><dd>${escapeHtml(selectedConversation.conversationId)}</dd></div>
+        <div><dt>Peer</dt><dd>${escapeHtml(selectedConversation.peerNodeId)}</dd></div>
+        <div><dt>Session</dt><dd>${escapeHtml(selectedConversation.sessionId ?? "unknown")}</dd></div>
+        <div><dt>Status</dt><dd>${escapeHtml(selectedConversation.status)}</dd></div>
+        <div><dt>Last message</dt><dd>${escapeHtml(selectedConversation.lastMessageType ?? "unknown")}</dd></div>
+      </dl>`
+    : `<p class="empty">No conversation selected.</p>`;
 
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Entangle User Client - ${escapeHtml(userNodeId)}</title>
+    <title>Entangle User Client - ${escapeHtml(state.userNodeId)}</title>
     <style>
-      body { margin: 0; background: #101214; color: #f7f1e8; font-family: system-ui, sans-serif; }
-      main { max-width: 920px; margin: 0 auto; padding: 28px; display: grid; gap: 18px; }
-      section { border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 16px; background: rgba(255,255,255,.04); }
-      label { display: grid; gap: 6px; margin: 0 0 12px; }
-      input, select, textarea, button { font: inherit; border-radius: 8px; border: 1px solid rgba(255,255,255,.16); padding: 10px; }
-      input, select, textarea { background: rgba(255,255,255,.06); color: #f7f1e8; }
-      button { background: #d4a86d; color: #111; cursor: pointer; font-weight: 700; }
-      pre { overflow: auto; background: rgba(0,0,0,.25); padding: 12px; border-radius: 8px; }
-      .muted { color: rgba(247,241,232,.7); }
-      .notice { border-left: 3px solid #78e0ac; padding-left: 10px; }
-      .error { border-left: 3px solid #d96857; padding-left: 10px; color: #ffcbc4; }
+      :root { color-scheme: light; --ink: #202327; --muted: #626a73; --line: #d9dee5; --panel: #ffffff; --page: #f4f6f8; --accent: #1f8a70; --accent-ink: #ffffff; --danger: #b1453d; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--page); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+      header { border-bottom: 1px solid var(--line); background: var(--panel); padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+      h1, h2 { margin: 0; line-height: 1.1; }
+      h1 { font-size: 20px; }
+      h2 { font-size: 15px; }
+      .layout { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; min-height: 0; }
+      aside, .workspace { padding: 20px; min-width: 0; }
+      aside { border-right: 1px solid var(--line); background: #fafbfc; }
+      .workspace { display: grid; gap: 16px; align-content: start; }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+      label { display: grid; gap: 6px; margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+      input, select, textarea, button { font: inherit; border-radius: 7px; border: 1px solid var(--line); padding: 10px; min-width: 0; }
+      input, select, textarea { width: 100%; background: #fff; color: var(--ink); }
+      textarea { resize: vertical; }
+      button { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); cursor: pointer; font-weight: 700; }
+      button:disabled { opacity: .5; cursor: not-allowed; }
+      .muted, .meta, .empty { color: var(--muted); }
+      .meta { font-size: 13px; }
+      .notice { border-color: rgba(31, 138, 112, .28); background: #ecf8f4; }
+      .error { border-color: rgba(177, 69, 61, .35); background: #fff1f0; color: var(--danger); }
+      .conversation-list { display: grid; gap: 8px; margin-top: 12px; }
+      .conversation { color: inherit; display: grid; gap: 3px; text-decoration: none; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 10px; font-size: 12px; }
+      .conversation.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+      .conversation-main { font-size: 14px; font-weight: 700; }
+      .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
+      .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
+      dt { color: var(--muted); font-size: 13px; }
+      dd { margin: 0; overflow-wrap: anywhere; }
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .form-grid label:last-child { grid-column: 1 / -1; }
+      @media (max-width: 760px) {
+        header { align-items: flex-start; flex-direction: column; }
+        .layout { grid-template-columns: 1fr; }
+        aside { border-right: 0; border-bottom: 1px solid var(--line); }
+        .form-grid { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
     <main>
-      <section>
-        <h1>Entangle User Client</h1>
-        <p class="muted">Running as User Node <strong>${escapeHtml(userNodeId)}</strong>.</p>
-        <p class="muted">Graph ${escapeHtml(input.context.binding.graphId)} revision ${escapeHtml(input.context.binding.graphRevisionId)}.</p>
-      </section>
-      ${input.notice ? `<section class="notice">${escapeHtml(input.notice)}</section>` : ""}
-      ${projection.error ? `<section class="error">${escapeHtml(projection.error)}</section>` : ""}
-      <section>
-        <h2>Send Message</h2>
-        <form method="post" action="/messages">
-          <label>Target node
-            <select name="targetNodeId" required>${targetOptions}</select>
-          </label>
-          <label>Message type
-            <select name="messageType">
-              <option value="task.request">task.request</option>
-              <option value="question">question</option>
-              <option value="answer">answer</option>
-            </select>
-          </label>
-          <label>Summary
-            <textarea name="summary" rows="5" required></textarea>
-          </label>
-          <button type="submit" ${targets.length === 0 ? "disabled" : ""}>Send as User Node</button>
-        </form>
-      </section>
-      <section>
-        <h2>Projected Conversations</h2>
-        ${conversations}
-      </section>
+      <header>
+        <div>
+          <h1>Entangle User Client</h1>
+          <div class="meta">User Node ${escapeHtml(state.userNodeId)} - Graph ${escapeHtml(state.graphId)} - ${escapeHtml(state.graphRevisionId)}</div>
+        </div>
+        <div class="meta">${escapeHtml(state.generatedAt ?? "projection unavailable")}</div>
+      </header>
+      <div class="layout">
+        <aside>
+          <h2>Conversations</h2>
+          <div class="conversation-list">${conversationList}</div>
+        </aside>
+        <div class="workspace">
+          ${input.notice ? `<section class="notice">${escapeHtml(input.notice)}</section>` : ""}
+          ${state.error ? `<section class="error">${escapeHtml(state.error)}</section>` : ""}
+          <section>
+            <h2>Selected Thread</h2>
+            ${selectedConversationPanel}
+          </section>
+          <section>
+            <h2>Message</h2>
+            <form method="post" action="/messages">
+              ${selectedConversation ? `<input type="hidden" name="conversationId" value="${escapeHtml(selectedConversation.conversationId)}" />${selectedConversation.sessionId ? `<input type="hidden" name="sessionId" value="${escapeHtml(selectedConversation.sessionId)}" />` : ""}` : ""}
+              <div class="form-grid">
+                <label>Target
+                  <select name="targetNodeId" required>${targetOptions}</select>
+                </label>
+                <label>Type
+                  <select name="messageType">${messageTypeOptions}</select>
+                </label>
+                <label>Summary
+                  <textarea name="summary" rows="7" required></textarea>
+                </label>
+              </div>
+              <button type="submit" ${state.targets.length === 0 ? "disabled" : ""}>Send</button>
+            </form>
+          </section>
+        </div>
+      </div>
     </main>
   </body>
 </html>`;
@@ -260,7 +407,12 @@ export async function startHumanInterfaceRuntime(input: {
   const listenPort = normalizeListenPort();
   const server = createServer((request, response) => {
     void (async () => {
-      if (request.method === "GET" && request.url === "/health") {
+      const requestUrl = new URL(
+        request.url ?? "/",
+        `http://${request.headers.host ?? "127.0.0.1"}`
+      );
+
+      if (request.method === "GET" && requestUrl.pathname === "/health") {
         writeJson(response, 200, {
           nodeId: input.context.binding.node.nodeId,
           ok: true,
@@ -269,13 +421,31 @@ export async function startHumanInterfaceRuntime(input: {
         return;
       }
 
-      if (request.method === "POST" && request.url === "/messages") {
+      if (request.method === "GET" && requestUrl.pathname === "/api/state") {
+        writeJson(
+          response,
+          200,
+          await buildUserClientState({
+            context: input.context,
+            hostApi: input.hostApi
+          })
+        );
+        return;
+      }
+
+      if (request.method === "POST" && requestUrl.pathname === "/messages") {
+        let selectedConversationIdForError: string | undefined;
+
         try {
           const form = new URLSearchParams(await readRequestBody(request));
+          const conversationId =
+            form.get("conversationId")?.trim() || undefined;
+          const sessionId = form.get("sessionId")?.trim() || undefined;
           const targetNodeId = form.get("targetNodeId")?.trim() ?? "";
           const summary = form.get("summary")?.trim() ?? "";
           const messageType = (form.get("messageType")?.trim() ||
             "task.request") as UserNodeMessagePublishType;
+          selectedConversationIdForError = conversationId;
 
           if (!targetNodeId || !summary) {
             writeHtml(
@@ -284,15 +454,18 @@ export async function startHumanInterfaceRuntime(input: {
               await renderHome({
                 context: input.context,
                 hostApi: input.hostApi,
-                notice: "Target node and summary are required."
+                notice: "Target node and summary are required.",
+                selectedConversationId: conversationId
               })
             );
             return;
           }
 
           const published = await publishUserNodeMessage({
+            conversationId,
             hostApi: input.hostApi,
             messageType,
+            sessionId,
             summary,
             targetNodeId,
             userNodeId: input.context.binding.node.nodeId
@@ -304,7 +477,8 @@ export async function startHumanInterfaceRuntime(input: {
             await renderHome({
               context: input.context,
               hostApi: input.hostApi,
-              notice: `Published message: ${JSON.stringify(published)}`
+              notice: `Published ${published.messageType} ${published.eventId}.`,
+              selectedConversationId: published.conversationId
             })
           );
         } catch (error) {
@@ -314,20 +488,23 @@ export async function startHumanInterfaceRuntime(input: {
             await renderHome({
               context: input.context,
               hostApi: input.hostApi,
-              notice: error instanceof Error ? error.message : "Publish failed."
+              notice: error instanceof Error ? error.message : "Publish failed.",
+              selectedConversationId: selectedConversationIdForError
             })
           );
         }
         return;
       }
 
-      if (request.method === "GET" && (!request.url || request.url === "/")) {
+      if (request.method === "GET" && requestUrl.pathname === "/") {
         writeHtml(
           response,
           200,
           await renderHome({
             context: input.context,
-            hostApi: input.hostApi
+            hostApi: input.hostApi,
+            selectedConversationId:
+              requestUrl.searchParams.get("conversationId") ?? undefined
           })
         );
         return;

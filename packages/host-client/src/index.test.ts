@@ -177,6 +177,24 @@ describe("createHostClient", () => {
             generatedAt: "2026-04-26T12:00:00.000Z",
             userNodes: [userNode]
           };
+        } else if (url.endsWith("/v1/user-nodes/user-main/inbox")) {
+          body = {
+            conversations: [
+              {
+                conversationId: "conversation-alpha",
+                graphId: "graph-alpha",
+                peerNodeId: "worker-it",
+                projection: {
+                  source: "observation_event",
+                  updatedAt: "2026-04-26T12:00:00.000Z"
+                },
+                unreadCount: 0,
+                userNodeId: "user-main"
+              }
+            ],
+            generatedAt: "2026-04-26T12:00:00.000Z",
+            userNodeId: "user-main"
+          };
         } else {
           body = {
             gateways: [],
@@ -206,6 +224,14 @@ describe("createHostClient", () => {
         nodeId: "user-main"
       }
     });
+    await expect(client.getUserNodeInbox("user-main")).resolves.toMatchObject({
+      conversations: [
+        {
+          conversationId: "conversation-alpha",
+          userNodeId: "user-main"
+        }
+      ]
+    });
     await expect(
       client.publishUserNodeMessage("user-main", {
         approval: {
@@ -226,6 +252,7 @@ describe("createHostClient", () => {
     expect(requests).toEqual([
       "http://entangle-host.test/v1/user-nodes",
       "http://entangle-host.test/v1/user-nodes/user-main",
+      "http://entangle-host.test/v1/user-nodes/user-main/inbox",
       "http://entangle-host.test/v1/user-nodes/user-main/messages"
     ]);
   });

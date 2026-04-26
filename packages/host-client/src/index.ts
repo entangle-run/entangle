@@ -94,6 +94,7 @@ import {
   sessionListResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
+  userNodeInboxResponseSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema,
   type CatalogInspectionResponse,
@@ -190,6 +191,7 @@ import {
   type SessionListResponse,
   type UserNodeIdentityInspectionResponse,
   type UserNodeIdentityListResponse,
+  type UserNodeInboxResponse,
   type UserNodeMessagePublishRequest,
   type UserNodeMessagePublishResponse,
 } from "@entangle/types";
@@ -430,6 +432,13 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}`),
         userNodeIdentityInspectionResponseSchema
+      );
+    },
+
+    async getUserNodeInbox(nodeId: string): Promise<UserNodeInboxResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}/inbox`),
+        userNodeInboxResponseSchema
       );
     },
 

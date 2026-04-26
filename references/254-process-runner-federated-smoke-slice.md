@@ -97,8 +97,9 @@ Implemented in this slice:
   backend setup, and Host/runner filesystem isolation;
 - extended the smoke to start a second actual runner process that advertises
   only `human_interface`, trust it, assign the graph User Node to it, verify a
-  projected running User Client endpoint, call `/health`, and verify User Node
-  runtime materialization under the second runner's state root;
+  projected running User Client endpoint, call `/health`, verify `/api/state`,
+  and verify User Node runtime materialization under the second runner's state
+  root;
 - made the smoke use per-run graph, runner, assignment, session, conversation,
   and turn identifiers so persistent relays do not mix current evidence with
   stale smoke events;
@@ -154,7 +155,7 @@ Verification record:
 - one-file TypeScript check for the process smoke passed;
 - process runner smoke passed against the federated dev `strfry` relay on
   `ws://localhost:7777`, including separate agent and User Node runner
-  processes, User Client health, signed User Node publish, runner
+  processes, User Client health and state, signed User Node publish, runner
   session/conversation intake, Host projection of the User Node conversation,
   and Host/agent-runner/User-runner filesystem isolation;
 - root `pnpm typecheck` passed;

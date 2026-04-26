@@ -1201,12 +1201,8 @@ inboxCommand
     command: Command
   ) => {
     const client = createCliHostClient(command);
-    const projection = await client.getProjection();
-    const conversations = sortUserConversationsForCli(
-      projection.userConversations.filter(
-        (conversation) => conversation.userNodeId === options.userNode
-      )
-    );
+    const inbox = await client.getUserNodeInbox(options.userNode);
+    const conversations = sortUserConversationsForCli(inbox.conversations);
 
     printJson(
       options.summary
@@ -1229,8 +1225,8 @@ inboxCommand
     command: Command
   ) => {
     const client = createCliHostClient(command);
-    const projection = await client.getProjection();
-    const conversation = projection.userConversations.find(
+    const inbox = await client.getUserNodeInbox(options.userNode);
+    const conversation = inbox.conversations.find(
       (candidate) =>
         candidate.userNodeId === options.userNode &&
         candidate.conversationId === conversationId

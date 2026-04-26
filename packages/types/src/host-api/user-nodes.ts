@@ -6,6 +6,7 @@ import {
   entangleA2AApprovalResponseDecisionSchema,
   entangleA2AResponsePolicySchema
 } from "../protocol/a2a.js";
+import { userConversationProjectionRecordSchema } from "../projection/projection.js";
 import {
   userInteractionGatewayRecordSchema,
   userNodeIdentityRecordSchema
@@ -19,6 +20,12 @@ export const userNodeIdentityListResponseSchema = z.object({
 export const userNodeIdentityInspectionResponseSchema = z.object({
   gateways: z.array(userInteractionGatewayRecordSchema).default([]),
   userNode: userNodeIdentityRecordSchema
+});
+
+export const userNodeInboxResponseSchema = z.object({
+  conversations: z.array(userConversationProjectionRecordSchema).default([]),
+  generatedAt: nonEmptyStringSchema,
+  userNodeId: identifierSchema
 });
 
 export const userNodeMessagePublishTypeSchema = z.enum([
@@ -78,6 +85,7 @@ export type UserNodeIdentityListResponse = z.infer<
 export type UserNodeIdentityInspectionResponse = z.infer<
   typeof userNodeIdentityInspectionResponseSchema
 >;
+export type UserNodeInboxResponse = z.infer<typeof userNodeInboxResponseSchema>;
 export type UserNodeMessagePublishRequest = z.input<
   typeof userNodeMessagePublishRequestSchema
 >;

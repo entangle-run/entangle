@@ -205,6 +205,7 @@ Implementation record:
 
 - [240-user-node-identity-slice.md](240-user-node-identity-slice.md)
 - [258-human-interface-runtime-realignment-plan.md](258-human-interface-runtime-realignment-plan.md)
+- [259-user-node-inbox-client-slice.md](259-user-node-inbox-client-slice.md)
 
 Current status:
 
@@ -219,8 +220,14 @@ Current status:
   Runtime `clientUrl`;
 - the process-boundary smoke covers one assigned agent runner plus one assigned
   User Node `human_interface` runner with a live User Client health check;
-- durable inbox/outbox, final User Client application, approval/artifact review
-  controls, and second-User-Node smoke coverage remain open.
+- Host now exposes a User Node-specific projected inbox API;
+- CLI inbox commands and the runner-served User Client use that inbox API;
+- the User Client has a first usable server-rendered conversation list,
+  selected thread metadata, `/api/state`, and message publishing that preserves
+  selected conversation/session context;
+- durable per-message inbox/outbox, final bundled User Client application,
+  approval/artifact review controls, and second-User-Node smoke coverage remain
+  open.
 
 Verification:
 

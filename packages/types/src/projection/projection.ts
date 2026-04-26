@@ -13,7 +13,10 @@ import {
   runtimeObservedStateSchema,
   runtimeRestartGenerationSchema
 } from "../runtime/runtime-state.js";
-import { sourceChangeCandidateStatusSchema } from "../runtime/session-state.js";
+import {
+  conversationLifecycleStateSchema,
+  sourceChangeCandidateStatusSchema
+} from "../runtime/session-state.js";
 
 export const projectionSourceKindSchema = z.enum([
   "desired_state",
@@ -76,12 +79,16 @@ export const runtimeProjectionRecordSchema = z.object({
 });
 
 export const userConversationProjectionRecordSchema = z.object({
+  artifactIds: z.array(identifierSchema).default([]),
   conversationId: identifierSchema,
   graphId: identifierSchema,
   lastMessageAt: nonEmptyStringSchema.optional(),
+  lastMessageType: nonEmptyStringSchema.optional(),
   peerNodeId: identifierSchema,
   pendingApprovalIds: z.array(identifierSchema).default([]),
   projection: projectionMetadataSchema,
+  sessionId: identifierSchema.optional(),
+  status: conversationLifecycleStateSchema.default("opened"),
   unreadCount: z.number().int().nonnegative().default(0),
   userNodeId: identifierSchema
 });

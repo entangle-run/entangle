@@ -36,11 +36,15 @@ The current implementation has the first federated execution path:
   runner are assigned through the same Host control plane and relay, the User
   Client endpoint is projected and health-checked, and the User Node message is
   delivered to the agent runner without Host/runner filesystem sharing.
+- Host now exposes a User Node-specific inbox API, and the runner-served User
+  Client uses it to render a conversation list, selected thread metadata, and
+  conversation/session-preserving message publication. The client also exposes
+  `/api/state` for automation and for replacing the shell with a richer app.
 
 The current implementation still does not have the final User Node client:
 
-- The current User Client is a minimal runner-served shell, not a complete
-  conversation/approval/artifact-review application.
+- The current User Client is a usable runner-served shell, not a complete
+  message-history/approval/artifact-review application.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface is summary-level; it is not a
   durable inbox/outbox message-history model.
@@ -194,6 +198,11 @@ This app can initially talk to Host using the same host-client APIs. The
 important architectural point is that it is launched as the User Node runtime
 and signs through the User Node gateway boundary, not through Studio.
 
+Status: first server-rendered runtime shell implemented. It is not yet a
+separate bundled app, but it now has a User Node inbox API, conversation list,
+selected thread metadata, `/api/state`, and message publication that keeps the
+selected conversation/session context.
+
 Impacted modules:
 
 - new `apps/user-client`
@@ -320,7 +329,8 @@ The fastest path to a product the user can test is:
 5. Add a smoke that runs one agent node and one user node. Done for the no-LLM
    path.
 6. Add a second-user-node smoke to prove distributed human placement.
-7. Expand inbox history, approvals, artifact review, and OpenCode parity.
+7. Expand durable message history, approvals, artifact review, and OpenCode
+   parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.
@@ -335,6 +345,7 @@ The realignment is complete when:
 - the runner starts a User Client for the assigned User Node;
 - outbound user messages are signed as the stable User Node identity;
 - User Client can send a task/question/reply to a connected agent node;
+- User Client can inspect projected conversations for the selected User Node;
 - each User Client signs as its own stable User Node identity;
 - Host projection shows user-node runtime state and conversations;
 - Studio can open the User Client but does not own the chat state;

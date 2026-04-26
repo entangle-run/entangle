@@ -806,6 +806,29 @@ async function main(): Promise<void> {
     );
     printPass("user-client-health", userClientUrl);
 
+    const userClientStateResponse = await fetch(
+      new URL("/api/state", userClientUrl)
+    );
+    assertCondition(
+      userClientStateResponse.ok,
+      `User Client state failed with HTTP ${userClientStateResponse.status}`
+    );
+    const userClientState = (await userClientStateResponse.json()) as {
+      targets?: Array<{ nodeId?: string }>;
+      userNodeId?: string;
+    };
+    assertCondition(
+      userClientState.userNodeId === "user",
+      "User Client state must identify the assigned User Node."
+    );
+    assertCondition(
+      (userClientState.targets ?? []).some(
+        (target) => target.nodeId === "builder"
+      ),
+      "User Client state must expose the builder edge target."
+    );
+    printPass("user-client-state", "user=user; target=builder");
+
     const materializedUserContextPath = path.join(
       userRunnerStateRoot,
       "assignments",

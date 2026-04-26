@@ -33,6 +33,13 @@ Recently added:
 - Studio shows an `Open User Client` action for projected runtimes with a
   client endpoint;
 - CLI projection summaries include `clientUrl`.
+- Host exposes a User Node-specific inbox API at
+  `/v1/user-nodes/:nodeId/inbox`;
+- CLI inbox commands now use the User Node inbox API instead of filtering the
+  global projection;
+- the runner-served User Client now has a conversation list, selected thread
+  metadata, `/api/state`, and conversation/session-preserving message
+  publishing.
 
 ## Target Model
 
@@ -101,8 +108,10 @@ Node.
   first `clientUrl` open action is implemented through projection; richer
   assignment/health panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
-  replies, and approvals. A minimal runner-served shell exists; the full client
-  app remains open.
+  replies, and approvals. A usable runner-served shell now has conversation
+  list, selected thread metadata, and reply/answer publishing; durable message
+  history, approval controls, artifact review, and the full bundled client app
+  remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.
@@ -115,7 +124,8 @@ Node.
 - Studio helper tests for authority/runner/assignment/inbox projections.
 - Studio tests for User Node runtime projection and User Client endpoint
   display.
-- User Client tests for signed reply/approval request construction.
+- User Client tests for state loading and selected-conversation message
+  publishing. Approval request construction remains open.
 - Regression tests for existing local runtime surfaces.
 
 ## Migration/Compatibility Notes

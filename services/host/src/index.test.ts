@@ -88,6 +88,7 @@ import {
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
+  userNodeInboxResponseSchema,
   userNodeIdentityListResponseSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
@@ -3231,6 +3232,19 @@ describe("buildHostServer", () => {
       expect(userNodeIdentity?.publicKey).toBe(
         bootstrapBundle.runtimeContext.identityContext.publicKey
       );
+
+      const inboxResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox"
+      });
+      expect(inboxResponse.statusCode).toBe(200);
+      expect(userNodeInboxResponseSchema.parse(inboxResponse.json())).toMatchObject({
+        conversations: [],
+        userNodeId: "user-main"
+      });
 
       const secretResponse = await server.inject({
         headers: {

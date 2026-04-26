@@ -3077,15 +3077,21 @@ async function listUserConversationProjectionRecords(): Promise<
       }
 
       return userConversationProjectionRecordSchema.parse({
+        artifactIds: record.artifactIds,
         conversationId: record.conversationId,
         graphId: record.graphId,
         lastMessageAt: record.updatedAt,
+        ...(record.lastMessageType
+          ? { lastMessageType: record.lastMessageType }
+          : {}),
         peerNodeId: userNodeId === record.peerNodeId ? record.nodeId : record.peerNodeId,
         pendingApprovalIds: [],
         projection: {
           source: "observation_event",
           updatedAt: record.updatedAt
         },
+        sessionId: record.sessionId,
+        status: record.status,
         unreadCount: 0,
         userNodeId
       });
