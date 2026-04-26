@@ -15,9 +15,11 @@ import {
 import {
   agentEngineTurnRequestSchema,
   agentEngineTurnResultSchema,
+  engineHandoffDirectiveSchema,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
   type EffectiveRuntimeContext,
+  type EngineHandoffDirective,
   type EnginePermissionObservation,
   type EngineToolExecutionObservation
 } from "@entangle/types";
@@ -53,6 +55,7 @@ type OpenCodeRuntimePaths = {
 
 const maxCapturedStderrCharacters = 12_000;
 const maxCapturedStdoutCharacters = 12_000;
+const maxEntangleActionBlockCharacters = 8_000;
 const maxEngineVersionCharacters = 200;
 const maxFailureMessageCharacters = 1_000;
 const defaultOpenCodeProcessTimeoutMs = 120_000;
@@ -62,6 +65,8 @@ const ansiEscapePattern = new RegExp(
   `${String.fromCharCode(27)}\\[[0-9;?]*[ -/]*[@-~]`,
   "g"
 );
+const entangleActionBlockPattern =
+  /```entangle-actions\s*([\s\S]*?)```/giu;
 
 const defaultOpenCodeSpawn: OpenCodeSpawn = (command, args, options) =>
   spawnChildProcess(command, args, {
@@ -390,6 +395,68 @@ function collectError(event: OpenCodeRunEvent, errors: string[]): void {
   errors.push(message);
 }
 
+type EntangleActionDirectiveExtraction = {
+  assistantMessages: string[];
+  errors: string[];
+  handoffDirectives: EngineHandoffDirective[];
+};
+
+export function extractEntangleActionDirectives(
+  assistantMessages: string[]
+): EntangleActionDirectiveExtraction {
+  const errors: string[] = [];
+  const handoffDirectives: EngineHandoffDirective[] = [];
+  const sanitizedMessages = assistantMessages
+    .map((message) =>
+      message.replace(entangleActionBlockPattern, (_match, block: string) => {
+        const payload = block.trim();
+
+        if (payload.length > maxEntangleActionBlockCharacters) {
+          errors.push("Entangle action block exceeds the bounded parse limit.");
+          return "";
+        }
+
+        try {
+          const parsed = JSON.parse(payload) as unknown;
+
+          if (!isRecord(parsed)) {
+            errors.push("Entangle action block must contain a JSON object.");
+            return "";
+          }
+
+          const directives = engineHandoffDirectiveSchema.array().safeParse(
+            parsed.handoffDirectives
+          );
+
+          if (!directives.success) {
+            errors.push(
+              `Entangle handoff directives are invalid: ${directives.error.issues
+                .map((issue) => issue.message)
+                .join("; ")}`
+            );
+            return "";
+          }
+
+          handoffDirectives.push(...directives.data);
+        } catch (error) {
+          errors.push(
+            `Entangle action block is not valid JSON: ${extractErrorMessage(error)}`
+          );
+        }
+
+        return "";
+      })
+    )
+    .map((message) => message.trim())
+    .filter((message) => message.length > 0);
+
+  return {
+    assistantMessages: sanitizedMessages,
+    errors,
+    handoffDirectives
+  };
+}
+
 function processOpenCodeStdoutLine(
   line: string,
   output: {
@@ -705,6 +772,34 @@ export function createOpenCodeAgentEngine(input: {
           permissionObservation.decision === "denied" ||
           permissionObservation.decision === "rejected"
       );
+      const actionDirectives = extractEntangleActionDirectives(
+        output.assistantMessages
+      );
+
+      if (actionDirectives.errors.length > 0) {
+        return agentEngineTurnResultSchema.parse({
+          assistantMessages:
+            actionDirectives.assistantMessages.length > 0
+              ? actionDirectives.assistantMessages
+              : output.assistantMessages,
+          ...(engineVersion ? { engineVersion } : {}),
+          ...(output.engineSessionId
+            ? { engineSessionId: output.engineSessionId }
+            : {}),
+          failure: {
+            classification: "bad_request",
+            message: truncate(
+              actionDirectives.errors.join("\n"),
+              maxFailureMessageCharacters
+            )
+          },
+          permissionObservations: output.permissionObservations,
+          providerStopReason: "entangle_action_directive_parse_error",
+          stopReason: "error",
+          toolExecutions: output.toolExecutions,
+          toolRequests: []
+        });
+      }
 
       if (rejectedPermissions.length > 0) {
         const permissionSummary = rejectedPermissions
@@ -719,7 +814,7 @@ export function createOpenCodeAgentEngine(input: {
           .join("; ");
 
         return agentEngineTurnResultSchema.parse({
-          assistantMessages: output.assistantMessages,
+          assistantMessages: actionDirectives.assistantMessages,
           ...(engineVersion ? { engineVersion } : {}),
           ...(output.engineSessionId
             ? { engineSessionId: output.engineSessionId }
@@ -741,7 +836,7 @@ export function createOpenCodeAgentEngine(input: {
 
       if (output.errors.length > 0) {
         return agentEngineTurnResultSchema.parse({
-          assistantMessages: output.assistantMessages,
+          assistantMessages: actionDirectives.assistantMessages,
           ...(engineVersion ? { engineVersion } : {}),
           ...(output.engineSessionId
             ? { engineSessionId: output.engineSessionId }
@@ -762,11 +857,12 @@ export function createOpenCodeAgentEngine(input: {
       }
 
       return agentEngineTurnResultSchema.parse({
-        assistantMessages: output.assistantMessages,
+        assistantMessages: actionDirectives.assistantMessages,
         ...(engineVersion ? { engineVersion } : {}),
         ...(output.engineSessionId
           ? { engineSessionId: output.engineSessionId }
           : {}),
+        handoffDirectives: actionDirectives.handoffDirectives,
         permissionObservations: output.permissionObservations,
         providerStopReason: "opencode_process_exit_0",
         stopReason: "completed",

@@ -62,6 +62,9 @@ The latest implementation state includes:
   boundary, autonomy/source-mutation policy, and inbound response/constraint
   control prompt parts, with matching structural inclusion flags on
   `engineRequestSummary`;
+- executable runner turns now include an explicit Entangle action contract,
+  and the OpenCode adapter can parse bounded `entangle-actions` output blocks
+  into validated generic handoff directives;
 - runner-owned source workspace change harvesting with bounded changed-file
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
@@ -702,6 +705,28 @@ Constraints:
 
 - Runner owns publication and messaging side effects.
 - Engines may propose actions; Entangle validates and performs them.
+
+Current partial implementation:
+
+- injected engines could already return generic `handoffDirectives`, and the
+  runner resolves those directives through effective edge routes, autonomy
+  policy, allowed edge relations, and materialized peer pubkeys before
+  publishing `task.handoff`;
+- executable prompt assembly now includes an Entangle action contract that
+  instructs node-local coding engines to propose side effects through a fenced
+  `entangle-actions` JSON block instead of directly messaging peers,
+  publishing artifacts, mutating the graph, or applying source changes;
+- the OpenCode adapter now extracts bounded `entangle-actions` blocks from
+  assistant text, validates `handoffDirectives` with the canonical engine
+  schema, strips the machine-action block from human assistant messages, and
+  returns validated directives on `AgentEngineTurnResult`;
+- malformed or oversized action blocks now produce a bounded `bad_request`
+  engine result with provider stop reason
+  `entangle_action_directive_parse_error`;
+- OpenCode-backed handoff is therefore available through the same runner-owned
+  Entangle validation path as injected engines, but live OpenCode permission
+  approval mapping, approval-request directives, publication directives, and
+  external cancellation remain open.
 
 Acceptance:
 

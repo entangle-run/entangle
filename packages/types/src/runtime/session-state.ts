@@ -111,6 +111,7 @@ export const memoryRepositorySyncOutcomeSchema = z.discriminatedUnion("status", 
 ]);
 
 export const engineTurnRequestSummarySchema = z.object({
+  actionContractContextIncluded: z.boolean().default(false),
   agentRuntimeContextIncluded: z.boolean().default(false),
   artifactInputCount: z.number().int().nonnegative(),
   artifactRefCount: z.number().int().nonnegative(),

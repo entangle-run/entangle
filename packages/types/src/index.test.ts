@@ -1300,6 +1300,7 @@ describe("host event contracts", () => {
         }
       },
       engineRequestSummary: {
+        actionContractContextIncluded: true,
         agentRuntimeContextIncluded: true,
         artifactInputCount: 1,
         artifactRefCount: 1,
@@ -1464,6 +1465,9 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.engineRequestSummary?.policyContextIncluded).toBe(
       true
     );
+    expect(
+      runnerTurnEvent.engineRequestSummary?.actionContractContextIncluded
+    ).toBe(true);
     expect(runnerTurnEvent.engineRequestSummary?.memoryRefCount).toBe(6);
     expect(runnerTurnEvent.memoryRepositorySyncOutcome?.status).toBe("committed");
     expect(runnerTurnEvent.sourceChangeSummary?.fileCount).toBe(1);

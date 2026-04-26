@@ -11,6 +11,7 @@ import {
 import {
   buildOpenCodePrompt,
   createOpenCodeAgentEngine,
+  extractEntangleActionDirectives,
   type OpenCodeSpawn
 } from "./opencode-engine.js";
 import {
@@ -262,6 +263,141 @@ describe("OpenCode runner engine adapter", () => {
     });
     expect(mock.calls[1]!.readStdin()).toContain(
       "Review the current workspace"
+    );
+  });
+
+  it("extracts Entangle action handoffs from OpenCode text blocks", () => {
+    const extraction = extractEntangleActionDirectives([
+      [
+        "Prepared the local changes and delegated review.",
+        "```entangle-actions",
+        JSON.stringify({
+          handoffDirectives: [
+            {
+              includeArtifacts: "all",
+              summary: "Review the produced source changes.",
+              targetNodeId: "reviewer-it"
+            }
+          ]
+        }),
+        "```"
+      ].join("\n")
+    ]);
+
+    expect(extraction).toMatchObject({
+      assistantMessages: ["Prepared the local changes and delegated review."],
+      errors: [],
+      handoffDirectives: [
+        {
+          includeArtifacts: "all",
+          responsePolicy: {
+            closeOnResult: true,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          summary: "Review the produced source changes.",
+          targetNodeId: "reviewer-it"
+        }
+      ]
+    });
+  });
+
+  it("parses OpenCode Entangle action blocks into handoff directives", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: [
+                  "I prepared the implementation.",
+                  "```entangle-actions",
+                  JSON.stringify({
+                    handoffDirectives: [
+                      {
+                        summary: "Review the implementation artifact.",
+                        targetNodeId: "reviewer-it"
+                      }
+                    ]
+                  }),
+                  "```"
+                ].join("\n")
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest());
+
+    expect(result.assistantMessages).toEqual(["I prepared the implementation."]);
+    expect(result.handoffDirectives).toEqual([
+      {
+        includeArtifacts: "produced",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 1,
+          responseRequired: true
+        },
+        summary: "Review the implementation artifact.",
+        targetNodeId: "reviewer-it"
+      }
+    ]);
+  });
+
+  it("returns a bounded bad-request result for malformed Entangle action blocks", async () => {
+    const fixture = await createRuntimeFixture();
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: [
+                  "I tried to delegate.",
+                  "```entangle-actions",
+                  "{\"handoffDirectives\":[{\"summary\":\"Missing target\"}]}",
+                  "```"
+                ].join("\n")
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest());
+
+    expect(result).toMatchObject({
+      assistantMessages: ["I tried to delegate."],
+      failure: {
+        classification: "bad_request"
+      },
+      providerStopReason: "entangle_action_directive_parse_error",
+      stopReason: "error"
+    });
+    expect(result.failure?.message).toContain(
+      "Engine handoff directives must specify edgeId or targetNodeId."
     );
   });
 

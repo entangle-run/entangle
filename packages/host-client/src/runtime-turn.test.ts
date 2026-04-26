@@ -55,6 +55,7 @@ function createTurn(
       }
     },
     engineRequestSummary: {
+      actionContractContextIncluded: true,
       agentRuntimeContextIncluded: true,
       artifactInputCount: 1,
       artifactRefCount: 1,
@@ -159,7 +160,7 @@ describe("runtime turn presentation helpers", () => {
         "source file added tests/worker.test.ts (+2/-1)",
         "engine request 4 system parts / 7 task parts (6 memory refs, 1 artifact ref, 1 artifact input, 3 tools)",
         "engine request limits 8 tool turns / 4096 output tokens; peer routes included",
-        "engine context agent included, workspace included, policy included, inbound included",
+        "engine context agent included, workspace included, policy included, inbound included, actions included",
         "provider anthropic/shared-anthropic (claude-opus-4-7)",
         "engine outcome completed",
         "engine session engine-session-alpha",

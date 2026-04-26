@@ -180,7 +180,9 @@ The repository now also contains the first real implementation baseline:
   exposing raw prompt text, runtime-local paths, or engine-specific payloads,
   while executable turn assembly now explicitly includes agent-runtime,
   workspace-boundary, autonomy/source-mutation policy, and inbound
-  response/constraint control context for the node-local coding engine;
+  response/constraint control context for the node-local coding engine, plus
+  an Entangle action contract that lets OpenCode propose validated handoff
+  directives through bounded `entangle-actions` output blocks;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

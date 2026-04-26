@@ -259,6 +259,23 @@ function buildInboundControlPromptPart(
   ].join("\n");
 }
 
+function buildEntangleActionContractPromptPart(
+  context: EffectiveRuntimeContext
+): string {
+  const peerRouteCount = context.relayContext.edgeRoutes.filter(
+    (route) => route.peerNodeId && route.peerPubkey
+  ).length;
+
+  return [
+    "Entangle action contract:",
+    "- Do not message peers, publish artifacts, mutate the graph, or apply source changes directly.",
+    "- Propose Entangle side effects only through a single fenced ```entangle-actions JSON block in the final answer.",
+    "- Supported shape: {\"handoffDirectives\":[{\"targetNodeId\":\"peer-node-id\",\"summary\":\"bounded task summary\",\"includeArtifacts\":\"produced\"}]}",
+    "- Entangle validates every directive against graph routes and policy before performing the side effect.",
+    `- materialized peer handoff routes available: ${peerRouteCount}`
+  ].join("\n");
+}
+
 export async function loadPackageToolCatalog(
   context: EffectiveRuntimeContext
 ): Promise<PackageToolCatalog> {
@@ -335,6 +352,7 @@ export async function buildAgentEngineTurnRequest(
       buildAgentRuntimePromptPart(context),
       buildWorkspaceBoundaryPromptPart(context),
       buildPolicyPromptPart(context),
+      buildEntangleActionContractPromptPart(context),
       ...(peerRoutePromptPart ? [peerRoutePromptPart] : []),
       ...(input.inboundMessage
         ? [
@@ -369,6 +387,9 @@ export function summarizeAgentEngineTurnRequest(
   input: { generatedAt: string }
 ): EngineTurnRequestSummary {
   return {
+    actionContractContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Entangle action contract:")
+    ),
     agentRuntimeContextIncluded: request.interactionPromptParts.some((part) =>
       part.startsWith("Agent runtime:")
     ),

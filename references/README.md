@@ -218,6 +218,7 @@ This directory is the canonical design corpus for Entangle.
 212. [211-local-doctor-wiki-repository-health-slice.md](211-local-doctor-wiki-repository-health-slice.md)
 213. [212-engine-request-summary-slice.md](212-engine-request-summary-slice.md)
 214. [213-engine-prompt-policy-workspace-context-slice.md](213-engine-prompt-policy-workspace-context-slice.md)
+215. [214-opencode-action-directive-bridge-slice.md](214-opencode-action-directive-bridge-slice.md)
 
 ## Role of this corpus
 

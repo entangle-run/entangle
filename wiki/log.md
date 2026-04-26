@@ -2341,3 +2341,17 @@ policy, and inbound-control context were included, with backward-compatible
 defaults for summaries written by the previous slice. Shared runtime-turn
 presentation now exposes those inclusion signals to CLI and Studio turn
 inspection.
+
+## [2026-04-26] implementation | Bridged OpenCode action directives
+
+Added `references/214-opencode-action-directive-bridge-slice.md` and advanced
+B7 of the Entangle Local completion plan. Executable turn assembly now includes
+an Entangle action contract telling node-local coding engines to propose
+side effects through fenced `entangle-actions` JSON blocks rather than
+messaging peers or publishing artifacts directly.
+
+The OpenCode adapter now extracts bounded `entangle-actions` blocks from
+assistant text, validates `handoffDirectives` with the canonical engine schema,
+strips the machine-action block from human assistant messages, and returns
+validated directives through the existing runner-owned handoff path. Malformed
+action blocks now produce a bounded `bad_request` engine result.

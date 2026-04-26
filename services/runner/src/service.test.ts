@@ -2226,6 +2226,7 @@ describe("RunnerService", () => {
     expect(turnIds).toHaveLength(1);
     expect(turnRecord?.producedArtifactIds).toEqual(sessionRecord.rootArtifactIds);
     expect(turnRecord?.engineRequestSummary).toMatchObject({
+      actionContractContextIncluded: true,
       agentRuntimeContextIncluded: true,
       artifactInputCount: 0,
       artifactRefCount: 0,
@@ -2234,7 +2235,7 @@ describe("RunnerService", () => {
         maxToolTurns: 5
       },
       inboundMessageContextIncluded: true,
-      interactionPromptPartCount: 12,
+      interactionPromptPartCount: 13,
       peerRouteContextIncluded: false,
       policyContextIncluded: true,
       systemPromptPartCount: 4,

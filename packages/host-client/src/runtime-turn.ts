@@ -127,7 +127,8 @@ export function formatRuntimeTurnDetailLines(
       `engine context agent ${formatIncluded(summary.agentRuntimeContextIncluded)}, ` +
         `workspace ${formatIncluded(summary.workspaceBoundaryContextIncluded)}, ` +
         `policy ${formatIncluded(summary.policyContextIncluded)}, ` +
-        `inbound ${formatIncluded(summary.inboundMessageContextIncluded)}`
+        `inbound ${formatIncluded(summary.inboundMessageContextIncluded)}, ` +
+        `actions ${formatIncluded(summary.actionContractContextIncluded)}`
     );
   }
 

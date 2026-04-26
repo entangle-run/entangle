@@ -87,6 +87,9 @@ describe("runner runtime context", () => {
     expect(request.interactionPromptParts.join("\n")).toContain(
       "Policy context:"
     );
+    expect(request.interactionPromptParts.join("\n")).toContain(
+      "Entangle action contract:"
+    );
     expect(request.toolDefinitions).toEqual([
       {
         description: "Inspect a retrieved inbound artifact by artifact id.",
@@ -111,6 +114,7 @@ describe("runner runtime context", () => {
     });
 
     expect(summary).toMatchObject({
+      actionContractContextIncluded: true,
       agentRuntimeContextIncluded: true,
       artifactInputCount: 0,
       artifactRefCount: 0,
@@ -120,7 +124,7 @@ describe("runner runtime context", () => {
       },
       generatedAt: "2026-04-25T00:00:00.000Z",
       inboundMessageContextIncluded: false,
-      interactionPromptPartCount: 8,
+      interactionPromptPartCount: 9,
       peerRouteContextIncluded: false,
       policyContextIncluded: true,
       systemPromptPartCount: 4,
@@ -180,6 +184,7 @@ describe("runner runtime context", () => {
     expect(interactionPrompt).toContain("response required: yes");
     expect(interactionPrompt).toContain("approval required before action: no");
     expect(summary.inboundMessageContextIncluded).toBe(true);
+    expect(summary.actionContractContextIncluded).toBe(true);
   });
 
   it("executes one stub-engine turn from an injected runtime context", async () => {
