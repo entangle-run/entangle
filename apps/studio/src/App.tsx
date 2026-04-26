@@ -35,6 +35,7 @@ import type {
   GraphRevisionMetadata,
   GraphSpec,
   HostEventRecord,
+  HostProjectionSnapshot,
   SessionInspectionResponse,
   HostSessionSummary,
   HostStatusResponse,
@@ -66,7 +67,8 @@ import type {
   SessionLaunchResponse,
   SourceChangeCandidateReviewDecision,
   SourceChangeCandidateRecord,
-  SourceHistoryRecord
+  SourceHistoryRecord,
+  UserNodeIdentityRecord
 } from "@entangle/types";
 import {
   buildEdgeCreateRequest,
@@ -203,6 +205,15 @@ import {
   isSessionLaunchDraftReady,
   type SessionLaunchDraft
 } from "./session-launch.js";
+import {
+  formatUserConversationDetail,
+  formatUserConversationLabel,
+  formatUserNodeIdentityDetail,
+  formatUserNodeIdentityLabel,
+  sortUserConversationsForStudio,
+  sortUserNodeIdentitiesForStudio,
+  summarizeFederationProjection
+} from "./federation-inspection.js";
 import {
   collectSessionInspectionTraceIds,
   filterRuntimeSessions,
@@ -414,6 +425,11 @@ export function App() {
     [authToken, baseUrl]
   );
   const [status, setStatus] = useState<HostStatusResponse | null>(null);
+  const [projectionSnapshot, setProjectionSnapshot] =
+    useState<HostProjectionSnapshot | null>(null);
+  const [projectionError, setProjectionError] = useState<string | null>(null);
+  const [userNodes, setUserNodes] = useState<UserNodeIdentityRecord[]>([]);
+  const [userNodeError, setUserNodeError] = useState<string | null>(null);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);
   const [graphRevisions, setGraphRevisions] = useState<GraphRevisionMetadata[]>([]);
@@ -645,7 +661,9 @@ export function App() {
       runtimeListResult,
       catalogResult,
       packageSourceResult,
-      externalPrincipalResult
+      externalPrincipalResult,
+      projectionResult,
+      userNodeResult
     ] =
       await Promise.allSettled([
         client.getHostStatus(),
@@ -654,7 +672,9 @@ export function App() {
         client.listRuntimes(),
         client.getCatalog(),
         client.listPackageSources(),
-        client.listExternalPrincipals()
+        client.listExternalPrincipals(),
+        client.getProjection(),
+        client.listUserNodes()
       ]);
 
     if (
@@ -755,6 +775,32 @@ export function App() {
           normalizeError(
             externalPrincipalResult.reason,
             "Unknown error while loading external principals."
+          )
+        );
+      }
+
+      if (projectionResult.status === "fulfilled") {
+        setProjectionSnapshot(projectionResult.value);
+        setProjectionError(null);
+      } else {
+        setProjectionSnapshot(null);
+        setProjectionError(
+          normalizeError(
+            projectionResult.reason,
+            "Unknown error while loading federated projection."
+          )
+        );
+      }
+
+      if (userNodeResult.status === "fulfilled") {
+        setUserNodes(sortUserNodeIdentitiesForStudio(userNodeResult.value.userNodes));
+        setUserNodeError(null);
+      } else {
+        setUserNodes([]);
+        setUserNodeError(
+          normalizeError(
+            userNodeResult.reason,
+            "Unknown error while loading User Nodes."
           )
         );
       }
@@ -3442,6 +3488,17 @@ export function App() {
     );
   }, [selectedMemory]);
   const statusTone = useMemo(() => status?.status ?? "pending", [status]);
+  const federationSummary = useMemo(
+    () => summarizeFederationProjection(projectionSnapshot),
+    [projectionSnapshot]
+  );
+  const projectedUserConversations = useMemo(
+    () =>
+      sortUserConversationsForStudio(
+        projectionSnapshot?.userConversations ?? []
+      ),
+    [projectionSnapshot]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3549,6 +3606,82 @@ export function App() {
           approval, artifact, runner turn, and trace activity that the host is actually
           emitting.
         </p>
+      </section>
+
+      <section className="panel federation-panel">
+        <div className="panel-header">
+          <h2>Federation</h2>
+          <span className="panel-caption">
+            Projection {federationSummary.freshness}
+          </span>
+        </div>
+
+        {projectionError ? <p className="error-box">{projectionError}</p> : null}
+        {userNodeError ? <p className="error-box">{userNodeError}</p> : null}
+
+        <div className="metric-grid">
+          <div>
+            <strong>{federationSummary.runnerCount}</strong>
+            <span>Runners</span>
+          </div>
+          <div>
+            <strong>{federationSummary.assignmentCount}</strong>
+            <span>Assignments</span>
+          </div>
+          <div>
+            <strong>{federationSummary.artifactRefCount}</strong>
+            <span>Artifact refs</span>
+          </div>
+          <div>
+            <strong>{federationSummary.sourceChangeRefCount}</strong>
+            <span>Source refs</span>
+          </div>
+          <div>
+            <strong>{federationSummary.wikiRefCount}</strong>
+            <span>Wiki refs</span>
+          </div>
+          <div>
+            <strong>{userNodes.length}</strong>
+            <span>User Nodes</span>
+          </div>
+          <div>
+            <strong>{federationSummary.userConversationCount}</strong>
+            <span>Conversations</span>
+          </div>
+        </div>
+
+        {userNodes.length > 0 ? (
+          <div className="compact-list">
+            {userNodes.slice(0, 4).map((userNode) => (
+              <div key={userNode.nodeId} className="compact-list-item">
+                <strong>{formatUserNodeIdentityLabel(userNode)}</strong>
+                <span>{formatUserNodeIdentityDetail(userNode)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="inline-empty-state">
+            <p>No User Node identity is projected yet.</p>
+          </div>
+        )}
+
+        {projectedUserConversations.length > 0 ? (
+          <div className="compact-list">
+            {projectedUserConversations.slice(0, 4).map((conversation) => (
+              <div
+                key={`${conversation.userNodeId}:${conversation.conversationId}`}
+                className="compact-list-item"
+              >
+                <strong>{formatUserConversationLabel(conversation)}</strong>
+                <span>{formatUserConversationDetail(conversation)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="inline-empty-state">
+            <p>No User Node conversation projection is available yet.</p>
+          </div>
+        )}
       </section>
 
       <section className="content-grid">

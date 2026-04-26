@@ -5,26 +5,26 @@
 Studio and CLI are mature local Host clients.
 
 CLI commands cover validation, package init/inspect, local backup/restore,
-local doctor/diagnostics/repair, Host status/events, catalog, package sources,
+local doctor/diagnostics/repair, Host status/events, Host Authority, runner
+registry, runtime assignments, User Node identities, signed User Node message
+publication, projection-backed inbox inspection, catalog, package sources,
 external principals, graph, nodes, edges, runtimes, runtime context, turns,
 artifacts, memory, approvals, source candidates/history, wiki publications,
 recovery, sessions, launch, and graph templates.
 
-Studio covers Host status, graph editing/validation/revisions/diff, package
-source admission, external principals, runtime lifecycle, runtime detail,
-sessions, approvals, turns, artifacts, memory, source candidates/history, wiki
-publications, recovery, and event refresh.
+Studio covers Host status, federation projection summary, User Node identity
+summary, projected User Node conversations, graph editing/validation/revisions/
+diff, package source admission, external principals, runtime lifecycle,
+runtime detail, sessions, approvals, turns, artifacts, memory, source
+candidates/history, wiki publications, recovery, and event refresh.
 
 Missing surfaces:
 
-- Host Authority status/import/export;
-- runner registry and trust/revoke;
-- runtime assignments and leases;
 - transport health;
 - user-node selector;
-- user-node inbox/chat;
-- user-node reply/approve/reject;
-- signed user-node task launch;
+- full Studio user-node inbox/chat;
+- full Studio user-node reply/approve/reject controls;
+- Studio signed user-node task launch migration;
 - projection-backed distributed runtime status.
 
 ## Target Model
@@ -74,10 +74,13 @@ command runners.
 - Add host-client methods for authority, runners, assignments, inbox,
   conversations, replies, approvals, and projection health.
 - Add CLI command groups for authority/runners/assignments/inbox/user-node
-  actions.
+  actions. Authority, runner, assignment, User Node, projection inbox, reply,
+  approve, and reject surfaces now exist; full inbox message history waits for
+  inbox/outbox projection reducers.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
-  transport/projection health.
+  transport/projection health. Studio now has the first projection health and
+  User Node summary panel.
 - Add Studio user-node panel with conversation list and message detail.
 - Replace Studio approval mutation with signed user-node approval flow.
 - Replace Studio session launch with selected user-node signed launch.

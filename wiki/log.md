@@ -2803,3 +2803,18 @@ and a registered runner pubkey match before storing projection records.
 This is a projection substrate slice. Runner service emission, Host Nostr
 observation dispatch, and replacement of legacy runtimeRoot-backed artifact,
 source, and wiki APIs remain follow-up work.
+
+## [2026-04-26] implementation | Added Studio and CLI federation surfaces
+
+Added `references/243-studio-cli-federation-surfaces-slice.md` and implemented
+the twelfth federated pivot slice. CLI now exposes assignment list/get/offer/
+revoke commands, `host nodes assign`, User Node identity inspection, signed User
+Node message publication, projection-backed inbox list/show, and top-level
+reply/approve/reject commands that publish signed User Node A2A messages.
+
+Studio now loads the Host projection and User Node identities during overview
+refresh and shows a federation panel with projection freshness, runner and
+assignment counts, artifact/source/wiki ref counts, User Node identities, and
+projected User Node conversations. Full Studio chat composition and replacement
+of legacy approval/session controls with signed User Node flows remain
+follow-up work.

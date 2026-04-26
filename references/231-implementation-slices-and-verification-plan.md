@@ -225,14 +225,24 @@ Verification:
 
 ### Slice 12: Studio And CLI Federation Surfaces
 
-Add authority, runners, assignments, transport, projection, user inbox/chat,
-reply, approve, and reject surfaces.
+Add first-pass authority, runners, assignments, projection, User Node identity,
+projection inbox, reply, approve, and reject surfaces. Full transport health
+and Studio chat remain follow-up work.
+
+Implementation record:
+
+- [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 
 Verification:
 
 - CLI command tests;
 - Studio helper/component tests;
 - lint and typecheck.
+
+This slice now includes first-pass CLI assignment/User Node/inbox/reply/
+approve/reject commands and a Studio projection/User Node panel. Full Studio
+chat, signed approval card migration, and durable inbox/outbox projection
+remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

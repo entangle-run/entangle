@@ -27,6 +27,8 @@ import {
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
   runtimeApprovalDecisionMutationRequestSchema,
+  runtimeAssignmentOfferRequestSchema,
+  runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateReviewMutationRequestSchema,
@@ -35,7 +37,8 @@ import {
   runtimeWikiRepositoryPublicationRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
-  sessionLaunchRequestSchema
+  sessionLaunchRequestSchema,
+  userNodeMessagePublishRequestSchema
 } from "@entangle/types";
 import {
   formatValidationReport,
@@ -81,6 +84,17 @@ import {
   projectRunnerRegistrySummary,
   sortRunnerRegistryEntriesForPresentation
 } from "./runner-output.js";
+import {
+  projectRuntimeAssignmentSummary,
+  sortRuntimeAssignmentsForCli
+} from "./assignment-output.js";
+import {
+  projectUserConversationSummary,
+  projectUserNodeIdentitySummary,
+  projectUserNodeMessagePublishSummary,
+  sortUserConversationsForCli,
+  sortUserNodeIdentitiesForCli
+} from "./user-node-output.js";
 import {
   buildNodeAgentRuntimeReplacementRequest,
   type NodeAgentRuntimeConfigurationOptions
@@ -206,10 +220,12 @@ function renderCliHostEvents(events: HostEventRecord[], summary: boolean): void 
 }
 
 function resolveHostUrl(command: Command): string {
+  const commandOptions = command.opts<{ hostUrl?: string }>();
   const rootOptions = command.parent?.opts<{ hostUrl?: string }>();
   const nestedRootOptions = command.parent?.parent?.opts<{ hostUrl?: string }>();
 
   return (
+    commandOptions.hostUrl ??
     rootOptions?.hostUrl ??
     nestedRootOptions?.hostUrl ??
     process.env.ENTANGLE_HOST_URL ??
@@ -218,9 +234,11 @@ function resolveHostUrl(command: Command): string {
 }
 
 function resolveHostToken(command: Command): string | undefined {
+  const commandOptions = command.opts<{ hostToken?: string }>();
   const rootOptions = command.parent?.opts<{ hostToken?: string }>();
   const nestedRootOptions = command.parent?.parent?.opts<{ hostToken?: string }>();
   const token =
+    commandOptions.hostToken ??
     rootOptions?.hostToken ??
     nestedRootOptions?.hostToken ??
     process.env.ENTANGLE_HOST_TOKEN ??
@@ -913,6 +931,501 @@ runnersCommand
     );
   });
 
+const assignmentsCommand = program
+  .command("assignments")
+  .description("Inspect and manage federated runtime assignments.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  );
+
+assignmentsCommand
+  .command("list")
+  .option("--summary", "Print compact assignment summaries.")
+  .description("List federated runtime assignments.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const response = await client.listAssignments();
+    printJson(
+      options.summary
+        ? {
+            assignments: sortRuntimeAssignmentsForCli(
+              response.assignments
+            ).map(projectRuntimeAssignmentSummary)
+          }
+        : response
+    );
+  });
+
+assignmentsCommand
+  .command("get")
+  .argument("<assignmentId>", "Runtime assignment identifier.")
+  .option("--summary", "Print a compact assignment summary.")
+  .description("Inspect one federated runtime assignment.")
+  .action(async (
+    assignmentId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.getAssignment(assignmentId);
+    printJson(
+      options.summary
+        ? { assignment: projectRuntimeAssignmentSummary(response.assignment) }
+        : response
+    );
+  });
+
+assignmentsCommand
+  .command("offer")
+  .requiredOption("--node <nodeId>", "Node id to assign.")
+  .requiredOption("--runner <runnerId>", "Trusted runner id to receive the node.")
+  .option("--assignment-id <assignmentId>", "Explicit assignment id.")
+  .option("--lease-duration-seconds <seconds>", "Lease duration in seconds.", "600")
+  .option("--policy-revision-id <policyRevisionId>", "Optional policy revision id.")
+  .option("--summary", "Print a compact assignment summary.")
+  .description("Offer a runtime assignment to a trusted runner.")
+  .action(async (
+    options: {
+      assignmentId?: string;
+      leaseDurationSeconds: string;
+      node: string;
+      policyRevisionId?: string;
+      runner: string;
+      summary?: boolean;
+    },
+    command: Command
+  ) => {
+    const request = runtimeAssignmentOfferRequestSchema.parse({
+      ...(options.assignmentId ? { assignmentId: options.assignmentId } : {}),
+      leaseDurationSeconds: Number.parseInt(options.leaseDurationSeconds, 10),
+      nodeId: options.node,
+      ...(options.policyRevisionId
+        ? { policyRevisionId: options.policyRevisionId }
+        : {}),
+      runnerId: options.runner
+    });
+    const client = createCliHostClient(command);
+    const response = await client.offerAssignment(request);
+
+    printJson(
+      options.summary
+        ? { assignment: projectRuntimeAssignmentSummary(response.assignment) }
+        : response
+    );
+  });
+
+assignmentsCommand
+  .command("revoke")
+  .argument("<assignmentId>", "Runtime assignment identifier.")
+  .option("--reason <reason>", "Operator note for the revocation.")
+  .option("--revoked-by <operatorId>", "Operator identifier for audit context.")
+  .option("--summary", "Print a compact assignment summary.")
+  .description("Revoke a runtime assignment.")
+  .action(async (
+    assignmentId: string,
+    options: { reason?: string; revokedBy?: string; summary?: boolean },
+    command: Command
+  ) => {
+    const request = runtimeAssignmentRevokeRequestSchema.parse({
+      ...(options.reason ? { reason: options.reason } : {}),
+      ...(options.revokedBy ? { revokedBy: options.revokedBy } : {})
+    });
+    const client = createCliHostClient(command);
+    const response = await client.revokeAssignment(assignmentId, request);
+
+    printJson(
+      options.summary
+        ? { assignment: projectRuntimeAssignmentSummary(response.assignment) }
+        : response
+    );
+  });
+
+const userNodesCommand = program
+  .command("user-nodes")
+  .description("Inspect User Node identities and publish signed User Node messages.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  );
+
+userNodesCommand
+  .command("list")
+  .option("--summary", "Print compact User Node summaries.")
+  .description("List active graph User Node identities.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const response = await client.listUserNodes();
+    printJson(
+      options.summary
+        ? {
+            userNodes: sortUserNodeIdentitiesForCli(response.userNodes).map(
+              projectUserNodeIdentitySummary
+            )
+          }
+        : response
+    );
+  });
+
+userNodesCommand
+  .command("get")
+  .argument("<nodeId>", "User Node identifier.")
+  .option("--summary", "Print a compact User Node summary.")
+  .description("Inspect one User Node identity.")
+  .action(async (
+    nodeId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.getUserNode(nodeId);
+    printJson(
+      options.summary
+        ? { userNode: projectUserNodeIdentitySummary(response.userNode) }
+        : response
+    );
+  });
+
+userNodesCommand
+  .command("message")
+  .argument("<nodeId>", "User Node identifier.")
+  .argument("<targetNodeId>", "Target runtime node id.")
+  .argument("<summary>", "Message summary/body.")
+  .option("--message-type <type>", "A2A message type.", "task.request")
+  .option("--approval-id <approvalId>", "Approval id for approval.response messages.")
+  .option(
+    "--approval-decision <decision>",
+    "Approval decision for approval.response messages."
+  )
+  .option("--conversation-id <conversationId>", "Conversation id to reuse.")
+  .option("--session-id <sessionId>", "Session id to reuse.")
+  .option("--turn-id <turnId>", "Turn id to use.")
+  .option("--parent-message-id <eventId>", "Parent Nostr event id.")
+  .option("--compact", "Print a compact publish summary.")
+  .description("Publish a signed User Node A2A message through entangle-host.")
+  .action(async (
+    nodeId: string,
+    targetNodeId: string,
+    summary: string,
+    options: {
+      approvalDecision?: string;
+      approvalId?: string;
+      compact?: boolean;
+      conversationId?: string;
+      messageType: string;
+      parentMessageId?: string;
+      sessionId?: string;
+      turnId?: string;
+    },
+    command: Command
+  ) => {
+    const request = userNodeMessagePublishRequestSchema.parse({
+      ...(options.approvalId && options.approvalDecision
+        ? {
+            approval: {
+              approvalId: options.approvalId,
+              decision: options.approvalDecision
+            }
+          }
+        : {}),
+      ...(options.conversationId
+        ? { conversationId: options.conversationId }
+        : {}),
+      messageType: options.messageType,
+      ...(options.parentMessageId
+        ? { parentMessageId: options.parentMessageId }
+        : {}),
+      ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+      summary,
+      targetNodeId,
+      ...(options.turnId ? { turnId: options.turnId } : {})
+    });
+    const client = createCliHostClient(command);
+    const response = await client.publishUserNodeMessage(nodeId, request);
+
+    printJson(
+      options.compact
+        ? { message: projectUserNodeMessagePublishSummary(response) }
+        : response
+    );
+  });
+
+const inboxCommand = program
+  .command("inbox")
+  .description("Inspect User Node conversation projection.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  );
+
+inboxCommand
+  .command("list")
+  .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option("--summary", "Print compact conversation summaries.")
+  .description("List projected conversations for one User Node.")
+  .action(async (
+    options: { summary?: boolean; userNode: string },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const projection = await client.getProjection();
+    const conversations = sortUserConversationsForCli(
+      projection.userConversations.filter(
+        (conversation) => conversation.userNodeId === options.userNode
+      )
+    );
+
+    printJson(
+      options.summary
+        ? {
+            conversations: conversations.map(projectUserConversationSummary)
+          }
+        : { conversations }
+    );
+  });
+
+inboxCommand
+  .command("show")
+  .argument("<conversationId>", "Projected conversation identifier.")
+  .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option("--summary", "Print a compact conversation summary.")
+  .description("Inspect one projected User Node conversation.")
+  .action(async (
+    conversationId: string,
+    options: { summary?: boolean; userNode: string },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const projection = await client.getProjection();
+    const conversation = projection.userConversations.find(
+      (candidate) =>
+        candidate.userNodeId === options.userNode &&
+        candidate.conversationId === conversationId
+    );
+
+    if (!conversation) {
+      throw new Error(
+        `Conversation '${conversationId}' was not found for User Node '${options.userNode}'.`
+      );
+    }
+
+    printJson(
+      options.summary
+        ? { conversation: projectUserConversationSummary(conversation) }
+        : { conversation }
+    );
+  });
+
+program
+  .command("reply")
+  .argument("<targetNodeId>", "Target runtime node id.")
+  .argument("<summary>", "Reply body.")
+  .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
+  .option("--conversation-id <conversationId>", "Conversation id to reuse.")
+  .option("--session-id <sessionId>", "Session id to reuse.")
+  .option("--turn-id <turnId>", "Turn id to use.")
+  .option("--parent-message-id <eventId>", "Parent Nostr event id.")
+  .option("--compact", "Print a compact publish summary.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  )
+  .description("Publish a signed User Node reply.")
+  .action(async (
+    targetNodeId: string,
+    summary: string,
+    options: {
+      compact?: boolean;
+      conversationId?: string;
+      parentMessageId?: string;
+      sessionId?: string;
+      turnId?: string;
+      userNode: string;
+    },
+    command: Command
+  ) => {
+    const request = userNodeMessagePublishRequestSchema.parse({
+      ...(options.conversationId
+        ? { conversationId: options.conversationId }
+        : {}),
+      messageType: "answer",
+      ...(options.parentMessageId
+        ? { parentMessageId: options.parentMessageId }
+        : {}),
+      ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+      summary,
+      targetNodeId,
+      ...(options.turnId ? { turnId: options.turnId } : {})
+    });
+    const client = createCliHostClient(command);
+    const response = await client.publishUserNodeMessage(
+      options.userNode,
+      request
+    );
+
+    printJson(
+      options.compact
+        ? { message: projectUserNodeMessagePublishSummary(response) }
+        : response
+    );
+  });
+
+program
+  .command("approve")
+  .argument("<approvalId>", "Approval identifier.")
+  .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
+  .requiredOption("--target-node <nodeId>", "Target runtime node id.")
+  .option("--body <body>", "Approval response body.")
+  .option("--conversation-id <conversationId>", "Conversation id to reuse.")
+  .option("--session-id <sessionId>", "Session id to reuse.")
+  .option("--turn-id <turnId>", "Turn id to use.")
+  .option("--parent-message-id <eventId>", "Parent Nostr event id.")
+  .option("--compact", "Print a compact publish summary.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  )
+  .description("Publish a signed User Node approval response.")
+  .action(async (
+    approvalId: string,
+    options: {
+      body?: string;
+      compact?: boolean;
+      conversationId?: string;
+      parentMessageId?: string;
+      sessionId?: string;
+      targetNode: string;
+      turnId?: string;
+      userNode: string;
+    },
+    command: Command
+  ) => {
+    const request = userNodeMessagePublishRequestSchema.parse({
+      approval: {
+        approvalId,
+        decision: "approved"
+      },
+      ...(options.conversationId
+        ? { conversationId: options.conversationId }
+        : {}),
+      messageType: "approval.response",
+      ...(options.parentMessageId
+        ? { parentMessageId: options.parentMessageId }
+        : {}),
+      ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+      summary: options.body ?? `Approved ${approvalId}.`,
+      targetNodeId: options.targetNode,
+      ...(options.turnId ? { turnId: options.turnId } : {})
+    });
+    const client = createCliHostClient(command);
+    const response = await client.publishUserNodeMessage(
+      options.userNode,
+      request
+    );
+
+    printJson(
+      options.compact
+        ? { message: projectUserNodeMessagePublishSummary(response) }
+        : response
+    );
+  });
+
+program
+  .command("reject")
+  .argument("<approvalId>", "Approval identifier.")
+  .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
+  .requiredOption("--target-node <nodeId>", "Target runtime node id.")
+  .option("--reason <reason>", "Rejection reason.")
+  .option("--conversation-id <conversationId>", "Conversation id to reuse.")
+  .option("--session-id <sessionId>", "Session id to reuse.")
+  .option("--turn-id <turnId>", "Turn id to use.")
+  .option("--parent-message-id <eventId>", "Parent Nostr event id.")
+  .option("--compact", "Print a compact publish summary.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  )
+  .description("Publish a signed User Node rejection response.")
+  .action(async (
+    approvalId: string,
+    options: {
+      compact?: boolean;
+      conversationId?: string;
+      parentMessageId?: string;
+      reason?: string;
+      sessionId?: string;
+      targetNode: string;
+      turnId?: string;
+      userNode: string;
+    },
+    command: Command
+  ) => {
+    const request = userNodeMessagePublishRequestSchema.parse({
+      approval: {
+        approvalId,
+        decision: "rejected"
+      },
+      ...(options.conversationId
+        ? { conversationId: options.conversationId }
+        : {}),
+      messageType: "approval.response",
+      ...(options.parentMessageId
+        ? { parentMessageId: options.parentMessageId }
+        : {}),
+      ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+      summary: options.reason ?? `Rejected ${approvalId}.`,
+      targetNodeId: options.targetNode,
+      ...(options.turnId ? { turnId: options.turnId } : {})
+    });
+    const client = createCliHostClient(command);
+    const response = await client.publishUserNodeMessage(
+      options.userNode,
+      request
+    );
+
+    printJson(
+      options.compact
+        ? { message: projectUserNodeMessagePublishSummary(response) }
+        : response
+    );
+  });
+
 const hostEventsCommand = hostCommand
   .command("events")
   .description("Inspect and watch typed host events.");
@@ -1494,6 +2007,45 @@ hostNodesCommand
     printJson(
       options.summary
         ? { node: projectNodeInspectionSummary(response) }
+        : response
+    );
+  });
+
+hostNodesCommand
+  .command("assign")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .requiredOption("--runner <runnerId>", "Trusted runner id to receive the node.")
+  .option("--assignment-id <assignmentId>", "Explicit assignment id.")
+  .option("--lease-duration-seconds <seconds>", "Lease duration in seconds.", "600")
+  .option("--policy-revision-id <policyRevisionId>", "Optional policy revision id.")
+  .option("--summary", "Print a compact assignment summary.")
+  .description("Offer a federated runtime assignment for one node.")
+  .action(async (
+    nodeId: string,
+    options: {
+      assignmentId?: string;
+      leaseDurationSeconds: string;
+      policyRevisionId?: string;
+      runner: string;
+      summary?: boolean;
+    },
+    command: Command
+  ) => {
+    const request = runtimeAssignmentOfferRequestSchema.parse({
+      ...(options.assignmentId ? { assignmentId: options.assignmentId } : {}),
+      leaseDurationSeconds: Number.parseInt(options.leaseDurationSeconds, 10),
+      nodeId,
+      ...(options.policyRevisionId
+        ? { policyRevisionId: options.policyRevisionId }
+        : {}),
+      runnerId: options.runner
+    });
+    const client = createCliHostClient(command);
+    const response = await client.offerAssignment(request);
+
+    printJson(
+      options.summary
+        ? { assignment: projectRuntimeAssignmentSummary(response.assignment) }
         : response
     );
   });

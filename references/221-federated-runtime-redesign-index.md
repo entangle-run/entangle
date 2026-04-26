@@ -42,6 +42,7 @@ because the handoff required these exact filenames. The existing
 - [240-user-node-identity-slice.md](240-user-node-identity-slice.md)
 - [241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
 - [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
+- [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 
 ## Audited Scope
 
@@ -137,10 +138,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs.
-12. Studio operator and user-node surfaces.
-13. CLI operator, user-node, and runner join surfaces.
-14. Product naming and compatibility migration.
-15. Distributed smoke test.
+12. Studio and CLI operator/user-node federation surfaces.
+13. Product naming and compatibility migration.
+14. Distributed smoke test.
 
 ## Acceptance Criteria
 
@@ -182,5 +182,5 @@ The plan was checked against the actual repo after writing:
 - duplicate `221` and `222` references are intentionally documented;
 - no code implementation is included in this documentation slice.
 
-Plan readiness: Slices 1 through 11 are implemented in this branch. Slice 12,
-Studio and CLI federation surfaces, is next.
+Plan readiness: Slices 1 through 12 are implemented in this branch. The next
+slice is product naming and compatibility migration.
