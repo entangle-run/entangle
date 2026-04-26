@@ -7,13 +7,32 @@ import {
   validateA2AMessageDocument,
   validateConversationLifecycleTransition,
   validateDeploymentResourceCatalogDocument,
+  validateEntangleControlEventDocument,
+  validateEntangleObservationEventDocument,
   validateGraphDocument,
+  validateHostAuthorityDocument,
   validatePackageDirectory,
+  validateRunnerRegistrationDocument,
+  validateRuntimeAssignmentDocument,
   validateRuntimeArtifactRefs,
-  validateSessionLifecycleTransition
+  validateSessionLifecycleTransition,
+  validateUserNodeIdentityDocument
 } from "./index.js";
 
 let temporaryRoots: string[] = [];
+
+const authorityPubkey =
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const runnerPubkey =
+  "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const userNodePubkey =
+  "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const eventId = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+const payloadHash =
+  "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const signature =
+  "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+const observedAt = "2026-04-26T10:00:00.000Z";
 
 afterEach(async () => {
   await Promise.all(
@@ -237,6 +256,40 @@ function buildA2AMessageDocument(
   };
 }
 
+function buildSignedEnvelope(input: {
+  protocol: "entangle.control.v1" | "entangle.observe.v1";
+  signerPubkey: string;
+  recipientPubkey: string;
+}): Record<string, unknown> {
+  return {
+    createdAt: observedAt,
+    eventId,
+    payloadHash,
+    protocol: input.protocol,
+    recipientPubkey: input.recipientPubkey,
+    schemaVersion: "1",
+    signature,
+    signerPubkey: input.signerPubkey
+  };
+}
+
+function buildOfferedAssignment(): Record<string, unknown> {
+  return {
+    assignmentId: "assignment-alpha",
+    graphId: "team-alpha",
+    graphRevisionId: "team-alpha-rev-1",
+    hostAuthorityPubkey: authorityPubkey,
+    nodeId: "worker-it",
+    offeredAt: observedAt,
+    runnerId: "runner-alpha",
+    runnerPubkey,
+    runtimeKind: "agent_runner",
+    schemaVersion: "1",
+    status: "offered",
+    updatedAt: observedAt
+  };
+}
+
 async function createPackageDirectory(input: {
   toolsJson: string;
 }): Promise<string> {
@@ -353,6 +406,140 @@ describe("validateDeploymentResourceCatalogDocument", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: "unknown_default_agent_engine_profile",
+          severity: "error"
+        })
+      ])
+    );
+  });
+});
+
+describe("federated runtime validators", () => {
+  it("accepts authority, runner, assignment, and user-node documents", () => {
+    expect(
+      validateHostAuthorityDocument({
+        authorityId: "authority-main",
+        createdAt: observedAt,
+        keyRef: "secret://host-authority/main",
+        publicKey: authorityPubkey,
+        schemaVersion: "1",
+        status: "active",
+        updatedAt: observedAt
+      })
+    ).toMatchObject({ ok: true, findings: [] });
+
+    expect(
+      validateRunnerRegistrationDocument({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        firstSeenAt: observedAt,
+        hostAuthorityPubkey: authorityPubkey,
+        publicKey: runnerPubkey,
+        runnerId: "runner-alpha",
+        schemaVersion: "1",
+        trustState: "trusted",
+        updatedAt: observedAt
+      })
+    ).toMatchObject({ ok: true, findings: [] });
+
+    expect(
+      validateRuntimeAssignmentDocument(buildOfferedAssignment())
+    ).toMatchObject({ ok: true, findings: [] });
+
+    expect(
+      validateUserNodeIdentityDocument({
+        createdAt: observedAt,
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        keyRef: "secret://user-nodes/user-main",
+        nodeId: "user-main",
+        publicKey: userNodePubkey,
+        schemaVersion: "1",
+        status: "active",
+        updatedAt: observedAt
+      })
+    ).toMatchObject({ ok: true, findings: [] });
+  });
+
+  it("rejects malformed federated records through dedicated finding codes", () => {
+    expect(
+      validateRunnerRegistrationDocument({
+        capabilities: {
+          runtimeKinds: ["agent_runner"]
+        },
+        firstSeenAt: observedAt,
+        hostAuthorityPubkey: authorityPubkey,
+        publicKey: runnerPubkey,
+        runnerId: "runner-alpha",
+        schemaVersion: "1",
+        trustState: "trusted",
+        updatedAt: observedAt
+      }).findings
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "runner_registration_invalid",
+          path: ["capabilities", "agentEngineKinds"],
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects control events not signed by Host Authority", () => {
+    const report = validateEntangleControlEventDocument({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: userNodePubkey
+      }),
+      payload: {
+        assignment: buildOfferedAssignment(),
+        eventType: "runtime.assignment.offer",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        protocol: "entangle.control.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "entangle_control_event_invalid",
+          path: ["envelope", "signerPubkey"],
+          severity: "error"
+        })
+      ])
+    );
+  });
+
+  it("rejects observation events not signed by the runner", () => {
+    const report = validateEntangleObservationEventDocument({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentIds: ["assignment-alpha"],
+        eventType: "runner.heartbeat",
+        hostAuthorityPubkey: authorityPubkey,
+        observedAt,
+        operationalState: "ready",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "entangle_observation_event_invalid",
+          path: ["envelope", "signerPubkey"],
           severity: "error"
         })
       ])

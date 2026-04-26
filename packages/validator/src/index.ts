@@ -12,10 +12,13 @@ import {
   entangleA2AApprovalResponseMetadataSchema,
   entangleA2AMessageSchema,
   type EntangleA2AMessage,
+  entangleControlEventSchema,
+  entangleObservationEventSchema,
   type EffectiveRuntimeContext,
   type ExternalPrincipalRecord,
   type GraphSpec,
   graphSpecSchema,
+  hostAuthorityRecordSchema,
   intersectIdentifiers,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
@@ -31,11 +34,27 @@ import {
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfileRefs,
   packageToolCatalogSchema,
+  runnerRegistrationRecordSchema,
   runnerTurnRecordSchema,
+  runtimeAssignmentRecordSchema,
   sessionRecordSchema,
+  userNodeIdentityRecordSchema,
   type ValidationFinding,
   type ValidationReport
 } from "@entangle/types";
+
+type SchemaParseIssue = {
+  message: string;
+  path: Array<string | number | symbol>;
+};
+
+type SchemaParseResult =
+  | { success: true }
+  | { success: false; error: { issues: SchemaParseIssue[] } };
+
+type DocumentSchema = {
+  safeParse(input: unknown): SchemaParseResult;
+};
 
 function createFinding(
   finding: Omit<ValidationFinding, "path"> & { path?: string[] }
@@ -71,6 +90,29 @@ function collectDuplicateFindings(
 
 function hasExistingId(ids: string[], id: string | undefined): boolean {
   return typeof id === "string" && ids.includes(id);
+}
+
+function validateSchemaDocument(
+  input: unknown,
+  schema: DocumentSchema,
+  code: string
+): ValidationReport {
+  const parseResult = schema.safeParse(input);
+
+  if (!parseResult.success) {
+    return buildValidationReport(
+      parseResult.error.issues.map((issue) =>
+        createFinding({
+          code,
+          severity: "error",
+          message: issue.message,
+          path: issue.path.map(String)
+        })
+      )
+    );
+  }
+
+  return buildValidationReport([]);
 }
 
 export function validatePackageManifestDocument(
@@ -203,6 +245,66 @@ export function validateDeploymentResourceCatalogDocument(
   }
 
   return buildValidationReport(findings);
+}
+
+export function validateHostAuthorityDocument(
+  input: unknown
+): ValidationReport {
+  return validateSchemaDocument(
+    input,
+    hostAuthorityRecordSchema,
+    "host_authority_invalid"
+  );
+}
+
+export function validateUserNodeIdentityDocument(
+  input: unknown
+): ValidationReport {
+  return validateSchemaDocument(
+    input,
+    userNodeIdentityRecordSchema,
+    "user_node_identity_invalid"
+  );
+}
+
+export function validateRunnerRegistrationDocument(
+  input: unknown
+): ValidationReport {
+  return validateSchemaDocument(
+    input,
+    runnerRegistrationRecordSchema,
+    "runner_registration_invalid"
+  );
+}
+
+export function validateRuntimeAssignmentDocument(
+  input: unknown
+): ValidationReport {
+  return validateSchemaDocument(
+    input,
+    runtimeAssignmentRecordSchema,
+    "runtime_assignment_invalid"
+  );
+}
+
+export function validateEntangleControlEventDocument(
+  input: unknown
+): ValidationReport {
+  return validateSchemaDocument(
+    input,
+    entangleControlEventSchema,
+    "entangle_control_event_invalid"
+  );
+}
+
+export function validateEntangleObservationEventDocument(
+  input: unknown
+): ValidationReport {
+  return validateSchemaDocument(
+    input,
+    entangleObservationEventSchema,
+    "entangle_observation_event_invalid"
+  );
 }
 
 function validateGraphSemantics(

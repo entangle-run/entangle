@@ -47,6 +47,10 @@ Add Host Authority, User Node identity, runner registration, assignment,
 lease, control event, observe event, projection, and gateway schemas. Export
 them from `packages/types`. Add semantic validator coverage.
 
+Implementation record:
+
+- [232-federated-contracts-slice.md](232-federated-contracts-slice.md)
+
 Verification:
 
 - `pnpm --filter @entangle/types test`

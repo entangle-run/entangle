@@ -11,6 +11,9 @@ links the coordinated audit, target model, migration, and implementation
 planning files from `222-current-state-codebase-audit.md` through
 `231-implementation-slices-and-verification-plan.md`.
 
+Federated implementation records start at
+[232-federated-contracts-slice.md](232-federated-contracts-slice.md).
+
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
 `221-source-history-replay-slice.md` and

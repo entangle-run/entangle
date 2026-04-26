@@ -2666,3 +2666,18 @@ The durable baseline is now Entangle as the product, with Local as one
 deployment profile. Current Local docs and code remain valid implementation
 history and adapter behavior, but future runtime work should follow the
 federated pack before extending Local-only assumptions.
+
+## [2026-04-26] implementation | Added federated runtime contracts
+
+Added `references/232-federated-contracts-slice.md` and implemented the first
+federated pivot slice. The shared type package now exports Host Authority,
+runner registration, runtime assignment and lease, stable User Node identity,
+user interaction gateway, signed envelope, `entangle.control.v1`,
+`entangle.observe.v1`, and projection snapshot contracts.
+
+Validator coverage now includes Host Authority, User Node identity, runner
+registration, runtime assignment, control event, and observation event
+documents. This is still an additive contract slice: Host and runner behavior
+remain on the current local adapter until the next slices wire authority
+storage, Nostr control/observe transport, registry, assignment lifecycle, and
+projection reducers.

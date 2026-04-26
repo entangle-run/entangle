@@ -10,6 +10,8 @@ import {
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
   entangleA2AMessageSchema,
+  entangleControlEventSchema,
+  entangleObservationEventSchema,
   entangleNostrGiftWrapKind,
   entangleNostrRumorKind,
   engineToolExecutionObservationSchema,
@@ -23,7 +25,9 @@ import {
   graphRevisionInspectionResponseSchema,
   gitRepositoryProvisioningRecordSchema,
   gitServiceProfileSchema,
+  hostAuthorityRecordSchema,
   hostErrorResponseSchema,
+  hostProjectionSnapshotSchema,
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
@@ -37,9 +41,11 @@ import {
   nodeInspectionResponseSchema,
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
+  runnerRegistrationRecordSchema,
   runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeAssignmentRecordSchema,
   runtimeArtifactDiffResponseSchema,
   runtimeArtifactHistoryResponseSchema,
   resolvedSecretBindingSchema,
@@ -76,8 +82,57 @@ import {
   resolveGitPrincipalBindingForService,
   resolveGitRepositoryTargetForArtifactLocator,
   resolvePrimaryGitRepositoryTarget,
-  secretRefSchema
+  secretRefSchema,
+  userInteractionGatewayRecordSchema,
+  userNodeIdentityRecordSchema
 } from "./index.js";
+
+const authorityPubkey =
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const runnerPubkey =
+  "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const userNodePubkey =
+  "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const eventId = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+const payloadHash =
+  "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const signature =
+  "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+const observedAt = "2026-04-26T10:00:00.000Z";
+
+function buildSignedEnvelope(input: {
+  protocol: "entangle.control.v1" | "entangle.observe.v1";
+  signerPubkey: string;
+  recipientPubkey: string;
+}): Record<string, unknown> {
+  return {
+    createdAt: observedAt,
+    eventId,
+    payloadHash,
+    protocol: input.protocol,
+    recipientPubkey: input.recipientPubkey,
+    schemaVersion: "1",
+    signature,
+    signerPubkey: input.signerPubkey
+  };
+}
+
+function buildOfferedAssignment(): Record<string, unknown> {
+  return {
+    assignmentId: "assignment-alpha",
+    graphId: "team-alpha",
+    graphRevisionId: "team-alpha-rev-1",
+    hostAuthorityPubkey: authorityPubkey,
+    nodeId: "worker-it",
+    offeredAt: observedAt,
+    runnerId: "runner-alpha",
+    runnerPubkey,
+    runtimeKind: "agent_runner",
+    schemaVersion: "1",
+    status: "offered",
+    updatedAt: observedAt
+  };
+}
 
 describe("host API error contracts", () => {
   it("accepts unauthorized responses from the bootstrap host auth boundary", () => {
@@ -90,6 +145,201 @@ describe("host API error contracts", () => {
       code: "unauthorized",
       message: "Entangle host operator token is required."
     });
+  });
+});
+
+describe("federated runtime contracts", () => {
+  it("accepts authority, runner, user-node, and gateway identity records", () => {
+    expect(
+      hostAuthorityRecordSchema.parse({
+        authorityId: "authority-main",
+        createdAt: observedAt,
+        displayName: "Main Host Authority",
+        keyRef: "secret://host-authority/main",
+        publicKey: authorityPubkey,
+        schemaVersion: "1",
+        status: "active",
+        updatedAt: observedAt
+      }).publicKey
+    ).toBe(authorityPubkey);
+
+    expect(
+      runnerRegistrationRecordSchema.parse({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        firstSeenAt: observedAt,
+        hostAuthorityPubkey: authorityPubkey,
+        publicKey: runnerPubkey,
+        runnerId: "runner-alpha",
+        schemaVersion: "1",
+        trustState: "trusted",
+        updatedAt: observedAt
+      }).capabilities.maxAssignments
+    ).toBe(1);
+
+    expect(
+      userNodeIdentityRecordSchema.parse({
+        createdAt: observedAt,
+        displayName: "User",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        keyRef: "secret://user-nodes/user-main",
+        nodeId: "user-main",
+        publicKey: userNodePubkey,
+        schemaVersion: "1",
+        status: "active",
+        updatedAt: observedAt
+      }).publicKey
+    ).toBe(userNodePubkey);
+
+    expect(
+      userInteractionGatewayRecordSchema.parse({
+        createdAt: observedAt,
+        gatewayId: "studio-main",
+        hostAuthorityPubkey: authorityPubkey,
+        kind: "studio",
+        schemaVersion: "1",
+        status: "active",
+        updatedAt: observedAt,
+        userNodeId: "user-main"
+      }).kind
+    ).toBe("studio");
+  });
+
+  it("requires active assignments to carry a lease", () => {
+    expect(
+      runtimeAssignmentRecordSchema.safeParse({
+        ...buildOfferedAssignment(),
+        acceptedAt: observedAt,
+        status: "active"
+      }).success
+    ).toBe(false);
+
+    expect(
+      runtimeAssignmentRecordSchema.parse({
+        ...buildOfferedAssignment(),
+        acceptedAt: observedAt,
+        lease: {
+          expiresAt: "2026-04-26T10:10:00.000Z",
+          issuedAt: observedAt,
+          leaseId: "lease-alpha",
+          renewBy: "2026-04-26T10:08:00.000Z"
+        },
+        status: "active"
+      }).lease?.leaseId
+    ).toBe("lease-alpha");
+  });
+
+  it("accepts signed control assignment offers from Host Authority", () => {
+    const event = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignment: buildOfferedAssignment(),
+        eventType: "runtime.assignment.offer",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        protocol: "entangle.control.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
+
+    expect(event.payload.eventType).toBe("runtime.assignment.offer");
+  });
+
+  it("rejects control and observation events signed by the wrong entity", () => {
+    expect(
+      entangleControlEventSchema.safeParse({
+        envelope: buildSignedEnvelope({
+          protocol: "entangle.control.v1",
+          recipientPubkey: runnerPubkey,
+          signerPubkey: userNodePubkey
+        }),
+        payload: {
+          eventType: "runner.hello.ack",
+          hostAuthorityPubkey: authorityPubkey,
+          issuedAt: observedAt,
+          protocol: "entangle.control.v1",
+          runnerId: "runner-alpha",
+          runnerPubkey,
+          trustState: "trusted"
+        }
+      }).success
+    ).toBe(false);
+
+    expect(
+      entangleObservationEventSchema.safeParse({
+        envelope: buildSignedEnvelope({
+          protocol: "entangle.observe.v1",
+          recipientPubkey: authorityPubkey,
+          signerPubkey: authorityPubkey
+        }),
+        payload: {
+          assignmentIds: [],
+          eventType: "runner.heartbeat",
+          hostAuthorityPubkey: authorityPubkey,
+          observedAt,
+          operationalState: "ready",
+          protocol: "entangle.observe.v1",
+          runnerId: "runner-alpha",
+          runnerPubkey
+        }
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts Host projection snapshots assembled from federated state", () => {
+    const projection = {
+      source: "observation_event",
+      updatedAt: observedAt
+    };
+    const snapshot = hostProjectionSnapshotSchema.parse({
+      assignments: [
+        {
+          assignmentId: "assignment-alpha",
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-rev-1",
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          projection,
+          runnerId: "runner-alpha",
+          status: "active"
+        }
+      ],
+      freshness: "current",
+      generatedAt: observedAt,
+      hostAuthorityPubkey: authorityPubkey,
+      runners: [
+        {
+          assignmentIds: ["assignment-alpha"],
+          hostAuthorityPubkey: authorityPubkey,
+          operationalState: "ready",
+          projection,
+          publicKey: runnerPubkey,
+          runnerId: "runner-alpha",
+          trustState: "trusted"
+        }
+      ],
+      schemaVersion: "1",
+      userConversations: [
+        {
+          conversationId: "conv-alpha",
+          graphId: "team-alpha",
+          peerNodeId: "worker-it",
+          projection,
+          unreadCount: 1,
+          userNodeId: "user-main"
+        }
+      ]
+    });
+
+    expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
   });
 });
 
