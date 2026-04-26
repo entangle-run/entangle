@@ -1,6 +1,10 @@
 import type { RuntimeInspectionResponse } from "@entangle/types";
 import { formatSourceChangeSummary } from "./runtime-turn.js";
 
+function formatIdList(ids: string[] | undefined): string {
+  return ids && ids.length > 0 ? ids.join(", ") : "none";
+}
+
 export function sortRuntimeInspectionsForPresentation(
   runtimes: RuntimeInspectionResponse[]
 ): RuntimeInspectionResponse[] {
@@ -116,9 +120,27 @@ export function formatRuntimeInspectionDetailLines(
       );
     }
 
+    if (runtime.agentRuntime.pendingApprovalIds.length > 0) {
+      detailLines.push(
+        `pending approvals ${formatIdList(runtime.agentRuntime.pendingApprovalIds)}`
+      );
+    }
+
     if (runtime.agentRuntime.lastTurnId) {
       detailLines.push(
         `last engine turn ${runtime.agentRuntime.lastTurnId} updated ${runtime.agentRuntime.lastTurnUpdatedAt ?? "unknown"}`
+      );
+    }
+
+    if (runtime.agentRuntime.lastProducedArtifactIds.length > 0) {
+      detailLines.push(
+        `last produced artifacts ${formatIdList(runtime.agentRuntime.lastProducedArtifactIds)}`
+      );
+    }
+
+    if (runtime.agentRuntime.lastRequestedApprovalIds.length > 0) {
+      detailLines.push(
+        `last requested approvals ${formatIdList(runtime.agentRuntime.lastRequestedApprovalIds)}`
       );
     }
 

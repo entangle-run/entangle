@@ -174,7 +174,9 @@ This repository currently contains:
   with engine-requested approvals materialized as pending runner approval
   records that move the session/conversation lifecycle to
   `waiting_approval`/`awaiting_approval` without granting the engine the
-  gated side effect;
+  gated side effect, and with generic runtime inspection now surfacing pending
+  approval blockers plus the latest produced artifact and requested approval
+  ids through the shared host/CLI/Studio boundary;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

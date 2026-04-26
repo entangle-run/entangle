@@ -2651,6 +2651,7 @@ async function buildRuntimeAgentRuntimeInspection(
   context: EffectiveRuntimeContext
 ): Promise<RuntimeAgentRuntimeInspection> {
   const turns = await listRuntimeTurnRecords(context.workspace.runtimeRoot);
+  const approvals = await listRuntimeApprovalRecords(context.workspace.runtimeRoot);
   const latestEngineTurn = turns
     .filter((turn) => Boolean(turn.engineOutcome))
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
@@ -2693,6 +2694,8 @@ async function buildRuntimeAgentRuntimeInspection(
     ...(latestEngineTurn?.sourceChangeSummary
       ? { lastSourceChangeSummary: latestEngineTurn.sourceChangeSummary }
       : {}),
+    lastProducedArtifactIds: latestEngineTurn?.producedArtifactIds ?? [],
+    lastRequestedApprovalIds: latestEngineTurn?.requestedApprovalIds ?? [],
     ...(latestEngineTurn?.sourceChangeCandidateIds?.[0]
       ? {
           lastSourceChangeCandidateId:
@@ -2706,6 +2709,13 @@ async function buildRuntimeAgentRuntimeInspection(
         }
       : {}),
     mode: context.agentRuntimeContext.mode,
+    pendingApprovalIds: approvals
+      .filter((approval) => approval.status === "pending")
+      .sort((left, right) =>
+        right.updatedAt.localeCompare(left.updatedAt) ||
+        left.approvalId.localeCompare(right.approvalId)
+      )
+      .map((approval) => approval.approvalId),
     stateScope: context.agentRuntimeContext.engineProfile.stateScope
   });
 }

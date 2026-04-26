@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-04-26] implementation | Surfaced runtime approval blockers and artifacts
+
+Advanced Entangle Local B8 runtime visibility by adding generic
+`agentRuntime` inspection fields for pending approval blocker ids, the latest
+engine turn's produced artifact ids, and the latest engine turn's requested
+approval ids. The host derives those fields from runner turn and approval
+records rather than engine-specific OpenCode internals.
+
+The shared host-client formatter, CLI runtime summaries, and Studio runtime
+details now expose the same host truth, so operators can see what a coding node
+is blocked on and which artifacts its latest engine turn produced without
+opening separate turn or approval panels first.
+
+Focused verification covered typecheck for types, host, host-client, and
+Studio, plus focused contract, host, host-client, and CLI tests.
+
 ## [2026-04-26] implementation | Materialized engine-requested approval gates
 
 Advanced Entangle Local B7/B3 by extending the OpenCode `entangle-actions`

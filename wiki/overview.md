@@ -188,7 +188,9 @@ The repository now also contains the first real implementation baseline:
   with engine-requested approvals materialized as pending runner approval
   records that move the session/conversation lifecycle to
   `waiting_approval`/`awaiting_approval` without granting the engine the
-  gated side effect;
+  gated side effect, and with generic runtime inspection now surfacing pending
+  approval blockers plus the latest produced artifact and requested approval
+  ids through the shared host/CLI/Studio boundary;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

@@ -48,11 +48,14 @@ export const runtimeAgentRuntimeInspectionSchema = z.object({
   lastPermissionDecision: enginePermissionDecisionSchema.optional(),
   lastPermissionOperation: enginePolicyOperationSchema.optional(),
   lastPermissionReason: nonEmptyStringSchema.optional(),
+  lastProducedArtifactIds: z.array(identifierSchema).default([]),
+  lastRequestedApprovalIds: z.array(identifierSchema).default([]),
   lastSourceChangeCandidateId: identifierSchema.optional(),
   lastSourceChangeSummary: sourceChangeSummarySchema.optional(),
   lastTurnId: identifierSchema.optional(),
   lastTurnUpdatedAt: nonEmptyStringSchema.optional(),
   mode: nodeAgentRuntimeModeSchema,
+  pendingApprovalIds: z.array(identifierSchema).default([]),
   stateScope: z.enum(["node", "shared"]).optional()
 });
 

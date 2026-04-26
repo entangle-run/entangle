@@ -13,6 +13,8 @@ function createRuntime(): RuntimeInspectionResponse {
       lastPermissionOperation: "command_execution",
       lastPermissionReason:
         "OpenCode one-shot CLI auto-rejected the permission request.",
+      lastProducedArtifactIds: ["artifact-report"],
+      lastRequestedApprovalIds: ["approval-source-publication"],
       lastSourceChangeCandidateId: "source-change-turn-alpha",
       lastSourceChangeSummary: {
         additions: 4,
@@ -30,6 +32,7 @@ function createRuntime(): RuntimeInspectionResponse {
         status: "changed"
       },
       mode: "coding_agent",
+      pendingApprovalIds: ["approval-source-publication"],
       stateScope: "node"
     },
     backendKind: "docker",
@@ -90,6 +93,12 @@ describe("runtime inspection CLI summary projection", () => {
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "last permission rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request."
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "pending approvals approval-source-publication"
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "last produced artifacts artifact-report"
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "last source changes 1 file (+4/-0)"

@@ -785,9 +785,12 @@ Current partial implementation:
 - Studio's Managed Node Editor now loads catalog engine profiles and writes the
   same graph-backed `agentRuntime` fields for node-level runtime mode,
   engine-profile, and default-agent overrides;
-- OpenCode availability probing in configuration context, approval blockers,
-  produced artifacts, richer source publication history views, and recent
-  engine-event panels remain open.
+- generic runtime inspection now exposes pending approval blocker ids plus the
+  latest engine turn's produced artifact ids and requested approval ids through
+  the shared host-client detail helper, CLI runtime summaries, and Studio
+  runtime details;
+- OpenCode availability probing in configuration context, richer source
+  publication history views, and recent engine-event panels remain open.
 
 Acceptance:
 

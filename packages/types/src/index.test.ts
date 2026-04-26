@@ -97,6 +97,8 @@ describe("runtime inspection host API contracts", () => {
         lastPermissionOperation: "command_execution",
         lastPermissionReason:
           "OpenCode one-shot CLI auto-rejected the permission request.",
+        lastProducedArtifactIds: ["artifact-report"],
+        lastRequestedApprovalIds: ["approval-source-publication"],
         lastSourceChangeCandidateId: "source-change-turn-alpha",
         lastSourceChangeSummary: {
           additions: 4,
@@ -116,6 +118,7 @@ describe("runtime inspection host API contracts", () => {
         lastTurnId: "turn-alpha",
         lastTurnUpdatedAt: "2026-04-25T08:05:00.000Z",
         mode: "coding_agent",
+        pendingApprovalIds: ["approval-source-publication"],
         stateScope: "node"
       },
       backendKind: "docker",
@@ -147,6 +150,12 @@ describe("runtime inspection host API contracts", () => {
     );
     expect(result.agentRuntime?.lastEngineVersion).toBe("0.10.0");
     expect(result.agentRuntime?.lastPermissionDecision).toBe("rejected");
+    expect(result.agentRuntime?.lastProducedArtifactIds).toEqual([
+      "artifact-report"
+    ]);
+    expect(result.agentRuntime?.pendingApprovalIds).toEqual([
+      "approval-source-publication"
+    ]);
     expect(result.agentRuntime?.lastSourceChangeSummary?.fileCount).toBe(1);
     expect(result.workspaceHealth?.status).toBe("ready");
   });

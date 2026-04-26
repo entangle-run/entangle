@@ -3141,7 +3141,7 @@ describe("buildHostServer", () => {
         nodeId: "worker-it",
         phase: "emitting",
         producedArtifactIds: ["report-turn-001"],
-        requestedApprovalIds: [],
+        requestedApprovalIds: ["approval-source-publication"],
         sessionId: "session-alpha",
         sourceChangeCandidateIds: [],
         startedAt: "2026-04-24T10:00:00.000Z",
@@ -3149,10 +3149,49 @@ describe("buildHostServer", () => {
         turnId: "turn-alpha",
         updatedAt: "2026-04-24T10:05:00.000Z"
       };
+      const approvalRecord = approvalRecordSchema.parse({
+        approvalId: "approval-source-publication",
+        approverNodeIds: ["user-main"],
+        conversationId: "conv-alpha",
+        graphId: "team-alpha",
+        operation: "source_publication",
+        reason: "Publish the source history artifact.",
+        requestedAt: "2026-04-24T10:04:00.000Z",
+        requestedByNodeId: "worker-it",
+        resource: {
+          id: "source-history-alpha",
+          kind: "source_history"
+        },
+        sessionId: "session-alpha",
+        status: "pending",
+        updatedAt: "2026-04-24T10:04:30.000Z"
+      });
       await writeJsonFile(
         path.join(runtimeContext.workspace.runtimeRoot, "turns", "turn-alpha.json"),
         turnRecord
       );
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "approvals",
+          "approval-source-publication.json"
+        ),
+        approvalRecord
+      );
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+
+      expect(runtimeResponse.statusCode).toBe(200);
+      expect(
+        runtimeInspectionResponseSchema.parse(runtimeResponse.json()).agentRuntime
+      ).toMatchObject({
+        lastProducedArtifactIds: ["report-turn-001"],
+        lastRequestedApprovalIds: ["approval-source-publication"],
+        pendingApprovalIds: ["approval-source-publication"]
+      });
 
       const turnsResponse = await server.inject({
         method: "GET",

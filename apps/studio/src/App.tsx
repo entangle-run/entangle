@@ -358,6 +358,10 @@ function formatRuntimeStateTone(
   return "pending";
 }
 
+function formatRuntimeIdList(ids: string[] | undefined): string {
+  return ids && ids.length > 0 ? ids.join(", ") : "none";
+}
+
 function formatEventStreamStateTone(state: EventStreamState): string {
   switch (state) {
     case "live":
@@ -4086,6 +4090,30 @@ export function App() {
                     <dd>
                       {selectedRuntime?.agentRuntime?.lastEngineSessionId ??
                         "none"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Pending approvals</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime
+                        ? formatRuntimeIdList(
+                            selectedRuntime.agentRuntime.pendingApprovalIds
+                          )
+                        : selectedRuntime
+                          ? "not reported"
+                          : "loading"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Produced artifacts</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime
+                        ? formatRuntimeIdList(
+                            selectedRuntime.agentRuntime.lastProducedArtifactIds
+                          )
+                        : selectedRuntime
+                          ? "not reported"
+                          : "loading"}
                     </dd>
                   </div>
                   <div>
