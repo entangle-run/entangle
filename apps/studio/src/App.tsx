@@ -56,6 +56,7 @@ import type {
   RuntimeSourceHistoryInspectionResponse,
   RuntimeTurnInspectionResponse,
   RunnerTurnRecord,
+  SessionCancellationResponse,
   SessionLaunchResponse,
   SourceChangeCandidateReviewDecision,
   SourceChangeCandidateRecord,
@@ -193,10 +194,12 @@ import {
 import {
   collectSessionInspectionTraceIds,
   filterRuntimeSessions,
+  formatSessionCancellationTargetSummary,
   formatSessionInspectionNodeDetail,
   formatSessionInspectionNodeLabel,
   formatRuntimeSessionDetail,
   formatRuntimeSessionLabel,
+  listCancellableSessionNodeIds,
   sessionInspectionReferencesRuntime,
   sortSessionInspectionNodes
 } from "./runtime-session-inspection.js";
@@ -556,6 +559,12 @@ export function App() {
   const [lastSessionLaunch, setLastSessionLaunch] =
     useState<SessionLaunchResponse | null>(null);
   const [pendingSessionLaunch, setPendingSessionLaunch] = useState(false);
+  const [sessionCancellationError, setSessionCancellationError] =
+    useState<string | null>(null);
+  const [lastSessionCancellation, setLastSessionCancellation] =
+    useState<SessionCancellationResponse | null>(null);
+  const [pendingSessionCancellation, setPendingSessionCancellation] =
+    useState(false);
   const [hostEvents, setHostEvents] = useState<HostEventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -761,6 +770,8 @@ export function App() {
             setSelectedSessionId(null);
             setSelectedSessionInspection(null);
             setSessionDetailError(null);
+            setSessionCancellationError(null);
+            setLastSessionCancellation(null);
             return;
           }
 
@@ -1652,10 +1663,14 @@ export function App() {
         if (!selectedSessionId) {
           setSelectedSessionInspection(null);
           setSessionDetailError(null);
+          setSessionCancellationError(null);
+          setLastSessionCancellation(null);
         } else if (!shouldRefreshSelectedSession) {
           setSelectedSessionId(null);
           setSelectedSessionInspection(null);
           setSessionDetailError(null);
+          setSessionCancellationError(null);
+          setLastSessionCancellation(null);
         } else if (selectedSessionResult?.status === "fulfilled") {
           if (sessionInspectionReferencesRuntime(selectedSessionResult.value, nodeId)) {
             setSelectedSessionInspection(selectedSessionResult.value);
@@ -1664,6 +1679,8 @@ export function App() {
             setSelectedSessionId(null);
             setSelectedSessionInspection(null);
             setSessionDetailError(null);
+            setSessionCancellationError(null);
+            setLastSessionCancellation(null);
           }
         } else if (selectedSessionResult?.status === "rejected") {
           setSelectedSessionInspection(null);
@@ -1684,6 +1701,8 @@ export function App() {
         );
         setSelectedSessionInspection(null);
         setSessionDetailError(null);
+        setSessionCancellationError(null);
+        setLastSessionCancellation(null);
       }
     });
   }, [
@@ -1786,10 +1805,85 @@ export function App() {
       setSelectedSessionId(sessionId);
       setSelectedSessionInspection(null);
       setSessionDetailError(null);
+      setSessionCancellationError(null);
+      setLastSessionCancellation(null);
       await loadSelectedSessionInspection(selectedRuntimeId, sessionId);
     },
     [loadSelectedSessionInspection, selectedRuntimeId]
   );
+
+  const cancelSelectedSession = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedSessionInspection) {
+      return;
+    }
+
+    const targetRuntimeId = selectedRuntimeId;
+    const targetSessionId = selectedSessionInspection.sessionId;
+    const targetNodeIds = listCancellableSessionNodeIds(selectedSessionInspection);
+
+    if (targetNodeIds.length === 0) {
+      return;
+    }
+
+    try {
+      setPendingSessionCancellation(true);
+      setSessionCancellationError(null);
+      setLastSessionCancellation(null);
+
+      const cancellation = await client.cancelSession(targetSessionId, {
+        nodeIds: targetNodeIds,
+        reason: "Cancelled from Entangle Studio.",
+        requestedBy: "studio-operator"
+      });
+
+      await refreshSelectedRuntimeDetails(targetRuntimeId);
+
+      if (
+        selectedRuntimeIdRef.current !== targetRuntimeId ||
+        selectedSessionIdRef.current !== targetSessionId
+      ) {
+        return;
+      }
+
+      startTransition(() => {
+        setLastSessionCancellation(cancellation);
+        setSessionCancellationError(null);
+
+        if (
+          cancellation.inspection &&
+          sessionInspectionReferencesRuntime(
+            cancellation.inspection,
+            targetRuntimeId
+          )
+        ) {
+          setSelectedSessionInspection(cancellation.inspection);
+        }
+      });
+    } catch (caught: unknown) {
+      if (
+        selectedRuntimeIdRef.current !== targetRuntimeId ||
+        selectedSessionIdRef.current !== targetSessionId
+      ) {
+        return;
+      }
+
+      startTransition(() => {
+        setSessionCancellationError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting session cancellation."
+          )
+        );
+      });
+    } finally {
+      setPendingSessionCancellation(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedSessionInspection
+  ]);
 
   const selectRuntimeApproval = useCallback(
     async (approvalId: string) => {
@@ -2636,6 +2730,9 @@ export function App() {
       setSessionLaunchDraft(createDefaultSessionLaunchDraft(null));
       setSessionLaunchError(null);
       setLastSessionLaunch(null);
+      setSessionCancellationError(null);
+      setLastSessionCancellation(null);
+      setPendingSessionCancellation(false);
       setSelectedRecovery(null);
       setMutationError(null);
       setRecoveryError(null);
@@ -2686,6 +2783,9 @@ export function App() {
     setSessionDetailError(null);
     setSessionLaunchError(null);
     setLastSessionLaunch(null);
+    setSessionCancellationError(null);
+    setLastSessionCancellation(null);
+    setPendingSessionCancellation(false);
     setMutationError(null);
     setSelectedRecovery(null);
     setRecoveryPolicyError(null);
@@ -2839,6 +2939,8 @@ export function App() {
         setSelectedSessionId(launch.sessionId);
         setSelectedSessionInspection(null);
         setSessionDetailError(null);
+        setSessionCancellationError(null);
+        setLastSessionCancellation(null);
       });
     } catch (caught: unknown) {
       startTransition(() => {
@@ -2871,6 +2973,17 @@ export function App() {
         ? collectSessionInspectionTraceIds(selectedSessionInspection)
         : [],
     [selectedSessionInspection]
+  );
+  const selectedSessionCancellableNodeIds = useMemo(
+    () =>
+      selectedSessionInspection
+        ? listCancellableSessionNodeIds(selectedSessionInspection)
+        : [],
+    [selectedSessionInspection]
+  );
+  const selectedSessionCancellationTargetSummary = useMemo(
+    () => formatSessionCancellationTargetSummary(selectedSessionCancellableNodeIds),
+    [selectedSessionCancellableNodeIds]
   );
   const selectedMemoryFocusedRegisters = useMemo(
     () =>
@@ -4603,7 +4716,44 @@ export function App() {
                                 : "none"}
                             </dd>
                           </div>
+                          <div>
+                            <dt>Cancellable nodes</dt>
+                            <dd>{selectedSessionCancellationTargetSummary}</dd>
+                          </div>
                         </dl>
+
+                        {sessionCancellationError ? (
+                          <p className="error-box">{sessionCancellationError}</p>
+                        ) : null}
+
+                        {lastSessionCancellation ? (
+                          <p className="notice-box">
+                            Cancellation requested for{" "}
+                            {lastSessionCancellation.cancellations.length} node
+                            {lastSessionCancellation.cancellations.length === 1
+                              ? ""
+                              : "s"}
+                            .
+                          </p>
+                        ) : null}
+
+                        <div className="action-row">
+                          <button
+                            className="action-button"
+                            disabled={
+                              pendingSessionCancellation ||
+                              selectedSessionCancellableNodeIds.length === 0
+                            }
+                            onClick={() => {
+                              void cancelSelectedSession();
+                            }}
+                            type="button"
+                          >
+                            {pendingSessionCancellation
+                              ? "Cancelling..."
+                              : "Cancel Session"}
+                          </button>
+                        </div>
 
                         <ul className="timeline-list">
                           {selectedSessionNodes.map((entry) => (

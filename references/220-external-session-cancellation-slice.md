@@ -24,6 +24,9 @@ standard abort signal.
 - Added shared host-client `cancelSession` and `cancelRuntimeSession` methods.
 - Added `entangle host sessions cancel` with optional node targeting and compact
   summary output.
+- Added Studio selected-session cancellation controls that derive cancellable
+  node ids from host-backed session inspection and request aggregate
+  cancellation through the shared host client.
 - Extended the generic agent engine boundary with optional `AbortSignal`
   propagation.
 - Added a `cancelled` engine stop reason, cancellation failure classification,
@@ -51,6 +54,10 @@ OpenCode adapter kills the active process, the runner records the turn with
 `phase: "cancelled"` and `engineOutcome.stopReason: "cancelled"`, and the
 session transitions to `cancelled`.
 
+Studio uses the same host boundary as the CLI. The selected-session detail view
+shows the non-terminal nodes that can still be cancelled and posts an aggregate
+session cancellation request scoped to those node ids.
+
 ## Boundaries
 
 This is intentionally not an OpenCode-specific control plane. OpenCode is only
@@ -58,7 +65,7 @@ the first adapter to honor the generic engine abort signal. Future attached
 server or other engine adapters should consume the same cancellation option.
 
 The slice does not implement post-approval engine resumption, live OpenCode
-permission approval mapping, or richer Studio cancellation controls. Those
+permission approval mapping, or richer live engine lifecycle controls. Those
 remain separate L3 tasks.
 
 ## Verification
@@ -70,8 +77,12 @@ pnpm --filter @entangle/types test -- --runInBand
 pnpm --filter @entangle/runner test -- --runInBand
 pnpm --filter @entangle/host-client test -- --runInBand
 pnpm --filter @entangle/host test -- --runInBand
+pnpm --filter @entangle/studio test -- --runInBand
 pnpm --filter @entangle/agent-engine typecheck
 pnpm --filter @entangle/runner typecheck
 pnpm --filter @entangle/host typecheck
 pnpm --filter @entangle/cli typecheck
+pnpm --filter @entangle/studio typecheck
+pnpm --filter @entangle/studio build
+CI=1 TURBO_DAEMON=false pnpm verify
 ```

@@ -2578,3 +2578,15 @@ Active turns now receive cancellation as a generic engine `AbortSignal`.
 OpenCode-backed turns terminate the child process with `SIGTERM`, and runner
 state records cancelled turn/session lifecycle evidence instead of collapsing
 operator cancellation into generic failure.
+
+## [2026-04-26] implementation | Added Studio session cancellation controls
+
+Extended `references/220-external-session-cancellation-slice.md` and aligned
+Studio with the existing host/runner cancellation bridge. The selected-session
+detail panel now derives cancellable node ids from host-backed inspection,
+shows the cancellation target set, and requests aggregate cancellation through
+the shared host client.
+
+The control remains host-first: Studio does not mutate local session state
+directly, and cancelled lifecycle evidence still comes from runner observation
+of persisted runtime cancellation requests.

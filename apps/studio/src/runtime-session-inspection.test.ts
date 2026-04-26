@@ -6,10 +6,13 @@ import type {
 import {
   collectSessionInspectionTraceIds,
   filterRuntimeSessions,
+  formatSessionCancellationTargetSummary,
   formatSessionInspectionNodeDetail,
   formatSessionInspectionNodeLabel,
   formatRuntimeSessionDetail,
   formatRuntimeSessionLabel,
+  isTerminalRuntimeSessionStatus,
+  listCancellableSessionNodeIds,
   sessionInspectionReferencesRuntime,
   sortSessionInspectionNodes
 } from "./runtime-session-inspection.js";
@@ -194,6 +197,121 @@ describe("studio runtime session inspection helpers", () => {
     );
     expect(formatSessionInspectionNodeDetail(workerEntry!)).toContain(
       "last message task.result"
+    );
+  });
+
+  it("derives cancellable session nodes from durable node statuses", () => {
+    const inspection: SessionInspectionResponse = {
+      graphId: "team-alpha",
+      nodes: [
+        {
+          nodeId: "lead-it",
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260424-000000",
+            nodeId: "lead-it",
+            observedState: "running",
+            reconciliation: {
+              findingCodes: [],
+              state: "aligned"
+            },
+            restartGeneration: 1
+          },
+          session: {
+            activeConversationIds: [],
+            graphId: "team-alpha",
+            intent: "Review the latest patch set.",
+            openedAt: "2026-04-24T10:00:00.000Z",
+            ownerNodeId: "lead-it",
+            rootArtifactIds: [],
+            sessionId: "session-alpha",
+            status: "completed",
+            traceId: "trace-alpha",
+            updatedAt: "2026-04-24T10:03:00.000Z",
+            waitingApprovalIds: []
+          }
+        },
+        {
+          nodeId: "qa-it",
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260424-000000",
+            nodeId: "qa-it",
+            observedState: "running",
+            reconciliation: {
+              findingCodes: [],
+              state: "aligned"
+            },
+            restartGeneration: 1
+          },
+          session: {
+            activeConversationIds: [],
+            graphId: "team-alpha",
+            intent: "Review the latest patch set.",
+            openedAt: "2026-04-24T10:00:00.000Z",
+            ownerNodeId: "qa-it",
+            rootArtifactIds: [],
+            sessionId: "session-alpha",
+            status: "waiting_approval",
+            traceId: "trace-alpha",
+            updatedAt: "2026-04-24T10:04:00.000Z",
+            waitingApprovalIds: ["approval-worker"]
+          }
+        },
+        {
+          nodeId: "worker-it",
+          runtime: {
+            backendKind: "docker",
+            contextAvailable: true,
+            desiredState: "running",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-20260424-000000",
+            nodeId: "worker-it",
+            observedState: "running",
+            reconciliation: {
+              findingCodes: [],
+              state: "aligned"
+            },
+            restartGeneration: 1
+          },
+          session: {
+            activeConversationIds: ["conv-worker"],
+            graphId: "team-alpha",
+            intent: "Review the latest patch set.",
+            openedAt: "2026-04-24T10:00:00.000Z",
+            ownerNodeId: "worker-it",
+            rootArtifactIds: [],
+            sessionId: "session-alpha",
+            status: "active",
+            traceId: "trace-alpha",
+            updatedAt: "2026-04-24T10:05:00.000Z",
+            waitingApprovalIds: []
+          }
+        }
+      ],
+      sessionId: "session-alpha"
+    };
+
+    expect(isTerminalRuntimeSessionStatus("cancelled")).toBe(true);
+    expect(isTerminalRuntimeSessionStatus("failed")).toBe(true);
+    expect(isTerminalRuntimeSessionStatus("waiting_approval")).toBe(false);
+    expect(listCancellableSessionNodeIds(inspection)).toEqual([
+      "qa-it",
+      "worker-it"
+    ]);
+    expect(
+      formatSessionCancellationTargetSummary(
+        listCancellableSessionNodeIds(inspection)
+      )
+    ).toBe("qa-it, worker-it");
+    expect(formatSessionCancellationTargetSummary([])).toBe(
+      "no cancellable nodes"
     );
   });
 });

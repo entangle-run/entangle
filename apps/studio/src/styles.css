@@ -194,6 +194,14 @@ code {
   color: #ffcbc4;
 }
 
+.notice-box {
+  margin: 18px 0 0;
+  border-left: 3px solid #8fbf7f;
+  background: rgba(143, 191, 127, 0.1);
+  padding: 12px 14px;
+  color: #dcf2d6;
+}
+
 .checklist {
   margin-top: 20px;
 }
