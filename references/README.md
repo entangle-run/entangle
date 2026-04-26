@@ -222,6 +222,7 @@ This directory is the canonical design corpus for Entangle.
 216. [215-runtime-artifact-restore-slice.md](215-runtime-artifact-restore-slice.md)
 217. [216-studio-artifact-restore-slice.md](216-studio-artifact-restore-slice.md)
 218. [217-runtime-artifact-restore-history-slice.md](217-runtime-artifact-restore-history-slice.md)
+219. [218-non-primary-publication-provisioning-slice.md](218-non-primary-publication-provisioning-slice.md)
 
 ## Role of this corpus
 

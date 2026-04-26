@@ -163,8 +163,9 @@ The repository now also contains the first real implementation baseline:
   review lifecycle mutations plus runtime-local source-history application for
   accepted candidates, and a separate source-history publication mutation that
   turns applied source-history commits into git commit artifacts with durable
-  publication metadata, resolved target metadata, and explicit retry after
-  failed attempts, with node-configured source mutation policy now able to
+  publication metadata, resolved target metadata, explicit retry after failed
+  attempts, and host-owned provisioning for selected non-primary `gitea_api`
+  targets, with node-configured source mutation policy now able to
   require approved runtime approval ids before source application, before any
   source-history publication, or before non-primary publication targets by
   default, while validating approval operation and concrete resource scope
@@ -739,9 +740,10 @@ The current implementation-truth audit now lives in
   listed-file preview plus review, local source-history state, and first
   retryable target-aware source-history commit artifact publication plus
   bounded artifact history/diff inspection and safe workspace restore for
-  materialized git artifacts; the next git gaps are approval-gated
-  restore/replay promotion semantics and non-primary target provisioning/
-  fallback behavior, while the next deployment-grade gap is non-disposable
+  materialized git artifacts, now including host-owned provisioning for
+  selected non-primary `gitea_api` publication targets; the next git gaps are
+  approval-gated restore/replay promotion semantics and explicit fallback or
+  replication behavior, while the next deployment-grade gap is non-disposable
   local-profile upgrade and repair behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled

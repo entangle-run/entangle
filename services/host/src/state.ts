@@ -1835,6 +1835,29 @@ async function ensureGitRepositoryTargetProvisioning(input: {
   }
 }
 
+async function persistGitRepositoryProvisioningRecord(
+  record: GitRepositoryProvisioningRecord
+): Promise<GitRepositoryProvisioningRecord> {
+  await writeJsonFileIfChanged(
+    gitRepositoryProvisioningRecordPath(record.target),
+    record
+  );
+
+  return record;
+}
+
+async function ensurePublicationGitRepositoryTargetProvisioning(input: {
+  context: EffectiveRuntimeContext;
+  target: GitRepositoryTarget;
+}): Promise<GitRepositoryProvisioningRecord> {
+  return persistGitRepositoryProvisioningRecord(
+    await ensureGitRepositoryTargetProvisioning({
+      gitServices: input.context.artifactContext.gitServices,
+      target: input.target
+    })
+  );
+}
+
 async function readCatalog(): Promise<DeploymentResourceCatalog> {
   await initializeHostState();
   return deploymentResourceCatalogSchema.parse(await readJsonFile(catalogPath));
@@ -3800,10 +3823,7 @@ async function buildRuntimeResolution(input: {
       );
     }
 
-    await writeJsonFileIfChanged(
-      gitRepositoryProvisioningRecordPath(resolvedPrimaryGitRepositoryTarget),
-      gitRepositoryProvisioning
-    );
+    await persistGitRepositoryProvisioningRecord(gitRepositoryProvisioning);
   }
   const effectiveBinding = effectiveNodeBindingSchema.parse({
     bindingId: sanitizeIdentifier(`${activeRevisionId}-${node.nodeId}`),
@@ -4392,9 +4412,18 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
     inspections.push(resolution.inspection);
   }
 
+  const retainedRepositoryProvisioningRecordIds = new Set(
+    repositoryProvisioningCache.keys()
+  );
+  for (const recordId of await listRuntimeSourceHistoryPublicationTargetRecordIds(
+    activeNodeIds
+  )) {
+    retainedRepositoryProvisioningRecordIds.add(recordId);
+  }
+
   await removeJsonFilesExcept(
     gitRepositoryTargetsRoot,
-    new Set(repositoryProvisioningCache.keys())
+    retainedRepositoryProvisioningRecordIds
   );
   await synchronizeRuntimeActivityEvents({
     runtimes: inspections
@@ -7230,6 +7259,18 @@ async function publishSourceHistoryArtifactRecord(input: {
   )}`;
   const attemptTimestamp = nowIsoString();
   const artifactRef = input.artifactRecord.ref;
+  const failPublication = (lastError: string): ArtifactRecord =>
+    artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        lastAttemptAt: attemptTimestamp,
+        lastError,
+        remoteName,
+        remoteUrl: input.target.remoteUrl,
+        state: "failed"
+      },
+      updatedAt: attemptTimestamp
+    });
 
   if (artifactRef.backend !== "git") {
     throw new Error(
@@ -7238,6 +7279,18 @@ async function publishSourceHistoryArtifactRecord(input: {
   }
 
   try {
+    const provisioning = await ensurePublicationGitRepositoryTargetProvisioning({
+      context: input.context,
+      target: input.target
+    });
+
+    if (provisioning.state === "failed") {
+      return failPublication(
+        `Git repository target '${input.target.gitServiceRef}/${input.target.namespace}/${input.target.repositoryName}' ` +
+          `could not be provisioned. ${provisioning.lastError ?? "Unknown provisioning error."}`
+      );
+    }
+
     const gitEnv = await buildSourceHistoryGitCommandEnvForRemoteOperation({
       context: input.context,
       target: input.target
@@ -7281,17 +7334,7 @@ async function publishSourceHistoryArtifactRecord(input: {
         ? error.message
         : "Unknown remote git publication failure.";
 
-    return artifactRecordSchema.parse({
-      ...input.artifactRecord,
-      publication: {
-        lastAttemptAt: attemptTimestamp,
-        lastError: publicationError,
-        remoteName,
-        remoteUrl: input.target.remoteUrl,
-        state: "failed"
-      },
-      updatedAt: attemptTimestamp
-    });
+    return failPublication(publicationError);
   }
 }
 
@@ -8592,6 +8635,36 @@ async function listRuntimeSourceHistoryRecords(
       )
     )
   );
+}
+
+async function listRuntimeSourceHistoryPublicationTargetRecordIds(
+  nodeIds: Set<string>
+): Promise<Set<string>> {
+  const recordIds = new Set<string>();
+
+  for (const nodeId of nodeIds) {
+    const runtimeRoot = buildWorkspaceLayout(nodeId).runtimeRoot;
+
+    for (const history of await listRuntimeSourceHistoryRecords(runtimeRoot)) {
+      const publication = history.publication;
+
+      if (
+        publication?.targetGitServiceRef &&
+        publication.targetNamespace &&
+        publication.targetRepositoryName
+      ) {
+        recordIds.add(
+          buildGitRepositoryTargetRecordId({
+            gitServiceRef: publication.targetGitServiceRef,
+            namespace: publication.targetNamespace,
+            repositoryName: publication.targetRepositoryName
+          })
+        );
+      }
+    }
+  }
+
+  return recordIds;
 }
 
 function runtimeSourceChangeCandidatesRoot(runtimeRoot: string): string {

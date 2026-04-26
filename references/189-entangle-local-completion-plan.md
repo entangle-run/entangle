@@ -659,8 +659,9 @@ Current partial implementation:
   pushes to the resolved git target when possible, records publication
   metadata and the resolved target on both the source-history entry and artifact
   locator, emits `source_history.published`, rejects repeated failed attempts
-  unless `retry: true` is supplied, and exposes host-client, CLI, and Studio
-  publish surfaces;
+  unless `retry: true` is supplied, provisions explicit non-primary
+  `gitea_api` publication targets through the host before the push path, and
+  exposes host-client, CLI, and Studio publish surfaces;
 - source application and source-history publication requests can now carry
   `approvalId`; node source mutation policy can require approval for source
   application, for all source publication, or for non-primary publication
@@ -678,8 +679,8 @@ Current partial implementation:
   `artifactWorkspaceRoot/restores/{restoreId}`, existing targets are not
   overwritten by default, and unsupported/unsafe restore attempts return
   structured unavailable records rather than widening filesystem access;
-- live OpenCode permission-to-approval flow, non-primary target
-  provisioning/fallback behavior, and approval-gated artifact replay/promotion
+- live OpenCode permission-to-approval flow, fallback/replication behavior
+  across publication targets, and approval-gated artifact replay/promotion
   workflow remain open.
 
 Acceptance:

@@ -28,6 +28,7 @@ import {
   externalPrincipalInspectionResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
+  gitRepositoryProvisioningRecordSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -65,7 +66,9 @@ import {
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
-  sourceChangeCandidateRecordSchema
+  sourceChangeCandidateRecordSchema,
+  sourceHistoryRecordSchema,
+  type RuntimeContextInspectionResponse
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -780,6 +783,117 @@ async function applySingleWorkerGraph(input: {
   });
 
   expect(response.statusCode).toBe(200);
+}
+
+async function writeAppliedSourceHistoryFixture(input: {
+  candidateId: string;
+  runtimeContext: RuntimeContextInspectionResponse;
+  sourceHistoryId: string;
+}): Promise<void> {
+  const sourceWorkspaceRoot = input.runtimeContext.workspace.sourceWorkspaceRoot;
+
+  if (!sourceWorkspaceRoot) {
+    throw new Error("Expected source workspace root in runtime context.");
+  }
+
+  const gitDir = path.join(
+    input.runtimeContext.workspace.runtimeRoot,
+    "source-snapshot.git"
+  );
+  const gitEnv = {
+    GIT_DIR: gitDir,
+    GIT_WORK_TREE: sourceWorkspaceRoot
+  };
+
+  await runGitCommand({
+    args: ["init"],
+    cwd: sourceWorkspaceRoot,
+    env: gitEnv
+  });
+  await writeFile(
+    path.join(sourceWorkspaceRoot, "worker.ts"),
+    "export const generated = false;\n",
+    "utf8"
+  );
+  await runGitCommand({
+    args: ["add", "--all", "--", "."],
+    cwd: sourceWorkspaceRoot,
+    env: gitEnv
+  });
+  const baseTree = await runGitCommand({
+    args: ["write-tree"],
+    cwd: sourceWorkspaceRoot,
+    env: gitEnv
+  });
+
+  await writeFile(
+    path.join(sourceWorkspaceRoot, "worker.ts"),
+    "export const generated = true;\n",
+    "utf8"
+  );
+  await runGitCommand({
+    args: ["add", "--all", "--", "."],
+    cwd: sourceWorkspaceRoot,
+    env: gitEnv
+  });
+  const headTree = await runGitCommand({
+    args: ["write-tree"],
+    cwd: sourceWorkspaceRoot,
+    env: gitEnv
+  });
+  const commit = await runGitCommand({
+    args: ["commit-tree", headTree, "-m", `Apply ${input.candidateId}`],
+    cwd: sourceWorkspaceRoot,
+    env: {
+      ...gitEnv,
+      GIT_AUTHOR_EMAIL: "worker-it@entangle.invalid",
+      GIT_AUTHOR_NAME: "Worker IT",
+      GIT_COMMITTER_EMAIL: "worker-it@entangle.invalid",
+      GIT_COMMITTER_NAME: "Worker IT"
+    }
+  });
+  const timestamp = "2026-04-24T10:08:00.000Z";
+  const historyRecord = sourceHistoryRecordSchema.parse({
+    appliedAt: timestamp,
+    baseTree,
+    branch: "entangle/source-history",
+    candidateId: input.candidateId,
+    commit,
+    graphId: input.runtimeContext.binding.graphId,
+    graphRevisionId: input.runtimeContext.binding.graphRevisionId,
+    headTree,
+    mode: "applied_to_workspace",
+    nodeId: input.runtimeContext.binding.node.nodeId,
+    sessionId: "session-alpha",
+    sourceChangeSummary: {
+      additions: 9,
+      checkedAt: timestamp,
+      deletions: 2,
+      fileCount: 1,
+      files: [
+        {
+          additions: 9,
+          deletions: 2,
+          path: "worker.ts",
+          status: "modified"
+        }
+      ],
+      status: "changed",
+      truncated: false
+    },
+    sourceHistoryId: input.sourceHistoryId,
+    turnId: "turn-alpha",
+    updatedAt: timestamp
+  });
+
+  await writeJsonFile(
+    path.join(
+      input.runtimeContext.workspace.runtimeRoot,
+      "source-history",
+      `${input.sourceHistoryId}.json`
+    ),
+    historyRecord
+  );
 }
 
 afterEach(async () => {
@@ -2704,6 +2818,138 @@ describe("buildHostServer", () => {
       expect(runtimeInspection.reason).toContain("could not be provisioned");
       expect(runtimeInspection.reason).toContain("requires provisioning secret");
       expect(giteaApi.requests).toEqual([]);
+    } finally {
+      await Promise.all([server.close(), giteaApi.close()]);
+    }
+  });
+
+  it("provisions a non-primary gitea_api publication target before git push", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const giteaApi = await createTestGiteaApiServer();
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      await writeSecretRefFile(
+        "secret://git-services/local-gitea/provisioning",
+        "gitea-provisioning-token\n"
+      );
+
+      await server.inject({
+        method: "PUT",
+        payload: buildProvisioningCatalog({
+          apiBaseUrl: giteaApi.url
+        }),
+        url: "/v1/catalog"
+      });
+
+      const admittedPackageSourceId = await admitPackageSource(
+        server,
+        packageDirectory
+      );
+      await applySingleWorkerGraph({
+        packageSourceId: admittedPackageSourceId,
+        server,
+        workerPolicy: {
+          sourceMutation: {
+            applyRequiresApproval: false,
+            nonPrimaryPublishRequiresApproval: false,
+            publishRequiresApproval: false
+          }
+        }
+      });
+
+      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/runtimes/worker-it/context"
+          })
+        ).json()
+      );
+      await writeAppliedSourceHistoryFixture({
+        candidateId: "source-change-gitea-target",
+        runtimeContext,
+        sourceHistoryId: "source-history-gitea-target"
+      });
+
+      const publishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          publishedBy: "operator-alpha",
+          reason: "Publish source history to a provisioned non-primary target.",
+          targetRepositoryName: "secondary-target"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/source-history-gitea-target/publish"
+      });
+
+      expect(publishResponse.statusCode).toBe(200);
+      const publication = runtimeSourceHistoryPublicationResponseSchema.parse(
+        publishResponse.json()
+      );
+      expect(publication.entry.publication).toMatchObject({
+        targetGitServiceRef: "local-gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "secondary-target"
+      });
+      expect(publication.artifact).toMatchObject({
+        publication: {
+          state: "failed"
+        },
+        ref: {
+          locator: {
+            repositoryName: "secondary-target"
+          }
+        }
+      });
+      expect(publication.artifact.publication?.lastError).toContain(
+        "Remote git operations require a git principal binding"
+      );
+
+      expect(
+        giteaApi.requests.some(
+          (request) =>
+            request.method === "POST" &&
+            request.url === "/api/v1/orgs/team-alpha/repos" &&
+            request.authorization === "token gitea-provisioning-token" &&
+            JSON.stringify(request.body) ===
+              JSON.stringify({
+                auto_init: false,
+                name: "secondary-target",
+                private: true
+              })
+        )
+      ).toBe(true);
+
+      const provisioningRecordPath = path.join(
+        process.env.ENTANGLE_HOME!,
+        "host",
+        "observed",
+        "git-repository-targets",
+        "local-gitea-team-alpha-secondary-target.json"
+      );
+      const provisioningRecord = gitRepositoryProvisioningRecordSchema.parse(
+        JSON.parse(await readFile(provisioningRecordPath, "utf8"))
+      );
+      expect(provisioningRecord).toMatchObject({
+        created: true,
+        state: "ready",
+        target: {
+          gitServiceRef: "local-gitea",
+          namespace: "team-alpha",
+          repositoryName: "secondary-target"
+        }
+      });
+
+      const runtimeResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it"
+      });
+
+      expect(runtimeResponse.statusCode).toBe(200);
+      await expect(readFile(provisioningRecordPath, "utf8")).resolves.toContain(
+        "secondary-target"
+      );
     } finally {
       await Promise.all([server.close(), giteaApi.close()]);
     }

@@ -2538,3 +2538,18 @@ During verification, `@entangle/validator` consistently stalled under the
 default Vitest worker pool while passing immediately with the fork pool. Its
 package test script now pins `--pool=forks` so the repository-level
 `pnpm verify` gate remains deterministic.
+
+## [2026-04-26] implementation | Added non-primary publication provisioning
+
+Added `references/218-non-primary-publication-provisioning-slice.md` and
+advanced B5 of the Entangle Local completion plan. Source-history publication
+now runs host-owned Gitea provisioning for the resolved publication target, so
+selected non-primary `gitea_api` repositories are created before the remote git
+push path is attempted.
+
+Provisioning records for source-history publication targets are persisted under
+observed git-repository-target state and retained across reconciliation while
+active source-history records reference the target. If provisioning or the
+subsequent git push cannot complete, the host keeps the local artifact truth
+and records a failed publication instead of hiding the failure behind fallback
+behavior.

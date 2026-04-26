@@ -149,7 +149,8 @@ This repository currently contains:
   source-history commit as a git commit artifact, records publication metadata,
   records the resolved git target, requires explicit retry after failed
   attempts, emits `source_history.published`, and can push to the runtime's
-  primary or selected git target, including local `file://` git remotes for
+  primary or selected git target, including host-owned provisioning for
+  selected non-primary `gitea_api` targets and local `file://` git remotes for
   Entangle Local tests, with node-configured source mutation policy now able
   to require approved runtime approval ids before source application, before
   any source-history publication, or before non-primary publication targets by
@@ -746,8 +747,7 @@ The highest-value remaining gaps are:
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
   source-history publication, and safe artifact restore model, especially
-  approval-gated replay/promotion semantics, non-primary target provisioning,
-  and replicated fallback paths;
+  approval-gated replay/promotion semantics and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;
