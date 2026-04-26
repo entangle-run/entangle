@@ -153,6 +153,12 @@ import {
   type RuntimeAssignmentRevokeResponse,
   runnerJoinConfigSchema,
   type RuntimeNodeKind,
+  userNodeIdentityInspectionResponseSchema,
+  type UserNodeIdentityInspectionResponse,
+  userNodeIdentityListResponseSchema,
+  type UserNodeIdentityListResponse,
+  userNodeIdentityRecordSchema,
+  type UserNodeIdentityRecord,
   secretRefSchema,
   sessionCancellationRequestRecordSchema,
   sessionCancellationResponseSchema,
@@ -363,6 +369,7 @@ const hostAuthorityRecordPath = path.join(
 );
 const runnerRegistryRoot = path.join(desiredRoot, "runner-registry");
 const runtimeAssignmentsRoot = path.join(desiredRoot, "runtime-assignments");
+const userNodeIdentitiesRoot = path.join(desiredRoot, "user-node-identities");
 const packageSourcesRoot = path.join(desiredRoot, "package-sources");
 const graphRoot = path.join(desiredRoot, "graph");
 const currentGraphPath = path.join(graphRoot, "current.json");
@@ -1145,6 +1152,119 @@ async function ensureRuntimeIdentity(input: {
   await writeSecretFile(secretStoragePath, `${secretHex}\n`);
   await writeJsonFile(recordPath, record);
   return record;
+}
+
+function buildUserNodeIdentityRecordId(graphId: string, nodeId: string): string {
+  return sanitizeIdentifier(`${graphId}-${nodeId}`);
+}
+
+function buildUserNodeIdentityRecordPath(graphId: string, nodeId: string): string {
+  return path.join(
+    userNodeIdentitiesRoot,
+    `${buildUserNodeIdentityRecordId(graphId, nodeId)}.json`
+  );
+}
+
+function buildUserNodeIdentityKeyRef(graphId: string, nodeId: string): string {
+  return `secret://user-nodes/${buildUserNodeIdentityRecordId(graphId, nodeId)}`;
+}
+
+async function readUserNodeIdentityRecord(
+  graphId: string,
+  nodeId: string
+): Promise<UserNodeIdentityRecord | undefined> {
+  const recordPath = buildUserNodeIdentityRecordPath(graphId, nodeId);
+
+  if (!(await pathExists(recordPath))) {
+    return undefined;
+  }
+
+  return userNodeIdentityRecordSchema.parse(await readJsonFile(recordPath));
+}
+
+async function resolveUserNodeSecretPublicKey(
+  keyRef: string | undefined
+): Promise<string | undefined> {
+  if (!keyRef) {
+    return undefined;
+  }
+
+  const secretKey = await readSecretRefValue(keyRef);
+
+  if (!secretKey) {
+    return undefined;
+  }
+
+  try {
+    return getPublicKey(parseNostrSecretKeyBytes(secretKey));
+  } catch {
+    return undefined;
+  }
+}
+
+async function ensureUserNodeIdentity(input: {
+  graphId: string;
+  hostAuthorityPubkey: string;
+  node: NodeBinding;
+}): Promise<UserNodeIdentityRecord> {
+  const existing = await readUserNodeIdentityRecord(
+    input.graphId,
+    input.node.nodeId
+  );
+  const keyRef =
+    existing?.keyRef ??
+    buildUserNodeIdentityKeyRef(input.graphId, input.node.nodeId);
+  let publicKey = await resolveUserNodeSecretPublicKey(keyRef);
+
+  if (!publicKey) {
+    const secretKey = generateSecretKey();
+    const secretKeyHex = Buffer.from(secretKey).toString("hex");
+    publicKey = getPublicKey(secretKey);
+    await writeSecretRefValue(keyRef, secretKeyHex);
+  }
+
+  const timestamp = nowIsoString();
+  const record = userNodeIdentityRecordSchema.parse({
+    createdAt: existing?.createdAt ?? timestamp,
+    displayName: input.node.displayName,
+    gatewayIds: existing?.gatewayIds ?? [],
+    graphId: input.graphId,
+    hostAuthorityPubkey: input.hostAuthorityPubkey,
+    keyAlgorithm: existing?.keyAlgorithm ?? "nostr_secp256k1",
+    keyRef,
+    nodeId: input.node.nodeId,
+    publicKey,
+    ...(existing?.revocationReason
+      ? { revocationReason: existing.revocationReason }
+      : {}),
+    ...(existing?.revokedAt ? { revokedAt: existing.revokedAt } : {}),
+    schemaVersion: "1",
+    status: existing?.status ?? "active",
+    updatedAt: timestamp
+  });
+
+  await writeJsonFile(
+    buildUserNodeIdentityRecordPath(input.graphId, input.node.nodeId),
+    record
+  );
+  return record;
+}
+
+async function ensureUserNodeIdentitiesForGraph(
+  graph: GraphSpec
+): Promise<UserNodeIdentityRecord[]> {
+  const authority = await ensureHostAuthorityMaterialized();
+  const userNodes = graph.nodes.filter((node) => node.nodeKind === "user");
+
+  return Promise.all(
+    userNodes.map((node) =>
+      ensureUserNodeIdentity({
+        graphId: graph.graphId,
+        hostAuthorityPubkey: authority.publicKey,
+        node
+      })
+    )
+  );
 }
 
 function resolveSecretRefStoragePath(secretRef: string): string | undefined {
@@ -2120,6 +2240,47 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     })),
     schemaVersion: "1",
     userConversations: []
+  });
+}
+
+async function listActiveGraphUserNodeIdentityRecords(): Promise<
+  UserNodeIdentityRecord[]
+> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return [];
+  }
+
+  const identities = await ensureUserNodeIdentitiesForGraph(graph);
+
+  return identities.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
+}
+
+export async function listUserNodeIdentities(): Promise<UserNodeIdentityListResponse> {
+  await initializeHostState();
+
+  return userNodeIdentityListResponseSchema.parse({
+    generatedAt: nowIsoString(),
+    userNodes: await listActiveGraphUserNodeIdentityRecords()
+  });
+}
+
+export async function getUserNodeIdentity(
+  nodeId: string
+): Promise<UserNodeIdentityInspectionResponse | undefined> {
+  await initializeHostState();
+
+  const identities = await listActiveGraphUserNodeIdentityRecords();
+  const userNode = identities.find((identity) => identity.nodeId === nodeId);
+
+  if (!userNode) {
+    return undefined;
+  }
+
+  return userNodeIdentityInspectionResponseSchema.parse({
+    gateways: [],
+    userNode
   });
 }
 
@@ -4139,6 +4300,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(hostAuthorityRoot),
     ensureDirectory(runnerRegistryRoot),
     ensureDirectory(runtimeAssignmentsRoot),
+    ensureDirectory(userNodeIdentitiesRoot),
     ensureDirectory(externalPrincipalsRoot),
     ensureDirectory(nodeBindingsRoot),
     ensureDirectory(runtimeIntentsRoot),
@@ -4936,6 +5098,7 @@ async function buildRuntimeResolution(input: {
       }
     }
 
+    const hostAuthority = await ensureHostAuthorityMaterialized();
     const edgeRoutes: EffectiveRuntimeContext["relayContext"]["edgeRoutes"] = [];
 
     for (const edge of graph.edges) {
@@ -4974,7 +5137,11 @@ async function buildRuntimeResolution(input: {
 
       const peerRuntimeIdentity =
         peerNode.nodeKind === "user"
-          ? undefined
+          ? await ensureUserNodeIdentity({
+              graphId: graph.graphId,
+              hostAuthorityPubkey: hostAuthority.publicKey,
+              node: peerNode
+            })
           : await ensureRuntimeIdentity({
               graphId: graph.graphId,
               nodeId: peerNode.nodeId
@@ -5058,7 +5225,6 @@ async function buildRuntimeResolution(input: {
 
     await writeJsonFileIfChanged(runtimeContextPath, context);
 
-    const hostAuthority = await ensureHostAuthorityMaterialized();
     const runnerJoinConfig = buildRunnerJoinConfigForRuntimeContext(
       context,
       hostAuthority.publicKey
@@ -5443,6 +5609,7 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
   const packageSources = await listPackageSourceRecordMap();
   const runtimeNodes = graph.nodes.filter((node) => node.nodeKind !== "user");
   const activeNodeIds = new Set(runtimeNodes.map((node) => node.nodeId));
+  await ensureUserNodeIdentitiesForGraph(graph);
   const repositoryProvisioningCache = new Map<
     string,
     GitRepositoryProvisioningRecord

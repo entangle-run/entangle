@@ -91,6 +91,8 @@ import {
   sessionLaunchRequestSchema,
   sessionLaunchResponseSchema,
   sessionListResponseSchema,
+  userNodeIdentityInspectionResponseSchema,
+  userNodeIdentityListResponseSchema,
   type CatalogInspectionResponse,
   type EdgeCreateRequest,
   type EdgeDeletionResponse,
@@ -182,6 +184,8 @@ import {
   type SessionLaunchRequest,
   type SessionLaunchResponse,
   type SessionListResponse,
+  type UserNodeIdentityInspectionResponse,
+  type UserNodeIdentityListResponse,
 } from "@entangle/types";
 
 type FetchResponse = {
@@ -404,6 +408,22 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/projection`),
         hostProjectionSnapshotSchema
+      );
+    },
+
+    async listUserNodes(): Promise<UserNodeIdentityListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/user-nodes`),
+        userNodeIdentityListResponseSchema
+      );
+    },
+
+    async getUserNode(
+      nodeId: string
+    ): Promise<UserNodeIdentityInspectionResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}`),
+        userNodeIdentityInspectionResponseSchema
       );
     },
 

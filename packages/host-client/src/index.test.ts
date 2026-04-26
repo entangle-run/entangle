@@ -135,6 +135,65 @@ describe("createHostClient", () => {
     expect(requests).toEqual(["http://entangle-host.test/v1/projection"]);
   });
 
+  it("fetches User Node identity surfaces", async () => {
+    const requests: string[] = [];
+    const userNode = {
+      createdAt: "2026-04-26T12:00:00.000Z",
+      displayName: "Operator",
+      graphId: "team-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      keyRef: "secret://user-nodes/team-alpha-user-main",
+      nodeId: "user-main",
+      publicKey:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      schemaVersion: "1",
+      status: "active",
+      updatedAt: "2026-04-26T12:00:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(
+              url.endsWith("/v1/user-nodes")
+                ? {
+                    generatedAt: "2026-04-26T12:00:00.000Z",
+                    userNodes: [userNode]
+                  }
+                : {
+                    gateways: [],
+                    userNode
+                  }
+            ),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.listUserNodes()).resolves.toMatchObject({
+      userNodes: [
+        {
+          nodeId: "user-main"
+        }
+      ]
+    });
+    await expect(client.getUserNode("user-main")).resolves.toMatchObject({
+      userNode: {
+        nodeId: "user-main"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/user-nodes",
+      "http://entangle-host.test/v1/user-nodes/user-main"
+    ]);
+  });
+
   it("preserves JSON headers while adding the configured host auth token", async () => {
     const requests: Array<{ headers?: Record<string, string> }> = [];
     const client = createHostClient({

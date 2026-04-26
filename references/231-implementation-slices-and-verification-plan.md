@@ -170,6 +170,10 @@ Verification:
 Add stable user-node identity records, gateway signing, inbox/outbox
 projection, and multi-user support.
 
+Implementation record:
+
+- [240-user-node-identity-slice.md](240-user-node-identity-slice.md)
+
 Verification:
 
 - user-node identity tests;

@@ -100,7 +100,9 @@ import {
   sessionInspectionResponseSchema,
   sessionLaunchRequestSchema,
   sessionLaunchResponseSchema,
-  sessionListResponseSchema
+  sessionListResponseSchema,
+  userNodeIdentityInspectionResponseSchema,
+  userNodeIdentityListResponseSchema
 } from "@entangle/types";
 import { ZodError, type ZodType } from "zod";
 import {
@@ -131,6 +133,7 @@ import {
   getRuntimeSourceChangeCandidateInspection,
   getRuntimeSourceHistoryInspection,
   getRuntimeTurnInspection,
+  getUserNodeIdentity,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
   listRuntimeArtifactRestores,
@@ -160,6 +163,7 @@ import {
   listRunnerRegistry,
   listRuntimeAssignments,
   listRuntimeInspections,
+  listUserNodeIdentities,
   listSessions,
   listPackageSources,
   getRuntimeArtifactDiff,
@@ -536,6 +540,26 @@ export async function buildHostServer() {
   server.get("/v1/projection", async () =>
     hostProjectionSnapshotSchema.parse(await getHostProjectionSnapshot())
   );
+
+  server.get("/v1/user-nodes", async () =>
+    userNodeIdentityListResponseSchema.parse(await listUserNodeIdentities())
+  );
+
+  server.get("/v1/user-nodes/:nodeId", async (request, reply) => {
+    const params = request.params as { nodeId: string };
+    const nodeId = identifierSchema.parse(params.nodeId);
+    const inspection = await getUserNodeIdentity(nodeId);
+
+    if (!inspection) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `User Node '${nodeId}' was not found.`
+      });
+    }
+
+    return userNodeIdentityInspectionResponseSchema.parse(inspection);
+  });
 
   server.get("/v1/authority", async () =>
     hostAuthorityInspectionResponseSchema.parse(await getHostAuthorityInspection())

@@ -94,6 +94,8 @@ import {
   resolvePrimaryGitRepositoryTarget,
   secretRefSchema,
   userInteractionGatewayRecordSchema,
+  userNodeIdentityInspectionResponseSchema,
+  userNodeIdentityListResponseSchema,
   userNodeIdentityRecordSchema
 } from "./index.js";
 
@@ -216,6 +218,45 @@ describe("federated runtime contracts", () => {
         userNodeId: "user-main"
       }).kind
     ).toBe("studio");
+  });
+
+  it("accepts User Node identity API responses without exposing secrets", () => {
+    const userNode = userNodeIdentityRecordSchema.parse({
+      createdAt: observedAt,
+      displayName: "Operator",
+      gatewayIds: ["studio-main"],
+      graphId: "team-alpha",
+      hostAuthorityPubkey: authorityPubkey,
+      keyRef: "secret://user-nodes/team-alpha-user-main",
+      nodeId: "user-main",
+      publicKey: userNodePubkey,
+      schemaVersion: "1",
+      status: "active",
+      updatedAt: observedAt
+    });
+    const gateway = userInteractionGatewayRecordSchema.parse({
+      createdAt: observedAt,
+      gatewayId: "studio-main",
+      hostAuthorityPubkey: authorityPubkey,
+      kind: "studio",
+      schemaVersion: "1",
+      status: "active",
+      updatedAt: observedAt,
+      userNodeId: "user-main"
+    });
+
+    expect(
+      userNodeIdentityListResponseSchema.parse({
+        generatedAt: observedAt,
+        userNodes: [userNode]
+      }).userNodes[0]?.publicKey
+    ).toBe(userNodePubkey);
+    expect(
+      userNodeIdentityInspectionResponseSchema.parse({
+        gateways: [gateway],
+        userNode
+      }).gateways[0]?.gatewayId
+    ).toBe("studio-main");
   });
 
   it("requires active assignments to carry a lease", () => {

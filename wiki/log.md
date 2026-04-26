@@ -2767,3 +2767,15 @@ liveness, trust, operational state, and heartbeat assignment ids.
 The shared host client now includes `getProjection()`. This is the first
 projection surface only; deep session, turn, approval, artifact, source, and
 wiki surfaces still need migration away from runner-local file reads.
+
+## [2026-04-26] implementation | Added stable User Node identities
+
+Added `references/240-user-node-identity-slice.md` and implemented the ninth
+federated pivot slice. Host now materializes stable per-graph User Node Nostr
+identities, stores their key material behind secret refs, exposes user-node
+identity list and inspection APIs, and includes User Node pubkeys in agent
+runtime edge routes.
+
+This slice establishes the identity substrate only. Signed User Node tasks,
+replies, approvals, inbox/outbox projection, and Studio/CLI user interaction
+surfaces remain the next federated runtime work.

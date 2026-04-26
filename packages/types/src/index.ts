@@ -25,6 +25,7 @@ export * from "./host-api/runtime-recovery.js";
 export * from "./host-api/runners.js";
 export * from "./host-api/sessions.js";
 export * from "./host-api/status.js";
+export * from "./host-api/user-nodes.js";
 export * from "./package/package-manifest.js";
 export * from "./package/package-source.js";
 export * from "./package/tool-catalog.js";

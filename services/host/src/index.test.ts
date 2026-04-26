@@ -86,6 +86,7 @@ import {
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
+  userNodeIdentityListResponseSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
   type RuntimeContextInspectionResponse
@@ -2701,6 +2702,15 @@ describe("buildHostServer", () => {
       const userRoute = workerContext.relayContext.edgeRoutes.find(
         (route) => route.peerNodeId === "user-main"
       );
+      const userNodesResponse = await server.inject({
+        method: "GET",
+        url: "/v1/user-nodes"
+      });
+      const userNodeIdentity = userNodeIdentityListResponseSchema
+        .parse(userNodesResponse.json())
+        .userNodes.find((userNode) => userNode.nodeId === "user-main");
+
+      expect(userNodeIdentity).toBeDefined();
 
       expect(reviewerRoute).toMatchObject({
         edgeId: "worker-to-reviewer",
@@ -2711,9 +2721,9 @@ describe("buildHostServer", () => {
       expect(userRoute).toMatchObject({
         edgeId: "user-to-worker",
         peerNodeId: "user-main",
+        peerPubkey: userNodeIdentity?.publicKey,
         relation: "delegates_to"
       });
-      expect(userRoute?.peerPubkey).toBeUndefined();
     } finally {
       await server.close();
     }
