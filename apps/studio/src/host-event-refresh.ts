@@ -12,6 +12,7 @@ const overviewRefreshEventTypes = new Set<HostEventRecord["type"]>([
   "runtime.observed_state.changed",
   "runtime.restart.requested",
   "session.updated",
+  "session.cancellation.requested",
   "conversation.trace.event",
   "host.reconciliation.completed"
 ]);
@@ -26,6 +27,7 @@ const selectedRuntimeRefreshEventTypes = new Set<HostEventRecord["type"]>([
   "runtime.recovery.recorded",
   "runtime.recovery_controller.updated",
   "session.updated",
+  "session.cancellation.requested",
   "runner.turn.updated",
   "conversation.trace.event",
   "approval.trace.event",

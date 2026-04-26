@@ -89,6 +89,19 @@ describe("host-event-refresh", () => {
       type: "conversation.trace.event",
       updatedAt: "2026-04-24T10:00:02.000Z"
     };
+    const cancellationEvent: HostEventRecord = {
+      ...baseEvent,
+      cancellationId: "session-cancel-alpha",
+      category: "session",
+      graphId: "team-alpha",
+      message:
+        "Session cancellation 'session-cancel-alpha' was requested for session 'session-alpha' on node 'worker-it'.",
+      nodeId: "worker-it",
+      requestedBy: "studio-operator",
+      sessionId: "session-alpha",
+      status: "requested",
+      type: "session.cancellation.requested"
+    };
 
     expect(shouldRefreshOverviewFromHostEvent(packageSourceEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(packageSourceDeletedEvent)).toBe(
@@ -101,6 +114,7 @@ describe("host-event-refresh", () => {
     expect(shouldRefreshOverviewFromHostEvent(runtimeEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(sessionEvent)).toBe(true);
     expect(shouldRefreshOverviewFromHostEvent(conversationEvent)).toBe(true);
+    expect(shouldRefreshOverviewFromHostEvent(cancellationEvent)).toBe(true);
   });
 
   it("does not refresh the overview for trace-only events", () => {
@@ -170,6 +184,20 @@ describe("host-event-refresh", () => {
       turnId: "turn-alpha",
       type: "source_history.published"
     };
+    const cancellationEvent: HostEventRecord = {
+      ...baseEvent,
+      cancellationId: "session-cancel-alpha",
+      category: "session",
+      graphId: "team-alpha",
+      message:
+        "Session cancellation 'session-cancel-alpha' was requested for session 'session-alpha' on node 'worker-it'.",
+      nodeId: "worker-it",
+      reason: "Operator stopped the active turn.",
+      requestedBy: "studio-operator",
+      sessionId: "session-alpha",
+      status: "requested",
+      type: "session.cancellation.requested"
+    };
 
     expect(
       shouldRefreshSelectedRuntimeFromHostEvent(
@@ -189,6 +217,12 @@ describe("host-event-refresh", () => {
     expect(
       shouldRefreshSelectedRuntimeFromHostEvent(
         sourceHistoryPublishedEvent,
+        "worker-it"
+      )
+    ).toBe(true);
+    expect(
+      shouldRefreshSelectedRuntimeFromHostEvent(
+        cancellationEvent,
         "worker-it"
       )
     ).toBe(true);

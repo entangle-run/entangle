@@ -2590,3 +2590,10 @@ the shared host client.
 The control remains host-first: Studio does not mutate local session state
 directly, and cancelled lifecycle evidence still comes from runner observation
 of persisted runtime cancellation requests.
+
+## [2026-04-26] implementation | Wired Studio cancellation event refresh
+
+Studio now treats `session.cancellation.requested` as overview-relevant and
+selected-runtime-relevant host activity. Cancellation requests started through
+CLI or another host client therefore schedule the same host-backed refresh path
+as in-Studio cancellation, instead of depending on a manual operator reload.

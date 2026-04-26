@@ -27,6 +27,9 @@ standard abort signal.
 - Added Studio selected-session cancellation controls that derive cancellable
   node ids from host-backed session inspection and request aggregate
   cancellation through the shared host client.
+- Added Studio event-refresh handling for `session.cancellation.requested` so
+  cancellation requests initiated by CLI or other host clients refresh overview
+  and selected-runtime state through the normal event stream path.
 - Extended the generic agent engine boundary with optional `AbortSignal`
   propagation.
 - Added a `cancelled` engine stop reason, cancellation failure classification,
