@@ -40,9 +40,9 @@ Recently added:
 - the runner-served User Client now has a conversation list, selected thread
   metadata, `/api/state`, and conversation/session-preserving message
   publishing.
-- Host exposes User Node conversation detail with recorded outbound messages,
-  CLI `inbox show` uses that detail endpoint, and the User Client renders
-  recorded messages for the selected thread.
+- Host exposes User Node conversation detail with recorded inbound/outbound
+  messages, CLI `inbox show` uses that detail endpoint, and the User Client
+  renders recorded messages for the selected thread.
 
 ## Target Model
 
@@ -101,8 +101,8 @@ Node.
   conversations, replies, approvals, and projection health.
 - Add CLI command groups for authority/runners/assignments/inbox/user-node
   actions. Authority, runner, assignment, User Node, projection inbox, reply,
-  approve, and reject surfaces now exist; full inbox message history waits for
-  inbox/outbox projection reducers.
+  approve, and reject surfaces now exist; message history now has the first
+  inbound/outbound projection path.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
@@ -112,9 +112,9 @@ Node.
   assignment/health panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
-  list, selected thread metadata, recorded outbound messages, and reply/answer
-  publishing; inbound message history, approval controls, artifact review, and
-  the full bundled client app remain open.
+  list, selected thread metadata, recorded inbound/outbound messages, and
+  reply/answer publishing; approval controls, artifact review, and the full
+  bundled client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

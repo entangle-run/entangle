@@ -105,6 +105,7 @@ import {
   userNodeIdentityListResponseSchema,
   userNodeIdentityRecordSchema,
   userNodeInboxResponseSchema,
+  userNodeInboundMessageRecordRequestSchema,
   userNodeMessageRecordSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
@@ -320,6 +321,42 @@ describe("federated runtime contracts", () => {
         userNodeId: "user-main"
       }).messages[0]?.summary
     ).toBe("Check the build.");
+
+    expect(
+      userNodeInboundMessageRecordRequestSchema.parse({
+        eventId:
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        message: {
+          constraints: {
+            approvalRequiredBeforeAction: false
+          },
+          conversationId: "conversation-alpha",
+          fromNodeId: "worker-it",
+          fromPubkey: runnerPubkey,
+          graphId: "team-alpha",
+          intent: "Report back to the user.",
+          messageType: "task.result",
+          parentMessageId:
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          protocol: "entangle.a2a.v1",
+          responsePolicy: {
+            closeOnResult: true,
+            maxFollowups: 0,
+            responseRequired: false
+          },
+          sessionId: "session-alpha",
+          toNodeId: "user-main",
+          toPubkey: userNodePubkey,
+          turnId: "turn-result",
+          work: {
+            artifactRefs: [],
+            metadata: {},
+            summary: "The requested work is complete."
+          }
+        },
+        receivedAt: observedAt
+      }).message.toNodeId
+    ).toBe("user-main");
   });
 
   it("accepts signed User Node message publish contracts", () => {

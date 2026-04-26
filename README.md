@@ -85,7 +85,9 @@ User Client health and state routes, observes runtime state through signed
 runner observations, publishes signed User Node messages through the relay, and
 verifies that the assigned agent runner persisted both received conversations
 and that Host projection contains both User Node conversations from
-runner-signed observations. Live OpenCode/model-provider behavior remains
+runner-signed observations. It also publishes a synthetic signed agent-to-user
+message through the relay and verifies that the running User Node records it as
+inbound inbox history. Live OpenCode/model-provider behavior remains
 intentionally manual until API-backed provider testing is available.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
@@ -131,7 +133,7 @@ This repository currently contains:
 - stable User Node identities that can be assigned to `human_interface`
   runners, portable User Node bootstrap bundles, a runner-served Human
   Interface Runtime/User Client with `/health`, `/api/state`, projected
-  conversation list, selected-thread metadata, recorded outbound message
+  conversation list, selected-thread metadata, recorded inbound/outbound message
   history, and Host-backed message publishing, plus projection of the User
   Client endpoint through Host, CLI, and Studio;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
@@ -368,7 +370,8 @@ This repository currently contains:
   that starts a Host HTTP server, launches separate generic joined agent and
   User Node runners as OS processes, assigns nodes through the relay, verifies
   runner-owned materialization, checks two Human Interface Runtime User Client
-  endpoints, publishes from two distinct User Node identities, and verifies
+  endpoints, publishes from two distinct User Node identities, records a
+  synthetic inbound agent message through the running User Node, and verifies
   Host projection;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable

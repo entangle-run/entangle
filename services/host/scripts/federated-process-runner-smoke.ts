@@ -11,6 +11,8 @@ import path from "node:path";
 import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import {
+  entangleA2AMessageSchema,
+  entangleNostrRumorKind,
   graphMutationResponseSchema,
   hostProjectionSnapshotSchema,
   packageSourceInspectionResponseSchema,
@@ -19,12 +21,14 @@ import {
   runnerRegistryInspectionResponseSchema,
   runtimeAssignmentOfferResponseSchema,
   runtimeContextInspectionResponseSchema,
+  runtimeIdentitySecretResponseSchema,
   sessionRecordSchema,
   userNodeConversationResponseSchema,
   userNodeMessagePublishResponseSchema,
+  type EntangleA2AMessage,
   type RunnerJoinConfig
 } from "@entangle/types";
-import { generateSecretKey, getPublicKey } from "nostr-tools";
+import { generateSecretKey, getPublicKey, nip59, SimplePool } from "nostr-tools";
 
 const keepRunning = process.argv.includes("--keep-running");
 const keepTemp = keepRunning || process.argv.includes("--keep-temp");
@@ -226,6 +230,37 @@ async function hostRequest(input: {
   }
 
   return response.json();
+}
+
+function parseSecretKeyHex(secretKey: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(secretKey, "hex"));
+}
+
+async function publishSyntheticA2AMessage(input: {
+  message: EntangleA2AMessage;
+  relayUrls: string[];
+  senderSecretKeyHex: string;
+}): Promise<string> {
+  const secretKey = parseSecretKeyHex(input.senderSecretKeyHex);
+  const message = entangleA2AMessageSchema.parse(input.message);
+  const rumor = nip59.createRumor(
+    {
+      content: JSON.stringify(message),
+      kind: entangleNostrRumorKind,
+      tags: []
+    },
+    secretKey
+  );
+  const seal = nip59.createSeal(rumor, secretKey, message.toPubkey);
+  const wrappedEvent = nip59.createWrap(seal, message.toPubkey);
+  const pool = new SimplePool();
+
+  try {
+    await Promise.all(pool.publish(input.relayUrls, wrappedEvent));
+    return rumor.id;
+  } finally {
+    pool.destroy();
+  }
 }
 
 function appendBounded(current: string, chunk: Buffer | string): string {
@@ -1268,6 +1303,77 @@ async function main(): Promise<void> {
       "User Node conversation detail must include the published User Node message."
     );
     printPass("user-node-message-history", userMessage.conversationId);
+
+    const builderIdentitySecret = runtimeIdentitySecretResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        path: "/v1/runtimes/builder/identity-secret"
+      })
+    );
+    const syntheticAgentMessageId = await publishSyntheticA2AMessage({
+      message: {
+        constraints: {
+          approvalRequiredBeforeAction: false
+        },
+        conversationId: userMessage.conversationId,
+        fromNodeId: "builder",
+        fromPubkey: materializedContext.identityContext.publicKey,
+        graphId: materializedContext.binding.graphId,
+        intent: "Send a synthetic result to the User Node.",
+        messageType: "task.result",
+        parentMessageId: userMessage.eventId,
+        protocol: "entangle.a2a.v1",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        sessionId: userMessage.sessionId,
+        toNodeId: "user",
+        toPubkey: materializedUserContext.identityContext.publicKey,
+        turnId: `${turnId}-synthetic-result`,
+        work: {
+          artifactRefs: [],
+          metadata: {
+            synthetic: true
+          },
+          summary:
+            "Process runner smoke: synthetic agent response reached the User Node inbox."
+        }
+      },
+      relayUrls,
+      senderSecretKeyHex: builderIdentitySecret.secretKey
+    });
+    const userInboundConversationDetail = await waitFor(
+      "Host User Node inbound message history",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.direction === "inbound" &&
+            message.eventId === syntheticAgentMessageId
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    assertCondition(
+      userInboundConversationDetail.messages.some(
+        (message) =>
+          message.direction === "inbound" &&
+          message.eventId === syntheticAgentMessageId &&
+          message.peerNodeId === "builder"
+      ),
+      "User Node conversation detail must include the inbound synthetic agent message."
+    );
+    printPass("user-node-inbound-message-history", userMessage.conversationId);
 
     const reviewerUserMessage = userNodeMessagePublishResponseSchema.parse(
       await hostRequest({

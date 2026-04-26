@@ -103,6 +103,9 @@ Verification record:
   distinct User Node pubkeys.
 - follow-up message-history slice adds conversation detail records for outbound
   User Node messages and renders them in the User Client.
+- follow-up inbound-intake slice subscribes as the running User Node, records
+  inbound agent-to-user messages, and renders them through the same conversation
+  detail surface.
 
 ## Migration/Compatibility Notes
 
@@ -120,7 +123,7 @@ stays server-side in the runner process and is not exposed to the browser.
   the bundled `apps/user-client` app as the next richer implementation.
 - Risk: conversation projection looks like full message history.
   Mitigation: the docs and UI call this a projected conversation list; durable
-  per-message inbox/outbox remains explicit deferred work.
+  per-message inbox/outbox is handled by the later message-history slices.
 - Risk: User Client can bypass graph policy.
   Mitigation: message publishing still goes through Host, which validates the
   selected User Node has an enabled outbound edge to the target node.

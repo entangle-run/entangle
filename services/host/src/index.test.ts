@@ -91,6 +91,7 @@ import {
   userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeIdentityListResponseSchema,
+  userNodeMessageRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
   type RuntimeAssignmentRecord,
@@ -3261,6 +3262,99 @@ describe("buildHostServer", () => {
         conversationId: "conversation-alpha",
         messages: [],
         userNodeId: "user-main"
+      });
+
+      const workerPubkey =
+        bootstrapBundle.runtimeContext.relayContext.edgeRoutes.find(
+          (route) => route.peerNodeId === "worker-it"
+        )?.peerPubkey;
+      if (!workerPubkey) {
+        throw new Error("Expected worker peer pubkey in User Node bootstrap.");
+      }
+      expect(workerPubkey).toHaveLength(64);
+      const inboundResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "POST",
+        payload: {
+          eventId:
+            "abababababababababababababababababababababababababababababababab",
+          message: {
+            constraints: {
+              approvalRequiredBeforeAction: false
+            },
+            conversationId: "conversation-alpha",
+            fromNodeId: "worker-it",
+            fromPubkey: workerPubkey,
+            graphId: "team-alpha",
+            intent: "Report back to the User Node.",
+            messageType: "task.result",
+            parentMessageId:
+              "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            protocol: "entangle.a2a.v1",
+            responsePolicy: {
+              closeOnResult: true,
+              maxFollowups: 0,
+              responseRequired: false
+            },
+            sessionId: "session-alpha",
+            toNodeId: "user-main",
+            toPubkey: bootstrapBundle.runtimeContext.identityContext.publicKey,
+            turnId: "turn-result",
+            work: {
+              artifactRefs: [],
+              metadata: {},
+              summary: "The worker completed the task."
+            }
+          },
+          receivedAt: new Date().toISOString()
+        },
+        url: "/v1/user-nodes/user-main/messages/inbound"
+      });
+      expect(inboundResponse.statusCode).toBe(200);
+      expect(userNodeMessageRecordSchema.parse(inboundResponse.json()))
+        .toMatchObject({
+          conversationId: "conversation-alpha",
+          direction: "inbound",
+          fromNodeId: "worker-it",
+          peerNodeId: "worker-it",
+          summary: "The worker completed the task.",
+          userNodeId: "user-main"
+        });
+
+      const inboxWithInboundResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox"
+      });
+      expect(
+        userNodeInboxResponseSchema.parse(inboxWithInboundResponse.json())
+          .conversations[0]
+      ).toMatchObject({
+        conversationId: "conversation-alpha",
+        lastMessageType: "task.result",
+        peerNodeId: "worker-it",
+        unreadCount: 1,
+        userNodeId: "user-main"
+      });
+
+      const conversationWithInboundResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox/conversation-alpha"
+      });
+      expect(
+        userNodeConversationResponseSchema.parse(
+          conversationWithInboundResponse.json()
+        ).messages[0]
+      ).toMatchObject({
+        direction: "inbound",
+        summary: "The worker completed the task."
       });
 
       const secretResponse = await server.inject({

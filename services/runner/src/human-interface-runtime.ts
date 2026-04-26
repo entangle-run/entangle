@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import type {
+  EntangleA2AMessage,
   EffectiveRuntimeContext,
   RunnerJoinHostApi,
   UserNodeConversationResponse,
@@ -13,6 +14,14 @@ import {
   userNodeInboxResponseSchema,
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
+import { getPublicKey } from "nostr-tools";
+import { parseNostrSecretKey } from "./join-config.js";
+import { NostrRunnerTransport } from "./nostr-transport.js";
+import type {
+  RunnerInboundEnvelope,
+  RunnerTransport,
+  RunnerTransportSubscription
+} from "./transport.js";
 
 export type HumanInterfaceRuntimeHandle = {
   clientUrl: string;
@@ -81,6 +90,45 @@ function buildHostApiHeaders(input: RunnerJoinHostApi | undefined): Record<strin
   }
 
   return headers;
+}
+
+function resolveHumanInterfaceSecretKey(
+  context: EffectiveRuntimeContext
+): Uint8Array | undefined {
+  const secretEnvVar =
+    context.identityContext.secretDelivery.mode === "env_var"
+      ? context.identityContext.secretDelivery.envVar
+      : undefined;
+  const secretKey = secretEnvVar
+    ? parseNostrSecretKey(process.env[secretEnvVar])
+    : undefined;
+
+  if (!secretKey) {
+    return undefined;
+  }
+
+  const publicKey = getPublicKey(secretKey);
+
+  if (publicKey !== context.identityContext.publicKey) {
+    throw new Error(
+      `Human Interface Runtime identity mismatch: context expects '${context.identityContext.publicKey}' but derived '${publicKey}'.`
+    );
+  }
+
+  return secretKey;
+}
+
+function createHumanInterfaceTransport(
+  context: EffectiveRuntimeContext
+): RunnerTransport | undefined {
+  const secretKey = resolveHumanInterfaceSecretKey(context);
+
+  return secretKey
+    ? new NostrRunnerTransport({
+        context,
+        secretKey
+      })
+    : undefined;
 }
 
 function listTargetNodes(context: EffectiveRuntimeContext): UserClientTarget[] {
@@ -236,6 +284,64 @@ async function fetchUserNodeConversation(input: {
           ? error.message
           : "Host conversation request failed."
     };
+  }
+}
+
+function isMessageAddressedToUserNode(input: {
+  message: EntangleA2AMessage;
+  publicKey: string;
+  userNodeId: string;
+}): boolean {
+  return (
+    input.message.toNodeId === input.userNodeId &&
+    input.message.toPubkey === input.publicKey
+  );
+}
+
+async function recordInboundUserNodeMessage(input: {
+  envelope: RunnerInboundEnvelope;
+  hostApi?: RunnerJoinHostApi | undefined;
+  publicKey: string;
+  userNodeId: string;
+}): Promise<void> {
+  if (!input.hostApi) {
+    return;
+  }
+
+  if (
+    !isMessageAddressedToUserNode({
+      message: input.envelope.message,
+      publicKey: input.publicKey,
+      userNodeId: input.userNodeId
+    })
+  ) {
+    return;
+  }
+
+  const response = await fetch(
+    new URL(
+      `/v1/user-nodes/${encodeURIComponent(input.userNodeId)}/messages/inbound`,
+      input.hostApi.baseUrl
+    ),
+    {
+      body: JSON.stringify({
+        eventId: input.envelope.eventId,
+        message: input.envelope.message,
+        receivedAt: input.envelope.receivedAt
+      }),
+      headers: {
+        ...buildHostApiHeaders(input.hostApi),
+        "content-type": "application/json"
+      },
+      method: "POST"
+    }
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Host User Node inbound record failed with HTTP ${response.status}: ${body}`
+    );
   }
 }
 
@@ -474,10 +580,14 @@ async function renderHome(input: {
 export async function startHumanInterfaceRuntime(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
+  transport?: RunnerTransport | undefined;
 }): Promise<HumanInterfaceRuntimeHandle> {
   const listenHost =
     process.env.ENTANGLE_HUMAN_INTERFACE_HOST?.trim() || "127.0.0.1";
   const listenPort = normalizeListenPort();
+  const inboundTransport = input.transport ?? createHumanInterfaceTransport(input.context);
+  const ownsInboundTransport = !input.transport && inboundTransport !== undefined;
+  let inboundSubscription: RunnerTransportSubscription | undefined;
   const server = createServer((request, response) => {
     void (async () => {
       const requestUrl = new URL(
@@ -603,12 +713,36 @@ export async function startHumanInterfaceRuntime(input: {
 
   const address = server.address() as AddressInfo;
   const clientUrl = normalizePublicClientUrl(address);
+  if (inboundTransport) {
+    try {
+      inboundSubscription = await inboundTransport.subscribe({
+        onMessage: (envelope) =>
+          recordInboundUserNodeMessage({
+            envelope,
+            hostApi: input.hostApi,
+            publicKey: input.context.identityContext.publicKey,
+            userNodeId: input.context.binding.node.nodeId
+          }).catch(() => undefined),
+        recipientPubkey: input.context.identityContext.publicKey
+      });
+    } catch {
+      if (ownsInboundTransport) {
+        await inboundTransport.close();
+      }
+    }
+  }
 
   return {
     clientUrl,
     runtimeRoot: input.context.workspace.runtimeRoot,
-    stop: () =>
-      new Promise<void>((resolve, reject) => {
+    stop: async () => {
+      await inboundSubscription?.close();
+
+      if (ownsInboundTransport) {
+        await inboundTransport?.close();
+      }
+
+      await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {
             reject(error);
@@ -617,6 +751,7 @@ export async function startHumanInterfaceRuntime(input: {
 
           resolve();
         });
-      })
+      });
+    }
   };
 }

@@ -528,6 +528,35 @@ describe("runner runtime context", () => {
           return;
         }
 
+        if (
+          request.method === "POST" &&
+          request.url === "/v1/user-nodes/user-main/messages/inbound"
+        ) {
+          response.end(
+            JSON.stringify({
+              conversationId: "conversation-alpha",
+              createdAt: "2026-04-26T12:04:00.000Z",
+              direction: "inbound",
+              eventId:
+                "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              fromNodeId: "worker-it",
+              fromPubkey: remotePublicKey,
+              messageType: "task.result",
+              peerNodeId: "worker-it",
+              publishedRelays: [],
+              relayUrls: [],
+              schemaVersion: "1",
+              sessionId: "session-alpha",
+              summary: "Inbound worker result.",
+              toNodeId: "user-main",
+              toPubkey: runnerPublicKey,
+              turnId: "turn-result",
+              userNodeId: "user-main"
+            })
+          );
+          return;
+        }
+
         response.statusCode = 404;
         response.end(JSON.stringify({ error: "not_found" }));
       })();
@@ -572,6 +601,7 @@ describe("runner runtime context", () => {
       }
     };
     process.env.ENTANGLE_HOST_TOKEN = "host-secret";
+    const transport = new InMemoryRunnerTransport();
     const handle = await startHumanInterfaceRuntime({
       context,
       hostApi: {
@@ -580,10 +610,40 @@ describe("runner runtime context", () => {
           mode: "bearer_env"
         },
         baseUrl: `http://127.0.0.1:${hostAddress.port}`
-      }
+      },
+      transport
     });
 
     try {
+      await transport.publish({
+        constraints: {
+          approvalRequiredBeforeAction: false
+        },
+        conversationId: "conversation-alpha",
+        fromNodeId: "worker-it",
+        fromPubkey: remotePublicKey,
+        graphId: context.binding.graphId,
+        intent: "Send a result to the user.",
+        messageType: "task.result",
+        parentMessageId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        protocol: "entangle.a2a.v1",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        sessionId: "session-alpha",
+        toNodeId: "user-main",
+        toPubkey: context.identityContext.publicKey,
+        turnId: "turn-result",
+        work: {
+          artifactRefs: [],
+          metadata: {},
+          summary: "Inbound worker result."
+        }
+      });
+
       const stateResponse = await fetch(new URL("/api/state", handle.clientUrl));
       expect(stateResponse.status).toBe(200);
       await expect(stateResponse.json()).resolves.toMatchObject({
@@ -658,6 +718,25 @@ describe("runner runtime context", () => {
       summary: "The reviewed answer is ready.",
       targetNodeId: "worker-it"
     });
+    const inboundRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/user-nodes/user-main/messages/inbound"
+    );
+    expect(inboundRequest).toMatchObject({
+      authorization: "Bearer host-secret"
+    });
+    expect(inboundRequest?.body).toMatchObject({
+      message: {
+        fromNodeId: "worker-it",
+        messageType: "task.result",
+        toNodeId: "user-main"
+      }
+    });
+    expect(
+      (inboundRequest?.body as { message?: { work?: { summary?: string } } })
+        .message?.work?.summary
+    ).toBe("Inbound worker result.");
   });
 
   it("can advertise a configured public Human Interface Runtime URL", async () => {

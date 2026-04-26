@@ -167,6 +167,7 @@ import {
   turnUpdatedObservationPayloadSchema,
   type ParsedUserNodeMessagePublishRequest,
   type UserNodeConversationResponse,
+  type UserNodeInboundMessageRecordRequest,
   userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
@@ -3094,6 +3095,51 @@ async function listWikiRefProjectionRecords(): Promise<WikiRefProjectionRecord[]
   );
 }
 
+function mergeProjectionArtifactIds(
+  current: string[],
+  nextRefs: UserNodeMessageRecord["artifactRefs"]
+): string[] {
+  return [
+    ...new Set([
+      ...current,
+      ...nextRefs.map((artifactRef) => artifactRef.artifactId)
+    ])
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+function inferUserConversationStatusFromMessage(
+  record: UserNodeMessageRecord
+): UserConversationProjectionRecord["status"] {
+  switch (record.messageType) {
+    case "approval.request":
+      return "awaiting_approval";
+    case "conversation.close":
+      return "closed";
+    case "task.result":
+      return "resolved";
+    default:
+      return "opened";
+  }
+}
+
+function resolveUserConversationStatusFromMessage(input: {
+  existing?: UserConversationProjectionRecord | undefined;
+  messageIsNewer: boolean;
+  record: UserNodeMessageRecord;
+}): UserConversationProjectionRecord["status"] {
+  const inferredStatus = inferUserConversationStatusFromMessage(input.record);
+
+  if (!input.existing) {
+    return inferredStatus;
+  }
+
+  if (!input.messageIsNewer || inferredStatus === "opened") {
+    return input.existing.status;
+  }
+
+  return inferredStatus;
+}
+
 async function listUserConversationProjectionRecords(): Promise<
   UserConversationProjectionRecord[]
 > {
@@ -3104,60 +3150,115 @@ async function listUserConversationProjectionRecords(): Promise<
       .map((node) => node.nodeId) ?? []
   );
 
-  if (userNodeIds.size === 0 || !(await pathExists(observedConversationActivityRoot))) {
+  if (userNodeIds.size === 0 || !graph) {
     return [];
   }
 
-  const records = await Promise.all(
-    (await readdir(observedConversationActivityRoot))
-      .filter((entry) => entry.endsWith(".json"))
-      .map(async (entry) =>
-        observedConversationActivityRecordSchema.parse(
-          await readJsonFile(path.join(observedConversationActivityRoot, entry))
-        )
+  const records = (await pathExists(observedConversationActivityRoot))
+    ? await Promise.all(
+        (await readdir(observedConversationActivityRoot))
+          .filter((entry) => entry.endsWith(".json"))
+          .map(async (entry) =>
+            observedConversationActivityRecordSchema.parse(
+              await readJsonFile(path.join(observedConversationActivityRoot, entry))
+            )
+          )
       )
-  );
-
-  return records
-    .map((record) => {
-      const userNodeId = userNodeIds.has(record.peerNodeId)
-        ? record.peerNodeId
-        : userNodeIds.has(record.nodeId)
-          ? record.nodeId
-          : undefined;
-
-      if (!userNodeId) {
-        return undefined;
-      }
-
-      return userConversationProjectionRecordSchema.parse({
-        artifactIds: record.artifactIds,
-        conversationId: record.conversationId,
-        graphId: record.graphId,
-        lastMessageAt: record.updatedAt,
-        ...(record.lastMessageType
-          ? { lastMessageType: record.lastMessageType }
-          : {}),
-        peerNodeId: userNodeId === record.peerNodeId ? record.nodeId : record.peerNodeId,
-        pendingApprovalIds: [],
-        projection: {
-          source: "observation_event",
-          updatedAt: record.updatedAt
-        },
-        sessionId: record.sessionId,
-        status: record.status,
-        unreadCount: 0,
-        userNodeId
-      });
-    })
-    .filter(
-      (record): record is UserConversationProjectionRecord => record !== undefined
+    : [];
+  const messageRecords = (
+    await Promise.all(
+      [...userNodeIds].map((userNodeId) =>
+        listUserNodeMessageRecords({
+          userNodeId
+        })
+      )
     )
-    .sort((left, right) =>
-      `${left.userNodeId}--${left.conversationId}`.localeCompare(
-        `${right.userNodeId}--${right.conversationId}`
-      )
+  ).flat();
+  const projectedRecords = new Map<string, UserConversationProjectionRecord>();
+
+  for (const record of records) {
+    const userNodeId = userNodeIds.has(record.peerNodeId)
+      ? record.peerNodeId
+      : userNodeIds.has(record.nodeId)
+        ? record.nodeId
+        : undefined;
+
+    if (!userNodeId) {
+      continue;
+    }
+
+    const projectionRecord = userConversationProjectionRecordSchema.parse({
+      artifactIds: record.artifactIds,
+      conversationId: record.conversationId,
+      graphId: record.graphId,
+      lastMessageAt: record.updatedAt,
+      ...(record.lastMessageType ? { lastMessageType: record.lastMessageType } : {}),
+      peerNodeId: userNodeId === record.peerNodeId ? record.nodeId : record.peerNodeId,
+      pendingApprovalIds: [],
+      projection: {
+        source: "observation_event",
+        updatedAt: record.updatedAt
+      },
+      sessionId: record.sessionId,
+      status: record.status,
+      unreadCount: 0,
+      userNodeId
+    });
+    projectedRecords.set(
+      `${projectionRecord.userNodeId}--${projectionRecord.conversationId}`,
+      projectionRecord
     );
+  }
+
+  for (const messageRecord of messageRecords) {
+    const key = `${messageRecord.userNodeId}--${messageRecord.conversationId}`;
+    const existing = projectedRecords.get(key);
+    const existingLastMessageAt = existing?.lastMessageAt;
+    const messageIsNewer =
+      !existingLastMessageAt || messageRecord.createdAt >= existingLastMessageAt;
+    const lastMessageAt = messageIsNewer
+      ? messageRecord.createdAt
+      : existingLastMessageAt;
+    const lastMessageType = messageIsNewer
+      ? messageRecord.messageType
+      : existing.lastMessageType;
+
+    projectedRecords.set(
+      key,
+      userConversationProjectionRecordSchema.parse({
+        artifactIds: mergeProjectionArtifactIds(
+          existing?.artifactIds ?? [],
+          messageRecord.artifactRefs
+        ),
+        conversationId: messageRecord.conversationId,
+        graphId: existing?.graphId ?? graph.graphId,
+        lastMessageAt,
+        ...(lastMessageType ? { lastMessageType } : {}),
+        peerNodeId: existing?.peerNodeId ?? messageRecord.peerNodeId,
+        pendingApprovalIds: existing?.pendingApprovalIds ?? [],
+        projection: {
+          source: existing?.projection.source ?? "observation_event",
+          updatedAt: lastMessageAt
+        },
+        sessionId: existing?.sessionId ?? messageRecord.sessionId,
+        status: resolveUserConversationStatusFromMessage({
+          ...(existing ? { existing } : {}),
+          messageIsNewer,
+          record: messageRecord
+        }),
+        unreadCount:
+          (existing?.unreadCount ?? 0) +
+          (messageRecord.direction === "inbound" ? 1 : 0),
+        userNodeId: messageRecord.userNodeId
+      })
+    );
+  }
+
+  return [...projectedRecords.values()].sort((left, right) =>
+    `${left.userNodeId}--${left.conversationId}`.localeCompare(
+      `${right.userNodeId}--${right.conversationId}`
+    )
+  );
 }
 
 export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapshot> {
@@ -3351,6 +3452,45 @@ export async function recordUserNodePublishedMessage(input: {
     toPubkey: input.response.toPubkey,
     turnId: input.response.turnId,
     userNodeId: input.response.fromNodeId
+  });
+
+  await writeJsonFileIfChanged(
+    observedUserNodeMessageRecordPath({
+      eventId: record.eventId,
+      userNodeId: record.userNodeId
+    }),
+    record
+  );
+
+  return record;
+}
+
+export async function recordUserNodeInboundMessage(input: {
+  request: UserNodeInboundMessageRecordRequest;
+  userNodeId: string;
+}): Promise<UserNodeMessageRecord> {
+  await initializeHostState();
+
+  const { message } = input.request;
+  const record = userNodeMessageRecordSchema.parse({
+    artifactRefs: message.work.artifactRefs,
+    conversationId: message.conversationId,
+    createdAt: input.request.receivedAt,
+    direction: "inbound",
+    eventId: input.request.eventId,
+    fromNodeId: message.fromNodeId,
+    fromPubkey: message.fromPubkey,
+    messageType: message.messageType,
+    peerNodeId: message.fromNodeId,
+    publishedRelays: [],
+    relayUrls: [],
+    schemaVersion: "1",
+    sessionId: message.sessionId,
+    summary: message.work.summary,
+    toNodeId: message.toNodeId,
+    toPubkey: message.toPubkey,
+    turnId: message.turnId,
+    userNodeId: input.userNodeId
   });
 
   await writeJsonFileIfChanged(

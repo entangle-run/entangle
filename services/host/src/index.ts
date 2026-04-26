@@ -108,6 +108,8 @@ import {
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeInboxResponseSchema,
+  userNodeInboundMessageRecordRequestSchema,
+  userNodeMessageRecordSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
@@ -200,6 +202,7 @@ import {
   setRuntimeRecoveryPolicy,
   trustRunnerRegistration,
   recordHostOperatorRequestCompleted,
+  recordUserNodeInboundMessage,
   recordUserNodePublishedMessage,
   subscribeToHostEvents,
   upsertExternalPrincipal,
@@ -689,6 +692,52 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       }
 
       return userNodeConversationResponseSchema.parse(inspection);
+    }
+  );
+
+  server.post(
+    "/v1/user-nodes/:nodeId/messages/inbound",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const nodeId = identifierSchema.parse(params.nodeId);
+      const userNode = await getUserNodeIdentity(nodeId);
+
+      if (!userNode) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `User Node '${nodeId}' was not found.`
+        });
+      }
+
+      const recordRequest = parseRequestInput(
+        userNodeInboundMessageRecordRequestSchema,
+        request.body,
+        {
+          detailsKey: "inboundMessage",
+          message: "Invalid User Node inbound message payload."
+        }
+      );
+
+      if (
+        recordRequest.message.toNodeId !== nodeId ||
+        recordRequest.message.toPubkey !== userNode.userNode.publicKey
+      ) {
+        throw new HostHttpError({
+          code: "bad_request",
+          message:
+            `Inbound message '${recordRequest.eventId}' is not addressed to ` +
+            `User Node '${nodeId}'.`,
+          statusCode: 400
+        });
+      }
+
+      return userNodeMessageRecordSchema.parse(
+        await recordUserNodeInboundMessage({
+          request: recordRequest,
+          userNodeId: nodeId
+        })
+      );
     }
   );
 

@@ -3173,3 +3173,24 @@ The smoke also exposed a runtime projection race where an older `starting`
 observation could overwrite a newer `running` observation. Host runtime-status
 observation writes are now serialized and stale startup observations are ignored
 when a current running projection is already present.
+
+## [2026-04-26] implementation | Added User Node inbound message intake
+
+Added `references/262-user-node-inbound-message-intake-slice.md`. The Human
+Interface Runtime now subscribes to A2A messages as the assigned User Node when
+identity key material is available, validates that inbound envelopes are
+addressed to that User Node, and forwards bounded records to Host through
+`POST /v1/user-nodes/:nodeId/messages/inbound`.
+
+Host records those inbound messages under the same User Node message-history
+store used for outbound messages and folds message records into User Node inbox
+projection, so conversations can appear from message history even before a
+runner conversation observation exists. The User Client renders inbound and
+outbound records through the existing conversation detail surface.
+
+Focused typechecks, focused tests, package lints, and
+`node --check scripts/smoke-federated-process-runner.mjs` passed for the
+changed `types`, `host`, and `runner` surfaces. The relay-backed
+`pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000`
+smoke passed with `user-node-inbound-message-history`, two User Node runtimes,
+and Host/runner/User-runner filesystem isolation.

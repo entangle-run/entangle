@@ -3,6 +3,7 @@ import { artifactRefSchema } from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
+  entangleA2AMessageSchema,
   entangleA2AApprovalResponseDecisionSchema,
   entangleA2AResponsePolicySchema
 } from "../protocol/a2a.js";
@@ -49,6 +50,12 @@ export const userNodeMessageRecordSchema = z.object({
   toPubkey: nostrPublicKeySchema,
   turnId: identifierSchema,
   userNodeId: identifierSchema
+});
+
+export const userNodeInboundMessageRecordRequestSchema = z.object({
+  eventId: nostrEventIdSchema,
+  message: entangleA2AMessageSchema,
+  receivedAt: nonEmptyStringSchema
 });
 
 export const userNodeConversationResponseSchema = z.object({
@@ -119,6 +126,9 @@ export type UserNodeIdentityInspectionResponse = z.infer<
 export type UserNodeInboxResponse = z.infer<typeof userNodeInboxResponseSchema>;
 export type UserNodeConversationResponse = z.infer<
   typeof userNodeConversationResponseSchema
+>;
+export type UserNodeInboundMessageRecordRequest = z.infer<
+  typeof userNodeInboundMessageRecordRequestSchema
 >;
 export type UserNodeMessageDirection = z.infer<
   typeof userNodeMessageDirectionSchema

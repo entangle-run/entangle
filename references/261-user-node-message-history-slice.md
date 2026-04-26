@@ -15,8 +15,8 @@ Host records the User Node messages it publishes, exposes them through a
 conversation detail API, and the Human Interface Runtime renders them in the
 User Client.
 
-Inbound agent-to-user message history remains a follow-up; this slice does not
-pretend conversation projection is full chat history.
+Inbound agent-to-user message history remained a follow-up for this slice and
+is now addressed by `262-user-node-inbound-message-intake-slice.md`.
 
 ## Impacted Modules/Files
 
@@ -61,7 +61,6 @@ Implemented in this slice:
 
 Deferred:
 
-- inbound agent-to-user message records;
 - message delivery/read state;
 - parent/child message threading display;
 - approval/artifact/source/wiki review message panels;
@@ -101,8 +100,8 @@ endpoint.
 ## Risks And Mitigations
 
 - Risk: outbound-only message records are mistaken for full chat history.
-  Mitigation: schemas include `direction`, and docs call inbound history out as
-  deferred work.
+  Mitigation: schemas include `direction`, and follow-up inbound intake now
+  records agent-to-user messages separately.
 - Risk: Host persistence failure after relay publication creates an inconsistent
   local outbox.
   Mitigation: current writes are schema-validated and atomic through the Host
@@ -113,6 +112,6 @@ endpoint.
 
 ## Open Questions
 
-The next product decision is whether inbound agent messages should be projected
-from runner observations with bounded message summaries, or whether the User
-Client should subscribe to the relay directly and maintain a local inbox store.
+The next product decision is whether the User Client should keep a local
+encrypted inbox store with only bounded Host projection, or whether Host
+projection remains the canonical participant inbox for v1.

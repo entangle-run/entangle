@@ -35,6 +35,10 @@ User nodes are now partially runtime-capable:
 - Host now persists outbound User Node messages it publishes and exposes them
   through `GET /v1/user-nodes/:nodeId/inbox/:conversationId`; the User Client
   renders those recorded messages for the selected thread.
+- The Human Interface Runtime now subscribes to A2A messages as the assigned
+  User Node when identity key material is available, forwards bounded inbound
+  message records to Host, and Host exposes those records through the same
+  conversation detail API.
 - The process-boundary smoke now starts one real joined agent runner and one
   real joined User Node `human_interface` runner, assigns both through the same
   control plane, verifies User Client `/health`, and proves the signed User
@@ -51,8 +55,7 @@ Still missing:
   review;
 - Studio approval decisions still include operator-side mutation paths instead
   of being only signed User Node protocol behavior;
-- Host approval mutation still writes local approval records;
-- inbound agent-to-user message history is not projected yet.
+- Host approval mutation still writes local approval records.
 
 ## Target Model
 
@@ -106,7 +109,7 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   Host-provisioned development key backend.
 - Add Host APIs for listing user-node identities and projected inbox state.
   Basic identity, User Node-specific projected conversation inbox surfaces, and
-  outbound message history exist; inbound message history remains open.
+  inbound/outbound message history now exist.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
   Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that
@@ -122,8 +125,11 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   signed User Node A2A message surface. Studio should show operator visibility
   and a link to the User Client, not own chat state.
 - Project inbound and outbound user-node conversations into Host read models.
-  Conversation-level projection exists; per-message inbox/outbox remains open.
+  Conversation-level projection and first per-message inbound/outbound records
+  exist.
 - Persist outbound User Node message records. Done for Host-published messages.
+- Persist inbound User Node message records. Done through the Human Interface
+  Runtime relay subscriber and Host inbound intake endpoint.
 - Make approval records include signer pubkey, event id, and source message id.
 - Add edge-route pubkeys for user-node peers.
 - Add multi-user selection in Studio and CLI.
@@ -140,6 +146,7 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - User Node inbox API tests.
 - User Client state and selected-conversation publish tests.
 - User Node conversation detail/message-history tests.
+- User Node inbound relay intake tests.
 - Signed user task launch tests.
 - Signed reply and answer tests.
 - Signed approval.response tests.
