@@ -1395,29 +1395,16 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     }
 
     const params = request.params as { nodeId: string };
-    const inspection = await getRuntimeInspection(params.nodeId);
-
-    if (!inspection) {
-      reply.status(404);
-      return hostErrorResponseSchema.parse({
-        code: "not_found",
-        message: `Runtime '${params.nodeId}' was not found in the active graph.`
-      });
-    }
-
     const identitySecret = await getRuntimeIdentitySecret({
       nodeId: params.nodeId
     });
 
     if (!identitySecret) {
-      throw new HostHttpError({
-        code: "conflict",
-        details: {
-          nodeId: params.nodeId
-        },
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
         message:
-          `Runtime '${params.nodeId}' does not have exportable Host-managed identity material.`,
-        statusCode: 409
+          `Runtime '${params.nodeId}' was not found as an assignable node in the active graph.`
       });
     }
 
