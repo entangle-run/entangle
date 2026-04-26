@@ -53,6 +53,7 @@ same-machine slice records.
 - [250-federated-dev-deployment-naming-cleanup-slice.md](250-federated-dev-deployment-naming-cleanup-slice.md)
 - [251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md)
 - [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
+- [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
 
 ## Audited Scope
 
@@ -117,6 +118,8 @@ The repository is not fully federated:
 - Host projection now exposes runtime projection records from observed runtime
   state, intents, and assignment records without invoking backend
   reconciliation;
+- `ops:smoke-federated-live-relay` now proves the federated control/observe path
+  against a real relay and projects a git-backed artifact ref;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 
@@ -202,5 +205,5 @@ The plan was checked against the actual repo after writing:
 
 Plan readiness: Slices 1 through 14 plus startup/materialization follow-up
 slices are implemented in this branch. The next blocking implementation areas
-are replacing remaining deep filesystem-backed runtime inspection paths and a
-live relay/git distributed smoke.
+are replacing remaining deep filesystem-backed runtime inspection paths and
+orchestrating a separate-process distributed smoke.

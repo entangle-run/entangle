@@ -2951,3 +2951,17 @@ Studio now shows projected runtime counts and compact runtime rows in the
 federation panel, while CLI gained `entangle host projection` for the same Host
 projection snapshot. The older detailed runtime inspection APIs still exist for
 deep detail until their filesystem-backed reads are replaced.
+
+## [2026-04-26] implementation | Added live relay federated smoke
+
+Added `references/253-live-relay-federated-smoke-slice.md` and
+`pnpm ops:smoke-federated-live-relay`. The smoke uses the real Host and runner
+Nostr transports against a reachable relay, keeps Host and runner state in
+separate temp roots, registers a generic runner, sends assignment control over
+the relay, receives runner-signed assignment/runtime observations, and projects
+a git-backed artifact ref.
+
+The smoke passed against the federated dev `strfry` service on
+`ws://localhost:7777`. It is still a same-machine process smoke; the remaining
+hardening path is a separate-process and eventually multi-machine distributed
+demo.

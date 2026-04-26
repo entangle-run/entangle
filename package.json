@@ -22,6 +22,7 @@
     "ops:smoke-federated-dev:disposable": "node scripts/smoke-federated-dev-profile-disposable.mjs",
     "ops:smoke-federated-dev:disposable:runtime": "node scripts/smoke-federated-dev-profile-disposable.mjs --include-runtime",
     "ops:smoke-federated-control": "node scripts/smoke-federated-control-plane.mjs",
+    "ops:smoke-federated-live-relay": "node scripts/smoke-federated-live-relay.mjs",
     "ops:smoke-federated-dev:runtime": "node scripts/smoke-federated-dev-runtime.mjs",
     "ops:demo-federated-preview": "node scripts/federated-preview-demo.mjs",
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",

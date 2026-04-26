@@ -135,6 +135,17 @@ The smoke checks:
 - Gitea serves its web surface;
 - the development `strfry` relay accepts a Nostr WebSocket subscription.
 
+To verify the federated control/observe path against the running development
+relay, run:
+
+```sh
+pnpm ops:smoke-federated-live-relay
+```
+
+This smoke uses real Nostr relay transport for runner hello, Host assignment
+control, assignment acceptance, runtime status, and a git-backed artifact ref
+projection while keeping Host and runner state in separate temporary roots.
+
 To verify the support-bundle path against an already-running federated dev
 profile, run:
 

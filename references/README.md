@@ -37,7 +37,9 @@ then
 and
 [251-runner-assignment-runtime-start-slice.md](251-runner-assignment-runtime-start-slice.md),
 then
-[252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md).
+[252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
+and
+[253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md).
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
