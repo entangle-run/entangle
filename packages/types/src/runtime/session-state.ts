@@ -84,6 +84,32 @@ export const memorySynthesisOutcomeSchema = z.discriminatedUnion("status", [
   memorySynthesisFailureOutcomeSchema
 ]);
 
+export const memoryRepositorySyncOutcomeSchema = z.discriminatedUnion("status", [
+  z.object({
+    branch: identifierSchema,
+    changedFileCount: z.number().int().nonnegative(),
+    commit: nonEmptyStringSchema,
+    status: z.literal("committed"),
+    syncedAt: nonEmptyStringSchema
+  }),
+  z.object({
+    branch: identifierSchema,
+    commit: nonEmptyStringSchema.optional(),
+    status: z.literal("unchanged"),
+    syncedAt: nonEmptyStringSchema
+  }),
+  z.object({
+    reason: nonEmptyStringSchema,
+    status: z.literal("not_configured"),
+    syncedAt: nonEmptyStringSchema
+  }),
+  z.object({
+    reason: nonEmptyStringSchema,
+    status: z.literal("failed"),
+    syncedAt: nonEmptyStringSchema
+  })
+]);
+
 export const sourceChangeFileStatusSchema = z.enum([
   "added",
   "modified",
@@ -286,6 +312,7 @@ export const runnerTurnRecordSchema = z.object({
   engineOutcome: engineTurnOutcomeSchema.optional(),
   emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   graphId: identifierSchema,
+  memoryRepositorySyncOutcome: memoryRepositorySyncOutcomeSchema.optional(),
   memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   messageId: nostrEventIdSchema.optional(),
   nodeId: identifierSchema,
@@ -387,6 +414,9 @@ export type RunnerPhase = z.infer<typeof runnerPhaseSchema>;
 export type RunnerTriggerKind = z.infer<typeof runnerTriggerKindSchema>;
 export type MemorySynthesisOutcome = z.infer<
   typeof memorySynthesisOutcomeSchema
+>;
+export type MemoryRepositorySyncOutcome = z.infer<
+  typeof memoryRepositorySyncOutcomeSchema
 >;
 export type SourceChangeFileStatus = z.infer<
   typeof sourceChangeFileStatusSchema

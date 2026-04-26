@@ -2225,6 +2225,7 @@ describe("RunnerService", () => {
     expect(conversationRecord?.followupCount).toBe(1);
     expect(turnIds).toHaveLength(1);
     expect(turnRecord?.producedArtifactIds).toEqual(sessionRecord.rootArtifactIds);
+    expect(turnRecord?.memoryRepositorySyncOutcome?.status).toBe("committed");
     expect(artifactRecords).toHaveLength(1);
     const artifactRecord = artifactRecords[0];
     if (!artifactRecord || artifactRecord.ref.backend !== "git") {
@@ -2279,6 +2280,39 @@ describe("RunnerService", () => {
     expect(memoryLog).toContain(`runner turn | session-alpha / ${turnRecord?.turnId}`);
     expect(memorySummary).toContain("# Recent Work Summary");
     expect(memorySummary).toContain(`### session-alpha / ${turnRecord?.turnId}`);
+
+    const wikiRepositoryRoot = runtimeContext.workspace.wikiRepositoryRoot;
+    if (!wikiRepositoryRoot) {
+      throw new Error("Expected a wiki repository root in runtime context.");
+    }
+
+    const wikiRepositoryTaskPage = await readFile(
+      path.join(
+        wikiRepositoryRoot,
+        "tasks",
+        "session-alpha",
+        `${turnRecord?.turnId}.md`
+      ),
+      "utf8"
+    );
+    expect(wikiRepositoryTaskPage).toContain(
+      `# Task Memory session-alpha / ${turnRecord?.turnId}`
+    );
+
+    const wikiRepositoryHead = spawnSync(
+      "git",
+      ["-C", wikiRepositoryRoot, "rev-parse", "HEAD"],
+      {
+        encoding: "utf8"
+      }
+    );
+    expect(wikiRepositoryHead.status).toBe(0);
+    if (turnRecord?.memoryRepositorySyncOutcome?.status !== "committed") {
+      throw new Error("Expected a committed wiki repository sync outcome.");
+    }
+    expect(wikiRepositoryHead.stdout.trim()).toBe(
+      turnRecord.memoryRepositorySyncOutcome.commit
+    );
 
     const gitDirectoryStats = await stat(
       path.join(runtimeContext.workspace.artifactWorkspaceRoot, ".git")

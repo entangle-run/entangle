@@ -2288,3 +2288,17 @@ Studio's Managed Node Editor now loads catalog engine profiles and writes the
 same `agentRuntime` fields for managed nodes. The remaining B8 work is richer
 runtime evidence and engine-event panels, not the basic graph/node
 configuration surface.
+
+## [2026-04-25] implementation | Added runner-owned wiki repository snapshots
+
+Added `references/210-wiki-repository-sync-slice.md` and advanced B4 of the
+Entangle Local completion plan. Completed runner turns now mirror the node's
+active `memory/wiki` tree into the materialized `wiki-repository` workspace,
+initialize a local git repository when needed, commit changed snapshots on the
+`entangle-wiki` branch, and persist a bounded sync outcome on the turn record.
+
+The same sync outcome now propagates through host observed activity,
+`runner.turn.updated` events, shared runtime-turn presentation, CLI output, and
+Studio turn inspection. This is intentionally a local runner-owned snapshot
+path, not yet a full memory-as-repo migration, backup/restore feature, or
+remote publication workflow.

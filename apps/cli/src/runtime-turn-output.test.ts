@@ -64,7 +64,8 @@ describe("runtime turn CLI output", () => {
       label: "turn-alpha · persisting · session-alpha",
       phase: "persisting",
       sessionId: "session-alpha",
-      status: "Trigger message · engine completed · memory not_run · source changed",
+      status:
+        "Trigger message · engine completed · memory not_run · wiki repo not_run · source changed",
       turnId: "turn-alpha",
       updatedAt: "2026-04-24T10:01:00.000Z"
     });

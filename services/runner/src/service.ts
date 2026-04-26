@@ -72,6 +72,7 @@ import {
   prepareSourceChangeHarvest
 } from "./source-change-harvester.js";
 import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js";
+import { syncWikiRepository } from "./wiki-repository.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -1728,6 +1729,23 @@ export class RunnerService {
     return nextTurnRecord;
   }
 
+  private async syncWikiRepositoryForTurn(input: {
+    statePaths: RunnerStatePaths;
+    turnRecord: RunnerTurnRecord;
+  }): Promise<RunnerTurnRecord> {
+    const memoryRepositorySyncOutcome = await syncWikiRepository(this.context, {
+      turnId: input.turnRecord.turnId
+    });
+    const nextTurnRecord: RunnerTurnRecord = {
+      ...input.turnRecord,
+      memoryRepositorySyncOutcome,
+      updatedAt: nowIsoString()
+    };
+
+    await writeRunnerTurnRecord(input.statePaths, nextTurnRecord);
+    return nextTurnRecord;
+  }
+
   async handleInboundEnvelope(
     envelope: RunnerInboundEnvelope
   ): Promise<RunnerServiceHandleResult> {
@@ -2062,6 +2080,10 @@ export class RunnerService {
         }
 
         turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
+        turnRecord = await this.syncWikiRepositoryForTurn({
+          statePaths,
+          turnRecord
+        });
 
         return {
           handled: true,
@@ -2105,6 +2127,10 @@ export class RunnerService {
         statePaths
       });
       turnRecord = await this.runOptionalMemorySynthesis(memorySynthesisInput);
+      turnRecord = await this.syncWikiRepositoryForTurn({
+        statePaths,
+        turnRecord
+      });
 
       return {
         handled: true,

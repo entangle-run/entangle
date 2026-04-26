@@ -155,7 +155,10 @@ This repository currently contains:
   source history events after validating approval operation and concrete
   resource scope, plus a host/CLI/Studio operator decision surface that can
   create scoped source-mutation approvals or decide existing pending approvals
-  through the same host boundary;
+  through the same host boundary, plus runner-owned local git snapshots of
+  `memory/wiki` into each node's `wiki-repository` workspace after completed
+  turns, with durable sync outcomes carried through runner turns, host events,
+  CLI output, and Studio turn inspection;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
 - a safer package scaffold flow where `entangle package init` exposes package

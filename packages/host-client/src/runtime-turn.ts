@@ -17,9 +17,10 @@ export function formatRuntimeTurnLabel(turn: RunnerTurnRecord): string {
 export function formatRuntimeTurnStatus(turn: RunnerTurnRecord): string {
   const engineStatus = turn.engineOutcome?.stopReason ?? "pending";
   const memoryStatus = turn.memorySynthesisOutcome?.status ?? "not_run";
+  const wikiStatus = turn.memoryRepositorySyncOutcome?.status ?? "not_run";
   const sourceStatus = turn.sourceChangeSummary?.status ?? "not_checked";
 
-  return `Trigger ${turn.triggerKind} · engine ${engineStatus} · memory ${memoryStatus} · source ${sourceStatus}`;
+  return `Trigger ${turn.triggerKind} · engine ${engineStatus} · memory ${memoryStatus} · wiki repo ${wikiStatus} · source ${sourceStatus}`;
 }
 
 export function formatRuntimeTurnArtifactSummary(
@@ -189,6 +190,26 @@ export function formatRuntimeTurnDetailLines(
     } else {
       lines.push(
         `memory synthesis failed: ${turn.memorySynthesisOutcome.errorMessage}`
+      );
+    }
+  }
+
+  if (turn.memoryRepositorySyncOutcome) {
+    if (turn.memoryRepositorySyncOutcome.status === "committed") {
+      lines.push(
+        `wiki repository committed ${turn.memoryRepositorySyncOutcome.commit} on ${turn.memoryRepositorySyncOutcome.branch} (${turn.memoryRepositorySyncOutcome.changedFileCount} changed files)`
+      );
+    } else if (turn.memoryRepositorySyncOutcome.status === "unchanged") {
+      lines.push(
+        `wiki repository unchanged on ${turn.memoryRepositorySyncOutcome.branch}${
+          turn.memoryRepositorySyncOutcome.commit
+            ? ` at ${turn.memoryRepositorySyncOutcome.commit}`
+            : ""
+        }`
+      );
+    } else {
+      lines.push(
+        `wiki repository ${turn.memoryRepositorySyncOutcome.status}: ${turn.memoryRepositorySyncOutcome.reason}`
       );
     }
   }

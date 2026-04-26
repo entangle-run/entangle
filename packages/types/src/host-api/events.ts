@@ -22,6 +22,7 @@ import {
 import {
   approvalLifecycleStateSchema,
   conversationLifecycleStateSchema,
+  memoryRepositorySyncOutcomeSchema,
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
@@ -255,6 +256,7 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   engineOutcome: engineTurnOutcomeSchema.optional(),
   emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   graphId: identifierSchema,
+  memoryRepositorySyncOutcome: memoryRepositorySyncOutcomeSchema.optional(),
   memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   nodeId: identifierSchema,
   phase: runnerPhaseSchema,

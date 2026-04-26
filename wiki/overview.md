@@ -168,8 +168,11 @@ The repository now also contains the first real implementation baseline:
   default, while validating approval operation and concrete resource scope
   before accepting a supplied approval id, with a host/CLI/Studio operator
   decision path for creating scoped approvals or deciding pending approvals,
-  and with bounded host/CLI/Studio history and diff inspection for supported
-  materialized git artifacts;
+  with bounded host/CLI/Studio history and diff inspection for supported
+  materialized git artifacts, and with runner-owned local git snapshots of
+  `memory/wiki` into each node's `wiki-repository` workspace after completed
+  turns, including durable sync outcomes on turns, host events, CLI output, and
+  Studio turn inspection;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

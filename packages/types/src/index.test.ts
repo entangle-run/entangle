@@ -1313,6 +1313,13 @@ describe("host event contracts", () => {
         workingContextPagePath:
           "/tmp/entangle-runner/memory/wiki/summaries/working-context.md"
       },
+      memoryRepositorySyncOutcome: {
+        branch: "entangle-wiki",
+        changedFileCount: 6,
+        commit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        status: "committed",
+        syncedAt: "2026-04-24T00:00:01.000Z"
+      },
       eventId: "turn-worker-it-001",
       graphId: "graph-alpha",
       message: "Runner turn 'turn-alpha' on node 'worker-it' is now in phase 'persisting'.",
@@ -1434,6 +1441,7 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.memorySynthesisOutcome?.updatedSummaryPagePaths).toHaveLength(
       6
     );
+    expect(runnerTurnEvent.memoryRepositorySyncOutcome?.status).toBe("committed");
     expect(runnerTurnEvent.sourceChangeSummary?.fileCount).toBe(1);
     expect(runnerTurnEvent.sourceChangeCandidateIds).toEqual([
       "source-change-turn-alpha"

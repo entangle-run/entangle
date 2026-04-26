@@ -8086,6 +8086,9 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     conversationId: turnRecord.conversationId,
     ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
     emittedHandoffMessageIds: turnRecord.emittedHandoffMessageIds,
+    ...(turnRecord.memoryRepositorySyncOutcome
+      ? { memoryRepositorySyncOutcome: turnRecord.memoryRepositorySyncOutcome }
+      : {}),
     ...(turnRecord.memorySynthesisOutcome
       ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
       : {}),
@@ -8123,6 +8126,9 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     conversationId: turnRecord.conversationId,
     ...(turnRecord.engineOutcome ? { engineOutcome: turnRecord.engineOutcome } : {}),
     emittedHandoffMessageIds: turnRecord.emittedHandoffMessageIds,
+    ...(turnRecord.memoryRepositorySyncOutcome
+      ? { memoryRepositorySyncOutcome: turnRecord.memoryRepositorySyncOutcome }
+      : {}),
     ...(turnRecord.memorySynthesisOutcome
       ? { memorySynthesisOutcome: turnRecord.memorySynthesisOutcome }
       : {}),

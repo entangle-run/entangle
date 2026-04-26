@@ -101,7 +101,7 @@ describe("studio runtime turn inspection helpers", () => {
       "turn-alpha · emitting · session-alpha"
     );
     expect(formatRuntimeTurnStatus(turn)).toBe(
-      "Trigger message · engine completed · memory succeeded · source changed"
+      "Trigger message · engine completed · memory succeeded · wiki repo not_run · source changed"
     );
     expect(formatRuntimeTurnArtifactSummary(turn)).toBe(
       "Artifacts consumed 1 · produced 1 · handoffs 0"

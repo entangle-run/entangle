@@ -47,6 +47,9 @@ The latest implementation state includes:
 - generic runtime workspace-health inspection for the Local node workspace
   layout, including source, artifact, engine-state, and wiki-repository
   surfaces;
+- runner-owned local git snapshots of each node's `memory/wiki` tree into the
+  materialized `wiki-repository` workspace after completed turns, with durable
+  turn-level sync outcomes and host/CLI/Studio presentation;
 - runner-owned source workspace change harvesting with bounded changed-file
   and diff summaries on runner turns, host events, runtime inspection, CLI
   output, and Studio details;
@@ -525,8 +528,14 @@ Current partial implementation:
   state when a required workspace surface is degraded;
 - shared host-client detail helpers, CLI summaries, and Studio selected-runtime
   details show the same workspace health summary;
-- `wiki-repository` remains reserved and uninitialized until memory-as-repo
-  migration and rollback semantics are explicit.
+- the runner now mirrors the active `memory/wiki` tree into a local
+  `wiki-repository` git repository after completed executable turns, commits
+  changed snapshots on the fixed `entangle-wiki` branch, and records
+  `committed`, `unchanged`, `not_configured`, or `failed` sync outcomes on
+  runner turns, host observed activity, host events, CLI output, and Studio
+  turn inspection;
+- this is a conservative local snapshot, not yet a full memory-as-repo
+  migration or remote publication workflow.
 
 Acceptance:
 

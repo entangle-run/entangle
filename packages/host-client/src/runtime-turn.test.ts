@@ -58,6 +58,13 @@ function createTurn(
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     ],
     graphId: "team-alpha",
+    memoryRepositorySyncOutcome: {
+      branch: "entangle-wiki",
+      changedFileCount: 4,
+      commit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      status: "committed",
+      syncedAt: updatedAt
+    },
     memorySynthesisOutcome: {
       status: "succeeded",
       updatedAt,
@@ -118,7 +125,7 @@ describe("runtime turn presentation helpers", () => {
       "turn-alpha · emitting · session-alpha"
     );
     expect(formatRuntimeTurnStatus(turn)).toBe(
-      "Trigger message · engine completed · memory succeeded · source changed"
+      "Trigger message · engine completed · memory succeeded · wiki repo committed · source changed"
     );
     expect(formatRuntimeTurnArtifactSummary(turn)).toBe(
       "Artifacts consumed 1 · produced 1 · handoffs 1"
@@ -139,7 +146,8 @@ describe("runtime turn presentation helpers", () => {
         "usage 42 input / 12 output tokens",
         "tool executions 2 total (1 success, 1 error)",
         "tool error #2 inspect_memory_ref: tool_execution_failed - Tool 'inspect_memory_ref' failed during execution.",
-        "memory synthesis succeeded with 2 summary pages"
+        "memory synthesis succeeded with 2 summary pages",
+        "wiki repository committed bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb on entangle-wiki (4 changed files)"
       ])
     );
   });

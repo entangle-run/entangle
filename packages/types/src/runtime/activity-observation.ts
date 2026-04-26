@@ -16,6 +16,7 @@ import {
 import {
   approvalLifecycleStateSchema,
   conversationLifecycleStateSchema,
+  memoryRepositorySyncOutcomeSchema,
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
@@ -46,6 +47,7 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   emittedHandoffMessageIds: z.array(nostrEventIdSchema).default([]),
   fingerprint: nonEmptyStringSchema,
   graphId: identifierSchema,
+  memoryRepositorySyncOutcome: memoryRepositorySyncOutcomeSchema.optional(),
   memorySynthesisOutcome: memorySynthesisOutcomeSchema.optional(),
   nodeId: identifierSchema,
   phase: runnerPhaseSchema,
