@@ -51,7 +51,9 @@ The current implementation has the first federated execution path:
   signed `approval.response` messages. Approval request cards now show resource
   metadata and link to source-change diff preview when the request targets a
   concrete `source_change_candidate`. The response can now preserve the scoped
-  operation/resource/reason context that the human reviewed.
+  operation/resource/reason context that the human reviewed. Source-change
+  approval cards also render bounded projected source summaries when Host
+  projection has a matching observed source-change ref.
 - The User Client renders bounded artifact refs from message records so humans
   can see handoff artifacts, and now provides a server-side artifact preview
   page for bounded Host artifact previews without exposing runtime-local source
@@ -65,9 +67,9 @@ The current implementation still does not have the final User Node client:
 - The current User Client is a usable runner-served shell, not a complete
   source/wiki review application, and artifact preview still depends on the
   existing Host deep runtime preview path rather than a projection-backed
-  artifact preview service. Source-change diff preview also depends on the
-  existing Host deep runtime diff path rather than a projection-backed source
-  review service.
+  artifact preview service. Source-change cards can now render projected
+  summaries, but source-change diff preview still depends on the existing Host
+  deep runtime diff path rather than a projection-backed source review service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, but not delivery/read state or a local encrypted client
@@ -226,10 +228,10 @@ Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
 artifact-ref rendering plus bounded artifact preview, source-change diff
-preview, scoped approval-response context, and message/approval publication
-that keeps the selected conversation/session context. Message history now also
-shows derived delivery labels for outbound relay publish coverage and inbound
-User Client receipt.
+preview, projected source-change summary rendering, scoped approval-response
+context, and message/approval publication that keeps the selected
+conversation/session context. Message history now also shows derived delivery
+labels for outbound relay publish coverage and inbound User Client receipt.
 
 Impacted modules:
 
@@ -362,8 +364,8 @@ The fastest path to a product the user can test is:
    path.
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
-7. Expand richer source/wiki review actions, projection-backed artifact/source
-   preview, delivery retry state, read receipts, and OpenCode parity.
+7. Expand projection-backed artifact/source content preview, richer wiki
+   review actions, delivery retry state, read receipts, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

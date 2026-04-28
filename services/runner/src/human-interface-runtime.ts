@@ -4,9 +4,11 @@ import type {
   ArtifactRef,
   EntangleA2AMessage,
   EffectiveRuntimeContext,
+  HostProjectionSnapshot,
   RunnerJoinHostApi,
   RuntimeArtifactPreviewResponse,
   RuntimeSourceChangeCandidateDiffResponse,
+  SourceChangeRefProjectionRecord,
   UserNodeConversationResponse,
   UserConversationProjectionRecord,
   UserNodeMessageRecord,
@@ -14,6 +16,7 @@ import type {
   UserNodeMessagePublishType
 } from "@entangle/types";
 import {
+  hostProjectionSnapshotSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   userNodeConversationResponseSchema,
@@ -47,6 +50,7 @@ type UserClientState = {
   generatedAt?: string;
   graphId: string;
   graphRevisionId: string;
+  sourceChangeRefs: SourceChangeRefProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
 };
@@ -237,13 +241,19 @@ async function buildUserClientState(input: {
     hostApi: input.hostApi,
     userNodeId
   });
+  const projection = await fetchHostProjection({
+    hostApi: input.hostApi
+  });
 
   return {
     conversations: inbox.conversations,
-    ...(inbox.error ? { error: inbox.error } : {}),
+    ...(inbox.error ?? projection.error
+      ? { error: [inbox.error, projection.error].filter(Boolean).join(" ") }
+      : {}),
     ...(inbox.generatedAt ? { generatedAt: inbox.generatedAt } : {}),
     graphId: input.context.binding.graphId,
     graphRevisionId: input.context.binding.graphRevisionId,
+    sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
     targets: listTargetNodes(input.context),
     userNodeId
   };
@@ -289,6 +299,42 @@ async function fetchUserNodeConversation(input: {
         error instanceof Error
           ? error.message
           : "Host conversation request failed."
+    };
+  }
+}
+
+async function fetchHostProjection(input: {
+  hostApi?: RunnerJoinHostApi | undefined;
+}): Promise<{
+  detail?: HostProjectionSnapshot;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for projection."
+    };
+  }
+
+  try {
+    const response = await fetch(new URL("/v1/projection", input.hostApi.baseUrl), {
+      headers: buildHostApiHeaders(input.hostApi)
+    });
+
+    if (!response.ok) {
+      return {
+        error: `Host projection request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: hostProjectionSnapshotSchema.parse(await response.json())
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host projection request failed."
     };
   }
 }
@@ -548,7 +594,33 @@ function renderApprovalControls(message: UserNodeMessageRecord): string {
   </form>`;
 }
 
-function renderApprovalResource(message: UserNodeMessageRecord): string {
+function renderSourceChangeSummary(ref?: SourceChangeRefProjectionRecord): string {
+  const summary = ref?.sourceChangeSummary;
+
+  if (!summary) {
+    return "";
+  }
+
+  const files =
+    summary.files.length > 0
+      ? `<ul>${summary.files
+          .map(
+            (file) =>
+              `<li>${escapeHtml(file.status)} ${escapeHtml(file.path)} +${file.additions} -${file.deletions}</li>`
+          )
+          .join("")}</ul>`
+      : "";
+
+  return `<div class="source-summary">
+    <div><strong>${summary.fileCount}</strong> files - <strong>${summary.additions}</strong> additions - <strong>${summary.deletions}</strong> deletions${summary.truncated ? " - truncated" : ""}</div>
+    ${files}
+  </div>`;
+}
+
+function renderApprovalResource(
+  message: UserNodeMessageRecord,
+  sourceChangeRefs: SourceChangeRefProjectionRecord[]
+): string {
   const resource = message.approval?.resource;
 
   if (!resource) {
@@ -556,6 +628,13 @@ function renderApprovalResource(message: UserNodeMessageRecord): string {
   }
 
   const resourceLabel = `${resource.kind}:${resource.id}`;
+  const sourceChangeRef =
+    resource.kind === "source_change_candidate"
+      ? sourceChangeRefs.find(
+          (ref) =>
+            ref.nodeId === message.fromNodeId && ref.candidateId === resource.id
+        )
+      : undefined;
   const sourceDiffAction =
     resource.kind === "source_change_candidate"
       ? `<a class="artifact-action" href="${escapeHtml(
@@ -565,7 +644,7 @@ function renderApprovalResource(message: UserNodeMessageRecord): string {
         )}">Review diff</a>`
       : "";
 
-  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${sourceDiffAction}`;
+  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${sourceDiffAction}`;
 }
 
 function renderArtifactLocator(ref: ArtifactRef): string {
@@ -727,7 +806,7 @@ async function renderHome(input: {
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
               ${renderMessageDelivery(message)}
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
-              ${renderApprovalResource(message)}
+              ${renderApprovalResource(message, state.sourceChangeRefs)}
               <div>${escapeHtml(message.summary)}</div>
               ${renderArtifactRefs(message)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
@@ -778,6 +857,8 @@ async function renderHome(input: {
       .artifact-list { display: grid; gap: 6px; }
       .artifact-ref { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .artifact-action { color: var(--accent); font-weight: 700; text-decoration: none; width: fit-content; }
+      .source-summary { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
+      .source-summary ul { margin: 0; padding-left: 18px; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
       dt { color: var(--muted); font-size: 13px; }

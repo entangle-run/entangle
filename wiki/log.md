@@ -3270,6 +3270,22 @@ tests, focused runner tests, package lints,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check`.
 
+## [2026-04-28] implementation | Rendered projected source summaries in User Client
+
+Added `references/271-user-client-source-summary-projection-slice.md`. The
+runner-served User Client now fetches Host projection alongside the User Node
+inbox and renders bounded projected source-change summaries on approval
+request cards that target a matching `source_change_candidate`.
+
+The card now shows file count, additions/deletions, changed-file rows, and the
+existing `Review diff` action. This makes source approval triage useful from
+the running User Node surface while the deeper diff route remains a separate
+projection-backed content migration.
+
+Runner typecheck, focused runner tests, runner lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
+
 ## [2026-04-26] implementation | Preserved scoped approval response context
 
 Added `references/267-user-node-approval-response-context-slice.md`. User Node

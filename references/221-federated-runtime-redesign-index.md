@@ -71,6 +71,7 @@ same-machine slice records.
 - [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
 - [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
 - [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
+- [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 
 ## Audited Scope
 
@@ -131,10 +132,10 @@ The repository is not fully federated:
   conversation surfaces, and a first usable runner-served User Client with
   thread selection, inbound/outbound message history, approval response
   controls, approval resource rendering, signed approval-response context,
-  source-change diff preview, artifact-ref rendering, server-side artifact
-  preview, delivery labels, and message publishing, but source/wiki review
-  actions, read receipts, and projection-backed artifact/source preview are
-  still incomplete;
+  source-change projection summary cards, source-change diff preview,
+  artifact-ref rendering, server-side artifact preview, delivery labels, and
+  message publishing, but wiki review actions, read receipts, and
+  projection-backed artifact/source content preview are still incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
@@ -209,10 +210,10 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 9. User Node identity records, assignable Human Interface Runtime, and User
    Client. The first assignable/minimal-client slice and inbound/outbound
    message history, approval controls, approval resource rendering, signed
-   approval-response context, source-change diff preview, artifact-ref
-   rendering, server-side artifact preview, and delivery labels are
-   implemented; source/wiki review actions, read receipts, and
-   projection-backed artifact/source preview remain open.
+   approval-response context, source-change projection summaries,
+   source-change diff preview, artifact-ref rendering, server-side artifact
+   preview, and delivery labels are implemented; wiki review actions, read
+   receipts, and projection-backed artifact/source content preview remain open.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;

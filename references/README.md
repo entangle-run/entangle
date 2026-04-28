@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
+[271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, and runner-emitted artifact/source/wiki
 observed refs with bounded source-change summaries.
@@ -324,6 +324,9 @@ files are the active federated redesign pack.
 267. [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 268. [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
 269. [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
+270. [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
+271. [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
+272. [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 
 ## Role of this corpus
 

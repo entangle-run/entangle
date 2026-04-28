@@ -439,6 +439,49 @@ describe("runner runtime context", () => {
         hostRequests.push(requestRecord);
         response.setHeader("content-type", "application/json; charset=utf-8");
 
+        if (request.method === "GET" && request.url === "/v1/projection") {
+          response.end(
+            JSON.stringify({
+              generatedAt: "2026-04-26T12:02:00.000Z",
+              hostAuthorityPubkey: hostPublicKey,
+              schemaVersion: "1",
+              sourceChangeRefs: [
+                {
+                  artifactRefs: [],
+                  candidateId: "source-change-turn-alpha",
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:02:00.000Z"
+                  },
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey,
+                  sourceChangeSummary: {
+                    additions: 3,
+                    checkedAt: "2026-04-26T12:02:00.000Z",
+                    deletions: 1,
+                    fileCount: 1,
+                    files: [
+                      {
+                        additions: 3,
+                        deletions: 1,
+                        path: "src/index.ts",
+                        status: "modified"
+                      }
+                    ],
+                    status: "changed",
+                    truncated: false
+                  },
+                  status: "pending_review"
+                }
+              ]
+            })
+          );
+          return;
+        }
+
         if (
           request.method === "GET" &&
           request.url === "/v1/user-nodes/user-main/inbox"
@@ -809,6 +852,8 @@ describe("runner runtime context", () => {
         "/artifacts/preview?nodeId=worker-it&amp;artifactId=artifact-alpha&amp;conversationId=conversation-alpha"
       );
       expect(pageBody).toContain("source_change_candidate:source-change-turn-alpha");
+      expect(pageBody).toContain("3</strong> additions");
+      expect(pageBody).toContain("modified src/index.ts +3 -1");
       expect(pageBody).toContain(
         "/source-change-candidates/diff?nodeId=worker-it&amp;candidateId=source-change-turn-alpha&amp;conversationId=conversation-alpha"
       );

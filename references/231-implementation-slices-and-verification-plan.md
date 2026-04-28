@@ -223,6 +223,7 @@ Implementation record:
 - [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 - [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
 - [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
+- [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 
 Current status:
 
@@ -242,15 +243,15 @@ Current status:
 - the User Client has a first usable server-rendered conversation list,
   selected thread metadata, `/api/state`, recorded inbound/outbound messages,
   approval response controls, approval resource rendering, source-change diff
-  preview, scoped approval-response context, artifact-ref rendering, bounded
-  artifact preview, delivery labels, and message publishing that preserves
-  selected conversation/session context;
+  preview, projected source-change summary rendering, scoped approval-response
+  context, artifact-ref rendering, bounded artifact preview, delivery labels,
+  and message publishing that preserves selected conversation/session context;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
 - final bundled User Client application, projection-backed artifact/source
-  content preview, richer source/wiki review controls, delivery retry state,
-  and read receipts remain open.
+  content preview, richer wiki review controls, delivery retry state, and read
+  receipts remain open.
 
 Verification:
 
