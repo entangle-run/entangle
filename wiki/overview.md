@@ -79,7 +79,9 @@ remains the operator surface, not the primary human-node client.
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets
 when available, or an explicit `--user-client-static-dir`, so manual
 `--keep-running` sessions can exercise the dedicated User Client from the real
-running User Node runtime.
+running User Node runtime. CLI now also exposes
+`entangle user-nodes clients --summary` to list active User Nodes with their
+projected Human Interface Runtime placement and User Client URLs.
 
 The contract-ownership layer is now also explicit:
 

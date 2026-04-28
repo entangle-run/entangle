@@ -79,8 +79,13 @@ Recently added:
   messages.
 - User Client artifact refs now include a server-side `Preview` action that
   renders bounded Host artifact previews without exposing runtime-local source
-  paths in browser output. Projection-backed artifact preview and richer
-  review controls remain follow-up work.
+  paths in browser output. The dedicated User Client now uses the local JSON
+  artifact preview route, which prefers Host projection before falling back to
+  runtime preview.
+- CLI now exposes `entangle user-nodes clients`, a User Node-focused endpoint
+  discovery command that joins active User Node identities with Host-projected
+  Human Interface Runtime state, runner placement, assignment id, and
+  `clientUrl`.
 
 ## Target Model
 
@@ -109,6 +114,7 @@ CLI has matching headless surfaces:
 - `entangle assignments revoke <assignmentId>`
 - `entangle inbox list --user-node <nodeId>`
 - `entangle inbox show <conversationId> --user-node <nodeId>`
+- `entangle user-nodes clients`
 - `entangle reply <messageId> "..." --user-node <nodeId>`
 - `entangle approve --user-node <nodeId> --from-message <eventId>`
 - `entangle reject --user-node <nodeId> --from-message <eventId>`
@@ -137,7 +143,9 @@ Node.
 
 - Add host-client methods for authority, runners, assignments, inbox,
   conversations, replies, approvals, and projection health.
-- Add CLI command groups for authority/runners/assignments/inbox/user-node
+- Add CLI command groups for authority/runners/assignments/inbox/user-node.
+  Done, including User Client endpoint discovery through
+  `entangle user-nodes clients`.
   actions. Authority, runner, assignment, User Node, projection inbox, reply,
   approve, and reject surfaces now exist; CLI signed approval responses now
   accept scoped operation/resource/reason metadata and can derive context from

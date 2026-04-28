@@ -241,6 +241,7 @@ Implementation record:
 - [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
 - [295-user-client-review-json-actions-slice.md](295-user-client-review-json-actions-slice.md)
 - [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
+- [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
 
 Current status:
 
@@ -291,6 +292,9 @@ Current status:
   preview, source diff, source-candidate review, and wiki preview cards;
 - the process-runner smoke auto-serves and validates built User Client assets
   when `apps/user-client/dist` exists or an explicit static directory is passed;
+- CLI now exposes `entangle user-nodes clients` to list active User Nodes with
+  projected Human Interface Runtime state, runner placement, assignment id, and
+  User Client URL;
 - richer artifact object-backend review remains open.
 
 Verification:
@@ -375,12 +379,13 @@ Verification:
 - lint and typecheck.
 
 This slice now includes first-pass CLI assignment/User Node/inbox/reply/
-approve/reject commands, scoped CLI approval-response context flags, and a
-Studio projection/User Node panel with runtime placement, User Client URL,
+approve/reject commands, scoped CLI approval-response context flags, CLI User
+Client endpoint discovery through `entangle user-nodes clients`, and a Studio
+projection/User Node panel with runtime placement, User Client URL,
 conversation, active, unread, and pending-approval counts. CLI approve/reject
 can now derive signed response context from directly looked-up recorded
-approval-request messages. Full Studio chat, signed approval card migration,
-and durable inbox/outbox projection remain follow-up work.
+approval-request messages. Transport health, full Studio assignment controls,
+and removal of old admin/debug approval mutation paths remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

@@ -91,6 +91,7 @@ import {
 } from "./assignment-output.js";
 import { projectHostProjectionSummary } from "./projection-output.js";
 import {
+  buildUserNodeClientSummariesForCli,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
   projectUserNodeMessagePublishSummary,
@@ -1127,6 +1128,24 @@ userNodesCommand
         ? { userNode: projectUserNodeIdentitySummary(response.userNode) }
         : response
     );
+  });
+
+userNodesCommand
+  .command("clients")
+  .option("--summary", "Print compact User Client runtime summaries.")
+  .description("List User Client endpoints projected for active graph User Nodes.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const [userNodes, projection] = await Promise.all([
+      client.listUserNodes(),
+      client.getProjection()
+    ]);
+    const clients = buildUserNodeClientSummariesForCli({
+      projection,
+      userNodes: userNodes.userNodes
+    });
+
+    printJson(options.summary ? { clients } : { generatedAt: projection.generatedAt, clients });
   });
 
 userNodesCommand

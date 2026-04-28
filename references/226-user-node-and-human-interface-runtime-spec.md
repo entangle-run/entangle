@@ -76,12 +76,15 @@ User nodes are now partially runtime-capable:
 - The same smoke now includes a second User Node assigned to a second
   `human_interface` runner, verifies a second User Client, and proves both User
   Nodes publish with distinct stable pubkeys.
+- CLI now exposes `entangle user-nodes clients` so operators and headless users
+  can discover each active User Node's projected Human Interface Runtime state,
+  runner placement, assignment id, and User Client URL without filtering the
+  full projection snapshot by hand.
 
 Still missing:
 
-- the current User Client is a first usable runner-served shell, not the final
-  dedicated app with richer projection-backed source/wiki review actions and
-  richer artifact/source workflow controls;
+- richer projection-backed source/wiki review actions and object-backed
+  artifact workflow controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;
@@ -161,6 +164,9 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   projection. Done through `runtime.status.clientUrl`.
 - Add a dedicated User Client app distinct from Studio. Done for the first
   Vite/React app that consumes Human Interface Runtime JSON APIs.
+- Add CLI User Client endpoint discovery. Done through
+  `entangle user-nodes clients`, which joins User Node identity records with
+  Host runtime projection and reports unassigned User Nodes explicitly.
 - Add runtime-local JSON APIs for artifact/source review. Done for
   projection-first artifact preview, projection-first source diff, and
   source-candidate review.

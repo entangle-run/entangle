@@ -99,7 +99,10 @@ both User Client URLs, and prints CLI commands for publishing a signed
 `task.request` to the assigned builder node and inspecting the User Node inbox
 projection plus runner turn events. If `apps/user-client/dist` exists, or if
 `--user-client-static-dir <path>` is passed, the smoke serves and validates the
-dedicated User Client app from the running User Node runtime.
+dedicated User Client app from the running User Node runtime. Outside the
+smoke, `entangle user-nodes clients --summary` lists active User Nodes with
+their projected Human Interface Runtime placement and browser-openable User
+Client URLs.
 
 ## Current Status
 
@@ -158,6 +161,8 @@ This repository currently contains:
   the dedicated app now using runtime-local JSON routes for artifact preview,
   source diff, source-candidate review, and wiki preview cards, plus
   projection of the User Client endpoint through Host, CLI, and Studio,
+  including `entangle user-nodes clients` for User Node-focused endpoint
+  discovery,
   with CLI signed approve/reject and generic User Node message
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI

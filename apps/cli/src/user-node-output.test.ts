@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type {
+  HostProjectionSnapshot,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord
 } from "@entangle/types";
 import {
+  buildUserNodeClientSummariesForCli,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
   projectUserNodeMessagePublishSummary,
@@ -76,6 +78,42 @@ const conversations: UserConversationProjectionRecord[] = [
   }
 ];
 
+const projection: HostProjectionSnapshot = {
+  artifactRefs: [],
+  assignments: [],
+  freshness: "current",
+  generatedAt: "2026-04-26T12:06:00.000Z",
+  hostAuthorityPubkey:
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  runtimes: [
+    {
+      assignmentId: "assignment-user-a",
+      backendKind: "federated",
+      clientUrl: "http://127.0.0.1:4301/",
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "graph-revision-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:05:30.000Z",
+      nodeId: "user-a",
+      observedState: "running",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:05:30.000Z"
+      },
+      restartGeneration: 0,
+      runnerId: "runner-human-a",
+      statusMessage: "Human Interface Runtime listening"
+    }
+  ],
+  runners: [],
+  schemaVersion: "1",
+  sourceChangeRefs: [],
+  userConversations: conversations,
+  wikiRefs: []
+};
+
 describe("user node CLI output", () => {
   it("sorts and projects User Node conversation projection records", () => {
     expect(
@@ -100,6 +138,39 @@ describe("user node CLI output", () => {
       nodeId: "user-b",
       status: "active"
     });
+  });
+
+  it("joins User Node identities with projected User Client runtimes", () => {
+    expect(
+      buildUserNodeClientSummariesForCli({
+        projection,
+        userNodes
+      })
+    ).toEqual([
+      {
+        assignmentId: "assignment-user-a",
+        clientUrl: "http://127.0.0.1:4301/",
+        desiredState: "running",
+        graphId: "team-alpha",
+        identityStatus: "active",
+        lastSeenAt: "2026-04-26T12:05:30.000Z",
+        nodeId: "user-a",
+        observedState: "running",
+        publicKey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        runnerId: "runner-human-a",
+        statusMessage: "Human Interface Runtime listening",
+        updatedAt: "2026-04-26T12:05:30.000Z"
+      },
+      {
+        graphId: "team-alpha",
+        identityStatus: "active",
+        nodeId: "user-b",
+        observedState: "unassigned",
+        publicKey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]);
   });
 
   it("projects published User Node messages", () => {

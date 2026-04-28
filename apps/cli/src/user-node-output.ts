@@ -1,8 +1,25 @@
 import type {
+  HostProjectionSnapshot,
+  RuntimeProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord,
   UserNodeMessagePublishResponse
 } from "@entangle/types";
+
+export type UserNodeClientCliSummary = {
+  assignmentId?: string;
+  clientUrl?: string;
+  desiredState?: string;
+  graphId: string;
+  identityStatus: string;
+  lastSeenAt?: string;
+  nodeId: string;
+  observedState: string;
+  publicKey: string;
+  runnerId?: string;
+  statusMessage?: string;
+  updatedAt?: string;
+};
 
 export type UserConversationCliSummary = {
   conversationId: string;
@@ -40,6 +57,14 @@ export function sortUserNodeIdentitiesForCli(
   userNodes: UserNodeIdentityRecord[]
 ): UserNodeIdentityRecord[] {
   return [...userNodes].sort((left, right) =>
+    left.nodeId.localeCompare(right.nodeId)
+  );
+}
+
+export function sortUserNodeClientSummariesForCli(
+  summaries: UserNodeClientCliSummary[]
+): UserNodeClientCliSummary[] {
+  return [...summaries].sort((left, right) =>
     left.nodeId.localeCompare(right.nodeId)
   );
 }
@@ -89,6 +114,48 @@ export function projectUserNodeIdentitySummary(
     status: userNode.status,
     updatedAt: userNode.updatedAt
   };
+}
+
+function projectUserNodeClientSummary(input: {
+  runtime?: RuntimeProjectionRecord | undefined;
+  userNode: UserNodeIdentityRecord;
+}): UserNodeClientCliSummary {
+  const runtime = input.runtime;
+
+  return {
+    ...(runtime?.assignmentId ? { assignmentId: runtime.assignmentId } : {}),
+    ...(runtime?.clientUrl ? { clientUrl: runtime.clientUrl } : {}),
+    ...(runtime?.desiredState ? { desiredState: runtime.desiredState } : {}),
+    graphId: input.userNode.graphId,
+    identityStatus: input.userNode.status,
+    ...(runtime?.lastSeenAt ? { lastSeenAt: runtime.lastSeenAt } : {}),
+    nodeId: input.userNode.nodeId,
+    observedState: runtime?.observedState ?? "unassigned",
+    publicKey: input.userNode.publicKey,
+    ...(runtime?.runnerId ? { runnerId: runtime.runnerId } : {}),
+    ...(runtime?.statusMessage ? { statusMessage: runtime.statusMessage } : {}),
+    ...(runtime?.projection.updatedAt
+      ? { updatedAt: runtime.projection.updatedAt }
+      : {})
+  };
+}
+
+export function buildUserNodeClientSummariesForCli(input: {
+  projection: HostProjectionSnapshot;
+  userNodes: UserNodeIdentityRecord[];
+}): UserNodeClientCliSummary[] {
+  const runtimesByNodeId = new Map(
+    input.projection.runtimes.map((runtime) => [runtime.nodeId, runtime])
+  );
+
+  return sortUserNodeClientSummariesForCli(
+    input.userNodes.map((userNode) =>
+      projectUserNodeClientSummary({
+        runtime: runtimesByNodeId.get(userNode.nodeId),
+        userNode
+      })
+    )
+  );
 }
 
 export function projectUserNodeMessagePublishSummary(

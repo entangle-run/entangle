@@ -178,6 +178,12 @@ exists, it is auto-served by the running User Node runtimes; pass
 `--user-client-static-dir <path>` to use another built app directory. Stop it
 with `Ctrl-C` when the manual test is done.
 
+To rediscover running User Client endpoints through Host projection, run:
+
+```sh
+pnpm --filter @entangle/cli dev -- user-nodes clients --summary
+```
+
 To verify the support-bundle path against an already-running federated dev
 profile, run:
 
@@ -270,7 +276,8 @@ dedicated to operational testing.
 When the Docker launcher starts a User Node runtime, it publishes the Human
 Interface Runtime on a deterministic host port and injects
 `ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL` into the runner container. Studio and CLI
-show that projected User Client URL through Host runtime projection.
+show that projected User Client URL through Host runtime projection; the focused
+CLI view is `entangle user-nodes clients`.
 
 Defaults:
 

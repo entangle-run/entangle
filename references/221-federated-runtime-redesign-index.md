@@ -97,6 +97,7 @@ same-machine slice records.
 - [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
 - [295-user-client-review-json-actions-slice.md](295-user-client-review-json-actions-slice.md)
 - [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
+- [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
 
 ## Audited Scope
 
@@ -228,6 +229,9 @@ The repository is not fully federated:
   distinct `human_interface` runner processes, with two User Client state
   checks, two signed publishes with distinct User Node pubkeys, and two Host
   projected conversations;
+- CLI now exposes `entangle user-nodes clients` to join active User Node
+  identities with Host-projected Human Interface Runtime placement and User
+  Client URLs;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;
@@ -277,8 +281,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    rendering, signed read receipts, parent-message links, delivery retry state,
    runtime status, live state refresh, local JSON conversation/message APIs,
    a first dedicated User Client app, Host-mediated source-candidate
-   accept/reject controls, and wiki publication retry actions are implemented;
-   complete projection-backed source/wiki review remains open.
+   accept/reject controls, wiki publication retry actions, and CLI User Client
+   endpoint discovery are implemented; complete projection-backed source/wiki
+   review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.
@@ -337,7 +342,8 @@ follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The User Client now includes the first Host-mediated source-candidate review
-action. The next blocking implementation areas are richer projection-backed
+action, and CLI can list projected User Client endpoints per User Node. The
+next blocking implementation areas are richer projection-backed
 source/wiki review services, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed
 artifact services, and turning the process smoke into the full multi-machine

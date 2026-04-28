@@ -3642,3 +3642,13 @@ process-runner smoke now accepts `--user-client-static-dir`, auto-detects
 `apps/user-client/dist` when present, passes it to joined runner processes as
 `ENTANGLE_USER_CLIENT_STATIC_DIR`, and validates that the running User Node
 runtime serves the dedicated app shell before continuing through the JSON API.
+
+## [2026-04-28] implementation | Added CLI User Client endpoint discovery
+
+Added `references/297-cli-user-client-endpoints-slice.md`. The CLI now exposes
+`entangle user-nodes clients`, which joins active User Node identities with the
+Host projection and reports Human Interface Runtime observed state, runner
+placement, assignment id, and User Client URL.
+
+This keeps Studio as the operator surface while making the human-node client
+endpoint discoverable from a headless Host boundary.
