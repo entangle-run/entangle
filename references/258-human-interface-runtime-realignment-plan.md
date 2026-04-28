@@ -236,11 +236,11 @@ separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
 artifact-ref rendering plus projection-backed bounded artifact preview with
 runtime fallback, projected source-change summary rendering, projected source
-diff excerpts with runtime-diff fallback, scoped approval-response context, and
-message/approval publication that keeps the selected conversation/session
-context. Message history now also shows derived delivery labels for outbound
-relay publish coverage and inbound User Client receipt, and selected
-conversations are marked read through Host projection.
+diff excerpts with runtime-diff fallback, projected wiki-ref rendering, scoped
+approval-response context, and message/approval publication that keeps the
+selected conversation/session context. Message history now also shows derived
+delivery labels for outbound relay publish coverage and inbound User Client
+receipt, and selected conversations are marked read through Host projection.
 
 Impacted modules:
 

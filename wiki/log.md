@@ -3445,3 +3445,14 @@ The runner-served User Client marks the selected conversation read when a human
 opens it, `packages/host-client` exposes the read mutation, and CLI now has
 `entangle inbox read <conversationId> --user-node <nodeId>`. This is local
 User Node inbox state, not a federated A2A read receipt.
+
+## [2026-04-28] implementation | Rendered projected wiki refs in User Client
+
+Added `references/279-user-client-wiki-ref-projection-slice.md`. The
+runner-served User Client state now carries Host-projected `wikiRefs`, and the
+selected thread renders peer wiki refs with artifact id, summary, locator, and
+observed time.
+
+This keeps node memory/wiki visible to the human User Node through Host
+projection without reading runner-local wiki files or pushing wiki content
+through Nostr.

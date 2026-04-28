@@ -14,7 +14,8 @@ import type {
   UserConversationProjectionRecord,
   UserNodeMessageRecord,
   UserNodeMessagePublishResponse,
-  UserNodeMessagePublishType
+  UserNodeMessagePublishType,
+  WikiRefProjectionRecord
 } from "@entangle/types";
 import {
   hostProjectionSnapshotSchema,
@@ -55,6 +56,7 @@ type UserClientState = {
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
 };
 
 function escapeHtml(value: string): string {
@@ -257,7 +259,8 @@ async function buildUserClientState(input: {
     graphRevisionId: input.context.binding.graphRevisionId,
     sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
     targets: listTargetNodes(input.context),
-    userNodeId
+    userNodeId,
+    wikiRefs: projection.detail?.wikiRefs ?? []
   };
 }
 
@@ -771,6 +774,32 @@ function renderArtifactRefs(message: UserNodeMessageRecord): string {
   </div>`;
 }
 
+function renderWikiRefsForPeer(input: {
+  peerNodeId?: string | undefined;
+  wikiRefs: WikiRefProjectionRecord[];
+}): string {
+  const refs = input.peerNodeId
+    ? input.wikiRefs.filter((ref) => ref.nodeId === input.peerNodeId)
+    : [];
+
+  if (refs.length === 0) {
+    return `<p class="empty">No projected wiki refs for this thread.</p>`;
+  }
+
+  return `<div class="artifact-list">
+    ${refs
+      .map(
+        (ref) => `<div class="artifact-ref">
+          <div><strong>${escapeHtml(ref.artifactId)}</strong> ${escapeHtml(ref.artifactRef.artifactKind ?? "knowledge_summary")}</div>
+          ${ref.artifactRef.contentSummary ? `<div>${escapeHtml(ref.artifactRef.contentSummary)}</div>` : ""}
+          <div class="message-meta">${escapeHtml(renderArtifactLocator(ref.artifactRef))}</div>
+          <div class="message-meta">observed ${escapeHtml(ref.projection.updatedAt)}</div>
+        </div>`
+      )
+      .join("")}
+  </div>`;
+}
+
 function renderMessageDelivery(message: UserNodeMessageRecord): string {
   if (message.direction === "inbound") {
     return `<div class="message-meta">delivery received by User Client</div>`;
@@ -885,6 +914,10 @@ async function renderHome(input: {
         )
         .join("")
     : `<p class="empty">No recorded User Node messages yet.</p>`;
+  const wikiRefs = renderWikiRefsForPeer({
+    peerNodeId: selectedConversation?.peerNodeId,
+    wikiRefs: state.wikiRefs
+  });
   const errorMessage = [state.error, readState?.error].filter(Boolean).join(" ");
 
   return `<!doctype html>
@@ -964,6 +997,10 @@ async function renderHome(input: {
           <section>
             <h2>Selected Thread</h2>
             ${selectedConversationPanel}
+          </section>
+          <section>
+            <h2>Wiki</h2>
+            ${wikiRefs}
           </section>
           ${selectedConversationHistory?.error ? `<section class="error">${escapeHtml(selectedConversationHistory.error)}</section>` : ""}
           <section>

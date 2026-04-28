@@ -513,6 +513,31 @@ describe("runner runtime context", () => {
                   },
                   status: "pending_review"
                 }
+              ],
+              wikiRefs: [
+                {
+                  artifactId: "wiki-alpha",
+                  artifactRef: {
+                    artifactId: "wiki-alpha",
+                    artifactKind: "knowledge_summary",
+                    backend: "wiki",
+                    contentSummary: "Wiki repository committed at abc123.",
+                    locator: {
+                      nodeId: "worker-it",
+                      path: "/wiki/summaries/working-context.md"
+                    },
+                    status: "materialized"
+                  },
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:02:30.000Z"
+                  },
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey
+                }
               ]
             })
           );
@@ -899,6 +924,12 @@ describe("runner runtime context", () => {
             nodeId: "worker-it"
           }
         ],
+        wikiRefs: [
+          {
+            artifactId: "wiki-alpha",
+            nodeId: "worker-it"
+          }
+        ],
         userNodeId: "user-main"
       });
 
@@ -911,6 +942,8 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("delivery published 1/1 relays");
       expect(pageBody).toContain("delivery received by User Client");
       expect(pageBody).toContain("approval-alpha");
+      expect(pageBody).toContain("Wiki repository committed at abc123.");
+      expect(pageBody).toContain("/wiki/summaries/working-context.md");
       expect(pageBody).toContain("artifact-alpha");
       expect(pageBody).toContain("reports/review.md");
       expect(pageBody).toContain(
