@@ -33,8 +33,10 @@ The runner:
 - records the publication artifact in runner-owned state;
 - emits signed `artifact.ref` observation evidence for Host projection.
 
-Host, CLI, and host-client request publication through the Host control-plane
-boundary. They do not read, mutate, or push the runner wiki repository.
+Host, CLI, host-client, and follow-up Studio surface
+`347-studio-wiki-publication-control-slice.md` request publication through the
+Host control-plane boundary. They do not read, mutate, or push the runner wiki
+repository.
 
 ## Impacted Modules/Files
 

@@ -4203,3 +4203,13 @@ snapshot to the node's primary git target, persists the publication artifact
 record in runner-owned state, and emits signed `artifact.ref` evidence for Host
 projection. Host, host-client, and CLI request the command without reading or
 pushing runner-local wiki files.
+
+## [2026-04-28] implementation | Added Studio wiki publication control
+
+Added `references/347-studio-wiki-publication-control-slice.md`. Studio's
+selected-runtime Runtime Memory panel can now request wiki publication through
+the same Host-signed `runtime.wiki.publish` command path as CLI.
+
+The UI collects optional reason, requester id, and failed-publication retry
+state, then shows the requested command summary while publication completion
+remains separate runner observation evidence.

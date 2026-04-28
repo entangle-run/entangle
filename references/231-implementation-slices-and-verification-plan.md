@@ -275,6 +275,7 @@ Implementation record:
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
+- [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 
 Verification:
 
@@ -375,7 +376,8 @@ Current status:
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the
   primary git target, persists artifact publication metadata, and emits
-  `artifact.ref` evidence;
+  `artifact.ref` evidence; Host API, host-client, CLI, and Studio can request
+  that command without reading runner-local files;
 - deeper artifact history computation, richer source/wiki mutation endpoints,
   non-primary publication, and artifact restore/promotion still need
   projection-backed or backend-resolved replacement.
@@ -545,6 +547,7 @@ Implementation record:
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
+- [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 
 Verification:
 

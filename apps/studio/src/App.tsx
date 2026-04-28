@@ -190,6 +190,12 @@ import {
   type RuntimeSourceHistoryReplayDraft
 } from "./runtime-source-history-inspection.js";
 import {
+  buildRuntimeWikiPublicationRequest,
+  createEmptyRuntimeWikiPublicationDraft,
+  formatRuntimeWikiPublicationRequestSummary,
+  type RuntimeWikiPublicationDraft
+} from "./runtime-wiki-publication.js";
+import {
   buildSessionLaunchRequest,
   createDefaultSessionLaunchDraft,
   isSessionLaunchDraftReady,
@@ -541,6 +547,13 @@ export function App() {
     useState<RuntimeMemoryPageInspectionResponse | null>(null);
   const [memoryError, setMemoryError] = useState<string | null>(null);
   const [memoryPageError, setMemoryPageError] = useState<string | null>(null);
+  const [wikiPublicationDraft, setWikiPublicationDraft] =
+    useState<RuntimeWikiPublicationDraft>(createEmptyRuntimeWikiPublicationDraft);
+  const [wikiPublicationError, setWikiPublicationError] =
+    useState<string | null>(null);
+  const [lastWikiPublicationSummary, setLastWikiPublicationSummary] =
+    useState<string | null>(null);
+  const [pendingWikiPublication, setPendingWikiPublication] = useState(false);
   const [selectedTurns, setSelectedTurns] = useState<RunnerTurnRecord[]>([]);
   const [turnError, setTurnError] = useState<string | null>(null);
   const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
@@ -2183,6 +2196,49 @@ export function App() {
     sourceHistoryReplayDraft
   ]);
 
+  const requestRuntimeWikiPublication = useCallback(async () => {
+    if (!selectedRuntimeId) {
+      return;
+    }
+
+    setPendingWikiPublication(true);
+    setWikiPublicationError(null);
+    setLastWikiPublicationSummary(null);
+
+    try {
+      const response = await client.publishRuntimeWikiRepository(
+        selectedRuntimeId,
+        buildRuntimeWikiPublicationRequest(wikiPublicationDraft)
+      );
+
+      startTransition(() => {
+        setLastWikiPublicationSummary(
+          formatRuntimeWikiPublicationRequestSummary(response)
+        );
+        setWikiPublicationDraft(createEmptyRuntimeWikiPublicationDraft());
+        setWikiPublicationError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setWikiPublicationError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting wiki publication."
+          )
+        );
+      });
+    } finally {
+      setPendingWikiPublication(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    wikiPublicationDraft
+  ]);
+
   const selectGraphRevision = useCallback(
     async (revisionId: string) => {
       setSelectedGraphRevisionId(revisionId);
@@ -2576,6 +2632,10 @@ export function App() {
       setSelectedMemoryPageInspection(null);
       setMemoryError(null);
       setMemoryPageError(null);
+      setWikiPublicationDraft(createEmptyRuntimeWikiPublicationDraft());
+      setWikiPublicationError(null);
+      setLastWikiPublicationSummary(null);
+      setPendingWikiPublication(false);
       setTurnError(null);
       setSelectedTurns([]);
       setSelectedTurnId(null);
@@ -2635,6 +2695,10 @@ export function App() {
     setSelectedMemoryPageInspection(null);
     setMemoryError(null);
     setMemoryPageError(null);
+    setWikiPublicationDraft(createEmptyRuntimeWikiPublicationDraft());
+    setWikiPublicationError(null);
+    setLastWikiPublicationSummary(null);
+    setPendingWikiPublication(false);
     setTurnError(null);
     setSelectedTurns([]);
     setSelectedTurnId(null);
@@ -5631,6 +5695,78 @@ export function App() {
                           : "loading"}
                       </span>
                     </div>
+
+                    <form
+                      className="stacked-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void requestRuntimeWikiPublication();
+                      }}
+                    >
+                      <div className="field-grid">
+                        <label className="field">
+                          <span>Reason</span>
+                          <input
+                            disabled={pendingWikiPublication}
+                            onChange={(event) => {
+                              setWikiPublicationDraft((current) => ({
+                                ...current,
+                                reason: event.target.value
+                              }));
+                            }}
+                            placeholder="operator publication reason"
+                            value={wikiPublicationDraft.reason}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Requested By</span>
+                          <input
+                            disabled={pendingWikiPublication}
+                            onChange={(event) => {
+                              setWikiPublicationDraft((current) => ({
+                                ...current,
+                                requestedBy: event.target.value
+                              }));
+                            }}
+                            placeholder="operator id"
+                            value={wikiPublicationDraft.requestedBy}
+                          />
+                        </label>
+                        <label className="toggle-field">
+                          <input
+                            checked={wikiPublicationDraft.retryFailedPublication}
+                            disabled={pendingWikiPublication}
+                            onChange={(event) => {
+                              setWikiPublicationDraft((current) => ({
+                                ...current,
+                                retryFailedPublication: event.target.checked
+                              }));
+                            }}
+                            type="checkbox"
+                          />
+                          <span>Retry failed publication</span>
+                        </label>
+                      </div>
+                      <div className="action-row">
+                        <button
+                          className="action-button"
+                          disabled={!selectedRuntimeId || pendingWikiPublication}
+                          type="submit"
+                        >
+                          {pendingWikiPublication
+                            ? "Requesting..."
+                            : "Publish Wiki"}
+                        </button>
+                        {lastWikiPublicationSummary ? (
+                          <span className="panel-caption">
+                            {lastWikiPublicationSummary}
+                          </span>
+                        ) : null}
+                      </div>
+                      {wikiPublicationError ? (
+                        <p className="error-box">{wikiPublicationError}</p>
+                      ) : null}
+                    </form>
 
                     {memoryError ? (
                       <p className="error-box">{memoryError}</p>

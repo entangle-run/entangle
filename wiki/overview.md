@@ -113,7 +113,8 @@ The most accurate current description is:
 - explicit wiki repository publication is now a Host-signed
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the
-  primary git target and emits `artifact.ref` evidence;
+  primary git target and emits `artifact.ref` evidence, while CLI and Studio
+  request the same Host control path;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -313,8 +314,9 @@ The repository now also contains the first real implementation baseline:
   wiki-repository publication has been removed from Host/CLI/Studio because it
   required Host-readable runner filesystem state; explicit wiki publication
   now returns as a Host-signed `runtime.wiki.publish` command that the accepted
-  runner executes from runner-owned wiki state, publishing a primary-git
-  artifact and emitting signed `artifact.ref` evidence. With
+  runner executes from runner-owned wiki state, with CLI and Studio requesting
+  that same Host control path, publishing a primary-git artifact and emitting
+  signed `artifact.ref` evidence. With
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without

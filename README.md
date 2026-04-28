@@ -278,8 +278,9 @@ This repository currently contains:
   removed because it required Host-readable runner filesystem state; explicit
   wiki publication now returns through a Host-signed `runtime.wiki.publish`
   control command that the accepted runner executes from runner-owned wiki
-  state, publishing a primary-git artifact and emitting `artifact.ref`
-  projection evidence. Bounded engine-request
+  state, with CLI and Studio requesting that same Host control path, publishing
+  a primary-git artifact and emitting `artifact.ref` projection evidence.
+  Bounded engine-request
   summaries on executable turns so
   operators can inspect prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without

@@ -147,6 +147,7 @@ same-machine slice records.
 - [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 - [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
+- [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 
 ## Audited Scope
 
@@ -573,9 +574,9 @@ assignments. Source-history replay now has a Host-signed
 assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed
 `sourceHistoryReplays` with Host API, host-client, CLI, and Studio summary
-surfaces. Explicit wiki publication now has Host API, host-client, and CLI
-request surfaces over the same control boundary. Per-assignment timelines now
-group assignment lifecycle state and
+surfaces. Explicit wiki publication now has Host API, host-client, CLI, and
+Studio request surfaces over the same control boundary. Per-assignment
+timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection, while
 non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,

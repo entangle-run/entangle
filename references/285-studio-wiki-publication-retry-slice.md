@@ -2,9 +2,10 @@
 
 ## Current Repo Truth
 
-Superseded by `335-host-wiki-publication-removal-slice.md`. Host, host-client,
-CLI, and Studio no longer support direct runtime wiki repository publication
-because that path required Host-readable runner filesystem state.
+Superseded by `335-host-wiki-publication-removal-slice.md` and later replaced
+by `347-studio-wiki-publication-control-slice.md`. Host, host-client, CLI, and
+Studio no longer support direct runtime wiki repository publication because
+that path required Host-readable runner filesystem state.
 
 Historical context from this slice: Host, host-client, CLI, and Studio once
 supported publishing a runtime wiki repository as a git-backed artifact. CLI
@@ -18,8 +19,9 @@ they switched to CLI.
 ## Target Model
 
 The target model described by this slice was replaced. Explicit wiki
-publication should return as runner-owned protocol behavior, not as a Studio
-button that asks Host to publish a runner-local repository.
+publication has returned as runner-owned protocol behavior: Studio now asks
+Host to send `runtime.wiki.publish` to the accepted runner assignment, not to
+publish a runner-local repository itself.
 
 ## Impacted Modules/Files
 
@@ -34,7 +36,8 @@ button that asks Host to publish a runner-local repository.
 
 Supersession note: the Studio wiki publication retry action described here was
 removed by `335-host-wiki-publication-removal-slice.md` because it depended on
-a direct Host filesystem mutation against runner-owned wiki state.
+a direct Host filesystem mutation against runner-owned wiki state. The valid
+replacement is the Host-signed control request described by `347`.
 
 - Detect retryable wiki repository publication attempts in Studio.
 - Send `retry: true` to `publishRuntimeWikiRepository` when a retryable attempt
