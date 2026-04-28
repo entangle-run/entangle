@@ -99,6 +99,7 @@ same-machine slice records.
 - [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
 - [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
 - [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
+- [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
 
 ## Audited Scope
 
@@ -236,6 +237,8 @@ The repository is not fully federated:
 - Studio now includes a Federation panel assignment control that offers graph
   nodes, including User Nodes, to trusted runners through the Host assignment
   API;
+- Studio now also lists projected runtime assignments and can revoke active,
+  accepted, offered, or revoking assignments through the Host assignment API;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;
@@ -296,7 +299,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
     source-change summaries and bounded artifact previews now project through
     observed refs; complete source/wiki review remains open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
-    both expose first-pass assignment operations through Host-owned APIs.
+    both expose first-pass assignment offer and revoke operations through
+    Host-owned APIs.
 13. Product naming migration with no local-product compatibility marker.
 14. Distributed smoke test.
 

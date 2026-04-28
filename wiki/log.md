@@ -3662,3 +3662,12 @@ an active graph node, a trusted runner, and a lease duration.
 The form calls the Host assignment API through `host-client`, refreshes the
 projection after success, and keeps runner control-plane authority in Host
 rather than direct Studio-runner communication.
+
+## [2026-04-28] implementation | Added Studio runtime assignment revocation
+
+Added `references/299-studio-runtime-assignment-revocation-slice.md`. Studio's
+Federation panel now lists Host-projected runtime assignments and exposes a
+Host-backed revoke action for revocable assignment states.
+
+This gives Studio the first complete offer/revoke assignment loop while keeping
+the canonical control-plane transition inside Host.

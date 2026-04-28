@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { graphSpecSchema, type GraphSpec, type HostProjectionSnapshot } from "@entangle/types";
+import {
+  graphSpecSchema,
+  type GraphSpec,
+  type HostProjectionSnapshot
+} from "@entangle/types";
 import {
   buildRuntimeAssignmentNodeOptions,
   buildRuntimeAssignmentOfferRequest,
   buildRuntimeAssignmentRunnerOptions,
+  canRevokeAssignmentProjection,
   createEmptyRuntimeAssignmentControlDraft,
-  normalizeRuntimeAssignmentControlDraft
+  formatAssignmentProjectionDetail,
+  formatAssignmentProjectionLabel,
+  normalizeRuntimeAssignmentControlDraft,
+  sortAssignmentProjectionsForStudio
 } from "./runtime-assignment-control.js";
 
 const graph: GraphSpec = graphSpecSchema.parse({
@@ -40,7 +48,36 @@ const graph: GraphSpec = graphSpecSchema.parse({
 
 const projection: HostProjectionSnapshot = {
   artifactRefs: [],
-  assignments: [],
+  assignments: [
+    {
+      assignmentId: "assignment-revoked",
+      graphId: "team-alpha",
+      graphRevisionId: "graph-revision-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nodeId: "builder-it",
+      projection: {
+        source: "control_event",
+        updatedAt: "2026-04-28T12:01:00.000Z"
+      },
+      runnerId: "runner-trusted",
+      status: "revoked"
+    },
+    {
+      assignmentId: "assignment-active",
+      graphId: "team-alpha",
+      graphRevisionId: "graph-revision-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nodeId: "user-a",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-28T12:02:00.000Z"
+      },
+      runnerId: "runner-trusted",
+      status: "active"
+    }
+  ],
   freshness: "current",
   generatedAt: "2026-04-28T12:00:00.000Z",
   hostAuthorityPubkey:
@@ -88,19 +125,19 @@ describe("runtime assignment control helpers", () => {
       {
         detail: "worker",
         id: "builder-it",
-        label: "builder-it · worker"
+        label: "builder-it - worker"
       },
       {
         detail: "user",
         id: "user-a",
-        label: "user-a · user"
+        label: "user-a - user"
       }
     ]);
     expect(buildRuntimeAssignmentRunnerOptions(projection)).toEqual([
       {
-        detail: "trusted · ready",
+        detail: "trusted - ready",
         id: "runner-trusted",
-        label: "runner-trusted · ready"
+        label: "runner-trusted - ready"
       }
     ]);
   });
@@ -143,5 +180,24 @@ describe("runtime assignment control helpers", () => {
         runnerId: "runner-trusted"
       })
     ).toThrow("Assignment lease duration must be a positive integer.");
+  });
+
+  it("sorts and formats assignment projections for Studio controls", () => {
+    const assignments = sortAssignmentProjectionsForStudio(
+      projection.assignments
+    );
+
+    expect(assignments.map((assignment) => assignment.assignmentId)).toEqual([
+      "assignment-active",
+      "assignment-revoked"
+    ]);
+    expect(formatAssignmentProjectionLabel(assignments[0]!)).toBe(
+      "user-a -> runner-trusted"
+    );
+    expect(formatAssignmentProjectionDetail(assignments[0]!)).toBe(
+      "active - assignment-active"
+    );
+    expect(canRevokeAssignmentProjection(assignments[0]!)).toBe(true);
+    expect(canRevokeAssignmentProjection(assignments[1]!)).toBe(false);
   });
 });

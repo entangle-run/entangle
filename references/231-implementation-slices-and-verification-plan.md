@@ -243,6 +243,7 @@ Implementation record:
 - [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
 - [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
 - [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
+- [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
 
 Current status:
 
@@ -385,10 +386,11 @@ Client endpoint discovery through `entangle user-nodes clients`, and a Studio
 projection/User Node panel with runtime placement, User Client URL,
 conversation, active, unread, and pending-approval counts. Studio also has a
 first Host-backed assignment offer control for assigning graph nodes, including
-User Nodes, to trusted runners. CLI approve/reject can now derive signed
-response context from directly looked-up recorded approval-request messages.
-Transport health, Studio assignment revocation/reassignment controls, and
-removal of old admin/debug approval mutation paths remain follow-up work.
+User Nodes, to trusted runners plus projected assignment rows with Host-backed
+revoke actions. CLI approve/reject can now derive signed response context from
+directly looked-up recorded approval-request messages. Transport health, richer
+Studio reassignment controls, and removal of old admin/debug approval mutation
+paths remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

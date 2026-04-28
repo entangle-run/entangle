@@ -222,8 +222,12 @@ import {
   buildRuntimeAssignmentNodeOptions,
   buildRuntimeAssignmentOfferRequest,
   buildRuntimeAssignmentRunnerOptions,
+  canRevokeAssignmentProjection,
   createEmptyRuntimeAssignmentControlDraft,
+  formatAssignmentProjectionDetail,
+  formatAssignmentProjectionLabel,
   normalizeRuntimeAssignmentControlDraft,
+  sortAssignmentProjectionsForStudio,
   type RuntimeAssignmentControlDraft
 } from "./runtime-assignment-control.js";
 import {
@@ -451,6 +455,8 @@ export function App() {
   const [lastAssignmentOfferSummary, setLastAssignmentOfferSummary] =
     useState<string | null>(null);
   const [pendingAssignmentOffer, setPendingAssignmentOffer] = useState(false);
+  const [pendingAssignmentRevokeId, setPendingAssignmentRevokeId] =
+    useState<string | null>(null);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);
   const [graphRevisions, setGraphRevisions] = useState<GraphRevisionMetadata[]>([]);
@@ -1971,6 +1977,39 @@ export function App() {
       setPendingAssignmentOffer(false);
     }
   }, [assignmentDraft, client, loadOverview]);
+
+  const revokeRuntimeAssignmentFromStudio = useCallback(
+    async (assignmentId: string) => {
+      try {
+        setPendingAssignmentRevokeId(assignmentId);
+        const response = await client.revokeAssignment(assignmentId, {
+          revokedBy: "studio"
+        });
+
+        await loadOverview();
+
+        startTransition(() => {
+          setAssignmentMutationError(null);
+          setLastAssignmentOfferSummary(
+            `${response.assignment.assignmentId} revoked`
+          );
+        });
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setAssignmentMutationError(
+            normalizeError(
+              caught,
+              "Unknown error while revoking the runtime assignment."
+            )
+          );
+          setLastAssignmentOfferSummary(null);
+        });
+      } finally {
+        setPendingAssignmentRevokeId(null);
+      }
+    },
+    [client, loadOverview]
+  );
 
   const mutateSelectedRuntime = useCallback(
     async (action: RuntimeLifecycleAction) => {
@@ -3583,6 +3622,11 @@ export function App() {
     () => buildRuntimeAssignmentRunnerOptions(projectionSnapshot),
     [projectionSnapshot]
   );
+  const assignmentProjectionRows = useMemo(
+    () =>
+      sortAssignmentProjectionsForStudio(projectionSnapshot?.assignments ?? []),
+    [projectionSnapshot]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3850,6 +3894,38 @@ export function App() {
             <p className="error-box">{assignmentMutationError}</p>
           ) : null}
         </form>
+
+        {assignmentProjectionRows.length > 0 ? (
+          <div className="compact-list">
+            {assignmentProjectionRows.slice(0, 6).map((assignment) => (
+              <div key={assignment.assignmentId} className="compact-list-item">
+                <strong>{formatAssignmentProjectionLabel(assignment)}</strong>
+                <span>{formatAssignmentProjectionDetail(assignment)}</span>
+                <button
+                  className="action-button"
+                  disabled={
+                    pendingAssignmentRevokeId !== null ||
+                    !canRevokeAssignmentProjection(assignment)
+                  }
+                  onClick={() => {
+                    void revokeRuntimeAssignmentFromStudio(
+                      assignment.assignmentId
+                    );
+                  }}
+                  type="button"
+                >
+                  {pendingAssignmentRevokeId === assignment.assignmentId
+                    ? "Revoking..."
+                    : "Revoke"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="inline-empty-state">
+            <p>No runtime assignments are projected yet.</p>
+          </div>
+        )}
 
         {projectedRuntimeStates.length > 0 ? (
           <div className="compact-list">

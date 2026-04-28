@@ -82,9 +82,9 @@ when available, or an explicit `--user-client-static-dir`, so manual
 running User Node runtime. CLI now also exposes
 `entangle user-nodes clients --summary` to list active User Nodes with their
 projected Human Interface Runtime placement and User Client URLs.
-Studio now has a first Host-backed assignment offer control in the Federation
-panel for assigning graph nodes, including User Nodes, to trusted runners while
-keeping participant chat/review inside the User Client.
+Studio now has first Host-backed assignment offer/revoke controls in the
+Federation panel for assigning graph nodes, including User Nodes, to trusted
+runners while keeping participant chat/review inside the User Client.
 
 The contract-ownership layer is now also explicit:
 

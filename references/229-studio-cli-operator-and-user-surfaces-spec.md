@@ -21,7 +21,7 @@ candidates/history, wiki publications, recovery, and event refresh.
 Missing surfaces:
 
 - transport health;
-- full User Node runtime reassignment/revocation workflow controls in Studio;
+- richer User Node runtime reassignment workflow controls in Studio;
 - rich Human Interface Runtime visibility beyond the projected runtime row;
 - durable user-node inbox/outbox projection;
 - Studio signed user-node task launch migration;
@@ -89,6 +89,8 @@ Recently added:
 - Studio now has a Federation panel assignment control that offers any active
   graph node, including User Nodes, to a Host-projected trusted runner via the
   Host assignment API.
+- Studio now lists projected assignment rows and can revoke active, accepted,
+  offered, or revoking assignments through the Host assignment API.
 
 ## Target Model
 
@@ -157,11 +159,10 @@ Node.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
-  User Node summary panel plus first-pass assignment offer controls.
+  User Node summary panel plus first-pass assignment offer/revoke controls.
 - Add Studio User Node runtime visibility and User Client open action. The
   first projection-derived User Node runtime summaries and `clientUrl` open
-  actions are implemented; reassignment/revocation and richer health panels
-  remain open.
+  actions are implemented; richer reassignment and health panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and

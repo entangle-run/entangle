@@ -1,4 +1,5 @@
 import type {
+  AssignmentProjectionRecord,
   GraphSpec,
   HostProjectionSnapshot,
   RuntimeAssignmentOfferRequest
@@ -16,6 +17,13 @@ export type RuntimeAssignmentControlOption = {
   label: string;
 };
 
+const revocableAssignmentStatuses = new Set<AssignmentProjectionRecord["status"]>([
+  "accepted",
+  "active",
+  "offered",
+  "revoking"
+]);
+
 export function createEmptyRuntimeAssignmentControlDraft(): RuntimeAssignmentControlDraft {
   return {
     leaseDurationSeconds: "3600",
@@ -32,7 +40,7 @@ export function buildRuntimeAssignmentNodeOptions(
     .map((node) => ({
       detail: node.nodeKind,
       id: node.nodeId,
-      label: `${node.nodeId} · ${node.nodeKind}`
+      label: `${node.nodeId} - ${node.nodeKind}`
     }));
 }
 
@@ -43,9 +51,9 @@ export function buildRuntimeAssignmentRunnerOptions(
     .filter((runner) => runner.trustState === "trusted")
     .sort((left, right) => left.runnerId.localeCompare(right.runnerId))
     .map((runner) => ({
-      detail: `${runner.trustState} · ${runner.operationalState}`,
+      detail: `${runner.trustState} - ${runner.operationalState}`,
       id: runner.runnerId,
-      label: `${runner.runnerId} · ${runner.operationalState}`
+      label: `${runner.runnerId} - ${runner.operationalState}`
     }));
 }
 
@@ -99,4 +107,51 @@ export function buildRuntimeAssignmentOfferRequest(
     nodeId: draft.nodeId,
     runnerId: draft.runnerId
   };
+}
+
+export function sortAssignmentProjectionsForStudio(
+  assignments: AssignmentProjectionRecord[]
+): AssignmentProjectionRecord[] {
+  return [...assignments].sort((left, right) => {
+    const statusPriority = (status: AssignmentProjectionRecord["status"]) =>
+      status === "active"
+        ? 0
+        : status === "accepted"
+          ? 1
+          : status === "offered"
+            ? 2
+            : 3;
+    const priorityOrder =
+      statusPriority(left.status) - statusPriority(right.status);
+
+    if (priorityOrder !== 0) {
+      return priorityOrder;
+    }
+
+    const nodeOrder = left.nodeId.localeCompare(right.nodeId);
+
+    if (nodeOrder !== 0) {
+      return nodeOrder;
+    }
+
+    return left.assignmentId.localeCompare(right.assignmentId);
+  });
+}
+
+export function canRevokeAssignmentProjection(
+  assignment: AssignmentProjectionRecord
+): boolean {
+  return revocableAssignmentStatuses.has(assignment.status);
+}
+
+export function formatAssignmentProjectionLabel(
+  assignment: AssignmentProjectionRecord
+): string {
+  return `${assignment.nodeId} -> ${assignment.runnerId}`;
+}
+
+export function formatAssignmentProjectionDetail(
+  assignment: AssignmentProjectionRecord
+): string {
+  return `${assignment.status} - ${assignment.assignmentId}`;
 }
