@@ -219,6 +219,14 @@ import {
   summarizeFederationProjection
 } from "./federation-inspection.js";
 import {
+  buildRuntimeAssignmentNodeOptions,
+  buildRuntimeAssignmentOfferRequest,
+  buildRuntimeAssignmentRunnerOptions,
+  createEmptyRuntimeAssignmentControlDraft,
+  normalizeRuntimeAssignmentControlDraft,
+  type RuntimeAssignmentControlDraft
+} from "./runtime-assignment-control.js";
+import {
   collectSessionInspectionTraceIds,
   filterRuntimeSessions,
   formatSessionCancellationTargetSummary,
@@ -434,6 +442,15 @@ export function App() {
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const [userNodes, setUserNodes] = useState<UserNodeIdentityRecord[]>([]);
   const [userNodeError, setUserNodeError] = useState<string | null>(null);
+  const [assignmentDraft, setAssignmentDraft] =
+    useState<RuntimeAssignmentControlDraft>(
+      createEmptyRuntimeAssignmentControlDraft
+    );
+  const [assignmentMutationError, setAssignmentMutationError] =
+    useState<string | null>(null);
+  const [lastAssignmentOfferSummary, setLastAssignmentOfferSummary] =
+    useState<string | null>(null);
+  const [pendingAssignmentOffer, setPendingAssignmentOffer] = useState(false);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);
   const [graphRevisions, setGraphRevisions] = useState<GraphRevisionMetadata[]>([]);
@@ -1925,6 +1942,35 @@ export function App() {
     selectedSessionId,
     selectedTurnId
   ]);
+
+  const offerRuntimeAssignmentFromStudio = useCallback(async () => {
+    try {
+      setPendingAssignmentOffer(true);
+      const request = buildRuntimeAssignmentOfferRequest(assignmentDraft);
+      const response = await client.offerAssignment(request);
+
+      await loadOverview();
+
+      startTransition(() => {
+        setAssignmentMutationError(null);
+        setLastAssignmentOfferSummary(
+          `${response.assignment.assignmentId} offered to ${response.assignment.runnerId}`
+        );
+      });
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setAssignmentMutationError(
+          normalizeError(
+            caught,
+            "Unknown error while offering the runtime assignment."
+          )
+        );
+        setLastAssignmentOfferSummary(null);
+      });
+    } finally {
+      setPendingAssignmentOffer(false);
+    }
+  }, [assignmentDraft, client, loadOverview]);
 
   const mutateSelectedRuntime = useCallback(
     async (action: RuntimeLifecycleAction) => {
@@ -3529,6 +3575,14 @@ export function App() {
     () => buildUserNodeRuntimeSummaries(userNodes, projectionSnapshot),
     [projectionSnapshot, userNodes]
   );
+  const assignmentNodeOptions = useMemo(
+    () => buildRuntimeAssignmentNodeOptions(graphInspection?.graph),
+    [graphInspection]
+  );
+  const assignmentRunnerOptions = useMemo(
+    () => buildRuntimeAssignmentRunnerOptions(projectionSnapshot),
+    [projectionSnapshot]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3623,6 +3677,16 @@ export function App() {
     setLastSessionLaunch(null);
   }, [selectedRuntime]);
 
+  useEffect(() => {
+    setAssignmentDraft((current) =>
+      normalizeRuntimeAssignmentControlDraft({
+        draft: current,
+        nodeOptions: assignmentNodeOptions,
+        runnerOptions: assignmentRunnerOptions
+      })
+    );
+  }, [assignmentNodeOptions, assignmentRunnerOptions]);
+
   return (
     <main className="studio-shell">
       <section className="hero-card">
@@ -3691,6 +3755,101 @@ export function App() {
             <span>Conversations</span>
           </div>
         </div>
+
+        <form
+          className="artifact-detail-card"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void offerRuntimeAssignmentFromStudio();
+          }}
+        >
+          <div className="section-header">
+            <h3>Runtime Assignment</h3>
+            <span className="panel-caption">
+              {pendingAssignmentOffer ? "offering" : "control"}
+            </span>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>Node</span>
+              <select
+                disabled={assignmentNodeOptions.length === 0 || pendingAssignmentOffer}
+                onChange={(event) => {
+                  setAssignmentDraft((current) => ({
+                    ...current,
+                    nodeId: event.target.value
+                  }));
+                }}
+                value={assignmentDraft.nodeId}
+              >
+                {assignmentNodeOptions.length === 0 ? (
+                  <option value="">No graph nodes</option>
+                ) : null}
+                {assignmentNodeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Trusted Runner</span>
+              <select
+                disabled={assignmentRunnerOptions.length === 0 || pendingAssignmentOffer}
+                onChange={(event) => {
+                  setAssignmentDraft((current) => ({
+                    ...current,
+                    runnerId: event.target.value
+                  }));
+                }}
+                value={assignmentDraft.runnerId}
+              >
+                {assignmentRunnerOptions.length === 0 ? (
+                  <option value="">No trusted runners</option>
+                ) : null}
+                {assignmentRunnerOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Lease Seconds</span>
+              <input
+                disabled={pendingAssignmentOffer}
+                min="1"
+                onChange={(event) => {
+                  setAssignmentDraft((current) => ({
+                    ...current,
+                    leaseDurationSeconds: event.target.value
+                  }));
+                }}
+                type="number"
+                value={assignmentDraft.leaseDurationSeconds}
+              />
+            </label>
+          </div>
+          <div className="action-row">
+            <button
+              className="action-button"
+              disabled={
+                pendingAssignmentOffer ||
+                assignmentNodeOptions.length === 0 ||
+                assignmentRunnerOptions.length === 0
+              }
+              type="submit"
+            >
+              {pendingAssignmentOffer ? "Offering..." : "Offer Assignment"}
+            </button>
+            {lastAssignmentOfferSummary ? (
+              <span className="panel-caption">{lastAssignmentOfferSummary}</span>
+            ) : null}
+          </div>
+          {assignmentMutationError ? (
+            <p className="error-box">{assignmentMutationError}</p>
+          ) : null}
+        </form>
 
         {projectedRuntimeStates.length > 0 ? (
           <div className="compact-list">

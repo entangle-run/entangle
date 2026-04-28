@@ -242,6 +242,7 @@ Implementation record:
 - [295-user-client-review-json-actions-slice.md](295-user-client-review-json-actions-slice.md)
 - [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
 - [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
+- [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
 
 Current status:
 
@@ -382,10 +383,12 @@ This slice now includes first-pass CLI assignment/User Node/inbox/reply/
 approve/reject commands, scoped CLI approval-response context flags, CLI User
 Client endpoint discovery through `entangle user-nodes clients`, and a Studio
 projection/User Node panel with runtime placement, User Client URL,
-conversation, active, unread, and pending-approval counts. CLI approve/reject
-can now derive signed response context from directly looked-up recorded
-approval-request messages. Transport health, full Studio assignment controls,
-and removal of old admin/debug approval mutation paths remain follow-up work.
+conversation, active, unread, and pending-approval counts. Studio also has a
+first Host-backed assignment offer control for assigning graph nodes, including
+User Nodes, to trusted runners. CLI approve/reject can now derive signed
+response context from directly looked-up recorded approval-request messages.
+Transport health, Studio assignment revocation/reassignment controls, and
+removal of old admin/debug approval mutation paths remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

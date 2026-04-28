@@ -3652,3 +3652,13 @@ placement, assignment id, and User Client URL.
 
 This keeps Studio as the operator surface while making the human-node client
 endpoint discoverable from a headless Host boundary.
+
+## [2026-04-28] implementation | Added Studio runtime assignment control
+
+Added `references/298-studio-runtime-assignment-control-slice.md`. Studio's
+Federation panel now includes a Host-backed assignment offer form for selecting
+an active graph node, a trusted runner, and a lease duration.
+
+The form calls the Host assignment API through `host-client`, refreshes the
+projection after success, and keeps runner control-plane authority in Host
+rather than direct Studio-runner communication.
