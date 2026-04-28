@@ -2547,9 +2547,15 @@ export function App() {
     try {
       setPendingWikiRepositoryPublication(true);
       setWikiRepositoryPublicationError(null);
+      const retryablePublication = selectedWikiRepositoryPublications.find(
+        (publication) => publication.publication.state !== "published"
+      );
       const response = await client.publishRuntimeWikiRepository(selectedRuntimeId, {
         publishedBy: "studio-operator",
-        reason: "Studio wiki repository publication"
+        reason: retryablePublication
+          ? "Studio wiki repository publication retry"
+          : "Studio wiki repository publication",
+        retry: Boolean(retryablePublication)
       });
 
       startTransition(() => {
@@ -2601,7 +2607,12 @@ export function App() {
     } finally {
       setPendingWikiRepositoryPublication(false);
     }
-  }, [client, refreshSelectedRuntimeDetails, selectedRuntimeId]);
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedWikiRepositoryPublications
+  ]);
 
   const restoreSelectedRuntimeArtifact = useCallback(async () => {
     if (
@@ -3491,6 +3502,13 @@ export function App() {
       selectedMemory.pages.filter((page) => !highlightedPaths.has(page.path))
     );
   }, [selectedMemory]);
+  const hasRetryableWikiRepositoryPublication = useMemo(
+    () =>
+      selectedWikiRepositoryPublications.some(
+        (publication) => publication.publication.state !== "published"
+      ),
+    [selectedWikiRepositoryPublications]
+  );
   const statusTone = useMemo(() => status?.status ?? "pending", [status]);
   const federationSummary = useMemo(
     () => summarizeFederationProjection(projectionSnapshot),
@@ -6142,8 +6160,12 @@ export function App() {
                             type="button"
                           >
                             {pendingWikiRepositoryPublication
-                              ? "Publishing wiki repository"
-                              : "Publish wiki repository"}
+                              ? hasRetryableWikiRepositoryPublication
+                                ? "Retrying wiki publication"
+                                : "Publishing wiki repository"
+                              : hasRetryableWikiRepositoryPublication
+                                ? "Retry wiki publication"
+                                : "Publish wiki repository"}
                           </button>
                         </div>
 

@@ -3511,3 +3511,13 @@ outbox record when relay publication fails. Outbound message records can be
 The runner-served User Client now renders failed relay delivery details and a
 retry action that republishes through the existing signed User Node gateway
 while preserving conversation, session, parent-message, and approval context.
+
+## [2026-04-28] implementation | Added Studio wiki publication retry
+
+Added `references/285-studio-wiki-publication-retry-slice.md`. Studio now
+detects non-published wiki repository publication attempts for the selected
+runtime and sends `retry: true` through the existing Host API, matching the CLI
+retry capability.
+
+This closes the operator-side wiki publication action gap without adding a new
+protocol or Host contract.

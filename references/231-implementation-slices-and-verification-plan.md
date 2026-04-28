@@ -263,8 +263,8 @@ Current status:
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application, full wiki publication actions, and
-  richer artifact object-backend review remain open.
+- final bundled User Client application and richer artifact object-backend
+  review remain open.
 
 Verification:
 

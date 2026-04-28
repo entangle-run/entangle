@@ -237,8 +237,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    artifact-ref rendering, projected bounded artifact preview with runtime
    fallback, delivery labels, local conversation read state, projected wiki-ref
    rendering, projected wiki preview rendering, wiki-scoped approval context
-   rendering, and signed read receipts are implemented; full wiki publication
-   actions and complete projection-backed source review remain open.
+   rendering, signed read receipts, parent-message links, delivery retry state,
+   and wiki publication retry actions are implemented; complete
+   projection-backed source review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.
