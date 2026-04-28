@@ -3267,6 +3267,19 @@ silently dropping it. CLI typecheck, focused CLI tests, CLI lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-28] implementation | Preferred projected source diff excerpts in User Client
+
+Added `references/273-user-client-projected-source-diff-excerpt-slice.md`.
+The runner-served User Client source-change review page now fetches Host
+projection first and renders a matching projected
+`sourceChangeSummary.diffExcerpt` without calling the runtime-local
+source-change diff endpoint.
+
+The previous Host runtime diff endpoint remains a fallback for records that do
+not yet have projected diff evidence. Runner typecheck, focused runner tests,
+runner lint, `node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
+
 ## [2026-04-28] implementation | Projected source-change summaries from observed refs
 
 Added `references/270-source-change-ref-summary-projection-slice.md`.

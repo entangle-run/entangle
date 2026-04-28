@@ -617,6 +617,16 @@ function renderSourceChangeSummary(ref?: SourceChangeRefProjectionRecord): strin
   </div>`;
 }
 
+function findProjectedSourceChangeRef(input: {
+  candidateId: string;
+  nodeId: string;
+  projection?: HostProjectionSnapshot | undefined;
+}): SourceChangeRefProjectionRecord | undefined {
+  return input.projection?.sourceChangeRefs.find(
+    (ref) => ref.nodeId === input.nodeId && ref.candidateId === input.candidateId
+  );
+}
+
 function renderApprovalResource(
   message: UserNodeMessageRecord,
   sourceChangeRefs: SourceChangeRefProjectionRecord[]
@@ -930,27 +940,42 @@ async function renderSourceChangeCandidateDiffPage(input: {
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
 }): Promise<string> {
-  const diff = await fetchRuntimeSourceChangeCandidateDiff({
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+  const projectedRef = findProjectedSourceChangeRef({
     candidateId: input.candidateId,
-    hostApi: input.hostApi,
-    nodeId: input.nodeId
+    nodeId: input.nodeId,
+    projection: projection.detail
   });
-  const diffDetail = diff.detail;
+  const projectedSummary = projectedRef?.sourceChangeSummary;
+  const diff = projectedSummary?.diffExcerpt
+    ? undefined
+    : await fetchRuntimeSourceChangeCandidateDiff({
+        candidateId: input.candidateId,
+        hostApi: input.hostApi,
+        nodeId: input.nodeId
+      });
+  const diffDetail = diff?.detail;
   const backHref = input.conversationId
     ? `/?conversationId=${encodeURIComponent(input.conversationId)}`
     : "/";
   const diffResult = diffDetail?.diff;
   const candidate = diffDetail?.candidate;
-  const diffBody = diff.error
-    ? `<section class="error">${escapeHtml(diff.error)}</section>`
-    : diffResult?.available
-      ? `<section>
+  const diffBody = projectedSummary?.diffExcerpt
+    ? `<section>
+          <h2>Diff</h2>
+          <div class="meta">projection excerpt${projectedSummary.truncated ? " - truncated" : ""}</div>
+          <pre>${escapeHtml(projectedSummary.diffExcerpt)}</pre>
+        </section>`
+    : diff?.error
+      ? `<section class="error">${escapeHtml(diff.error)}</section>`
+      : diffResult?.available
+        ? `<section>
           <h2>Diff</h2>
           <div class="meta">${escapeHtml(diffResult.contentType)} - ${diffResult.bytesRead} bytes${diffResult.truncated ? " - truncated" : ""}</div>
           <pre>${escapeHtml(diffResult.content)}</pre>
         </section>`
-      : `<section class="notice">${escapeHtml(diffResult?.reason ?? "Source-change diff is unavailable.")}</section>`;
-  const summary = candidate?.sourceChangeSummary;
+        : `<section class="notice">${escapeHtml(diffResult?.reason ?? projection.error ?? "Source-change diff is unavailable.")}</section>`;
+  const summary = projectedSummary ?? candidate?.sourceChangeSummary;
   const summaryBody = summary
     ? `<section>
         <h2>Summary</h2>
@@ -997,7 +1022,7 @@ async function renderSourceChangeCandidateDiffPage(input: {
       <header>
         <a href="${escapeHtml(backHref)}">Back to conversation</a>
         <h1>${escapeHtml(input.candidateId)}</h1>
-        <div class="meta">Runtime ${escapeHtml(input.nodeId)}${candidate?.status ? ` - ${escapeHtml(candidate.status)}` : ""}</div>
+        <div class="meta">Runtime ${escapeHtml(input.nodeId)}${projectedRef?.status || candidate?.status ? ` - ${escapeHtml(projectedRef?.status ?? candidate?.status ?? "")}` : ""}</div>
       </header>
       ${summaryBody}
       ${diffBody}

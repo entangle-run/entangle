@@ -462,6 +462,8 @@ describe("runner runtime context", () => {
                     additions: 3,
                     checkedAt: "2026-04-26T12:02:00.000Z",
                     deletions: 1,
+                    diffExcerpt:
+                      "diff --git a/src/index.ts b/src/index.ts\n+projected behavior\n-old behavior\n",
                     fileCount: 1,
                     files: [
                       {
@@ -868,7 +870,15 @@ describe("runner runtime context", () => {
       const sourceDiffBody = await sourceDiffResponse.text();
       expect(sourceDiffResponse.status).toBe(200);
       expect(sourceDiffBody).toContain("src/index.ts");
-      expect(sourceDiffBody).toContain("+new behavior");
+      expect(sourceDiffBody).toContain("projection excerpt");
+      expect(sourceDiffBody).toContain("+projected behavior");
+      expect(
+        hostRequests.some(
+          (record) =>
+            record.url ===
+            "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
+        )
+      ).toBe(false);
 
       const artifactPreviewResponse = await fetch(
         new URL(
@@ -948,13 +958,14 @@ describe("runner runtime context", () => {
         url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
       })
     );
-    expect(hostRequests).toContainEqual(
-      expect.objectContaining({
-        authorization: "Bearer host-secret",
-        method: "GET",
-        url: "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
-      })
-    );
+    expect(
+      hostRequests.some(
+        (request) =>
+          request.method === "GET" &&
+          request.url ===
+            "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
+      )
+    ).toBe(false);
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&

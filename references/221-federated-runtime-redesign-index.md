@@ -73,6 +73,7 @@ same-machine slice records.
 - [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 - [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 - [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
+- [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
 
 ## Audited Scope
 
@@ -144,6 +145,9 @@ The repository is not fully federated:
 - `source_change.ref` observations and Host projection records now carry the
   runner's bounded `sourceChangeSummary`, so source candidates can be listed
   and triaged from projection without reading runner-local detail files;
+- the User Client source-change review page now renders projected
+  `diffExcerpt` evidence from matching `source_change.ref` records before
+  falling back to the runtime-local diff endpoint;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist, and CLI
   signed approval responses can now carry scoped operation/resource/reason
@@ -214,9 +218,10 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    Client. The first assignable/minimal-client slice and inbound/outbound
    message history, approval controls, approval resource rendering, signed
    approval-response context, source-change projection summaries,
-   source-change diff preview, artifact-ref rendering, server-side artifact
-   preview, and delivery labels are implemented; wiki review actions, read
-   receipts, and projection-backed artifact/source content preview remain open.
+   projected source-change diff excerpts, source-change diff preview fallback,
+   artifact-ref rendering, server-side artifact preview, and delivery labels
+   are implemented; wiki review actions, read receipts, and projection-backed
+   artifact/source content preview remain open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.

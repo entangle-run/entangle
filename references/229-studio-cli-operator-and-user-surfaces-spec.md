@@ -52,6 +52,10 @@ Recently added:
 - User Client approval request cards now render bounded projected
   source-change summaries for matching `source_change_candidate` refs before
   the explicit diff review action.
+- The User Client source-change diff review page now prefers projected
+  `sourceChangeSummary.diffExcerpt` evidence from Host projection and only
+  falls back to the runtime-local diff endpoint when no projected excerpt is
+  available.
 - User Client approval responses now carry optional operation, resource, and
   reason context from the reviewed request so the signed response is
   self-describing in User Node history.
@@ -138,10 +142,11 @@ Node.
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and
   reply/answer/approval publishing with scoped approval-response context plus
-  projected source-change summary rendering, source-change diff preview,
-  artifact-ref rendering, and bounded artifact preview; projection-backed
-  artifact/source content preview, richer wiki review actions, read receipts,
-  and the full bundled client app remain open.
+  projected source-change summary rendering, projected source diff excerpts
+  with runtime-diff fallback, artifact-ref rendering, and bounded artifact
+  preview; projection-backed complete artifact/source content preview, richer
+  wiki review actions, read receipts, and the full bundled client app remain
+  open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

@@ -225,6 +225,7 @@ Implementation record:
 - [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
 - [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 - [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
+- [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
 
 Current status:
 
@@ -244,9 +245,10 @@ Current status:
 - the User Client has a first usable server-rendered conversation list,
   selected thread metadata, `/api/state`, recorded inbound/outbound messages,
   approval response controls, approval resource rendering, source-change diff
-  preview, projected source-change summary rendering, scoped approval-response
-  context, artifact-ref rendering, bounded artifact preview, delivery labels,
-  and message publishing that preserves selected conversation/session context;
+  preview, projected source-change summary rendering, projected source diff
+  excerpts with runtime-diff fallback, scoped approval-response context,
+  artifact-ref rendering, bounded artifact preview, delivery labels, and
+  message publishing that preserves selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;

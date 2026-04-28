@@ -328,6 +328,7 @@ files are the active federated redesign pack.
 271. [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 272. [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 273. [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
+274. [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
 
 ## Role of this corpus
 

@@ -137,8 +137,9 @@ This repository currently contains:
   conversation list, selected-thread metadata, recorded inbound/outbound message
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, projected source-change summary rendering,
-  source-change diff preview, artifact-ref rendering, bounded artifact preview,
-  delivery labels, and Host-backed message publishing, plus projection of the
+  projected source-change diff excerpt rendering, source-change diff fallback,
+  artifact-ref rendering, bounded artifact preview, delivery labels, and
+  Host-backed message publishing, plus projection of the
   User Client endpoint
   through Host, CLI, and Studio, with CLI signed approve/reject and generic
   User Node message commands also able to carry scoped approval-response
