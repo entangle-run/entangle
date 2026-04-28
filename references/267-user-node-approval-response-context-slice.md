@@ -62,11 +62,14 @@ Implemented in this slice:
 
 Deferred:
 
-- CLI flags for manually supplying operation/resource context on ad hoc
-  approval responses;
 - richer User Client post-response state that marks the original request card
   as answered;
 - first-class source-review message types beyond approval responses.
+
+Follow-up implemented later:
+
+- `272-cli-user-node-approval-context-slice.md` added CLI flags for manually
+  supplying operation/resource/reason context on signed approval responses.
 
 ## Tests Required
 

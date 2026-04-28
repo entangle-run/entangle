@@ -72,6 +72,7 @@ same-machine slice records.
 - [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
 - [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 - [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
+- [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 
 ## Audited Scope
 
@@ -144,7 +145,9 @@ The repository is not fully federated:
   runner's bounded `sourceChangeSummary`, so source candidates can be listed
   and triaged from projection without reading runner-local detail files;
 - older Studio/CLI approval controls still include Host mutation paths even
-  though signed User Node reply/approve/reject commands now exist;
+  though signed User Node reply/approve/reject commands now exist, and CLI
+  signed approval responses can now carry scoped operation/resource/reason
+  context;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
   paths, and joined runners can now start node runtime services from
   materialized assignment context paths;
@@ -214,7 +217,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    source-change diff preview, artifact-ref rendering, server-side artifact
    preview, and delivery labels are implemented; wiki review actions, read
    receipts, and projection-backed artifact/source content preview remain open.
-10. Signed user-node task, reply, approval, and rejection messages.
+10. Signed user-node task, reply, approval, and rejection messages. CLI
+    approval and rejection commands now preserve optional signed approval
+    operation/resource/reason context.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries now project through observed refs; projection-backed

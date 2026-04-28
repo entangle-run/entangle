@@ -55,6 +55,9 @@ Recently added:
 - User Client approval responses now carry optional operation, resource, and
   reason context from the reviewed request so the signed response is
   self-describing in User Node history.
+- CLI signed approval responses now have matching optional
+  operation/resource/reason flags on `approve`, `reject`, and generic
+  `user-nodes message` publishing.
 - User Client message history now shows derived delivery labels for outbound
   relay publish coverage and inbound User Client receipt.
 - User Client message history now renders bounded artifact refs attached to
@@ -92,8 +95,8 @@ CLI has matching headless surfaces:
 - `entangle inbox list --user-node <nodeId>`
 - `entangle inbox show <conversationId> --user-node <nodeId>`
 - `entangle reply <messageId> "..." --user-node <nodeId>`
-- `entangle approve <approvalId> --user-node <nodeId>`
-- `entangle reject <approvalId> --user-node <nodeId>`
+- `entangle approve <approvalId> --user-node <nodeId> --approval-resource-kind <kind> --approval-resource-id <id>`
+- `entangle reject <approvalId> --user-node <nodeId> --approval-resource-kind <kind> --approval-resource-id <id>`
 - `entangle-runner join --config runner.toml`
 
 Studio and CLI must talk to Host and user-node gateways. They must not directly
@@ -121,8 +124,9 @@ Node.
   conversations, replies, approvals, and projection health.
 - Add CLI command groups for authority/runners/assignments/inbox/user-node
   actions. Authority, runner, assignment, User Node, projection inbox, reply,
-  approve, and reject surfaces now exist; message history now has the first
-  inbound/outbound projection path.
+  approve, and reject surfaces now exist; CLI signed approval responses now
+  accept scoped operation/resource/reason metadata; message history now has the
+  first inbound/outbound projection path.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
@@ -146,7 +150,7 @@ Node.
 ## Tests Required
 
 - Host-client endpoint method tests.
-- CLI parser and output tests for every new command group.
+- CLI parser/helper and output tests for every new command group.
 - Studio helper tests for authority/runner/assignment/inbox projections.
 - Studio tests for User Node runtime projection and User Client endpoint
   display.

@@ -3253,6 +3253,20 @@ Runner typecheck, focused runner tests, runner lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-28] implementation | Added CLI scoped User Node approval context
+
+Added `references/272-cli-user-node-approval-context-slice.md`. CLI signed
+User Node approval responses now match the User Client's approval-response
+shape: `entangle approve`, `entangle reject`, and generic
+`entangle user-nodes message` publishing can carry optional
+operation/resource/reason context on signed `approval.response` metadata.
+
+The new CLI helper validates operations and resource scopes through the
+canonical policy schemas and rejects partial approval context instead of
+silently dropping it. CLI typecheck, focused CLI tests, CLI lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
+
 ## [2026-04-28] implementation | Projected source-change summaries from observed refs
 
 Added `references/270-source-change-ref-summary-projection-slice.md`.

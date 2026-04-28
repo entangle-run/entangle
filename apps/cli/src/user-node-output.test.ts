@@ -10,6 +10,10 @@ import {
   sortUserConversationsForCli,
   sortUserNodeIdentitiesForCli
 } from "./user-node-output.js";
+import {
+  buildUserNodeApprovalMetadata,
+  hasUserNodeApprovalContextOptions
+} from "./user-node-message-command.js";
 
 const userNodes: UserNodeIdentityRecord[] = [
   {
@@ -119,5 +123,70 @@ describe("user node CLI output", () => {
       messageType: "approval.response",
       publishedRelayCount: 1
     });
+  });
+
+  it("builds scoped approval response metadata from CLI options", () => {
+    expect(
+      buildUserNodeApprovalMetadata({
+        approvalId: "approval-source-alpha",
+        decision: "approved",
+        options: {
+          approvalOperation: "source_application",
+          approvalReason: "Reviewed source diff.",
+          approvalResourceId: "source-change-alpha",
+          approvalResourceKind: "source_change_candidate",
+          approvalResourceLabel: "Source change alpha"
+        }
+      })
+    ).toEqual({
+      approvalId: "approval-source-alpha",
+      decision: "approved",
+      operation: "source_application",
+      reason: "Reviewed source diff.",
+      resource: {
+        id: "source-change-alpha",
+        kind: "source_change_candidate",
+        label: "Source change alpha"
+      }
+    });
+  });
+
+  it("validates approval context options for User Node CLI messages", () => {
+    expect(
+      hasUserNodeApprovalContextOptions({
+        approvalResourceId: "source-change-alpha"
+      })
+    ).toBe(true);
+    expect(hasUserNodeApprovalContextOptions({})).toBe(false);
+    expect(() =>
+      buildUserNodeApprovalMetadata({
+        approvalId: "approval-source-alpha",
+        decision: "approved",
+        options: {
+          approvalResourceId: "source-change-alpha"
+        }
+      })
+    ).toThrow(
+      "Approval resource context requires both --approval-resource-id and --approval-resource-kind."
+    );
+    expect(() =>
+      buildUserNodeApprovalMetadata({
+        approvalId: "approval-source-alpha",
+        decision: "approved",
+        options: {
+          approvalOperation: "delete_everything"
+        }
+      })
+    ).toThrow();
+    expect(() =>
+      buildUserNodeApprovalMetadata({
+        approvalId: "approval-source-alpha",
+        decision: "approved",
+        options: {
+          approvalResourceId: "source-change-alpha",
+          approvalResourceKind: "made_up_resource"
+        }
+      })
+    ).toThrow();
   });
 });

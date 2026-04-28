@@ -97,6 +97,10 @@ import {
   sortUserNodeIdentitiesForCli
 } from "./user-node-output.js";
 import {
+  buildUserNodeApprovalMetadata,
+  hasUserNodeApprovalContextOptions
+} from "./user-node-message-command.js";
+import {
   buildNodeAgentRuntimeReplacementRequest,
   type NodeAgentRuntimeConfigurationOptions
 } from "./node-agent-runtime-command.js";
@@ -1124,6 +1128,26 @@ userNodesCommand
     "--approval-decision <decision>",
     "Approval decision for approval.response messages."
   )
+  .option(
+    "--approval-operation <operation>",
+    "Scoped policy operation for approval.response context."
+  )
+  .option(
+    "--approval-reason <reason>",
+    "Reason/context carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-id <id>",
+    "Scoped resource id for approval.response context."
+  )
+  .option(
+    "--approval-resource-kind <kind>",
+    "Scoped resource kind for approval.response context."
+  )
+  .option(
+    "--approval-resource-label <label>",
+    "Human-readable scoped resource label for approval.response context."
+  )
   .option("--conversation-id <conversationId>", "Conversation id to reuse.")
   .option("--session-id <sessionId>", "Session id to reuse.")
   .option("--turn-id <turnId>", "Turn id to use.")
@@ -1137,6 +1161,11 @@ userNodesCommand
     options: {
       approvalDecision?: string;
       approvalId?: string;
+      approvalOperation?: string;
+      approvalReason?: string;
+      approvalResourceId?: string;
+      approvalResourceKind?: string;
+      approvalResourceLabel?: string;
       compact?: boolean;
       conversationId?: string;
       messageType: string;
@@ -1146,13 +1175,25 @@ userNodesCommand
     },
     command: Command
   ) => {
+    if (
+      (options.approvalId ||
+        options.approvalDecision ||
+        hasUserNodeApprovalContextOptions(options)) &&
+      (!options.approvalId || !options.approvalDecision)
+    ) {
+      throw new Error(
+        "User Node approval messages require both --approval-id and --approval-decision."
+      );
+    }
+
     const request = userNodeMessagePublishRequestSchema.parse({
       ...(options.approvalId && options.approvalDecision
         ? {
-            approval: {
+            approval: buildUserNodeApprovalMetadata({
               approvalId: options.approvalId,
-              decision: options.approvalDecision
-            }
+              decision: options.approvalDecision,
+              options
+            })
           }
         : {}),
       ...(options.conversationId
@@ -1316,6 +1357,26 @@ program
   .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
   .requiredOption("--target-node <nodeId>", "Target runtime node id.")
   .option("--body <body>", "Approval response body.")
+  .option(
+    "--approval-operation <operation>",
+    "Scoped policy operation carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-reason <reason>",
+    "Reason/context carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-id <id>",
+    "Scoped resource id carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-kind <kind>",
+    "Scoped resource kind carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-label <label>",
+    "Human-readable scoped resource label carried on the signed approval.response metadata."
+  )
   .option("--conversation-id <conversationId>", "Conversation id to reuse.")
   .option("--session-id <sessionId>", "Session id to reuse.")
   .option("--turn-id <turnId>", "Turn id to use.")
@@ -1338,6 +1399,11 @@ program
       body?: string;
       compact?: boolean;
       conversationId?: string;
+      approvalOperation?: string;
+      approvalReason?: string;
+      approvalResourceId?: string;
+      approvalResourceKind?: string;
+      approvalResourceLabel?: string;
       parentMessageId?: string;
       sessionId?: string;
       targetNode: string;
@@ -1347,10 +1413,11 @@ program
     command: Command
   ) => {
     const request = userNodeMessagePublishRequestSchema.parse({
-      approval: {
+      approval: buildUserNodeApprovalMetadata({
         approvalId,
-        decision: "approved"
-      },
+        decision: "approved",
+        options
+      }),
       ...(options.conversationId
         ? { conversationId: options.conversationId }
         : {}),
@@ -1382,6 +1449,26 @@ program
   .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
   .requiredOption("--target-node <nodeId>", "Target runtime node id.")
   .option("--reason <reason>", "Rejection reason.")
+  .option(
+    "--approval-operation <operation>",
+    "Scoped policy operation carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-reason <reason>",
+    "Reason/context carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-id <id>",
+    "Scoped resource id carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-kind <kind>",
+    "Scoped resource kind carried on the signed approval.response metadata."
+  )
+  .option(
+    "--approval-resource-label <label>",
+    "Human-readable scoped resource label carried on the signed approval.response metadata."
+  )
   .option("--conversation-id <conversationId>", "Conversation id to reuse.")
   .option("--session-id <sessionId>", "Session id to reuse.")
   .option("--turn-id <turnId>", "Turn id to use.")
@@ -1401,6 +1488,11 @@ program
   .action(async (
     approvalId: string,
     options: {
+      approvalOperation?: string;
+      approvalReason?: string;
+      approvalResourceId?: string;
+      approvalResourceKind?: string;
+      approvalResourceLabel?: string;
       compact?: boolean;
       conversationId?: string;
       parentMessageId?: string;
@@ -1413,10 +1505,11 @@ program
     command: Command
   ) => {
     const request = userNodeMessagePublishRequestSchema.parse({
-      approval: {
+      approval: buildUserNodeApprovalMetadata({
         approvalId,
-        decision: "rejected"
-      },
+        decision: "rejected",
+        options
+      }),
       ...(options.conversationId
         ? { conversationId: options.conversationId }
         : {}),

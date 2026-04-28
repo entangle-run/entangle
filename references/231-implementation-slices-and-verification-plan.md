@@ -224,6 +224,7 @@ Implementation record:
 - [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
 - [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
 - [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
+- [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 
 Current status:
 
@@ -246,6 +247,9 @@ Current status:
   preview, projected source-change summary rendering, scoped approval-response
   context, artifact-ref rendering, bounded artifact preview, delivery labels,
   and message publishing that preserves selected conversation/session context;
+- the CLI signed User Node `approve`, `reject`, and generic
+  `user-nodes message` commands can now carry the same optional scoped
+  approval-response operation/resource/reason metadata;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
@@ -268,6 +272,7 @@ A2A messages. Retire direct approval mutation as canonical behavior.
 Implementation record:
 
 - [241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
+- [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 
 Verification:
 
@@ -320,9 +325,9 @@ Verification:
 - lint and typecheck.
 
 This slice now includes first-pass CLI assignment/User Node/inbox/reply/
-approve/reject commands and a Studio projection/User Node panel. Full Studio
-chat, signed approval card migration, and durable inbox/outbox projection
-remain follow-up work.
+approve/reject commands, scoped CLI approval-response context flags, and a
+Studio projection/User Node panel. Full Studio chat, signed approval card
+migration, and durable inbox/outbox projection remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

@@ -140,7 +140,9 @@ This repository currently contains:
   source-change diff preview, artifact-ref rendering, bounded artifact preview,
   delivery labels, and Host-backed message publishing, plus projection of the
   User Client endpoint
-  through Host, CLI, and Studio;
+  through Host, CLI, and Studio, with CLI signed approve/reject and generic
+  User Node message commands also able to carry scoped approval-response
+  operation/resource/reason context;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
   Nostr public keys are injected as non-secret route metadata, and runner turn
   requests now receive a bounded peer-route summary for controlled
