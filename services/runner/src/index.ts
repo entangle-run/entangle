@@ -307,6 +307,7 @@ function createRuntimeObservationPublisher(input: {
         protocol: "entangle.observe.v1",
         runnerId: input.config.runnerId,
         runnerPubkey: input.runnerPubkey,
+        sourceChangeSummary: record.candidate.sourceChangeSummary,
         status: record.candidate.status
       }),
     publishTurnUpdated: (record) =>

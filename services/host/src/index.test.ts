@@ -1705,6 +1705,22 @@ describe("buildHostServer", () => {
         protocol: "entangle.observe.v1",
         runnerId: "runner-alpha",
         runnerPubkey,
+        sourceChangeSummary: {
+          additions: 4,
+          checkedAt: observedAt,
+          deletions: 1,
+          fileCount: 1,
+          files: [
+            {
+              additions: 4,
+              deletions: 1,
+              path: "src/app.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
         status: "pending_review"
       });
       await recordWikiRefObservation({
@@ -1748,6 +1764,11 @@ describe("buildHostServer", () => {
       });
       expect(projection.sourceChangeRefs[0]).toMatchObject({
         candidateId: "candidate-alpha",
+        sourceChangeSummary: {
+          additions: 4,
+          fileCount: 1,
+          status: "changed"
+        },
         status: "pending_review"
       });
       expect(projection.wikiRefs[0]).toMatchObject({

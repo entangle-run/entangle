@@ -15,7 +15,8 @@ import {
 } from "../runtime/runtime-state.js";
 import {
   conversationLifecycleStateSchema,
-  sourceChangeCandidateStatusSchema
+  sourceChangeCandidateStatusSchema,
+  sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 
 export const projectionSourceKindSchema = z.enum([
@@ -112,6 +113,7 @@ export const sourceChangeRefProjectionRecordSchema =
   runnerObservationProjectionBaseSchema.extend({
     artifactRefs: z.array(artifactRefSchema).default([]),
     candidateId: identifierSchema,
+    sourceChangeSummary: sourceChangeSummarySchema.optional(),
     status: sourceChangeCandidateStatusSchema
   });
 

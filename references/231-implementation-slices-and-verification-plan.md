@@ -180,6 +180,7 @@ Implementation record:
 - [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 - [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
 - [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
+- [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 
 Verification:
 
@@ -198,6 +199,8 @@ Current status:
 - joined agent runners now emit observed artifact, source-change candidate, and
   wiki refs during normal turn execution, feeding Host projection through the
   same `entangle.observe.v1` path;
+- observed source-change refs now include bounded source-change summaries for
+  projection consumers;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime

@@ -16,7 +16,8 @@ import {
   runnerPhaseSchema,
   sessionRecordSchema,
   sessionLifecycleStateSchema,
-  sourceChangeCandidateStatusSchema
+  sourceChangeCandidateStatusSchema,
+  sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleSignedEnvelopeSchema } from "./signed-envelope.js";
 
@@ -159,6 +160,7 @@ export const sourceChangeRefObservationPayloadSchema =
     eventType: z.literal("source_change.ref"),
     graphId: identifierSchema,
     nodeId: identifierSchema,
+    sourceChangeSummary: sourceChangeSummarySchema.optional(),
     status: sourceChangeCandidateStatusSchema
   });
 

@@ -41,10 +41,10 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
+[270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, and runner-emitted artifact/source/wiki
-observed refs.
+observed refs with bounded source-change summaries.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

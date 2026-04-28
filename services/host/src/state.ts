@@ -2706,6 +2706,9 @@ export async function recordSourceChangeRefObservation(
     },
     runnerId: observation.runnerId,
     runnerPubkey: observation.runnerPubkey,
+    ...(observation.sourceChangeSummary
+      ? { sourceChangeSummary: observation.sourceChangeSummary }
+      : {}),
     status: observation.status
   });
 

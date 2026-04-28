@@ -692,6 +692,22 @@ describe("federated runtime contracts", () => {
           projection,
           runnerId: "runner-alpha",
           runnerPubkey,
+          sourceChangeSummary: {
+            additions: 4,
+            checkedAt: "2026-04-26T12:00:00.000Z",
+            deletions: 1,
+            fileCount: 1,
+            files: [
+              {
+                additions: 4,
+                deletions: 1,
+                path: "src/app.ts",
+                status: "modified"
+              }
+            ],
+            status: "changed",
+            truncated: false
+          },
           status: "pending_review"
         }
       ],
@@ -731,6 +747,7 @@ describe("federated runtime contracts", () => {
     expect(snapshot.artifactRefs[0]?.artifactId).toBe("artifact-alpha");
     expect(snapshot.runtimes[0]?.nodeId).toBe("worker-it");
     expect(snapshot.sourceChangeRefs[0]?.candidateId).toBe("candidate-alpha");
+    expect(snapshot.sourceChangeRefs[0]?.sourceChangeSummary?.fileCount).toBe(1);
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
     expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");
   });
@@ -850,10 +867,47 @@ describe("federated runtime contracts", () => {
         updatedAt: observedAt
       }
     });
+    const sourceChangeObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        artifactRefs: [],
+        candidateId: "source-change-turn-alpha",
+        eventType: "source_change.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceChangeSummary: {
+          additions: 2,
+          checkedAt: observedAt,
+          deletions: 1,
+          fileCount: 1,
+          files: [
+            {
+              additions: 2,
+              deletions: 1,
+              path: "src/index.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
+        status: "pending_review"
+      }
+    });
 
     expect(sessionObservation.payload.eventType).toBe("session.updated");
     expect(conversationObservation.payload.eventType).toBe("conversation.updated");
     expect(turnObservation.payload.eventType).toBe("turn.updated");
+    expect(sourceChangeObservation.payload.eventType).toBe("source_change.ref");
   });
 
   it("accepts Host Authority API responses and status summaries", () => {

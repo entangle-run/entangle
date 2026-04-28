@@ -201,8 +201,9 @@ This repository currently contains:
   create scoped source-mutation approvals or decide existing pending approvals
   through the same host boundary, plus runner-emitted `artifact.ref`,
   `source_change.ref`, and `wiki.ref` observations during normal turns so Host
-  projection receives portable work refs through the observe protocol, plus
-  runner-owned local git snapshots of `memory/wiki` into each node's
+  projection receives portable work refs and bounded source-change summaries
+  through the observe protocol, plus runner-owned local git snapshots of
+  `memory/wiki` into each node's
   `wiki-repository` workspace after completed turns, with durable sync outcomes
   carried through runner turns, host events, CLI output, and Studio turn
   inspection, and with `entangle deployment doctor`

@@ -3253,6 +3253,23 @@ Runner typecheck, focused runner tests, runner lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-28] implementation | Projected source-change summaries from observed refs
+
+Added `references/270-source-change-ref-summary-projection-slice.md`.
+`source_change.ref` observation payloads and Host source-change projection
+records now carry the runner's bounded `sourceChangeSummary`.
+
+The joined-runner observation publisher includes the persisted candidate
+summary, Host reducers store it, and type/Host tests now cover the richer
+observation and projection shape. This lets source candidates be listed and
+triaged from Host projection without requiring immediate access to
+runner-local source snapshot files.
+
+Types, Host, and runner typechecks passed, along with types tests, focused Host
+tests, focused runner tests, package lints,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check`.
+
 ## [2026-04-26] implementation | Preserved scoped approval response context
 
 Added `references/267-user-node-approval-response-context-slice.md`. User Node
