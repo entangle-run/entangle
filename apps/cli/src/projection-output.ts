@@ -18,6 +18,7 @@ export type RuntimeProjectionCliSummary = {
 
 export type HostProjectionCliSummary = {
   assignmentCount: number;
+  assignmentReceiptCount: number;
   failedRuntimeCount: number;
   freshness: string;
   generatedAt: string;
@@ -58,6 +59,7 @@ export function projectHostProjectionSummary(
 ): HostProjectionCliSummary {
   return {
     assignmentCount: projection.assignments.length,
+    assignmentReceiptCount: projection.assignmentReceipts.length,
     failedRuntimeCount: projection.runtimes.filter(
       (runtime) => runtime.observedState === "failed"
     ).length,

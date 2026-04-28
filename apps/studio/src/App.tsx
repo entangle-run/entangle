@@ -207,6 +207,8 @@ import {
 } from "./session-launch.js";
 import {
   buildUserNodeRuntimeSummaries,
+  formatAssignmentReceiptDetail,
+  formatAssignmentReceiptLabel,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
   formatUserConversationDetail,
@@ -214,6 +216,7 @@ import {
   formatUserNodeRuntimeSummaryDetail,
   formatUserNodeRuntimeSummaryLabel,
   sortRuntimeProjectionsForStudio,
+  sortAssignmentReceiptsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
   summarizeFederationProjection
@@ -3516,6 +3519,13 @@ export function App() {
       sortAssignmentProjectionsForStudio(projectionSnapshot?.assignments ?? []),
     [projectionSnapshot]
   );
+  const assignmentReceiptRows = useMemo(
+    () =>
+      sortAssignmentReceiptsForStudio(
+        projectionSnapshot?.assignmentReceipts ?? []
+      ),
+    [projectionSnapshot]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3654,6 +3664,10 @@ export function App() {
           <div>
             <strong>{federationSummary.assignmentCount}</strong>
             <span>Assignments</span>
+          </div>
+          <div>
+            <strong>{federationSummary.assignmentReceiptCount}</strong>
+            <span>Receipts</span>
           </div>
           <div>
             <strong>{federationSummary.runtimeCount}</strong>
@@ -3813,6 +3827,24 @@ export function App() {
         ) : (
           <div className="inline-empty-state">
             <p>No runtime assignments are projected yet.</p>
+          </div>
+        )}
+
+        {assignmentReceiptRows.length > 0 ? (
+          <div className="compact-list">
+            {assignmentReceiptRows.slice(0, 6).map((receipt) => (
+              <div
+                key={`${receipt.assignmentId}-${receipt.observedAt}-${receipt.receiptKind}`}
+                className="compact-list-item"
+              >
+                <strong>{formatAssignmentReceiptLabel(receipt)}</strong>
+                <span>{formatAssignmentReceiptDetail(receipt)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="inline-empty-state">
+            <p>No assignment receipts are projected yet.</p>
           </div>
         )}
 

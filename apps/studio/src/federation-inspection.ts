@@ -1,4 +1,5 @@
 import type {
+  AssignmentReceiptProjectionRecord,
   HostProjectionSnapshot,
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
@@ -7,6 +8,7 @@ import type {
 
 export type FederationProjectionSummary = {
   assignmentCount: number;
+  assignmentReceiptCount: number;
   artifactRefCount: number;
   failedRuntimeCount: number;
   freshness: string;
@@ -38,6 +40,7 @@ export function summarizeFederationProjection(
 ): FederationProjectionSummary {
   return {
     assignmentCount: projection?.assignments.length ?? 0,
+    assignmentReceiptCount: projection?.assignmentReceipts.length ?? 0,
     artifactRefCount: projection?.artifactRefs.length ?? 0,
     failedRuntimeCount:
       projection?.runtimes.filter((runtime) => runtime.observedState === "failed")
@@ -60,6 +63,33 @@ export function sortRuntimeProjectionsForStudio(
   return [...runtimes].sort((left, right) =>
     left.nodeId.localeCompare(right.nodeId)
   );
+}
+
+export function sortAssignmentReceiptsForStudio(
+  receipts: AssignmentReceiptProjectionRecord[]
+): AssignmentReceiptProjectionRecord[] {
+  return [...receipts].sort((left, right) => {
+    const timeOrder = right.observedAt.localeCompare(left.observedAt);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.assignmentId.localeCompare(right.assignmentId);
+  });
+}
+
+export function formatAssignmentReceiptLabel(
+  receipt: AssignmentReceiptProjectionRecord
+): string {
+  return `${receipt.assignmentId} · ${receipt.receiptKind}`;
+}
+
+export function formatAssignmentReceiptDetail(
+  receipt: AssignmentReceiptProjectionRecord
+): string {
+  return [
+    `runner ${receipt.runnerId}`,
+    `observed ${receipt.observedAt}`,
+    receipt.receiptMessage
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
 export function formatRuntimeProjectionLabel(

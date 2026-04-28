@@ -48,6 +48,7 @@ const graph: GraphSpec = graphSpecSchema.parse({
 
 const projection: HostProjectionSnapshot = {
   artifactRefs: [],
+  assignmentReceipts: [],
   assignments: [
     {
       assignmentId: "assignment-revoked",

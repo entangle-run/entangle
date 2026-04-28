@@ -128,6 +128,7 @@ Implementation record:
 - [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
 - [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
 - [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
+- [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 
 Verification:
 
@@ -159,6 +160,8 @@ Current status:
   receipt kinds from the real lifecycle path.
 - Host projection now exposes bounded `assignmentReceipts` for recent
   assignment lifecycle receipts.
+- CLI and Studio now expose compact projected assignment receipt counts and
+  recent receipt rows for operator inspection.
 
 ### Slice 6: Generic Runner Bootstrap
 
@@ -502,6 +505,7 @@ Implementation record:
 
 - [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 - [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
+- [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 
 Verification:
 
@@ -525,6 +529,10 @@ remain follow-up work.
 
 CLI also now exposes `entangle runners join-config` to write Host-derived,
 schema-validated generic runner join configs without embedding secrets.
+
+CLI projection summaries now include assignment receipt counts, and Studio
+renders recent projected assignment receipt rows near the assignment/runtime
+operator panel. A richer per-assignment detail timeline remains follow-up work.
 
 ### Slice 13: Product Naming Migration
 

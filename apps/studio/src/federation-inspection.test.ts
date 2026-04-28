@@ -8,6 +8,8 @@ import {
   buildUserNodeRuntimeSummaries,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
+  formatAssignmentReceiptDetail,
+  formatAssignmentReceiptLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeIdentityDetail,
@@ -15,6 +17,7 @@ import {
   formatUserNodeRuntimeSummaryDetail,
   formatUserNodeRuntimeSummaryLabel,
   sortRuntimeProjectionsForStudio,
+  sortAssignmentReceiptsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
   summarizeFederationProjection
@@ -22,6 +25,23 @@ import {
 
 const projection: HostProjectionSnapshot = {
   artifactRefs: [],
+  assignmentReceipts: [
+    {
+      assignmentId: "assignment-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      observedAt: "2026-04-26T12:01:00.000Z",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:01:00.000Z"
+      },
+      receiptKind: "started",
+      receiptMessage: "Assignment runtime is running.",
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
   assignments: [
     {
       assignmentId: "assignment-alpha",
@@ -159,10 +179,36 @@ describe("Studio federation inspection helpers", () => {
   it("summarizes projection counts for operator panels", () => {
     expect(summarizeFederationProjection(projection)).toMatchObject({
       assignmentCount: 1,
+      assignmentReceiptCount: 1,
       freshness: "current",
       runtimeCount: 2,
       runningRuntimeCount: 2
     });
+  });
+
+  it("sorts and formats assignment receipts", () => {
+    const receipts = sortAssignmentReceiptsForStudio([
+      {
+        ...projection.assignmentReceipts[0]!,
+        assignmentId: "assignment-old",
+        observedAt: "2026-04-26T12:00:00.000Z"
+      },
+      projection.assignmentReceipts[0]!
+    ]);
+
+    expect(receipts.map((receipt) => receipt.assignmentId)).toEqual([
+      "assignment-alpha",
+      "assignment-old"
+    ]);
+    expect(formatAssignmentReceiptLabel(receipts[0]!)).toBe(
+      "assignment-alpha · started"
+    );
+    expect(formatAssignmentReceiptDetail(receipts[0]!)).toContain(
+      "runner runner-alpha"
+    );
+    expect(formatAssignmentReceiptDetail(receipts[0]!)).toContain(
+      "Assignment runtime is running."
+    );
   });
 
   it("sorts and formats runtime projections", () => {

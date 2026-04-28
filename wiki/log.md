@@ -3990,3 +3990,13 @@ This gives operator surfaces a compact read model for recent assignment
 received/materialized/started/stopped/failed receipts without scanning the full
 Host event stream. The federated process-runner smoke still passes with the
 expanded projection schema.
+
+## [2026-04-28] implementation | Surfaced assignment receipts for operators
+
+Added `references/328-assignment-receipt-operator-surfaces-slice.md`. CLI
+projection summaries now include the projected assignment receipt count, and
+Studio renders a compact recent receipt list beside assignment and runtime
+state.
+
+This keeps the signed runner receipt audit trail visible through normal
+operator surfaces instead of requiring raw event-log inspection.

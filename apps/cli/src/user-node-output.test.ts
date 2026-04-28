@@ -82,6 +82,7 @@ const conversations: UserConversationProjectionRecord[] = [
 
 const projection: HostProjectionSnapshot = {
   artifactRefs: [],
+  assignmentReceipts: [],
   assignments: [],
   freshness: "current",
   generatedAt: "2026-04-26T12:06:00.000Z",

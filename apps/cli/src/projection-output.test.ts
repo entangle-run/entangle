@@ -8,6 +8,22 @@ import {
 
 const projection: HostProjectionSnapshot = {
   artifactRefs: [],
+  assignmentReceipts: [
+    {
+      assignmentId: "assignment-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      observedAt: "2026-04-26T12:00:01.000Z",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:00:01.000Z"
+      },
+      receiptKind: "started",
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
   assignments: [],
   freshness: "current",
   generatedAt: "2026-04-26T12:00:00.000Z",
@@ -93,6 +109,7 @@ describe("projection CLI output", () => {
 
   it("projects compact Host projection summaries", () => {
     expect(projectHostProjectionSummary(projection)).toMatchObject({
+      assignmentReceiptCount: 1,
       failedRuntimeCount: 0,
       runtimeCount: 2,
       runningRuntimeCount: 1,
