@@ -117,6 +117,11 @@ pnpm --filter @entangle/cli dev -- runners join-config --runner runner-a --outpu
 pnpm --filter @entangle/runner start -- join --config runner-join.json
 ```
 
+Managed Docker runners in the federated dev profile use the same join path.
+The Host passes inline join config JSON to the runner container and the runner
+fetches its portable bootstrap bundle from the Host API instead of mounting
+Host state just to read `runner-join.json`.
+
 ## Current Status
 
 This repository currently contains:
@@ -296,6 +301,10 @@ This repository currently contains:
   projection can track remote runner liveness after startup, and the
   process-runner smoke now validates those projected heartbeats from real
   joined runner processes;
+- the Docker launcher adapter can now deliver runner join config as inline JSON
+  env, and the federated dev Compose profile launches managed Docker runners in
+  join mode with Host API bundle retrieval instead of path-mounted join config
+  delivery;
 - observed activity projection now preserves signed remote session activity
   during same-workstation compatibility synchronization, and Host session
   listing plus bounded session detail can surface projected remote sessions

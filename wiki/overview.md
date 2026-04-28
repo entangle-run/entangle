@@ -128,6 +128,9 @@ capacity-derived operational state, keeping Host projection live after the
 initial `runner.hello`. The heartbeat interval can be written into
 `runner-join.json`, and the process-runner smoke now validates projected
 heartbeats from the real joined agent runner and User Node runners.
+Docker managed runners can now receive join config as inline JSON env, and the
+federated dev Compose profile selects Docker join mode with Host API bundle
+retrieval instead of mounting Host state just to read `runner-join.json`.
 
 The contract-ownership layer is now also explicit:
 

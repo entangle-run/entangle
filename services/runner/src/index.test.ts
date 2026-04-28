@@ -44,6 +44,7 @@ afterEach(async () => {
   }
 
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
+  delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_JSON;
   delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH;
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
   delete process.env.ENTANGLE_RUNNER_STATE_ROOT;
@@ -1604,6 +1605,15 @@ describe("runner runtime context", () => {
     });
     expect(
       parseRunnerCliMode([], {
+        ENTANGLE_RUNNER_JOIN_CONFIG_JSON: JSON.stringify({
+          schemaVersion: "1"
+        })
+      })
+    ).toEqual({
+      mode: "join"
+    });
+    expect(
+      parseRunnerCliMode([], {
         ENTANGLE_RUNTIME_CONTEXT_PATH: "/tmp/context.json"
       })
     ).toEqual({
@@ -1640,6 +1650,33 @@ describe("runner runtime context", () => {
       runnerId: "runner-alpha"
     });
     expect(transport.isClosed()).toBe(true);
+  });
+
+  it("starts generic federated join from inline env JSON", async () => {
+    const fixture = await createRunnerJoinFixture();
+    const abortController = new AbortController();
+    const transport = new FakeRunnerJoinTransport();
+    process.env.ENTANGLE_RUNNER_JOIN_CONFIG_JSON = JSON.stringify(fixture.config);
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    abortController.abort();
+
+    const result = await runGenericRunnerUntilSignal({
+      abortSignal: abortController.signal,
+      clock: () => "2026-04-26T12:00:00.000Z",
+      nonceFactory: () => "nonce-alpha",
+      transport
+    });
+
+    expect(result).toMatchObject({
+      configPath: "ENTANGLE_RUNNER_JOIN_CONFIG_JSON",
+      runnerId: "runner-alpha",
+      runnerPubkey: runnerPublicKey
+    });
+    expect(transport.observations[0]).toMatchObject({
+      eventType: "runner.hello",
+      runnerId: "runner-alpha"
+    });
   });
 
   it("emits periodic join heartbeats with accepted assignment ids", async () => {

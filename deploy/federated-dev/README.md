@@ -325,11 +325,13 @@ The Compose profile keeps host state and secret state in Docker volumes:
 - `entangle-host-state`
 - `entangle-secret-state`
 
-Those volumes have explicit Compose names because managed runner containers are
-created directly by `entangle-host` through the Docker Engine API and must mount
-the same volumes that the Compose-managed host container uses. This is a
-development launcher adapter constraint, not the target federated execution
-model.
+Those volumes have explicit Compose names so Host state survives profile
+restarts. Managed runner containers created by `entangle-host` in join mode
+receive inline `ENTANGLE_RUNNER_JOIN_CONFIG_JSON` and retrieve their assignment
+bundle through Host API; they do not mount Host state or secret volumes just to
+read `runner-join.json`. Path delivery and direct runtime-context compatibility
+modes remain local launcher/debug paths rather than the target federated
+execution model.
 
 Do not delete these volumes unless you intentionally want to reset host state,
 runtime identities, imported packages, and secret material.

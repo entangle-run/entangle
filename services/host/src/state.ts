@@ -2171,6 +2171,9 @@ function buildRunnerJoinConfigForRuntimeContext(
   hostAuthorityPubkey: string
 ) {
   const relayUrls = buildRunnerJoinRelayUrls(context);
+  const hostApiBaseUrl =
+    process.env.ENTANGLE_DOCKER_RUNNER_HOST_API_URL?.trim() ??
+    process.env.ENTANGLE_RUNNER_HOST_API_URL?.trim();
 
   if (relayUrls.length === 0) {
     return undefined;
@@ -2191,6 +2194,24 @@ function buildRunnerJoinConfigForRuntimeContext(
       supportsNip59: true
     },
     hostAuthorityPubkey,
+    ...(hostApiBaseUrl
+      ? {
+          hostApi: {
+            ...(process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+              ? {
+                  auth: {
+                    envVar: "ENTANGLE_HOST_OPERATOR_TOKEN",
+                    mode: "bearer_env"
+                  }
+                }
+              : {}),
+            baseUrl: hostApiBaseUrl,
+            runtimeIdentitySecret: {
+              mode: "host_api"
+            }
+          }
+        }
+      : {}),
     identity: {
       publicKey: context.identityContext.publicKey,
       secretDelivery: context.identityContext.secretDelivery

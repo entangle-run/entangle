@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import type { EffectiveRuntimeContext } from "@entangle/types";
 import type {
   DockerContainerInspect,
@@ -69,6 +72,8 @@ describe("createRuntimeBackend", () => {
     delete process.env.ENTANGLE_RUNTIME_BACKEND;
     delete process.env.ENTANGLE_DOCKER_RUNNER_IMAGE;
     delete process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP;
+    delete process.env.ENTANGLE_DOCKER_RUNNER_JOIN_CONFIG_DELIVERY;
+    delete process.env.ENTANGLE_DOCKER_RUNNER_HOST_API_URL;
     delete process.env.ENTANGLE_DOCKER_NETWORK;
     delete process.env.ENTANGLE_DOCKER_SECRET_STATE_TARGET;
     delete process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME;
@@ -200,6 +205,16 @@ describe("createRuntimeBackend", () => {
   it("can launch a Docker runner in generic join bootstrap mode", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
     process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "join";
+    const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-join-"));
+    const joinConfigPath = path.join(tempRoot, "runner-join.json");
+    await writeFile(
+      joinConfigPath,
+      JSON.stringify({
+        runnerId: "worker-it",
+        schemaVersion: "1"
+      }),
+      "utf8"
+    );
 
     const dockerClient = createFakeDockerClient();
     dockerClient.inspectImage.mockResolvedValue(true);
@@ -209,15 +224,15 @@ describe("createRuntimeBackend", () => {
         buildContainerInspection({
           Config: {
             Env: [
-              "ENTANGLE_RUNNER_JOIN_CONFIG_PATH=/entangle-state/runner-join.json"
+              "ENTANGLE_RUNNER_JOIN_CONFIG_JSON={\"runnerId\":\"worker-it\",\"schemaVersion\":\"1\"}"
             ],
             Image: "entangle-runner:federated-dev",
             Labels: {
               "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.join_config_delivery": "json_env",
               "io.entangle.restart_generation": "0",
               "io.entangle.runner_bootstrap": "join",
-              "io.entangle.runner_join_config_path":
-                "/entangle-state/runner-join.json"
+              "io.entangle.runner_join_config_path": joinConfigPath
             }
           }
         })
@@ -236,7 +251,7 @@ describe("createRuntimeBackend", () => {
       desiredState: "running",
       graphId: "team-alpha",
       graphRevisionId: "rev-1",
-      joinConfigPath: "/entangle-state/runner-join.json",
+      joinConfigPath,
       nodeId: "worker-it",
       reason: undefined,
       restartGeneration: 0,
@@ -251,21 +266,24 @@ describe("createRuntimeBackend", () => {
 
     expect(createContainerInput?.env).toEqual(
       expect.arrayContaining([
-        "ENTANGLE_RUNNER_JOIN_CONFIG_PATH=/entangle-state/runner-join.json",
+        "ENTANGLE_RUNNER_JOIN_CONFIG_JSON={\"runnerId\":\"worker-it\",\"schemaVersion\":\"1\"}",
         "ENTANGLE_NOSTR_SECRET_KEY=1111111111111111111111111111111111111111111111111111111111111111"
       ])
     );
+    expect(createContainerInput?.mounts).toEqual([]);
     expect(createContainerInput?.env).not.toContain(
       "ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/effective-runtime-context.json"
     );
     expect(createContainerInput?.labels).toMatchObject({
+      "io.entangle.join_config_delivery": "json_env",
       "io.entangle.runner_bootstrap": "join",
-      "io.entangle.runner_join_config_path": "/entangle-state/runner-join.json"
+      "io.entangle.runner_join_config_path": joinConfigPath
     });
     expect(result).toMatchObject({
       backendKind: "docker",
       observedState: "running"
     });
+    await rm(tempRoot, { force: true, recursive: true });
   });
 
   it("publishes a reachable User Client port for Docker-backed User Node runtimes", async () => {

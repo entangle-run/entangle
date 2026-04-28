@@ -102,7 +102,9 @@ controls.
 
 - Host owns Docker runner creation;
 - Host mounts Docker socket;
-- runner containers mount the same Host state and secret volumes;
+- managed runner containers now use join bootstrap with inline JSON config in
+  the federated dev Compose profile, so those join-mode containers do not mount
+  Host state or secret volumes just to read `runner-join.json`;
 - local relay and Gitea are Compose services;
 - same-machine smokes prove the adapter path; the federated process-runner
   smoke proves separate Host/agent-runner/User-runner state roots and

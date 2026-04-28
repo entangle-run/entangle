@@ -13,7 +13,8 @@ import {
   loadRunnerJoinConfig,
   parseNostrSecretKey,
   resolveRunnerJoinConfigPath,
-  resolveRunnerJoinIdentity
+  resolveRunnerJoinIdentity,
+  runnerJoinConfigJsonEnvVar
 } from "./join-config.js";
 import {
   createRunnerJoinTransport,
@@ -118,9 +119,11 @@ export function parseRunnerCliMode(
     };
   }
 
-  if (env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH) {
+  if (env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH || env[runnerJoinConfigJsonEnvVar]) {
     return {
-      joinConfigPath: env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH,
+      ...(env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH
+        ? { joinConfigPath: env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH }
+        : {}),
       mode: "join"
     };
   }
@@ -381,8 +384,11 @@ export async function createConfiguredRunnerJoinService(
   publicKey: string;
   service: RunnerJoinService;
 }> {
-  const configPath = resolveRunnerJoinConfigPath(joinConfigPath);
-  const config = await loadRunnerJoinConfig(configPath);
+  const configPath =
+    !joinConfigPath && process.env[runnerJoinConfigJsonEnvVar]?.trim()
+      ? runnerJoinConfigJsonEnvVar
+      : resolveRunnerJoinConfigPath(joinConfigPath);
+  const config = await loadRunnerJoinConfig(joinConfigPath);
   const { publicKey, secretKey } = await resolveRunnerJoinIdentity(config);
   const transport =
     input.transport ??

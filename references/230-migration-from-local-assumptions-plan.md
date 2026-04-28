@@ -8,7 +8,10 @@ The repo still has local deployment assumptions in implementation:
 - one injected `effective-runtime-context.json`;
 - `RuntimeBackend` as memory or Docker launcher;
 - Docker socket mounted into Host for the current single-machine adapter;
-- shared Host/runner state and secret volumes in the current Compose topology;
+- shared Host/runner state and secret volumes still exist for direct
+  runtime-context compatibility, but Docker join mode can now deliver inline
+  join config JSON and avoid mounting Host volumes into managed runner
+  containers;
 - Host file reads from runner `runtimeRoot`;
 - Host approval and cancellation writes into runner runtime state;
 - local deployment CLI backup/restore/repair/doctor;
@@ -101,6 +104,9 @@ Classified results:
   - Host approval decisions writing local approval records directly;
   - runner bootstrap requiring `effective-runtime-context.json` for canonical
     startup.
+  - Docker managed runners needing Host volume access for join config delivery:
+    fixed for join mode by
+    [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md).
   - runner Host API bootstrap that copies directly from Host-local context
     paths: fixed for default joined runners by
     [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md).

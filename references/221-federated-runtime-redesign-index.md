@@ -117,6 +117,7 @@ same-machine slice records.
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
+- [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md)
 
 ## Audited Scope
 
@@ -163,7 +164,9 @@ The repository is not fully federated:
 - Host state layout declares product `"entangle"`;
 - Host still materializes launcher-owned workspaces and writes
   `effective-runtime-context.json`;
-- Docker runners mount shared Host and secret volumes;
+- Docker direct runtime-context runners can still mount shared Host and secret
+  volumes, but Docker join mode now supports inline JSON join config delivery
+  without mounting those Host volumes into the managed runner container;
 - Host can publish signed assignment control payloads and project
   runner-signed runtime status observations, but node runtime start/stop still
   has a Docker launcher path that must be demoted to an adapter;
@@ -270,6 +273,9 @@ The repository is not fully federated:
   `entangle-runner` bin for `join --config` startup;
 - generic joined runners now keep Host projection live through periodic signed
   `runner.heartbeat` observations after startup;
+- Docker-managed joined runners can now receive inline join config JSON through
+  environment, and the federated dev Compose profile selects Docker join mode
+  with Host API bundle retrieval instead of path-mounted join config delivery;
 - the process-runner smoke now validates Host-projected heartbeats from the
   agent runner and both User Node runners by writing a short interval into the
   temporary join configs;

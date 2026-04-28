@@ -12,6 +12,7 @@ export const defaultRunnerJoinConfigPath = path.join(
   "join",
   "runner-join.json"
 );
+export const runnerJoinConfigJsonEnvVar = "ENTANGLE_RUNNER_JOIN_CONFIG_JSON";
 
 export function resolveRunnerJoinConfigPath(explicitPath?: string): string {
   return (
@@ -28,6 +29,13 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
 export async function loadRunnerJoinConfig(
   explicitPath?: string
 ): Promise<RunnerJoinConfig> {
+  const inlineConfig =
+    explicitPath === undefined ? process.env[runnerJoinConfigJsonEnvVar] : undefined;
+
+  if (inlineConfig?.trim()) {
+    return runnerJoinConfigSchema.parse(JSON.parse(inlineConfig));
+  }
+
   return runnerJoinConfigSchema.parse(
     await readJsonFile(resolveRunnerJoinConfigPath(explicitPath))
   );

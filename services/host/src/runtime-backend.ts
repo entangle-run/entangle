@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readFile } from "node:fs/promises";
 import type {
   EffectiveRuntimeContext,
   RuntimeBackendKind,
@@ -249,6 +250,26 @@ function buildDockerSecretMountStrategy(secretStateRoot: string): RuntimeMountSt
   };
 }
 
+async function readInlineJoinConfig(joinConfigPath: string): Promise<string> {
+  return JSON.stringify(JSON.parse(await readFile(joinConfigPath, "utf8")));
+}
+
+function buildDockerRunnerLaunchEnvironment(input: {
+  bootstrapMode: "join" | "runtime-context";
+  inlineJoinConfig?: string | undefined;
+  launchConfigPath: string;
+}): string[] {
+  if (input.bootstrapMode === "runtime-context") {
+    return [`ENTANGLE_RUNTIME_CONTEXT_PATH=${input.launchConfigPath}`];
+  }
+
+  if (input.inlineJoinConfig) {
+    return [`ENTANGLE_RUNNER_JOIN_CONFIG_JSON=${input.inlineJoinConfig}`];
+  }
+
+  return [`ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${input.launchConfigPath}`];
+}
+
 class MemoryRuntimeBackend implements RuntimeBackend {
   readonly kind = "memory" as const;
 
@@ -287,6 +308,10 @@ class DockerRuntimeBackend implements RuntimeBackend {
     process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP?.trim() === "join"
       ? "join"
       : "runtime-context";
+  private readonly joinConfigDelivery =
+    process.env.ENTANGLE_DOCKER_RUNNER_JOIN_CONFIG_DELIVERY?.trim() === "path"
+      ? "path"
+      : "json_env";
   private readonly dockerClient: DockerEngineApi;
   private readonly networkName = process.env.ENTANGLE_DOCKER_NETWORK?.trim();
   private readonly runnerImage =
@@ -337,9 +362,17 @@ class DockerRuntimeBackend implements RuntimeBackend {
       };
     }
 
+    const inlineJoinConfig =
+      this.bootstrapMode === "join" && this.joinConfigDelivery === "json_env"
+        ? await readInlineJoinConfig(launchConfigPath)
+        : undefined;
+
     let inspection = await this.dockerClient.inspectContainer(containerName);
 
-    if (inspection && this.containerRequiresRecreation(inspection, input)) {
+    if (
+      inspection &&
+      this.containerRequiresRecreation(inspection, input, inlineJoinConfig)
+    ) {
       await this.dockerClient.removeContainer(containerName);
       inspection = undefined;
     }
@@ -350,28 +383,36 @@ class DockerRuntimeBackend implements RuntimeBackend {
         nodeId: input.nodeId
       });
       const containerEnv = [
-        this.bootstrapMode === "join"
-          ? `ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${launchConfigPath}`
-          : `ENTANGLE_RUNTIME_CONTEXT_PATH=${launchConfigPath}`,
+        ...buildDockerRunnerLaunchEnvironment({
+          bootstrapMode: this.bootstrapMode,
+          inlineJoinConfig,
+          launchConfigPath
+        }),
         ...(humanInterfaceExposure?.env ?? []),
+        ...(this.bootstrapMode === "join" && process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+          ? [`ENTANGLE_HOST_OPERATOR_TOKEN=${process.env.ENTANGLE_HOST_OPERATOR_TOKEN}`]
+          : []),
         ...Object.entries(input.secretEnvironment ?? {})
           .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
           .map(([key, value]) => `${key}=${value}`)
       ];
-      const mounts = [
-        {
-          readOnly: this.stateMount.readOnly ?? false,
-          source: this.stateMount.source,
-          target: this.stateMount.target,
-          type: this.stateMount.kind
-        },
-        {
-          readOnly: this.secretMount.readOnly ?? false,
-          source: this.secretMount.source,
-          target: this.secretMount.target,
-          type: this.secretMount.kind
-        }
-      ] as const;
+      const mounts =
+        this.bootstrapMode === "join" && this.joinConfigDelivery === "json_env"
+          ? []
+          : [
+              {
+                readOnly: this.stateMount.readOnly ?? false,
+                source: this.stateMount.source,
+                target: this.stateMount.target,
+                type: this.stateMount.kind
+              },
+              {
+                readOnly: this.secretMount.readOnly ?? false,
+                source: this.secretMount.source,
+                target: this.secretMount.target,
+                type: this.secretMount.kind
+              }
+            ];
       await this.dockerClient.createContainer({
         containerName,
         env: containerEnv,
@@ -379,6 +420,9 @@ class DockerRuntimeBackend implements RuntimeBackend {
         labels: {
           "io.entangle.graph_id": input.graphId,
           "io.entangle.graph_revision_id": input.graphRevisionId,
+          ...(this.bootstrapMode === "join"
+            ? { "io.entangle.join_config_delivery": this.joinConfigDelivery }
+            : {}),
           "io.entangle.managed": "true",
           "io.entangle.node_id": input.nodeId,
           "io.entangle.restart_generation": String(input.restartGeneration),
@@ -432,7 +476,8 @@ class DockerRuntimeBackend implements RuntimeBackend {
 
   private containerRequiresRecreation(
     inspection: DockerContainerInspect,
-    input: RuntimeBackendReconcileInput
+    input: RuntimeBackendReconcileInput,
+    inlineJoinConfig: string | undefined
   ): boolean {
     const launchConfigPath =
       this.bootstrapMode === "join" ? input.joinConfigPath : input.contextPath;
@@ -450,10 +495,15 @@ class DockerRuntimeBackend implements RuntimeBackend {
         })
       : undefined;
     const requiredEnvEntries = [
-      this.bootstrapMode === "join"
-        ? `ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${launchConfigPath}`
-        : `ENTANGLE_RUNTIME_CONTEXT_PATH=${launchConfigPath}`,
+      ...buildDockerRunnerLaunchEnvironment({
+        bootstrapMode: this.bootstrapMode,
+        inlineJoinConfig,
+        launchConfigPath
+      }),
       ...(humanInterfaceExposure?.env ?? []),
+      ...(this.bootstrapMode === "join" && process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+        ? [`ENTANGLE_HOST_OPERATOR_TOKEN=${process.env.ENTANGLE_HOST_OPERATOR_TOKEN}`]
+        : []),
       ...Object.entries(input.secretEnvironment ?? {})
         .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
         .map(([key, value]) => `${key}=${value}`)
@@ -465,6 +515,8 @@ class DockerRuntimeBackend implements RuntimeBackend {
       labels["io.entangle.graph_revision_id"] !== input.graphRevisionId ||
       labels["io.entangle.restart_generation"] !== String(input.restartGeneration) ||
       labels["io.entangle.runner_bootstrap"] !== this.bootstrapMode ||
+      (this.bootstrapMode === "join" &&
+        labels["io.entangle.join_config_delivery"] !== this.joinConfigDelivery) ||
       labelEntries.some(([key, value]) => labels[key] !== value) ||
       (this.bootstrapMode === "join"
         ? labels["io.entangle.runner_join_config_path"] !== launchConfigPath

@@ -3861,3 +3861,15 @@ smoke now writes a source file in the runner-owned source workspace.
 The smoke now waits for the projected source-change candidate list/detail/diff
 Host APIs and verifies the projected diff for the generated source file, still
 without requiring live model credentials.
+
+## [2026-04-28] implementation | Moved Docker join config to inline env
+
+Added `references/317-docker-join-config-env-slice.md`. Runners can now start
+join mode from `ENTANGLE_RUNNER_JOIN_CONFIG_JSON`, and the Docker launcher
+adapter defaults join-mode managed containers to inline JSON join config
+delivery.
+
+The federated dev Compose Host now selects Docker join mode with
+`ENTANGLE_DOCKER_RUNNER_HOST_API_URL=http://host:7071`, so managed Docker
+runners can fetch portable bootstrap bundles through Host API instead of
+mounting Host state just to read `runner-join.json`.

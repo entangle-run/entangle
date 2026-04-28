@@ -171,6 +171,7 @@ canonical Host observation.
 Implementation record:
 
 - [238-local-launcher-join-adapter-slice.md](238-local-launcher-join-adapter-slice.md)
+- [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md)
 
 Verification:
 
@@ -191,6 +192,10 @@ Current status:
   `opencode` executable, verifies projected turn/source-change
   candidate/approval/session read APIs, and proves Host, agent runner, and
   User Node runner state roots are isolated.
+- Docker managed runners can now receive inline join config JSON and the
+  federated dev Compose profile selects Docker join mode with Host API bundle
+  retrieval, avoiding Host state/secret volume mounts in managed join-mode
+  runner containers.
 
 ### Slice 8: ProjectionStore
 
