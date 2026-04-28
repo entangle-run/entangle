@@ -18,6 +18,7 @@ import {
 } from "../runtime/runtime-state.js";
 import {
   conversationLifecycleStateSchema,
+  sourceChangeCandidateRecordSchema,
   sourceChangeCandidateStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
@@ -117,6 +118,7 @@ export const artifactRefProjectionRecordSchema =
 export const sourceChangeRefProjectionRecordSchema =
   runnerObservationProjectionBaseSchema.extend({
     artifactRefs: z.array(artifactRefSchema).default([]),
+    candidate: sourceChangeCandidateRecordSchema.optional(),
     candidateId: identifierSchema,
     sourceChangeSummary: sourceChangeSummarySchema.optional(),
     status: sourceChangeCandidateStatusSchema

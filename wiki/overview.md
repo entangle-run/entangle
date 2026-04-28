@@ -74,6 +74,9 @@ The most accurate current description is:
   projection without runner-local turn files;
 - runtime artifact list/detail read APIs can now use observed `artifact.ref`
   projection without runner-local artifact files;
+- source-change candidate list/detail read APIs can now use full candidate
+  records carried by observed `source_change.ref` projection without
+  runner-local candidate files;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, then
   verifies projected turn, approval, and session read APIs without live model

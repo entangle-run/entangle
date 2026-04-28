@@ -2836,8 +2836,11 @@ export async function recordSourceChangeRefObservation(
 
   const observation = sourceChangeRefObservationPayloadSchema.parse(input);
   await assertRegisteredObservationRunner(observation);
+  const sourceChangeSummary =
+    observation.sourceChangeSummary ?? observation.candidate?.sourceChangeSummary;
   const record = sourceChangeRefProjectionRecordSchema.parse({
     artifactRefs: observation.artifactRefs,
+    ...(observation.candidate ? { candidate: observation.candidate } : {}),
     candidateId: observation.candidateId,
     graphId: observation.graphId,
     hostAuthorityPubkey: observation.hostAuthorityPubkey,
@@ -2848,9 +2851,7 @@ export async function recordSourceChangeRefObservation(
     },
     runnerId: observation.runnerId,
     runnerPubkey: observation.runnerPubkey,
-    ...(observation.sourceChangeSummary
-      ? { sourceChangeSummary: observation.sourceChangeSummary }
-      : {}),
+    ...(sourceChangeSummary ? { sourceChangeSummary } : {}),
     status: observation.status
   });
 
@@ -10655,18 +10656,59 @@ export async function recordRuntimeApprovalDecision(input: {
   };
 }
 
+async function listProjectedRuntimeSourceChangeCandidateRecords(
+  nodeId: string
+): Promise<SourceChangeCandidateRecord[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return [];
+  }
+
+  const records = await listSourceChangeRefProjectionRecords();
+
+  return records
+    .filter(
+      (
+        record
+      ): record is SourceChangeRefProjectionRecord & {
+        candidate: SourceChangeCandidateRecord;
+      } =>
+        record.graphId === graph.graphId &&
+        record.nodeId === nodeId &&
+        Boolean(record.candidate)
+    )
+    .map((record) => record.candidate)
+    .sort((left, right) => left.candidateId.localeCompare(right.candidateId));
+}
+
 export async function listRuntimeSourceChangeCandidates(
   nodeId: string
 ): Promise<RuntimeSourceChangeCandidateListResponse | null> {
-  const context = await getRuntimeContext(nodeId);
+  const [context, projectedCandidates] = await Promise.all([
+    getRuntimeContext(nodeId),
+    listProjectedRuntimeSourceChangeCandidateRecords(nodeId)
+  ]);
 
   if (!context) {
-    return null;
+    return runtimeSourceChangeCandidateListResponseSchema.parse({
+      candidates: projectedCandidates
+    });
+  }
+
+  const candidatesById = new Map(
+    projectedCandidates.map((candidate) => [candidate.candidateId, candidate])
+  );
+
+  for (const candidate of await listRuntimeSourceChangeCandidateRecords(
+    context.workspace.runtimeRoot
+  )) {
+    candidatesById.set(candidate.candidateId, candidate);
   }
 
   return runtimeSourceChangeCandidateListResponseSchema.parse({
-    candidates: await listRuntimeSourceChangeCandidateRecords(
-      context.workspace.runtimeRoot
+    candidates: [...candidatesById.values()].sort((left, right) =>
+      left.candidateId.localeCompare(right.candidateId)
     )
   });
 }

@@ -33,8 +33,11 @@ now read from that projection as well as local compatibility files. Runtime
 turn list/detail GET routes now read from observed turn projection as well as
 local compatibility files. Runtime artifact list/detail GET routes now read
 from observed `artifact.ref` projection as well as local compatibility files.
-The process-runner smoke now verifies projected
-turn, approval, and session read APIs after a deterministic OpenCode-adapter
+Joined runners now include the full bounded `SourceChangeCandidateRecord` when
+publishing `source_change.ref`, and Host runtime source-change candidate
+list/detail GET routes can read those projected records without local runner
+files. The process-runner smoke now verifies projected turn, approval, and
+session read APIs after a deterministic OpenCode-adapter
 task turn from a real joined runner process. Joined runners now also publish
 session/conversation observations for later lifecycle transitions including
 handoffs, coordination result/close, approval request/response, completion,
@@ -100,8 +103,10 @@ and refs so Host can inspect global state without reading runner disk.
   with projection-backed read models. The high-level session list and bounded
   session inspection now have projection fallbacks; approval and turn read APIs
   can read projection; artifact list/detail reads can read projected
-  `artifact.ref` records; deeper runtime source, artifact preview/history,
-  wiki, and mutation surfaces still need projected equivalents.
+  `artifact.ref` records; source-change candidate list/detail reads can read
+  projected full candidate records; deeper runtime source diff/file,
+  artifact preview/history, wiki, and mutation surfaces still need projected
+  equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn

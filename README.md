@@ -306,6 +306,9 @@ This repository currently contains:
 - runtime artifact list/detail APIs can now list and inspect observed
   `artifact.ref` projection records without requiring Host-readable
   runner-local artifact files;
+- source-change candidate list/detail APIs can now list and inspect projected
+  full candidate records carried by `source_change.ref` observations without
+  requiring Host-readable runner-local candidate files;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, then verifies projected turn, approval, and session read APIs

@@ -20,6 +20,7 @@ import {
   runnerPhaseSchema,
   sessionRecordSchema,
   sessionLifecycleStateSchema,
+  sourceChangeCandidateRecordSchema,
   sourceChangeCandidateStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
@@ -162,12 +163,35 @@ export const artifactRefObservationPayloadSchema =
 export const sourceChangeRefObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
     artifactRefs: z.array(artifactRefSchema).default([]),
+    candidate: sourceChangeCandidateRecordSchema.optional(),
     candidateId: identifierSchema,
     eventType: z.literal("source_change.ref"),
     graphId: identifierSchema,
     nodeId: identifierSchema,
     sourceChangeSummary: sourceChangeSummarySchema.optional(),
     status: sourceChangeCandidateStatusSchema
+  })
+  .superRefine((value, context) => {
+    if (!value.candidate) {
+      return;
+    }
+
+    const expectedFields = [
+      ["candidateId", value.candidate.candidateId, value.candidateId],
+      ["graphId", value.candidate.graphId, value.graphId],
+      ["nodeId", value.candidate.nodeId, value.nodeId],
+      ["status", value.candidate.status, value.status]
+    ] as const;
+
+    for (const [field, actual, expected] of expectedFields) {
+      if (actual !== expected) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `source_change.ref candidate.${field} must match payload ${field}.`,
+          path: ["candidate", field]
+        });
+      }
+    }
   });
 
 export const wikiRefObservationPayloadSchema = observedAtPayloadBaseSchema.extend({

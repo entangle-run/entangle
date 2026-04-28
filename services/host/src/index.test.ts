@@ -1735,6 +1735,32 @@ describe("buildHostServer", () => {
         ...artifactRef,
         preferred: true
       };
+      const sourceChangeSummary = {
+        additions: 4,
+        checkedAt: observedAt,
+        deletions: 1,
+        fileCount: 1,
+        files: [
+          {
+            additions: 4,
+            deletions: 1,
+            path: "src/app.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed",
+        truncated: false
+      };
+      const projectedSourceCandidate = sourceChangeCandidateRecordSchema.parse({
+        candidateId: "candidate-alpha",
+        createdAt: observedAt,
+        graphId: "team-alpha",
+        nodeId: "worker-it",
+        sourceChangeSummary,
+        status: "pending_review",
+        turnId: "turn-alpha",
+        updatedAt: observedAt
+      });
 
       await recordArtifactRefObservation({
         artifactPreview: {
@@ -1757,6 +1783,7 @@ describe("buildHostServer", () => {
       });
       await recordSourceChangeRefObservation({
         artifactRefs: [artifactRef],
+        candidate: projectedSourceCandidate,
         candidateId: "candidate-alpha",
         eventType: "source_change.ref",
         graphId: "team-alpha",
@@ -1766,22 +1793,7 @@ describe("buildHostServer", () => {
         protocol: "entangle.observe.v1",
         runnerId: "runner-alpha",
         runnerPubkey,
-        sourceChangeSummary: {
-          additions: 4,
-          checkedAt: observedAt,
-          deletions: 1,
-          fileCount: 1,
-          files: [
-            {
-              additions: 4,
-              deletions: 1,
-              path: "src/app.ts",
-              status: "modified"
-            }
-          ],
-          status: "changed",
-          truncated: false
-        },
+        sourceChangeSummary,
         status: "pending_review"
       });
       await recordWikiRefObservation({
@@ -1836,6 +1848,10 @@ describe("buildHostServer", () => {
         runnerId: "runner-alpha"
       });
       expect(projection.sourceChangeRefs[0]).toMatchObject({
+        candidate: {
+          candidateId: "candidate-alpha",
+          turnId: "turn-alpha"
+        },
         candidateId: "candidate-alpha",
         sourceChangeSummary: {
           additions: 4,
@@ -1851,6 +1867,32 @@ describe("buildHostServer", () => {
           content: "# Working Context\nReady."
         },
         nodeId: "worker-it"
+      });
+
+      const projectedCandidatesResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-change-candidates"
+      });
+      expect(projectedCandidatesResponse.statusCode).toBe(200);
+      const projectedCandidates =
+        runtimeSourceChangeCandidateListResponseSchema.parse(
+          projectedCandidatesResponse.json()
+        );
+      expect(projectedCandidates.candidates).toContainEqual(
+        projectedSourceCandidate
+      );
+
+      const projectedCandidateResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-change-candidates/candidate-alpha"
+      });
+      expect(projectedCandidateResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+          projectedCandidateResponse.json()
+        )
+      ).toEqual({
+        candidate: projectedSourceCandidate
       });
 
       const projectedArtifactsResponse = await server.inject({

@@ -52,7 +52,9 @@ or stable User Node identity.
   approval lifecycle changes now have signed `approval.updated` observation
   reducers plus projected approval list/detail reads, while runner turn
   list/detail reads can now use observed turn projection and artifact
-  list/detail reads can now use observed `artifact.ref` projection;
+  list/detail reads can now use observed `artifact.ref` projection, and
+  source-change candidate list/detail reads can now use observed full
+  `source_change.ref` candidate projection;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 
@@ -74,9 +76,10 @@ mode, but canonical execution still falls back to injected same-machine context:
 - Host and joined runners are wired end-to-end through relay-backed
   control/observe subscriptions for registration, assignment, heartbeat,
   runtime status, session/conversation updates, turn updates, approval updates,
-  and artifact/source/wiki refs; deeper mutation and detail surfaces are still
-  being moved off runner filesystem reads, and later session/conversation
-  lifecycle transitions now publish observations as well;
+  and artifact/source/wiki refs; `source_change.ref` observations can now carry
+  the full bounded candidate record; deeper mutation and detail surfaces are
+  still being moved off runner filesystem reads, and later
+  session/conversation lifecycle transitions now publish observations as well;
 - runner state is file-backed under `runtimeRoot`;
 - cancellation is polled from Host-written local files;
 - OpenCode is invoked by a safe one-shot process adapter, and the process-runner

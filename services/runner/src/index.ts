@@ -318,6 +318,7 @@ function createRuntimeObservationPublisher(input: {
     publishSourceChangeRefObserved: (record) =>
       publish({
         artifactRefs: record.artifactRefs,
+        candidate: record.candidate,
         candidateId: record.candidate.candidateId,
         eventType: "source_change.ref",
         graphId: record.candidate.graphId,

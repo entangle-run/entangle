@@ -3817,3 +3817,15 @@ Projected artifact refs can now be listed and inspected for nodes in the active
 graph even when Host has no readable runner-local runtime context. Deep preview,
 history, diff, restore, and promotion operations remain local-context backed
 until object-backend resolution replaces those filesystem reads.
+
+## [2026-04-28] implementation | Added projected source-candidate read APIs
+
+Added `references/313-projected-source-candidate-read-api-slice.md`.
+`source_change.ref` observations can now carry the full bounded
+`SourceChangeCandidateRecord` owned by the runner.
+
+Host persists that candidate in projection and merges projected candidates with
+local compatibility files for runtime source-change candidate list/detail GET
+routes. Source diff/file preview, review, apply, and source-history operations
+remain local-context backed until those operations move to a runner-mediated or
+backend-resolved federated path.

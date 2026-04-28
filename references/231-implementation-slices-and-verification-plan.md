@@ -213,6 +213,7 @@ Implementation record:
 - [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
 - [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
 - [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
+- [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 
 Verification:
 
@@ -254,8 +255,11 @@ Current status:
 - runtime artifact list/detail GET routes now merge projected `artifact.ref`
   records with local compatibility files and can serve remote artifact refs
   without Host-readable runner filesystem context;
-- deeper runtime source, artifact preview/history, wiki, and mutation endpoints
-  still need projection-backed or backend-resolved replacement.
+- `source_change.ref` observations can now carry full bounded candidate
+  records, and runtime source-change candidate list/detail GET routes can merge
+  those projected candidates with local compatibility files;
+- deeper runtime source diff/file, artifact preview/history, wiki, and mutation
+  endpoints still need projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -388,6 +392,7 @@ Implementation record:
 - [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
 - [277-projected-artifact-preview-slice.md](277-projected-artifact-preview-slice.md)
 - [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
+- [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 
 Verification:
 

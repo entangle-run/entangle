@@ -983,6 +983,31 @@ describe("federated runtime contracts", () => {
       }),
       payload: {
         artifactRefs: [],
+        candidate: {
+          candidateId: "source-change-turn-alpha",
+          createdAt: observedAt,
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          sourceChangeSummary: {
+            additions: 2,
+            checkedAt: observedAt,
+            deletions: 1,
+            fileCount: 1,
+            files: [
+              {
+                additions: 2,
+                deletions: 1,
+                path: "src/index.ts",
+                status: "modified"
+              }
+            ],
+            status: "changed",
+            truncated: false
+          },
+          status: "pending_review",
+          turnId: "turn-alpha",
+          updatedAt: observedAt
+        },
         candidateId: "source-change-turn-alpha",
         eventType: "source_change.ref",
         graphId: "team-alpha",
