@@ -242,8 +242,11 @@ This repository currently contains:
   validates the current source tree before recording a local history commit,
   with runner-owned source-history publication that materializes an accepted
   source-history commit as a git commit artifact, records publication metadata,
-  and pushes to the node's primary git target when policy allows it, with
-  node-configured source mutation policy still able to require approved runtime
+  and pushes to the node's primary git target when policy allows it, while
+  explicit operator publish/retry requests now travel as Host-signed
+  `runtime.source_history.publish` commands to the accepted runner assignment
+  instead of Host-side filesystem mutations. Node-configured source mutation
+  policy is still able to require approved runtime
   approval ids before source application or source publication, and with
   accepted approval ids persisted on source records after validating approval
   operation and concrete resource scope, plus signed User Node
@@ -254,7 +257,8 @@ This repository currently contains:
   projection receives portable work refs, bounded source-change summaries, and
   concrete source-history records through the observe protocol, with the runner
   also publishing accepted source-history records to the node's primary git
-  target when policy allows it, plus runner-owned local git snapshots of
+  target when policy allows it or when it receives an explicit federated
+  source-history publish/retry command, plus runner-owned local git snapshots of
   `memory/wiki` into each node's
   `wiki-repository` workspace after completed turns, with durable sync outcomes
   carried through runner turns, host events, CLI output, and Studio turn
@@ -932,11 +936,10 @@ The highest-value remaining gaps are:
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, and bounded artifact
-  history/diff/preview inspection, especially runner-owned publication retry,
-  runner-owned source replay, protocol-owned artifact restore or source-change
-  proposal flows, non-primary publication targets, wiki publication/promotion,
-  richer source-history merge/reconcile workflows, and replicated fallback
-  paths;
+  history/diff/preview inspection, especially runner-owned source replay,
+  protocol-owned artifact restore or source-change proposal flows, non-primary
+  publication targets, wiki publication/promotion, richer source-history
+  merge/reconcile workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

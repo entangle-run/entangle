@@ -2719,6 +2719,65 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runner-owned runtime source history publication requests", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-source-history-publish-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-24T10:08:00.000Z",
+              sourceHistoryId: "source-history-source-change-turn-alpha",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.publishRuntimeSourceHistory(
+        "worker-it",
+        "source-history-source-change-turn-alpha",
+        {
+          reason: "Retry failed source publication.",
+          requestedBy: "operator-main",
+          retryFailedPublication: true
+        }
+      )
+    ).resolves.toMatchObject({
+      assignmentId: "assignment-alpha",
+      nodeId: "worker-it",
+      sourceHistoryId: "source-history-source-change-turn-alpha",
+      status: "requested"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          reason: "Retry failed source publication.",
+          requestedBy: "operator-main",
+          retryFailedPublication: true
+        }),
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/source-history/" +
+          "source-history-source-change-turn-alpha/publish"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

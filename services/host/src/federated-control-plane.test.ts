@@ -622,6 +622,15 @@ describe("Host federated control plane", () => {
       commandId: "cmd-cancel-alpha",
       relayUrls
     });
+    await controlPlane.publishRuntimeSourceHistoryPublish({
+      assignment,
+      commandId: "cmd-source-history-publish-alpha",
+      reason: "Retry publication.",
+      relayUrls,
+      requestedBy: "operator-main",
+      retryFailedPublication: true,
+      sourceHistoryId: "source-history-alpha"
+    });
 
     expect(transport.publishedControlEvents.map((event) => event.payload)).toEqual([
       expect.objectContaining({
@@ -668,6 +677,20 @@ describe("Host federated control plane", () => {
         runnerId: "runner-alpha",
         runnerPubkey,
         sessionId: "session-alpha"
+      }),
+      expect.objectContaining({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-publish-alpha",
+        eventType: "runtime.source_history.publish",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        requestedBy: "operator-main",
+        retryFailedPublication: true,
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-alpha"
       })
     ]);
     expect(transport.publishedControlEvents[3]?.payload).toMatchObject({
@@ -677,6 +700,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

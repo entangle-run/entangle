@@ -78,6 +78,8 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublishRequestSchema,
+  runtimeSourceHistoryPublishResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -277,6 +279,17 @@ type HostFederatedAssignmentPublisher = {
     commandId: string;
     correlationId?: string;
     relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeSourceHistoryPublish?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+    sourceHistoryId: string;
   }): Promise<unknown>;
 };
 
@@ -652,6 +665,41 @@ async function publishRuntimeSessionCancelCommandFromHost(
   });
 
   return true;
+}
+
+async function publishRuntimeSourceHistoryPublishCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    assignment: RuntimeAssignmentRecord;
+    reason?: string;
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+    sourceHistoryId: string;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeSourceHistoryPublish ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-source-history-publish-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeSourceHistoryPublish({
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+    retryFailedPublication: input.retryFailedPublication ?? false,
+    sourceHistoryId: input.sourceHistoryId
+  });
+
+  return commandId;
 }
 
 async function requestRuntimeSessionCancellationFromHost(
@@ -2336,6 +2384,93 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       return runtimeSourceHistoryInspectionResponseSchema.parse(
         historyInspection
       );
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/source-history/:sourceHistoryId/publish",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string; sourceHistoryId: string };
+      const body = parseRequestInput(
+        runtimeSourceHistoryPublishRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message: "Request body did not match the expected source-history publish schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const historyInspection = await getRuntimeSourceHistoryInspection({
+        nodeId: params.nodeId,
+        sourceHistoryId: params.sourceHistoryId
+      });
+
+      if (!historyInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source history entry '${params.sourceHistoryId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId,
+            sourceHistoryId: params.sourceHistoryId
+          },
+          message:
+            `Source history publication for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const commandId =
+        await publishRuntimeSourceHistoryPublishCommandFromHost(options, {
+          assignment,
+          ...(body.reason ? { reason: body.reason } : {}),
+          ...(body.requestedBy ? { requestedBy: body.requestedBy } : {}),
+          retryFailedPublication: body.retryFailedPublication,
+          sourceHistoryId: params.sourceHistoryId
+        });
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId,
+            sourceHistoryId: params.sourceHistoryId
+          },
+          message:
+            "Federated source-history publication requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeSourceHistoryPublishResponseSchema.parse({
+        assignmentId: assignment.assignmentId,
+        commandId,
+        nodeId: params.nodeId,
+        requestedAt: new Date().toISOString(),
+        sourceHistoryId: params.sourceHistoryId,
+        status: "requested"
+      });
     }
   );
 

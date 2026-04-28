@@ -19,7 +19,8 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.start",
   "runtime.stop",
   "runtime.restart",
-  "runtime.session.cancel"
+  "runtime.session.cancel",
+  "runtime.source_history.publish"
 ]);
 
 const controlPayloadBaseSchema = z.object({
@@ -163,6 +164,19 @@ export const runtimeSessionCancelPayloadSchema = controlPayloadBaseSchema
     }
   });
 
+export const runtimeSourceHistoryPublishPayloadSchema =
+  controlPayloadBaseSchema.extend({
+    assignmentId: identifierSchema.optional(),
+    commandId: identifierSchema,
+    eventType: z.literal("runtime.source_history.publish"),
+    graphId: identifierSchema,
+    nodeId: identifierSchema,
+    reason: nonEmptyStringSchema.optional(),
+    requestedBy: identifierSchema.optional(),
+    retryFailedPublication: z.boolean().default(false),
+    sourceHistoryId: identifierSchema
+  });
+
 export const entangleControlEventPayloadSchema = z.discriminatedUnion(
   "eventType",
   [
@@ -173,7 +187,8 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeStartPayloadSchema,
     runtimeStopPayloadSchema,
     runtimeRestartPayloadSchema,
-    runtimeSessionCancelPayloadSchema
+    runtimeSessionCancelPayloadSchema,
+    runtimeSourceHistoryPublishPayloadSchema
   ]
 );
 
@@ -234,6 +249,9 @@ export type RuntimeStopPayload = z.infer<typeof runtimeStopPayloadSchema>;
 export type RuntimeRestartPayload = z.infer<typeof runtimeRestartPayloadSchema>;
 export type RuntimeSessionCancelPayload = z.infer<
   typeof runtimeSessionCancelPayloadSchema
+>;
+export type RuntimeSourceHistoryPublishPayload = z.infer<
+  typeof runtimeSourceHistoryPublishPayloadSchema
 >;
 export type EntangleControlEventPayload = z.infer<
   typeof entangleControlEventPayloadSchema

@@ -139,6 +139,7 @@ same-machine slice records.
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 - [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
+- [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
 
 ## Audited Scope
 
@@ -369,7 +370,10 @@ The repository is not fully federated:
   for Host projection and read-only source-history inspection. When the node has
   a primary git repository target and source publication does not require extra
   approval, the runner also publishes a git commit artifact and emits the
-  resulting `artifact.ref` plus updated `source_history.ref`;
+  resulting `artifact.ref` plus updated `source_history.ref`. Operators can
+  also request publication or explicit failed-publication retry through the
+  Host-signed `runtime.source_history.publish` control command, which the
+  assigned runner handles from runner-owned source-history state;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -529,9 +533,11 @@ wiki and artifact inspection currently remain through runner-owned refs plus
 signed projection, and explicit wiki/artifact mutation must return as
 runner-owned protocol behavior. Session cancellation now uses signed
 `runtime.session.cancel` control commands for accepted federated assignments,
-with local cancellation files retained only as fallback compatibility. The next
-blocking implementation areas are explicit runner-owned publication
-retry/non-primary target commands, runner-owned source replay, richer
+with local cancellation files retained only as fallback compatibility.
+Source-history publication retry now has a Host-signed
+`runtime.source_history.publish` control command for accepted federated
+assignments, while non-primary target publication remains future work. The next
+blocking implementation areas are runner-owned source replay, richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed

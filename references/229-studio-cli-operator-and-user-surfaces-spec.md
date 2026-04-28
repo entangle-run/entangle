@@ -159,7 +159,10 @@ Node.
   approve, and reject surfaces now exist; CLI signed approval responses now
   accept scoped operation/resource/reason metadata and can derive context from
   recorded approval-request messages through direct message lookup; message
-  history now has the first inbound/outbound projection path.
+  history now has the first inbound/outbound projection path. CLI also exposes
+  `host runtimes source-history-publish` as an operator request surface that
+  asks the accepted federated runner assignment to publish or retry a concrete
+  source-history record, instead of mutating runner files from Host.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner

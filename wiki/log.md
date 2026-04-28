@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Added federated source-history publication control
+
+Added Host-signed `runtime.source_history.publish` control delivery for
+explicit source-history publication and failed-publication retry. Host now only
+requests the operation for accepted federated assignments; the owning runner
+reads runner-owned source-history state, performs the git publication, emits
+artifact/source-history observations, and records assignment receipts for
+operator outcome evidence.
+
+Added
+`references/339-federated-source-history-publication-control-slice.md`.
+
 ## [2026-04-28] implementation | Added federated session cancellation control
 
 Moved the primary session cancellation delivery path from Host-written runner

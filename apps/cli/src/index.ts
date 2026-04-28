@@ -29,6 +29,7 @@ import {
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
+  runtimeSourceHistoryPublishRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema,
@@ -3390,6 +3391,46 @@ hostRuntimesCommand
               sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
             }
           : response
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-publish")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<sourceHistoryId>", "Source history entry identifier to publish.")
+  .option("--reason <reason>", "Operator-visible publication reason.")
+  .option("--requested-by <operatorId>", "Operator id requesting publication.")
+  .option(
+    "--retry-failed-publication",
+    "Retry source-history entries whose previous publication state is failed."
+  )
+  .description(
+    "Ask the assigned runner to publish one source history entry through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      sourceHistoryId: string,
+      options: {
+        reason?: string;
+        requestedBy?: string;
+        retryFailedPublication?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const request = runtimeSourceHistoryPublishRequestSchema.parse({
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
+        retryFailedPublication: options.retryFailedPublication ?? false
+      });
+      printJson(
+        await client.publishRuntimeSourceHistory(
+          nodeId,
+          sourceHistoryId,
+          request
+        )
       );
     }
   );

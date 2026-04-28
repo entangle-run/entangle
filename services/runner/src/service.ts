@@ -61,6 +61,7 @@ import {
   readApprovalRecord,
   readConversationRecord,
   readSourceChangeCandidateRecord,
+  readSourceHistoryRecord,
   readSessionRecord,
   writeApprovalRecord,
   writeArtifactRecord,
@@ -101,6 +102,12 @@ export type RunnerServiceStartResult = {
   nodeId: string;
   publicKey: string;
   runtimeRoot: string;
+};
+
+export type RunnerSourceHistoryPublicationCommandResult = {
+  message?: string;
+  publicationState?: "failed" | "not_requested" | "published";
+  sourceHistoryId: string;
 };
 
 export type RunnerServiceObservationPublisher = {
@@ -1731,6 +1738,62 @@ export class RunnerService {
     await writeSessionCancellationRequestRecord(statePaths, parsed);
     await this.applyExternalCancellationRequests();
     return parsed;
+  }
+
+  async requestSourceHistoryPublication(input: {
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+    sourceHistoryId: string;
+  }): Promise<RunnerSourceHistoryPublicationCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const history = await readSourceHistoryRecord(
+      statePaths,
+      input.sourceHistoryId
+    );
+
+    if (!history) {
+      throw new Error(
+        `Source history '${input.sourceHistoryId}' was not found for runtime '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    if (history.nodeId !== this.context.binding.node.nodeId) {
+      throw new Error(
+        `Source history '${input.sourceHistoryId}' belongs to node '${history.nodeId}', not '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    const publication = await publishSourceHistoryToPrimaryGitTarget({
+      context: this.context,
+      history,
+      ...(input.reason ? { reason: input.reason } : {}),
+      requestedAt: input.requestedAt ?? new Date().toISOString(),
+      ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+      retryFailedPublication: input.retryFailedPublication ?? false,
+      statePaths
+    });
+
+    if (!publication.published) {
+      throw new Error(publication.reason);
+    }
+
+    await this.publishArtifactRefObservation(publication.artifact);
+    await this.publishSourceHistoryRefObservation(publication.history);
+
+    const publicationState = publication.history.publication?.publication.state;
+
+    return {
+      ...(publication.history.publication?.publication.lastError
+        ? { message: publication.history.publication.publication.lastError }
+        : {}),
+      ...(publicationState ? { publicationState } : {}),
+      sourceHistoryId: publication.history.sourceHistoryId
+    };
   }
 
   private async resolveToolDefinitions(): Promise<EngineToolDefinition[]> {

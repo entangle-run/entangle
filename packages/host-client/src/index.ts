@@ -61,6 +61,8 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublishRequestSchema,
+  runtimeSourceHistoryPublishResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -144,6 +146,8 @@ import {
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeSourceHistoryInspectionResponse,
   type RuntimeSourceHistoryListResponse,
+  type RuntimeSourceHistoryPublishRequest,
+  type RuntimeSourceHistoryPublishResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type RunnerRegistryInspectionResponse,
@@ -1116,6 +1120,28 @@ export function createHostClient(options: HostClientOptions) {
           `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}`
         ),
         runtimeSourceHistoryInspectionResponseSchema
+      );
+    },
+
+    async publishRuntimeSourceHistory(
+      nodeId: string,
+      sourceHistoryId: string,
+      request: RuntimeSourceHistoryPublishRequest = {}
+    ): Promise<RuntimeSourceHistoryPublishResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/publish`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(
+              runtimeSourceHistoryPublishRequestSchema.parse(request)
+            )
+          }
+        ),
+        runtimeSourceHistoryPublishResponseSchema
       );
     },
 

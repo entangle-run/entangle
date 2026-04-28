@@ -67,6 +67,7 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublishResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -152,6 +153,15 @@ type TestFederatedAssignmentPublisher = {
     cancellation: SessionCancellationRequestRecord;
     commandId: string;
     relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeSourceHistoryPublish?(input: {
+    assignment: RuntimeAssignmentRecord;
+    commandId: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    retryFailedPublication: boolean;
+    sourceHistoryId: string;
   }): Promise<unknown>;
 };
 
@@ -6511,6 +6521,190 @@ describe("buildHostServer", () => {
           status: "requested"
         },
         relayUrls: ["ws://relay.example"]
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("publishes runner-owned source history publication commands for accepted assignments", async () => {
+    const publishedRequests: Array<{
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+      retryFailedPublication: boolean;
+      sourceHistoryId: string;
+    }> = [];
+    const server = await createTestServer({
+      federatedControlPlane: {
+        publishRuntimeAssignmentOffer: () => Promise.resolve(),
+        publishRuntimeAssignmentRevoke: () => Promise.resolve(),
+        publishRuntimeSourceHistoryPublish: (input) => {
+          publishedRequests.push({
+            assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+            retryFailedPublication: input.retryFailedPublication,
+            sourceHistoryId: input.sourceHistoryId
+          });
+          return Promise.resolve();
+        }
+      },
+      federatedControlRelayUrls: ["ws://relay.example"],
+      includeModelEndpoint: true
+    });
+
+    try {
+      const [
+        {
+          recordRunnerHello,
+          recordRuntimeAssignmentAccepted,
+          recordSourceHistoryRefObservation
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/authority"
+          })
+        ).json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+      const observedAt = new Date().toISOString();
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: observedAt,
+        nonce: "nonce-source-history",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+      await server.inject({
+        method: "POST",
+        url: "/v1/runners/runner-alpha/trust"
+      });
+
+      const offer = runtimeAssignmentOfferResponseSchema.parse(
+        (
+          await server.inject({
+            method: "POST",
+            payload: {
+              assignmentId: "assignment-alpha",
+              nodeId: "worker-it",
+              runnerId: "runner-alpha"
+            },
+            url: "/v1/assignments"
+          })
+        ).json()
+      ).assignment;
+      await recordRuntimeAssignmentAccepted({
+        acceptedAt: observedAt,
+        assignmentId: offer.assignmentId,
+        eventType: "assignment.accepted",
+        hostAuthorityPubkey,
+        ...(offer.lease ? { lease: offer.lease } : {}),
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+
+      const projectedSourceHistory = sourceHistoryRecordSchema.parse({
+        appliedAt: observedAt,
+        appliedBy: "user-main",
+        baseTree: "tree-base-alpha",
+        branch: "entangle-source-history",
+        candidateId: "candidate-alpha",
+        commit: "commit-source-history-alpha",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-rev-1",
+        headTree: "tree-head-alpha",
+        mode: "already_in_workspace",
+        nodeId: "worker-it",
+        sourceChangeSummary: {
+          additions: 1,
+          checkedAt: observedAt,
+          deletions: 0,
+          fileCount: 1,
+          files: [
+            {
+              additions: 1,
+              deletions: 0,
+              path: "src/index.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
+        sourceHistoryId: "source-history-candidate-alpha",
+        turnId: "turn-alpha",
+        updatedAt: observedAt
+      });
+      await recordSourceHistoryRefObservation({
+        eventType: "source_history.ref",
+        graphId: "team-alpha",
+        history: projectedSourceHistory,
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-candidate-alpha"
+      });
+
+      const publishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "Operator requested publication retry.",
+          requestedBy: "operator-main",
+          retryFailedPublication: true
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/" +
+          "source-history-candidate-alpha/publish"
+      });
+
+      expect(publishResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryPublishResponseSchema.parse(publishResponse.json())
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        sourceHistoryId: "source-history-candidate-alpha",
+        status: "requested"
+      });
+      expect(publishedRequests).toHaveLength(1);
+      expect(publishedRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(publishedRequests[0]).toMatchObject({
+        reason: "Operator requested publication retry.",
+        relayUrls: ["ws://relay.example"],
+        requestedBy: "operator-main",
+        retryFailedPublication: true,
+        sourceHistoryId: "source-history-candidate-alpha"
       });
     } finally {
       await server.close();

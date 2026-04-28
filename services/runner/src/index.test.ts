@@ -305,6 +305,41 @@ function buildRuntimeSessionCancelEvent(
   };
 }
 
+function buildRuntimeSourceHistoryPublishEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:05.000Z",
+      eventId: "abababababababababababababababababababababababababababababababab",
+      payloadHash:
+        "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-source-history-publish-alpha",
+      eventType: "runtime.source_history.publish",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:05.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Retry publication",
+      requestedBy: "operator-main",
+      retryFailedPublication: true,
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey,
+      sourceHistoryId: "source-history-alpha"
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -2005,6 +2040,7 @@ describe("runner runtime context", () => {
     const runtimeStops: string[] = [];
     const runtimeStarts: string[] = [];
     const runtimeCancellations: string[] = [];
+    const runtimeSourceHistoryPublications: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const configured = await createConfiguredRunnerJoinService(
@@ -2025,6 +2061,15 @@ describe("runner runtime context", () => {
               runtimeCancellations.push(request.sessionId);
               return Promise.resolve();
             },
+            publishSourceHistory: (request) => {
+              runtimeSourceHistoryPublications.push(
+                `${request.sourceHistoryId}:${request.retryFailedPublication ? "retry" : "publish"}:${request.requestedBy ?? "unknown"}`
+              );
+              return Promise.resolve({
+                publicationState: "published",
+                sourceHistoryId: request.sourceHistoryId
+              });
+            },
             runtimeContextPath,
             stop: () => {
               runtimeStops.push(runtimeContextPath);
@@ -2043,6 +2088,7 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeStartEvent(assignment));
     await transport.dispatch(buildRuntimeRestartEvent(assignment));
     await transport.dispatch(buildRuntimeSessionCancelEvent(assignment));
+    await transport.dispatch(buildRuntimeSourceHistoryPublishEvent(assignment));
 
     expect(runtimeStarts).toEqual([
       "/runner/assignments/assignment-alpha/runtime-context.json",
@@ -2054,6 +2100,9 @@ describe("runner runtime context", () => {
       "/runner/assignments/assignment-alpha/runtime-context.json"
     ]);
     expect(runtimeCancellations).toEqual(["session-alpha"]);
+    expect(runtimeSourceHistoryPublications).toEqual([
+      "source-history-alpha:retry:operator-main"
+    ]);
     expect(
       transport.observations.filter(
         (payload) =>

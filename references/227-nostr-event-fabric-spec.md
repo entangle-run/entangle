@@ -80,8 +80,11 @@ Nostr must not carry:
   - `assignment.offer`;
   - `assignment.revoke`;
   - `assignment.lease.renew`;
+  - `runtime.start`;
   - `runtime.stop`;
-  - `runtime.restart`.
+  - `runtime.restart`;
+  - `runtime.session.cancel`;
+  - `runtime.source_history.publish`.
 - Add observe event payloads:
   - `runner.hello`;
   - `runner.heartbeat`;

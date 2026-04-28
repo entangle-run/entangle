@@ -356,6 +356,21 @@ export const runtimeSourceHistoryInspectionResponseSchema = z.object({
   entry: sourceHistoryRecordSchema
 });
 
+export const runtimeSourceHistoryPublishRequestSchema = z.object({
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional(),
+  retryFailedPublication: z.boolean().default(false)
+});
+
+export const runtimeSourceHistoryPublishResponseSchema = z.object({
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  nodeId: identifierSchema,
+  requestedAt: nonEmptyStringSchema,
+  sourceHistoryId: identifierSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
   "available",
   [
@@ -488,6 +503,12 @@ export type RuntimeSourceHistoryListResponse = z.infer<
 >;
 export type RuntimeSourceHistoryInspectionResponse = z.infer<
   typeof runtimeSourceHistoryInspectionResponseSchema
+>;
+export type RuntimeSourceHistoryPublishRequest = z.input<
+  typeof runtimeSourceHistoryPublishRequestSchema
+>;
+export type RuntimeSourceHistoryPublishResponse = z.infer<
+  typeof runtimeSourceHistoryPublishResponseSchema
 >;
 export type RuntimeSourceChangeCandidateDiff = z.infer<
   typeof runtimeSourceChangeCandidateDiffSchema

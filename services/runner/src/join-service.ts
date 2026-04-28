@@ -67,6 +67,17 @@ export type RunnerAssignmentMaterializer = (input: {
 export type RunnerAssignmentRuntimeHandle = {
   cancelSession?(request: SessionCancellationRequestRecord): Promise<void>;
   clientUrl?: string;
+  publishSourceHistory?(request: {
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+    sourceHistoryId: string;
+  }): Promise<{
+    message?: string;
+    publicationState?: "failed" | "not_requested" | "published";
+    sourceHistoryId: string;
+  }>;
   runtimeContextPath: string;
   runtimeRoot?: string;
   stop(): Promise<void>;
@@ -225,6 +236,11 @@ export class RunnerJoinService {
 
     if (payload.eventType === "runtime.session.cancel") {
       await this.handleRuntimeSessionCancelCommand(payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.source_history.publish") {
+      await this.handleRuntimeSourceHistoryPublishCommand(payload);
     }
   }
 
@@ -369,6 +385,7 @@ export class RunnerJoinService {
         eventType:
           | "runtime.restart"
           | "runtime.session.cancel"
+          | "runtime.source_history.publish"
           | "runtime.start"
           | "runtime.stop";
       }
@@ -590,6 +607,69 @@ export class RunnerJoinService {
           error instanceof Error
             ? error.message
             : "Runtime session cancellation command failed."
+      });
+    }
+  }
+
+  private async handleRuntimeSourceHistoryPublishCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.source_history.publish" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime source-history publication command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.publishSourceHistory) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime source-history publication command cannot be applied because the assigned runtime is not running."
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.publishSourceHistory({
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        requestedAt: payload.issuedAt,
+        ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {}),
+        retryFailedPublication: payload.retryFailedPublication,
+        sourceHistoryId: payload.sourceHistoryId
+      });
+
+      if (result.publicationState === "failed") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Source history '${result.sourceHistoryId}' publication failed.`
+        });
+      }
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime source-history publication command failed."
       });
     }
   }

@@ -272,8 +272,10 @@ The repository now also contains the first real implementation baseline:
   source-history application for accepted candidates with signed
   `source_history.ref` projection, and
   runner-owned source-history publication that turns accepted source-history
-  commits into git commit artifacts with durable publication metadata, with
-  node-configured source mutation policy now able to require approved runtime
+  commits into git commit artifacts with durable publication metadata; explicit
+  operator publish/retry requests now travel as Host-signed
+  `runtime.source_history.publish` commands to the accepted runner assignment.
+  Node-configured source mutation policy is now able to require approved runtime
   approval ids before source application or source publication, while
   validating approval operation and concrete resource scope before accepting a
   supplied approval id, with a host/CLI/Studio operator decision path for
@@ -867,10 +869,10 @@ The current implementation-truth audit now lives in
   listed-file preview plus review, local source-history state, and first
   runner-owned primary source-history commit artifact publication plus bounded
   artifact history/diff/preview inspection; the next git gaps are runner-owned
-  publication retry, runner-owned source replay, protocol-owned artifact restore
-  or source-change proposal flows, non-primary publication targets, wiki
-  publication/promotion, richer source-history merge/reconcile workflows, and
-  explicit fallback or replication behavior, while the next deployment-grade gap is
+  source replay, protocol-owned artifact restore or source-change proposal
+  flows, non-primary publication targets, wiki publication/promotion, richer
+  source-history merge/reconcile workflows, and explicit fallback or
+  replication behavior, while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea
   volumes;
 - complete CLI parity where it adds real headless operational value;

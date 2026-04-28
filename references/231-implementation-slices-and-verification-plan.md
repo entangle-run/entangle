@@ -339,6 +339,10 @@ Current status:
 - the direct Host source-history publication mutation, host-client method, CLI
   `--publish` path, and Studio publish/retry action have been removed so Host
   observes source-history publication instead of owning the push;
+- explicit source-history publication and failed-publication retry now use a
+  Host-signed `runtime.source_history.publish` control command to the accepted
+  runner assignment; the runner performs the git publication from runner-owned
+  state and emits projection evidence;
 - the direct Host source-candidate apply mutation and source-history replay
   mutation/list surfaces have been removed from Host, host-client, CLI, and
   Studio; source application is now public only through signed User Node review
@@ -509,6 +513,7 @@ Implementation record:
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
+- [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
 
 Verification:
 

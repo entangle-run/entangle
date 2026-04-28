@@ -51,8 +51,12 @@ transitions including
 handoffs, coordination result/close, approval request/response, completion,
 cancellation, and failure paths. Host session cancellation now prefers a signed
 `runtime.session.cancel` control command to accepted runner assignments before
-falling back to local compatibility. The remaining deep runtime APIs still need
-to be moved off local file reads.
+falling back to local compatibility. Explicit source-history publication and
+failed-publication retry now use a signed `runtime.source_history.publish`
+control command to accepted runner assignments; Host then relies on assignment
+receipts plus `artifact.ref` and `source_history.ref` observations for outcome
+evidence. The remaining deep runtime APIs still need to be moved off local file
+reads.
 
 ## Target Model
 

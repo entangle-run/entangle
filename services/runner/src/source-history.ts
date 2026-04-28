@@ -814,15 +814,27 @@ export async function applyAcceptedSourceChangeCandidate(input: {
 export async function publishSourceHistoryToPrimaryGitTarget(input: {
   context: EffectiveRuntimeContext;
   history: SourceHistoryRecord;
+  reason?: string;
   requestedAt: string;
+  requestedBy?: string;
+  retryFailedPublication?: boolean;
   statePaths: RunnerStatePaths;
 }): Promise<SourceHistoryPublicationResult> {
   if (input.history.publication) {
-    return {
-      history: input.history,
-      published: false,
-      reason: `Source history '${input.history.sourceHistoryId}' already has publication metadata.`
-    };
+    const publicationState = input.history.publication.publication.state;
+    if (publicationState === "failed" && input.retryFailedPublication) {
+      // Retry below against the current primary target. The new publication
+      // metadata replaces the prior failed attempt if the command completes.
+    } else {
+      return {
+        history: input.history,
+        published: false,
+        reason:
+          publicationState === "failed"
+            ? `Source history '${input.history.sourceHistoryId}' already has failed publication metadata; retry is required.`
+            : `Source history '${input.history.sourceHistoryId}' already has publication metadata.`
+      };
+    }
   }
 
   if (input.context.policyContext.sourceMutation.publishRequiresApproval) {
@@ -895,8 +907,9 @@ export async function publishSourceHistoryToPrimaryGitTarget(input: {
           state: "not_requested"
         },
         requestedAt: input.requestedAt,
-        ...(input.history.appliedBy
-          ? { requestedBy: input.history.appliedBy }
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.requestedBy ?? input.history.appliedBy
+          ? { requestedBy: input.requestedBy ?? input.history.appliedBy }
           : {}),
         targetGitServiceRef: target.gitServiceRef,
         targetNamespace: target.namespace,

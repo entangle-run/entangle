@@ -452,6 +452,8 @@ export async function createConfiguredRunnerJoinService(
           cancelSession: async (request) => {
             await configured.service.requestSessionCancellation(request);
           },
+          publishSourceHistory: (request) =>
+            configured.service.requestSourceHistoryPublication(request),
           runtimeContextPath,
           runtimeRoot: startResult.runtimeRoot,
           stop: () => configured.service.stop()

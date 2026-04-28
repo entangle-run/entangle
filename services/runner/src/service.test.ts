@@ -6,6 +6,7 @@ import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import {
   entangleA2AMessageSchema,
   sessionRecordSchema,
+  sourceHistoryRecordSchema,
   type AgentEngineTurnRequest,
   type ApprovalRecord,
   type ConversationRecord,
@@ -35,6 +36,7 @@ import {
   writeConversationRecord,
   writeSessionCancellationRequestRecord,
   writeSourceChangeCandidateRecord,
+  writeSourceHistoryRecord,
   writeSessionRecord
 } from "./state-store.js";
 import {
@@ -76,6 +78,31 @@ function createDeferred<T>(): {
     reject,
     resolve
   };
+}
+
+function runGitFixtureCommand(input: {
+  args: string[];
+  cwd: string;
+  env?: NodeJS.ProcessEnv;
+}): string {
+  const result = spawnSync("git", input.args, {
+    cwd: input.cwd,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ...input.env
+    }
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `Git fixture command failed (${input.args.join(" ")}): ${
+        result.stderr.trim() || result.stdout.trim() || `exit ${result.status}`
+      }`
+    );
+  }
+
+  return result.stdout.trim();
 }
 
 afterEach(async () => {
@@ -1938,6 +1965,140 @@ describe("RunnerService", () => {
     expect(conversationRecord?.lastMessageType).toBe("source_change.review");
     expect(sessionRecord?.lastMessageId).toBe(sourceReviewMessageId);
     expect(sessionRecord?.lastMessageType).toBe("source_change.review");
+  });
+
+  it("publishes source history on runner-owned control requests and requires explicit failed retry", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const sourceBaseline = await prepareSourceChangeHarvest(runtimeContext);
+
+    if (sourceBaseline.kind !== "ready") {
+      throw new Error("Expected source change harvest baseline to be ready.");
+    }
+
+    await mkdir(path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src"), {
+      recursive: true
+    });
+    await writeFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src", "index.ts"),
+      "export const published = true;\n",
+      "utf8"
+    );
+    const sourceHarvest = await harvestSourceChanges(
+      runtimeContext,
+      sourceBaseline
+    );
+
+    if (!sourceHarvest.snapshot) {
+      throw new Error("Expected source change harvest to produce a snapshot.");
+    }
+
+    const sourceCommit = runGitFixtureCommand({
+      args: [
+        "--git-dir",
+        path.join(runtimeContext.workspace.runtimeRoot, "source-snapshot.git"),
+        "commit-tree",
+        sourceHarvest.snapshot.headTree,
+        "-m",
+        "Apply source-history-control-alpha"
+      ],
+      cwd: runtimeContext.workspace.sourceWorkspaceRoot!,
+      env: {
+        GIT_AUTHOR_EMAIL: "worker-it@entangle.invalid",
+        GIT_AUTHOR_NAME: "Worker IT",
+        GIT_COMMITTER_EMAIL: "worker-it@entangle.invalid",
+        GIT_COMMITTER_NAME: "Worker IT"
+      }
+    });
+    const failedHistory = sourceHistoryRecordSchema.parse({
+      appliedAt: "2026-04-24T10:07:00.000Z",
+      appliedBy: "reviewer-it",
+      baseTree: sourceHarvest.snapshot.baseTree,
+      branch: "entangle-source-history",
+      candidateId: "source-history-control-alpha",
+      commit: sourceCommit,
+      graphId: runtimeContext.binding.graphId,
+      graphRevisionId: runtimeContext.binding.graphRevisionId,
+      headTree: sourceHarvest.snapshot.headTree,
+      mode: "already_in_workspace",
+      nodeId: "worker-it",
+      publication: {
+        artifactId: "source-source-history-control-alpha",
+        branch: "entangle-source-history",
+        publication: {
+          lastAttemptAt: "2026-04-24T10:08:00.000Z",
+          lastError: "Remote was unavailable.",
+          state: "failed"
+        },
+        requestedAt: "2026-04-24T10:08:00.000Z",
+        requestedBy: "operator-main"
+      },
+      sourceChangeSummary: sourceHarvest.summary,
+      sourceHistoryId: "source-history-control-alpha",
+      turnId: "turn-source-history-control",
+      updatedAt: "2026-04-24T10:08:00.000Z"
+    });
+    await writeSourceHistoryRecord(statePaths, failedHistory);
+
+    const observedArtifacts: ObservedArtifactRecord[] = [];
+    const observedSourceHistories: SourceHistoryRecord[] = [];
+    const service = new RunnerService({
+      context: runtimeContext,
+      observationPublisher: {
+        publishArtifactRefObserved: (input) => {
+          observedArtifacts.push(input);
+          return Promise.resolve();
+        },
+        publishSourceHistoryRefObserved: (input) => {
+          observedSourceHistories.push(input.history);
+          return Promise.resolve();
+        }
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    await expect(
+      service.requestSourceHistoryPublication({
+        requestedAt: "2026-04-24T10:09:00.000Z",
+        requestedBy: "operator-main",
+        sourceHistoryId: "source-history-control-alpha"
+      })
+    ).rejects.toThrow("retry is required");
+
+    const result = await service.requestSourceHistoryPublication({
+      reason: "Retry after remote recovery.",
+      requestedAt: "2026-04-24T10:10:00.000Z",
+      requestedBy: "operator-main",
+      retryFailedPublication: true,
+      sourceHistoryId: "source-history-control-alpha"
+    });
+    const [historyRecord] = await listSourceHistoryRecords(statePaths);
+
+    expect(result).toMatchObject({
+      publicationState: "published",
+      sourceHistoryId: "source-history-control-alpha"
+    });
+    expect(historyRecord?.publication).toMatchObject({
+      reason: "Retry after remote recovery.",
+      requestedBy: "operator-main",
+      requestedAt: "2026-04-24T10:10:00.000Z",
+      publication: {
+        state: "published"
+      }
+    });
+    expect(observedArtifacts[0]?.artifactRecord.ref).toMatchObject({
+      artifactKind: "commit",
+      backend: "git",
+      status: "published"
+    });
+    expect(observedSourceHistories[0]?.publication?.publication.state).toBe(
+      "published"
+    );
   });
 
   it("applies approved approval responses and completes unblocked waiting sessions", async () => {
