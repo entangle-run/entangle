@@ -3477,6 +3477,41 @@ hostRuntimesCommand
   );
 
 hostRuntimesCommand
+  .command("source-history-replays")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option(
+    "--source-history-id <sourceHistoryId>",
+    "Filter replay records to one source history entry."
+  )
+  .description("List projected source history replay outcomes for a runtime.")
+  .action(
+    async (
+      nodeId: string,
+      options: { sourceHistoryId?: string },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      printJson(
+        await client.listRuntimeSourceHistoryReplays(nodeId, {
+          ...(options.sourceHistoryId
+            ? { sourceHistoryId: options.sourceHistoryId }
+            : {})
+        })
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-replay-get")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<replayId>", "Source history replay identifier.")
+  .description("Inspect one projected source history replay outcome.")
+  .action(async (nodeId: string, replayId: string, command: Command) => {
+    const client = createCliHostClient(command);
+    printJson(await client.getRuntimeSourceHistoryReplay(nodeId, replayId));
+  });
+
+hostRuntimesCommand
   .command("recovery")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .option("--limit <n>", "Maximum number of recovery records to return.", "50")

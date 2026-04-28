@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Added projected source-history replay outcomes
+
+Added typed Host projection records for runner-observed
+`source_history.replayed` outcomes. Host now exposes replay list/detail read
+APIs, the shared host-client and CLI can inspect replay outcomes, and Studio's
+Federation summary includes projected replay counts without reading
+runner-local replay files.
+
+Added
+`references/342-projected-source-history-replay-read-model-slice.md`.
+
 ## [2026-04-28] implementation | Added Studio source-history replay requests
 
 Added a Studio selected-runtime source-history replay form that calls the

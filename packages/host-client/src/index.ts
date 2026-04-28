@@ -63,6 +63,9 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishRequestSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReplayInspectionResponseSchema,
+  runtimeSourceHistoryReplayListQuerySchema,
+  runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -150,6 +153,9 @@ import {
   type RuntimeSourceHistoryListResponse,
   type RuntimeSourceHistoryPublishRequest,
   type RuntimeSourceHistoryPublishResponse,
+  type RuntimeSourceHistoryReplayInspectionResponse,
+  type RuntimeSourceHistoryReplayListQuery,
+  type RuntimeSourceHistoryReplayListResponse,
   type RuntimeSourceHistoryReplayRequest,
   type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
@@ -1124,6 +1130,35 @@ export function createHostClient(options: HostClientOptions) {
           `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}`
         ),
         runtimeSourceHistoryInspectionResponseSchema
+      );
+    },
+
+    async listRuntimeSourceHistoryReplays(
+      nodeId: string,
+      query: RuntimeSourceHistoryReplayListQuery = {}
+    ): Promise<RuntimeSourceHistoryReplayListResponse> {
+      const parsed = runtimeSourceHistoryReplayListQuerySchema.parse(query);
+      const url = new URL(`${baseUrl}/v1/runtimes/${nodeId}/source-history-replays`);
+
+      if (parsed.sourceHistoryId) {
+        url.searchParams.set("sourceHistoryId", parsed.sourceHistoryId);
+      }
+
+      return parseResponse(
+        await hostFetch(url.toString()),
+        runtimeSourceHistoryReplayListResponseSchema
+      );
+    },
+
+    async getRuntimeSourceHistoryReplay(
+      nodeId: string,
+      replayId: string
+    ): Promise<RuntimeSourceHistoryReplayInspectionResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history-replays/${replayId}`
+        ),
+        runtimeSourceHistoryReplayInspectionResponseSchema
       );
     },
 

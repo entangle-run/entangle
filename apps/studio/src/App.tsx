@@ -3102,6 +3102,10 @@ export function App() {
             <span>History refs</span>
           </div>
           <div>
+            <strong>{federationSummary.sourceHistoryReplayCount}</strong>
+            <span>History replays</span>
+          </div>
+          <div>
             <strong>{federationSummary.wikiRefCount}</strong>
             <span>Wiki refs</span>
           </div>

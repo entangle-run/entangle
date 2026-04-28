@@ -21,6 +21,7 @@ import {
   sourceChangeCandidateRecordSchema,
   sourceChangeCandidateStatusSchema,
   sourceHistoryRecordSchema,
+  sourceHistoryReplayRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 
@@ -148,6 +149,13 @@ export const sourceHistoryRefProjectionRecordSchema =
     sourceHistoryId: identifierSchema
   });
 
+export const sourceHistoryReplayProjectionRecordSchema =
+  runnerObservationProjectionBaseSchema.extend({
+    replay: sourceHistoryReplayRecordSchema,
+    replayId: identifierSchema,
+    sourceHistoryId: identifierSchema
+  });
+
 export const wikiRefProjectionRecordSchema =
   runnerObservationProjectionBaseSchema.extend({
     artifactId: identifierSchema,
@@ -169,6 +177,9 @@ export const hostProjectionSnapshotSchema = z.object({
   schemaVersion: z.literal("1"),
   sourceChangeRefs: z.array(sourceChangeRefProjectionRecordSchema).default([]),
   sourceHistoryRefs: z.array(sourceHistoryRefProjectionRecordSchema).default([]),
+  sourceHistoryReplays: z
+    .array(sourceHistoryReplayProjectionRecordSchema)
+    .default([]),
   userConversations: z
     .array(userConversationProjectionRecordSchema)
     .default([]),
@@ -201,6 +212,9 @@ export type SourceChangeRefProjectionRecord = z.infer<
 >;
 export type SourceHistoryRefProjectionRecord = z.infer<
   typeof sourceHistoryRefProjectionRecordSchema
+>;
+export type SourceHistoryReplayProjectionRecord = z.infer<
+  typeof sourceHistoryReplayProjectionRecordSchema
 >;
 export type WikiRefProjectionRecord = z.infer<
   typeof wikiRefProjectionRecordSchema

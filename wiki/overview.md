@@ -105,7 +105,9 @@ The most accurate current description is:
 - explicit source-history publication/retry and source-history replay are now
   Host-signed control commands to the accepted runner assignment, with the
   runner owning git publication or replay execution and emitting observation
-  evidence;
+  evidence; Host now projects `source_history.replayed` outcomes into typed
+  replay records for API, CLI, and Studio inspection without runner-local file
+  access;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -281,7 +283,8 @@ The repository now also contains the first real implementation baseline:
   `runtime.source_history.publish` commands to the accepted runner assignment,
   and explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment,
-  with both CLI and Studio source-history detail using that Host request path.
+  with both CLI and Studio source-history detail using that Host request path
+  and replay outcomes visible through Host projection.
   Node-configured source mutation policy is now able to require approved runtime
   approval ids before source application or source publication, while
   validating approval operation and concrete resource scope before accepting a

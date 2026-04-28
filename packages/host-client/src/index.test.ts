@@ -2719,6 +2719,83 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("inspects projected source history replay outcomes through the host surface", async () => {
+    const requests: Array<{ method?: string; url: string }> = [];
+    const replay = {
+      baseTree: "tree-base-alpha",
+      candidateId: "source-change-turn-alpha",
+      commit: "commit-alpha",
+      createdAt: "2026-04-24T00:04:00.000Z",
+      graphId: "team-alpha",
+      graphRevisionId: "team-alpha-20260424-000000",
+      headTree: "tree-head-alpha",
+      nodeId: "worker-it",
+      replayedFileCount: 1,
+      replayedPath: "/workspace/source",
+      replayId: "replay-source-history-alpha",
+      sourceHistoryId: "source-history-source-change-turn-alpha",
+      status: "replayed",
+      turnId: "turn-alpha",
+      updatedAt: "2026-04-24T00:04:00.000Z"
+    };
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          method: init?.method,
+          url
+        });
+
+        const body = url.includes("/source-history-replays/replay-")
+          ? { replay }
+          : { replays: [replay] };
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify(body),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.listRuntimeSourceHistoryReplays("worker-it", {
+        sourceHistoryId: "source-history-source-change-turn-alpha"
+      })
+    ).resolves.toMatchObject({
+      replays: [
+        {
+          replayId: "replay-source-history-alpha",
+          status: "replayed"
+        }
+      ]
+    });
+    await expect(
+      client.getRuntimeSourceHistoryReplay(
+        "worker-it",
+        "replay-source-history-alpha"
+      )
+    ).resolves.toMatchObject({
+      replay: {
+        sourceHistoryId: "source-history-source-change-turn-alpha"
+      }
+    });
+    expect(requests).toEqual([
+      {
+        method: undefined,
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/source-history-replays?sourceHistoryId=source-history-source-change-turn-alpha"
+      },
+      {
+        method: undefined,
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/source-history-replays/replay-source-history-alpha"
+      }
+    ]);
+  });
+
   it("posts runner-owned runtime source history publication requests", async () => {
     const requests: { body?: string; method?: string; url: string }[] = [];
     const client = createHostClient({

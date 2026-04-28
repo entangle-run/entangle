@@ -18,6 +18,8 @@ diff, package source admission, external principals, runtime lifecycle,
 runtime detail, sessions, approvals, turns, artifacts, memory, source
 candidates/history, projected wiki refs, recovery, event refresh, and
 federated source-history replay requests from selected source-history detail.
+Federation summary also includes the projected source-history replay outcome
+count.
 
 Missing surfaces:
 
@@ -166,7 +168,10 @@ Node.
   source-history record, and `host runtimes source-history-replay` as an
   operator request surface that asks the accepted runner to replay a concrete
   source-history record under runner-owned policy checks, instead of mutating
-  runner files from Host.
+  runner files from Host. CLI also exposes
+  `host runtimes source-history-replays` and
+  `host runtimes source-history-replay-get` for inspecting observed replay
+  outcomes from Host projection.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner
@@ -176,7 +181,8 @@ Node.
   User Node summary panel, transport health row, and first-pass assignment
   offer/revoke controls. Studio source-history detail now has a federated
   replay request form mirroring the CLI request path without direct workspace
-  mutation.
+  mutation, and the federation summary includes projected replay outcome
+  counts.
 - Add Studio User Node runtime visibility and User Client open action. The
   first projection-derived User Node runtime summaries and `clientUrl` open
   actions are implemented; richer reassignment and health panels remain open.

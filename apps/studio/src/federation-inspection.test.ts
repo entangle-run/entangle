@@ -108,6 +108,7 @@ const projection: HostProjectionSnapshot = {
   schemaVersion: "1",
   sourceChangeRefs: [],
   sourceHistoryRefs: [],
+  sourceHistoryReplays: [],
   userConversations: [],
   wikiRefs: []
 };
@@ -183,7 +184,8 @@ describe("Studio federation inspection helpers", () => {
       assignmentReceiptCount: 1,
       freshness: "current",
       runtimeCount: 2,
-      runningRuntimeCount: 2
+      runningRuntimeCount: 2,
+      sourceHistoryReplayCount: 0
     });
   });
 

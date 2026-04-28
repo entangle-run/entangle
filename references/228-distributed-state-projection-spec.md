@@ -58,8 +58,11 @@ receipts plus `artifact.ref` and `source_history.ref` observations for outcome
 evidence. Explicit source-history replay now uses a signed
 `runtime.source_history.replay` control command to the accepted runner
 assignment; the runner persists replay evidence locally and emits
-`source_history.replayed` observations for Host projection and audit. The
-remaining deep runtime APIs still need to be moved off local file reads.
+`source_history.replayed` observations for Host projection and audit. Host now
+stores those observations as typed `sourceHistoryReplays`, exposes
+source-history replay list/detail read APIs, and lets CLI/Studio summarize
+replay outcomes without reading runner-local replay files. The remaining deep
+runtime APIs still need to be moved off local file reads.
 
 ## Target Model
 
@@ -102,6 +105,9 @@ and refs so Host can inspect global state without reading runner disk.
   history, wiki refs, and transport health.
 - Continue defining projection record schemas for sessions, conversations,
   turns, approvals, source history, and transport health.
+- Keep source-history replay outcomes as projected records derived from
+  `source_history.replayed`, separate from replay request/control command
+  acceptance.
 - Continue implementing Host observation ingestion with signature verification
   and event-id replay.
 - Replace Host APIs that read `runtimeRoot` with projection-backed APIs.
@@ -129,6 +135,8 @@ and refs so Host can inspect global state without reading runner disk.
   artifact records with explicit unavailable reasons when no backend checkout
   is attached; deeper artifact history computation, wiki publication, and
   mutation surfaces still need projected or backend-resolved equivalents.
+- Treat `source_history.replayed` as the signed runner replay outcome feed for
+  source-history replay list/detail read APIs.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn

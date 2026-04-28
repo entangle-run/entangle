@@ -169,6 +169,8 @@ import {
   sourceHistoryReplayedObservationPayloadSchema,
   sourceHistoryRefProjectionRecordSchema,
   type SourceHistoryRefProjectionRecord,
+  sourceHistoryReplayProjectionRecordSchema,
+  type SourceHistoryReplayProjectionRecord,
   sessionUpdatedObservationPayloadSchema,
   turnUpdatedObservationPayloadSchema,
   entangleA2AApprovalRequestMetadataSchema,
@@ -207,6 +209,7 @@ import {
   sessionRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
+  type SourceHistoryReplayRecord,
   runtimeAgentRuntimeInspectionSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
@@ -227,6 +230,8 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryReplayInspectionResponseSchema,
+  runtimeSourceHistoryReplayListResponseSchema,
   type RuntimeRecoveryControllerRecord,
   type RuntimeRecoveryPolicy,
   type RuntimeRecoveryPolicyRecord,
@@ -260,6 +265,8 @@ import {
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeSourceHistoryInspectionResponse,
   type RuntimeSourceHistoryListResponse,
+  type RuntimeSourceHistoryReplayInspectionResponse,
+  type RuntimeSourceHistoryReplayListResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   stateLayoutInspectionSchema,
@@ -388,6 +395,10 @@ const observedSourceChangeRefsRoot = path.join(
 const observedSourceHistoryRefsRoot = path.join(
   observedRoot,
   "source-history-refs"
+);
+const observedSourceHistoryReplaysRoot = path.join(
+  observedRoot,
+  "source-history-replays"
 );
 const observedWikiRefsRoot = path.join(observedRoot, "wiki-refs");
 const runtimeRecoveryPoliciesRoot = path.join(
@@ -2479,6 +2490,16 @@ function observedSourceHistoryRefRecordPath(input: {
   );
 }
 
+function observedSourceHistoryReplayRecordPath(input: {
+  nodeId: string;
+  replayId: string;
+}): string {
+  return path.join(
+    observedSourceHistoryReplaysRoot,
+    `${input.nodeId}--${input.replayId}.json`
+  );
+}
+
 function observedWikiRefRecordPath(input: {
   artifactId: string;
   nodeId: string;
@@ -2955,6 +2976,28 @@ export async function recordSourceHistoryReplayedObservation(
   const observation = sourceHistoryReplayedObservationPayloadSchema.parse(input);
   await assertRegisteredObservationRunner(observation);
   const { replay } = observation;
+  const projection = sourceHistoryReplayProjectionRecordSchema.parse({
+    graphId: observation.graphId,
+    hostAuthorityPubkey: observation.hostAuthorityPubkey,
+    nodeId: observation.nodeId,
+    projection: {
+      source: "observation_event",
+      updatedAt: observation.observedAt
+    },
+    replay,
+    replayId: observation.replayId,
+    runnerId: observation.runnerId,
+    runnerPubkey: observation.runnerPubkey,
+    sourceHistoryId: observation.sourceHistoryId
+  });
+
+  await writeJsonFileIfChanged(
+    observedSourceHistoryReplayRecordPath({
+      nodeId: projection.nodeId,
+      replayId: projection.replayId
+    }),
+    projection
+  );
 
   return appendHostEvent({
     ...(replay.approvalId ? { approvalId: replay.approvalId } : {}),
@@ -3390,6 +3433,30 @@ async function listSourceHistoryRefProjectionRecords(): Promise<
   );
 }
 
+async function listSourceHistoryReplayProjectionRecords(): Promise<
+  SourceHistoryReplayProjectionRecord[]
+> {
+  if (!(await pathExists(observedSourceHistoryReplaysRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedSourceHistoryReplaysRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        sourceHistoryReplayProjectionRecordSchema.parse(
+          await readJsonFile(path.join(observedSourceHistoryReplaysRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.replay.updatedAt}--${left.replayId}`.localeCompare(
+      `${right.nodeId}--${right.replay.updatedAt}--${right.replayId}`
+    )
+  );
+}
+
 async function listWikiRefProjectionRecords(): Promise<WikiRefProjectionRecord[]> {
   if (!(await pathExists(observedWikiRefsRoot))) {
     return [];
@@ -3640,6 +3707,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     artifactRefs,
     sourceChangeRefs,
     sourceHistoryRefs,
+    sourceHistoryReplays,
     userConversations,
     wikiRefs
   ] = await Promise.all([
@@ -3649,6 +3717,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     listArtifactRefProjectionRecords(),
     listSourceChangeRefProjectionRecords(),
     listSourceHistoryRefProjectionRecords(),
+    listSourceHistoryReplayProjectionRecords(),
     listUserConversationProjectionRecords(),
     listWikiRefProjectionRecords()
   ]);
@@ -3706,6 +3775,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     schemaVersion: "1",
     sourceChangeRefs,
     sourceHistoryRefs,
+    sourceHistoryReplays,
     userConversations,
     wikiRefs
   });
@@ -6229,6 +6299,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(observedArtifactRefsRoot),
     ensureDirectory(observedSourceChangeRefsRoot),
     ensureDirectory(observedSourceHistoryRefsRoot),
+    ensureDirectory(observedSourceHistoryReplaysRoot),
     ensureDirectory(observedWikiRefsRoot),
     ensureDirectory(observedRunnerHeartbeatRoot),
     ensureDirectory(runtimeRecoveryHistoryRoot),
@@ -9631,6 +9702,35 @@ async function listProjectedRuntimeSourceHistoryRecords(
     );
 }
 
+async function listProjectedRuntimeSourceHistoryReplayRecords(input: {
+  nodeId: string;
+  sourceHistoryId?: string | undefined;
+}): Promise<SourceHistoryReplayRecord[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return [];
+  }
+
+  const records = await listSourceHistoryReplayProjectionRecords();
+
+  return records
+    .filter(
+      (record) =>
+        record.graphId === graph.graphId &&
+        record.nodeId === input.nodeId &&
+        (!input.sourceHistoryId ||
+          record.sourceHistoryId === input.sourceHistoryId)
+    )
+    .map((record) => record.replay)
+    .sort((left, right) => {
+      const updatedOrder = right.updatedAt.localeCompare(left.updatedAt);
+      return updatedOrder !== 0
+        ? updatedOrder
+        : left.replayId.localeCompare(right.replayId);
+    });
+}
+
 export async function listRuntimeSourceChangeCandidates(
   nodeId: string
 ): Promise<RuntimeSourceChangeCandidateListResponse | null> {
@@ -9728,6 +9828,43 @@ export async function getRuntimeSourceHistoryInspection(input: {
 
   return entry
     ? runtimeSourceHistoryInspectionResponseSchema.parse({ entry })
+    : null;
+}
+
+export async function listRuntimeSourceHistoryReplays(input: {
+  nodeId: string;
+  sourceHistoryId?: string | undefined;
+}): Promise<RuntimeSourceHistoryReplayListResponse | null> {
+  const inspection = await getRuntimeInspection(input.nodeId);
+  const replays = await listProjectedRuntimeSourceHistoryReplayRecords(input);
+
+  if (!inspection && replays.length === 0) {
+    return null;
+  }
+
+  return runtimeSourceHistoryReplayListResponseSchema.parse({
+    replays
+  });
+}
+
+export async function getRuntimeSourceHistoryReplayInspection(input: {
+  nodeId: string;
+  replayId: string;
+}): Promise<RuntimeSourceHistoryReplayInspectionResponse | null> {
+  const replays = await listRuntimeSourceHistoryReplays({
+    nodeId: input.nodeId
+  });
+
+  if (!replays) {
+    return null;
+  }
+
+  const replay = replays.replays.find(
+    (candidate) => candidate.replayId === input.replayId
+  );
+
+  return replay
+    ? runtimeSourceHistoryReplayInspectionResponseSchema.parse({ replay })
     : null;
 }
 

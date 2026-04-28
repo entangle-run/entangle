@@ -959,6 +959,37 @@ describe("federated runtime contracts", () => {
           sourceHistoryId: "source-history-candidate-alpha"
         }
       ],
+      sourceHistoryReplays: [
+        {
+          graphId: "team-alpha",
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          projection,
+          replay: {
+            approvalId: "approval-source-history-replay-alpha",
+            baseTree: "tree-base-alpha",
+            candidateId: "candidate-alpha",
+            commit: "commit-source-history-alpha",
+            createdAt: "2026-04-26T12:02:00.000Z",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-rev-1",
+            headTree: "tree-head-alpha",
+            nodeId: "worker-it",
+            replayedBy: "operator-main",
+            replayedFileCount: 1,
+            replayedPath: "/workspace/source",
+            replayId: "replay-source-history-alpha",
+            sourceHistoryId: "source-history-candidate-alpha",
+            status: "replayed",
+            turnId: "turn-alpha",
+            updatedAt: "2026-04-26T12:02:00.000Z"
+          },
+          replayId: "replay-source-history-alpha",
+          runnerId: "runner-alpha",
+          runnerPubkey,
+          sourceHistoryId: "source-history-candidate-alpha"
+        }
+      ],
       userConversations: [
         {
           conversationId: "conv-alpha",
@@ -1009,6 +1040,7 @@ describe("federated runtime contracts", () => {
     expect(snapshot.sourceHistoryRefs[0]?.sourceHistoryId).toBe(
       "source-history-candidate-alpha"
     );
+    expect(snapshot.sourceHistoryReplays[0]?.replay.status).toBe("replayed");
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
     expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");
     expect(snapshot.wikiRefs[0]?.artifactPreview?.available).toBe(true);

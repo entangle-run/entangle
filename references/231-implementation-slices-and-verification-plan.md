@@ -265,6 +265,7 @@ Implementation record:
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
+- [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 
 Verification:
 
@@ -348,6 +349,10 @@ Current status:
   assignment; the runner validates source-application approval policy, refuses
   diverged workspace trees, persists runner-local replay records, and emits
   `source_history.replayed` evidence;
+- `source_history.replayed` evidence is now reduced into typed Host projection
+  records exposed through `sourceHistoryReplays`, Host replay list/detail APIs,
+  host-client, CLI replay inspection commands, and Studio federation summary
+  counts without Host-readable runner files;
 - the direct Host source-candidate apply mutation and previous direct
   source-history replay mutation/list surfaces have been removed from Host,
   host-client, CLI, and Studio; source application is now public only through
@@ -522,6 +527,7 @@ Implementation record:
 - [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
 - [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
+- [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 
 Verification:
 
@@ -595,8 +601,10 @@ CLI projection summaries now include assignment receipt counts, and Studio
 renders recent projected assignment receipt rows near the assignment/runtime
 operator panel. Studio selected-runtime source-history detail now exposes the
 federated replay request path through Host, matching the CLI
-`host runtimes source-history-replay` command. A richer per-assignment detail
-timeline remains follow-up work.
+`host runtimes source-history-replay` command. CLI can now inspect projected
+replay outcomes through source-history replay list/detail commands, and Studio
+summarizes projected replay outcome counts in the Federation panel. A richer
+per-assignment detail timeline remains follow-up work.
 
 ### Slice 13: Product Naming Migration
 

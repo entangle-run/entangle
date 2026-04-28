@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  artifactPublicationSchema,
-  artifactRecordSchema
-} from "../artifacts/artifact-ref.js";
+import { artifactRecordSchema } from "../artifacts/artifact-ref.js";
 import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
 import {
   nostrPublicKeySchema,
@@ -35,6 +32,7 @@ import {
   runnerTurnRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
+  sourceHistoryReplayRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 
@@ -356,6 +354,18 @@ export const runtimeSourceHistoryInspectionResponseSchema = z.object({
   entry: sourceHistoryRecordSchema
 });
 
+export const runtimeSourceHistoryReplayListQuerySchema = z.object({
+  sourceHistoryId: identifierSchema.optional()
+});
+
+export const runtimeSourceHistoryReplayListResponseSchema = z.object({
+  replays: z.array(sourceHistoryReplayRecordSchema)
+});
+
+export const runtimeSourceHistoryReplayInspectionResponseSchema = z.object({
+  replay: sourceHistoryReplayRecordSchema
+});
+
 export const runtimeSourceHistoryPublishRequestSchema = z.object({
   reason: nonEmptyStringSchema.optional(),
   requestedBy: identifierSchema.optional(),
@@ -519,6 +529,15 @@ export type RuntimeSourceHistoryListResponse = z.infer<
 >;
 export type RuntimeSourceHistoryInspectionResponse = z.infer<
   typeof runtimeSourceHistoryInspectionResponseSchema
+>;
+export type RuntimeSourceHistoryReplayListQuery = z.input<
+  typeof runtimeSourceHistoryReplayListQuerySchema
+>;
+export type RuntimeSourceHistoryReplayListResponse = z.infer<
+  typeof runtimeSourceHistoryReplayListResponseSchema
+>;
+export type RuntimeSourceHistoryReplayInspectionResponse = z.infer<
+  typeof runtimeSourceHistoryReplayInspectionResponseSchema
 >;
 export type RuntimeSourceHistoryPublishRequest = z.input<
   typeof runtimeSourceHistoryPublishRequestSchema

@@ -70,6 +70,7 @@ const projection: HostProjectionSnapshot = {
   schemaVersion: "1",
   sourceChangeRefs: [],
   sourceHistoryRefs: [],
+  sourceHistoryReplays: [],
   userConversations: [
     {
       conversationId: "conversation-alpha",
@@ -114,6 +115,7 @@ describe("projection CLI output", () => {
       failedRuntimeCount: 0,
       runtimeCount: 2,
       runningRuntimeCount: 1,
+      sourceHistoryReplayCount: 0,
       userConversationCount: 1,
       runtimes: [
         {

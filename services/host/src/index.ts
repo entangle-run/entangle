@@ -80,6 +80,9 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishRequestSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReplayInspectionResponseSchema,
+  runtimeSourceHistoryReplayListQuerySchema,
+  runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -135,6 +138,7 @@ import {
   getRuntimeSourceChangeCandidateFilePreview,
   getRuntimeSourceChangeCandidateInspection,
   getRuntimeSourceHistoryInspection,
+  getRuntimeSourceHistoryReplayInspection,
   getRuntimeTurnInspection,
   getUserNodeConversation,
   getUserNodeIdentity,
@@ -146,6 +150,7 @@ import {
   listRuntimeApprovals,
   listRuntimeSourceChangeCandidates,
   listRuntimeSourceHistory,
+  listRuntimeSourceHistoryReplays,
   listRuntimeTurns,
   listHostEvents,
   getCatalogInspection,
@@ -2404,6 +2409,86 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
     return runtimeSourceHistoryListResponseSchema.parse(history);
   });
+
+  server.get(
+    "/v1/runtimes/:nodeId/source-history-replays",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const query = parseRequestInput(
+        runtimeSourceHistoryReplayListQuerySchema,
+        request.query,
+        {
+          detailsKey: "queryIssues",
+          message:
+            "Query parameters did not match the expected source-history replay list schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const replays = await listRuntimeSourceHistoryReplays({
+        nodeId: params.nodeId,
+        ...(query.sourceHistoryId
+          ? { sourceHistoryId: query.sourceHistoryId }
+          : {})
+      });
+
+      if (!replays) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            inspection.reason ??
+            `Runtime '${params.nodeId}' does not currently have replay projection state.`,
+          statusCode: 409
+        });
+      }
+
+      return runtimeSourceHistoryReplayListResponseSchema.parse(replays);
+    }
+  );
+
+  server.get(
+    "/v1/runtimes/:nodeId/source-history-replays/:replayId",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string; replayId: string };
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const replayInspection = await getRuntimeSourceHistoryReplayInspection({
+        nodeId: params.nodeId,
+        replayId: params.replayId
+      });
+
+      if (!replayInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source history replay '${params.replayId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      return runtimeSourceHistoryReplayInspectionResponseSchema.parse(
+        replayInspection
+      );
+    }
+  );
 
   server.get(
     "/v1/runtimes/:nodeId/source-history/:sourceHistoryId",

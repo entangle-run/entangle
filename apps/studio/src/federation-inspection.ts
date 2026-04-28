@@ -17,6 +17,7 @@ export type FederationProjectionSummary = {
   runnerCount: number;
   sourceChangeRefCount: number;
   sourceHistoryRefCount: number;
+  sourceHistoryReplayCount: number;
   userConversationCount: number;
   wikiRefCount: number;
 };
@@ -54,6 +55,7 @@ export function summarizeFederationProjection(
     runnerCount: projection?.runners.length ?? 0,
     sourceChangeRefCount: projection?.sourceChangeRefs.length ?? 0,
     sourceHistoryRefCount: projection?.sourceHistoryRefs.length ?? 0,
+    sourceHistoryReplayCount: projection?.sourceHistoryReplays.length ?? 0,
     userConversationCount: projection?.userConversations.length ?? 0,
     wikiRefCount: projection?.wikiRefs.length ?? 0
   };

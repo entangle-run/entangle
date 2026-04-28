@@ -68,6 +68,8 @@ import {
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReplayInspectionResponseSchema,
+  runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
@@ -1695,6 +1697,7 @@ describe("buildHostServer", () => {
           recordRunnerHello,
           recordSourceChangeRefObservation,
           recordSourceHistoryRefObservation,
+          recordSourceHistoryReplayedObservation,
           recordWikiRefObservation
         }
       ] = await Promise.all([import("./state.js")]);
@@ -1848,6 +1851,38 @@ describe("buildHostServer", () => {
         runnerPubkey,
         sourceHistoryId: "source-history-candidate-alpha"
       });
+      await recordSourceHistoryReplayedObservation({
+        eventType: "source_history.replayed",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        replay: {
+          approvalId: "approval-source-history-replay-alpha",
+          baseTree: "tree-base-alpha",
+          candidateId: "candidate-alpha",
+          commit: "commit-source-history-alpha",
+          createdAt: observedAt,
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-20260420-000000",
+          headTree: "tree-head-alpha",
+          nodeId: "worker-it",
+          replayedBy: "operator-main",
+          replayedFileCount: 1,
+          replayedPath: "/workspace/source",
+          replayId: "replay-source-history-alpha",
+          sourceHistoryId: "source-history-candidate-alpha",
+          status: "replayed",
+          turnId: "turn-alpha",
+          updatedAt: observedAt
+        },
+        replayId: "replay-source-history-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-candidate-alpha",
+        status: "replayed"
+      });
       await recordWikiRefObservation({
         artifactPreview: {
           available: true,
@@ -1918,6 +1953,15 @@ describe("buildHostServer", () => {
           commit: "commit-source-history-alpha"
         },
         nodeId: "worker-it",
+        sourceHistoryId: "source-history-candidate-alpha"
+      });
+      expect(projection.sourceHistoryReplays[0]).toMatchObject({
+        replay: {
+          replayId: "replay-source-history-alpha",
+          sourceHistoryId: "source-history-candidate-alpha",
+          status: "replayed"
+        },
+        replayId: "replay-source-history-alpha",
         sourceHistoryId: "source-history-candidate-alpha"
       });
       expect(projection.wikiRefs[0]).toMatchObject({
@@ -2076,6 +2120,34 @@ describe("buildHostServer", () => {
       ).toEqual({
         entry: projectedSourceHistory
       });
+
+      const projectedSourceHistoryReplayResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-history-replays?sourceHistoryId=" +
+          "source-history-candidate-alpha"
+      });
+      expect(projectedSourceHistoryReplayResponse.statusCode).toBe(200);
+      const projectedSourceHistoryReplays =
+        runtimeSourceHistoryReplayListResponseSchema.parse(
+          projectedSourceHistoryReplayResponse.json()
+        );
+      expect(projectedSourceHistoryReplays.replays[0]?.replayId).toBe(
+        "replay-source-history-alpha"
+      );
+
+      const projectedSourceHistoryReplayEntryResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-history-replays/" +
+          "replay-source-history-alpha"
+      });
+      expect(projectedSourceHistoryReplayEntryResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryReplayInspectionResponseSchema.parse(
+          projectedSourceHistoryReplayEntryResponse.json()
+        ).replay.status
+      ).toBe("replayed");
 
       const projectedArtifactsResponse = await server.inject({
         method: "GET",

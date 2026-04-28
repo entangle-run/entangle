@@ -248,7 +248,10 @@ This repository currently contains:
   and explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
-  history detail using that Host request path. Node-configured source mutation
+  history detail using that Host request path and with observed
+  `source_history.replayed` outcomes now projected through Host API,
+  host-client, CLI replay inspection commands, and Studio federation summary
+  counts. Node-configured source mutation
   policy is still able to require approved runtime
   approval ids before source application or source publication, and with
   accepted approval ids persisted on source records after validating approval
@@ -261,7 +264,8 @@ This repository currently contains:
   concrete source-history records through the observe protocol, with the runner
   also publishing accepted source-history records to the node's primary git
   target when policy allows it or when it receives an explicit federated
-  source-history publish/retry command, plus runner-owned local git snapshots of
+  source-history publish/retry command, plus replay outcome records from
+  `source_history.replayed` observations, plus runner-owned local git snapshots of
   `memory/wiki` into each node's
   `wiki-repository` workspace after completed turns, with durable sync outcomes
   carried through runner turns, host events, CLI output, and Studio turn
