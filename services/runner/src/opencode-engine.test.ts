@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { PassThrough } from "node:stream";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import {
   agentEngineTurnRequestSchema,
@@ -161,6 +161,9 @@ async function waitForMockSpawnCallCount(
 }
 
 afterEach(async () => {
+  delete process.env.OPENCODE_SERVER_PASSWORD;
+  delete process.env.OPENCODE_SERVER_USERNAME;
+  vi.unstubAllGlobals();
   await cleanupRuntimeFixtures();
 });
 
@@ -300,6 +303,138 @@ describe("OpenCode runner engine adapter", () => {
     expect(mock.calls[1]!.readStdin()).toContain(
       "Review the current workspace"
     );
+  });
+
+  it("probes attached OpenCode server health before running a turn", async () => {
+    const fixture = await createRuntimeFixture();
+    const baseUrl = "http://127.0.0.1:4567";
+    const context = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        engineProfile: {
+          ...fixture.context.agentRuntimeContext.engineProfile,
+          baseUrl
+        }
+      }
+    };
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: "Completed through attached server."
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const healthRequests: Array<{
+      authorization?: string | undefined;
+      url: string;
+    }> = [];
+    process.env.OPENCODE_SERVER_USERNAME = "entangle";
+    process.env.OPENCODE_SERVER_PASSWORD = "server-secret";
+    vi.stubGlobal(
+      "fetch",
+      (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1]
+      ) => {
+        const url =
+          input instanceof URL
+            ? input.toString()
+            : typeof input === "string"
+              ? input
+              : input.url;
+        const headers = new Headers(init?.headers);
+
+        healthRequests.push({
+          authorization: headers.get("authorization") ?? undefined,
+          url
+        });
+
+        return new Response(
+          JSON.stringify({
+            healthy: true,
+            version: "1.14.20"
+          }),
+          {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          }
+        );
+      }
+    );
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: context,
+      spawn: mock.spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest());
+
+    expect(result).toMatchObject({
+      assistantMessages: ["Completed through attached server."],
+      engineVersion: "0.10.0; server 1.14.20"
+    });
+    expect(healthRequests).toEqual([
+      {
+        authorization: `Basic ${Buffer.from("entangle:server-secret").toString(
+          "base64"
+        )}`,
+        url: "http://127.0.0.1:4567/global/health"
+      }
+    ]);
+    expect(mock.calls).toHaveLength(2);
+    expect(mock.calls[1]!.args).toEqual(
+      expect.arrayContaining(["--attach", baseUrl])
+    );
+  });
+
+  it("fails before launching OpenCode run when the attached server is unhealthy", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        engineProfile: {
+          ...fixture.context.agentRuntimeContext.engineProfile,
+          baseUrl: "http://127.0.0.1:4567"
+        }
+      }
+    };
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        }
+      ]
+    });
+    vi.stubGlobal("fetch", () => {
+      return new Response(JSON.stringify({ healthy: false }), {
+        status: 503
+      });
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: context,
+      spawn: mock.spawn
+    });
+
+    await expect(engine.executeTurn(buildTurnRequest())).rejects.toMatchObject({
+      classification: "provider_unavailable",
+      name: AgentEngineExecutionError.name
+    });
+    expect(mock.calls).toHaveLength(1);
+    expect(mock.calls[0]!.args).toEqual(["--version"]);
   });
 
   it("kills the OpenCode run process when the turn abort signal is cancelled", async () => {

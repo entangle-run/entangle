@@ -3555,3 +3555,14 @@ mutation with `reviewedBy` set to the running User Node id. This gives the
 human-node client a concrete source review action without making Studio the
 user-node UI and without conflating review with source application or
 publication.
+
+## [2026-04-28] implementation | Added OpenCode server health probe
+
+Added `references/289-opencode-server-health-probe-slice.md`. OpenCode engine
+profiles with `baseUrl` now probe the attached server's `/global/health`
+endpoint before launching `opencode run --attach`.
+
+The probe reuses OpenCode server Basic auth environment variables when present,
+records combined CLI/server version evidence, and fails as
+`provider_unavailable` before the run process starts if the server is
+unreachable or unhealthy.

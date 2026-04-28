@@ -662,6 +662,43 @@ function firstNonEmptyLine(value: string): string | undefined {
     .find((line) => line.length > 0);
 }
 
+function buildOpenCodeServerHeaders(
+  env: NodeJS.ProcessEnv
+): Record<string, string> {
+  const password = env.OPENCODE_SERVER_PASSWORD?.trim();
+
+  if (!password) {
+    return {};
+  }
+
+  const username = env.OPENCODE_SERVER_USERNAME?.trim() || "opencode";
+  const token = Buffer.from(`${username}:${password}`).toString("base64");
+
+  return {
+    authorization: `Basic ${token}`
+  };
+}
+
+function formatOpenCodeEngineVersion(input: {
+  cliVersion?: string | undefined;
+  serverVersion?: string | undefined;
+}): string | undefined {
+  if (input.cliVersion && input.serverVersion) {
+    return truncate(
+      `${input.cliVersion}; server ${input.serverVersion}`,
+      maxEngineVersionCharacters
+    );
+  }
+
+  if (input.cliVersion) {
+    return input.cliVersion;
+  }
+
+  return input.serverVersion
+    ? truncate(`server ${input.serverVersion}`, maxEngineVersionCharacters)
+    : undefined;
+}
+
 async function waitForOpenCodeProcess(input: {
   abortSignal?: AbortSignal;
   child: OpenCodeProcess;
@@ -811,6 +848,65 @@ async function probeOpenCodeVersion(input: {
   return version ? truncate(version, maxEngineVersionCharacters) : undefined;
 }
 
+async function probeOpenCodeServerHealth(input: {
+  abortSignal?: AbortSignal;
+  baseUrl: string;
+  env: NodeJS.ProcessEnv;
+  nodeId: string;
+  timeoutMs: number;
+}): Promise<string | undefined> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs);
+  const abortHandler = (): void => controller.abort();
+
+  input.abortSignal?.addEventListener("abort", abortHandler, { once: true });
+
+  try {
+    const response = await fetch(new URL("/global/health", input.baseUrl), {
+      headers: buildOpenCodeServerHeaders(input.env),
+      signal: controller.signal
+    });
+    const body = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${body}`);
+    }
+
+    const health = JSON.parse(body) as {
+      healthy?: unknown;
+      version?: unknown;
+    };
+
+    if (health.healthy !== true) {
+      throw new Error("OpenCode server did not report healthy: true.");
+    }
+
+    return typeof health.version === "string"
+      ? truncate(health.version, maxEngineVersionCharacters)
+      : undefined;
+  } catch (error) {
+    if (input.abortSignal?.aborted) {
+      throw new AgentEngineExecutionError(
+        `OpenCode server health probe was cancelled for node '${input.nodeId}'.`,
+        {
+          classification: "cancelled"
+        }
+      );
+    }
+
+    throw new AgentEngineExecutionError(
+      `OpenCode server '${input.baseUrl}' is not reachable or healthy for node '${input.nodeId}'.`,
+      {
+        cause: error,
+        classification: "provider_unavailable"
+      }
+    );
+  } finally {
+    clearTimeout(timeout);
+    input.abortSignal?.removeEventListener("abort", abortHandler);
+  }
+}
+
 function buildOpenCodeArgs(input: {
   context: EffectiveRuntimeContext;
   request: AgentEngineTurnRequest;
@@ -908,7 +1004,7 @@ export function createOpenCodeAgentEngine(input: {
         context: input.runtimeContext,
         runtimePaths
       });
-      const engineVersion = await probeOpenCodeVersion({
+      const cliVersion = await probeOpenCodeVersion({
         env,
         executable,
         nodeId: normalizedRequest.nodeId,
@@ -916,6 +1012,21 @@ export function createOpenCodeAgentEngine(input: {
         timeoutMs: processTimeoutMs,
         ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
         workspace
+      });
+      const serverVersion = profile.baseUrl
+        ? await probeOpenCodeServerHealth({
+            baseUrl: profile.baseUrl,
+            env,
+            nodeId: normalizedRequest.nodeId,
+            timeoutMs: processTimeoutMs,
+            ...(options?.abortSignal
+              ? { abortSignal: options.abortSignal }
+              : {})
+          })
+        : undefined;
+      const engineVersion = formatOpenCodeEngineVersion({
+        cliVersion,
+        serverVersion
       });
       const child = spawn(executable, args, {
         cwd: workspace,

@@ -89,6 +89,7 @@ same-machine slice records.
 - [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
 - [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
 - [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
+- [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
 
 ## Audited Scope
 
@@ -167,6 +168,10 @@ The repository is not fully federated:
   including tool titles, redacted input summaries, output summaries, and
   durations, while keeping OpenCode-specific event payloads behind the engine
   adapter boundary;
+- OpenCode-backed runner turns now probe `/global/health` before attaching to
+  a configured OpenCode server, include Basic auth from runner environment
+  when configured, and record combined CLI/server version evidence while still
+  executing through the generic adapter boundary;
 - `source_change.ref` observations and Host projection records now carry the
   runner's bounded `sourceChangeSummary`, so source candidates can be listed
   and triaged from projection without reading runner-local detail files;

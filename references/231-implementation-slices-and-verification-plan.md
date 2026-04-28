@@ -324,6 +324,9 @@ Implementation record:
 - [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
   adds bounded generic tool evidence from OpenCode JSON events while preserving
   the adapter boundary.
+- [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
+  verifies attached OpenCode server health and version before launching
+  `opencode run --attach`.
 
 Verification:
 
@@ -332,6 +335,7 @@ Verification:
 - cancellation tests;
 - source/artifact/wiki observation tests;
 - bounded tool evidence contract and presentation tests.
+- attached-server health and auth probe tests.
 
 ### Slice 12: Studio And CLI Federation Surfaces
 

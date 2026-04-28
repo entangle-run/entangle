@@ -370,9 +370,12 @@ After the graph/user runtime path is usable, deepen the OpenCode integration:
 Status: bounded generic tool evidence is partially implemented in
 `286-opencode-tool-evidence-slice.md`. OpenCode JSON `tool_use` events now
 populate tool title, redacted input summary, output summary, duration, and
-call id fields on the generic engine outcome contract. Long-running server
-session attachment, live event streaming before turn completion, and a true
-permission bridge remain future adapter work.
+call id fields on the generic engine outcome contract. Attached OpenCode
+server profiles now also probe `/global/health` before `opencode run --attach`
+and preserve combined CLI/server version evidence through
+`289-opencode-server-health-probe-slice.md`. Long-running server session
+attachment, live event streaming before turn completion, and a true permission
+bridge remain future adapter work.
 
 This should remain behind the agent-engine adapter. Entangle still owns graph,
 identity, policy, projection, memory/wiki, git/artifact handoff, and

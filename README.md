@@ -180,7 +180,9 @@ This repository currently contains:
   with the runner now able to execute the first safe OpenCode CLI/process
   adapter for primary node turns while isolating OpenCode DB/config/XDG state
   under the node engine-state workspace, probing OpenCode version before turns,
-  applying bounded probe/run process timeouts, and carrying generic
+  probing attached OpenCode server health/version before `--attach` turns when
+  an engine profile provides `baseUrl`, applying bounded probe/run process
+  timeouts, and carrying generic
   engine-session ids, engine versions, and permission-block observations on
   persisted turn outcomes, including `policy_denied` results when OpenCode
   one-shot CLI auto-rejects a permission request, plus bounded generic tool
