@@ -100,6 +100,7 @@ import {
   resolvePrimaryGitRepositoryTarget,
   secretRefSchema,
   userInteractionGatewayRecordSchema,
+  userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
@@ -278,6 +279,7 @@ describe("federated runtime contracts", () => {
             conversationId: "conversation-alpha",
             graphId: "team-alpha",
             lastMessageAt: observedAt,
+            lastReadAt: observedAt,
             peerNodeId: "worker-it",
             pendingApprovalIds: [],
             projection: {
@@ -292,6 +294,27 @@ describe("federated runtime contracts", () => {
         userNodeId: "user-main"
       }).conversations[0]?.conversationId
     ).toBe("conversation-alpha");
+    expect(
+      userNodeConversationReadResponseSchema.parse({
+        conversation: {
+          conversationId: "conversation-alpha",
+          graphId: "team-alpha",
+          lastReadAt: observedAt,
+          peerNodeId: "worker-it",
+          projection: {
+            source: "observation_event",
+            updatedAt: observedAt
+          },
+          unreadCount: 0,
+          userNodeId: "user-main"
+        },
+        read: {
+          conversationId: "conversation-alpha",
+          readAt: observedAt,
+          userNodeId: "user-main"
+        }
+      }).read.readAt
+    ).toBe(observedAt);
 
     const messageRecord = userNodeMessageRecordSchema.parse({
       approval: {

@@ -64,6 +64,7 @@ const conversations: UserConversationProjectionRecord[] = [
     conversationId: "conversation-new",
     graphId: "team-alpha",
     lastMessageAt: "2026-04-26T12:05:00.000Z",
+    lastReadAt: "2026-04-26T12:04:30.000Z",
     peerNodeId: "worker-b",
     pendingApprovalIds: ["approval-alpha"],
     projection: {
@@ -84,6 +85,7 @@ describe("user node CLI output", () => {
     ).toEqual(["conversation-new", "conversation-old"]);
     expect(projectUserConversationSummary(conversations[1]!)).toMatchObject({
       conversationId: "conversation-new",
+      lastReadAt: "2026-04-26T12:04:30.000Z",
       pendingApprovalCount: 1,
       unreadCount: 2,
       userNodeId: "user-a"

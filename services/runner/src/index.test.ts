@@ -630,6 +630,34 @@ describe("runner runtime context", () => {
         }
 
         if (
+          request.method === "POST" &&
+          request.url === "/v1/user-nodes/user-main/inbox/conversation-alpha/read"
+        ) {
+          response.end(
+            JSON.stringify({
+              conversation: {
+                conversationId: "conversation-alpha",
+                graphId: "graph-alpha",
+                lastReadAt: "2026-04-26T12:05:00.000Z",
+                peerNodeId: "worker-it",
+                projection: {
+                  source: "observation_event",
+                  updatedAt: "2026-04-26T12:05:00.000Z"
+                },
+                unreadCount: 0,
+                userNodeId: "user-main"
+              },
+              read: {
+                conversationId: "conversation-alpha",
+                readAt: "2026-04-26T12:05:00.000Z",
+                userNodeId: "user-main"
+              }
+            })
+          );
+          return;
+        }
+
+        if (
           request.method === "GET" &&
           request.url ===
             "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
@@ -985,6 +1013,13 @@ describe("runner runtime context", () => {
         authorization: "Bearer host-secret",
         method: "GET",
         url: "/v1/user-nodes/user-main/inbox"
+      })
+    );
+    expect(hostRequests).toContainEqual(
+      expect.objectContaining({
+        authorization: "Bearer host-secret",
+        method: "POST",
+        url: "/v1/user-nodes/user-main/inbox/conversation-alpha/read"
       })
     );
     expect(

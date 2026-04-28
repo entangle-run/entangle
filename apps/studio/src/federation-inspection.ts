@@ -175,8 +175,9 @@ export function formatUserConversationDetail(
     conversation.conversationId,
     `unread ${conversation.unreadCount}`,
     `approvals ${conversation.pendingApprovalIds.length}`,
+    conversation.lastReadAt ? `read ${conversation.lastReadAt}` : undefined,
     `updated ${lastMessageAt}`
-  ].join(" · ");
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
 export function formatUserNodeIdentityLabel(

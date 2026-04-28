@@ -142,6 +142,7 @@ const conversations: UserConversationProjectionRecord[] = [
     conversationId: "conversation-new",
     graphId: "team-alpha",
     lastMessageAt: "2026-04-26T12:05:00.000Z",
+    lastReadAt: "2026-04-26T12:04:30.000Z",
     peerNodeId: "worker-b",
     pendingApprovalIds: ["approval-alpha"],
     projection: {
@@ -200,6 +201,9 @@ describe("Studio federation inspection helpers", () => {
     );
     expect(formatUserConversationDetail(conversations[1]!)).toContain(
       "approvals 1"
+    );
+    expect(formatUserConversationDetail(conversations[1]!)).toContain(
+      "read 2026-04-26T12:04:30.000Z"
     );
   });
 

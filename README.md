@@ -139,9 +139,9 @@ This repository currently contains:
   signed approval-response context, projected source-change summary rendering,
   projected source-change diff excerpt rendering, source-change diff fallback,
   artifact-ref rendering, projected bounded artifact preview with runtime
-  fallback, delivery labels, and Host-backed message publishing, plus
-  projection of the User Client endpoint through Host, CLI, and Studio, with
-  CLI signed approve/reject and generic
+  fallback, delivery labels, local conversation read state, and Host-backed
+  message publishing, plus projection of the User Client endpoint through Host,
+  CLI, and Studio, with CLI signed approve/reject and generic
   User Node message commands also able to carry scoped approval-response
   operation/resource/reason context, and CLI approve/reject commands able to
   derive that context directly from Host-recorded inbound approval-request

@@ -69,7 +69,10 @@ Recently added:
   require scanning every conversation.
 - Studio User Node overview summaries now combine identity, runtime state,
   runner placement, User Client URL, conversation counts, active counts,
-  pending approval counts, and unread counts from Host projection.
+  pending approval counts, unread counts, and local read markers from Host
+  projection.
+- CLI now exposes `entangle inbox read <conversationId> --user-node <nodeId>`
+  for clearing a User Node conversation's local unread count.
 - User Client message history now shows derived delivery labels for outbound
   relay publish coverage and inbound User Client receipt.
 - User Client message history now renders bounded artifact refs attached to
@@ -152,10 +155,10 @@ Node.
   list, selected thread metadata, recorded inbound/outbound messages, and
   reply/answer/approval publishing with scoped approval-response context plus
   projected source-change summary rendering, projected source diff excerpts
-  with runtime-diff fallback, artifact-ref rendering, and bounded artifact
-  preview; projection-backed complete artifact/source content preview, richer
-  wiki review actions, read receipts, and the full bundled client app remain
-  open.
+  with runtime-diff fallback, artifact-ref rendering, bounded artifact preview,
+  and local read-state updates; projection-backed complete artifact/source
+  content preview, richer wiki review actions, protocol-level read receipts,
+  and the full bundled client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

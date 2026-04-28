@@ -333,6 +333,7 @@ files are the active federated redesign pack.
 276. [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
 277. [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
 278. [277-projected-artifact-preview-slice.md](277-projected-artifact-preview-slice.md)
+279. [278-user-node-local-read-state-slice.md](278-user-node-local-read-state-slice.md)
 
 ## Role of this corpus
 

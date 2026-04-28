@@ -64,6 +64,9 @@ The current implementation has the first federated execution path:
 - The process-boundary smoke now includes two User Nodes assigned to two
   distinct `human_interface` runners, each exposing its own User Client and
   publishing with a distinct stable User Node pubkey.
+- Host projection now tracks per-User-Node conversation `lastReadAt` markers,
+  the User Client marks the selected thread read, and CLI exposes
+  `entangle inbox read`.
 
 The current implementation still does not have the final User Node client:
 
@@ -76,8 +79,8 @@ The current implementation still does not have the final User Node client:
   service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
-  message records, but not delivery/read state or a local encrypted client
-  store.
+  message records and local read markers, but not protocol-level read receipts,
+  delivery retry state, or a local encrypted client store.
 - User Node approvals still coexist with older operator-side approval mutation
   surfaces.
 
@@ -236,7 +239,8 @@ runtime fallback, projected source-change summary rendering, projected source
 diff excerpts with runtime-diff fallback, scoped approval-response context, and
 message/approval publication that keeps the selected conversation/session
 context. Message history now also shows derived delivery labels for outbound
-relay publish coverage and inbound User Client receipt.
+relay publish coverage and inbound User Client receipt, and selected
+conversations are marked read through Host projection.
 
 Impacted modules:
 
@@ -373,8 +377,8 @@ The fastest path to a product the user can test is:
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
 7. Expand complete projection-backed source/wiki review, richer artifact
-   object-backend review, delivery retry state, read receipts, and OpenCode
-   parity.
+   object-backend review, delivery retry state, protocol-level read receipts,
+   and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

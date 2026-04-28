@@ -18,8 +18,9 @@ records:
 - outbound messages show relay publish coverage;
 - inbound messages show that the User Client has received the message.
 
-Full read receipts and cross-client read state remain a later protocol and UI
-feature.
+Local per-User-Node conversation read markers were added later in
+[278-user-node-local-read-state-slice.md](278-user-node-local-read-state-slice.md).
+Protocol-level read receipts remain a later feature.
 
 ## Impacted Modules/Files
 
@@ -46,7 +47,7 @@ Implemented in this slice:
 Deferred:
 
 - protocol-level read receipts;
-- per-device/per-client read state;
+- per-device/per-client read state beyond the current shared User Node marker;
 - delivery failure/retry history beyond current relay publish results.
 
 ## Tests Required

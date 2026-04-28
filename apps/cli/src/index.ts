@@ -1303,6 +1303,33 @@ inboxCommand
     );
   });
 
+inboxCommand
+  .command("read")
+  .argument("<conversationId>", "Projected conversation identifier.")
+  .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option("--summary", "Print the compact updated conversation summary.")
+  .description("Mark one User Node conversation as read.")
+  .action(async (
+    conversationId: string,
+    options: { summary?: boolean; userNode: string },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.markUserNodeConversationRead(
+      options.userNode,
+      conversationId
+    );
+
+    printJson(
+      options.summary && response.conversation
+        ? {
+            conversation: projectUserConversationSummary(response.conversation),
+            read: response.read
+          }
+        : response
+    );
+  });
+
 program
   .command("reply")
   .argument("<targetNodeId>", "Target runtime node id.")

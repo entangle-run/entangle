@@ -170,7 +170,30 @@ describe("createHostClient", () => {
         requests.push(url);
         let body: unknown;
 
-        if (init?.method === "POST") {
+        if (
+          init?.method === "POST" &&
+          url.endsWith("/v1/user-nodes/user-main/inbox/conversation-alpha/read")
+        ) {
+          body = {
+            conversation: {
+              conversationId: "conversation-alpha",
+              graphId: "graph-alpha",
+              lastReadAt: "2026-04-26T12:01:00.000Z",
+              peerNodeId: "worker-it",
+              projection: {
+                source: "observation_event",
+                updatedAt: "2026-04-26T12:01:00.000Z"
+              },
+              unreadCount: 0,
+              userNodeId: "user-main"
+            },
+            read: {
+              conversationId: "conversation-alpha",
+              readAt: "2026-04-26T12:01:00.000Z",
+              userNodeId: "user-main"
+            }
+          };
+        } else if (init?.method === "POST") {
           body = publishResponse;
         } else if (url.endsWith("/v1/user-nodes")) {
           body = {
@@ -272,6 +295,17 @@ describe("createHostClient", () => {
       ]
     });
     await expect(
+      client.markUserNodeConversationRead("user-main", "conversation-alpha")
+    ).resolves.toMatchObject({
+      conversation: {
+        lastReadAt: "2026-04-26T12:01:00.000Z",
+        unreadCount: 0
+      },
+      read: {
+        conversationId: "conversation-alpha"
+      }
+    });
+    await expect(
       client.publishUserNodeMessage("user-main", {
         approval: {
           approvalId: "approval-alpha",
@@ -293,6 +327,7 @@ describe("createHostClient", () => {
       "http://entangle-host.test/v1/user-nodes/user-main",
       "http://entangle-host.test/v1/user-nodes/user-main/inbox",
       "http://entangle-host.test/v1/user-nodes/user-main/inbox/conversation-alpha",
+      "http://entangle-host.test/v1/user-nodes/user-main/inbox/conversation-alpha/read",
       "http://entangle-host.test/v1/user-nodes/user-main/messages"
     ]);
   });

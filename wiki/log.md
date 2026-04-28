@@ -3434,3 +3434,14 @@ Runner-produced report artifacts now emit preview excerpts without exposing
 runtime-local source paths through the projection. Types, Host, and runner
 typechecks passed, along with types tests, focused Host/runner tests, and
 `git diff --check` during the implementation slice.
+
+## [2026-04-28] implementation | Added User Node local read state
+
+Added `references/278-user-node-local-read-state-slice.md`. Host now stores
+per-User-Node conversation read markers, projection exposes `lastReadAt`, and
+unread counts are computed from inbound messages newer than that marker.
+
+The runner-served User Client marks the selected conversation read when a human
+opens it, `packages/host-client` exposes the read mutation, and CLI now has
+`entangle inbox read <conversationId> --user-node <nodeId>`. This is local
+User Node inbox state, not a federated A2A read receipt.

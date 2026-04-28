@@ -64,8 +64,8 @@ Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
   dedicated app with richer source/wiki review actions, projection-backed
-  artifact/source preview, read receipts, and richer artifact/source workflow
-  controls;
+  artifact/source preview, protocol-level read receipts, and richer
+  artifact/source workflow controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;
@@ -95,6 +95,7 @@ User Node capabilities:
 - bounded artifact preview;
 - bounded source-change diff preview;
 - derived delivery status;
+- local conversation read state;
 - per-node policy and edge constraints;
 - multiple user nodes in one graph.
 

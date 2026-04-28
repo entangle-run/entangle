@@ -8,6 +8,7 @@ export type UserConversationCliSummary = {
   conversationId: string;
   graphId: string;
   lastMessageAt?: string;
+  lastReadAt?: string;
   peerNodeId: string;
   pendingApprovalCount: number;
   unreadCount: number;
@@ -68,6 +69,7 @@ export function projectUserConversationSummary(
     ...(conversation.lastMessageAt
       ? { lastMessageAt: conversation.lastMessageAt }
       : {}),
+    ...(conversation.lastReadAt ? { lastReadAt: conversation.lastReadAt } : {}),
     peerNodeId: conversation.peerNodeId,
     pendingApprovalCount: conversation.pendingApprovalIds.length,
     unreadCount: conversation.unreadCount,

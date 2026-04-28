@@ -80,6 +80,17 @@ export const userNodeConversationResponseSchema = z.object({
   userNodeId: identifierSchema
 });
 
+export const userNodeConversationReadRecordSchema = z.object({
+  conversationId: identifierSchema,
+  readAt: nonEmptyStringSchema,
+  userNodeId: identifierSchema
+});
+
+export const userNodeConversationReadResponseSchema = z.object({
+  conversation: userConversationProjectionRecordSchema.optional(),
+  read: userNodeConversationReadRecordSchema
+});
+
 export const userNodeMessageInspectionResponseSchema = z.object({
   generatedAt: nonEmptyStringSchema,
   message: userNodeMessageRecordSchema,
@@ -149,6 +160,12 @@ export type UserNodeIdentityInspectionResponse = z.infer<
 export type UserNodeInboxResponse = z.infer<typeof userNodeInboxResponseSchema>;
 export type UserNodeConversationResponse = z.infer<
   typeof userNodeConversationResponseSchema
+>;
+export type UserNodeConversationReadRecord = z.infer<
+  typeof userNodeConversationReadRecordSchema
+>;
+export type UserNodeConversationReadResponse = z.infer<
+  typeof userNodeConversationReadResponseSchema
 >;
 export type UserNodeMessageInspectionResponse = z.infer<
   typeof userNodeMessageInspectionResponseSchema

@@ -88,6 +88,7 @@ import {
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
+  userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeIdentityListResponseSchema,
@@ -3390,6 +3391,45 @@ describe("buildHostServer", () => {
         direction: "inbound",
         summary: "The worker completed the task."
       });
+
+      const readResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "POST",
+        url: "/v1/user-nodes/user-main/inbox/conversation-alpha/read"
+      });
+      expect(readResponse.statusCode).toBe(200);
+      const readResult = userNodeConversationReadResponseSchema.parse(
+        readResponse.json()
+      );
+      expect(readResult).toMatchObject({
+        conversation: {
+          conversationId: "conversation-alpha",
+          unreadCount: 0
+        },
+        read: {
+          conversationId: "conversation-alpha",
+          userNodeId: "user-main"
+        }
+      });
+      expect(readResult.conversation?.lastReadAt).toEqual(expect.any(String));
+
+      const inboxAfterReadResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/inbox"
+      });
+      const inboxAfterRead = userNodeInboxResponseSchema.parse(
+        inboxAfterReadResponse.json()
+      ).conversations[0];
+      expect(inboxAfterRead).toMatchObject({
+        conversationId: "conversation-alpha",
+        unreadCount: 0
+      });
+      expect(inboxAfterRead?.lastReadAt).toEqual(expect.any(String));
 
       const inboundApprovalResponse = await server.inject({
         headers: {

@@ -87,6 +87,7 @@ export const userConversationProjectionRecordSchema = z.object({
   conversationId: identifierSchema,
   graphId: identifierSchema,
   lastMessageAt: nonEmptyStringSchema.optional(),
+  lastReadAt: nonEmptyStringSchema.optional(),
   lastMessageType: nonEmptyStringSchema.optional(),
   peerNodeId: identifierSchema,
   pendingApprovalIds: z.array(identifierSchema).default([]),

@@ -168,8 +168,12 @@ import {
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
   type ParsedUserNodeMessagePublishRequest,
+  type UserNodeConversationReadRecord,
+  type UserNodeConversationReadResponse,
   type UserNodeConversationResponse,
   type UserNodeInboundMessageRecordRequest,
+  userNodeConversationReadRecordSchema,
+  userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
   userNodeMessageInspectionResponseSchema,
   userNodeIdentityInspectionResponseSchema,
@@ -437,6 +441,10 @@ const observedConversationActivityRoot = path.join(
 const observedUserNodeMessagesRoot = path.join(
   observedRoot,
   "user-node-messages"
+);
+const observedUserNodeConversationReadsRoot = path.join(
+  observedRoot,
+  "user-node-conversation-reads"
 );
 const observedRunnerTurnActivityRoot = path.join(
   observedRoot,
@@ -3208,6 +3216,21 @@ async function listUserConversationProjectionRecords(): Promise<
       )
     )
   ).flat();
+  const readRecords = (
+    await Promise.all(
+      [...userNodeIds].map((userNodeId) =>
+        listUserNodeConversationReadRecords({
+          userNodeId
+        })
+      )
+    )
+  ).flat();
+  const readRecordsByConversation = new Map(
+    readRecords.map((record) => [
+      `${record.userNodeId}--${record.conversationId}`,
+      record
+    ])
+  );
   const projectedRecords = new Map<string, UserConversationProjectionRecord>();
 
   for (const record of records) {
@@ -3221,11 +3244,15 @@ async function listUserConversationProjectionRecords(): Promise<
       continue;
     }
 
+    const readRecord = readRecordsByConversation.get(
+      `${userNodeId}--${record.conversationId}`
+    );
     const projectionRecord = userConversationProjectionRecordSchema.parse({
       artifactIds: record.artifactIds,
       conversationId: record.conversationId,
       graphId: record.graphId,
       lastMessageAt: record.updatedAt,
+      ...(readRecord?.readAt ? { lastReadAt: readRecord.readAt } : {}),
       ...(record.lastMessageType ? { lastMessageType: record.lastMessageType } : {}),
       peerNodeId: userNodeId === record.peerNodeId ? record.nodeId : record.peerNodeId,
       pendingApprovalIds: [],
@@ -3247,6 +3274,7 @@ async function listUserConversationProjectionRecords(): Promise<
   for (const messageRecord of messageRecords) {
     const key = `${messageRecord.userNodeId}--${messageRecord.conversationId}`;
     const existing = projectedRecords.get(key);
+    const readRecord = readRecordsByConversation.get(key);
     const existingLastMessageAt = existing?.lastMessageAt;
     const messageIsNewer =
       !existingLastMessageAt || messageRecord.createdAt >= existingLastMessageAt;
@@ -3267,6 +3295,7 @@ async function listUserConversationProjectionRecords(): Promise<
         conversationId: messageRecord.conversationId,
         graphId: existing?.graphId ?? graph.graphId,
         lastMessageAt,
+        ...(readRecord?.readAt ? { lastReadAt: readRecord.readAt } : {}),
         ...(lastMessageType ? { lastMessageType } : {}),
         peerNodeId: existing?.peerNodeId ?? messageRecord.peerNodeId,
         pendingApprovalIds: mergePendingApprovalIdsFromMessage({
@@ -3285,7 +3314,10 @@ async function listUserConversationProjectionRecords(): Promise<
         }),
         unreadCount:
           (existing?.unreadCount ?? 0) +
-          (messageRecord.direction === "inbound" ? 1 : 0),
+          (messageRecord.direction === "inbound" &&
+          (!readRecord || messageRecord.createdAt > readRecord.readAt)
+            ? 1
+            : 0),
         userNodeId: messageRecord.userNodeId
       })
     );
@@ -3425,6 +3457,16 @@ function observedUserNodeMessageRecordPath(input: {
   );
 }
 
+function observedUserNodeConversationReadRecordPath(input: {
+  conversationId: string;
+  userNodeId: string;
+}): string {
+  return path.join(
+    observedUserNodeConversationReadsRoot,
+    `${input.userNodeId}--${input.conversationId}.json`
+  );
+}
+
 function extractUserNodeMessageApproval(
   message: UserNodeInboundMessageRecordRequest["message"]
 ): UserNodeMessageRecord["approval"] {
@@ -3498,6 +3540,34 @@ async function listUserNodeMessageRecords(input: {
 
       return left.eventId.localeCompare(right.eventId);
     });
+}
+
+async function listUserNodeConversationReadRecords(input: {
+  userNodeId: string;
+}): Promise<UserNodeConversationReadRecord[]> {
+  await initializeHostState();
+
+  if (!(await pathExists(observedUserNodeConversationReadsRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedUserNodeConversationReadsRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        userNodeConversationReadRecordSchema.parse(
+          await readJsonFile(
+            path.join(observedUserNodeConversationReadsRoot, entry)
+          )
+        )
+      )
+  );
+
+  return records
+    .filter((record) => record.userNodeId === input.userNodeId)
+    .sort((left, right) =>
+      left.conversationId.localeCompare(right.conversationId)
+    );
 }
 
 export async function recordUserNodePublishedMessage(input: {
@@ -3629,6 +3699,46 @@ export async function getUserNodeConversation(
     generatedAt: nowIsoString(),
     messages,
     userNodeId: nodeId
+  });
+}
+
+export async function markUserNodeConversationRead(input: {
+  conversationId: string;
+  readAt?: string;
+  userNodeId: string;
+}): Promise<UserNodeConversationReadResponse | undefined> {
+  await initializeHostState();
+
+  const inspection = await getUserNodeIdentity(input.userNodeId);
+
+  if (!inspection) {
+    return undefined;
+  }
+
+  const read = userNodeConversationReadRecordSchema.parse({
+    conversationId: input.conversationId,
+    readAt: input.readAt ?? nowIsoString(),
+    userNodeId: input.userNodeId
+  });
+
+  await writeJsonFileIfChanged(
+    observedUserNodeConversationReadRecordPath({
+      conversationId: read.conversationId,
+      userNodeId: read.userNodeId
+    }),
+    read
+  );
+
+  const projection = await getHostProjectionSnapshot();
+  const conversation = projection.userConversations.find(
+    (candidate) =>
+      candidate.userNodeId === read.userNodeId &&
+      candidate.conversationId === read.conversationId
+  );
+
+  return userNodeConversationReadResponseSchema.parse({
+    ...(conversation ? { conversation } : {}),
+    read
   });
 }
 
@@ -5699,6 +5809,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(gitRepositoryTargetsRoot),
     ensureDirectory(observedRunnerTurnActivityRoot),
     ensureDirectory(observedSessionActivityRoot),
+    ensureDirectory(observedUserNodeConversationReadsRoot),
     ensureDirectory(observedUserNodeMessagesRoot),
     ensureDirectory(reconciliationHistoryRoot),
     ensureDirectory(path.join(observedRoot, "health")),

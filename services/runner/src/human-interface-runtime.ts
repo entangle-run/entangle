@@ -21,6 +21,7 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   userNodeConversationResponseSchema,
+  userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
@@ -300,6 +301,47 @@ async function fetchUserNodeConversation(input: {
         error instanceof Error
           ? error.message
           : "Host conversation request failed."
+    };
+  }
+}
+
+async function markUserNodeConversationRead(input: {
+  conversationId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  userNodeId: string;
+}): Promise<{ error?: string }> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for conversation read state."
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/user-nodes/${encodeURIComponent(input.userNodeId)}/inbox/${encodeURIComponent(input.conversationId)}/read`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi),
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host conversation read request failed with HTTP ${response.status}.`
+      };
+    }
+
+    userNodeConversationReadResponseSchema.parse(await response.json());
+    return {};
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host conversation read request failed."
     };
   }
 }
@@ -752,6 +794,13 @@ async function renderHome(input: {
   notice?: string;
   selectedConversationId?: string | undefined;
 }): Promise<string> {
+  const readState = input.selectedConversationId
+    ? await markUserNodeConversationRead({
+        conversationId: input.selectedConversationId,
+        hostApi: input.hostApi,
+        userNodeId: input.context.binding.node.nodeId
+      })
+    : undefined;
   const state = await buildUserClientState({
     context: input.context,
     hostApi: input.hostApi
@@ -836,6 +885,7 @@ async function renderHome(input: {
         )
         .join("")
     : `<p class="empty">No recorded User Node messages yet.</p>`;
+  const errorMessage = [state.error, readState?.error].filter(Boolean).join(" ");
 
   return `<!doctype html>
 <html lang="en">
@@ -910,7 +960,7 @@ async function renderHome(input: {
         </aside>
         <div class="workspace">
           ${input.notice ? `<section class="notice">${escapeHtml(input.notice)}</section>` : ""}
-          ${state.error ? `<section class="error">${escapeHtml(state.error)}</section>` : ""}
+          ${errorMessage ? `<section class="error">${escapeHtml(errorMessage)}</section>` : ""}
           <section>
             <h2>Selected Thread</h2>
             ${selectedConversationPanel}
