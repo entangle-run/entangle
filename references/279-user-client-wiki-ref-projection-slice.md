@@ -6,7 +6,8 @@ Host projection already exposed observed `wiki.ref` records emitted by joined
 agent runners. Studio could count those refs, and Host tests proved the reducer
 path, but the running User Client did not render projected wiki memory for the
 human User Node. A user opening a conversation could inspect report artifacts
-and source-change summaries, but not the peer agent's latest wiki snapshot ref.
+and source-change summaries, but not the peer agent's latest wiki snapshot ref
+or wiki-scoped approval context.
 
 ## Target Model
 
@@ -31,6 +32,8 @@ or imply that the wiki content is available in Nostr.
 
 - Add projected `wikiRefs` to the User Client state model.
 - Render a selected-thread Wiki section filtered to the peer node.
+- Render matching wiki refs inside `wiki_repository` and `wiki_page` approval
+  request cards.
 - Display wiki artifact id, kind, content summary, locator, and observed time.
 - Keep the surface projection-only; no Host runtime filesystem read or large
   wiki content transfer is added by this slice.
@@ -41,6 +44,8 @@ or imply that the wiki content is available in Nostr.
   projection.
 - Runner User Client page test proving the selected thread renders the peer
   wiki summary and locator.
+- Runner User Client page test proving wiki-scoped approval requests render
+  the matching projected wiki ref.
 - Runner typecheck and lint.
 
 ## Migration/Compatibility Notes

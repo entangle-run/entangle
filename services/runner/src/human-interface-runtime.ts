@@ -59,6 +59,10 @@ type UserClientState = {
   wikiRefs: WikiRefProjectionRecord[];
 };
 
+type ApprovalResource = NonNullable<
+  NonNullable<UserNodeMessageRecord["approval"]>["resource"]
+>;
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -683,9 +687,25 @@ function findProjectedArtifactRef(input: {
   );
 }
 
+function wikiRefMatchesResource(input: {
+  ref: WikiRefProjectionRecord;
+  resource: ApprovalResource;
+}): boolean {
+  const locatorPath = input.ref.artifactRef.locator.path;
+  const normalizedLocatorPath = locatorPath.replace(/^\/+/u, "");
+
+  return (
+    input.resource.id === input.ref.nodeId ||
+    input.resource.id === input.ref.artifactId ||
+    input.resource.id === locatorPath ||
+    input.resource.id === normalizedLocatorPath
+  );
+}
+
 function renderApprovalResource(
   message: UserNodeMessageRecord,
-  sourceChangeRefs: SourceChangeRefProjectionRecord[]
+  sourceChangeRefs: SourceChangeRefProjectionRecord[],
+  wikiRefs: WikiRefProjectionRecord[]
 ): string {
   const resource = message.approval?.resource;
 
@@ -701,6 +721,14 @@ function renderApprovalResource(
             ref.nodeId === message.fromNodeId && ref.candidateId === resource.id
         )
       : undefined;
+  const relatedWikiRefs =
+    resource.kind === "wiki_repository" || resource.kind === "wiki_page"
+      ? wikiRefs.filter(
+          (ref) =>
+            ref.nodeId === message.fromNodeId &&
+            wikiRefMatchesResource({ ref, resource })
+        )
+      : [];
   const sourceDiffAction =
     resource.kind === "source_change_candidate"
       ? `<a class="artifact-action" href="${escapeHtml(
@@ -710,7 +738,7 @@ function renderApprovalResource(
         )}">Review diff</a>`
       : "";
 
-  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${sourceDiffAction}`;
+  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}`;
 }
 
 function renderArtifactLocator(ref: ArtifactRef): string {
@@ -774,16 +802,9 @@ function renderArtifactRefs(message: UserNodeMessageRecord): string {
   </div>`;
 }
 
-function renderWikiRefsForPeer(input: {
-  peerNodeId?: string | undefined;
-  wikiRefs: WikiRefProjectionRecord[];
-}): string {
-  const refs = input.peerNodeId
-    ? input.wikiRefs.filter((ref) => ref.nodeId === input.peerNodeId)
-    : [];
-
+function renderWikiRefCards(refs: WikiRefProjectionRecord[]): string {
   if (refs.length === 0) {
-    return `<p class="empty">No projected wiki refs for this thread.</p>`;
+    return "";
   }
 
   return `<div class="artifact-list">
@@ -798,6 +819,20 @@ function renderWikiRefsForPeer(input: {
       )
       .join("")}
   </div>`;
+}
+
+function renderWikiRefsForPeer(input: {
+  peerNodeId?: string | undefined;
+  wikiRefs: WikiRefProjectionRecord[];
+}): string {
+  const refs = input.peerNodeId
+    ? input.wikiRefs.filter((ref) => ref.nodeId === input.peerNodeId)
+    : [];
+
+  return (
+    renderWikiRefCards(refs) ||
+    `<p class="empty">No projected wiki refs for this thread.</p>`
+  );
 }
 
 function renderMessageDelivery(message: UserNodeMessageRecord): string {
@@ -905,7 +940,7 @@ async function renderHome(input: {
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
               ${renderMessageDelivery(message)}
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
-              ${renderApprovalResource(message, state.sourceChangeRefs)}
+              ${renderApprovalResource(message, state.sourceChangeRefs, state.wikiRefs)}
               <div>${escapeHtml(message.summary)}</div>
               ${renderArtifactRefs(message)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>

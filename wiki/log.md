@@ -3451,7 +3451,8 @@ User Node inbox state, not a federated A2A read receipt.
 Added `references/279-user-client-wiki-ref-projection-slice.md`. The
 runner-served User Client state now carries Host-projected `wikiRefs`, and the
 selected thread renders peer wiki refs with artifact id, summary, locator, and
-observed time.
+observed time. Wiki-scoped approval requests also render matching projected
+wiki refs inside the message card.
 
 This keeps node memory/wiki visible to the human User Node through Host
 projection without reading runner-local wiki files or pushing wiki content

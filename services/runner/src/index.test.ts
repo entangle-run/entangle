@@ -646,6 +646,36 @@ describe("runner runtime context", () => {
                   toPubkey: runnerPublicKey,
                   turnId: "turn-approval",
                   userNodeId: "user-main"
+                },
+                {
+                  approval: {
+                    approvalId: "approval-wiki",
+                    approverNodeIds: ["user-main"],
+                    operation: "wiki_update",
+                    resource: {
+                      id: "worker-it",
+                      kind: "wiki_repository",
+                      label: "worker-it wiki"
+                    }
+                  },
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:02:30.000Z",
+                  direction: "inbound",
+                  eventId:
+                    "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  fromNodeId: "worker-it",
+                  fromPubkey: remotePublicKey,
+                  messageType: "approval.request",
+                  peerNodeId: "worker-it",
+                  publishedRelays: [],
+                  relayUrls: [],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Review wiki memory update.",
+                  toNodeId: "user-main",
+                  toPubkey: runnerPublicKey,
+                  turnId: "turn-wiki",
+                  userNodeId: "user-main"
                 }
               ],
               userNodeId: "user-main"
@@ -942,7 +972,10 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("delivery published 1/1 relays");
       expect(pageBody).toContain("delivery received by User Client");
       expect(pageBody).toContain("approval-alpha");
-      expect(pageBody).toContain("Wiki repository committed at abc123.");
+      expect(pageBody).toContain("approval-wiki");
+      expect(pageBody).toContain("wiki_repository:worker-it");
+      expect(pageBody.match(/Wiki repository committed at abc123\./g) ?? [])
+        .toHaveLength(2);
       expect(pageBody).toContain("/wiki/summaries/working-context.md");
       expect(pageBody).toContain("artifact-alpha");
       expect(pageBody).toContain("reports/review.md");
