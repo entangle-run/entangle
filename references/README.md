@@ -336,6 +336,7 @@ files are the active federated redesign pack.
 279. [278-user-node-local-read-state-slice.md](278-user-node-local-read-state-slice.md)
 280. [279-user-client-wiki-ref-projection-slice.md](279-user-client-wiki-ref-projection-slice.md)
 281. [280-user-node-read-receipt-slice.md](280-user-node-read-receipt-slice.md)
+282. [281-projected-wiki-preview-slice.md](281-projected-wiki-preview-slice.md)
 
 ## Role of this corpus
 

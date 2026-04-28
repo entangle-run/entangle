@@ -331,6 +331,9 @@ function createRuntimeObservationPublisher(input: {
       }),
     publishWikiRefObserved: (record) =>
       publish({
+        ...(record.artifactPreview
+          ? { artifactPreview: record.artifactPreview }
+          : {}),
         artifactRef: record.artifactRef,
         eventType: "wiki.ref",
         graphId: record.graphId,

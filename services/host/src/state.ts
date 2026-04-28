@@ -2744,6 +2744,9 @@ export async function recordWikiRefObservation(
   await assertRegisteredObservationRunner(observation);
   const record = wikiRefProjectionRecordSchema.parse({
     artifactId: observation.artifactRef.artifactId,
+    ...(observation.artifactPreview
+      ? { artifactPreview: observation.artifactPreview }
+      : {}),
     artifactRef: observation.artifactRef,
     graphId: observation.graphId,
     hostAuthorityPubkey: observation.hostAuthorityPubkey,

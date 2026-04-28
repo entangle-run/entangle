@@ -229,6 +229,7 @@ Implementation record:
 - [278-user-node-local-read-state-slice.md](278-user-node-local-read-state-slice.md)
 - [279-user-client-wiki-ref-projection-slice.md](279-user-client-wiki-ref-projection-slice.md)
 - [280-user-node-read-receipt-slice.md](280-user-node-read-receipt-slice.md)
+- [281-projected-wiki-preview-slice.md](281-projected-wiki-preview-slice.md)
 
 Current status:
 
@@ -252,16 +253,16 @@ Current status:
   excerpts with runtime-diff fallback, scoped approval-response context,
   artifact-ref rendering, projection-backed bounded artifact preview with
   runtime fallback, delivery labels, local conversation read state, projected
-  wiki-ref rendering, wiki-scoped approval context rendering, signed read
-  receipts, and message publishing that preserves selected conversation/session
-  context;
+  wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
+  context rendering, signed read receipts, and message publishing that
+  preserves selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application, full wiki review actions, richer
+- final bundled User Client application, full wiki publication actions, richer
   artifact object-backend review, and delivery retry state remain open.
 
 Verification:

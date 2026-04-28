@@ -3468,3 +3468,13 @@ unread inbound messages before being marked read locally.
 The local read marker remains the inbox source of truth; the read receipt is a
 peer-visible signed notification carried through the existing User Node
 gateway.
+
+## [2026-04-28] implementation | Projected bounded wiki previews
+
+Added `references/281-projected-wiki-preview-slice.md`. `wiki.ref`
+observations and Host projection now carry optional bounded wiki preview
+content, joined runners emit previews from their runner-owned wiki repository,
+and the User Client renders the preview from projection.
+
+This keeps human-node wiki review on the federated observation path while
+leaving full wiki repositories in git/object-backed artifact space.

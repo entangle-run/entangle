@@ -1734,6 +1734,14 @@ describe("buildHostServer", () => {
         status: "pending_review"
       });
       await recordWikiRefObservation({
+        artifactPreview: {
+          available: true,
+          bytesRead: 24,
+          content: "# Working Context\nReady.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        },
         artifactRef: {
           artifactId: "wiki-alpha",
           artifactKind: "knowledge_summary",
@@ -1787,6 +1795,10 @@ describe("buildHostServer", () => {
       });
       expect(projection.wikiRefs[0]).toMatchObject({
         artifactId: "wiki-alpha",
+        artifactPreview: {
+          available: true,
+          content: "# Working Context\nReady."
+        },
         nodeId: "worker-it"
       });
     } finally {

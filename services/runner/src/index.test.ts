@@ -518,6 +518,14 @@ describe("runner runtime context", () => {
               wikiRefs: [
                 {
                   artifactId: "wiki-alpha",
+                  artifactPreview: {
+                    available: true,
+                    bytesRead: 34,
+                    content: "# Working Context\n\nReady for review.",
+                    contentEncoding: "utf8",
+                    contentType: "text/markdown",
+                    truncated: false
+                  },
                   artifactRef: {
                     artifactId: "wiki-alpha",
                     artifactKind: "knowledge_summary",
@@ -978,6 +986,7 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("wiki_repository:worker-it");
       expect(pageBody.match(/Wiki repository committed at abc123\./g) ?? [])
         .toHaveLength(2);
+      expect(pageBody).toContain("Ready for review.");
       expect(pageBody).toContain("/wiki/summaries/working-context.md");
       expect(pageBody).toContain("artifact-alpha");
       expect(pageBody).toContain("reports/review.md");

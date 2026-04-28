@@ -204,7 +204,10 @@ describe("RunnerService", () => {
     const transport = new InMemoryRunnerTransport();
     const observedArtifacts: ObservedArtifactRecord[] = [];
     const observedSourceCandidateIds: string[] = [];
-    const observedWikiArtifactIds: string[] = [];
+    const observedWikiRefs: Array<{
+      artifactId: string;
+      previewContent?: string;
+    }> = [];
     const service = new RunnerService({
       context,
       engine: {
@@ -245,7 +248,12 @@ describe("RunnerService", () => {
         },
         publishTurnUpdated: () => Promise.resolve(),
         publishWikiRefObserved: (record) => {
-          observedWikiArtifactIds.push(record.artifactRef.artifactId);
+          observedWikiRefs.push({
+            artifactId: record.artifactRef.artifactId,
+            ...(record.artifactPreview?.available
+              ? { previewContent: record.artifactPreview.content }
+              : {})
+          });
           return Promise.resolve();
         }
       },
@@ -316,7 +324,11 @@ describe("RunnerService", () => {
       "# Entangle Turn Report"
     );
     expect(observedReportArtifact.artifactPreview.contentType).toBe("text/markdown");
-    expect(observedWikiArtifactIds).toEqual([`wiki-${turn?.turnId}`]);
+    expect(observedWikiRefs).toHaveLength(1);
+    expect(observedWikiRefs[0]).toMatchObject({
+      artifactId: `wiki-${turn?.turnId}`
+    });
+    expect(observedWikiRefs[0]?.previewContent).toContain("# Wiki Index");
   });
 
   it("cancels an active engine turn when an external cancellation request is observed", async () => {

@@ -156,9 +156,10 @@ Node.
   reply/answer/approval publishing with scoped approval-response context plus
   projected source-change summary rendering, projected source diff excerpts
   with runtime-diff fallback, artifact-ref rendering, bounded artifact preview,
-  projected wiki-ref rendering, wiki-scoped approval context rendering, and
-  local read-state updates plus signed read receipts; richer wiki review
-  actions and the full bundled client app remain open.
+  projected wiki-ref rendering, projected wiki preview rendering,
+  wiki-scoped approval context rendering, and local read-state updates plus
+  signed read receipts; richer wiki publication actions and the full bundled
+  client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

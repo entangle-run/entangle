@@ -169,6 +169,7 @@ export const sourceChangeRefObservationPayloadSchema =
   });
 
 export const wikiRefObservationPayloadSchema = observedAtPayloadBaseSchema.extend({
+  artifactPreview: artifactContentPreviewSchema.optional(),
   artifactRef: artifactRefSchema,
   eventType: z.literal("wiki.ref"),
   graphId: identifierSchema,

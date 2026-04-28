@@ -237,11 +237,12 @@ selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
 artifact-ref rendering plus projection-backed bounded artifact preview with
 runtime fallback, projected source-change summary rendering, projected source
 diff excerpts with runtime-diff fallback, projected wiki-ref rendering,
-wiki-scoped approval context rendering, scoped approval-response context, and
-message/approval/read-receipt publication that keeps the selected
-conversation/session context. Message history now also shows derived delivery
-labels for outbound relay publish coverage and inbound User Client receipt,
-and selected conversations are marked read through Host projection.
+projected wiki preview rendering, wiki-scoped approval context rendering,
+scoped approval-response context, and message/approval/read-receipt
+publication that keeps the selected conversation/session context. Message
+history now also shows derived delivery labels for outbound relay publish
+coverage and inbound User Client receipt, and selected conversations are marked
+read through Host projection.
 
 Impacted modules:
 

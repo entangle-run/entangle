@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { open, stat } from "node:fs/promises";
+import path from "node:path";
 import type {
   AgentEngineTurnResult,
   ArtifactContentPreview,
@@ -113,6 +114,7 @@ export type RunnerServiceObservationPublisher = {
   publishTurnUpdated(record: RunnerTurnRecord): Promise<void>;
   publishWikiRefObserved?(input: {
     artifactRef: ArtifactRef;
+    artifactPreview?: ArtifactContentPreview;
     graphId: string;
     nodeId: string;
     observedAt: string;
@@ -1413,6 +1415,77 @@ function buildWikiArtifactRefForTurn(input: {
   };
 }
 
+const wikiPreviewMaxBytes = 8 * 1024;
+const wikiPreviewCandidatePaths = [
+  "summaries/working-context.md",
+  "index.md"
+] as const;
+
+async function readWikiRepositoryPreview(
+  context: EffectiveRuntimeContext
+): Promise<ArtifactContentPreview | undefined> {
+  const repositoryRoot = context.workspace.wikiRepositoryRoot;
+
+  if (!repositoryRoot) {
+    return undefined;
+  }
+
+  for (const relativePath of wikiPreviewCandidatePaths) {
+    const candidatePath = path.join(repositoryRoot, relativePath);
+
+    try {
+      const candidateStat = await stat(candidatePath);
+
+      if (!candidateStat.isFile()) {
+        continue;
+      }
+
+      const file = await open(candidatePath, "r");
+
+      try {
+        const buffer = Buffer.alloc(wikiPreviewMaxBytes + 1);
+        const { bytesRead } = await file.read(
+          buffer,
+          0,
+          wikiPreviewMaxBytes + 1,
+          0
+        );
+        const truncated = bytesRead > wikiPreviewMaxBytes;
+        const previewBuffer = buffer.subarray(
+          0,
+          Math.min(bytesRead, wikiPreviewMaxBytes)
+        );
+
+        if (previewBuffer.includes(0)) {
+          return {
+            available: false,
+            reason:
+              "Wiki preview is unavailable because the selected wiki page is not text."
+          };
+        }
+
+        return {
+          available: true,
+          bytesRead: previewBuffer.length,
+          content: previewBuffer.toString("utf8"),
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated
+        };
+      } finally {
+        await file.close();
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return {
+    available: false,
+    reason: "Wiki preview is unavailable because no previewable wiki page exists."
+  };
+}
+
 export class RunnerService {
   private readonly cancellationPollIntervalMs: number;
   private readonly artifactBackend: RunnerArtifactBackend;
@@ -1520,11 +1593,13 @@ export class RunnerService {
 
   private async publishWikiRefObservation(
     artifactRef: ArtifactRef,
-    observedAt: string
+    observedAt: string,
+    artifactPreview?: ArtifactContentPreview
   ): Promise<void> {
     try {
       await this.observationPublisher?.publishWikiRefObserved?.({
         artifactRef,
+        ...(artifactPreview ? { artifactPreview } : {}),
         graphId: this.context.binding.graphId,
         nodeId: this.context.binding.node.nodeId,
         observedAt
@@ -2381,9 +2456,11 @@ export class RunnerService {
     });
 
     if (wikiArtifactRef) {
+      const wikiPreview = await readWikiRepositoryPreview(this.context);
       await this.publishWikiRefObservation(
         wikiArtifactRef,
-        memoryRepositorySyncOutcome.syncedAt
+        memoryRepositorySyncOutcome.syncedAt,
+        wikiPreview
       );
     }
 

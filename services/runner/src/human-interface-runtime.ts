@@ -859,6 +859,13 @@ function renderWikiRefCards(refs: WikiRefProjectionRecord[]): string {
         (ref) => `<div class="artifact-ref">
           <div><strong>${escapeHtml(ref.artifactId)}</strong> ${escapeHtml(ref.artifactRef.artifactKind ?? "knowledge_summary")}</div>
           ${ref.artifactRef.contentSummary ? `<div>${escapeHtml(ref.artifactRef.contentSummary)}</div>` : ""}
+          ${
+            ref.artifactPreview?.available
+              ? `<pre class="wiki-preview">${escapeHtml(ref.artifactPreview.content)}</pre>`
+              : ref.artifactPreview
+                ? `<div class="message-meta">${escapeHtml(ref.artifactPreview.reason)}</div>`
+                : ""
+          }
           <div class="message-meta">${escapeHtml(renderArtifactLocator(ref.artifactRef))}</div>
           <div class="message-meta">observed ${escapeHtml(ref.projection.updatedAt)}</div>
         </div>`
@@ -1066,6 +1073,7 @@ async function renderHome(input: {
       .artifact-action { color: var(--accent); font-weight: 700; text-decoration: none; width: fit-content; }
       .source-summary { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .source-summary ul { margin: 0; padding-left: 18px; }
+      .wiki-preview { background: #f4f6f8; border-radius: 6px; margin: 0; max-height: 220px; overflow: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
       dt { color: var(--muted); font-size: 13px; }

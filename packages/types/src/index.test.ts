@@ -775,6 +775,14 @@ describe("federated runtime contracts", () => {
       wikiRefs: [
         {
           artifactId: "wiki-alpha",
+          artifactPreview: {
+            available: true,
+            bytesRead: 23,
+            content: "# Working Context\nReady.",
+            contentEncoding: "utf8",
+            contentType: "text/markdown",
+            truncated: false
+          },
           artifactRef: {
             artifactId: "wiki-alpha",
             artifactKind: "knowledge_summary",
@@ -802,6 +810,7 @@ describe("federated runtime contracts", () => {
     expect(snapshot.sourceChangeRefs[0]?.sourceChangeSummary?.fileCount).toBe(1);
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
     expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");
+    expect(snapshot.wikiRefs[0]?.artifactPreview?.available).toBe(true);
   });
 
   it("accepts federated session and conversation observations with embedded runner records", () => {

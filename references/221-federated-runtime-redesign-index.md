@@ -140,9 +140,10 @@ The repository is not fully federated:
   source-change projection summary cards, source-change diff preview,
   artifact-ref rendering, projected bounded artifact preview with runtime
   fallback, delivery labels, local conversation read state, projected wiki-ref
-  rendering, wiki-scoped approval context rendering, signed read receipts, and
-  message publishing, but full wiki review actions and complete
-  projection-backed source/wiki review are still incomplete;
+  rendering, projected wiki preview rendering, wiki-scoped approval context
+  rendering, signed read receipts, and message publishing, but full wiki review
+  actions and complete projection-backed source/wiki review are still
+  incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
@@ -232,9 +233,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    projected source-change diff excerpts, source-change diff preview fallback,
    artifact-ref rendering, projected bounded artifact preview with runtime
    fallback, delivery labels, local conversation read state, projected wiki-ref
-   rendering, wiki-scoped approval context rendering, and signed read receipts
-   are implemented; full wiki review actions and complete projection-backed
-   source/wiki review remain open.
+   rendering, projected wiki preview rendering, wiki-scoped approval context
+   rendering, and signed read receipts are implemented; full wiki publication
+   actions and complete projection-backed source review remain open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.

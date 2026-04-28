@@ -125,6 +125,7 @@ export const sourceChangeRefProjectionRecordSchema =
 export const wikiRefProjectionRecordSchema =
   runnerObservationProjectionBaseSchema.extend({
     artifactId: identifierSchema,
+    artifactPreview: artifactContentPreviewSchema.optional(),
     artifactRef: artifactRefSchema
   });
 
