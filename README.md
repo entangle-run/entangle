@@ -299,7 +299,8 @@ This repository currently contains:
   without a Host-readable runner session file;
 - runner-owned approval lifecycle changes now emit signed `approval.updated`
   observations with bounded approval records, feeding Host approval activity
-  projection without relying only on runner-local approval files;
+  projection and approval list/detail reads without relying only on runner-local
+  approval files;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

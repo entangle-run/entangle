@@ -6674,6 +6674,48 @@ describe("buildHostServer", () => {
           sessionId: "session-remote"
         }
       });
+
+      const approvalListResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/approvals"
+      });
+
+      expect(approvalListResponse.statusCode).toBe(200);
+      expect(runtimeApprovalListResponseSchema.parse(approvalListResponse.json()))
+        .toMatchObject({
+          approvals: [
+            {
+              approvalId: "approval-remote",
+              requestedByNodeId: "worker-it",
+              sessionId: "session-remote",
+              status: "pending"
+            }
+          ]
+        });
+
+      const approvalInspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/approvals/approval-remote"
+      });
+
+      expect(approvalInspectionResponse.statusCode).toBe(200);
+      expect(
+        runtimeApprovalInspectionResponseSchema.parse(
+          approvalInspectionResponse.json()
+        )
+      ).toMatchObject({
+        approval: {
+          approvalId: "approval-remote",
+          operation: "source_application",
+          requestedByNodeId: "worker-it",
+          resource: {
+            id: "source-remote",
+            kind: "source_change_candidate"
+          },
+          sessionId: "session-remote",
+          status: "pending"
+        }
+      });
     } finally {
       await server.close();
     }

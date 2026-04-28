@@ -67,7 +67,9 @@ The most accurate current description is:
   session list plus bounded session detail can surface remote projected
   sessions without a Host-readable runner filesystem record;
 - approval lifecycle changes now flow through signed runner
-  `approval.updated` observations into Host approval activity projection;
+  `approval.updated` observations into Host approval activity projection, and
+  approval list/detail read APIs can use that projection without runner-local
+  approval files;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, Docker launcher rebasing onto the assignment path, and the full
   multi-machine distributed proof.

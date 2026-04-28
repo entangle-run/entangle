@@ -3762,3 +3762,13 @@ approval trace events.
 This makes approval status counts in projected remote session summaries/details
 come from signed runner observations instead of only from same-workstation
 approval files.
+
+## [2026-04-28] implementation | Added projected approval read APIs
+
+Added `references/308-projected-approval-read-api-slice.md`. Observed approval
+activity now persists the bounded full approval record, and Host runtime
+approval list/detail GET routes merge projected approvals with local
+compatibility files.
+
+Direct Host approval mutation remains local-context backed; signed User Node
+approval responses remain the federated participant path.

@@ -2741,6 +2741,7 @@ export async function recordApprovalUpdatedObservation(
     approvalRecord.approvalId
   );
   const record = observedApprovalActivityRecordSchema.parse({
+    approval: approvalRecord,
     approvalId: approvalRecord.approvalId,
     approverNodeIds: approvalRecord.approverNodeIds,
     conversationId: approvalRecord.conversationId,
@@ -10324,17 +10325,57 @@ export async function getRuntimeArtifactDiff(input: {
   });
 }
 
+async function listProjectedRuntimeApprovalRecords(
+  nodeId: string
+): Promise<ApprovalRecord[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph || !graph.nodes.some((node) => node.nodeId === nodeId)) {
+    return [];
+  }
+
+  const records = await listObservedApprovalActivityRecords();
+
+  return records
+    .filter(
+      (record) =>
+        record.graphId === graph.graphId &&
+        record.nodeId === nodeId &&
+        Boolean(record.approval)
+    )
+    .map((record) => record.approval)
+    .filter((approval): approval is ApprovalRecord => Boolean(approval))
+    .sort((left, right) => left.approvalId.localeCompare(right.approvalId));
+}
+
 export async function listRuntimeApprovals(
   nodeId: string
 ): Promise<RuntimeApprovalListResponse | null> {
-  const context = await getRuntimeContext(nodeId);
+  const [context, projectedApprovals] = await Promise.all([
+    getRuntimeContext(nodeId),
+    listProjectedRuntimeApprovalRecords(nodeId)
+  ]);
 
   if (!context) {
-    return null;
+    return runtimeApprovalListResponseSchema.parse({
+      approvals: projectedApprovals
+    });
+  }
+
+  const approvalRecordsById = new Map(
+    projectedApprovals.map((approval) => [approval.approvalId, approval])
+  );
+
+  for (const approval of await listRuntimeApprovalRecords(
+    context.workspace.runtimeRoot
+  )) {
+    approvalRecordsById.set(approval.approvalId, approval);
   }
 
   return runtimeApprovalListResponseSchema.parse({
-    approvals: await listRuntimeApprovalRecords(context.workspace.runtimeRoot)
+    approvals: [...approvalRecordsById.values()].sort((left, right) =>
+      left.approvalId.localeCompare(right.approvalId)
+    )
   });
 }
 
@@ -13933,6 +13974,7 @@ async function synchronizeApprovalActivityObservation(input: {
     approvalRecord.approvalId
   );
   const nextRecord = observedApprovalActivityRecordSchema.parse({
+    approval: approvalRecord,
     approvalId: approvalRecord.approvalId,
     approverNodeIds: approvalRecord.approverNodeIds,
     conversationId: approvalRecord.conversationId,

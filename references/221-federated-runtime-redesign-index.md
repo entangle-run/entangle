@@ -108,6 +108,7 @@ same-machine slice records.
 - [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
 - [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
 - [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
+- [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
 
 ## Audited Scope
 
@@ -273,6 +274,9 @@ The repository is not fully federated:
 - runner-owned approval lifecycle changes now publish `approval.updated`
   observations with bounded approval records, and Host reduces those signed
   events into approval activity projection and typed approval trace events;
+- Host runtime approval list/detail GET routes now merge projected approval
+  records with local compatibility files, while keeping direct approval mutation
+  local-context backed;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

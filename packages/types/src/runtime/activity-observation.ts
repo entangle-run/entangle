@@ -15,6 +15,7 @@ import {
 } from "../artifacts/artifact-ref.js";
 import {
   approvalLifecycleStateSchema,
+  approvalRecordSchema,
   conversationLifecycleStateSchema,
   engineTurnRequestSummarySchema,
   memoryRepositorySyncOutcomeSchema,
@@ -91,6 +92,7 @@ export const observedConversationActivityRecordSchema = z.object({
 });
 
 export const observedApprovalActivityRecordSchema = z.object({
+  approval: approvalRecordSchema.optional(),
   approvalId: identifierSchema,
   approverNodeIds: z.array(identifierSchema).default([]),
   conversationId: identifierSchema.optional(),

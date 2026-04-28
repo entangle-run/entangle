@@ -50,7 +50,7 @@ or stable User Node identity.
   compatibility sync, local pruning preserves signed observation-event records,
   session list/detail can now fall back to projected observed sessions, and
   approval lifecycle changes now have signed `approval.updated` observation
-  reducers;
+  reducers plus projected approval list/detail reads;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 

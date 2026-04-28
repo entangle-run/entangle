@@ -206,6 +206,7 @@ Implementation record:
 - [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
 - [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
 - [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
+- [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
 
 Verification:
 
@@ -234,6 +235,8 @@ Current status:
   detail for observed remote sessions when no local runtime session file exists;
 - approval lifecycle changes now flow through signed runner
   `approval.updated` observations and Host approval activity projection;
+- runtime approval list/detail GET routes now use observed approval projection
+  when local runtime approval files are unavailable;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime

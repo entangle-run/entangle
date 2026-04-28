@@ -28,8 +28,9 @@ projection fallback for remote sessions that have no Host-readable runner
 filesystem record, and the session detail route can return bounded projected
 inspection for those sessions. Runner-owned approval lifecycle changes now emit
 `approval.updated` observations with bounded approval records, and Host reduces
-them into observed approval activity. The remaining deep runtime APIs still
-need to be moved off local file reads.
+them into observed approval activity. Runtime approval list/detail GET routes
+now read from that projection as well as local compatibility files. The
+remaining deep runtime APIs still need to be moved off local file reads.
 
 ## Target Model
 
@@ -89,7 +90,7 @@ and refs so Host can inspect global state without reading runner disk.
   session inspection now have projection fallbacks; deeper runtime source,
   artifact, wiki, approval, and turn detail still need projected equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
-  session counts and future approval detail APIs.
+  session counts and approval read APIs.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 
