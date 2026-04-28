@@ -3364,6 +3364,7 @@ describe("buildHostServer", () => {
         .toMatchObject({
           conversationId: "conversation-alpha",
           direction: "inbound",
+          deliveryStatus: "received",
           fromNodeId: "worker-it",
           parentMessageId:
             "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
@@ -3403,6 +3404,7 @@ describe("buildHostServer", () => {
         ).messages[0]
       ).toMatchObject({
         direction: "inbound",
+        deliveryStatus: "received",
         parentMessageId:
           "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         summary: "The worker completed the task."
@@ -3500,6 +3502,7 @@ describe("buildHostServer", () => {
             approvalId: "approval-alpha",
             operation: "source_application"
           },
+          deliveryStatus: "received",
           messageType: "approval.request",
           parentMessageId:
             "abababababababababababababababababababababababababababababababab"

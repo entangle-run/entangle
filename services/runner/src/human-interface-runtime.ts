@@ -897,18 +897,59 @@ function renderMessageDelivery(message: UserNodeMessageRecord): string {
     message.relayUrls.length > 0
       ? message.relayUrls.length
       : message.publishedRelays.length;
+  const deliveryStatus =
+    message.deliveryStatus ??
+    (message.publishedRelays.length > 0 ? "published" : undefined);
   const deliveryLabel =
-    message.publishedRelays.length > 0
-      ? `published ${message.publishedRelays.length}/${targetRelayCount} relays`
-      : "publish status unknown";
+    deliveryStatus === "failed"
+      ? `failed ${message.publishedRelays.length}/${targetRelayCount} relays`
+      : deliveryStatus === "partial"
+        ? `partial ${message.publishedRelays.length}/${targetRelayCount} relays`
+        : message.publishedRelays.length > 0
+          ? `published ${message.publishedRelays.length}/${targetRelayCount} relays`
+          : "publish status unknown";
+  const deliveryErrors =
+    message.deliveryErrors.length > 0
+      ? `<ul class="delivery-errors">${message.deliveryErrors
+          .map(
+            (error) =>
+              `<li>${escapeHtml(error.relayUrl)}: ${escapeHtml(error.message)}</li>`
+          )
+          .join("")}</ul>`
+      : "";
 
-  return `<div class="message-meta">delivery ${escapeHtml(deliveryLabel)}</div>`;
+  return `<div class="message-meta">delivery ${escapeHtml(deliveryLabel)}</div>${deliveryErrors}`;
 }
 
 function renderParentMessageLink(message: UserNodeMessageRecord): string {
   return message.parentMessageId
     ? `<div class="message-meta">reply to ${escapeHtml(message.parentMessageId)}</div>`
     : "";
+}
+
+function renderRetryControl(message: UserNodeMessageRecord): string {
+  if (message.direction !== "outbound" || message.deliveryStatus !== "failed") {
+    return "";
+  }
+
+  const approval = message.approval;
+
+  return `<form class="retry-action" method="post" action="/messages">
+    <input type="hidden" name="conversationId" value="${escapeHtml(message.conversationId)}" />
+    <input type="hidden" name="sessionId" value="${escapeHtml(message.sessionId)}" />
+    <input type="hidden" name="targetNodeId" value="${escapeHtml(message.toNodeId)}" />
+    <input type="hidden" name="messageType" value="${escapeHtml(message.messageType)}" />
+    <input type="hidden" name="summary" value="${escapeHtml(message.summary)}" />
+    ${message.parentMessageId ? `<input type="hidden" name="parentMessageId" value="${escapeHtml(message.parentMessageId)}" />` : ""}
+    ${approval?.approvalId ? `<input type="hidden" name="approvalId" value="${escapeHtml(approval.approvalId)}" />` : ""}
+    ${approval?.decision ? `<input type="hidden" name="approvalDecision" value="${escapeHtml(approval.decision)}" />` : ""}
+    ${approval?.operation ? `<input type="hidden" name="approvalOperation" value="${escapeHtml(approval.operation)}" />` : ""}
+    ${approval?.reason ? `<input type="hidden" name="approvalReason" value="${escapeHtml(approval.reason)}" />` : ""}
+    ${approval?.resource?.id ? `<input type="hidden" name="approvalResourceId" value="${escapeHtml(approval.resource.id)}" />` : ""}
+    ${approval?.resource?.kind ? `<input type="hidden" name="approvalResourceKind" value="${escapeHtml(approval.resource.kind)}" />` : ""}
+    ${approval?.resource?.label ? `<input type="hidden" name="approvalResourceLabel" value="${escapeHtml(approval.resource.label)}" />` : ""}
+    <button type="submit">Retry delivery</button>
+  </form>`;
 }
 
 async function renderHome(input: {
@@ -1025,6 +1066,7 @@ async function renderHome(input: {
               ${renderParentMessageLink(message)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
               ${renderApprovalControls(message)}
+              ${renderRetryControl(message)}
             </article>`
         )
         .join("")
@@ -1074,7 +1116,8 @@ async function renderHome(input: {
       .message { border-top: 1px solid var(--line); display: grid; gap: 6px; padding: 12px 0; }
       .message:first-child { border-top: 0; padding-top: 0; }
       .message-meta { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-      .approval-actions { display: flex; gap: 8px; margin-top: 4px; }
+      .approval-actions, .retry-action { display: flex; gap: 8px; margin-top: 4px; }
+      .delivery-errors { color: var(--danger); font-size: 12px; margin: 4px 0 0; padding-left: 18px; }
       .artifact-list { display: grid; gap: 6px; }
       .artifact-ref { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .artifact-action { color: var(--accent); font-weight: 700; text-decoration: none; width: fit-content; }
@@ -1526,7 +1569,12 @@ export async function startHumanInterfaceRuntime(input: {
             await renderHome({
               context: input.context,
               hostApi: input.hostApi,
-              notice: `Published ${published.messageType} ${published.eventId}.`,
+              notice:
+                published.deliveryStatus === "failed"
+                  ? `Recorded ${published.messageType} ${published.eventId}, but relay delivery failed.`
+                  : published.deliveryStatus === "partial"
+                    ? `Published ${published.messageType} ${published.eventId} to ${published.publishedRelays.length}/${published.relayUrls.length} relays.`
+                    : `Published ${published.messageType} ${published.eventId}.`,
               selectedConversationId: published.conversationId
             })
           );

@@ -325,6 +325,8 @@ describe("federated runtime contracts", () => {
       conversationId: "conversation-alpha",
       createdAt: observedAt,
       direction: "outbound",
+      deliveryErrors: [],
+      deliveryStatus: "published",
       eventId:
         "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
       fromNodeId: "user-main",
@@ -436,6 +438,8 @@ describe("federated runtime contracts", () => {
     expect(
       userNodeMessagePublishResponseSchema.parse({
         conversationId: "conversation-alpha",
+        deliveryErrors: [],
+        deliveryStatus: "published",
         eventId:
           "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         fromNodeId: "user-main",

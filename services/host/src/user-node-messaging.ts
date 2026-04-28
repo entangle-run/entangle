@@ -45,6 +45,10 @@ function buildAuthSigner(
   return (event) => Promise.resolve(finalizeEvent(event, secretKey));
 }
 
+function formatPublishFailure(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function buildUserNodeA2AMessage(input: {
   request: ParsedUserNodeMessagePublishRequest;
   runtimeContext: EffectiveRuntimeContext;
@@ -147,15 +151,39 @@ export async function publishUserNodeA2AMessage(input: {
       publishParams.onauth = buildAuthSigner(input.userNode.secretKey);
     }
 
-    const publishResults = await Promise.all(
+    const publishResults = await Promise.allSettled(
       pool.publish(relaySelection.relayUrls, wrappedEvent, publishParams)
     );
-    const publishedRelays = publishResults.map((result, index) =>
-      result.trim() ? result : relaySelection.relayUrls[index]!
+    const publishedRelays = publishResults.flatMap((result, index) => {
+      if (result.status === "rejected") {
+        return [];
+      }
+
+      return [
+        result.value.trim() ? result.value : relaySelection.relayUrls[index]!
+      ];
+    });
+    const deliveryErrors = publishResults.flatMap((result, index) =>
+      result.status === "rejected"
+        ? [
+            {
+              message: formatPublishFailure(result.reason),
+              relayUrl: relaySelection.relayUrls[index]!
+            }
+          ]
+        : []
     );
+    const deliveryStatus =
+      publishedRelays.length === relaySelection.relayUrls.length
+        ? "published"
+        : publishedRelays.length > 0
+          ? "partial"
+          : "failed";
 
     return {
       conversationId: message.conversationId,
+      deliveryErrors,
+      deliveryStatus,
       eventId: rumor.id,
       fromNodeId: message.fromNodeId,
       fromPubkey: message.fromPubkey,

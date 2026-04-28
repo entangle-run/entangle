@@ -219,6 +219,8 @@ describe("User Node A2A publishing", () => {
     });
 
     expect(response).toMatchObject({
+      deliveryErrors: [],
+      deliveryStatus: "published",
       fromNodeId: "user-main",
       fromPubkey: getPublicKey(userSecretKey),
       messageType: "task.request",
@@ -266,5 +268,49 @@ describe("User Node A2A publishing", () => {
     });
 
     expect(response.publishedRelays).toEqual(["ws://localhost:7777"]);
+    expect(response.deliveryStatus).toBe("published");
+  });
+
+  it("returns failed delivery state when relay publication fails", async () => {
+    const userSecretKey = generateSecretKey();
+    const workerSecretKey = generateSecretKey();
+    const response = await publishUserNodeA2AMessage({
+      pool: {
+        destroy: vi.fn(),
+        publish: vi.fn((relayUrls: string[]) =>
+          relayUrls.map((relayUrl) =>
+            Promise.reject(new Error(`cannot publish to ${relayUrl}`))
+          )
+        )
+      },
+      request: {
+        artifactRefs: [],
+        messageType: "question",
+        responsePolicy: {
+          closeOnResult: false,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        summary: "Can you receive this signed message?",
+        targetNodeId: "worker-it"
+      },
+      runtimeContext: buildRuntimeContext(getPublicKey(workerSecretKey)),
+      userNode: {
+        nodeId: "user-main",
+        publicKey: getPublicKey(userSecretKey),
+        secretKey: userSecretKey
+      }
+    });
+
+    expect(response).toMatchObject({
+      deliveryErrors: [
+        {
+          message: "cannot publish to ws://localhost:7777",
+          relayUrl: "ws://localhost:7777"
+        }
+      ],
+      deliveryStatus: "failed",
+      publishedRelays: []
+    });
   });
 });

@@ -3500,3 +3500,14 @@ link in conversation history.
 
 This makes human-node conversation state less flat and gives future delivery
 retry and thread repair work a durable parent/child message link to build on.
+
+## [2026-04-28] implementation | Added User Node delivery retry state
+
+Added `references/284-user-node-delivery-retry-state-slice.md`. User Node
+message publish now records per-relay delivery status instead of dropping the
+outbox record when relay publication fails. Outbound message records can be
+`published`, `partial`, or `failed`; inbound records are marked `received`.
+
+The runner-served User Client now renders failed relay delivery details and a
+retry action that republishes through the existing signed User Node gateway
+while preserving conversation, session, parent-message, and approval context.

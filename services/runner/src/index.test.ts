@@ -596,6 +596,8 @@ describe("runner runtime context", () => {
                   conversationId: "conversation-alpha",
                   createdAt: "2026-04-26T12:01:00.000Z",
                   direction: "outbound",
+                  deliveryErrors: [],
+                  deliveryStatus: "published",
                   eventId:
                     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
                   fromNodeId: "user-main",
@@ -610,6 +612,35 @@ describe("runner runtime context", () => {
                   toNodeId: "worker-it",
                   toPubkey: remotePublicKey,
                   turnId: "turn-alpha",
+                  userNodeId: "user-main"
+                },
+                {
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:01:30.000Z",
+                  direction: "outbound",
+                  deliveryErrors: [
+                    {
+                      message: "connection failed",
+                      relayUrl: "ws://strfry:7777"
+                    }
+                  ],
+                  deliveryStatus: "failed",
+                  eventId:
+                    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  fromNodeId: "user-main",
+                  fromPubkey: runnerPublicKey,
+                  messageType: "question",
+                  parentMessageId:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  peerNodeId: "worker-it",
+                  publishedRelays: [],
+                  relayUrls: ["ws://strfry:7777"],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Failed user message.",
+                  toNodeId: "worker-it",
+                  toPubkey: remotePublicKey,
+                  turnId: "turn-failed",
                   userNodeId: "user-main"
                 },
                 {
@@ -982,6 +1013,8 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("conversation-alpha");
       expect(pageBody).toContain("Previous user message.");
       expect(pageBody).toContain("delivery published 1/1 relays");
+      expect(pageBody).toContain("delivery failed 0/1 relays");
+      expect(pageBody).toContain("Retry delivery");
       expect(pageBody).toContain("delivery received by User Client");
       expect(pageBody).toContain(
         "reply to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"

@@ -255,15 +255,16 @@ Current status:
   runtime fallback, delivery labels, local conversation read state, projected
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
   context rendering, signed read receipts, parent-message links, and message
-  publishing that preserves selected conversation/session context;
+  delivery retry state, and message publishing that preserves selected
+  conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application, full wiki publication actions, richer
-  artifact object-backend review, and delivery retry state remain open.
+- final bundled User Client application, full wiki publication actions, and
+  richer artifact object-backend review remain open.
 
 Verification:
 

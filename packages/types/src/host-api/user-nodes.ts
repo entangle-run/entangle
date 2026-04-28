@@ -35,6 +35,18 @@ export const userNodeInboxResponseSchema = z.object({
 
 export const userNodeMessageDirectionSchema = z.enum(["inbound", "outbound"]);
 
+export const userNodeMessageDeliveryStatusSchema = z.enum([
+  "failed",
+  "partial",
+  "published",
+  "received"
+]);
+
+export const userNodeMessageDeliveryErrorSchema = z.object({
+  message: nonEmptyStringSchema,
+  relayUrl: nonEmptyStringSchema
+});
+
 export const userNodeMessageRecordSchema = z.object({
   approval: z
     .object({
@@ -50,6 +62,8 @@ export const userNodeMessageRecordSchema = z.object({
   conversationId: identifierSchema,
   createdAt: nonEmptyStringSchema,
   direction: userNodeMessageDirectionSchema,
+  deliveryErrors: z.array(userNodeMessageDeliveryErrorSchema).default([]),
+  deliveryStatus: userNodeMessageDeliveryStatusSchema.optional(),
   eventId: nostrEventIdSchema,
   fromNodeId: identifierSchema,
   fromPubkey: nostrPublicKeySchema,
@@ -141,6 +155,10 @@ export const userNodeMessagePublishRequestSchema = z
 
 export const userNodeMessagePublishResponseSchema = z.object({
   conversationId: nonEmptyStringSchema,
+  deliveryErrors: z.array(userNodeMessageDeliveryErrorSchema).default([]),
+  deliveryStatus: z
+    .enum(["failed", "partial", "published"])
+    .default("published"),
   eventId: nostrEventIdSchema,
   fromNodeId: identifierSchema,
   fromPubkey: nostrPublicKeySchema,

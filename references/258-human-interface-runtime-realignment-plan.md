@@ -79,8 +79,8 @@ The current implementation still does not have the final User Node client:
   service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
-  message records, local read markers, and signed read receipts, but not
-  delivery retry state or a local encrypted client store.
+  message records, local read markers, signed read receipts, delivery retry
+  state, and parent-message links, but not a local encrypted client store.
 - User Node approvals still coexist with older operator-side approval mutation
   surfaces.
 
@@ -241,8 +241,9 @@ projected wiki preview rendering, wiki-scoped approval context rendering,
 scoped approval-response context, and message/approval/read-receipt
 publication that keeps the selected conversation/session context. Message
 history now also shows parent-message links, derived delivery labels for
-outbound relay publish coverage and inbound User Client receipt, and selected
-conversations are marked read through Host projection.
+outbound relay publish coverage, failed relay delivery details with retry
+actions, and inbound User Client receipt, and selected conversations are marked
+read through Host projection.
 
 Impacted modules:
 
@@ -379,7 +380,7 @@ The fastest path to a product the user can test is:
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
 7. Expand complete projection-backed source/wiki review, richer artifact
-   object-backend review, delivery retry state, and OpenCode parity.
+   object-backend review, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.
