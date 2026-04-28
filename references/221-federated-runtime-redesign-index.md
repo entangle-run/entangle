@@ -141,6 +141,7 @@ same-machine slice records.
 - [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
 - [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
 - [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
+- [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 
 ## Audited Scope
 
@@ -379,7 +380,8 @@ The repository is not fully federated:
   `runtime.source_history.replay` control command; the assigned runner enforces
   source-application approval policy, replays only from expected source trees,
   persists replay records locally, and emits `source_history.replayed`
-  observations;
+  observations. Studio selected-runtime source-history detail now exposes the
+  same replay request path without restoring direct Host workspace mutation;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -544,7 +546,8 @@ Source-history publication retry now has a Host-signed
 `runtime.source_history.publish` control command for accepted federated
 assignments. Source-history replay now has a Host-signed
 `runtime.source_history.replay` control command for accepted federated
-assignments, while non-primary target publication remains future work. The next
+assignments, and Studio can request that command from selected source-history
+details, while non-primary target publication remains future work. The next
 blocking implementation areas are richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime

@@ -521,6 +521,7 @@ Implementation record:
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 - [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
 - [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
+- [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 
 Verification:
 
@@ -592,7 +593,10 @@ schema-validated generic runner join configs without embedding secrets.
 
 CLI projection summaries now include assignment receipt counts, and Studio
 renders recent projected assignment receipt rows near the assignment/runtime
-operator panel. A richer per-assignment detail timeline remains follow-up work.
+operator panel. Studio selected-runtime source-history detail now exposes the
+federated replay request path through Host, matching the CLI
+`host runtimes source-history-replay` command. A richer per-assignment detail
+timeline remains follow-up work.
 
 ### Slice 13: Product Naming Migration
 

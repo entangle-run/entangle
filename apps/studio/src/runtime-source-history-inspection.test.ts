@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SourceHistoryRecord } from "@entangle/types";
 import {
+  buildRuntimeSourceHistoryReplayRequest,
+  createEmptyRuntimeSourceHistoryReplayDraft,
+  formatRuntimeSourceHistoryReplayRequestSummary,
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
   sortRuntimeSourceHistory
@@ -94,6 +97,41 @@ describe("runtime source history Studio helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
       "publication approval approval-source-publish-new"
+    );
+  });
+
+  it("builds replay requests from optional operator fields", () => {
+    expect(
+      buildRuntimeSourceHistoryReplayRequest(
+        createEmptyRuntimeSourceHistoryReplayDraft()
+      )
+    ).toEqual({});
+
+    expect(
+      buildRuntimeSourceHistoryReplayRequest({
+        approvalId: " approval-source-application ",
+        reason: " restore accepted source ",
+        replayId: " replay-alpha ",
+        replayedBy: " operator-it "
+      })
+    ).toEqual({
+      approvalId: "approval-source-application",
+      reason: "restore accepted source",
+      replayId: "replay-alpha",
+      replayedBy: "operator-it"
+    });
+
+    expect(
+      formatRuntimeSourceHistoryReplayRequestSummary({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-replay-alpha",
+        nodeId: "worker-it",
+        requestedAt: "2026-04-28T00:00:00.000Z",
+        sourceHistoryId: "source-history-alpha",
+        status: "requested"
+      })
+    ).toBe(
+      "source-history-alpha requested on assignment-alpha (cmd-source-history-replay-alpha)"
     );
   });
 });

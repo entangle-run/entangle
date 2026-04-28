@@ -280,7 +280,8 @@ The repository now also contains the first real implementation baseline:
   operator publish/retry requests now travel as Host-signed
   `runtime.source_history.publish` commands to the accepted runner assignment,
   and explicit operator replay requests now travel as Host-signed
-  `runtime.source_history.replay` commands to the accepted runner assignment.
+  `runtime.source_history.replay` commands to the accepted runner assignment,
+  with both CLI and Studio source-history detail using that Host request path.
   Node-configured source mutation policy is now able to require approved runtime
   approval ids before source application or source publication, while
   validating approval operation and concrete resource scope before accepting a

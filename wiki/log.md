@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Added Studio source-history replay requests
+
+Added a Studio selected-runtime source-history replay form that calls the
+federated Host request path instead of mutating runner workspaces. Operators can
+provide optional approval id, reason, replay id, and requester metadata; Studio
+shows the Host command as requested while replay completion remains assignment
+receipt and `source_history.replayed` evidence.
+
+Added `references/341-studio-source-history-replay-control-slice.md`.
+
 ## [2026-04-28] implementation | Added federated source-history replay control
 
 Added Host-signed `runtime.source_history.replay` control delivery for explicit

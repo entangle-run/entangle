@@ -16,7 +16,8 @@ Studio covers Host status, federation projection summary, User Node identity
 summary, projected User Node conversations, graph editing/validation/revisions/
 diff, package source admission, external principals, runtime lifecycle,
 runtime detail, sessions, approvals, turns, artifacts, memory, source
-candidates/history, projected wiki refs, recovery, and event refresh.
+candidates/history, projected wiki refs, recovery, event refresh, and
+federated source-history replay requests from selected source-history detail.
 
 Missing surfaces:
 
@@ -173,7 +174,9 @@ Node.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health,
   User Node summary panel, transport health row, and first-pass assignment
-  offer/revoke controls.
+  offer/revoke controls. Studio source-history detail now has a federated
+  replay request form mirroring the CLI request path without direct workspace
+  mutation.
 - Add Studio User Node runtime visibility and User Client open action. The
   first projection-derived User Node runtime summaries and `clientUrl` open
   actions are implemented; richer reassignment and health panels remain open.

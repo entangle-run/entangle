@@ -41,14 +41,14 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
+[341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
 operator receipt/transport visibility, runner-owned source history, and removal
 of direct Host source/wiki/artifact filesystem mutation paths plus federated
-session-cancellation, source-history-publication, and source-history-replay
-control delivery.
+session-cancellation, source-history-publication, source-history-replay control
+delivery, and matching Studio replay request controls.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -398,6 +398,9 @@ files are the active federated redesign pack.
 337. [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 338. [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 339. [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
+340. [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
+341. [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
+342. [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 
 ## Role of this corpus
 

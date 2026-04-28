@@ -247,7 +247,8 @@ This repository currently contains:
   `runtime.source_history.publish` commands to the accepted runner assignment
   and explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
-  instead of Host-side filesystem mutations. Node-configured source mutation
+  instead of Host-side filesystem mutations, with both CLI and Studio source
+  history detail using that Host request path. Node-configured source mutation
   policy is still able to require approved runtime
   approval ids before source application or source publication, and with
   accepted approval ids persisted on source records after validating approval

@@ -181,9 +181,13 @@ import {
   sortRuntimeSourceChangeCandidates
 } from "./runtime-source-change-candidate-inspection.js";
 import {
+  buildRuntimeSourceHistoryReplayRequest,
+  createEmptyRuntimeSourceHistoryReplayDraft,
+  formatRuntimeSourceHistoryReplayRequestSummary,
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
-  sortRuntimeSourceHistory
+  sortRuntimeSourceHistory,
+  type RuntimeSourceHistoryReplayDraft
 } from "./runtime-source-history-inspection.js";
 import {
   buildSessionLaunchRequest,
@@ -574,6 +578,16 @@ export function App() {
     useState<RuntimeSourceHistoryInspectionResponse | null>(null);
   const [sourceHistoryDetailError, setSourceHistoryDetailError] =
     useState<string | null>(null);
+  const [sourceHistoryReplayDraft, setSourceHistoryReplayDraft] =
+    useState<RuntimeSourceHistoryReplayDraft>(
+      createEmptyRuntimeSourceHistoryReplayDraft
+    );
+  const [sourceHistoryReplayError, setSourceHistoryReplayError] =
+    useState<string | null>(null);
+  const [lastSourceHistoryReplaySummary, setLastSourceHistoryReplaySummary] =
+    useState<string | null>(null);
+  const [pendingSourceHistoryReplay, setPendingSourceHistoryReplay] =
+    useState(false);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -1646,10 +1660,17 @@ export function App() {
         if (!selectedSourceHistoryId) {
           setSelectedSourceHistoryInspection(null);
           setSourceHistoryDetailError(null);
+          setSourceHistoryReplayError(null);
+          setLastSourceHistoryReplaySummary(null);
+          setPendingSourceHistoryReplay(false);
         } else if (!shouldRefreshSelectedSourceHistory) {
           setSelectedSourceHistoryId(null);
           setSelectedSourceHistoryInspection(null);
           setSourceHistoryDetailError(null);
+          setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+          setSourceHistoryReplayError(null);
+          setLastSourceHistoryReplaySummary(null);
+          setPendingSourceHistoryReplay(false);
         } else if (selectedSourceHistoryResult?.status === "fulfilled") {
           setSelectedSourceHistoryInspection(selectedSourceHistoryResult.value);
           setSourceHistoryDetailError(null);
@@ -1661,6 +1682,9 @@ export function App() {
               "Unknown error while loading source history detail."
             )
           );
+          setSourceHistoryReplayError(null);
+          setLastSourceHistoryReplaySummary(null);
+          setPendingSourceHistoryReplay(false);
         }
       } else {
         setSelectedSourceHistory([]);
@@ -1673,6 +1697,10 @@ export function App() {
         setSelectedSourceHistoryId(null);
         setSelectedSourceHistoryInspection(null);
         setSourceHistoryDetailError(null);
+        setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+        setSourceHistoryReplayError(null);
+        setLastSourceHistoryReplaySummary(null);
+        setPendingSourceHistoryReplay(false);
       }
 
       if (sessionResult.status === "fulfilled") {
@@ -2076,6 +2104,10 @@ export function App() {
       setSelectedSourceHistoryId(sourceHistoryId);
       setSelectedSourceHistoryInspection(null);
       setSourceHistoryDetailError(null);
+      setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+      setSourceHistoryReplayError(null);
+      setLastSourceHistoryReplaySummary(null);
+      setPendingSourceHistoryReplay(false);
 
       try {
         const response = await client.getRuntimeSourceHistory(
@@ -2101,6 +2133,54 @@ export function App() {
     },
     [client, selectedRuntimeId]
   );
+
+  const requestRuntimeSourceHistoryReplay = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedSourceHistoryInspection) {
+      return;
+    }
+
+    const sourceHistoryId =
+      selectedSourceHistoryInspection.entry.sourceHistoryId;
+
+    setPendingSourceHistoryReplay(true);
+    setSourceHistoryReplayError(null);
+    setLastSourceHistoryReplaySummary(null);
+
+    try {
+      const response = await client.replayRuntimeSourceHistory(
+        selectedRuntimeId,
+        sourceHistoryId,
+        buildRuntimeSourceHistoryReplayRequest(sourceHistoryReplayDraft)
+      );
+
+      startTransition(() => {
+        setLastSourceHistoryReplaySummary(
+          formatRuntimeSourceHistoryReplayRequestSummary(response)
+        );
+        setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+        setSourceHistoryReplayError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setSourceHistoryReplayError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting source history replay."
+          )
+        );
+      });
+    } finally {
+      setPendingSourceHistoryReplay(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedSourceHistoryInspection,
+    sourceHistoryReplayDraft
+  ]);
 
   const selectGraphRevision = useCallback(
     async (revisionId: string) => {
@@ -2513,6 +2593,10 @@ export function App() {
       setSelectedSourceHistoryId(null);
       setSelectedSourceHistoryInspection(null);
       setSourceHistoryDetailError(null);
+      setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+      setSourceHistoryReplayError(null);
+      setLastSourceHistoryReplaySummary(null);
+      setPendingSourceHistoryReplay(false);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -2568,6 +2652,10 @@ export function App() {
     setSelectedSourceHistoryId(null);
     setSelectedSourceHistoryInspection(null);
     setSourceHistoryDetailError(null);
+    setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+    setSourceHistoryReplayError(null);
+    setLastSourceHistoryReplaySummary(null);
+    setPendingSourceHistoryReplay(false);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -5425,6 +5513,92 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        <form
+                          className="stacked-form"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void requestRuntimeSourceHistoryReplay();
+                          }}
+                        >
+                          <div className="field-grid">
+                            <label className="field">
+                              <span>Approval ID</span>
+                              <input
+                                disabled={pendingSourceHistoryReplay}
+                                onChange={(event) => {
+                                  setSourceHistoryReplayDraft((current) => ({
+                                    ...current,
+                                    approvalId: event.target.value
+                                  }));
+                                }}
+                                placeholder="optional approved source_application id"
+                                value={sourceHistoryReplayDraft.approvalId}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Reason</span>
+                              <input
+                                disabled={pendingSourceHistoryReplay}
+                                onChange={(event) => {
+                                  setSourceHistoryReplayDraft((current) => ({
+                                    ...current,
+                                    reason: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator replay reason"
+                                value={sourceHistoryReplayDraft.reason}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Replay ID</span>
+                              <input
+                                disabled={pendingSourceHistoryReplay}
+                                onChange={(event) => {
+                                  setSourceHistoryReplayDraft((current) => ({
+                                    ...current,
+                                    replayId: event.target.value
+                                  }));
+                                }}
+                                placeholder="optional stable replay id"
+                                value={sourceHistoryReplayDraft.replayId}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Requested By</span>
+                              <input
+                                disabled={pendingSourceHistoryReplay}
+                                onChange={(event) => {
+                                  setSourceHistoryReplayDraft((current) => ({
+                                    ...current,
+                                    replayedBy: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator id"
+                                value={sourceHistoryReplayDraft.replayedBy}
+                              />
+                            </label>
+                          </div>
+                          <div className="action-row">
+                            <button
+                              className="action-button"
+                              disabled={pendingSourceHistoryReplay}
+                              type="submit"
+                            >
+                              {pendingSourceHistoryReplay
+                                ? "Requesting..."
+                                : "Request Replay"}
+                            </button>
+                            {lastSourceHistoryReplaySummary ? (
+                              <span className="panel-caption">
+                                {lastSourceHistoryReplaySummary}
+                              </span>
+                            ) : null}
+                          </div>
+                          {sourceHistoryReplayError ? (
+                            <p className="error-box">{sourceHistoryReplayError}</p>
+                          ) : null}
+                        </form>
                       </div>
                     ) : selectedSourceHistoryId ? (
                       <div className="inline-empty-state">
