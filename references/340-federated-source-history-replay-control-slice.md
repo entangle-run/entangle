@@ -95,7 +95,7 @@ Host never writes the source workspace and never reads runner replay files.
 
 ## Audit Search
 
-`git diff -U0 | rg "^\\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"`
+`git diff -U0 | rg "^\\+.*(deprecated local product name|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"`
 returned only runner-owned local state/storage additions:
 
 - `fixture.contextPath` in runner tests: valid test fixture for loading an
@@ -105,8 +105,8 @@ returned only runner-owned local state/storage additions:
 - `source-history-replays` in runner state paths: valid runner-owned replay
   record storage.
 
-No new product-level `Entangle Local`, `entangle-local`, shared-volume, or
-Host-side runner filesystem assumption was introduced.
+No new product-level deprecated local product name, shared-volume, or Host-side
+runner filesystem assumption was introduced.
 
 ## Migration/Compatibility Notes
 

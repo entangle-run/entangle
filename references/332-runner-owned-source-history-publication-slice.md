@@ -60,7 +60,7 @@ Verification run for this slice:
 - `pnpm ops:smoke-federated-process-runner -- --timeout-ms 60000`
 - `git diff --check`
 - Added-line local-assumption audit:
-  `git diff -U0 | rg "^\\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"`
+  `git diff -U0 | rg "^\\+.*(deprecated local product name|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"`
 
 The added-line audit found one `runtimeRoot` reference. It is valid because the
 runner reads its own runner-local shadow git repository before publishing its
