@@ -243,7 +243,9 @@ publication that keeps the selected conversation/session context. Message
 history now also shows parent-message links, derived delivery labels for
 outbound relay publish coverage, failed relay delivery details with retry
 actions, and inbound User Client receipt, and selected conversations are marked
-read through Host projection.
+read through Host projection. Runtime identity, Host API, and relay status now
+render in the User Client, and the page polls `/api/state` for lightweight live
+refresh when inbox or projection state changes.
 
 Impacted modules:
 

@@ -985,7 +985,8 @@ describe("runner runtime context", () => {
 
       const stateResponse = await fetch(new URL("/api/state", handle.clientUrl));
       expect(stateResponse.status).toBe(200);
-      await expect(stateResponse.json()).resolves.toMatchObject({
+      const stateBody = await stateResponse.json();
+      expect(stateBody).toMatchObject({
         conversations: [
           {
             conversationId: "conversation-alpha",
@@ -1003,6 +1004,13 @@ describe("runner runtime context", () => {
             nodeId: "worker-it"
           }
         ],
+        runtime: {
+          hostApiBaseUrl: `http://127.0.0.1:${hostAddress.port}`,
+          hostApiConfigured: true,
+          identityPublicKey: runnerPublicKey,
+          primaryRelayProfileRef: "preview-relay",
+          relayUrls: ["ws://strfry:7777"]
+        },
         userNodeId: "user-main"
       });
 
@@ -1011,6 +1019,11 @@ describe("runner runtime context", () => {
       );
       const pageBody = await pageResponse.text();
       expect(pageBody).toContain("conversation-alpha");
+      expect(pageBody).toContain("data-live-status");
+      expect(pageBody).toContain("Live state current");
+      expect(pageBody).toContain(runnerPublicKey);
+      expect(pageBody).toContain(`http://127.0.0.1:${hostAddress.port}`);
+      expect(pageBody).toContain("ws://strfry:7777");
       expect(pageBody).toContain("Previous user message.");
       expect(pageBody).toContain("delivery published 1/1 relays");
       expect(pageBody).toContain("delivery failed 0/1 relays");

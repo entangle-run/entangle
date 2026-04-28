@@ -220,7 +220,9 @@ The repository now also contains the first real implementation baseline:
   idle or mid-turn, and translated into engine abort signals for OpenCode-backed
   turns, and with generic runtime inspection now surfacing pending
   approval blockers plus the latest produced artifact and requested approval
-  ids through the shared host/CLI/Studio boundary;
+  ids through the shared host/CLI/Studio boundary, and with runner-served User
+  Clients now rendering runtime identity, Host API, relay status, and
+  lightweight live refresh over `/api/state`;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

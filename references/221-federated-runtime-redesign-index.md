@@ -87,6 +87,7 @@ same-machine slice records.
 - [284-user-node-delivery-retry-state-slice.md](284-user-node-delivery-retry-state-slice.md)
 - [285-studio-wiki-publication-retry-slice.md](285-studio-wiki-publication-retry-slice.md)
 - [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
+- [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
 
 ## Audited Scope
 
@@ -152,8 +153,9 @@ The repository is not fully federated:
   fallback, delivery labels, local conversation read state, projected wiki-ref
   rendering, projected wiki preview rendering, wiki-scoped approval context
   rendering, signed read receipts, parent-message links, delivery retry state,
-  and message publishing, but a separate bundled User Client app and richer
-  object-backend review still remain incomplete;
+  runtime status, live state refresh, and message publishing, but a separate
+  bundled User Client app and richer object-backend review still remain
+  incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
@@ -252,8 +254,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    fallback, delivery labels, local conversation read state, projected wiki-ref
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
-   and wiki publication retry actions are implemented; complete
-   projection-backed source review remains open.
+   runtime status, live state refresh, and wiki publication retry actions are
+   implemented; complete projection-backed source review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.

@@ -141,9 +141,10 @@ This repository currently contains:
   artifact-ref rendering, projected bounded artifact preview with runtime
   fallback, delivery labels, local conversation read state, projected wiki-ref
   rendering, projected wiki preview rendering, signed read receipts,
-  parent-message links, delivery retry state, and Host-backed message
-  publishing, plus projection of the User Client endpoint through Host, CLI,
-  and Studio, with CLI signed approve/reject and generic User Node message
+  parent-message links, delivery retry state, runtime identity/relay/Host API
+  status, lightweight live state refresh, and Host-backed message publishing,
+  plus projection of the User Client endpoint through Host, CLI, and Studio,
+  with CLI signed approve/reject and generic User Node message
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI
   approve/reject commands able to derive that context directly from

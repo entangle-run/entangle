@@ -3532,3 +3532,14 @@ and OpenCode call ids when present.
 The shared runtime-turn and runtime-trace presentation helpers now surface this
 evidence for CLI and Studio consumers, and memory synthesis receives tool title
 and duration context without embedding raw provider event payloads.
+
+## [2026-04-28] implementation | Added User Client runtime status and live refresh
+
+Added `references/287-user-client-runtime-status-live-refresh-slice.md`. The
+runner-served User Client now includes runtime identity, Host API, primary
+relay, relay URLs, and target-node status in `/api/state` and in the rendered
+page.
+
+The page now computes a bounded state fingerprint and polls `/api/state` so it
+can reload when inbox, source-change, or wiki projection state changes, without
+moving user-node chat ownership into Studio.

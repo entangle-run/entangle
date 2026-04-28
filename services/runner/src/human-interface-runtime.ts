@@ -53,6 +53,13 @@ type UserClientState = {
   generatedAt?: string;
   graphId: string;
   graphRevisionId: string;
+  runtime: {
+    hostApiBaseUrl?: string;
+    hostApiConfigured: boolean;
+    identityPublicKey: string;
+    primaryRelayProfileRef?: string;
+    relayUrls: string[];
+  };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
@@ -193,6 +200,50 @@ function writeJson(response: ServerResponse, statusCode: number, body: unknown):
   response.end(`${JSON.stringify(body, null, 2)}\n`);
 }
 
+function listRelayUrls(context: EffectiveRuntimeContext): string[] {
+  const relayUrls = new Set<string>();
+
+  for (const relayProfile of context.relayContext.relayProfiles) {
+    for (const relayUrl of relayProfile.readUrls) {
+      relayUrls.add(relayUrl);
+    }
+
+    for (const relayUrl of relayProfile.writeUrls) {
+      relayUrls.add(relayUrl);
+    }
+  }
+
+  return [...relayUrls].sort((left, right) => left.localeCompare(right));
+}
+
+function buildUserClientStateFingerprint(state: UserClientState): string {
+  return JSON.stringify({
+    conversations: state.conversations.map((conversation) => ({
+      conversationId: conversation.conversationId,
+      lastMessageAt: conversation.lastMessageAt,
+      pendingApprovalIds: conversation.pendingApprovalIds,
+      status: conversation.status,
+      unreadCount: conversation.unreadCount,
+      updatedAt: conversation.projection.updatedAt
+    })),
+    generatedAt: state.generatedAt,
+    sourceChangeRefs: state.sourceChangeRefs.map((ref) => [
+      ref.nodeId,
+      ref.candidateId,
+      ref.projection.updatedAt
+    ]),
+    wikiRefs: state.wikiRefs.map((ref) => [
+      ref.nodeId,
+      ref.artifactId,
+      ref.projection.updatedAt
+    ])
+  });
+}
+
+function toSafeScriptJson(value: unknown): string {
+  return JSON.stringify(value).replace(/</gu, "\\u003c");
+}
+
 async function fetchUserNodeInbox(input: {
   hostApi?: RunnerJoinHostApi | undefined;
   userNodeId: string;
@@ -261,6 +312,20 @@ async function buildUserClientState(input: {
     ...(inbox.generatedAt ? { generatedAt: inbox.generatedAt } : {}),
     graphId: input.context.binding.graphId,
     graphRevisionId: input.context.binding.graphRevisionId,
+    runtime: {
+      ...(input.hostApi?.baseUrl
+        ? { hostApiBaseUrl: input.hostApi.baseUrl }
+        : {}),
+      hostApiConfigured: input.hostApi !== undefined,
+      identityPublicKey: input.context.identityContext.publicKey,
+      ...(input.context.relayContext.primaryRelayProfileRef
+        ? {
+            primaryRelayProfileRef:
+              input.context.relayContext.primaryRelayProfileRef
+          }
+        : {}),
+      relayUrls: listRelayUrls(input.context)
+    },
     sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
     targets: listTargetNodes(input.context),
     userNodeId,
@@ -1078,6 +1143,65 @@ async function renderHome(input: {
   const errorMessage = [state.error, readState?.error, readReceiptState?.error]
     .filter(Boolean)
     .join(" ");
+  const stateFingerprint = buildUserClientStateFingerprint(state);
+  const relayList =
+    state.runtime.relayUrls.length > 0
+      ? state.runtime.relayUrls.join(", ")
+      : "no relay profiles";
+  const liveRefreshScript = `<script>
+      (() => {
+        const indicator = document.querySelector("[data-live-status]");
+        let currentFingerprint = ${toSafeScriptJson(stateFingerprint)};
+        const fingerprint = (state) => JSON.stringify({
+          conversations: (state.conversations || []).map((conversation) => ({
+            conversationId: conversation.conversationId,
+            lastMessageAt: conversation.lastMessageAt,
+            pendingApprovalIds: conversation.pendingApprovalIds,
+            status: conversation.status,
+            unreadCount: conversation.unreadCount,
+            updatedAt: conversation.projection?.updatedAt
+          })),
+          generatedAt: state.generatedAt,
+          sourceChangeRefs: (state.sourceChangeRefs || []).map((ref) => [
+            ref.nodeId,
+            ref.candidateId,
+            ref.projection?.updatedAt
+          ]),
+          wikiRefs: (state.wikiRefs || []).map((ref) => [
+            ref.nodeId,
+            ref.artifactId,
+            ref.projection?.updatedAt
+          ])
+        });
+
+        async function refreshState() {
+          try {
+            const response = await fetch("/api/state", {
+              headers: { accept: "application/json" }
+            });
+
+            if (!response.ok) {
+              if (indicator) indicator.textContent = "State refresh failed";
+              return;
+            }
+
+            const nextFingerprint = fingerprint(await response.json());
+            if (nextFingerprint !== currentFingerprint) {
+              window.location.reload();
+              return;
+            }
+
+            if (indicator) {
+              indicator.textContent = "Live state current";
+            }
+          } catch {
+            if (indicator) indicator.textContent = "State refresh unavailable";
+          }
+        }
+
+        window.setInterval(refreshState, 5000);
+      })();
+    </script>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -1109,6 +1233,7 @@ async function renderHome(input: {
       .meta { font-size: 13px; }
       .notice { border-color: rgba(31, 138, 112, .28); background: #ecf8f4; }
       .error { border-color: rgba(177, 69, 61, .35); background: #fff1f0; color: var(--danger); }
+      .status-pill { border: 1px solid var(--line); border-radius: 999px; color: var(--muted); display: inline-flex; font-size: 12px; padding: 6px 10px; }
       .conversation-list { display: grid; gap: 8px; margin-top: 12px; }
       .conversation { color: inherit; display: grid; gap: 3px; text-decoration: none; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 10px; font-size: 12px; }
       .conversation.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
@@ -1145,7 +1270,7 @@ async function renderHome(input: {
           <h1>Entangle User Client</h1>
           <div class="meta">User Node ${escapeHtml(state.userNodeId)} - Graph ${escapeHtml(state.graphId)} - ${escapeHtml(state.graphRevisionId)}</div>
         </div>
-        <div class="meta">${escapeHtml(state.generatedAt ?? "projection unavailable")}</div>
+        <div class="status-pill" data-live-status>${escapeHtml(state.generatedAt ?? "projection unavailable")}</div>
       </header>
       <div class="layout">
         <aside>
@@ -1158,6 +1283,16 @@ async function renderHome(input: {
           <section>
             <h2>Selected Thread</h2>
             ${selectedConversationPanel}
+          </section>
+          <section>
+            <h2>Runtime</h2>
+            <dl class="detail-list">
+              <div><dt>Identity</dt><dd>${escapeHtml(state.runtime.identityPublicKey)}</dd></div>
+              <div><dt>Host API</dt><dd>${escapeHtml(state.runtime.hostApiBaseUrl ?? (state.runtime.hostApiConfigured ? "configured" : "not configured"))}</dd></div>
+              <div><dt>Primary relay</dt><dd>${escapeHtml(state.runtime.primaryRelayProfileRef ?? "none")}</dd></div>
+              <div><dt>Relays</dt><dd>${escapeHtml(relayList)}</dd></div>
+              <div><dt>Targets</dt><dd>${escapeHtml(state.targets.map((target) => target.nodeId).join(", ") || "none")}</dd></div>
+            </dl>
           </section>
           <section>
             <h2>Wiki</h2>
@@ -1189,6 +1324,7 @@ async function renderHome(input: {
         </div>
       </div>
     </main>
+    ${liveRefreshScript}
   </body>
 </html>`;
 }

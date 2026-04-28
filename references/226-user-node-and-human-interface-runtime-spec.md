@@ -31,7 +31,10 @@ User nodes are now partially runtime-capable:
   User Client uses it instead of filtering the global projection directly. The
   client exposes `/api/state`, renders a conversation list and selected thread
   metadata, and can send messages while preserving selected conversation and
-  session ids.
+  session ids. `/api/state` now also includes the User Node runtime identity,
+  Host API status, primary relay profile, and relay URLs; the rendered page
+  polls `/api/state` and refreshes when inbox/source/wiki projection state
+  changes.
 - Host now persists outbound User Node messages it publishes and exposes them
   through `GET /v1/user-nodes/:nodeId/inbox/:conversationId`; the User Client
   renders those recorded messages for the selected thread.
@@ -63,8 +66,7 @@ User nodes are now partially runtime-capable:
 Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
-  dedicated app with richer source/wiki review actions, projection-backed
-  artifact/source preview, protocol-level read receipts, and richer
+  dedicated app with richer source/wiki review actions and richer
   artifact/source workflow controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
