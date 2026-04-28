@@ -62,6 +62,9 @@ Implemented in this slice:
 - renamed the default runner image from the old runner image tag to
   `entangle-runner:federated-dev`;
 - updated active deployment docs, README/wiki references, tests, and smokes.
+- later cleanup `304-deployment-index-profile-cleanup-slice.md` fixed the
+  active deployment index link so it points at `deploy/federated-dev` instead
+  of the removed deployment path.
 
 Deferred:
 

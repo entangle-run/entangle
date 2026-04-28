@@ -104,6 +104,7 @@ same-machine slice records.
 - [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
 - [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
 - [303-runner-heartbeat-config-smoke-slice.md](303-runner-heartbeat-config-smoke-slice.md)
+- [304-deployment-index-profile-cleanup-slice.md](304-deployment-index-profile-cleanup-slice.md)
 
 ## Audited Scope
 
@@ -261,6 +262,8 @@ The repository is not fully federated:
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;
+- the active deployment index now points at `deploy/federated-dev` rather than
+  a stale local profile path;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 

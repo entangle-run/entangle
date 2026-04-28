@@ -4,19 +4,19 @@ This directory is organized by deployment profile.
 
 ## Active Profiles
 
-- [local](local/README.md) — Entangle deployment operator profile for a single
-  workstation, backed by Docker Compose, `strfry`, Gitea, `entangle-host`,
-  Studio, and host-managed local runners.
+- [federated-dev](federated-dev/README.md) — Entangle deployment profile for
+  running Host, Studio, relay, git service, and runner infrastructure on one
+  workstation while preserving the federated runtime model.
 
 ## Future Profiles
 
-Cloud and Enterprise deployment material should not be added here until the
+Managed or hosted deployment material should not be added here until the
 roadmap reaches the relevant product gate. Preparatory notes belong in
-`references/` or `wiki/` unless they are needed to keep the active Local
-profile clean.
+`references/` or `wiki/` unless they are needed to keep the active
+`federated-dev` profile clean.
 
 ## Path Policy
 
 Operational scripts should consume profile paths from
-`scripts/federated-dev-profile-paths.mjs` instead of hardcoding the Federated dev Compose,
-Dockerfile, or config paths in multiple places.
+`scripts/federated-dev-profile-paths.mjs` instead of hardcoding the
+federated-dev Compose, Dockerfile, or config paths in multiple places.

@@ -3714,3 +3714,10 @@ include the configured cadence.
 The process-runner smoke now writes short heartbeat intervals into its temporary
 join configs and waits for Host-projected heartbeats from the agent runner and
 both User Node runners before continuing.
+
+## [2026-04-28] documentation | Fixed active deployment profile index
+
+Added `references/304-deployment-index-profile-cleanup-slice.md`.
+`deploy/README.md` now points at `deploy/federated-dev/README.md` and describes
+same-workstation operation as the active federated development profile rather
+than a separate local product profile.
