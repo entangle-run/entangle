@@ -57,12 +57,6 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
-  runtimeArtifactPromotionListResponseSchema,
-  runtimeArtifactPromotionRequestSchema,
-  runtimeArtifactPromotionResponseSchema,
-  runtimeArtifactRestoreListResponseSchema,
-  runtimeArtifactRestoreRequestSchema,
-  runtimeArtifactRestoreResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
@@ -142,8 +136,6 @@ import {
   markUserNodeConversationRead,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
-  listRuntimeArtifactRestores,
-  listRuntimeArtifactRestoresForArtifact,
   listRuntimeApprovals,
   listRuntimeSourceChangeCandidates,
   listRuntimeSourceHistory,
@@ -172,11 +164,7 @@ import {
   getRuntimeArtifactDiff,
   getRuntimeArtifactHistory,
   getRuntimeArtifactPreview,
-  listRuntimeArtifactPromotions,
-  listRuntimeArtifactPromotionsForArtifact,
   restartRuntime,
-  promoteRuntimeArtifact,
-  restoreRuntimeArtifact,
   replaceEdge,
   replaceManagedNode,
   offerRuntimeAssignment,
@@ -1755,95 +1743,6 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     return runtimeArtifactListResponseSchema.parse(artifacts);
   });
 
-  server.get("/v1/runtimes/:nodeId/artifact-restores", async (request, reply) => {
-    const params = request.params as { nodeId: string };
-    const inspection = await getRuntimeInspection(params.nodeId);
-
-    if (!inspection) {
-      reply.status(404);
-      return hostErrorResponseSchema.parse({
-        code: "not_found",
-        message: `Runtime '${params.nodeId}' was not found in the active graph.`
-      });
-    }
-
-    if (!inspection.contextAvailable) {
-      throw new HostHttpError({
-        code: "conflict",
-        details: {
-          nodeId: params.nodeId
-        },
-        message:
-          inspection.reason ??
-          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-        statusCode: 409
-      });
-    }
-
-    const restores = await listRuntimeArtifactRestores(params.nodeId);
-
-    if (!restores) {
-      throw new HostHttpError({
-        code: "conflict",
-        details: {
-          nodeId: params.nodeId
-        },
-        message:
-          inspection.reason ??
-          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-        statusCode: 409
-      });
-    }
-
-    return runtimeArtifactRestoreListResponseSchema.parse(restores);
-  });
-
-  server.get(
-    "/v1/runtimes/:nodeId/artifact-promotions",
-    async (request, reply) => {
-      const params = request.params as { nodeId: string };
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const promotions = await listRuntimeArtifactPromotions(params.nodeId);
-
-      if (!promotions) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      return runtimeArtifactPromotionListResponseSchema.parse(promotions);
-    }
-  );
-
   server.get(
     "/v1/runtimes/:nodeId/artifacts/:artifactId/preview",
     async (request, reply) => {
@@ -1948,203 +1847,6 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       }
 
       return runtimeArtifactDiffResponseSchema.parse(artifactDiff);
-    }
-  );
-
-  server.get(
-    "/v1/runtimes/:nodeId/artifacts/:artifactId/restores",
-    async (request, reply) => {
-      const params = request.params as { artifactId: string; nodeId: string };
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const restores = await listRuntimeArtifactRestoresForArtifact({
-        artifactId: params.artifactId,
-        nodeId: params.nodeId
-      });
-
-      if (!restores) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
-        });
-      }
-
-      return runtimeArtifactRestoreListResponseSchema.parse(restores);
-    }
-  );
-
-  server.get(
-    "/v1/runtimes/:nodeId/artifacts/:artifactId/promotions",
-    async (request, reply) => {
-      const params = request.params as { artifactId: string; nodeId: string };
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const promotions = await listRuntimeArtifactPromotionsForArtifact({
-        artifactId: params.artifactId,
-        nodeId: params.nodeId
-      });
-
-      if (!promotions) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
-        });
-      }
-
-      return runtimeArtifactPromotionListResponseSchema.parse(promotions);
-    }
-  );
-
-  server.post(
-    "/v1/runtimes/:nodeId/artifacts/:artifactId/promote",
-    async (request, reply) => {
-      const params = request.params as { artifactId: string; nodeId: string };
-      const body = parseRequestInput(
-        runtimeArtifactPromotionRequestSchema,
-        request.body ?? {},
-        {
-          detailsKey: "bodyIssues",
-          message:
-            "Request body did not match the expected artifact promotion schema."
-        }
-      );
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const artifactPromotion = await promoteRuntimeArtifact({
-        artifactId: params.artifactId,
-        nodeId: params.nodeId,
-        request: body
-      });
-
-      if (!artifactPromotion) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message:
-            `Artifact '${params.artifactId}' or requested restore was not found ` +
-            `for runtime '${params.nodeId}'.`
-        });
-      }
-
-      return runtimeArtifactPromotionResponseSchema.parse(artifactPromotion);
-    }
-  );
-
-  server.post(
-    "/v1/runtimes/:nodeId/artifacts/:artifactId/restore",
-    async (request, reply) => {
-      const params = request.params as { artifactId: string; nodeId: string };
-      const body = parseRequestInput(
-        runtimeArtifactRestoreRequestSchema,
-        request.body ?? {},
-        {
-          detailsKey: "bodyIssues",
-          message: "Request body did not match the expected schema."
-        }
-      );
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const artifactRestore = await restoreRuntimeArtifact({
-        artifactId: params.artifactId,
-        nodeId: params.nodeId,
-        request: body
-      });
-
-      if (!artifactRestore) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
-        });
-      }
-
-      return runtimeArtifactRestoreResponseSchema.parse(artifactRestore);
     }
   );
 

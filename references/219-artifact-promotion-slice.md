@@ -2,6 +2,14 @@
 
 Date: 2026-04-26.
 
+## Superseded Boundary
+
+This Host-mediated artifact promotion surface has been superseded by
+`336-host-artifact-restore-promotion-removal-slice.md`. Public Host, CLI, and
+Studio surfaces no longer promote restored artifact workspaces into source
+workspaces; future promotion behavior must be runner-owned or represented as a
+source-change proposal.
+
 ## Purpose
 
 This slice adds the first approval-gated promotion path from a restored runtime

@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Removed Host artifact restore and promotion
+
+Removed the direct Host artifact restore and promotion routes, host-client
+methods, CLI commands, and Studio controls. Artifact inspection remains
+available through list/detail/preview/history/diff read surfaces, while future
+restore or source-promotion behavior must return as runner-owned protocol work
+or source-change proposals.
+
+Added `references/336-host-artifact-restore-promotion-removal-slice.md` and
+marked the old Host-mediated restore/promotion docs as superseded.
+
 ## [2026-04-28] implementation | Removed Host wiki publication
 
 Removed the direct Host wiki repository publication/list routes, host-client

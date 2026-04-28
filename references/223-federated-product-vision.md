@@ -9,9 +9,11 @@ notes. Those are useful implementation history, but current product messaging
 must not frame the runtime as a separate local product or a local graph mode.
 
 Recent same-machine slices added real coding-agent behavior, OpenCode
-execution, source changes, approvals, artifact promotion, wiki repository
-publication, and Docker smokes. They prove an integrated workstation
-deployment, not yet a fully distributed runtime.
+execution, source changes, signed approvals/reviews, projected artifacts,
+runner-owned source-history publication, wiki refs, and Docker smokes. They
+prove an integrated workstation deployment, not yet a fully distributed
+runtime. Later cleanup slices removed direct Host artifact promotion and wiki
+publication because those actions must be runner-owned protocol behavior.
 
 ## Target Model
 

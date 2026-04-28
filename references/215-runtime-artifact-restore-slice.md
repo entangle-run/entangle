@@ -2,6 +2,13 @@
 
 Date: 2026-04-26.
 
+## Superseded Boundary
+
+This Host-mediated same-machine restore surface has been superseded by
+`336-host-artifact-restore-promotion-removal-slice.md`. Public Host, CLI, and
+Studio surfaces no longer restore artifacts by writing runner-local workspaces;
+future restore behavior must be runner-owned protocol behavior.
+
 ## Purpose
 
 This slice adds the first safe restore path for git-backed runtime artifacts in

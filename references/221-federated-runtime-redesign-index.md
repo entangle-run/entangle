@@ -136,6 +136,7 @@ same-machine slice records.
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
+- [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 
 ## Audited Scope
 
@@ -517,12 +518,13 @@ diagnostics for operator surfaces, and accepted signed source-candidate reviews
 now produce projected runner-owned source-history application and primary git
 publication evidence, with the old direct Host publication, source-candidate
 apply, and source-history replay mutations removed from Host, CLI, Studio, and
-host-client. Direct Host-mediated wiki repository publication has also been
-removed from Host/CLI/Studio/host-client; wiki inspection currently remains
-through runner-owned sync plus signed `wiki.ref` projection, and explicit wiki
-publication must return as runner-owned protocol behavior. The next blocking
-implementation areas are explicit runner-owned publication retry/non-primary
-target commands, runner-owned source replay, richer
+host-client. Direct Host-mediated wiki repository publication and artifact
+restore/promotion have also been removed from Host/CLI/Studio/host-client;
+wiki and artifact inspection currently remain through runner-owned refs plus
+signed projection, and explicit wiki/artifact mutation must return as
+runner-owned protocol behavior. The next blocking implementation areas are
+explicit runner-owned publication retry/non-primary target commands,
+runner-owned source replay, richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed

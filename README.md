@@ -402,17 +402,10 @@ This repository currently contains:
 - host read surfaces for persisted runtime artifacts through
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, with bounded preview,
-  git history, and git diff inspection for supported materialized artifacts,
-  plus a first safe `POST /v1/runtimes/{nodeId}/artifacts/{artifactId}/restore`
-  path that restores git-backed artifacts into an explicit artifact workspace
-  restore directory without overwriting existing targets by default, plus
-  restore-attempt history through
-  `GET /v1/runtimes/{nodeId}/artifact-restores` and
-  `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}/restores`, with matching
-  host-client, CLI, and Studio coverage, and an approval-gated
-  `POST /v1/runtimes/{nodeId}/artifacts/{artifactId}/promote` path that can
-  copy a successful restore into the source workspace through the shared host
-  boundary, CLI, and Studio controls;
+  git history, and git diff inspection for supported materialized artifacts.
+  Direct Host restore/promotion mutations have been removed because artifact
+  mutation must be runner-owned protocol behavior rather than Host writes into
+  runner-local workspaces;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -935,11 +928,12 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
-  runner-owned source-history publication, safe artifact restore, and
-  approval-gated promotion model with restore/promotion history inspection,
-  especially runner-owned publication retry, runner-owned source replay,
-  non-primary publication targets, wiki promotion, richer source-history
-  merge/reconcile workflows, and replicated fallback paths;
+  runner-owned source-history publication, and bounded artifact
+  history/diff/preview inspection, especially runner-owned publication retry,
+  runner-owned source replay, protocol-owned artifact restore or source-change
+  proposal flows, non-primary publication targets, wiki publication/promotion,
+  richer source-history merge/reconcile workflows, and replicated fallback
+  paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

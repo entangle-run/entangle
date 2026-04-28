@@ -47,12 +47,6 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
-  runtimeArtifactPromotionListResponseSchema,
-  runtimeArtifactPromotionRequestSchema,
-  runtimeArtifactPromotionResponseSchema,
-  runtimeArtifactRestoreListResponseSchema,
-  runtimeArtifactRestoreRequestSchema,
-  runtimeArtifactRestoreResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
@@ -136,12 +130,6 @@ import {
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeArtifactPreviewResponse,
-  type RuntimeArtifactPromotionListResponse,
-  type RuntimeArtifactPromotionRequest,
-  type RuntimeArtifactPromotionResponse,
-  type RuntimeArtifactRestoreListResponse,
-  type RuntimeArtifactRestoreRequest,
-  type RuntimeArtifactRestoreResponse,
   type RuntimeBootstrapBundleResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
@@ -962,48 +950,6 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
-    async listRuntimeArtifactRestores(
-      nodeId: string
-    ): Promise<RuntimeArtifactRestoreListResponse> {
-      return parseResponse(
-        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/artifact-restores`),
-        runtimeArtifactRestoreListResponseSchema
-      );
-    },
-
-    async listRuntimeArtifactRestoresForArtifact(
-      nodeId: string,
-      artifactId: string
-    ): Promise<RuntimeArtifactRestoreListResponse> {
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/restores`
-        ),
-        runtimeArtifactRestoreListResponseSchema
-      );
-    },
-
-    async listRuntimeArtifactPromotions(
-      nodeId: string
-    ): Promise<RuntimeArtifactPromotionListResponse> {
-      return parseResponse(
-        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/artifact-promotions`),
-        runtimeArtifactPromotionListResponseSchema
-      );
-    },
-
-    async listRuntimeArtifactPromotionsForArtifact(
-      nodeId: string,
-      artifactId: string
-    ): Promise<RuntimeArtifactPromotionListResponse> {
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/promotions`
-        ),
-        runtimeArtifactPromotionListResponseSchema
-      );
-    },
-
     async getRuntimeArtifact(
       nodeId: string,
       artifactId: string
@@ -1060,50 +1006,6 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(url.toString()),
         runtimeArtifactDiffResponseSchema
-      );
-    },
-
-    async restoreRuntimeArtifact(
-      nodeId: string,
-      artifactId: string,
-      request: RuntimeArtifactRestoreRequest = {}
-    ): Promise<RuntimeArtifactRestoreResponse> {
-      const body = runtimeArtifactRestoreRequestSchema.parse(request);
-
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/restore`,
-          {
-            body: JSON.stringify(body),
-            headers: {
-              "content-type": "application/json"
-            },
-            method: "POST"
-          }
-        ),
-        runtimeArtifactRestoreResponseSchema
-      );
-    },
-
-    async promoteRuntimeArtifact(
-      nodeId: string,
-      artifactId: string,
-      request: RuntimeArtifactPromotionRequest
-    ): Promise<RuntimeArtifactPromotionResponse> {
-      const body = runtimeArtifactPromotionRequestSchema.parse(request);
-
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/promote`,
-          {
-            body: JSON.stringify(body),
-            headers: {
-              "content-type": "application/json"
-            },
-            method: "POST"
-          }
-        ),
-        runtimeArtifactPromotionResponseSchema
       );
     },
 
@@ -1439,8 +1341,6 @@ export {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
-  formatRuntimeArtifactPromotionStatus,
-  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation,
   type RuntimeArtifactPresentationFilterOptions

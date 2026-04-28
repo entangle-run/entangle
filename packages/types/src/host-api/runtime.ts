@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  artifactBackendSchema,
   artifactPublicationSchema,
   artifactRecordSchema
 } from "../artifacts/artifact-ref.js";
@@ -283,154 +282,6 @@ export const runtimeArtifactDiffResponseSchema = z.object({
   diff: runtimeArtifactDiffSchema
 });
 
-export const runtimeArtifactRestoreModeSchema = z.enum(["restore_workspace"]);
-
-export const runtimeArtifactRestoreRequestSchema = z.object({
-  mode: runtimeArtifactRestoreModeSchema.default("restore_workspace"),
-  overwrite: z.boolean().default(false),
-  reason: nonEmptyStringSchema.optional(),
-  requestedBy: identifierSchema.optional(),
-  restoreId: identifierSchema.optional()
-});
-
-export const runtimeArtifactRestoreStatusSchema = z.enum([
-  "restored",
-  "unavailable"
-]);
-
-export const runtimeArtifactRestoreRecordSchema = z
-  .object({
-    artifactId: identifierSchema,
-    createdAt: nonEmptyStringSchema,
-    mode: runtimeArtifactRestoreModeSchema,
-    nodeId: identifierSchema,
-    reason: nonEmptyStringSchema.optional(),
-    requestedBy: identifierSchema.optional(),
-    restoreId: identifierSchema,
-    restoredFileCount: z.number().int().nonnegative().optional(),
-    restoredPath: filesystemPathSchema.optional(),
-    source: z.object({
-      backend: artifactBackendSchema,
-      commit: nonEmptyStringSchema.optional(),
-      path: nonEmptyStringSchema.optional()
-    }),
-    status: runtimeArtifactRestoreStatusSchema,
-    unavailableReason: nonEmptyStringSchema.optional(),
-    updatedAt: nonEmptyStringSchema
-  })
-  .superRefine((value, context) => {
-    if (value.status === "restored") {
-      if (value.restoredFileCount === undefined) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Restored artifact restore records must include restoredFileCount.",
-          path: ["restoredFileCount"]
-        });
-      }
-
-      if (!value.restoredPath) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Restored artifact restore records must include restoredPath.",
-          path: ["restoredPath"]
-        });
-      }
-    }
-
-    if (value.status === "unavailable" && !value.unavailableReason) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Unavailable artifact restore records must include unavailableReason.",
-        path: ["unavailableReason"]
-      });
-    }
-  });
-
-export const runtimeArtifactRestoreResponseSchema = z.object({
-  artifact: artifactRecordSchema,
-  restore: runtimeArtifactRestoreRecordSchema
-});
-
-export const runtimeArtifactRestoreListResponseSchema = z.object({
-  restores: z.array(runtimeArtifactRestoreRecordSchema)
-});
-
-export const runtimeArtifactPromotionTargetSchema = z.enum(["source_workspace"]);
-
-export const runtimeArtifactPromotionRequestSchema = z.object({
-  approvalId: identifierSchema,
-  overwrite: z.boolean().default(false),
-  promotedBy: identifierSchema.optional(),
-  promotionId: identifierSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  restoreId: identifierSchema,
-  target: runtimeArtifactPromotionTargetSchema.default("source_workspace")
-});
-
-export const runtimeArtifactPromotionStatusSchema = z.enum([
-  "promoted",
-  "unavailable"
-]);
-
-export const runtimeArtifactPromotionRecordSchema = z
-  .object({
-    approvalId: identifierSchema,
-    artifactId: identifierSchema,
-    createdAt: nonEmptyStringSchema,
-    nodeId: identifierSchema,
-    promotedBy: identifierSchema.optional(),
-    promotedFileCount: z.number().int().nonnegative().optional(),
-    promotedPath: filesystemPathSchema.optional(),
-    promotionId: identifierSchema,
-    reason: nonEmptyStringSchema.optional(),
-    restoreId: identifierSchema,
-    status: runtimeArtifactPromotionStatusSchema,
-    target: runtimeArtifactPromotionTargetSchema,
-    unavailableReason: nonEmptyStringSchema.optional(),
-    updatedAt: nonEmptyStringSchema
-  })
-  .superRefine((value, context) => {
-    if (value.status === "promoted") {
-      if (value.promotedFileCount === undefined) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Promoted artifact promotion records must include promotedFileCount.",
-          path: ["promotedFileCount"]
-        });
-      }
-
-      if (!value.promotedPath) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Promoted artifact promotion records must include promotedPath.",
-          path: ["promotedPath"]
-        });
-      }
-    }
-
-    if (value.status === "unavailable" && !value.unavailableReason) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Unavailable artifact promotion records must include unavailableReason.",
-        path: ["unavailableReason"]
-      });
-    }
-  });
-
-export const runtimeArtifactPromotionResponseSchema = z.object({
-  artifact: artifactRecordSchema,
-  promotion: runtimeArtifactPromotionRecordSchema,
-  restore: runtimeArtifactRestoreRecordSchema
-});
-
-export const runtimeArtifactPromotionListResponseSchema = z.object({
-  promotions: z.array(runtimeArtifactPromotionRecordSchema)
-});
-
 export const runtimeMemoryPageKindSchema = z.enum([
   "schema",
   "summary",
@@ -611,36 +462,6 @@ export type RuntimeArtifactDiffQuery = z.infer<
 export type RuntimeArtifactDiff = z.infer<typeof runtimeArtifactDiffSchema>;
 export type RuntimeArtifactDiffResponse = z.infer<
   typeof runtimeArtifactDiffResponseSchema
->;
-export type RuntimeArtifactRestoreMode = z.infer<
-  typeof runtimeArtifactRestoreModeSchema
->;
-export type RuntimeArtifactRestoreRequest = z.input<
-  typeof runtimeArtifactRestoreRequestSchema
->;
-export type RuntimeArtifactRestoreRecord = z.infer<
-  typeof runtimeArtifactRestoreRecordSchema
->;
-export type RuntimeArtifactRestoreResponse = z.infer<
-  typeof runtimeArtifactRestoreResponseSchema
->;
-export type RuntimeArtifactRestoreListResponse = z.infer<
-  typeof runtimeArtifactRestoreListResponseSchema
->;
-export type RuntimeArtifactPromotionTarget = z.infer<
-  typeof runtimeArtifactPromotionTargetSchema
->;
-export type RuntimeArtifactPromotionRequest = z.infer<
-  typeof runtimeArtifactPromotionRequestSchema
->;
-export type RuntimeArtifactPromotionRecord = z.infer<
-  typeof runtimeArtifactPromotionRecordSchema
->;
-export type RuntimeArtifactPromotionResponse = z.infer<
-  typeof runtimeArtifactPromotionResponseSchema
->;
-export type RuntimeArtifactPromotionListResponse = z.infer<
-  typeof runtimeArtifactPromotionListResponseSchema
 >;
 export type RuntimeMemoryPageKind = z.infer<typeof runtimeMemoryPageKindSchema>;
 export type RuntimeMemoryPageSummary = z.infer<typeof runtimeMemoryPageSummarySchema>;

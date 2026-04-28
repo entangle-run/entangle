@@ -6,8 +6,6 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
-  formatRuntimeArtifactPromotionStatus,
-  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation,
   type RuntimeArtifactPresentationFilterOptions
@@ -16,11 +14,7 @@ import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
-  RuntimeArtifactPromotionRecord,
-  RuntimeArtifactPromotionResponse,
-  RuntimeArtifactPreviewResponse,
-  RuntimeArtifactRestoreRecord,
-  RuntimeArtifactRestoreResponse
+  RuntimeArtifactPreviewResponse
 } from "@entangle/types";
 
 export type RuntimeArtifactCliFilterOptions =
@@ -199,179 +193,5 @@ export function projectRuntimeArtifactDiffSummary(
           reason: response.diff.reason,
           status: formatRuntimeArtifactDiffStatus(response.diff)
         }
-  };
-}
-
-export interface RuntimeArtifactCliRestoreSummaryRecord {
-  artifact: RuntimeArtifactCliSummaryRecord;
-  restore:
-    | {
-        available: true;
-        mode: RuntimeArtifactRestoreResponse["restore"]["mode"];
-        restoredFileCount: number;
-        restoredPath: string;
-        restoreId: string;
-        status: string;
-      }
-    | {
-        available: false;
-        reason: string;
-        restoreId: string;
-        status: string;
-      };
-}
-
-export function projectRuntimeArtifactRestoreSummary(
-  response: RuntimeArtifactRestoreResponse
-): RuntimeArtifactCliRestoreSummaryRecord {
-  return {
-    artifact: projectRuntimeArtifactSummary(response.artifact),
-    restore:
-      response.restore.status === "restored"
-        ? {
-            available: true,
-            mode: response.restore.mode,
-            restoredFileCount: response.restore.restoredFileCount ?? 0,
-            restoredPath: response.restore.restoredPath ?? "",
-            restoreId: response.restore.restoreId,
-            status: formatRuntimeArtifactRestoreStatus(response.restore)
-          }
-        : {
-            available: false,
-            reason:
-              response.restore.unavailableReason ??
-              "Artifact restore is unavailable.",
-            restoreId: response.restore.restoreId,
-            status: formatRuntimeArtifactRestoreStatus(response.restore)
-          }
-  };
-}
-
-export interface RuntimeArtifactCliRestoreRecordSummary {
-  artifactId: string;
-  createdAt: string;
-  mode: RuntimeArtifactRestoreRecord["mode"];
-  restoredFileCount?: number;
-  restoredPath?: string;
-  restoreId: string;
-  source: RuntimeArtifactRestoreRecord["source"];
-  status: string;
-  unavailableReason?: string;
-  updatedAt: string;
-}
-
-export function projectRuntimeArtifactRestoreRecordSummary(
-  restore: RuntimeArtifactRestoreRecord
-): RuntimeArtifactCliRestoreRecordSummary {
-  return {
-    artifactId: restore.artifactId,
-    createdAt: restore.createdAt,
-    mode: restore.mode,
-    ...(restore.restoredFileCount !== undefined
-      ? { restoredFileCount: restore.restoredFileCount }
-      : {}),
-    ...(restore.restoredPath ? { restoredPath: restore.restoredPath } : {}),
-    restoreId: restore.restoreId,
-    source: restore.source,
-    status: formatRuntimeArtifactRestoreStatus(restore),
-    ...(restore.unavailableReason
-      ? { unavailableReason: restore.unavailableReason }
-      : {}),
-    updatedAt: restore.updatedAt
-  };
-}
-
-export interface RuntimeArtifactCliPromotionSummaryRecord {
-  artifact: RuntimeArtifactCliSummaryRecord;
-  promotion:
-    | {
-        approvalId: string;
-        available: true;
-        promotedFileCount: number;
-        promotedPath: string;
-        promotionId: string;
-        restoreId: string;
-        status: string;
-        target: RuntimeArtifactPromotionResponse["promotion"]["target"];
-      }
-    | {
-        approvalId: string;
-        available: false;
-        promotionId: string;
-        reason: string;
-        restoreId: string;
-        status: string;
-        target: RuntimeArtifactPromotionResponse["promotion"]["target"];
-      };
-  restore: RuntimeArtifactCliRestoreRecordSummary;
-}
-
-export function projectRuntimeArtifactPromotionSummary(
-  response: RuntimeArtifactPromotionResponse
-): RuntimeArtifactCliPromotionSummaryRecord {
-  return {
-    artifact: projectRuntimeArtifactSummary(response.artifact),
-    promotion:
-      response.promotion.status === "promoted"
-        ? {
-            approvalId: response.promotion.approvalId,
-            available: true,
-            promotedFileCount: response.promotion.promotedFileCount ?? 0,
-            promotedPath: response.promotion.promotedPath ?? "",
-            promotionId: response.promotion.promotionId,
-            restoreId: response.promotion.restoreId,
-            status: formatRuntimeArtifactPromotionStatus(response.promotion),
-            target: response.promotion.target
-          }
-        : {
-            approvalId: response.promotion.approvalId,
-            available: false,
-            promotionId: response.promotion.promotionId,
-            reason:
-              response.promotion.unavailableReason ??
-              "Artifact promotion is unavailable.",
-            restoreId: response.promotion.restoreId,
-            status: formatRuntimeArtifactPromotionStatus(response.promotion),
-            target: response.promotion.target
-          },
-    restore: projectRuntimeArtifactRestoreRecordSummary(response.restore)
-  };
-}
-
-export interface RuntimeArtifactCliPromotionRecordSummary {
-  approvalId: string;
-  artifactId: string;
-  createdAt: string;
-  promotedFileCount?: number;
-  promotedPath?: string;
-  promotionId: string;
-  restoreId: string;
-  status: string;
-  target: RuntimeArtifactPromotionRecord["target"];
-  unavailableReason?: string;
-  updatedAt: string;
-}
-
-export function projectRuntimeArtifactPromotionRecordSummary(
-  promotion: RuntimeArtifactPromotionRecord
-): RuntimeArtifactCliPromotionRecordSummary {
-  return {
-    approvalId: promotion.approvalId,
-    artifactId: promotion.artifactId,
-    createdAt: promotion.createdAt,
-    ...(promotion.promotedFileCount !== undefined
-      ? { promotedFileCount: promotion.promotedFileCount }
-      : {}),
-    ...(promotion.promotedPath
-      ? { promotedPath: promotion.promotedPath }
-      : {}),
-    promotionId: promotion.promotionId,
-    restoreId: promotion.restoreId,
-    status: formatRuntimeArtifactPromotionStatus(promotion),
-    target: promotion.target,
-    ...(promotion.unavailableReason
-      ? { unavailableReason: promotion.unavailableReason }
-      : {}),
-    updatedAt: promotion.updatedAt
   };
 }

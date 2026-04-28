@@ -7,10 +7,10 @@ Host read models are still mostly derived from local files.
 `services/host/src/state.ts` reads runtime context and then reads
 `context.workspace.runtimeRoot` for some compatibility read paths including
 sessions, conversations, approvals, turns, artifacts, source-change candidates,
-source history, artifact restore/promotion records, and cancellation requests.
-Direct Host wiki publication and source mutation routes have since been
-removed; Host events are still partly derived from local records in
-same-machine adapter mode.
+source history, and cancellation requests. Direct Host wiki publication, source
+mutation, and artifact restore/promotion routes have since been removed; Host
+events are still partly derived from local records in same-machine adapter
+mode.
 
 This works only for a same-machine compatibility profile where Host and runner
 share a volume. It cannot work when Host and runner live on separate machines.

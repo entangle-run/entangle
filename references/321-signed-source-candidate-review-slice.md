@@ -84,5 +84,7 @@ review.
 
 ## Open Questions
 
-- Source candidate apply/publish/replay, artifact restore/promote, and wiki
-  publication still need equivalent runner-owned command paths.
+- Later cleanup slices removed the direct Host source apply/publish/replay,
+  artifact restore/promote, and wiki publication surfaces. Runner-owned
+  command/protocol paths for explicit retry, replay, restore, and promotion are
+  still open product work.

@@ -2,6 +2,12 @@
 
 Date: 2026-04-26.
 
+## Superseded Boundary
+
+This Host-mediated restore history surface has been superseded by
+`336-host-artifact-restore-promotion-removal-slice.md`. Public Host APIs no
+longer expose restore history records created from Host workspace mutations.
+
 ## Purpose
 
 This slice closes the first audit-read surface for runtime artifact restore

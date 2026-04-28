@@ -65,9 +65,9 @@ participant actions through User Node signing commands.
 This slice quarantines direct public mutation surfaces. The follow-up
 [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 deletes the underlying Host compatibility routes for approval decisions and
-source-candidate review. Remaining non-canonical direct mutations need
-dedicated follow-up slices once source apply/publish, artifact restore/promote,
-and wiki publication have runner-owned command paths.
+source-candidate review. Later cleanup slices also removed direct Host
+source apply/publish/replay, artifact restore/promote, and wiki publication.
+Their replacements should return only as runner-owned protocol paths.
 
 Operators should use Studio/CLI for inspection and assignment. Human graph
 participants should use the User Client or CLI User Node signing commands for

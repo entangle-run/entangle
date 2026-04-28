@@ -276,12 +276,9 @@ The repository now also contains the first real implementation baseline:
   supplied approval id, with a host/CLI/Studio operator decision path for
   creating scoped approvals or deciding pending approvals,
   with bounded host/CLI/Studio history and diff inspection for supported
-  materialized git artifacts, plus a first safe host/CLI/Studio restore path
-  that materializes git-backed runtime artifacts into explicit artifact
-  workspace restore directories without overwriting existing targets by
-  default, with host/CLI/Studio restore-attempt history inspection and a first
-  approval-gated host/CLI/Studio promotion path from successful restores into
-  the source workspace, and with runner-owned local git snapshots of `memory/wiki` into
+  materialized git artifacts, with direct Host artifact restore/promotion
+  mutations removed so future artifact mutation returns as runner-owned
+  protocol behavior or source-change proposals, and with runner-owned local git snapshots of `memory/wiki` into
   each node's `wiki-repository` workspace after completed turns, including
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus
@@ -864,12 +861,11 @@ The current implementation-truth audit now lives in
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
   runner-owned primary source-history commit artifact publication plus bounded
-  artifact history/diff inspection, safe workspace restore, and approval-gated
-  promotion with restore/promotion history inspection for materialized git
-  artifacts; the next git gaps are runner-owned publication retry, runner-owned
-  source replay, non-primary publication targets, wiki promotion, richer
-  source-history merge/reconcile workflows, and explicit fallback or
-  replication behavior, while the next deployment-grade gap is
+  artifact history/diff/preview inspection; the next git gaps are runner-owned
+  publication retry, runner-owned source replay, protocol-owned artifact restore
+  or source-change proposal flows, non-primary publication targets, wiki
+  publication/promotion, richer source-history merge/reconcile workflows, and
+  explicit fallback or replication behavior, while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea
   volumes;
 - complete CLI parity where it adds real headless operational value;

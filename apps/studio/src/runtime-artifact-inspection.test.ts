@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
-  RuntimeArtifactHistoryResponse,
-  RuntimeArtifactPromotionResponse,
-  RuntimeArtifactRestoreResponse
+  RuntimeArtifactHistoryResponse
 } from "@entangle/types";
 import {
   formatRuntimeArtifactDetailLines,
@@ -13,8 +11,6 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
-  formatRuntimeArtifactPromotionStatus,
-  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
@@ -114,44 +110,4 @@ describe("studio runtime artifact inspection helpers", () => {
     );
   });
 
-  it("formats artifact restore inspection states", () => {
-    const restore: RuntimeArtifactRestoreResponse["restore"] = {
-      artifactId: "artifact-report",
-      createdAt: "2026-04-24T11:01:00.000Z",
-      mode: "restore_workspace",
-      nodeId: "worker-it",
-      restoreId: "restore-artifact-report",
-      restoredFileCount: 3,
-      restoredPath: "/tmp/entangle/restores/restore-artifact-report",
-      source: {
-        backend: "git",
-        commit: "1234567890abcdef1234567890abcdef12345678",
-        path: "artifacts/artifact-report.md"
-      },
-      status: "restored",
-      updatedAt: "2026-04-24T11:01:00.000Z"
-    };
-
-    expect(formatRuntimeArtifactRestoreStatus(restore)).toBe("3 files restored");
-  });
-
-  it("formats artifact promotion inspection states", () => {
-    const promotion: RuntimeArtifactPromotionResponse["promotion"] = {
-      approvalId: "approval-promote-artifact-report",
-      artifactId: "artifact-report",
-      createdAt: "2026-04-24T11:02:00.000Z",
-      nodeId: "worker-it",
-      promotedFileCount: 3,
-      promotedPath: "/tmp/entangle/source",
-      promotionId: "promotion-artifact-report",
-      restoreId: "restore-artifact-report",
-      status: "promoted",
-      target: "source_workspace",
-      updatedAt: "2026-04-24T11:02:00.000Z"
-    };
-
-    expect(formatRuntimeArtifactPromotionStatus(promotion)).toBe(
-      "3 files promoted"
-    );
-  });
 });

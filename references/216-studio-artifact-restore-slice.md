@@ -2,6 +2,12 @@
 
 Date: 2026-04-26.
 
+## Superseded Boundary
+
+This Studio restore control has been superseded by
+`336-host-artifact-restore-promotion-removal-slice.md`. Studio now keeps
+artifact inspection read-only; future restore behavior must be runner-owned.
+
 ## Purpose
 
 This slice completes the first visual operator surface for safe runtime artifact

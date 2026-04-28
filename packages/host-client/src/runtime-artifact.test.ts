@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
-  RuntimeArtifactHistoryResponse,
-  RuntimeArtifactPromotionResponse,
-  RuntimeArtifactRestoreResponse
+  RuntimeArtifactHistoryResponse
 } from "@entangle/types";
 import {
   filterRuntimeArtifactsForPresentation,
@@ -14,8 +12,6 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
-  formatRuntimeArtifactPromotionStatus,
-  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifactsForPresentation
 } from "./runtime-artifact.js";
@@ -188,68 +184,4 @@ describe("runtime artifact presentation helpers", () => {
     );
   });
 
-  it("formats artifact restore summaries", () => {
-    const restore: RuntimeArtifactRestoreResponse["restore"] = {
-      artifactId: "artifact-report",
-      createdAt: "2026-04-24T10:03:00.000Z",
-      mode: "restore_workspace",
-      nodeId: "worker-it",
-      restoreId: "restore-artifact-report",
-      restoredFileCount: 1,
-      restoredPath: "/tmp/worker-it/restores/restore-artifact-report",
-      source: {
-        backend: "git",
-        commit: "0123456789abcdef",
-        path: "reports/report.md"
-      },
-      status: "restored",
-      updatedAt: "2026-04-24T10:03:00.000Z"
-    };
-
-    expect(formatRuntimeArtifactRestoreStatus(restore)).toBe("1 file restored");
-    expect(
-      formatRuntimeArtifactRestoreStatus({
-        ...restore,
-        restoredFileCount: undefined,
-        restoredPath: undefined,
-        status: "unavailable",
-        unavailableReason: "missing git repository"
-      })
-    ).toBe("unavailable");
-  });
-
-  it("formats artifact promotion summaries", () => {
-    const promoted: RuntimeArtifactPromotionResponse["promotion"] = {
-      approvalId: "approval-promote-report",
-      artifactId: "artifact-report",
-      createdAt: "2026-04-24T10:04:00.000Z",
-      nodeId: "worker-it",
-      promotedFileCount: 2,
-      promotedPath: "/tmp/worker-it/source",
-      promotionId: "promotion-artifact-report",
-      restoreId: "restore-artifact-report",
-      status: "promoted",
-      target: "source_workspace",
-      updatedAt: "2026-04-24T10:04:00.000Z"
-    };
-    const unavailable: RuntimeArtifactPromotionResponse["promotion"] = {
-      approvalId: "approval-promote-report",
-      artifactId: "artifact-report",
-      createdAt: "2026-04-24T10:04:00.000Z",
-      nodeId: "worker-it",
-      promotionId: "promotion-artifact-report",
-      restoreId: "restore-artifact-report",
-      status: "unavailable",
-      target: "source_workspace",
-      unavailableReason: "Approval is missing.",
-      updatedAt: "2026-04-24T10:04:00.000Z"
-    };
-
-    expect(formatRuntimeArtifactPromotionStatus(promoted)).toBe(
-      "2 files promoted"
-    );
-    expect(formatRuntimeArtifactPromotionStatus(unavailable)).toBe(
-      "Approval is missing."
-    );
-  });
 });

@@ -72,10 +72,10 @@ This is an intentional breaking cleanup before public release. Existing local
 scripts that used direct Host approval decisions or source-candidate review must
 move to User Node signing commands or the running User Client.
 
-Remaining direct Host mutation paths for source apply/publish/replay, artifact
-restore/promote, and wiki publication are still present. They are separate
-side-effect commands and need runner-owned protocol replacements in later
-slices.
+The later cleanup slices removed the direct Host source apply/publish/replay,
+artifact restore/promote, and wiki publication mutation paths as well. Their
+replacement behavior must remain runner-owned protocol work, not Host
+filesystem mutation.
 
 ## Risks And Mitigations
 

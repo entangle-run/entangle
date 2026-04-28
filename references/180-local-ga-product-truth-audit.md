@@ -2,6 +2,14 @@
 
 Date: 2026-04-25.
 
+## Superseded Boundary
+
+This Local-era truth audit is historical. The current product baseline is the
+federated Entangle plan coordinated by
+`221-federated-runtime-redesign-index.md`, and later cleanup slices removed
+direct Host source/wiki/artifact mutation surfaces that this audit still lists
+as implemented Local capabilities.
+
 ## Purpose
 
 This audit is the product-truth baseline for carrying Entangle from the

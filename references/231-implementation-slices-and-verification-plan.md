@@ -263,6 +263,7 @@ Implementation record:
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
+- [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 
 Verification:
 
@@ -501,6 +502,7 @@ Implementation record:
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
+- [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 
 Verification:
 

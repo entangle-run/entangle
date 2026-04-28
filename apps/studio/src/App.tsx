@@ -46,11 +46,7 @@ import type {
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactInspectionResponse,
-  RuntimeArtifactPromotionRecord,
-  RuntimeArtifactPromotionResponse,
   RuntimeArtifactPreviewResponse,
-  RuntimeArtifactRestoreRecord,
-  RuntimeArtifactRestoreResponse,
   RuntimeInspectionResponse,
   RuntimeMemoryInspectionResponse,
   RuntimeMemoryPageInspectionResponse,
@@ -165,8 +161,6 @@ import {
   formatRuntimeArtifactHistoryStatus,
   formatRuntimeArtifactLabel,
   formatRuntimeArtifactLocator,
-  formatRuntimeArtifactPromotionStatus,
-  formatRuntimeArtifactRestoreStatus,
   formatRuntimeArtifactStatus,
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
@@ -532,26 +526,8 @@ export function App() {
     useState<RuntimeArtifactHistoryResponse | null>(null);
   const [selectedArtifactDiff, setSelectedArtifactDiff] =
     useState<RuntimeArtifactDiffResponse | null>(null);
-  const [selectedArtifactRestore, setSelectedArtifactRestore] =
-    useState<RuntimeArtifactRestoreResponse | null>(null);
-  const [selectedArtifactRestores, setSelectedArtifactRestores] = useState<
-    RuntimeArtifactRestoreRecord[]
-  >([]);
-  const [selectedArtifactPromotion, setSelectedArtifactPromotion] =
-    useState<RuntimeArtifactPromotionResponse | null>(null);
-  const [selectedArtifactPromotions, setSelectedArtifactPromotions] = useState<
-    RuntimeArtifactPromotionRecord[]
-  >([]);
-  const [artifactPromotionApprovalId, setArtifactPromotionApprovalId] =
-    useState("");
-  const [artifactPromotionOverwrite, setArtifactPromotionOverwrite] =
-    useState(false);
-  const [artifactPromotionError, setArtifactPromotionError] =
-    useState<string | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
-  const [pendingArtifactRestore, setPendingArtifactRestore] = useState(false);
-  const [pendingArtifactPromotion, setPendingArtifactPromotion] = useState(false);
   const [selectedMemory, setSelectedMemory] =
     useState<RuntimeMemoryInspectionResponse | null>(null);
   const [selectedMemoryPagePath, setSelectedMemoryPagePath] =
@@ -936,15 +912,12 @@ export function App() {
   const loadSelectedArtifactInspection = useCallback(
     async (nodeId: string, artifactId: string) => {
       try {
-        const [inspection, preview, history, diff, restores, promotions] =
-          await Promise.all([
-            client.getRuntimeArtifact(nodeId, artifactId),
-            client.getRuntimeArtifactPreview(nodeId, artifactId),
-            client.getRuntimeArtifactHistory(nodeId, artifactId, { limit: 8 }),
-            client.getRuntimeArtifactDiff(nodeId, artifactId),
-            client.listRuntimeArtifactRestoresForArtifact(nodeId, artifactId),
-            client.listRuntimeArtifactPromotionsForArtifact(nodeId, artifactId)
-          ]);
+        const [inspection, preview, history, diff] = await Promise.all([
+          client.getRuntimeArtifact(nodeId, artifactId),
+          client.getRuntimeArtifactPreview(nodeId, artifactId),
+          client.getRuntimeArtifactHistory(nodeId, artifactId, { limit: 8 }),
+          client.getRuntimeArtifactDiff(nodeId, artifactId)
+        ]);
 
         if (
           selectedRuntimeIdRef.current !== nodeId ||
@@ -958,8 +931,6 @@ export function App() {
           setSelectedArtifactPreview(preview);
           setSelectedArtifactHistory(history);
           setSelectedArtifactDiff(diff);
-          setSelectedArtifactRestores(restores.restores);
-          setSelectedArtifactPromotions(promotions.promotions);
           setArtifactDetailError(null);
         });
       } catch (caught: unknown) {
@@ -975,14 +946,6 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionApprovalId("");
-          setArtifactPromotionOverwrite(false);
-          setArtifactPromotionError(null);
-          setPendingArtifactPromotion(false);
           setArtifactDetailError(
             normalizeError(caught, "Unknown error while loading artifact detail.")
           );
@@ -1256,15 +1219,7 @@ export function App() {
             client.getRuntimeArtifactHistory(nodeId, currentSelectedArtifactId, {
               limit: 8
             }),
-            client.getRuntimeArtifactDiff(nodeId, currentSelectedArtifactId),
-            client.listRuntimeArtifactRestoresForArtifact(
-              nodeId,
-              currentSelectedArtifactId
-            ),
-            client.listRuntimeArtifactPromotionsForArtifact(
-              nodeId,
-              currentSelectedArtifactId
-            )
+            client.getRuntimeArtifactDiff(nodeId, currentSelectedArtifactId)
           ])
         )
       : null;
@@ -1272,8 +1227,6 @@ export function App() {
     const selectedArtifactPreviewResult = selectedArtifactResults?.[1] ?? null;
     const selectedArtifactHistoryResult = selectedArtifactResults?.[2] ?? null;
     const selectedArtifactDiffResult = selectedArtifactResults?.[3] ?? null;
-    const selectedArtifactRestoresResult = selectedArtifactResults?.[4] ?? null;
-    const selectedArtifactPromotionsResult = selectedArtifactResults?.[5] ?? null;
     const currentSelectedTurnId = selectedTurnId;
     const shouldRefreshSelectedTurn =
       currentSelectedTurnId !== null &&
@@ -1445,14 +1398,6 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionApprovalId("");
-          setArtifactPromotionOverwrite(false);
-          setArtifactPromotionError(null);
-          setPendingArtifactPromotion(false);
           setArtifactDetailError(null);
         } else if (!shouldRefreshSelectedArtifact) {
           setSelectedArtifactId(null);
@@ -1460,42 +1405,23 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionApprovalId("");
-          setArtifactPromotionOverwrite(false);
-          setArtifactPromotionError(null);
-          setPendingArtifactPromotion(false);
           setArtifactDetailError(null);
         } else if (
           selectedArtifactResult?.status === "fulfilled" &&
           selectedArtifactPreviewResult?.status === "fulfilled" &&
           selectedArtifactHistoryResult?.status === "fulfilled" &&
-          selectedArtifactDiffResult?.status === "fulfilled" &&
-          selectedArtifactRestoresResult?.status === "fulfilled" &&
-          selectedArtifactPromotionsResult?.status === "fulfilled"
+          selectedArtifactDiffResult?.status === "fulfilled"
         ) {
           setSelectedArtifactInspection(selectedArtifactResult.value);
           setSelectedArtifactPreview(selectedArtifactPreviewResult.value);
           setSelectedArtifactHistory(selectedArtifactHistoryResult.value);
           setSelectedArtifactDiff(selectedArtifactDiffResult.value);
-          setSelectedArtifactRestores(selectedArtifactRestoresResult.value.restores);
-          setSelectedArtifactPromotions(
-            selectedArtifactPromotionsResult.value.promotions
-          );
           setArtifactDetailError(null);
         } else if (selectedArtifactResult?.status === "rejected") {
           setSelectedArtifactInspection(null);
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactResult.reason,
@@ -1507,11 +1433,6 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactPreviewResult.reason,
@@ -1523,11 +1444,6 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactHistoryResult.reason,
@@ -1539,47 +1455,10 @@ export function App() {
           setSelectedArtifactPreview(null);
           setSelectedArtifactHistory(null);
           setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionError(null);
           setArtifactDetailError(
             normalizeError(
               selectedArtifactDiffResult.reason,
               "Unknown error while loading artifact diff."
-            )
-          );
-        } else if (selectedArtifactRestoresResult?.status === "rejected") {
-          setSelectedArtifactInspection(null);
-          setSelectedArtifactPreview(null);
-          setSelectedArtifactHistory(null);
-          setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionError(null);
-          setArtifactDetailError(
-            normalizeError(
-              selectedArtifactRestoresResult.reason,
-              "Unknown error while loading artifact restore history."
-            )
-          );
-        } else if (selectedArtifactPromotionsResult?.status === "rejected") {
-          setSelectedArtifactInspection(null);
-          setSelectedArtifactPreview(null);
-          setSelectedArtifactHistory(null);
-          setSelectedArtifactDiff(null);
-          setSelectedArtifactRestore(null);
-          setSelectedArtifactRestores([]);
-          setSelectedArtifactPromotion(null);
-          setSelectedArtifactPromotions([]);
-          setArtifactPromotionError(null);
-          setArtifactDetailError(
-            normalizeError(
-              selectedArtifactPromotionsResult.reason,
-              "Unknown error while loading artifact promotion history."
             )
           );
         }
@@ -1596,14 +1475,6 @@ export function App() {
         setSelectedArtifactPreview(null);
         setSelectedArtifactHistory(null);
         setSelectedArtifactDiff(null);
-        setSelectedArtifactRestore(null);
-        setSelectedArtifactRestores([]);
-        setSelectedArtifactPromotion(null);
-        setSelectedArtifactPromotions([]);
-        setArtifactPromotionApprovalId("");
-        setArtifactPromotionOverwrite(false);
-        setArtifactPromotionError(null);
-        setPendingArtifactPromotion(false);
         setArtifactDetailError(null);
       }
 
@@ -2120,14 +1991,6 @@ export function App() {
       setSelectedArtifactPreview(null);
       setSelectedArtifactHistory(null);
       setSelectedArtifactDiff(null);
-      setSelectedArtifactRestore(null);
-      setSelectedArtifactRestores([]);
-      setSelectedArtifactPromotion(null);
-      setSelectedArtifactPromotions([]);
-      setArtifactPromotionApprovalId("");
-      setArtifactPromotionOverwrite(false);
-      setArtifactPromotionError(null);
-      setPendingArtifactPromotion(false);
       setArtifactDetailError(null);
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
@@ -2238,143 +2101,6 @@ export function App() {
     },
     [client, selectedRuntimeId]
   );
-
-  const restoreSelectedRuntimeArtifact = useCallback(async () => {
-    if (
-      !selectedRuntimeId ||
-      !selectedArtifactId ||
-      selectedArtifactInspection?.artifact.ref.backend !== "git"
-    ) {
-      return;
-    }
-
-    try {
-      setPendingArtifactRestore(true);
-      setArtifactDetailError(null);
-      setArtifactPromotionError(null);
-      setSelectedArtifactPromotion(null);
-      const response = await client.restoreRuntimeArtifact(
-        selectedRuntimeId,
-        selectedArtifactId,
-        {
-          reason: "Studio artifact restore"
-        }
-      );
-
-      startTransition(() => {
-        setSelectedArtifactRestore(response);
-        setSelectedArtifactRestores((restores) => [response.restore, ...restores]);
-        setSelectedArtifactInspection({ artifact: response.artifact });
-        setSelectedArtifacts((artifacts) =>
-          sortRuntimeArtifacts([
-            response.artifact,
-            ...artifacts.filter(
-              (artifact) =>
-                artifact.ref.artifactId !== response.artifact.ref.artifactId
-            )
-          ])
-        );
-        setArtifactError(null);
-        setArtifactDetailError(null);
-      });
-    } catch (caught: unknown) {
-      startTransition(() => {
-        setArtifactDetailError(
-          normalizeError(caught, "Unknown error while restoring artifact.")
-        );
-      });
-    } finally {
-      setPendingArtifactRestore(false);
-    }
-  }, [
-    client,
-    selectedArtifactId,
-    selectedArtifactInspection,
-    selectedRuntimeId
-  ]);
-
-  const promoteSelectedRuntimeArtifact = useCallback(async () => {
-    const promotionRestore =
-      selectedArtifactRestore?.restore.status === "restored"
-        ? selectedArtifactRestore.restore
-        : (selectedArtifactRestores.find(
-            (restore) => restore.status === "restored"
-          ) ?? null);
-
-    if (
-      !selectedRuntimeId ||
-      !selectedArtifactId ||
-      !promotionRestore ||
-      artifactPromotionApprovalId.trim().length === 0
-    ) {
-      return;
-    }
-
-    try {
-      setPendingArtifactPromotion(true);
-      setArtifactPromotionError(null);
-      const response = await client.promoteRuntimeArtifact(
-        selectedRuntimeId,
-        selectedArtifactId,
-        {
-          approvalId: artifactPromotionApprovalId.trim(),
-          overwrite: artifactPromotionOverwrite,
-          promotedBy: "studio-operator",
-          reason: "Studio artifact promotion",
-          restoreId: promotionRestore.restoreId,
-          target: "source_workspace"
-        }
-      );
-
-      startTransition(() => {
-        setSelectedArtifactPromotion(response);
-        setSelectedArtifactInspection({ artifact: response.artifact });
-        setSelectedArtifactPromotions((promotions) => [
-          response.promotion,
-          ...promotions.filter(
-            (promotion) =>
-              promotion.promotionId !== response.promotion.promotionId ||
-              promotion.updatedAt !== response.promotion.updatedAt
-          )
-        ]);
-        setSelectedArtifactRestores((restores) => [
-          response.restore,
-          ...restores.filter(
-            (restore) =>
-              restore.restoreId !== response.restore.restoreId ||
-              restore.updatedAt !== response.restore.updatedAt
-          )
-        ]);
-        setSelectedArtifacts((artifacts) =>
-          sortRuntimeArtifacts([
-            response.artifact,
-            ...artifacts.filter(
-              (artifact) =>
-                artifact.ref.artifactId !== response.artifact.ref.artifactId
-            )
-          ])
-        );
-        setArtifactError(null);
-        setArtifactPromotionError(null);
-      });
-    } catch (caught: unknown) {
-      startTransition(() => {
-        setArtifactPromotionError(
-          normalizeError(caught, "Unknown error while promoting artifact.")
-        );
-      });
-    } finally {
-      setPendingArtifactPromotion(false);
-    }
-  }, [
-    artifactPromotionApprovalId,
-    artifactPromotionOverwrite,
-    client,
-    selectedArtifactId,
-    selectedArtifactRestore,
-    selectedArtifactRestores,
-    selectedRuntimeId
-  ]);
 
   const selectGraphRevision = useCallback(
     async (revisionId: string) => {
@@ -2763,14 +2489,6 @@ export function App() {
       setSelectedArtifactPreview(null);
       setSelectedArtifactHistory(null);
       setSelectedArtifactDiff(null);
-      setSelectedArtifactRestore(null);
-      setSelectedArtifactRestores([]);
-      setSelectedArtifactPromotion(null);
-      setSelectedArtifactPromotions([]);
-      setArtifactPromotionApprovalId("");
-      setArtifactPromotionOverwrite(false);
-      setArtifactPromotionError(null);
-      setPendingArtifactPromotion(false);
       setArtifactDetailError(null);
       setSelectedMemory(null);
       setSelectedMemoryPagePath(null);
@@ -2826,14 +2544,6 @@ export function App() {
     setSelectedArtifactPreview(null);
     setSelectedArtifactHistory(null);
     setSelectedArtifactDiff(null);
-    setSelectedArtifactRestore(null);
-    setSelectedArtifactRestores([]);
-    setSelectedArtifactPromotion(null);
-    setSelectedArtifactPromotions([]);
-    setArtifactPromotionApprovalId("");
-    setArtifactPromotionOverwrite(false);
-    setArtifactPromotionError(null);
-    setPendingArtifactPromotion(false);
     setArtifactDetailError(null);
     setSelectedMemory(null);
     setSelectedMemoryPagePath(null);
@@ -3067,19 +2777,6 @@ export function App() {
     () => formatSessionCancellationTargetSummary(selectedSessionCancellableNodeIds),
     [selectedSessionCancellableNodeIds]
   );
-  const selectedArtifactRestoredRestore = useMemo(() => {
-    if (selectedArtifactRestore?.restore.status === "restored") {
-      return selectedArtifactRestore.restore;
-    }
-
-    return (
-      selectedArtifactRestores.find((restore) => restore.status === "restored") ??
-      null
-    );
-  }, [selectedArtifactRestore, selectedArtifactRestores]);
-  const artifactPromotionReady =
-    selectedArtifactRestoredRestore !== null &&
-    artifactPromotionApprovalId.trim().length > 0;
   const selectedMemoryFocusedRegisters = useMemo(
     () =>
       selectedMemory
@@ -6007,256 +5704,6 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
-
-                        <div className="artifact-preview-panel">
-                          <div className="section-header">
-                            <h3>Artifact Restore</h3>
-                            <span className="panel-caption">
-                              {selectedArtifactRestore
-                                ? formatRuntimeArtifactRestoreStatus(
-                                    selectedArtifactRestore.restore
-                                  )
-                                : selectedArtifactInspection.artifact.ref.backend ===
-                                    "git"
-                                  ? "ready"
-                                  : "unavailable"}
-                            </span>
-                          </div>
-                          <div className="action-row">
-                            <button
-                              className="action-button"
-                              disabled={
-                                pendingArtifactRestore ||
-                                selectedArtifactInspection.artifact.ref.backend !==
-                                  "git"
-                              }
-                              onClick={() => {
-                                void restoreSelectedRuntimeArtifact();
-                              }}
-                              type="button"
-                            >
-                              {pendingArtifactRestore
-                                ? "Restoring..."
-                                : "Restore artifact"}
-                            </button>
-                          </div>
-
-                          {selectedArtifactRestore ? (
-                            <dl className="status-list compact-list">
-                              <div>
-                                <dt>Restore</dt>
-                                <dd>{selectedArtifactRestore.restore.restoreId}</dd>
-                              </div>
-                              <div>
-                                <dt>Status</dt>
-                                <dd>{selectedArtifactRestore.restore.status}</dd>
-                              </div>
-                              {selectedArtifactRestore.restore.restoredPath ? (
-                                <div>
-                                  <dt>Path</dt>
-                                  <dd>
-                                    {selectedArtifactRestore.restore.restoredPath}
-                                  </dd>
-                                </div>
-                              ) : null}
-                              {selectedArtifactRestore.restore.unavailableReason ? (
-                                <div>
-                                  <dt>Reason</dt>
-                                  <dd>
-                                    {
-                                      selectedArtifactRestore.restore
-                                        .unavailableReason
-                                    }
-                                  </dd>
-                                </div>
-                              ) : null}
-                            </dl>
-                          ) : selectedArtifactInspection.artifact.ref.backend !==
-                            "git" ? (
-                            <div className="inline-empty-state">
-                              <p>Non-git artifact backend.</p>
-                            </div>
-                          ) : null}
-
-                          {selectedArtifactRestores.length > 0 ? (
-                            <ul className="detail-list">
-                              {selectedArtifactRestores
-                                .slice(0, 4)
-                                .map((restore, index) => (
-                                  <li
-                                    key={`${restore.restoreId}-${restore.updatedAt}-${index}`}
-                                  >
-                                    {restore.restoreId} ·{" "}
-                                    {formatRuntimeArtifactRestoreStatus(restore)} ·{" "}
-                                    {restore.updatedAt}
-                                  </li>
-                                ))}
-                            </ul>
-                          ) : selectedArtifactInspection.artifact.ref.backend ===
-                            "git" ? (
-                            <div className="inline-empty-state">
-                              <p>No restore attempts recorded.</p>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="artifact-preview-panel">
-                          <div className="section-header">
-                            <h3>Artifact Promotion</h3>
-                            <span className="panel-caption">
-                              {selectedArtifactPromotion
-                                ? formatRuntimeArtifactPromotionStatus(
-                                    selectedArtifactPromotion.promotion
-                                  )
-                                : selectedArtifactRestoredRestore
-                                  ? "ready"
-                                  : "restore required"}
-                            </span>
-                          </div>
-
-                          <div className="field-grid">
-                            <label className="field">
-                              <span>Approval id</span>
-                              <input
-                                disabled={
-                                  pendingArtifactPromotion ||
-                                  !selectedArtifactRestoredRestore
-                                }
-                                onChange={(event) => {
-                                  setArtifactPromotionApprovalId(
-                                    event.target.value
-                                  );
-                                }}
-                                type="text"
-                                value={artifactPromotionApprovalId}
-                              />
-                            </label>
-
-                            <label className="toggle-field">
-                              <input
-                                checked={artifactPromotionOverwrite}
-                                disabled={
-                                  pendingArtifactPromotion ||
-                                  !selectedArtifactRestoredRestore
-                                }
-                                onChange={(event) => {
-                                  setArtifactPromotionOverwrite(
-                                    event.target.checked
-                                  );
-                                }}
-                                type="checkbox"
-                              />
-                              <span>Overwrite existing source files</span>
-                            </label>
-                          </div>
-
-                          {artifactPromotionError ? (
-                            <p className="error-box">{artifactPromotionError}</p>
-                          ) : null}
-
-                          {selectedArtifactRestoredRestore ? (
-                            <dl className="status-list compact-list">
-                              <div>
-                                <dt>Restore</dt>
-                                <dd>{selectedArtifactRestoredRestore.restoreId}</dd>
-                              </div>
-                              <div>
-                                <dt>Target</dt>
-                                <dd>source_workspace</dd>
-                              </div>
-                            </dl>
-                          ) : (
-                            <div className="inline-empty-state">
-                              <p>No restored artifact workspace is available.</p>
-                            </div>
-                          )}
-
-                          <div className="action-row">
-                            <button
-                              className="action-button"
-                              disabled={
-                                pendingArtifactPromotion ||
-                                !artifactPromotionReady
-                              }
-                              onClick={() => {
-                                void promoteSelectedRuntimeArtifact();
-                              }}
-                              type="button"
-                            >
-                              {pendingArtifactPromotion
-                                ? "Promoting..."
-                                : "Promote restore"}
-                            </button>
-                          </div>
-
-                          {selectedArtifactPromotion ? (
-                            <dl className="status-list compact-list">
-                              <div>
-                                <dt>Promotion</dt>
-                                <dd>
-                                  {
-                                    selectedArtifactPromotion.promotion
-                                      .promotionId
-                                  }
-                                </dd>
-                              </div>
-                              <div>
-                                <dt>Status</dt>
-                                <dd>
-                                  {formatRuntimeArtifactPromotionStatus(
-                                    selectedArtifactPromotion.promotion
-                                  )}
-                                </dd>
-                              </div>
-                              {selectedArtifactPromotion.promotion.promotedPath ? (
-                                <div>
-                                  <dt>Path</dt>
-                                  <dd>
-                                    {
-                                      selectedArtifactPromotion.promotion
-                                        .promotedPath
-                                    }
-                                  </dd>
-                                </div>
-                              ) : null}
-                              {selectedArtifactPromotion.promotion
-                                .unavailableReason ? (
-                                <div>
-                                  <dt>Reason</dt>
-                                  <dd>
-                                    {
-                                      selectedArtifactPromotion.promotion
-                                        .unavailableReason
-                                    }
-                                  </dd>
-                                </div>
-                              ) : null}
-                            </dl>
-                          ) : null}
-
-                          {selectedArtifactPromotions.length > 0 ? (
-                            <ul className="detail-list">
-                              {selectedArtifactPromotions
-                                .slice(0, 4)
-                                .map((promotion, index) => (
-                                  <li
-                                    key={`${promotion.promotionId}-${promotion.updatedAt}-${index}`}
-                                  >
-                                    {promotion.promotionId} ·{" "}
-                                    {formatRuntimeArtifactPromotionStatus(
-                                      promotion
-                                    )}{" "}
-                                    · {promotion.updatedAt}
-                                  </li>
-                                ))}
-                            </ul>
-                          ) : selectedArtifactInspection.artifact.ref.backend ===
-                            "git" ? (
-                            <div className="inline-empty-state">
-                              <p>No promotion attempts recorded.</p>
-                            </div>
-                          ) : null}
-                        </div>
 
                         <div className="artifact-preview-panel">
                           <div className="section-header">
