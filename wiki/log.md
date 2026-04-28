@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-28] verification | Covered assignment timeline in process smoke
+
+Extended the federated process-runner smoke so the real joined runner path now
+checks `/v1/assignments/:assignmentId/timeline` after lifecycle receipts. The
+smoke asserts assignment acceptance plus runner `started` receipt evidence from
+the timeline read model.
+
+Added `references/344-process-smoke-assignment-timeline-slice.md`.
+
 ## [2026-04-28] implementation | Added assignment timeline read model
 
 Added a Host-backed assignment timeline read model that joins assignment

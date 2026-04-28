@@ -130,6 +130,7 @@ Implementation record:
 - [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 - [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
+- [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 
 Verification:
 
@@ -166,6 +167,9 @@ Current status:
 - Host now exposes a per-assignment timeline read model built from assignment
   lifecycle state plus projected runner receipts; CLI can inspect it directly,
   and Studio groups receipt summaries under assignment rows.
+- The process-runner smoke now validates that the real joined runner path
+  produces assignment acceptance and `started` receipt evidence visible through
+  the assignment timeline read model.
 
 ### Slice 6: Generic Runner Bootstrap
 
@@ -638,6 +642,7 @@ Implementation records:
 
 - [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
 - [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
+- [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 
 Current status:
 
@@ -651,6 +656,8 @@ Current status:
 - the same process proof now uses the running User Client JSON API for the
   first user publish, selected conversation inspection, signed source-candidate
   review, and approval response;
+- the same process proof now validates assignment timeline projection for real
+  runner acceptance and lifecycle receipts;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

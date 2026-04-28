@@ -83,10 +83,12 @@ joined User Node runner processes with separate state roots. It assigns the
 agent node and both User Nodes through signed control events, verifies that
 each User Node `human_interface` runtime exposes a User Client endpoint, checks
 User Client health and state routes, observes runtime state through signed
-runner observations, publishes signed User Node messages through the relay, and
-verifies that the assigned agent runner persisted both received conversations
-and that Host projection contains both User Node conversations from
-runner-signed observations. It also publishes a synthetic signed agent-to-user
+  runner observations, publishes signed User Node messages through the relay, and
+  verifies that the assigned agent runner persisted both received conversations
+  and that Host projection contains both User Node conversations from
+  runner-signed observations. It also verifies the per-assignment timeline read
+  model over real runner acceptance and lifecycle receipt evidence. It publishes
+  a synthetic signed agent-to-user
 message through the relay and verifies that the running User Node records it as
 inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits signed source-candidate review and

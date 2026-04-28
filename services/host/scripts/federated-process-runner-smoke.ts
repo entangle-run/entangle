@@ -29,6 +29,7 @@ import {
   runnerJoinConfigSchema,
   runnerRegistryInspectionResponseSchema,
   runtimeAssignmentOfferResponseSchema,
+  runtimeAssignmentTimelineResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -1389,6 +1390,31 @@ async function main(): Promise<void> {
     printPass(
       "runtime-lifecycle-receipts",
       `receipts=${[...lifecycleReceipts].sort().join(",")}`
+    );
+
+    const assignmentTimeline = runtimeAssignmentTimelineResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        path: `/v1/assignments/${assignment.assignmentId}/timeline`
+      })
+    );
+    assertCondition(
+      assignmentTimeline.timeline.some(
+        (entry) =>
+          entry.entryKind === "assignment.receipt" &&
+          entry.receiptKind === "started"
+      ),
+      "Assignment timeline must include the runner started receipt."
+    );
+    assertCondition(
+      assignmentTimeline.timeline.some(
+        (entry) => entry.entryKind === "assignment.accepted"
+      ),
+      "Assignment timeline must include assignment acceptance."
+    );
+    printPass(
+      "assignment-timeline",
+      `entries=${assignmentTimeline.timeline.length}; receipts=${assignmentTimeline.receipts.length}`
     );
 
     const materializedContextPath = path.join(

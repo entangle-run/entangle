@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
+[344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -49,7 +49,8 @@ operator receipt/transport visibility, runner-owned source history, and removal
 of direct Host source/wiki/artifact filesystem mutation paths plus federated
 session-cancellation, source-history-publication, source-history-replay control
 delivery, matching Studio replay request controls, projected source-history
-replay outcome read models, and per-assignment timeline read models.
+replay outcome read models, per-assignment timeline read models, and process
+smoke coverage for assignment timelines.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -404,6 +405,7 @@ files are the active federated redesign pack.
 342. [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 343. [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 344. [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
+345. [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 
 ## Role of this corpus
 

@@ -144,6 +144,7 @@ same-machine slice records.
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
+- [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 
 ## Audited Scope
 
@@ -283,7 +284,9 @@ The repository is not fully federated:
   running User Client, exercises a deterministic OpenCode-adapter task turn,
   verifies projected turn/approval/session read APIs, verifies runner-owned
   session/conversation intake, and verifies Host projection of the User Node
-  conversation without requiring a live model-provider call;
+  conversation without requiring a live model-provider call. The same smoke now
+  verifies the per-assignment timeline read model includes real assignment
+  acceptance and runner `started` receipt evidence;
 - the same process smoke now proves two distinct User Nodes assigned to two
   distinct `human_interface` runner processes, with two User Client state
   checks, two signed publishes with distinct User Node pubkeys, and two Host

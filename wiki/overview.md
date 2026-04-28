@@ -61,7 +61,9 @@ The most accurate current description is:
   Runtime, and User Client are already real runtime components;
 - the process-runner smoke now proves joined agent and User Node runners over a
   live relay with signed messages, signed approvals, projected heartbeats, and
-  separate Host/runner state roots;
+  separate Host/runner state roots, and it now validates the per-assignment
+  timeline read model over real runner acceptance and lifecycle receipt
+  evidence;
 - Host activity projection now preserves runner-signed observation-event
   records during local compatibility synchronization, and the high-level
   session list plus bounded session detail can surface remote projected
