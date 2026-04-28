@@ -71,6 +71,37 @@ type UserClientState = {
   wikiRefs: WikiRefProjectionRecord[];
 };
 
+type UserClientArtifactPreviewResponse = {
+  artifact?: ArtifactRef | undefined;
+  artifactId: string;
+  nodeId: string;
+  preview:
+    | NonNullable<ArtifactRefProjectionRecord["artifactPreview"]>
+    | RuntimeArtifactPreviewResponse["preview"];
+  source: "projection" | "runtime" | "unavailable";
+};
+
+type UserClientSourceChangeDiffResponse = {
+  candidateId: string;
+  diff: RuntimeSourceChangeCandidateDiffResponse["diff"];
+  nodeId: string;
+  review?:
+    | NonNullable<
+        RuntimeSourceChangeCandidateInspectionResponse["candidate"]["review"]
+      >
+    | undefined;
+  source: "projection" | "runtime" | "unavailable";
+  sourceChangeSummary?: SourceChangeRefProjectionRecord["sourceChangeSummary"];
+  status?: SourceChangeRefProjectionRecord["status"] | undefined;
+};
+
+type UserClientSourceChangeReviewRequest = {
+  candidateId?: unknown;
+  nodeId?: unknown;
+  reason?: unknown;
+  status?: unknown;
+};
+
 type ApprovalResource = NonNullable<
   NonNullable<UserNodeMessageRecord["approval"]>["resource"]
 >;
@@ -686,6 +717,126 @@ async function fetchRuntimeSourceChangeCandidateDiff(input: {
           : "Host source-change diff request failed."
     };
   }
+}
+
+async function buildUserClientArtifactPreview(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<UserClientArtifactPreviewResponse> {
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+  const projectedRef = findProjectedArtifactRef({
+    artifactId: input.artifactId,
+    nodeId: input.nodeId,
+    projection: projection.detail
+  });
+
+  if (projectedRef?.artifactPreview) {
+    return {
+      artifact: projectedRef.artifactRef,
+      artifactId: input.artifactId,
+      nodeId: input.nodeId,
+      preview: projectedRef.artifactPreview,
+      source: "projection"
+    };
+  }
+
+  const runtimePreview = await fetchRuntimeArtifactPreview({
+    artifactId: input.artifactId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId
+  });
+
+  if (runtimePreview.detail) {
+    return {
+      artifact: runtimePreview.detail.artifact.ref,
+      artifactId: input.artifactId,
+      nodeId: input.nodeId,
+      preview: runtimePreview.detail.preview,
+      source: "runtime"
+    };
+  }
+
+  return {
+    ...(projectedRef?.artifactRef ? { artifact: projectedRef.artifactRef } : {}),
+    artifactId: input.artifactId,
+    nodeId: input.nodeId,
+    preview: {
+      available: false,
+      reason:
+        runtimePreview.error ??
+        projection.error ??
+        "Artifact preview is unavailable."
+    },
+    source: "unavailable"
+  };
+}
+
+async function buildUserClientSourceChangeDiff(input: {
+  candidateId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<UserClientSourceChangeDiffResponse> {
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+  const projectedRef = findProjectedSourceChangeRef({
+    candidateId: input.candidateId,
+    nodeId: input.nodeId,
+    projection: projection.detail
+  });
+  const projectedSummary = projectedRef?.sourceChangeSummary;
+
+  if (projectedSummary?.diffExcerpt) {
+    return {
+      candidateId: input.candidateId,
+      diff: {
+        available: true,
+        bytesRead: Buffer.byteLength(projectedSummary.diffExcerpt, "utf8"),
+        content: projectedSummary.diffExcerpt,
+        contentEncoding: "utf8",
+        contentType: "text/x-diff",
+        truncated: projectedSummary.truncated
+      },
+      nodeId: input.nodeId,
+      source: "projection",
+      sourceChangeSummary: projectedSummary,
+      status: projectedRef?.status
+    };
+  }
+
+  const runtimeDiff = await fetchRuntimeSourceChangeCandidateDiff({
+    candidateId: input.candidateId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId
+  });
+
+  if (runtimeDiff.detail) {
+    return {
+      candidateId: input.candidateId,
+      diff: runtimeDiff.detail.diff,
+      nodeId: input.nodeId,
+      ...(runtimeDiff.detail.candidate.review
+        ? { review: runtimeDiff.detail.candidate.review }
+        : {}),
+      source: "runtime",
+      sourceChangeSummary: runtimeDiff.detail.candidate.sourceChangeSummary,
+      status: runtimeDiff.detail.candidate.status
+    };
+  }
+
+  return {
+    candidateId: input.candidateId,
+    diff: {
+      available: false,
+      reason:
+        runtimeDiff.error ??
+        projection.error ??
+        "Source-change diff is unavailable."
+    },
+    nodeId: input.nodeId,
+    source: "unavailable",
+    ...(projectedSummary ? { sourceChangeSummary: projectedSummary } : {}),
+    ...(projectedRef?.status ? { status: projectedRef.status } : {})
+  };
 }
 
 async function reviewRuntimeSourceChangeCandidate(input: {
@@ -1867,6 +2018,128 @@ export async function startHumanInterfaceRuntime(input: {
                 : "User Client message publish failed."
           });
         }
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/api/artifacts/preview"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const artifactId =
+          requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+
+        if (!nodeId || !artifactId) {
+          writeJson(response, 400, {
+            error: "Runtime node and artifact id are required."
+          });
+          return;
+        }
+
+        writeJson(
+          response,
+          200,
+          await buildUserClientArtifactPreview({
+            artifactId,
+            hostApi: input.hostApi,
+            nodeId
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/api/source-change-candidates/diff"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const candidateId =
+          requestUrl.searchParams.get("candidateId")?.trim() ?? "";
+
+        if (!nodeId || !candidateId) {
+          writeJson(response, 400, {
+            error: "Runtime node and source-change candidate are required."
+          });
+          return;
+        }
+
+        writeJson(
+          response,
+          200,
+          await buildUserClientSourceChangeDiff({
+            candidateId,
+            hostApi: input.hostApi,
+            nodeId
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/source-change-candidates/review"
+      ) {
+        let reviewRequest: UserClientSourceChangeReviewRequest;
+
+        try {
+          reviewRequest =
+            (await readRequestJson(request)) as UserClientSourceChangeReviewRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Source-change review request is invalid."
+          });
+          return;
+        }
+
+        const candidateId =
+          typeof reviewRequest.candidateId === "string"
+            ? reviewRequest.candidateId.trim()
+            : "";
+        const nodeId =
+          typeof reviewRequest.nodeId === "string"
+            ? reviewRequest.nodeId.trim()
+            : "";
+        const reason =
+          typeof reviewRequest.reason === "string" &&
+          reviewRequest.reason.trim().length > 0
+            ? reviewRequest.reason.trim()
+            : undefined;
+        const status = reviewRequest.status;
+
+        if (status !== "accepted" && status !== "rejected") {
+          writeJson(response, 400, {
+            error: "Source-change review status must be accepted or rejected."
+          });
+          return;
+        }
+
+        if (!nodeId || !candidateId) {
+          writeJson(response, 400, {
+            error: "Runtime node and source-change candidate are required."
+          });
+          return;
+        }
+
+        const review = await reviewRuntimeSourceChangeCandidate({
+          candidateId,
+          hostApi: input.hostApi,
+          nodeId,
+          reason,
+          reviewedBy: input.context.binding.node.nodeId,
+          status
+        });
+
+        if (review.error || !review.detail) {
+          writeJson(response, review.statusCode ?? 502, {
+            error: review.error ?? "Source-change review failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, review.detail);
         return;
       }
 

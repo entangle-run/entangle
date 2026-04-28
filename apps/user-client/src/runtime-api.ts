@@ -1,6 +1,8 @@
 import type {
   ArtifactRef,
+  RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
+  SourceChangeSummary,
   UserConversationProjectionRecord,
   UserNodeConversationResponse,
   UserNodeMessagePublishResponse,
@@ -41,6 +43,38 @@ export type MessageDraft = {
   sessionId?: string | undefined;
   summary: string;
   targetNodeId: string;
+};
+
+export type UserClientPreviewResult =
+  | {
+      available: true;
+      bytesRead: number;
+      content: string;
+      contentEncoding: "utf8";
+      contentType: "text/markdown" | "text/plain" | "text/x-diff";
+      truncated: boolean;
+    }
+  | {
+      available: false;
+      reason: string;
+    };
+
+export type UserClientArtifactPreviewResponse = {
+  artifact?: ArtifactRef | undefined;
+  artifactId: string;
+  nodeId: string;
+  preview: UserClientPreviewResult;
+  source: "projection" | "runtime" | "unavailable";
+};
+
+export type UserClientSourceChangeDiffResponse = {
+  candidateId: string;
+  diff: UserClientPreviewResult;
+  nodeId: string;
+  review?: RuntimeSourceChangeCandidateInspectionResponse["candidate"]["review"];
+  source: "projection" | "runtime" | "unavailable";
+  sourceChangeSummary?: SourceChangeSummary | undefined;
+  status?: SourceChangeRefProjectionRecord["status"] | undefined;
 };
 
 export function normalizeApiBaseUrl(value: string | undefined): string {
@@ -154,6 +188,69 @@ export function publishApprovalResponse(input: {
       method: "POST"
     }
   });
+}
+
+export function fetchArtifactPreview(input: {
+  artifactId: string;
+  baseUrl: string;
+  nodeId: string;
+}): Promise<UserClientArtifactPreviewResponse> {
+  const params = new URLSearchParams({
+    artifactId: input.artifactId,
+    nodeId: input.nodeId
+  });
+
+  return fetchJson<UserClientArtifactPreviewResponse>(
+    `/api/artifacts/preview?${params.toString()}`,
+    {
+      baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function fetchSourceChangeDiff(input: {
+  baseUrl: string;
+  candidateId: string;
+  nodeId: string;
+}): Promise<UserClientSourceChangeDiffResponse> {
+  const params = new URLSearchParams({
+    candidateId: input.candidateId,
+    nodeId: input.nodeId
+  });
+
+  return fetchJson<UserClientSourceChangeDiffResponse>(
+    `/api/source-change-candidates/diff?${params.toString()}`,
+    {
+      baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function reviewSourceChangeCandidate(input: {
+  baseUrl: string;
+  candidateId: string;
+  nodeId: string;
+  reason?: string | undefined;
+  status: "accepted" | "rejected";
+}): Promise<RuntimeSourceChangeCandidateInspectionResponse> {
+  return fetchJson<RuntimeSourceChangeCandidateInspectionResponse>(
+    "/api/source-change-candidates/review",
+    {
+      baseUrl: input.baseUrl,
+      init: {
+        body: JSON.stringify({
+          candidateId: input.candidateId,
+          nodeId: input.nodeId,
+          ...(input.reason ? { reason: input.reason } : {}),
+          status: input.status
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    }
+  );
 }
 
 export function chooseConversationId(input: {

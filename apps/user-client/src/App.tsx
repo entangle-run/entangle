@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
+  ArtifactRef,
+  SourceChangeRefProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeConversationResponse,
   UserNodeMessagePublishType,
-  UserNodeMessageRecord
+  UserNodeMessageRecord,
+  WikiRefProjectionRecord
 } from "@entangle/types";
 import {
   chooseConversationId,
+  fetchArtifactPreview,
   fetchConversationDetail,
+  fetchSourceChangeDiff,
   fetchUserClientState,
   formatConversationTimestamp,
   formatDeliveryLabel,
@@ -15,6 +20,7 @@ import {
   publishApprovalResponse,
   publishUserMessage,
   renderArtifactLocator,
+  reviewSourceChangeCandidate,
   type UserClientState
 } from "./runtime-api.js";
 
@@ -30,6 +36,267 @@ function isApprovalRequest(message: UserNodeMessageRecord): boolean {
     message.direction === "inbound" &&
     message.messageType === "approval.request" &&
     message.approval !== undefined
+  );
+}
+
+function resolveArtifactPreviewNodeId(
+  message: UserNodeMessageRecord,
+  ref: ArtifactRef
+): string {
+  if (ref.backend === "wiki") {
+    return ref.locator.nodeId;
+  }
+
+  return message.direction === "inbound" ? message.fromNodeId : message.toNodeId;
+}
+
+function findSourceChangeRef(input: {
+  candidateId: string;
+  nodeId: string;
+  state?: UserClientState | undefined;
+}): SourceChangeRefProjectionRecord | undefined {
+  return input.state?.sourceChangeRefs.find(
+    (ref) => ref.nodeId === input.nodeId && ref.candidateId === input.candidateId
+  );
+}
+
+function wikiRefMatchesResource(input: {
+  ref: WikiRefProjectionRecord;
+  resource: NonNullable<UserNodeMessageRecord["approval"]>["resource"];
+}): boolean {
+  if (!input.resource) {
+    return false;
+  }
+
+  const locatorPath = input.ref.artifactRef.locator.path;
+  const normalizedLocatorPath = locatorPath.replace(/^\/+/u, "");
+
+  return (
+    input.resource.id === input.ref.nodeId ||
+    input.resource.id === input.ref.artifactId ||
+    input.resource.id === locatorPath ||
+    input.resource.id === normalizedLocatorPath
+  );
+}
+
+function SourceSummary({
+  sourceRef
+}: {
+  sourceRef?: SourceChangeRefProjectionRecord | undefined;
+}) {
+  const summary = sourceRef?.sourceChangeSummary;
+
+  if (!summary) {
+    return null;
+  }
+
+  return (
+    <div className="review-panel">
+      <strong>
+        {summary.fileCount} files · +{summary.additions} -{summary.deletions}
+      </strong>
+      {summary.files.length > 0 ? (
+        <ul className="compact-list">
+          {summary.files.map((file) => (
+            <li key={file.path}>
+              {file.status} {file.path} +{file.additions} -{file.deletions}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function ArtifactPreviewAction({
+  artifact,
+  baseUrl,
+  message
+}: {
+  artifact: ArtifactRef;
+  baseUrl: string;
+  message: UserNodeMessageRecord;
+}) {
+  const [preview, setPreview] = useState<string | undefined>();
+  const [status, setStatus] = useState<string | undefined>();
+  const nodeId = resolveArtifactPreviewNodeId(message, artifact);
+
+  async function loadPreview(): Promise<void> {
+    setStatus("loading");
+
+    try {
+      const response = await fetchArtifactPreview({
+        artifactId: artifact.artifactId,
+        baseUrl,
+        nodeId
+      });
+
+      if (response.preview.available) {
+        setPreview(response.preview.content);
+        setStatus(`${response.source} preview`);
+      } else {
+        setPreview(undefined);
+        setStatus(response.preview.reason);
+      }
+    } catch (error) {
+      setPreview(undefined);
+      setStatus(error instanceof Error ? error.message : "Preview failed.");
+    }
+  }
+
+  return (
+    <div className="artifact-actions">
+      <button onClick={() => void loadPreview()} type="button">
+        Preview
+      </button>
+      {status ? <span className="metadata">{status}</span> : null}
+      {preview ? <pre className="preview-block">{preview}</pre> : null}
+    </div>
+  );
+}
+
+function SourceChangeReview({
+  baseUrl,
+  message,
+  onRefresh,
+  state
+}: {
+  baseUrl: string;
+  message: UserNodeMessageRecord;
+  onRefresh: () => Promise<void>;
+  state?: UserClientState | undefined;
+}) {
+  const resource = message.approval?.resource;
+  const [diff, setDiff] = useState<string | undefined>();
+  const [reason, setReason] = useState("");
+  const [status, setStatus] = useState<string | undefined>();
+
+  if (resource?.kind !== "source_change_candidate") {
+    return null;
+  }
+
+  const candidateId = resource.id;
+  const sourceRef = findSourceChangeRef({
+    candidateId,
+    nodeId: message.fromNodeId,
+    state
+  });
+  const reviewDisabled =
+    sourceRef?.status !== undefined && sourceRef.status !== "pending_review";
+
+  async function loadDiff(): Promise<void> {
+    setStatus("loading diff");
+
+    try {
+      const response = await fetchSourceChangeDiff({
+        baseUrl,
+        candidateId,
+        nodeId: message.fromNodeId
+      });
+
+      if (response.diff.available) {
+        setDiff(response.diff.content);
+        setStatus(`${response.source} diff`);
+      } else {
+        setDiff(undefined);
+        setStatus(response.diff.reason);
+      }
+    } catch (error) {
+      setDiff(undefined);
+      setStatus(error instanceof Error ? error.message : "Diff load failed.");
+    }
+  }
+
+  async function review(statusValue: "accepted" | "rejected"): Promise<void> {
+    setStatus(undefined);
+
+    try {
+      const response = await reviewSourceChangeCandidate({
+        baseUrl,
+        candidateId,
+        nodeId: message.fromNodeId,
+        ...(reason.trim() ? { reason: reason.trim() } : {}),
+        status: statusValue
+      });
+
+      setStatus(`${response.candidate.status} ${candidateId}`);
+      await onRefresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Review failed.");
+    }
+  }
+
+  return (
+    <div className="review-panel">
+      <strong>source change {candidateId}</strong>
+      <SourceSummary sourceRef={sourceRef} />
+      <div className="review-actions">
+        <button onClick={() => void loadDiff()} type="button">
+          Load diff
+        </button>
+        <input
+          aria-label="Review reason"
+          disabled={reviewDisabled}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Review reason"
+          value={reason}
+        />
+        <button
+          disabled={reviewDisabled}
+          onClick={() => void review("accepted")}
+          type="button"
+        >
+          Accept
+        </button>
+        <button
+          className="danger"
+          disabled={reviewDisabled}
+          onClick={() => void review("rejected")}
+          type="button"
+        >
+          Reject
+        </button>
+      </div>
+      {status ? <div className="metadata">{status}</div> : null}
+      {diff ? <pre className="preview-block">{diff}</pre> : null}
+    </div>
+  );
+}
+
+function WikiResourceCards({
+  message,
+  state
+}: {
+  message: UserNodeMessageRecord;
+  state?: UserClientState | undefined;
+}) {
+  const resource = message.approval?.resource;
+  const refs =
+    resource?.kind === "wiki_repository" || resource?.kind === "wiki_page"
+      ? (state?.wikiRefs ?? []).filter(
+          (ref) =>
+            ref.nodeId === message.fromNodeId &&
+            wikiRefMatchesResource({ ref, resource })
+        )
+      : [];
+
+  if (refs.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="artifact-list">
+      {refs.map((ref) => (
+        <div className="artifact-card" key={ref.artifactId}>
+          <strong>{ref.artifactId}</strong>
+          <span>{ref.artifactRef.contentSummary}</span>
+          <span>{renderArtifactLocator(ref.artifactRef)}</span>
+          {ref.artifactPreview?.available ? (
+            <pre className="preview-block">{ref.artifactPreview.content}</pre>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -99,12 +366,14 @@ function MessageTimeline({
   baseUrl,
   conversation,
   messages,
-  onRefresh
+  onRefresh,
+  state
 }: {
   baseUrl: string;
   conversation?: UserConversationProjectionRecord | undefined;
   messages: UserNodeMessageRecord[];
   onRefresh: () => Promise<void>;
+  state?: UserClientState | undefined;
 }) {
   const [actionMessage, setActionMessage] = useState<string | undefined>();
   const [busyApprovalId, setBusyApprovalId] = useState<string | undefined>();
@@ -169,10 +438,22 @@ function MessageTimeline({
                   <strong>{artifact.artifactId}</strong>
                   <span>{artifact.artifactKind ?? artifact.backend}</span>
                   <span>{renderArtifactLocator(artifact)}</span>
+                  <ArtifactPreviewAction
+                    artifact={artifact}
+                    baseUrl={baseUrl}
+                    message={message}
+                  />
                 </li>
               ))}
             </ul>
           ) : null}
+          <SourceChangeReview
+            baseUrl={baseUrl}
+            message={message}
+            onRefresh={onRefresh}
+            state={state}
+          />
+          <WikiResourceCards message={message} state={state} />
           <footer className="message-footer">
             <span>{message.createdAt}</span>
             <span>{message.eventId}</span>
@@ -483,6 +764,7 @@ export function App() {
             conversation={selectedConversation}
             messages={conversation?.messages ?? []}
             onRefresh={refreshAll}
+            state={state}
           />
           <Composer
             baseUrl={apiBaseUrl}

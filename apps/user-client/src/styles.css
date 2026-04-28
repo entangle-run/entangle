@@ -43,6 +43,7 @@ button:disabled {
 }
 
 select,
+input,
 textarea {
   width: 100%;
   border: 1px solid #cfd6df;
@@ -265,6 +266,46 @@ textarea {
   border-left: 3px solid #4d7cba;
   background: #f1f5fb;
   padding: 8px 10px;
+}
+
+.artifact-card,
+.review-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d7dde5;
+  border-radius: 7px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.artifact-actions,
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-actions input {
+  flex: 1 1 220px;
+  width: auto;
+}
+
+.compact-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.preview-block {
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 7px;
+  background: #111418;
+  color: #eef3f7;
+  margin: 0;
+  padding: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .danger {

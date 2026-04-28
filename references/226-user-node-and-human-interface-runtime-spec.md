@@ -39,7 +39,8 @@ User nodes are now partially runtime-capable:
   `GET /api/conversations/:conversationId` and `POST /api/messages`.
 - A first dedicated `apps/user-client` Vite/React app now consumes those local
   JSON routes for runtime status, conversation inspection, message publishing,
-  and approval responses.
+  approval responses, artifact preview, source-change diff loading,
+  source-candidate accept/reject review, and wiki preview cards.
 - The Human Interface Runtime can serve dedicated User Client static assets
   from `ENTANGLE_USER_CLIENT_STATIC_DIR` while keeping `/api/*` routes dynamic.
 - The federated dev runner image now builds and bundles that dedicated app at
@@ -160,6 +161,9 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   projection. Done through `runtime.status.clientUrl`.
 - Add a dedicated User Client app distinct from Studio. Done for the first
   Vite/React app that consumes Human Interface Runtime JSON APIs.
+- Add runtime-local JSON APIs for artifact/source review. Done for
+  projection-first artifact preview, projection-first source diff, and
+  source-candidate review.
 - Serve dedicated User Client assets from the running Human Interface Runtime.
   Done when `ENTANGLE_USER_CLIENT_STATIC_DIR` points at a built/static app
   directory, and now enabled by default in the federated dev runner image.

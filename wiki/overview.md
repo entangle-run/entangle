@@ -72,8 +72,9 @@ with `reviewedBy` stamped as the running User Node id. A first dedicated
 serve static User Client assets from `ENTANGLE_USER_CLIENT_STATIC_DIR`. The
 federated dev runner image now bundles that built app, and the Docker launcher
 adapter can publish a browser-openable User Client port for User Node runtime
-contexts. Studio remains the operator surface, not the primary human-node
-client.
+contexts. The dedicated app now reaches runtime-local JSON routes for artifact
+preview, source diff, source-candidate review, and wiki preview cards. Studio
+remains the operator surface, not the primary human-node client.
 
 The contract-ownership layer is now also explicit:
 

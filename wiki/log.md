@@ -3622,3 +3622,15 @@ The Docker launcher adapter can now publish a host port and public User Client
 URL for User Node runtime contexts, so projected User Client links can be
 opened from the operator workstation instead of pointing at container-internal
 loopback addresses when that adapter is used.
+
+## [2026-04-28] implementation | Added User Client review JSON actions
+
+Added `references/295-user-client-review-json-actions-slice.md`. The Human
+Interface Runtime now exposes local JSON routes for projection-first artifact
+preview, projection-first source-change diff preview, and source-candidate
+accept/reject review stamped with the running User Node id.
+
+The dedicated `apps/user-client` app now uses those routes for artifact
+preview, source diff loading, source-candidate review, and related wiki preview
+cards, reducing the capability gap between the bundled app and the
+server-rendered fallback shell.

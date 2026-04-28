@@ -45,6 +45,9 @@ Node gateway path used by the runner-served shell.
 - Added a quiet operational UI with runtime status, conversation list, selected
   thread, message timeline, artifact summaries, composer, and approval
   approve/reject actions.
+- `295-user-client-review-json-actions-slice.md` extended the app with
+  runtime-local JSON artifact preview, source diff, source-candidate review,
+  and wiki preview cards.
 - Added a Vite dev proxy controlled by `ENTANGLE_USER_CLIENT_RUNTIME_URL` so
   local development can proxy `/api`, `/health`, artifact, and source review
   routes to a running Human Interface Runtime.
@@ -89,9 +92,5 @@ The new app can run in development against a runtime by setting
 
 ## Open Questions
 
-- Should the federated dev runner image build and include
-  `apps/user-client` assets by default?
-- Should artifact/source/wiki review actions move under JSON `/api/*` routes
-  before the app exposes full review panels?
 - Should the app receive live updates through server-sent events or WebSocket
   rather than polling `/api/state`?

@@ -1173,6 +1173,79 @@ describe("runner runtime context", () => {
         targetNodeId: "worker-it"
       });
 
+      const jsonArtifactPreviewResponse = await fetch(
+        new URL(
+          "/api/artifacts/preview?nodeId=worker-it&artifactId=artifact-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonArtifactPreviewResponse.status).toBe(200);
+      await expect(jsonArtifactPreviewResponse.json()).resolves.toMatchObject({
+        artifact: {
+          artifactId: "artifact-alpha",
+          backend: "git"
+        },
+        nodeId: "worker-it",
+        preview: {
+          available: true,
+          content: "Projected report preview body."
+        },
+        source: "projection"
+      });
+
+      const jsonSourceDiffResponse = await fetch(
+        new URL(
+          "/api/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonSourceDiffResponse.status).toBe(200);
+      const jsonSourceDiffBody = (await jsonSourceDiffResponse.json()) as {
+        diff: {
+          content?: string;
+        };
+        source: string;
+        status: string;
+      };
+      expect(jsonSourceDiffBody).toMatchObject({
+        candidateId: "source-change-turn-alpha",
+        diff: {
+          available: true
+        },
+        nodeId: "worker-it",
+        source: "projection",
+        status: "pending_review"
+      });
+      expect(jsonSourceDiffBody.diff.content).toContain("+projected behavior");
+
+      const jsonSourceReviewResponse = await fetch(
+        new URL("/api/source-change-candidates/review", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            candidateId: "source-change-turn-alpha",
+            nodeId: "worker-it",
+            reason: "JSON review rejected.",
+            status: "rejected"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonSourceReviewResponse.status).toBe(200);
+      await expect(jsonSourceReviewResponse.json()).resolves.toMatchObject({
+        candidate: {
+          candidateId: "source-change-turn-alpha",
+          review: {
+            decidedBy: "user-main",
+            decision: "rejected",
+            reason: "JSON review rejected."
+          },
+          status: "rejected"
+        }
+      });
+
       const pageResponse = await fetch(
         new URL("/?conversationId=conversation-alpha", handle.clientUrl)
       );
@@ -1354,7 +1427,9 @@ describe("runner runtime context", () => {
       (request) =>
         request.method === "PATCH" &&
         request.url ===
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review"
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review" &&
+        (request.body as { reason?: string } | undefined)?.reason ===
+          "Looks good for application."
     );
     expect(sourceReviewRequest).toMatchObject({
       authorization: "Bearer host-secret"
@@ -1363,6 +1438,19 @@ describe("runner runtime context", () => {
       reason: "Looks good for application.",
       reviewedBy: "user-main",
       status: "accepted"
+    });
+    const jsonSourceReviewRequest = hostRequests.find(
+      (request) =>
+        request.method === "PATCH" &&
+        request.url ===
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review" &&
+        (request.body as { reason?: string } | undefined)?.reason ===
+          "JSON review rejected."
+    );
+    expect(jsonSourceReviewRequest?.body).toMatchObject({
+      reason: "JSON review rejected.",
+      reviewedBy: "user-main",
+      status: "rejected"
     });
     const publishRequest = hostRequests.find(
       (request) =>
