@@ -921,6 +921,10 @@ runnersCommand
   )
   .option("--max-assignments <n>", "Maximum concurrent assignments.", "1")
   .option(
+    "--heartbeat-interval-ms <ms>",
+    "Runner heartbeat interval in milliseconds."
+  )
+  .option(
     "--secret-env-var <envVar>",
     "Env var that will hold the runner Nostr secret key on the runner machine.",
     "ENTANGLE_RUNNER_NOSTR_SECRET_KEY"
@@ -943,6 +947,7 @@ runnersCommand
     options: {
       agentEngineKind?: string[];
       authRequired?: boolean;
+      heartbeatIntervalMs?: string;
       hostApi?: boolean;
       hostApiUrl?: string;
       hostTokenEnvVar?: string;
@@ -988,6 +993,14 @@ runnersCommand
       authRequired: options.authRequired ?? false,
       ...(hostApiAuthEnvVar ? { hostApiAuthEnvVar } : {}),
       hostApiBaseUrl: options.hostApiUrl ?? resolveHostUrl(command),
+      ...(options.heartbeatIntervalMs
+        ? {
+            heartbeatIntervalMs: parsePositiveIntegerOption(
+              options.heartbeatIntervalMs,
+              "--heartbeat-interval-ms"
+            )
+          }
+        : {}),
       hostAuthorityPubkey: status.authority.publicKey,
       includeHostApi: options.hostApi ?? true,
       includeRuntimeIdentitySecret: options.runtimeIdentitySecret ?? true,

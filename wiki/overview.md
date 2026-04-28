@@ -94,7 +94,9 @@ CLI can now generate a Host-derived `runner-join.json` with
 scripts. Generic joined runners now also emit periodic signed
 `runner.heartbeat` observations carrying accepted assignment ids and
 capacity-derived operational state, keeping Host projection live after the
-initial `runner.hello`.
+initial `runner.hello`. The heartbeat interval can be written into
+`runner-join.json`, and the process-runner smoke now validates projected
+heartbeats from the real joined agent runner and User Node runners.
 
 The contract-ownership layer is now also explicit:
 

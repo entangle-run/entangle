@@ -103,6 +103,7 @@ same-machine slice records.
 - [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
 - [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
 - [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
+- [303-runner-heartbeat-config-smoke-slice.md](303-runner-heartbeat-config-smoke-slice.md)
 
 ## Audited Scope
 
@@ -211,7 +212,7 @@ The repository is not fully federated:
   materialized assignment context paths;
 - generic joined runners now emit periodic signed `runner.heartbeat`
   observations with accepted assignment ids and capacity-derived operational
-  state;
+  state, and their join configs can optionally tune `heartbeatIntervalMs`;
 - Host projection now exposes runtime projection records from observed runtime
   state, intents, and assignment records without invoking backend
   reconciliation;
@@ -254,6 +255,9 @@ The repository is not fully federated:
   `entangle-runner` bin for `join --config` startup;
 - generic joined runners now keep Host projection live through periodic signed
   `runner.heartbeat` observations after startup;
+- the process-runner smoke now validates Host-projected heartbeats from the
+  agent runner and both User Node runners by writing a short interval into the
+  temporary join configs;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

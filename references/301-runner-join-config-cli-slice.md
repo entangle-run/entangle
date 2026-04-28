@@ -20,7 +20,8 @@ An operator should be able to prepare a runner machine with:
 
 The generated config should not contain secrets. It should contain Host
 Authority pubkey, relay URLs, runner id, declared capabilities, runner secret
-delivery reference, and optional Host API bootstrap settings.
+delivery reference, optional heartbeat interval, and optional Host API
+bootstrap settings.
 
 ## Impacted Modules/Files
 
@@ -44,7 +45,8 @@ delivery reference, and optional Host API bootstrap settings.
 - Add `entangle runners join-config`.
 - Derive Host Authority pubkey and default relay URLs from `/v1/host/status`.
 - Allow explicit relay, runtime-kind, agent-engine-kind, label,
-  max-assignment, Host API, Host token env var, and runner public-key options.
+  max-assignment, heartbeat interval, Host API, Host token env var, and runner
+  public-key options.
 - Validate generated output with `runnerJoinConfigSchema`.
 - Emit compact summaries for automation-friendly CLI use.
 - Add the `entangle-runner` package bin and a Node shebang to runner entrypoint.

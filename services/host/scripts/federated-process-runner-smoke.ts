@@ -41,6 +41,7 @@ const relayUrl =
 const relayUrls = [relayUrl];
 const timeoutMs = Number.parseInt(readFlagValue("--timeout-ms") ?? "30000", 10);
 const pollIntervalMs = 150;
+const runnerHeartbeatIntervalMs = 1000;
 const operatorToken = "process-runner-smoke-token";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "..", "..", "..");
@@ -78,6 +79,19 @@ function assertCondition(condition: boolean, message: string): void {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+async function assertResponseOk(
+  response: Response,
+  label: string
+): Promise<void> {
+  if (response.ok) {
+    return;
+  }
+
+  throw new Error(
+    `${label} failed with HTTP ${response.status}: ${await response.text()}`
+  );
 }
 
 function printPass(label: string, detail: string): void {
@@ -355,6 +369,33 @@ async function hostRequest(input: {
   }
 
   return response.json();
+}
+
+async function waitForRunnerHeartbeat(input: {
+  baseUrl: string;
+  runnerId: string;
+  stdout: () => string;
+  stderr: () => string;
+}): Promise<void> {
+  const inspection = await waitFor(
+    `${input.runnerId} heartbeat`,
+    async () => {
+      const response = runnerRegistryInspectionResponseSchema.parse(
+        await hostRequest({
+          baseUrl: input.baseUrl,
+          path: `/v1/runners/${input.runnerId}`
+        })
+      );
+
+      return response.runner.heartbeat ? response : undefined;
+    },
+    () => `\nstdout:\n${input.stdout()}\nstderr:\n${input.stderr()}`
+  );
+
+  printPass(
+    "runner-heartbeat",
+    `runner=${input.runnerId}; assignments=${inspection.runner.heartbeat?.assignmentIds.length ?? 0}`
+  );
 }
 
 function parseSecretKeyHex(secretKey: string): Uint8Array {
@@ -659,6 +700,7 @@ async function main(): Promise<void> {
         supportsLocalWorkspace: true,
         supportsNip59: true
       },
+      heartbeatIntervalMs: runnerHeartbeatIntervalMs,
       hostApi: {
         auth: {
           envVar: "ENTANGLE_HOST_TOKEN",
@@ -696,6 +738,7 @@ async function main(): Promise<void> {
         supportsLocalWorkspace: true,
         supportsNip59: true
       },
+      heartbeatIntervalMs: runnerHeartbeatIntervalMs,
       hostApi: {
         auth: {
           envVar: "ENTANGLE_HOST_TOKEN",
@@ -739,6 +782,7 @@ async function main(): Promise<void> {
           supportsLocalWorkspace: true,
           supportsNip59: true
         },
+        heartbeatIntervalMs: runnerHeartbeatIntervalMs,
         hostApi: {
           auth: {
             envVar: "ENTANGLE_HOST_TOKEN",
@@ -919,6 +963,12 @@ async function main(): Promise<void> {
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
     printPass("runner-hello", `runner=${runnerId}`);
+    await waitForRunnerHeartbeat({
+      baseUrl: hostBaseUrl,
+      runnerId,
+      stderr: () => runnerStderr,
+      stdout: () => runnerStdout
+    });
 
     await waitFor(
       "User Node runner registration",
@@ -943,6 +993,12 @@ async function main(): Promise<void> {
       () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
     );
     printPass("user-runner-hello", `runner=${userRunnerId}`);
+    await waitForRunnerHeartbeat({
+      baseUrl: hostBaseUrl,
+      runnerId: userRunnerId,
+      stderr: () => userRunnerStderr,
+      stdout: () => userRunnerStdout
+    });
 
     await waitFor(
       "Reviewer User Node runner registration",
@@ -971,6 +1027,12 @@ async function main(): Promise<void> {
       "reviewer-user-runner-hello",
       `runner=${reviewerUserRunnerId}`
     );
+    await waitForRunnerHeartbeat({
+      baseUrl: hostBaseUrl,
+      runnerId: reviewerUserRunnerId,
+      stderr: () => reviewerUserRunnerStderr,
+      stdout: () => reviewerUserRunnerStdout
+    });
 
     await hostRequest({
       baseUrl: hostBaseUrl,
@@ -1367,10 +1429,7 @@ async function main(): Promise<void> {
         method: "POST"
       }
     );
-    assertCondition(
-      userMessageResponse.ok,
-      `User Client JSON publish failed with HTTP ${userMessageResponse.status}: ${await userMessageResponse.text()}`
-    );
+    await assertResponseOk(userMessageResponse, "User Client JSON publish");
     const userMessage = userNodeMessagePublishResponseSchema.parse(
       await userMessageResponse.json()
     );
@@ -1472,9 +1531,9 @@ async function main(): Promise<void> {
         userClientUrl
       )
     );
-    assertCondition(
-      userClientConversationResponse.ok,
-      `User Client conversation API failed with HTTP ${userClientConversationResponse.status}: ${await userClientConversationResponse.text()}`
+    await assertResponseOk(
+      userClientConversationResponse,
+      "User Client conversation API"
     );
     const userClientConversation = userNodeConversationResponseSchema.parse(
       await userClientConversationResponse.json()
@@ -1658,10 +1717,7 @@ async function main(): Promise<void> {
       },
       method: "POST"
     });
-    assertCondition(
-      approvalResponse.ok,
-      `User Client JSON approval response failed with HTTP ${approvalResponse.status}: ${await approvalResponse.text()}`
-    );
+    await assertResponseOk(approvalResponse, "User Client JSON approval response");
     await waitFor(
       "Host User Node approval response history",
       async () => {

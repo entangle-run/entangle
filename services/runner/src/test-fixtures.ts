@@ -380,6 +380,7 @@ export async function createRuntimeFixture(input: {
 export async function createRunnerJoinFixture(
   input: {
     capabilities?: RunnerCapability;
+    heartbeatIntervalMs?: number;
     hostApi?: RunnerJoinConfig["hostApi"];
     hostAuthorityPubkey?: string;
     relayUrls?: string[];
@@ -404,6 +405,9 @@ export async function createRunnerJoinFixture(
       supportsLocalWorkspace: true,
       supportsNip59: true
     },
+    ...(input.heartbeatIntervalMs !== undefined
+      ? { heartbeatIntervalMs: input.heartbeatIntervalMs }
+      : {}),
     ...(input.hostApi ? { hostApi: input.hostApi } : {}),
     hostAuthorityPubkey: input.hostAuthorityPubkey ?? hostPublicKey,
     identity: {

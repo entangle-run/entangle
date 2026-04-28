@@ -286,10 +286,13 @@ This repository currently contains:
   CLI, and Studio rendering;
 - CLI can generate schema-validated generic runner join configs from Host
   status through `entangle runners join-config`, while the runner package now
-  exposes an `entangle-runner` bin for `join --config` startup;
+  exposes an `entangle-runner` bin for `join --config` startup, including an
+  optional validated heartbeat interval;
 - generic joined runners emit periodic signed `runner.heartbeat` observations
   with accepted assignment ids and capacity-derived operational state, so Host
-  projection can track remote runner liveness after startup;
+  projection can track remote runner liveness after startup, and the
+  process-runner smoke now validates those projected heartbeats from real
+  joined runner processes;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

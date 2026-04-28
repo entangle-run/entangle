@@ -192,6 +192,7 @@ export ENTANGLE_RUNNER_NOSTR_SECRET_KEY="$(openssl rand -hex 32)"
 pnpm --filter @entangle/cli dev -- runners join-config \
   --runner runner-extra \
   --output runner-join.json \
+  --heartbeat-interval-ms 30000 \
   --summary
 pnpm --filter @entangle/runner start -- join --config runner-join.json
 ```

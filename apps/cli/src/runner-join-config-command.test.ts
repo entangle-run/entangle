@@ -21,6 +21,7 @@ describe("runner join config command helpers", () => {
       hostApiAuthEnvVar: "ENTANGLE_HOST_TOKEN",
       hostApiBaseUrl: "http://localhost:7071",
       hostAuthorityPubkey: authorityPubkey,
+      heartbeatIntervalMs: 1000,
       relayUrls: ["ws://localhost:7777"],
       runnerId: "runner-alpha",
       runnerPublicKey: runnerPubkey,
@@ -33,6 +34,7 @@ describe("runner join config command helpers", () => {
         maxAssignments: 1,
         runtimeKinds: ["agent_runner", "human_interface"]
       },
+      heartbeatIntervalMs: 1000,
       hostApi: {
         auth: {
           envVar: "ENTANGLE_HOST_TOKEN",
@@ -56,6 +58,7 @@ describe("runner join config command helpers", () => {
       schemaVersion: "1"
     });
     expect(projectRunnerJoinConfigSummary(config)).toMatchObject({
+      heartbeatIntervalMs: 1000,
       hostApiAuthEnvVar: "ENTANGLE_HOST_TOKEN",
       runtimeIdentitySecretFromHost: true,
       secretDelivery: "env:ENTANGLE_RUNNER_NOSTR_SECRET_KEY"

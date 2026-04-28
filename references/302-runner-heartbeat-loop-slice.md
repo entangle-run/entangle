@@ -68,6 +68,6 @@ the observe schema and Host reducer path.
 
 ## Open Questions
 
-- Per-runner heartbeat interval policy is not exposed in the operator join-config
-  command yet. The internal constructor hook exists for tests and can become a
-  config field if operators need non-default intervals.
+- Resolved by `303-runner-heartbeat-config-smoke-slice.md`: the join config
+  now supports optional `heartbeatIntervalMs`, and the CLI can write it through
+  `--heartbeat-interval-ms`.

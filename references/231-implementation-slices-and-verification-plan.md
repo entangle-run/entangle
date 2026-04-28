@@ -97,6 +97,7 @@ Implementation record:
 
 - [235-runner-registry-slice.md](235-runner-registry-slice.md)
 - [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
+- [303-runner-heartbeat-config-smoke-slice.md](303-runner-heartbeat-config-smoke-slice.md)
 
 Verification:
 
@@ -104,6 +105,7 @@ Verification:
 - CLI runner commands;
 - Studio helper tests.
 - runner join heartbeat timer tests.
+- process-runner smoke heartbeat projection checks.
 
 Current status:
 
@@ -111,6 +113,9 @@ Current status:
 - Generic joined runners now emit periodic signed `runner.heartbeat`
   observations with accepted assignment ids and a capacity-derived
   operational state.
+- Join configs can optionally tune heartbeat cadence through
+  `heartbeatIntervalMs`, and the process-runner smoke validates Host-projected
+  heartbeats from all joined runner processes.
 
 ### Slice 5: Assignment Lifecycle
 
@@ -142,6 +147,7 @@ Implementation record:
 - [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
 - [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
 - [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
+- [303-runner-heartbeat-config-smoke-slice.md](303-runner-heartbeat-config-smoke-slice.md)
 
 Verification:
 
@@ -153,6 +159,8 @@ Verification:
 - CLI join-config helper tests and runner package typecheck/build for
   `entangle-runner join --config`.
 - runner heartbeat timer tests for the generic join service.
+- process-runner smoke validation that generated process join configs can use a
+  short heartbeat interval and project liveness through Host.
 
 ### Slice 7: Local Adapter Rebase
 

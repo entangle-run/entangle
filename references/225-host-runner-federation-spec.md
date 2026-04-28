@@ -10,9 +10,10 @@ portable Host bootstrap bundles, materialize runner-owned assignment workspaces,
 start assigned agent or `human_interface` node runtimes, and emit signed
 observations. They now also emit periodic signed `runner.heartbeat`
 observations with accepted assignment ids and capacity-derived operational
-state. The process-runner smoke proves the broader join and assignment path
-with separate Host, agent runner, and User Node runner process roots over a
-live relay.
+state, with an optional `heartbeatIntervalMs` in `runner-join.json` for
+non-default cadences. The process-runner smoke proves the broader join,
+heartbeat, and assignment path with separate Host, agent runner, and User Node
+runner process roots over a live relay.
 
 The same-machine Docker launcher still exists as an adapter, and several deep
 runtime detail APIs still read runner-owned filesystem state through Host
@@ -62,8 +63,8 @@ Host must not need shared filesystem access to understand runner state.
 - Add runner registration records and Host APIs.
 - Add runner trust/revoke state transitions.
 - Add runner heartbeat and stale/offline classification. Done for Host reducer
-  and generic runner heartbeat emission; deeper operator tuning remains future
-  work.
+  and generic runner heartbeat emission, including optional join-config interval
+  tuning.
 - Add runtime assignment offers with graph revision, node id, runtime kind,
   resource refs, policy, and lease.
 - Add runner acceptance/rejection receipts.

@@ -497,6 +497,7 @@ describe("federated runtime contracts", () => {
         agentEngineKinds: ["opencode_server"],
         runtimeKinds: ["agent_runner"]
       },
+      heartbeatIntervalMs: 1000,
       hostApi: {
         auth: {
           envVar: "ENTANGLE_HOST_TOKEN",
@@ -522,6 +523,7 @@ describe("federated runtime contracts", () => {
 
     expect(config.authRequired).toBe(false);
     expect(config.capabilities.maxAssignments).toBe(1);
+    expect(config.heartbeatIntervalMs).toBe(1000);
     expect(config.hostApi?.baseUrl).toBe("http://host.test");
     expect(config.hostApi?.runtimeIdentitySecret?.mode).toBe("host_api");
     expect(config.identity.publicKey).toBe(runnerPubkey);

@@ -331,7 +331,9 @@ export class RunnerJoinService {
     }
 
     const intervalMs =
-      this.input.heartbeatIntervalMs ?? defaultHeartbeatIntervalMs;
+      this.input.heartbeatIntervalMs ??
+      this.input.config.heartbeatIntervalMs ??
+      defaultHeartbeatIntervalMs;
 
     if (intervalMs <= 0) {
       return;

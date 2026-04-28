@@ -3703,3 +3703,14 @@ capacity-derived operational state.
 
 This closes the runner-side liveness gap for remote runners without adding
 shared filesystem assumptions or changing existing assignment event order.
+
+## [2026-04-28] implementation | Added runner heartbeat join-config and smoke coverage
+
+Added `references/303-runner-heartbeat-config-smoke-slice.md`. Runner join
+configs now accept optional `heartbeatIntervalMs`, the CLI can write it through
+`entangle runners join-config --heartbeat-interval-ms`, and compact summaries
+include the configured cadence.
+
+The process-runner smoke now writes short heartbeat intervals into its temporary
+join configs and waits for Host-projected heartbeats from the agent runner and
+both User Node runners before continuing.

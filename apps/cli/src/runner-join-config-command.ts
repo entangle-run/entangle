@@ -9,6 +9,7 @@ export type RunnerJoinConfigBuildInput = {
   hostApiAuthEnvVar?: string;
   hostApiBaseUrl?: string;
   hostAuthorityPubkey: string;
+  heartbeatIntervalMs?: number;
   includeHostApi?: boolean;
   includeRuntimeIdentitySecret?: boolean;
   labels?: string[];
@@ -22,6 +23,7 @@ export type RunnerJoinConfigBuildInput = {
 
 export type RunnerJoinConfigSummary = {
   agentEngineKinds: string[];
+  heartbeatIntervalMs?: number;
   hostApiAuthEnvVar?: string;
   hostApiBaseUrl?: string;
   hostAuthorityPubkey: string;
@@ -79,6 +81,9 @@ export function buildRunnerJoinConfig(
       supportsLocalWorkspace: true,
       supportsNip59: true
     },
+    ...(input.heartbeatIntervalMs !== undefined
+      ? { heartbeatIntervalMs: input.heartbeatIntervalMs }
+      : {}),
     ...(includeHostApi && input.hostApiBaseUrl
       ? {
           hostApi: {
@@ -124,6 +129,9 @@ export function projectRunnerJoinConfigSummary(
       ? { hostApiAuthEnvVar: config.hostApi.auth.envVar }
       : {}),
     ...(config.hostApi?.baseUrl ? { hostApiBaseUrl: config.hostApi.baseUrl } : {}),
+    ...(config.heartbeatIntervalMs !== undefined
+      ? { heartbeatIntervalMs: config.heartbeatIntervalMs }
+      : {}),
     hostAuthorityPubkey: config.hostAuthorityPubkey,
     relayUrls: config.relayUrls,
     runnerId: config.runnerId,

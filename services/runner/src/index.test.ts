@@ -1643,7 +1643,9 @@ describe("runner runtime context", () => {
   });
 
   it("emits periodic join heartbeats with accepted assignment ids", async () => {
-    const fixture = await createRunnerJoinFixture();
+    const fixture = await createRunnerJoinFixture({
+      heartbeatIntervalMs: 1_000
+    });
     const transport = new FakeRunnerJoinTransport();
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
     vi.useFakeTimers();
@@ -1652,7 +1654,6 @@ describe("runner runtime context", () => {
       fixture.configPath,
       {
         clock: () => "2026-04-26T12:00:00.000Z",
-        heartbeatIntervalMs: 1_000,
         materializer: ({ assignment }) =>
           Promise.resolve({
             accepted: true,

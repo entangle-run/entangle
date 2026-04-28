@@ -32,6 +32,7 @@ export const runnerJoinHostApiSchema = z.object({
 export const runnerJoinConfigSchema = z.object({
   authRequired: z.boolean().default(false),
   capabilities: runnerCapabilitySchema,
+  heartbeatIntervalMs: z.number().int().positive().optional(),
   hostApi: runnerJoinHostApiSchema.optional(),
   hostAuthorityPubkey: nostrPublicKeySchema,
   identity: runnerJoinIdentitySchema,
