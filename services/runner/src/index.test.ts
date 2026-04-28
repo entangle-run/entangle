@@ -264,6 +264,47 @@ function buildRuntimeRestartEvent(
   };
 }
 
+function buildRuntimeSessionCancelEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:04.000Z",
+      eventId: "7777777777777777777777777777777777777777777777777777777777777777",
+      payloadHash:
+        "8888888888888888888888888888888888888888888888888888888888888888",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      cancellation: {
+        cancellationId: "cancel-alpha",
+        graphId: assignment.graphId,
+        nodeId: assignment.nodeId,
+        requestedAt: "2026-04-26T12:00:04.000Z",
+        sessionId: "session-alpha",
+        status: "requested"
+      },
+      commandId: "cmd-cancel-alpha",
+      eventType: "runtime.session.cancel",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:04.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Operator cancellation",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey,
+      sessionId: "session-alpha"
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -1963,6 +2004,7 @@ describe("runner runtime context", () => {
     const transport = new FakeRunnerJoinTransport();
     const runtimeStops: string[] = [];
     const runtimeStarts: string[] = [];
+    const runtimeCancellations: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const configured = await createConfiguredRunnerJoinService(
@@ -1979,6 +2021,10 @@ describe("runner runtime context", () => {
           runtimeStarts.push(runtimeContextPath);
           return Promise.resolve({
             clientUrl: "http://127.0.0.1:4173/",
+            cancelSession: (request) => {
+              runtimeCancellations.push(request.sessionId);
+              return Promise.resolve();
+            },
             runtimeContextPath,
             stop: () => {
               runtimeStops.push(runtimeContextPath);
@@ -1996,6 +2042,7 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeStopEvent(assignment));
     await transport.dispatch(buildRuntimeStartEvent(assignment));
     await transport.dispatch(buildRuntimeRestartEvent(assignment));
+    await transport.dispatch(buildRuntimeSessionCancelEvent(assignment));
 
     expect(runtimeStarts).toEqual([
       "/runner/assignments/assignment-alpha/runtime-context.json",
@@ -2006,6 +2053,7 @@ describe("runner runtime context", () => {
       "/runner/assignments/assignment-alpha/runtime-context.json",
       "/runner/assignments/assignment-alpha/runtime-context.json"
     ]);
+    expect(runtimeCancellations).toEqual(["session-alpha"]);
     expect(
       transport.observations.filter(
         (payload) =>

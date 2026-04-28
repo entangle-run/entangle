@@ -137,6 +137,7 @@ same-machine slice records.
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
+- [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 
 ## Audited Scope
 
@@ -522,9 +523,11 @@ host-client. Direct Host-mediated wiki repository publication and artifact
 restore/promotion have also been removed from Host/CLI/Studio/host-client;
 wiki and artifact inspection currently remain through runner-owned refs plus
 signed projection, and explicit wiki/artifact mutation must return as
-runner-owned protocol behavior. The next blocking implementation areas are
-explicit runner-owned publication retry/non-primary target commands,
-runner-owned source replay, richer
+runner-owned protocol behavior. Session cancellation now uses signed
+`runtime.session.cancel` control commands for accepted federated assignments,
+with local cancellation files retained only as fallback compatibility. The next
+blocking implementation areas are explicit runner-owned publication
+retry/non-primary target commands, runner-owned source replay, richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed

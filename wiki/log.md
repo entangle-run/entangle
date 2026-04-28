@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Added federated session cancellation control
+
+Moved the primary session cancellation delivery path from Host-written runner
+filesystem records to a signed `runtime.session.cancel` control command for
+accepted federated assignments. The generic runner forwards the command to the
+running assignment runtime, and RunnerService persists/applies it under
+runner-owned state while preserving existing CLI/Studio/host-client cancel
+surfaces.
+
+Added `references/337-federated-session-cancellation-control-slice.md`.
+
 ## [2026-04-28] implementation | Removed Host artifact restore and promotion
 
 Removed the direct Host artifact restore and promotion routes, host-client

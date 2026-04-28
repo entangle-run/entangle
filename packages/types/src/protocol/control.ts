@@ -6,6 +6,7 @@ import {
   runtimeAssignmentRecordSchema
 } from "../federation/assignment.js";
 import { runnerTrustStateSchema } from "../federation/runner.js";
+import { sessionCancellationRequestRecordSchema } from "../runtime/session-state.js";
 import { entangleSignedEnvelopeSchema } from "./signed-envelope.js";
 
 export const entangleControlProtocolSchema = z.literal("entangle.control.v1");
@@ -17,7 +18,8 @@ export const entangleControlEventTypeSchema = z.enum([
   "assignment.lease.renew",
   "runtime.start",
   "runtime.stop",
-  "runtime.restart"
+  "runtime.restart",
+  "runtime.session.cancel"
 ]);
 
 const controlPayloadBaseSchema = z.object({
@@ -115,6 +117,52 @@ export const runtimeRestartPayloadSchema = controlPayloadBaseSchema.extend({
   reason: nonEmptyStringSchema.optional()
 });
 
+export const runtimeSessionCancelPayloadSchema = controlPayloadBaseSchema
+  .extend({
+    assignmentId: identifierSchema.optional(),
+    cancellation: sessionCancellationRequestRecordSchema,
+    commandId: identifierSchema,
+    eventType: z.literal("runtime.session.cancel"),
+    graphId: identifierSchema,
+    nodeId: identifierSchema,
+    reason: nonEmptyStringSchema.optional(),
+    sessionId: identifierSchema
+  })
+  .superRefine((value, context) => {
+    if (value.cancellation.graphId !== value.graphId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Cancellation graphId must match the control payload graphId.",
+        path: ["cancellation", "graphId"]
+      });
+    }
+
+    if (value.cancellation.nodeId !== value.nodeId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Cancellation nodeId must match the control payload nodeId.",
+        path: ["cancellation", "nodeId"]
+      });
+    }
+
+    if (value.cancellation.sessionId !== value.sessionId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Cancellation sessionId must match the control payload sessionId.",
+        path: ["cancellation", "sessionId"]
+      });
+    }
+
+    if (value.cancellation.status !== "requested") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Cancellation control commands must carry requested records.",
+        path: ["cancellation", "status"]
+      });
+    }
+  });
+
 export const entangleControlEventPayloadSchema = z.discriminatedUnion(
   "eventType",
   [
@@ -124,7 +172,8 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     assignmentLeaseRenewPayloadSchema,
     runtimeStartPayloadSchema,
     runtimeStopPayloadSchema,
-    runtimeRestartPayloadSchema
+    runtimeRestartPayloadSchema,
+    runtimeSessionCancelPayloadSchema
   ]
 );
 
@@ -183,6 +232,9 @@ export type AssignmentLeaseRenewPayload = z.infer<
 export type RuntimeStartPayload = z.infer<typeof runtimeStartPayloadSchema>;
 export type RuntimeStopPayload = z.infer<typeof runtimeStopPayloadSchema>;
 export type RuntimeRestartPayload = z.infer<typeof runtimeRestartPayloadSchema>;
+export type RuntimeSessionCancelPayload = z.infer<
+  typeof runtimeSessionCancelPayloadSchema
+>;
 export type EntangleControlEventPayload = z.infer<
   typeof entangleControlEventPayloadSchema
 >;

@@ -2,6 +2,15 @@
 
 Date: 2026-04-26.
 
+## Superseded Delivery Boundary
+
+The public cancellation API and runner cancellation semantics from this slice
+remain valid, but the primary delivery path has been superseded by
+`337-federated-session-cancellation-control-slice.md`. Host now publishes a
+signed `runtime.session.cancel` control command to accepted federated
+assignments when available; Host-written `runtimeRoot/session-cancellations`
+records are fallback compatibility only.
+
 ## Purpose
 
 This slice closes the first Entangle external cancellation bridge for

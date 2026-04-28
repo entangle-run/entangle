@@ -85,7 +85,8 @@ import {
   userNodeMessageRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
-  type RuntimeAssignmentRecord
+  type RuntimeAssignmentRecord,
+  type SessionCancellationRequestRecord
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -144,6 +145,12 @@ type TestFederatedAssignmentPublisher = {
     assignment: RuntimeAssignmentRecord;
     commandId: string;
     reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeSessionCancel?(input: {
+    assignment: RuntimeAssignmentRecord;
+    cancellation: SessionCancellationRequestRecord;
+    commandId: string;
     relayUrls: string[];
   }): Promise<unknown>;
 };
@@ -6366,6 +6373,144 @@ describe("buildHostServer", () => {
           }
         ],
         sessionId: "session-before-intake"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("publishes federated session cancellation commands for accepted assignments", async () => {
+    const publishedCancels: Array<{
+      assignment: RuntimeAssignmentRecord;
+      cancellation: SessionCancellationRequestRecord;
+      relayUrls: string[];
+    }> = [];
+    const server = await createTestServer({
+      federatedControlPlane: {
+        publishRuntimeAssignmentOffer: () => Promise.resolve(),
+        publishRuntimeAssignmentRevoke: () => Promise.resolve(),
+        publishRuntimeSessionCancel: (input) => {
+          publishedCancels.push({
+            assignment: input.assignment,
+            cancellation: input.cancellation,
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        }
+      },
+      federatedControlRelayUrls: ["ws://relay.example"],
+      includeModelEndpoint: true
+    });
+
+    try {
+      const [
+        {
+          recordRunnerHello,
+          recordRuntimeAssignmentAccepted
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/authority"
+          })
+        ).json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+      await server.inject({
+        method: "POST",
+        url: "/v1/runners/runner-alpha/trust"
+      });
+
+      const offer = runtimeAssignmentOfferResponseSchema.parse(
+        (
+          await server.inject({
+            method: "POST",
+            payload: {
+              assignmentId: "assignment-alpha",
+              nodeId: "worker-it",
+              runnerId: "runner-alpha"
+            },
+            url: "/v1/assignments"
+          })
+        ).json()
+      ).assignment;
+      await recordRuntimeAssignmentAccepted({
+        acceptedAt: new Date().toISOString(),
+        assignmentId: offer.assignmentId,
+        eventType: "assignment.accepted",
+        hostAuthorityPubkey,
+        ...(offer.lease ? { lease: offer.lease } : {}),
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+
+      const cancelResponse = await server.inject({
+        method: "POST",
+        payload: {
+          cancellationId: "cancel-federated-alpha",
+          reason: "Operator stopped federated work.",
+          requestedBy: "operator-main"
+        },
+        url: "/v1/runtimes/worker-it/sessions/session-federated-alpha/cancel"
+      });
+
+      expect(cancelResponse.statusCode).toBe(200);
+      expect(
+        sessionCancellationResponseSchema.parse(cancelResponse.json())
+      ).toMatchObject({
+        cancellations: [
+          {
+            cancellationId: "cancel-federated-alpha",
+            graphId: "team-alpha",
+            nodeId: "worker-it",
+            reason: "Operator stopped federated work.",
+            requestedBy: "operator-main",
+            sessionId: "session-federated-alpha",
+            status: "requested"
+          }
+        ],
+        sessionId: "session-federated-alpha"
+      });
+      expect(publishedCancels).toHaveLength(1);
+      expect(publishedCancels[0]).toMatchObject({
+        assignment: {
+          assignmentId: "assignment-alpha",
+          nodeId: "worker-it",
+          runnerId: "runner-alpha"
+        },
+        cancellation: {
+          cancellationId: "cancel-federated-alpha",
+          sessionId: "session-federated-alpha",
+          status: "requested"
+        },
+        relayUrls: ["ws://relay.example"]
       });
     } finally {
       await server.close();

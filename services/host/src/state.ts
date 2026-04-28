@@ -12083,6 +12083,55 @@ function buildSessionCancellationId(input: {
   );
 }
 
+export function buildFederatedSessionCancellationRequestRecord(input: {
+  assignment: RuntimeAssignmentRecord;
+  request: SessionCancellationMutationRequest;
+  sessionId: string;
+}): SessionCancellationRequestRecord {
+  const request = sessionCancellationMutationRequestSchema.parse(input.request);
+
+  return sessionCancellationRequestRecordSchema.parse({
+    cancellationId: buildSessionCancellationId({
+      request,
+      sessionId: input.sessionId
+    }),
+    graphId: input.assignment.graphId,
+    nodeId: input.assignment.nodeId,
+    ...(request.reason ? { reason: request.reason } : {}),
+    requestedAt: nowIsoString(),
+    ...(request.requestedBy ? { requestedBy: request.requestedBy } : {}),
+    sessionId: input.sessionId,
+    status: "requested"
+  });
+}
+
+async function appendSessionCancellationRequestedEvent(
+  record: SessionCancellationRequestRecord
+): Promise<void> {
+  await appendHostEvent({
+    cancellationId: record.cancellationId,
+    category: "session",
+    graphId: record.graphId,
+    message:
+      `Session cancellation '${record.cancellationId}' was requested for ` +
+      `session '${record.sessionId}' on node '${record.nodeId}'.`,
+    nodeId: record.nodeId,
+    ...(record.reason ? { reason: record.reason } : {}),
+    ...(record.requestedBy ? { requestedBy: record.requestedBy } : {}),
+    sessionId: record.sessionId,
+    status: record.status,
+    type: "session.cancellation.requested"
+  } satisfies SessionCancellationRequestedEventInput);
+}
+
+export async function recordFederatedSessionCancellationRequest(
+  record: SessionCancellationRequestRecord
+): Promise<SessionCancellationRequestRecord> {
+  const parsed = sessionCancellationRequestRecordSchema.parse(record);
+  await appendSessionCancellationRequestedEvent(parsed);
+  return parsed;
+}
+
 async function requestRuntimeSessionCancellation(input: {
   nodeId: string;
   request: SessionCancellationMutationRequest;
@@ -12127,67 +12176,9 @@ async function requestRuntimeSessionCancellation(input: {
     context.workspace.runtimeRoot,
     record
   );
-  await appendHostEvent({
-    cancellationId: record.cancellationId,
-    category: "session",
-    graphId: record.graphId,
-    message:
-      `Session cancellation '${record.cancellationId}' was requested for ` +
-      `session '${record.sessionId}' on node '${record.nodeId}'.`,
-    nodeId: record.nodeId,
-    ...(record.reason ? { reason: record.reason } : {}),
-    ...(record.requestedBy ? { requestedBy: record.requestedBy } : {}),
-    sessionId: record.sessionId,
-    status: record.status,
-    type: "session.cancellation.requested"
-  } satisfies SessionCancellationRequestedEventInput);
+  await appendSessionCancellationRequestedEvent(record);
 
   return record;
-}
-
-export async function requestSessionCancellation(input: {
-  request: SessionCancellationMutationRequest;
-  sessionId: string;
-}): Promise<SessionCancellationResponse | null> {
-  const request = sessionCancellationMutationRequestSchema.parse(input.request);
-  const targetNodeIds =
-    request.nodeIds.length > 0
-      ? request.nodeIds
-      : (await getSessionInspection(input.sessionId))?.nodes.map(
-          (node) => node.nodeId
-        ) ?? [];
-
-  if (targetNodeIds.length === 0) {
-    return null;
-  }
-
-  const cancellations = (
-    await Promise.all(
-      targetNodeIds.map((nodeId) =>
-        requestRuntimeSessionCancellation({
-          nodeId,
-          request,
-          sessionId: input.sessionId
-        })
-      )
-    )
-  ).filter(
-    (
-      record
-    ): record is SessionCancellationRequestRecord => record !== null
-  );
-
-  if (cancellations.length === 0) {
-    return null;
-  }
-
-  const inspection = await getSessionInspection(input.sessionId);
-
-  return sessionCancellationResponseSchema.parse({
-    cancellations,
-    ...(inspection ? { inspection } : {}),
-    sessionId: input.sessionId
-  });
 }
 
 export async function requestRuntimeBoundSessionCancellation(input: {

@@ -7,10 +7,10 @@ Host read models are still mostly derived from local files.
 `services/host/src/state.ts` reads runtime context and then reads
 `context.workspace.runtimeRoot` for some compatibility read paths including
 sessions, conversations, approvals, turns, artifacts, source-change candidates,
-source history, and cancellation requests. Direct Host wiki publication, source
-mutation, and artifact restore/promotion routes have since been removed; Host
-events are still partly derived from local records in same-machine adapter
-mode.
+and source history. Direct Host wiki publication, source mutation, artifact
+restore/promotion, and primary session cancellation delivery routes have since
+been moved off Host-written runner files; Host events are still partly derived
+from local records in same-machine adapter mode.
 
 This works only for a same-machine compatibility profile where Host and runner
 share a volume. It cannot work when Host and runner live on separate machines.
@@ -49,8 +49,10 @@ OpenCode-adapter task turn from a real joined runner process. Joined runners
 now also publish session/conversation observations for later lifecycle
 transitions including
 handoffs, coordination result/close, approval request/response, completion,
-cancellation, and failure paths. The remaining deep runtime APIs still need to
-be moved off local file reads.
+cancellation, and failure paths. Host session cancellation now prefers a signed
+`runtime.session.cancel` control command to accepted runner assignments before
+falling back to local compatibility. The remaining deep runtime APIs still need
+to be moved off local file reads.
 
 ## Target Model
 

@@ -20,6 +20,9 @@ import {
   type HostEventRecord,
   type HostOperatorRequestMethod,
   type RuntimeAssignmentRecord,
+  type SessionCancellationMutationRequest,
+  type SessionCancellationRequestRecord,
+  type SessionCancellationResponse,
   runtimeAssignmentInspectionResponseSchema,
   runtimeAssignmentListResponseSchema,
   runtimeAssignmentOfferRequestSchema,
@@ -144,6 +147,7 @@ import {
   getCatalogInspection,
   getGraphInspection,
   getGraphRevision,
+  buildFederatedSessionCancellationRequestRecord,
   listExternalPrincipals,
   listEdges,
   listGraphRevisions,
@@ -168,8 +172,8 @@ import {
   replaceEdge,
   replaceManagedNode,
   offerRuntimeAssignment,
+  recordFederatedSessionCancellationRequest,
   requestRuntimeBoundSessionCancellation,
-  requestSessionCancellation,
   revokeRunnerRegistration,
   revokeRuntimeAssignment,
   setRuntimeDesiredState,
@@ -264,6 +268,14 @@ type HostFederatedAssignmentPublisher = {
     commandId: string;
     correlationId?: string;
     reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeSessionCancel?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    cancellation: SessionCancellationRequestRecord;
+    commandId: string;
+    correlationId?: string;
     relayUrls: string[];
   }): Promise<unknown>;
 };
@@ -612,6 +624,126 @@ async function publishRuntimeLifecycleCommandFromHost(
   });
 
   return true;
+}
+
+async function publishRuntimeSessionCancelCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    assignment: RuntimeAssignmentRecord;
+    cancellation: SessionCancellationRequestRecord;
+  }
+): Promise<boolean> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeSessionCancel ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return false;
+  }
+
+  await options.federatedControlPlane.publishRuntimeSessionCancel({
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    cancellation: input.cancellation,
+    commandId: `cmd-session-cancel-${randomUUID()}`,
+    relayUrls: options.federatedControlRelayUrls
+  });
+
+  return true;
+}
+
+async function requestRuntimeSessionCancellationFromHost(
+  options: HostServerOptions,
+  input: {
+    assignments: RuntimeAssignmentRecord[];
+    nodeId: string;
+    request: SessionCancellationMutationRequest;
+    sessionId: string;
+  }
+): Promise<SessionCancellationRequestRecord | null> {
+  const assignment = selectFederatedRuntimeControlAssignment({
+    assignments: input.assignments,
+    nodeId: input.nodeId
+  });
+
+  if (assignment) {
+    const cancellation = buildFederatedSessionCancellationRequestRecord({
+      assignment,
+      request: input.request,
+      sessionId: input.sessionId
+    });
+    const published = await publishRuntimeSessionCancelCommandFromHost(options, {
+      assignment,
+      cancellation
+    });
+
+    if (published) {
+      return recordFederatedSessionCancellationRequest(cancellation);
+    }
+  }
+
+  const fallback = await requestRuntimeBoundSessionCancellation({
+    nodeId: input.nodeId,
+    request: input.request,
+    sessionId: input.sessionId
+  });
+
+  return fallback?.cancellations[0] ?? null;
+}
+
+async function requestSessionCancellationFromHost(
+  options: HostServerOptions,
+  input: {
+    request: SessionCancellationMutationRequest;
+    sessionId: string;
+  }
+): Promise<SessionCancellationResponse | null> {
+  const request = sessionCancellationMutationRequestSchema.parse(input.request);
+  const targetNodeIds = [
+    ...new Set(
+      request.nodeIds.length > 0
+        ? request.nodeIds
+        : ((await getSessionInspection(input.sessionId))?.nodes.map(
+            (node) => node.nodeId
+          ) ?? [])
+    )
+  ];
+
+  if (targetNodeIds.length === 0) {
+    return null;
+  }
+
+  const assignments = (await listRuntimeAssignments()).assignments;
+  const cancellations = (
+    await Promise.all(
+      targetNodeIds.map((nodeId) =>
+        requestRuntimeSessionCancellationFromHost(options, {
+          assignments,
+          nodeId,
+          request,
+          sessionId: input.sessionId
+        })
+      )
+    )
+  ).filter(
+    (
+      record
+    ): record is SessionCancellationRequestRecord => record !== null
+  );
+
+  if (cancellations.length === 0) {
+    return null;
+  }
+
+  const inspection = await getSessionInspection(input.sessionId);
+
+  return sessionCancellationResponseSchema.parse({
+    cancellations,
+    ...(inspection ? { inspection } : {}),
+    sessionId: input.sessionId
+  });
 }
 
 export async function buildHostServer(options: HostServerOptions = {}) {
@@ -2369,7 +2501,7 @@ export async function buildHostServer(options: HostServerOptions = {}) {
           "Request body did not match the expected session cancellation schema."
       }
     );
-    const cancellation = await requestSessionCancellation({
+    const cancellation = await requestSessionCancellationFromHost(options, {
       request: cancellationRequest,
       sessionId: params.sessionId
     });
@@ -2400,19 +2532,30 @@ export async function buildHostServer(options: HostServerOptions = {}) {
             "Request body did not match the expected session cancellation schema."
         }
       );
-      const cancellation = await requestRuntimeBoundSessionCancellation({
-        nodeId: params.nodeId,
-        request: cancellationRequest,
-        sessionId: params.sessionId
-      });
+      const cancellationRecord = await requestRuntimeSessionCancellationFromHost(
+        options,
+        {
+          assignments: (await listRuntimeAssignments()).assignments,
+          nodeId: params.nodeId,
+          request: cancellationRequest,
+          sessionId: params.sessionId
+        }
+      );
 
-      if (!cancellation) {
+      if (!cancellationRecord) {
         reply.status(404);
         return hostErrorResponseSchema.parse({
           code: "not_found",
           message: `Runtime '${params.nodeId}' was not found in the active graph.`
         });
       }
+
+      const inspection = await getSessionInspection(params.sessionId);
+      const cancellation = sessionCancellationResponseSchema.parse({
+        cancellations: [cancellationRecord],
+        ...(inspection ? { inspection } : {}),
+        sessionId: params.sessionId
+      });
 
       return sessionCancellationResponseSchema.parse(cancellation);
     }

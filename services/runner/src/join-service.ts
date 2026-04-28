@@ -5,9 +5,13 @@ import type {
   EntangleObservationEventPayload,
   RuntimeAssignmentRecord,
   RunnerJoinConfig,
-  RunnerJoinStatus
+  RunnerJoinStatus,
+  SessionCancellationRequestRecord
 } from "@entangle/types";
-import { runnerJoinStatusSchema } from "@entangle/types";
+import {
+  runnerJoinStatusSchema,
+  sessionCancellationRequestRecordSchema
+} from "@entangle/types";
 import { RunnerFederatedNostrTransport } from "./federated-nostr-transport.js";
 
 type RunnerJoinTransportSubscription = {
@@ -61,6 +65,7 @@ export type RunnerAssignmentMaterializer = (input: {
 }) => Promise<RunnerAssignmentMaterializationResult>;
 
 export type RunnerAssignmentRuntimeHandle = {
+  cancelSession?(request: SessionCancellationRequestRecord): Promise<void>;
   clientUrl?: string;
   runtimeContextPath: string;
   runtimeRoot?: string;
@@ -215,6 +220,11 @@ export class RunnerJoinService {
 
     if (payload.eventType === "runtime.restart") {
       await this.handleRuntimeRestartCommand(event, payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.session.cancel") {
+      await this.handleRuntimeSessionCancelCommand(payload);
     }
   }
 
@@ -355,7 +365,13 @@ export class RunnerJoinService {
   private resolveRuntimeCommandAssignment(
     payload: Extract<
       EntangleControlEvent["payload"],
-      { eventType: "runtime.restart" | "runtime.start" | "runtime.stop" }
+      {
+        eventType:
+          | "runtime.restart"
+          | "runtime.session.cancel"
+          | "runtime.start"
+          | "runtime.stop";
+      }
     >
   ): RuntimeAssignmentRecord | undefined {
     if (
@@ -526,6 +542,56 @@ export class RunnerJoinService {
       event,
       payload.reason ?? "Runtime restart requested by Host."
     );
+  }
+
+  private async handleRuntimeSessionCancelCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.session.cancel" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime session cancellation command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.cancelSession) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime session cancellation command cannot be applied because the assigned runtime is not running."
+      });
+      return;
+    }
+
+    try {
+      await handle.cancelSession(
+        sessionCancellationRequestRecordSchema.parse(payload.cancellation)
+      );
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime session cancellation command failed."
+      });
+    }
   }
 
   private startHeartbeatTimer(): void {

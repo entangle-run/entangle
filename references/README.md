@@ -41,12 +41,13 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
+[337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
 operator receipt/transport visibility, runner-owned source history, and removal
-of direct Host source/wiki/artifact filesystem mutation paths.
+of direct Host source/wiki/artifact filesystem mutation paths plus federated
+session-cancellation control delivery.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -394,6 +395,7 @@ files are the active federated redesign pack.
 335. [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 336. [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 337. [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
+338. [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 
 ## Role of this corpus
 

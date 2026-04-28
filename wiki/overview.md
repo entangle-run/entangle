@@ -303,8 +303,10 @@ The repository now also contains the first real implementation baseline:
   with engine-requested approvals materialized as pending runner approval
   records that move the session/conversation lifecycle to
   `waiting_approval`/`awaiting_approval` without granting the engine the
-  gated side effect, with host-written external session cancellation requests
-  now exposed through CLI and Studio controls, observed by node runners while
+  gated side effect, with external session cancellation now delivered as a
+  Host-signed `runtime.session.cancel` control command for accepted federated
+  runner assignments and only falling back to local compatibility when no
+  joined assignment/control path is available, observed by node runners while
   idle or mid-turn, and translated into engine abort signals for OpenCode-backed
   turns, and with generic runtime inspection now surfacing pending
   approval blockers plus the latest produced artifact and requested approval

@@ -449,6 +449,9 @@ export async function createConfiguredRunnerJoinService(
         const startResult = await configured.service.start();
 
         return {
+          cancelSession: async (request) => {
+            await configured.service.requestSessionCancellation(request);
+          },
           runtimeContextPath,
           runtimeRoot: startResult.runtimeRoot,
           stop: () => configured.service.stop()

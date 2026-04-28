@@ -1711,12 +1711,26 @@ export class RunnerService {
         continue;
       }
 
-      await cancelSessionForRequest({
+      const cancelledSession = await cancelSessionForRequest({
         request,
         session,
         statePaths
       });
+      await this.publishSessionObservation(cancelledSession);
     }
+  }
+
+  async requestSessionCancellation(
+    request: SessionCancellationRequestRecord
+  ): Promise<SessionCancellationRequestRecord> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const parsed = sessionCancellationRequestRecordSchema.parse(request);
+    await writeSessionCancellationRequestRecord(statePaths, parsed);
+    await this.applyExternalCancellationRequests();
+    return parsed;
   }
 
   private async resolveToolDefinitions(): Promise<EngineToolDefinition[]> {

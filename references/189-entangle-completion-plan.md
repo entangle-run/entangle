@@ -474,12 +474,13 @@ Current partial implementation:
 - `entangle deployment doctor` now probes `opencode --version` inside the configured
   runner image in addition to the host PATH so default-engine availability is
   checked where runner turns actually execute;
-- host-written session cancellation requests are now persisted under
-  runtime-local `session-cancellations`, exposed through host-client, CLI, and
-  Studio selected-session cancellation controls, observed by the runner while
-  idle or mid-turn, propagated through the generic engine boundary as
-  `AbortSignal`, and honored by the OpenCode adapter by terminating the child
-  process and recording cancelled turn/session lifecycle evidence;
+- session cancellation is now exposed through host-client, CLI, and Studio
+  selected-session cancellation controls, delivered primarily as a signed
+  `runtime.session.cancel` control command to accepted federated assignments,
+  observed by the runner while idle or mid-turn, propagated through the generic
+  engine boundary as `AbortSignal`, and honored by the OpenCode adapter by
+  terminating the child process and recording cancelled turn/session lifecycle
+  evidence;
 - this does not yet complete permission mapping, full
   degraded-runtime status DTOs, attached server lifecycle, policy-gated source
   publication, or the broader artifact replay/promotion workflow beyond the

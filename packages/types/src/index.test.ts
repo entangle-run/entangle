@@ -668,10 +668,39 @@ describe("federated runtime contracts", () => {
         runnerPubkey
       }
     });
+    const cancel = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentId: "assignment-alpha",
+        cancellation: {
+          cancellationId: "cancel-alpha",
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          requestedAt: observedAt,
+          sessionId: "session-alpha",
+          status: "requested"
+        },
+        commandId: "cmd-cancel-alpha",
+        eventType: "runtime.session.cancel",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sessionId: "session-alpha"
+      }
+    });
 
     expect(start.payload.eventType).toBe("runtime.start");
     expect(stop.payload.eventType).toBe("runtime.stop");
     expect(restart.payload.eventType).toBe("runtime.restart");
+    expect(cancel.payload.eventType).toBe("runtime.session.cancel");
   });
 
   it("rejects control and observation events signed by the wrong entity", () => {

@@ -2,6 +2,7 @@ import type {
   EntangleControlEvent,
   EntangleObservationEvent,
   RuntimeAssignmentRecord,
+  SessionCancellationRequestRecord,
   RunnerTrustState
 } from "@entangle/types";
 import { entangleObservationEventSchema } from "@entangle/types";
@@ -389,6 +390,42 @@ export class HostFederatedControlPlane {
         ...(input.reason ? { reason: input.reason } : {}),
         runnerId: input.assignment.runnerId,
         runnerPubkey: input.assignment.runnerPubkey
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
+  publishRuntimeSessionCancel(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    cancellation: SessionCancellationRequestRecord;
+    commandId: string;
+    correlationId?: string;
+    relayUrls: string[];
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        assignmentId: input.assignment.assignmentId,
+        cancellation: input.cancellation,
+        commandId: input.commandId,
+        eventType: "runtime.session.cancel",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        protocol: "entangle.control.v1",
+        ...(input.cancellation.reason
+          ? { reason: input.cancellation.reason }
+          : {}),
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey,
+        sessionId: input.cancellation.sessionId
       },
       relayUrls: input.relayUrls
     });
