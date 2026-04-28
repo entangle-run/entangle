@@ -126,6 +126,7 @@ same-machine slice records.
 - [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 - [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
 - [325-federated-lifecycle-process-smoke-slice.md](325-federated-lifecycle-process-smoke-slice.md)
+- [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
 
 ## Audited Scope
 
@@ -337,6 +338,9 @@ The repository is not fully federated:
   `runtime.stop`, and `runtime.restart` commands to accepted/active assigned
   runners, and joined runners handle those commands by starting/stopping their
   runner-local runtime handles and emitting receipts/status observations;
+- Host now records signed `assignment.receipt` observations as typed
+  `runtime.assignment.receipt` Host audit events, and the process-runner smoke
+  verifies received/started/stopped receipt events from the real lifecycle path;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`
@@ -487,7 +491,8 @@ runtime inspection no longer overwrites assigned federated runtime ownership
 through the local backend adapter. The process-runner smoke now proves that
 same lifecycle path end-to-end through a live relay and real joined runner
 process. The next blocking implementation areas are richer projection-backed
-source/wiki review services, replacing remaining deep filesystem-backed runtime
-inspection paths with projection-backed source/wiki services and object-backed
-artifact services, adding deeper per-relay diagnostics, and turning the process
-smoke into the full multi-machine distributed proof.
+source/wiki review services, compact per-assignment receipt/timeline
+projection, replacing remaining deep filesystem-backed runtime inspection paths
+with projection-backed source/wiki services and object-backed artifact services,
+adding deeper per-relay diagnostics, and turning the process smoke into the
+full multi-machine distributed proof.

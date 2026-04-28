@@ -16,6 +16,7 @@ import {
   recordConversationUpdatedObservation,
   recordRunnerHeartbeat,
   recordRunnerHello,
+  recordRuntimeAssignmentReceiptObservation,
   recordRuntimeStatusObservation,
   recordRuntimeAssignmentAccepted,
   recordRuntimeAssignmentRejected,
@@ -135,6 +136,15 @@ export class HostFederatedControlPlane {
 
     if (payload.eventType === "assignment.rejected") {
       await recordRuntimeAssignmentRejected(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "assignment.receipt") {
+      await recordRuntimeAssignmentReceiptObservation(payload);
       return {
         action: "recorded",
         eventType: payload.eventType,

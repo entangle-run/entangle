@@ -126,6 +126,7 @@ Implementation record:
 
 - [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
 - [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
+- [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
 
 Verification:
 
@@ -135,6 +136,8 @@ Verification:
 - Host control-plane lifecycle payload tests;
 - runner lifecycle command tests.
 - process-runner smoke lifecycle command assertions.
+- typed Host event and control-plane tests for `assignment.receipt`
+  observations.
 
 Current status:
 
@@ -149,6 +152,9 @@ Current status:
 - `ops:smoke-federated-process-runner` now proves Host stop/start/restart
   requests reach a real joined runner through the relay and return as projected
   signed runtime observations.
+- Signed runner `assignment.receipt` observations now become
+  `runtime.assignment.receipt` Host audit events, and the process smoke verifies
+  receipt kinds from the real lifecycle path.
 
 ### Slice 6: Generic Runner Bootstrap
 

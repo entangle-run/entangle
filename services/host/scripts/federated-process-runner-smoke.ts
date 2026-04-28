@@ -22,6 +22,7 @@ import {
   entangleA2AMessageSchema,
   entangleNostrRumorKind,
   graphMutationResponseSchema,
+  hostEventListResponseSchema,
   hostProjectionSnapshotSchema,
   packageSourceInspectionResponseSchema,
   conversationRecordSchema,
@@ -1343,6 +1344,38 @@ async function main(): Promise<void> {
     printPass(
       "runtime-lifecycle-restart",
       `runtime=${restartedRuntimeProjection.observedState}; restartGeneration=${restartInspection.restartGeneration}`
+    );
+
+    const lifecycleReceipts = await waitFor(
+      "federated runtime lifecycle receipt events",
+      async () => {
+        const events = hostEventListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/events?limit=100"
+          })
+        );
+        const receiptKinds = new Set(
+          events.events
+            .filter(
+              (event) =>
+                event.type === "runtime.assignment.receipt" &&
+                event.assignmentId === assignment.assignmentId
+            )
+            .map((event) => event.receiptKind)
+        );
+
+        return receiptKinds.has("received") &&
+          receiptKinds.has("stopped") &&
+          receiptKinds.has("started")
+          ? receiptKinds
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "runtime-lifecycle-receipts",
+      `receipts=${[...lifecycleReceipts].sort().join(",")}`
     );
 
     const materializedContextPath = path.join(

@@ -3968,3 +3968,14 @@ observations.
 
 The restart assertion waits for a post-command `lastSeenAt`, so the smoke
 cannot pass against stale pre-restart running state.
+
+## [2026-04-28] implementation | Recorded assignment receipts in Host audit
+
+Added `references/326-assignment-receipt-audit-trail-slice.md`. Host now
+records signed runner `assignment.receipt` observations as typed
+`runtime.assignment.receipt` Host events after validating the registered runner
+identity.
+
+The process-runner smoke now verifies `received`, `started`, and `stopped`
+receipt events from the real lifecycle command path in addition to runtime
+projection state.

@@ -137,6 +137,7 @@ import {
   type RuntimeDesiredState,
   nostrSecretKeySchema,
   assignmentAcceptedObservationPayloadSchema,
+  assignmentReceiptPayloadSchema,
   assignmentRejectedObservationPayloadSchema,
   approvalUpdatedObservationPayloadSchema,
   artifactRefObservationPayloadSchema,
@@ -630,6 +631,10 @@ type RuntimeRecoveryControllerUpdatedEventInput = Omit<
 >;
 type RuntimeObservedStateChangedEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.observed_state.changed" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeAssignmentReceiptEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.assignment.receipt" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type SessionUpdatedEventInput = Omit<
@@ -2402,6 +2407,30 @@ export async function recordRuntimeAssignmentRejected(
   return runtimeAssignmentInspectionResponseSchema.parse({
     assignment: updated
   });
+}
+
+export async function recordRuntimeAssignmentReceiptObservation(
+  input: unknown
+): Promise<HostEventRecord> {
+  await initializeHostState();
+
+  const receipt = assignmentReceiptPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(receipt);
+
+  return appendHostEvent({
+    assignmentId: receipt.assignmentId,
+    category: "runtime",
+    hostAuthorityPubkey: receipt.hostAuthorityPubkey,
+    message:
+      `Assignment '${receipt.assignmentId}' reported receipt ` +
+      `'${receipt.receiptKind}' from runner '${receipt.runnerId}'.`,
+    observedAt: receipt.observedAt,
+    receiptKind: receipt.receiptKind,
+    ...(receipt.message ? { receiptMessage: receipt.message } : {}),
+    runnerId: receipt.runnerId,
+    runnerPubkey: receipt.runnerPubkey,
+    type: "runtime.assignment.receipt"
+  } satisfies RuntimeAssignmentReceiptEventInput);
 }
 
 async function assertRegisteredObservationRunner(input: {

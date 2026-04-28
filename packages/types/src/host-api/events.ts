@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { nostrEventIdSchema } from "../common/crypto.js";
+import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import {
   policyOperationSchema,
   policyResourceScopeSchema
@@ -228,6 +228,24 @@ export const runtimeObservedStateChangedEventSchema = hostEventBaseSchema.extend
   type: z.literal("runtime.observed_state.changed")
 });
 
+export const runtimeAssignmentReceiptEventSchema = hostEventBaseSchema.extend({
+  assignmentId: identifierSchema,
+  category: z.literal("runtime"),
+  hostAuthorityPubkey: nostrPublicKeySchema,
+  observedAt: nonEmptyStringSchema,
+  receiptKind: z.enum([
+    "received",
+    "materialized",
+    "started",
+    "stopped",
+    "failed"
+  ]),
+  receiptMessage: nonEmptyStringSchema.optional(),
+  runnerId: identifierSchema,
+  runnerPubkey: nostrPublicKeySchema,
+  type: z.literal("runtime.assignment.receipt")
+});
+
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
   activeConversationIds: z.array(identifierSchema).default([]),
   approvalStatusCounts: approvalStatusCountsSchema.optional(),
@@ -439,6 +457,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeRecoveryRecordedEventSchema,
   runtimeRecoveryControllerUpdatedEventSchema,
   runtimeObservedStateChangedEventSchema,
+  runtimeAssignmentReceiptEventSchema,
   sessionUpdatedEventSchema,
   sessionCancellationRequestedEventSchema,
   runnerTurnUpdatedEventSchema,
@@ -507,6 +526,9 @@ export type RuntimeRecoveryControllerUpdatedEvent = z.infer<
 >;
 export type RuntimeObservedStateChangedEvent = z.infer<
   typeof runtimeObservedStateChangedEventSchema
+>;
+export type RuntimeAssignmentReceiptEvent = z.infer<
+  typeof runtimeAssignmentReceiptEventSchema
 >;
 export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
 export type SessionCancellationRequestedEvent = z.infer<

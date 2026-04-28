@@ -182,6 +182,27 @@ function buildRuntimeStatus(input: {
   }).event;
 }
 
+function buildAssignmentReceipt(input: {
+  hostAuthorityPubkey: string;
+  runnerPubkey: string;
+  runnerSecretKey: Uint8Array;
+}): EntangleObservationEvent {
+  return buildEntangleObservationNostrEvent({
+    payload: {
+      assignmentId: "assignment-alpha",
+      eventType: "assignment.receipt",
+      hostAuthorityPubkey: input.hostAuthorityPubkey,
+      message: "Assignment runtime is running.",
+      observedAt: "2026-04-26T12:00:02.000Z",
+      protocol: "entangle.observe.v1",
+      receiptKind: "started",
+      runnerId: "runner-alpha",
+      runnerPubkey: input.runnerPubkey
+    },
+    signerSecretKey: input.runnerSecretKey
+  }).event;
+}
+
 function buildAssignment(input: {
   hostAuthorityPubkey: string;
   runnerPubkey: string;
@@ -291,6 +312,19 @@ describe("Host federated control plane", () => {
       eventType: "runner.heartbeat"
     });
 
+    const receiptResult = await controlPlane.handleObservationEvent(
+      buildAssignmentReceipt({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey,
+        runnerSecretKey
+      })
+    );
+    expect(receiptResult).toMatchObject({
+      action: "recorded",
+      eventType: "assignment.receipt",
+      runnerId: "runner-alpha"
+    });
+
     const runtimeStatusResult = await controlPlane.handleObservationEvent(
       buildRuntimeStatus({
         hostAuthorityPubkey: authority.authority.publicKey,
@@ -326,6 +360,17 @@ describe("Host federated control plane", () => {
     });
 
     const hostEvents = await stateModule.listHostEvents();
+    expect(
+      hostEvents.events.find(
+        (event) => event.type === "runtime.assignment.receipt"
+      )
+    ).toMatchObject({
+      assignmentId: "assignment-alpha",
+      receiptKind: "started",
+      receiptMessage: "Assignment runtime is running.",
+      runnerId: "runner-alpha",
+      type: "runtime.assignment.receipt"
+    });
     expect(
       hostEvents.events.find(
         (event) => event.type === "runtime.observed_state.changed"

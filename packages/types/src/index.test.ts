@@ -2819,6 +2819,28 @@ describe("host event contracts", () => {
     expect(result.restartGeneration).toBe(1);
   });
 
+  it("accepts a typed runtime assignment receipt event", () => {
+    const result = hostEventRecordSchema.parse({
+      assignmentId: "assignment-alpha",
+      category: "runtime",
+      eventId: "runtime-assignment-receipt-001",
+      hostAuthorityPubkey: authorityPubkey,
+      message:
+        "Assignment 'assignment-alpha' reported receipt 'started' from runner 'runner-alpha'.",
+      observedAt,
+      receiptKind: "started",
+      receiptMessage: "Assignment runtime is running.",
+      runnerId: "runner-alpha",
+      runnerPubkey,
+      schemaVersion: "1",
+      timestamp: observedAt,
+      type: "runtime.assignment.receipt"
+    });
+
+    expect(result.type).toBe("runtime.assignment.receipt");
+    expect(result.receiptKind).toBe("started");
+  });
+
   it("accepts a typed external-principal deleted event", () => {
     const result = hostEventRecordSchema.parse({
       category: "control_plane",
