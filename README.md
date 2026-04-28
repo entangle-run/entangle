@@ -149,8 +149,9 @@ This repository currently contains:
   APIs for selected conversation detail and message publishing, and Host-backed
   message publishing,
   plus a first dedicated `apps/user-client` app that consumes those runtime
-  JSON APIs, plus projection of the User Client endpoint through Host, CLI, and
-  Studio,
+  JSON APIs and can be served by the Human Interface Runtime from
+  `ENTANGLE_USER_CLIENT_STATIC_DIR`, plus projection of the User Client
+  endpoint through Host, CLI, and Studio,
   with CLI signed approve/reject and generic User Node message
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI

@@ -251,7 +251,9 @@ read through Host projection. Runtime identity, Host API, and relay status now
 render in the server shell, and the page polls `/api/state` for lightweight
 live refresh when inbox or projection state changes. The dedicated app consumes
 the same JSON API for runtime status, conversation inspection, message publish,
-and approval response; serving its built assets from the runtime remains open.
+and approval response. The runtime can serve configured static assets from
+`ENTANGLE_USER_CLIENT_STATIC_DIR`; packaging those built assets into deployment
+images remains open.
 
 Impacted modules:
 

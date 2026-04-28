@@ -68,8 +68,9 @@ User Node messages, respond to approval requests, review artifact/wiki/source
 evidence, use local JSON APIs for selected conversation detail and message
 publishing, and submit Host-mediated source-candidate accept/reject decisions
 with `reviewedBy` stamped as the running User Node id. A first dedicated
-`apps/user-client` app now consumes that runtime JSON API. Studio remains the
-operator surface, not the primary human-node client.
+`apps/user-client` app now consumes that runtime JSON API, and the runtime can
+serve static User Client assets from `ENTANGLE_USER_CLIENT_STATIC_DIR`. Studio
+remains the operator surface, not the primary human-node client.
 
 The contract-ownership layer is now also explicit:
 

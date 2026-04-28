@@ -237,6 +237,7 @@ Implementation record:
 - [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
 - [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
 - [292-dedicated-user-client-app-slice.md](292-dedicated-user-client-app-slice.md)
+- [293-runtime-served-user-client-assets-slice.md](293-runtime-served-user-client-assets-slice.md)
 
 Current status:
 
@@ -277,7 +278,9 @@ Current status:
 - a first dedicated `apps/user-client` app exists and consumes the Human
   Interface Runtime JSON API for runtime state, conversations, message publish,
   and approval response;
-- serving the built User Client app directly from the Human Interface Runtime,
+- the Human Interface Runtime can serve configured static User Client assets
+  from `ENTANGLE_USER_CLIENT_STATIC_DIR`;
+- packaging the built User Client app into deployment images,
   projection-backed source/wiki review, and richer artifact object-backend
   review remain open.
 

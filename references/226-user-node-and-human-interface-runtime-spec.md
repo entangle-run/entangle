@@ -40,7 +40,9 @@ User nodes are now partially runtime-capable:
 - A first dedicated `apps/user-client` Vite/React app now consumes those local
   JSON routes for runtime status, conversation inspection, message publishing,
   and approval responses. The runner-served shell remains the smoke path until
-  the built app is served by the Human Interface Runtime.
+  deployment packaging makes the built app the default.
+- The Human Interface Runtime can serve dedicated User Client static assets
+  from `ENTANGLE_USER_CLIENT_STATIC_DIR` while keeping `/api/*` routes dynamic.
 - Host now persists outbound User Node messages it publishes and exposes them
   through `GET /v1/user-nodes/:nodeId/inbox/:conversationId`; the User Client
   renders those recorded messages for the selected thread.
@@ -154,8 +156,10 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Expose User Client endpoint/health through runner observations and Host
   projection. Done through `runtime.status.clientUrl`.
 - Add a dedicated User Client app distinct from Studio. Done for the first
-  Vite/React app that consumes Human Interface Runtime JSON APIs; serving the
-  built assets directly from the runtime remains open.
+  Vite/React app that consumes Human Interface Runtime JSON APIs.
+- Serve dedicated User Client assets from the running Human Interface Runtime.
+  Done when `ENTANGLE_USER_CLIENT_STATIC_DIR` points at a built/static app
+  directory; deployment packaging remains open.
 - Keep session launch publishing signed `task.request` from the selected User
   Node identity.
 - Move user-facing `reply`, `answer`, `approve`, and `reject` flows onto the

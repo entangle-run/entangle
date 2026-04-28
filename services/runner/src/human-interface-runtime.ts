@@ -1,5 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { readFile, stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
+import path from "node:path";
 import type {
   ArtifactRef,
   ArtifactRefProjectionRecord,
@@ -110,6 +112,57 @@ function normalizePublicClientUrl(address: AddressInfo): string {
   return `http://${address.address}:${address.port}/`;
 }
 
+function normalizeUserClientStaticDir(): string | undefined {
+  const configuredStaticDir = process.env.ENTANGLE_USER_CLIENT_STATIC_DIR?.trim();
+
+  return configuredStaticDir ? path.resolve(configuredStaticDir) : undefined;
+}
+
+function isUserClientStaticRequest(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    pathname === "/index.html" ||
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/assets/")
+  );
+}
+
+function resolveUserClientStaticPath(input: {
+  pathname: string;
+  staticRoot: string;
+}): string | undefined {
+  const decodedPathname = decodeURIComponent(input.pathname);
+  const relativePath =
+    decodedPathname === "/"
+      ? "index.html"
+      : decodedPathname.replace(/^\/+/u, "");
+  const filePath = path.resolve(input.staticRoot, relativePath);
+  const rootWithSeparator = `${input.staticRoot}${path.sep}`;
+
+  return filePath === input.staticRoot || filePath.startsWith(rootWithSeparator)
+    ? filePath
+    : undefined;
+}
+
+function contentTypeForStaticPath(filePath: string): string {
+  const extension = path.extname(filePath).toLowerCase();
+
+  switch (extension) {
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+      return "text/javascript; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".svg":
+      return "image/svg+xml";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 function buildHostApiHeaders(input: RunnerJoinHostApi | undefined): Record<string, string> {
   const headers: Record<string, string> = {
     accept: "application/json"
@@ -217,6 +270,37 @@ function writeJson(response: ServerResponse, statusCode: number, body: unknown):
     "content-type": "application/json; charset=utf-8"
   });
   response.end(`${JSON.stringify(body, null, 2)}\n`);
+}
+
+async function tryWriteStaticUserClient(input: {
+  pathname: string;
+  response: ServerResponse;
+  staticRoot: string;
+}): Promise<boolean> {
+  const filePath = resolveUserClientStaticPath({
+    pathname: input.pathname,
+    staticRoot: input.staticRoot
+  });
+
+  if (!filePath) {
+    return false;
+  }
+
+  try {
+    const fileStat = await stat(filePath);
+
+    if (!fileStat.isFile()) {
+      return false;
+    }
+
+    input.response.writeHead(200, {
+      "content-type": contentTypeForStaticPath(filePath)
+    });
+    input.response.end(await readFile(filePath));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function listRelayUrls(context: EffectiveRuntimeContext): string[] {
@@ -1670,6 +1754,7 @@ export async function startHumanInterfaceRuntime(input: {
   const listenHost =
     process.env.ENTANGLE_HUMAN_INTERFACE_HOST?.trim() || "127.0.0.1";
   const listenPort = normalizeListenPort();
+  const userClientStaticRoot = normalizeUserClientStaticDir();
   const inboundTransport = input.transport ?? createHumanInterfaceTransport(input.context);
   const ownsInboundTransport = !input.transport && inboundTransport !== undefined;
   let inboundSubscription: RunnerTransportSubscription | undefined;
@@ -1698,6 +1783,19 @@ export async function startHumanInterfaceRuntime(input: {
             hostApi: input.hostApi
           })
         );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        userClientStaticRoot &&
+        isUserClientStaticRequest(requestUrl.pathname) &&
+        (await tryWriteStaticUserClient({
+          pathname: requestUrl.pathname,
+          response,
+          staticRoot: userClientStaticRoot
+        }))
+      ) {
         return;
       }
 

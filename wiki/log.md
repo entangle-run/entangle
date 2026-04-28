@@ -3598,5 +3598,15 @@ participant surface outside Studio.
 
 It consumes the Human Interface Runtime JSON API for runtime status, selected
 conversation detail, message publishing, and approval responses. The runner
-server-rendered shell remains available while a later slice decides how to
-serve the built app directly from the Human Interface Runtime.
+server-rendered shell remains available while deployment packaging decides
+whether built assets are included by default.
+
+## [2026-04-28] implementation | Added runtime-served User Client assets
+
+Added `references/293-runtime-served-user-client-assets-slice.md`. The Human
+Interface Runtime can now serve dedicated User Client static assets from
+`ENTANGLE_USER_CLIENT_STATIC_DIR` for `/`, `/index.html`, `/assets/*`, and
+`/favicon.ico`.
+
+The dynamic runtime APIs remain under `/api/*`, and the server-rendered shell
+continues to be the fallback when no static asset directory is configured.

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
@@ -49,6 +49,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_RUNNER_STATE_ROOT;
   delete process.env.ENTANGLE_HOST_TOKEN;
   delete process.env.ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL;
+  delete process.env.ENTANGLE_USER_CLIENT_STATIC_DIR;
   vi.unstubAllGlobals();
   await cleanupRuntimeFixtures();
 });
@@ -399,6 +400,68 @@ describe("runner runtime context", () => {
         nodeId: "user-main",
         ok: true,
         runtimeKind: "human_interface"
+      });
+    } finally {
+      await handle.stop();
+    }
+  });
+
+  it("can serve a dedicated User Client static bundle when configured", async () => {
+    const fixture = await createRuntimeFixture();
+    const staticRoot = path.join(fixture.context.workspace.root, "user-client");
+    await mkdir(path.join(staticRoot, "assets"), { recursive: true });
+    await Promise.all([
+      writeFile(
+        path.join(staticRoot, "index.html"),
+        "<!doctype html><title>Dedicated User Client</title><div id=\"root\"></div>",
+        "utf8"
+      ),
+      writeFile(
+        path.join(staticRoot, "assets", "app.js"),
+        "globalThis.__entangleUserClient = true;\n",
+        "utf8"
+      )
+    ]);
+    process.env.ENTANGLE_USER_CLIENT_STATIC_DIR = staticRoot;
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        mode: "disabled"
+      },
+      binding: {
+        ...fixture.context.binding,
+        node: {
+          ...fixture.context.binding.node,
+          displayName: "User",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      }
+    };
+    const handle = await startHumanInterfaceRuntime({
+      context
+    });
+
+    try {
+      const indexResponse = await fetch(new URL("/", handle.clientUrl));
+      expect(indexResponse.status).toBe(200);
+      expect(indexResponse.headers.get("content-type")).toContain("text/html");
+      expect(await indexResponse.text()).toContain("Dedicated User Client");
+
+      const assetResponse = await fetch(
+        new URL("/assets/app.js", handle.clientUrl)
+      );
+      expect(assetResponse.status).toBe(200);
+      expect(assetResponse.headers.get("content-type")).toContain(
+        "text/javascript"
+      );
+      expect(await assetResponse.text()).toContain("__entangleUserClient");
+
+      const stateResponse = await fetch(new URL("/api/state", handle.clientUrl));
+      expect(stateResponse.status).toBe(200);
+      await expect(stateResponse.json()).resolves.toMatchObject({
+        userNodeId: "user-main"
       });
     } finally {
       await handle.stop();

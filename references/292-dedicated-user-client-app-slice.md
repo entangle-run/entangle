@@ -64,7 +64,11 @@ Node gateway path used by the runner-served shell.
 ## Migration And Compatibility Notes
 
 The existing runner-served HTML shell remains available and remains the smoke
-path until the bundled app is served directly by the Human Interface Runtime.
+path until deployment packaging makes the bundled app the default.
+
+`293-runtime-served-user-client-assets-slice.md` adds optional static serving
+through `ENTANGLE_USER_CLIENT_STATIC_DIR`, so a built User Client can now be
+served by the running Human Interface Runtime when assets are available.
 
 The new app can run in development against a runtime by setting
 `ENTANGLE_USER_CLIENT_RUNTIME_URL=<runtime-client-url>` and starting
@@ -85,8 +89,8 @@ The new app can run in development against a runtime by setting
 
 ## Open Questions
 
-- Should the Human Interface Runtime serve the built `apps/user-client` assets
-  directly in the next slice?
+- Should the federated dev runner image build and include
+  `apps/user-client` assets by default?
 - Should artifact/source/wiki review actions move under JSON `/api/*` routes
   before the app exposes full review panels?
 - Should the app receive live updates through server-sent events or WebSocket
