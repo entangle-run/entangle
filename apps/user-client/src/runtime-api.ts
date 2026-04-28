@@ -229,20 +229,28 @@ export function fetchSourceChangeDiff(input: {
 export function reviewSourceChangeCandidate(input: {
   baseUrl: string;
   candidateId: string;
+  conversationId: string;
   nodeId: string;
+  parentMessageId: string;
   reason?: string | undefined;
+  sessionId: string;
   status: "accepted" | "rejected";
-}): Promise<RuntimeSourceChangeCandidateInspectionResponse> {
-  return fetchJson<RuntimeSourceChangeCandidateInspectionResponse>(
+  turnId?: string | undefined;
+}): Promise<UserNodeMessagePublishResponse> {
+  return fetchJson<UserNodeMessagePublishResponse>(
     "/api/source-change-candidates/review",
     {
       baseUrl: input.baseUrl,
       init: {
         body: JSON.stringify({
           candidateId: input.candidateId,
+          conversationId: input.conversationId,
           nodeId: input.nodeId,
+          parentMessageId: input.parentMessageId,
           ...(input.reason ? { reason: input.reason } : {}),
-          status: input.status
+          sessionId: input.sessionId,
+          status: input.status,
+          ...(input.turnId ? { turnId: input.turnId } : {})
         }),
         headers: {
           "content-type": "application/json"

@@ -21,6 +21,7 @@ export const entangleA2AMessageTypeSchema = z.enum([
   "answer",
   "approval.request",
   "approval.response",
+  "source_change.review",
   "read.receipt",
   "conversation.close"
 ]);
@@ -67,6 +68,19 @@ export const entangleA2AApprovalResponseMetadataSchema = z.object({
   })
 });
 
+export const entangleA2ASourceChangeReviewDecisionSchema = z.enum([
+  "accepted",
+  "rejected"
+]);
+
+export const entangleA2ASourceChangeReviewMetadataSchema = z.object({
+  sourceChangeReview: z.object({
+    candidateId: identifierSchema,
+    decision: entangleA2ASourceChangeReviewDecisionSchema,
+    reason: nonEmptyStringSchema.optional()
+  })
+});
+
 function requiresParentMessage(
   messageType: z.infer<typeof entangleA2AMessageTypeSchema>
 ): boolean {
@@ -79,6 +93,7 @@ function requiresParentMessage(
     case "answer":
     case "approval.request":
     case "approval.response":
+    case "source_change.review":
     case "read.receipt":
     case "conversation.close":
       return true;
@@ -175,6 +190,12 @@ export type EntangleA2AApprovalResponseDecision = z.infer<
 >;
 export type EntangleA2AApprovalResponseMetadata = z.infer<
   typeof entangleA2AApprovalResponseMetadataSchema
+>;
+export type EntangleA2ASourceChangeReviewDecision = z.infer<
+  typeof entangleA2ASourceChangeReviewDecisionSchema
+>;
+export type EntangleA2ASourceChangeReviewMetadata = z.infer<
+  typeof entangleA2ASourceChangeReviewMetadataSchema
 >;
 export type EntangleA2AWork = z.infer<typeof entangleA2AWorkSchema>;
 export type EntangleA2AMessage = z.infer<typeof entangleA2AMessageSchema>;

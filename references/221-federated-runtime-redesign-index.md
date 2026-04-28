@@ -121,6 +121,7 @@ same-machine slice records.
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
+- [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 
 ## Audited Scope
 
@@ -184,11 +185,11 @@ The repository is not fully federated:
   thread selection, inbound/outbound message history, approval response
   controls, approval resource rendering, signed approval-response context,
   source-change projection summary cards, source-change diff preview,
-  Host-mediated source-candidate accept/reject controls stamped with the
-  running User Node id, artifact-ref rendering, projected bounded artifact
-  preview with runtime fallback, delivery labels, local conversation read
-  state, projected wiki-ref rendering, projected wiki preview rendering,
-  wiki-scoped approval context rendering, signed read receipts,
+  signed source-candidate accept/reject messages handled by the owning runner,
+  artifact-ref rendering, projected bounded artifact preview with runtime
+  fallback, delivery labels, local conversation read state, projected wiki-ref
+  rendering, projected wiki preview rendering, wiki-scoped approval context
+  rendering, signed read receipts,
   parent-message links, delivery retry state, runtime status, live state
   refresh, message publishing, local JSON APIs for conversation detail and
   message publishing, a first dedicated `apps/user-client` app, and optional
@@ -322,11 +323,16 @@ The repository is not fully federated:
   materialization and fall back to projected artifact records with explicit
   unavailable reasons when no backend-resolved repository checkout is attached
   to Host;
+- User Client source-candidate accept/reject now publishes signed
+  `source_change.review` A2A messages, and the owning runner applies the review
+  to runner-local candidate state before emitting a new `source_change.ref`
+  observation;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, source-change candidate list/detail/diff/file,
-  approval, and session read APIs against signed observations from the real
-  joined runner process without requiring live model credentials;
+  signed source-candidate review, approval, and session read APIs against signed
+  observations from the real joined runner process without requiring live model
+  credentials;
 - joined runners now publish session/conversation observations after outbound
   handoff writes, coordination close/result transitions, approval request and
   response transitions, session completion, and failure/cancellation paths, so
@@ -381,8 +387,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
    runtime status, live state refresh, local JSON conversation/message APIs,
-   a first dedicated User Client app, Host-mediated source-candidate
-   accept/reject controls, wiki publication retry actions, and CLI User Client
+   a first dedicated User Client app, signed source-candidate accept/reject
+   messages handled by the owning runner, wiki publication retry actions, and CLI User Client
    endpoint discovery are implemented; complete projection-backed source/wiki
    review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
@@ -446,8 +452,8 @@ Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
 follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
-The User Client now includes the first Host-mediated source-candidate review
-action, CLI can list projected User Client endpoints per User Node, Host status
+The User Client now emits signed source-candidate review messages to the owning
+runner, CLI can list projected User Client endpoints per User Node, Host status
 exposes first control/observe transport health to CLI and Studio, and operators
 can generate generic runner join configs from Host status. The next blocking
 implementation areas are richer projection-backed source/wiki review services,

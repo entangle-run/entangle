@@ -9,6 +9,7 @@ import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js"
 import {
   entangleA2AMessageSchema,
   entangleA2AApprovalResponseDecisionSchema,
+  entangleA2ASourceChangeReviewDecisionSchema,
   entangleA2AResponsePolicySchema
 } from "../protocol/a2a.js";
 import { userConversationProjectionRecordSchema } from "../projection/projection.js";
@@ -74,6 +75,13 @@ export const userNodeMessageRecordSchema = z.object({
   relayUrls: z.array(nonEmptyStringSchema).default([]),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema,
+  sourceChangeReview: z
+    .object({
+      candidateId: identifierSchema,
+      decision: entangleA2ASourceChangeReviewDecisionSchema,
+      reason: nonEmptyStringSchema.optional()
+    })
+    .optional(),
   summary: nonEmptyStringSchema,
   toNodeId: identifierSchema,
   toPubkey: nostrPublicKeySchema,
@@ -117,6 +125,7 @@ export const userNodeMessagePublishTypeSchema = z.enum([
   "question",
   "answer",
   "approval.response",
+  "source_change.review",
   "read.receipt",
   "conversation.close"
 ]);
@@ -139,6 +148,13 @@ export const userNodeMessagePublishRequestSchema = z
     parentMessageId: nostrEventIdSchema.optional(),
     responsePolicy: entangleA2AResponsePolicySchema.optional(),
     sessionId: identifierSchema.optional(),
+    sourceChangeReview: z
+      .object({
+        candidateId: identifierSchema,
+        decision: entangleA2ASourceChangeReviewDecisionSchema,
+        reason: nonEmptyStringSchema.optional()
+      })
+      .optional(),
     summary: nonEmptyStringSchema,
     targetNodeId: identifierSchema,
     turnId: identifierSchema.optional()
@@ -150,6 +166,24 @@ export const userNodeMessagePublishRequestSchema = z
         message: "approval.response messages require approval metadata.",
         path: ["approval"]
       });
+    }
+
+    if (value.messageType === "source_change.review") {
+      if (!value.sourceChangeReview) {
+        context.addIssue({
+          code: "custom",
+          message: "source_change.review messages require sourceChangeReview metadata.",
+          path: ["sourceChangeReview"]
+        });
+      }
+
+      if (!value.parentMessageId) {
+        context.addIssue({
+          code: "custom",
+          message: "source_change.review messages require a parentMessageId.",
+          path: ["parentMessageId"]
+        });
+      }
     }
   });
 

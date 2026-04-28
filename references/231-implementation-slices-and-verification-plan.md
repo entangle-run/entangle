@@ -329,6 +329,7 @@ Implementation record:
 - [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
 - [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
 - [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
+- [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 
 Current status:
 
@@ -355,9 +356,9 @@ Current status:
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
   context rendering, signed read receipts, parent-message links, message
   delivery retry state, runtime status, live state refresh, local JSON APIs for
-  selected conversation detail and message publishing, and Host-mediated
-  source-candidate accept/reject controls stamped with the running User Node id,
-  and message publishing that preserves selected conversation/session context;
+  selected conversation detail and message publishing, signed source-candidate
+  accept/reject messages handled by the owning runner, and message publishing
+  that preserves selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;
@@ -402,6 +403,7 @@ Implementation record:
 - [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 - [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
 - [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
+- [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 
 Verification:
 
@@ -527,7 +529,8 @@ Current status:
 - the same process proof now includes a second User Node assigned to a second
   `human_interface` runner;
 - the same process proof now uses the running User Client JSON API for the
-  first user publish, selected conversation inspection, and approval response;
+  first user publish, selected conversation inspection, signed source-candidate
+  review, and approval response;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

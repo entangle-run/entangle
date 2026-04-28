@@ -96,9 +96,14 @@ describe("user client runtime API helpers", () => {
     await reviewSourceChangeCandidate({
       baseUrl: "http://127.0.0.1:4300",
       candidateId: "candidate-alpha",
+      conversationId: "conversation-alpha",
       nodeId: "worker-it",
+      parentMessageId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       reason: "looks good",
-      status: "accepted"
+      sessionId: "session-alpha",
+      status: "accepted",
+      turnId: "turn-alpha"
     });
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
@@ -115,9 +120,14 @@ describe("user client runtime API helpers", () => {
     });
     expect(JSON.parse(fetchMock.mock.calls[2]?.[1]?.body as string)).toMatchObject({
       candidateId: "candidate-alpha",
+      conversationId: "conversation-alpha",
       nodeId: "worker-it",
+      parentMessageId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       reason: "looks good",
-      status: "accepted"
+      sessionId: "session-alpha",
+      status: "accepted",
+      turnId: "turn-alpha"
     });
   });
 });

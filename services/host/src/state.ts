@@ -170,6 +170,7 @@ import {
   turnUpdatedObservationPayloadSchema,
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
+  entangleA2ASourceChangeReviewMetadataSchema,
   type ParsedUserNodeMessagePublishRequest,
   type UserNodeConversationReadRecord,
   type UserNodeConversationReadResponse,
@@ -3658,6 +3659,20 @@ function extractUserNodeMessageApproval(
   return undefined;
 }
 
+function extractUserNodeMessageSourceChangeReview(
+  message: UserNodeInboundMessageRecordRequest["message"]
+): UserNodeMessageRecord["sourceChangeReview"] {
+  if (message.messageType !== "source_change.review") {
+    return undefined;
+  }
+
+  const metadata = entangleA2ASourceChangeReviewMetadataSchema.safeParse(
+    message.work.metadata
+  );
+
+  return metadata.success ? metadata.data.sourceChangeReview : undefined;
+}
+
 async function listUserNodeMessageRecords(input: {
   conversationId?: string;
   userNodeId: string;
@@ -3768,6 +3783,9 @@ export async function recordUserNodePublishedMessage(input: {
     relayUrls: input.response.relayUrls,
     schemaVersion: "1",
     sessionId: input.response.sessionId,
+    ...(input.request.sourceChangeReview
+      ? { sourceChangeReview: input.request.sourceChangeReview }
+      : {}),
     summary: input.request.summary,
     toNodeId: input.response.targetNodeId,
     toPubkey: input.response.toPubkey,
@@ -3794,6 +3812,7 @@ export async function recordUserNodeInboundMessage(input: {
 
   const { message } = input.request;
   const approval = extractUserNodeMessageApproval(message);
+  const sourceChangeReview = extractUserNodeMessageSourceChangeReview(message);
   const record = userNodeMessageRecordSchema.parse({
     ...(approval ? { approval } : {}),
     artifactRefs: message.work.artifactRefs,
@@ -3814,6 +3833,7 @@ export async function recordUserNodeInboundMessage(input: {
     relayUrls: [],
     schemaVersion: "1",
     sessionId: message.sessionId,
+    ...(sourceChangeReview ? { sourceChangeReview } : {}),
     summary: message.work.summary,
     toNodeId: message.toNodeId,
     toPubkey: message.toPubkey,

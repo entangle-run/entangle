@@ -89,10 +89,11 @@ and that Host projection contains both User Node conversations from
 runner-signed observations. It also publishes a synthetic signed agent-to-user
 message through the relay and verifies that the running User Node records it as
 inbound inbox history, uses the running User Client JSON API for selected
-conversation inspection, then submits a signed approval response through the
-same JSON User Client API. The fake OpenCode executable mutates the source
-workspace, so the smoke also verifies projected source-change candidate
-list/detail/diff reads without live model credentials. Live
+conversation inspection, then submits signed source-candidate review and
+approval response messages through the same JSON User Client API. The fake
+OpenCode executable mutates the source workspace, so the smoke also verifies
+projected source-change candidate list/detail/diff/file reads without live
+model credentials. Live
 OpenCode/model-provider behavior remains intentionally manual until API-backed
 provider testing is available.
 
@@ -163,9 +164,9 @@ This repository currently contains:
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, projected source-change summary rendering,
   projected source-change diff excerpt rendering, source-change diff/file fallback,
-  Host-mediated source-candidate accept/reject controls stamped with the
-  running User Node id, artifact-ref rendering, projected bounded artifact
-  preview with runtime fallback, delivery labels, local conversation read
+  signed source-candidate accept/reject messages handled by the owning runner,
+  artifact-ref rendering, projected bounded artifact preview with runtime
+  fallback, delivery labels, local conversation read
   state, projected wiki-ref rendering, projected wiki preview rendering,
   signed read receipts, parent-message links, delivery retry state, runtime
   identity/relay/Host API status, lightweight live state refresh, local JSON
@@ -336,8 +337,9 @@ This repository currently contains:
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
-  source-change candidate list/detail/diff/file, approval, and session read
-  APIs without requiring live model-provider credentials;
+  source-change candidate list/detail/diff/file, signed source-candidate
+  review, approval, and session read APIs without requiring live
+  model-provider credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions including handoffs, coordination result/close,
   approval request/response, completion, cancellation, and failure paths;

@@ -26,10 +26,12 @@ import {
   readApprovalRecord,
   readConversationRecord,
   readRunnerTurnRecord,
+  readSourceChangeCandidateRecord,
   readSessionRecord,
   writeApprovalRecord,
   writeConversationRecord,
   writeSessionCancellationRequestRecord,
+  writeSourceChangeCandidateRecord,
   writeSessionRecord
 } from "./state-store.js";
 import {
@@ -1685,6 +1687,169 @@ describe("RunnerService", () => {
     expect(approvalRecord).toBeUndefined();
     expect(conversationRecord).toBeUndefined();
     expect(sessionRecord).toBeUndefined();
+  });
+
+  it("applies signed source-change review messages as runner-owned candidate updates", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const sourceReviewParentMessageId =
+      "abababababababababababababababababababababababababababababababab";
+    const sourceReviewMessageId =
+      "bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc";
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-source-review"],
+      graphId: "graph-alpha",
+      intent: "Review generated source.",
+      lastMessageId: sourceReviewParentMessageId,
+      lastMessageType: "approval.request",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-source-review",
+      status: "active",
+      traceId: "session-source-review",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: []
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-source-review",
+      followupCount: 0,
+      graphId: "graph-alpha",
+      initiator: "self",
+      lastOutboundMessageId: sourceReviewParentMessageId,
+      lastMessageType: "approval.request",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-source-review",
+      status: "awaiting_approval",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeSourceChangeCandidateRecord(statePaths, {
+      candidateId: "source-change-review-alpha",
+      conversationId: "conv-source-review",
+      createdAt: "2026-04-24T10:02:00.000Z",
+      graphId: "graph-alpha",
+      nodeId: "worker-it",
+      sessionId: "session-source-review",
+      sourceChangeSummary: {
+        additions: 2,
+        checkedAt: "2026-04-24T10:02:00.000Z",
+        deletions: 0,
+        fileCount: 1,
+        files: [
+          {
+            additions: 2,
+            deletions: 0,
+            path: "src/index.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed"
+      },
+      status: "pending_review",
+      turnId: "turn-source-review",
+      updatedAt: "2026-04-24T10:02:00.000Z"
+    });
+
+    const observedSourceReviews: SourceChangeCandidateRecord[] = [];
+    const service = new RunnerService({
+      context: runtimeContext,
+      observationPublisher: {
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishSourceChangeRefObserved: (input) => {
+          observedSourceReviews.push(input.candidate);
+          return Promise.resolve();
+        },
+        publishTurnUpdated: () => Promise.resolve()
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+    const sourceReviewMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-source-review",
+      fromNodeId: "reviewer-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Accept source change candidate.",
+      messageType: "source_change.review",
+      parentMessageId: sourceReviewParentMessageId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-source-review",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "turn-source-review-response",
+      work: {
+        artifactRefs: [],
+        metadata: {
+          sourceChangeReview: {
+            candidateId: "source-change-review-alpha",
+            decision: "accepted",
+            reason: "Diff reviewed by the human node."
+          }
+        },
+        summary: "Accept source-change-review-alpha."
+      }
+    });
+
+    const result = await service.handleInboundEnvelope({
+      eventId: sourceReviewMessageId,
+      message: sourceReviewMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [candidateRecord, conversationRecord, sessionRecord] =
+      await Promise.all([
+        readSourceChangeCandidateRecord(
+          statePaths,
+          "source-change-review-alpha"
+        ),
+        readConversationRecord(statePaths, "conv-source-review"),
+        readSessionRecord(statePaths, "session-source-review")
+      ]);
+
+    expect(result.handled).toBe(true);
+    expect(candidateRecord).toMatchObject({
+      candidateId: "source-change-review-alpha",
+      review: {
+        decidedBy: "reviewer-it",
+        decision: "accepted",
+        reason: "Diff reviewed by the human node."
+      },
+      status: "accepted"
+    });
+    expect(observedSourceReviews).toEqual([
+      expect.objectContaining({
+        candidateId: "source-change-review-alpha",
+        status: "accepted"
+      })
+    ]);
+    expect(conversationRecord?.lastInboundMessageId).toBe(
+      sourceReviewMessageId
+    );
+    expect(conversationRecord?.lastMessageType).toBe("source_change.review");
+    expect(sessionRecord?.lastMessageId).toBe(sourceReviewMessageId);
+    expect(sessionRecord?.lastMessageType).toBe("source_change.review");
   });
 
   it("applies approved approval responses and completes unblocked waiting sessions", async () => {

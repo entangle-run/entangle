@@ -30,6 +30,7 @@ import {
   agentEngineTurnResultSchema,
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
+  entangleA2ASourceChangeReviewMetadataSchema,
   engineTurnOutcomeSchema,
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
@@ -58,6 +59,7 @@ import {
   listSessionRecords,
   readApprovalRecord,
   readConversationRecord,
+  readSourceChangeCandidateRecord,
   readSessionRecord,
   writeApprovalRecord,
   writeArtifactRecord,
@@ -2268,6 +2270,62 @@ export class RunnerService {
     };
   }
 
+  private async handleSourceChangeReviewEnvelope(input: {
+    conversation: ConversationRecord;
+    envelope: RunnerInboundEnvelope;
+    session: SessionRecord;
+    statePaths: RunnerStatePaths;
+  }): Promise<{
+    conversation: ConversationRecord;
+    session: SessionRecord;
+  }> {
+    const metadata = entangleA2ASourceChangeReviewMetadataSchema.safeParse(
+      input.envelope.message.work.metadata
+    );
+
+    if (!metadata.success) {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
+    const { sourceChangeReview } = metadata.data;
+    const candidate = await readSourceChangeCandidateRecord(
+      input.statePaths,
+      sourceChangeReview.candidateId
+    );
+
+    if (!candidate || candidate.status !== "pending_review") {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
+    const reviewedCandidate: SourceChangeCandidateRecord = {
+      ...candidate,
+      review: {
+        decidedAt: input.envelope.receivedAt,
+        decidedBy: input.envelope.message.fromNodeId,
+        decision: sourceChangeReview.decision,
+        ...(sourceChangeReview.reason
+          ? { reason: sourceChangeReview.reason }
+          : {})
+      },
+      status: sourceChangeReview.decision,
+      updatedAt: input.envelope.receivedAt
+    };
+
+    await writeSourceChangeCandidateRecord(input.statePaths, reviewedCandidate);
+    await this.publishSourceChangeRefObservation(reviewedCandidate);
+
+    return {
+      conversation: input.conversation,
+      session: input.session
+    };
+  }
+
   private async handleCoordinationEnvelope(
     envelope: RunnerInboundEnvelope
   ): Promise<RunnerServiceHandleResult> {
@@ -2290,6 +2348,31 @@ export class RunnerService {
         ]);
 
       if (!approvalRecord && !conversationRecord && !sessionRecord) {
+        return {
+          handled: true,
+          handoffs: [],
+          response: undefined
+        };
+      }
+    }
+
+    if (envelope.message.messageType === "source_change.review") {
+      const metadata = entangleA2ASourceChangeReviewMetadataSchema.safeParse(
+        envelope.message.work.metadata
+      );
+      const [candidateRecord, conversationRecord, sessionRecord] =
+        await Promise.all([
+          metadata.success
+            ? readSourceChangeCandidateRecord(
+                statePaths,
+                metadata.data.sourceChangeReview.candidateId
+              )
+            : undefined,
+          readConversationRecord(statePaths, envelope.message.conversationId),
+          readSessionRecord(statePaths, envelope.message.sessionId)
+        ]);
+
+      if (!candidateRecord && !conversationRecord && !sessionRecord) {
         return {
           handled: true,
           handoffs: [],
@@ -2363,6 +2446,13 @@ export class RunnerService {
       });
     } else if (envelope.message.messageType === "approval.response") {
       await this.handleApprovalResponseEnvelope({
+        conversation: currentConversation,
+        envelope,
+        session: currentSession,
+        statePaths
+      });
+    } else if (envelope.message.messageType === "source_change.review") {
+      await this.handleSourceChangeReviewEnvelope({
         conversation: currentConversation,
         envelope,
         session: currentSession,

@@ -214,12 +214,22 @@ function SourceChangeReview({
       const response = await reviewSourceChangeCandidate({
         baseUrl,
         candidateId,
+        conversationId: message.conversationId,
         nodeId: message.fromNodeId,
+        parentMessageId: message.eventId,
         ...(reason.trim() ? { reason: reason.trim() } : {}),
-        status: statusValue
+        sessionId: message.sessionId,
+        status: statusValue,
+        turnId: message.turnId
       });
 
-      setStatus(`${response.candidate.status} ${candidateId}`);
+      setStatus(
+        response.deliveryStatus === "failed"
+          ? `recorded ${response.eventId}; relay delivery failed`
+          : response.deliveryStatus === "partial"
+            ? `published ${response.eventId} to ${response.publishedRelays.length}/${response.relayUrls.length} relays`
+            : `published ${response.eventId}`
+      );
       await onRefresh();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Review failed.");
@@ -429,6 +439,12 @@ function MessageTimeline({
               {message.approval.decision
                 ? ` · ${message.approval.decision}`
                 : ""}
+            </div>
+          ) : null}
+          {message.sourceChangeReview ? (
+            <div className="metadata">
+              source review {message.sourceChangeReview.candidateId} ·{" "}
+              {message.sourceChangeReview.decision}
             </div>
           ) : null}
           {message.artifactRefs.length > 0 ? (

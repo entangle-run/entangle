@@ -1705,6 +1705,53 @@ async function main(): Promise<void> {
         }`
     );
 
+    const sourceReviewResponse = await fetch(
+      new URL("/api/source-change-candidates/review", userClientUrl),
+      {
+        body: JSON.stringify({
+          candidateId: projectedBuilderSourceCandidate.candidate.candidateId,
+          conversationId: userMessage.conversationId,
+          nodeId: "builder",
+          parentMessageId: userMessage.eventId,
+          reason: "Process runner smoke accepted projected source change.",
+          sessionId: userMessage.sessionId,
+          status: "accepted",
+          turnId: projectedBuilderTurn.turnId
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      sourceReviewResponse,
+      "User Client JSON source-change review"
+    );
+    const reviewedBuilderSourceCandidate = await waitFor(
+      "Host projected builder source-change review",
+      async () => {
+        const inspection =
+          runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runtimes/builder/source-change-candidates/${projectedBuilderSourceCandidate.candidate.candidateId}`
+            })
+          );
+
+        return inspection.candidate.status === "accepted" &&
+          inspection.candidate.review?.decidedBy === "user"
+          ? inspection.candidate
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "user-node-source-change-review",
+      `candidate=${reviewedBuilderSourceCandidate.candidateId}; ` +
+        `status=${reviewedBuilderSourceCandidate.status}`
+    );
+
     const projectedBuilderApproval = await waitFor(
       "Host projected builder approval read API",
       async () => {

@@ -10,6 +10,7 @@ import {
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
   entangleA2AMessageSchema,
+  entangleA2ASourceChangeReviewMetadataSchema,
   entangleControlEventSchema,
   entangleObservationEventSchema,
   entangleNostrGiftWrapKind,
@@ -2359,6 +2360,65 @@ describe("Entangle A2A machine-readable contracts", () => {
         }
       }).approval.decision
     ).toBe("approved");
+  });
+
+  it("accepts source-change review messages with parent context", () => {
+    const message = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-source-review",
+      fromNodeId: "user-main",
+      fromPubkey: "1111111111111111111111111111111111111111111111111111111111111111",
+      graphId: "graph-alpha",
+      intent: "review_source_change",
+      messageType: "source_change.review",
+      parentMessageId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-source-review",
+      toNodeId: "worker-it",
+      toPubkey: "2222222222222222222222222222222222222222222222222222222222222222",
+      turnId: "turn-source-review",
+      work: {
+        metadata: {
+          sourceChangeReview: {
+            candidateId: "source-change-turn-alpha",
+            decision: "accepted",
+            reason: "The candidate is ready for approval."
+          }
+        },
+        summary: "Accepted source change source-change-turn-alpha."
+      }
+    });
+
+    expect(message.messageType).toBe("source_change.review");
+    expect(
+      entangleA2ASourceChangeReviewMetadataSchema.parse(
+        message.work.metadata
+      ).sourceChangeReview.decision
+    ).toBe("accepted");
+    expect(
+      userNodeMessagePublishRequestSchema.parse({
+        conversationId: "conv-source-review",
+        messageType: "source_change.review",
+        parentMessageId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        sessionId: "session-source-review",
+        sourceChangeReview: {
+          candidateId: "source-change-turn-alpha",
+          decision: "accepted"
+        },
+        summary: "Accepted source change source-change-turn-alpha.",
+        targetNodeId: "worker-it",
+        turnId: "turn-source-review"
+      }).sourceChangeReview?.candidateId
+    ).toBe("source-change-turn-alpha");
   });
 });
 

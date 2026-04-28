@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Signed User Node source-candidate reviews
+
+User Client source-change accept/reject now publishes signed
+`source_change.review` A2A messages instead of calling the Host runtime
+candidate review mutation. The owning runner applies the review to
+runner-owned source-change candidate state, stamps the deciding User Node, and
+emits a fresh `source_change.ref` observation for Host projection.
+
+Added `references/321-signed-source-candidate-review-slice.md` and updated the
+federated runtime plan to treat source-candidate review as a participant
+message path. The process-runner smoke now verifies this through the running
+User Client JSON API. The older Host source-candidate review mutation remains
+only as a non-canonical compatibility/admin path pending removal with the other
+direct mutation routes.
+
 ## [2026-04-26] implementation | Enforced joined runner assignment capacity
 
 `RunnerJoinService` now rejects new assignment offers once the runner has

@@ -24,7 +24,6 @@ import {
   hostProjectionSnapshotSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
-  runtimeSourceChangeCandidateInspectionResponseSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
@@ -97,9 +96,13 @@ type UserClientSourceChangeDiffResponse = {
 
 type UserClientSourceChangeReviewRequest = {
   candidateId?: unknown;
+  conversationId?: unknown;
   nodeId?: unknown;
+  parentMessageId?: unknown;
   reason?: unknown;
+  sessionId?: unknown;
   status?: unknown;
+  turnId?: unknown;
 };
 
 type ApprovalResource = NonNullable<
@@ -839,64 +842,59 @@ async function buildUserClientSourceChangeDiff(input: {
   };
 }
 
-async function reviewRuntimeSourceChangeCandidate(input: {
+async function publishSourceChangeReviewMessage(input: {
   candidateId: string;
+  conversationId: string;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  parentMessageId: string;
   reason?: string | undefined;
-  reviewedBy: string;
+  sessionId: string;
   status: UserSourceCandidateReviewStatus;
+  turnId?: string | undefined;
+  userNodeId: string;
 }): Promise<{
-  detail?: RuntimeSourceChangeCandidateInspectionResponse;
+  detail?: UserNodeMessagePublishResponse;
   error?: string;
   statusCode?: number;
 }> {
   if (!input.hostApi) {
     return {
-      error: "Host API is not configured for source-change review.",
+      error: "Host API is not configured for source-change review messages.",
       statusCode: 409
     };
   }
 
   try {
-    const response = await fetch(
-      new URL(
-        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/source-change-candidates/${encodeURIComponent(input.candidateId)}/review`,
-        input.hostApi.baseUrl
-      ),
-      {
-        body: JSON.stringify({
-          ...(input.reason ? { reason: input.reason } : {}),
-          reviewedBy: input.reviewedBy,
-          status: input.status
-        }),
-        headers: {
-          ...buildHostApiHeaders(input.hostApi),
-          "content-type": "application/json"
-        },
-        method: "PATCH"
-      }
-    );
-    const body = await response.text();
-
-    if (!response.ok) {
-      return {
-        error: `Host source-change review request failed with HTTP ${response.status}: ${body}`,
-        statusCode: response.status
-      };
-    }
-
     return {
-      detail: runtimeSourceChangeCandidateInspectionResponseSchema.parse(
-        JSON.parse(body)
-      )
+      detail: await publishUserNodeMessage({
+        conversationId: input.conversationId,
+        hostApi: input.hostApi,
+        messageType: "source_change.review",
+        parentMessageId: input.parentMessageId,
+        responsePolicy: {
+          closeOnResult: false,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        sessionId: input.sessionId,
+        sourceChangeReview: {
+          candidateId: input.candidateId,
+          decision: input.status,
+          ...(input.reason ? { reason: input.reason } : {})
+        },
+        summary: `${input.status === "accepted" ? "Accepted" : "Rejected"} source change ${input.candidateId}.`,
+        targetNodeId: input.nodeId,
+        turnId: input.turnId,
+        userNodeId: input.userNodeId
+      })
     };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
-          : "Host source-change review request failed.",
+          : "Source-change review message publish failed.",
       statusCode: 500
     };
   }
@@ -988,6 +986,13 @@ async function publishUserNodeMessage(input: {
     responseRequired: boolean;
   } | undefined;
   sessionId?: string | undefined;
+  sourceChangeReview?:
+    | {
+        candidateId: string;
+        decision: "accepted" | "rejected";
+        reason?: string | undefined;
+      }
+    | undefined;
   summary: string;
   targetNodeId: string;
   turnId?: string | undefined;
@@ -1012,6 +1017,9 @@ async function publishUserNodeMessage(input: {
         ...(input.parentMessageId ? { parentMessageId: input.parentMessageId } : {}),
         ...(input.responsePolicy ? { responsePolicy: input.responsePolicy } : {}),
         ...(input.sessionId ? { sessionId: input.sessionId } : {}),
+        ...(input.sourceChangeReview
+          ? { sourceChangeReview: input.sourceChangeReview }
+          : {}),
         summary: input.summary,
         targetNodeId: input.targetNodeId,
         ...(input.turnId ? { turnId: input.turnId } : {})
@@ -1106,8 +1114,11 @@ function renderSourceChangeReviewControls(input: {
   candidateId: string;
   conversationId?: string | undefined;
   nodeId: string;
+  parentMessageId: string;
   review?: SourceChangeCandidateReviewRecord | undefined;
+  sessionId: string;
   status?: SourceChangeRefProjectionRecord["status"] | undefined;
+  turnId: string;
 }): string {
   if (input.status && input.status !== "pending_review") {
     const review = input.review;
@@ -1127,6 +1138,9 @@ function renderSourceChangeReviewControls(input: {
     <input type="hidden" name="nodeId" value="${escapeHtml(input.nodeId)}" />
     <input type="hidden" name="candidateId" value="${escapeHtml(input.candidateId)}" />
     ${input.conversationId ? `<input type="hidden" name="conversationId" value="${escapeHtml(input.conversationId)}" />` : ""}
+    <input type="hidden" name="parentMessageId" value="${escapeHtml(input.parentMessageId)}" />
+    <input type="hidden" name="sessionId" value="${escapeHtml(input.sessionId)}" />
+    <input type="hidden" name="turnId" value="${escapeHtml(input.turnId)}" />
     <label>Review reason
       <textarea name="reason" rows="2"></textarea>
     </label>
@@ -1204,7 +1218,10 @@ function renderApprovalResource(
       ? `<a class="artifact-action" href="${escapeHtml(
           `/source-change-candidates/diff?nodeId=${encodeURIComponent(message.fromNodeId)}` +
             `&candidateId=${encodeURIComponent(resource.id)}` +
-            `&conversationId=${encodeURIComponent(message.conversationId)}`
+            `&conversationId=${encodeURIComponent(message.conversationId)}` +
+            `&parentMessageId=${encodeURIComponent(message.eventId)}` +
+            `&sessionId=${encodeURIComponent(message.sessionId)}` +
+            `&turnId=${encodeURIComponent(message.turnId)}`
         )}">Review diff</a>`
       : "";
   const sourceReviewControls =
@@ -1213,7 +1230,10 @@ function renderApprovalResource(
           candidateId: resource.id,
           conversationId: message.conversationId,
           nodeId: message.fromNodeId,
-          status: sourceChangeRef?.status
+          parentMessageId: message.eventId,
+          sessionId: message.sessionId,
+          status: sourceChangeRef?.status,
+          turnId: message.turnId
         })
       : "";
 
@@ -1493,6 +1513,7 @@ async function renderHome(input: {
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
               ${renderMessageDelivery(message)}
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
+              ${message.sourceChangeReview ? `<div class="message-meta">source review ${escapeHtml(message.sourceChangeReview.candidateId)} - ${escapeHtml(message.sourceChangeReview.decision)}</div>` : ""}
               ${renderApprovalResource(message, state.sourceChangeRefs, state.wikiRefs)}
               <div>${escapeHtml(message.summary)}</div>
               ${renderArtifactRefs(message)}
@@ -1706,6 +1727,9 @@ async function renderSourceChangeCandidateDiffPage(input: {
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  parentMessageId?: string | undefined;
+  sessionId?: string | undefined;
+  turnId?: string | undefined;
 }): Promise<string> {
   const projection = await fetchHostProjection({ hostApi: input.hostApi });
   const projectedRef = findProjectedSourceChangeRef({
@@ -1744,13 +1768,19 @@ async function renderSourceChangeCandidateDiffPage(input: {
         : `<section class="notice">${escapeHtml(diffResult?.reason ?? projection.error ?? "Source-change diff is unavailable.")}</section>`;
   const summary = projectedSummary ?? candidate?.sourceChangeSummary;
   const candidateStatus = projectedRef?.status ?? candidate?.status;
-  const reviewControls = renderSourceChangeReviewControls({
-    candidateId: input.candidateId,
-    conversationId: input.conversationId,
-    nodeId: input.nodeId,
-    review: candidate?.review,
-    status: candidateStatus
-  });
+  const reviewControls =
+    input.parentMessageId && input.sessionId && input.turnId
+      ? renderSourceChangeReviewControls({
+          candidateId: input.candidateId,
+          conversationId: input.conversationId,
+          nodeId: input.nodeId,
+          parentMessageId: input.parentMessageId,
+          review: candidate?.review,
+          sessionId: input.sessionId,
+          status: candidateStatus,
+          turnId: input.turnId
+        })
+      : "";
   const summaryBody = summary
     ? `<section>
         <h2>Summary</h2>
@@ -2098,16 +2128,32 @@ export async function startHumanInterfaceRuntime(input: {
           typeof reviewRequest.candidateId === "string"
             ? reviewRequest.candidateId.trim()
             : "";
+        const conversationId =
+          typeof reviewRequest.conversationId === "string"
+            ? reviewRequest.conversationId.trim()
+            : "";
         const nodeId =
           typeof reviewRequest.nodeId === "string"
             ? reviewRequest.nodeId.trim()
+            : "";
+        const parentMessageId =
+          typeof reviewRequest.parentMessageId === "string"
+            ? reviewRequest.parentMessageId.trim()
             : "";
         const reason =
           typeof reviewRequest.reason === "string" &&
           reviewRequest.reason.trim().length > 0
             ? reviewRequest.reason.trim()
             : undefined;
+        const sessionId =
+          typeof reviewRequest.sessionId === "string"
+            ? reviewRequest.sessionId.trim()
+            : "";
         const status = reviewRequest.status;
+        const turnId =
+          typeof reviewRequest.turnId === "string"
+            ? reviewRequest.turnId.trim()
+            : undefined;
 
         if (status !== "accepted" && status !== "rejected") {
           writeJson(response, 400, {
@@ -2116,20 +2162,25 @@ export async function startHumanInterfaceRuntime(input: {
           return;
         }
 
-        if (!nodeId || !candidateId) {
+        if (!nodeId || !candidateId || !conversationId || !parentMessageId || !sessionId) {
           writeJson(response, 400, {
-            error: "Runtime node and source-change candidate are required."
+            error:
+              "Runtime node, source-change candidate, conversation, parent message, and session are required."
           });
           return;
         }
 
-        const review = await reviewRuntimeSourceChangeCandidate({
+        const review = await publishSourceChangeReviewMessage({
           candidateId,
+          conversationId,
           hostApi: input.hostApi,
           nodeId,
+          parentMessageId,
           reason,
-          reviewedBy: input.context.binding.node.nodeId,
-          status
+          sessionId,
+          status,
+          turnId,
+          userNodeId: input.context.binding.node.nodeId
         });
 
         if (review.error || !review.detail) {
@@ -2189,6 +2240,11 @@ export async function startHumanInterfaceRuntime(input: {
           requestUrl.searchParams.get("candidateId")?.trim() ?? "";
         const conversationId =
           requestUrl.searchParams.get("conversationId")?.trim() || undefined;
+        const parentMessageId =
+          requestUrl.searchParams.get("parentMessageId")?.trim() || undefined;
+        const sessionId =
+          requestUrl.searchParams.get("sessionId")?.trim() || undefined;
+        const turnId = requestUrl.searchParams.get("turnId")?.trim() || undefined;
 
         if (!nodeId || !candidateId) {
           writeHtml(
@@ -2198,7 +2254,10 @@ export async function startHumanInterfaceRuntime(input: {
               candidateId: candidateId || "unknown-candidate",
               conversationId,
               hostApi: input.hostApi,
-              nodeId: nodeId || "unknown-runtime"
+              nodeId: nodeId || "unknown-runtime",
+              parentMessageId,
+              sessionId,
+              turnId
             })
           );
           return;
@@ -2211,7 +2270,10 @@ export async function startHumanInterfaceRuntime(input: {
             candidateId,
             conversationId,
             hostApi: input.hostApi,
-            nodeId
+            nodeId,
+            parentMessageId,
+            sessionId,
+            turnId
           })
         );
         return;
@@ -2227,10 +2289,13 @@ export async function startHumanInterfaceRuntime(input: {
           const form = new URLSearchParams(await readRequestBody(request));
           const candidateId = form.get("candidateId")?.trim() ?? "";
           const conversationId =
-            form.get("conversationId")?.trim() || undefined;
+            form.get("conversationId")?.trim() ?? "";
           const nodeId = form.get("nodeId")?.trim() ?? "";
+          const parentMessageId = form.get("parentMessageId")?.trim() ?? "";
           const reason = form.get("reason")?.trim() || undefined;
+          const sessionId = form.get("sessionId")?.trim() ?? "";
           const rawStatus = form.get("status")?.trim();
+          const turnId = form.get("turnId")?.trim() || undefined;
           selectedConversationIdForError = conversationId;
 
           if (rawStatus !== "accepted" && rawStatus !== "rejected") {
@@ -2248,27 +2313,32 @@ export async function startHumanInterfaceRuntime(input: {
             return;
           }
 
-          if (!nodeId || !candidateId) {
+          if (!nodeId || !candidateId || !conversationId || !parentMessageId || !sessionId) {
             writeHtml(
               response,
               400,
               await renderHome({
                 context: input.context,
                 hostApi: input.hostApi,
-                notice: "Runtime node and source-change candidate are required.",
+                notice:
+                  "Runtime node, source-change candidate, conversation, parent message, and session are required.",
                 selectedConversationId: conversationId
               })
             );
             return;
           }
 
-          const review = await reviewRuntimeSourceChangeCandidate({
+          const review = await publishSourceChangeReviewMessage({
             candidateId,
+            conversationId,
             hostApi: input.hostApi,
             nodeId,
+            parentMessageId,
             reason,
-            reviewedBy: input.context.binding.node.nodeId,
-            status: rawStatus
+            sessionId,
+            status: rawStatus,
+            turnId,
+            userNodeId: input.context.binding.node.nodeId
           });
 
           if (review.error) {
@@ -2291,7 +2361,12 @@ export async function startHumanInterfaceRuntime(input: {
             await renderHome({
               context: input.context,
               hostApi: input.hostApi,
-              notice: `Reviewed ${candidateId} as ${review.detail?.candidate.status ?? rawStatus}.`,
+              notice:
+                review.detail?.deliveryStatus === "failed"
+                  ? `Recorded source review ${review.detail.eventId}, but relay delivery failed.`
+                  : review.detail?.deliveryStatus === "partial"
+                    ? `Published source review ${review.detail.eventId} to ${review.detail.publishedRelays.length}/${review.detail.relayUrls.length} relays.`
+                    : `Published source review ${review.detail?.eventId ?? candidateId}.`,
               selectedConversationId: conversationId
             })
           );

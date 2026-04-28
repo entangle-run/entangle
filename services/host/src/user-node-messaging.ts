@@ -61,14 +61,27 @@ export function buildUserNodeA2AMessage(input: {
     input.request.conversationId ??
     createUserNodeMessageIdentifier("conversation");
   const turnId = input.request.turnId ?? createUserNodeMessageIdentifier("turn");
-  const metadata =
-    messageType === "approval.response" && input.request.approval
+  const metadata = {
+    ...(messageType === "approval.response" && input.request.approval
+      ? { approval: input.request.approval }
+      : {}),
+    ...(messageType === "source_change.review" &&
+    input.request.sourceChangeReview
+      ? { sourceChangeReview: input.request.sourceChangeReview }
+      : {}),
+    sentBy: "user-node-gateway"
+  };
+  const defaultResponsePolicy =
+    messageType === "source_change.review"
       ? {
-          approval: input.request.approval,
-          sentBy: "user-node-gateway"
+          closeOnResult: false,
+          maxFollowups: 0,
+          responseRequired: false
         }
       : {
-          sentBy: "user-node-gateway"
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
         };
 
   return entangleA2AMessageSchema.parse({
@@ -87,11 +100,7 @@ export function buildUserNodeA2AMessage(input: {
     protocol: "entangle.a2a.v1",
     responsePolicy:
       input.request.responsePolicy ??
-      {
-        closeOnResult: true,
-        maxFollowups: 0,
-        responseRequired: false
-      },
+      defaultResponsePolicy,
     sessionId,
     toNodeId: input.runtimeContext.binding.node.nodeId,
     toPubkey: input.runtimeContext.identityContext.publicKey,
