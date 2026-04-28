@@ -217,7 +217,7 @@ export const runtimeArtifactPreviewSchema = z.discriminatedUnion("available", [
     content: z.string(),
     contentEncoding: z.literal("utf8"),
     contentType: z.enum(["text/markdown", "text/plain"]),
-    sourcePath: filesystemPathSchema,
+    sourcePath: filesystemPathSchema.optional(),
     truncated: z.boolean()
   }),
   z.object({

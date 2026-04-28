@@ -1531,6 +1531,19 @@ describe("runtime artifact host API contracts", () => {
     });
 
     expect(result.preview.available).toBe(true);
+    expect(
+      runtimeArtifactPreviewResponseSchema.parse({
+        artifact: result.artifact,
+        preview: {
+          available: true,
+          bytesRead: 24,
+          content: "# Turn Report\n\nComplete.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        }
+      }).preview.available
+    ).toBe(true);
   });
 
   it("accepts bounded runtime artifact history and diff responses", () => {

@@ -9136,37 +9136,66 @@ export async function getRuntimeArtifactPreview(input: {
 }): Promise<RuntimeArtifactPreviewResponse | null> {
   const context = await getRuntimeContext(input.nodeId);
 
-  if (!context) {
+  if (context) {
+    const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+    const artifact = artifacts.find(
+      (candidate) => candidate.ref.artifactId === input.artifactId
+    );
+
+    if (artifact) {
+      const resolvedPath = resolveArtifactPreviewPath({ artifact, context });
+
+      if ("reason" in resolvedPath) {
+        return runtimeArtifactPreviewResponseSchema.parse({
+          artifact,
+          preview: {
+            available: false,
+            reason: resolvedPath.reason
+          }
+        });
+      }
+
+      return runtimeArtifactPreviewResponseSchema.parse({
+        artifact,
+        preview: await readArtifactPreview({
+          artifact,
+          filePath: resolvedPath.filePath
+        })
+      });
+    }
+  }
+
+  return getProjectedRuntimeArtifactPreview(input);
+}
+
+async function getProjectedRuntimeArtifactPreview(input: {
+  artifactId: string;
+  nodeId: string;
+}): Promise<RuntimeArtifactPreviewResponse | null> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
     return null;
   }
 
-  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
-  const artifact = artifacts.find(
-    (candidate) => candidate.ref.artifactId === input.artifactId
+  const record = (await listArtifactRefProjectionRecords()).find(
+    (candidate) =>
+      candidate.graphId === graph.graphId &&
+      candidate.nodeId === input.nodeId &&
+      candidate.artifactId === input.artifactId
   );
 
-  if (!artifact) {
+  if (!record) {
     return null;
-  }
-
-  const resolvedPath = resolveArtifactPreviewPath({ artifact, context });
-
-  if ("reason" in resolvedPath) {
-    return runtimeArtifactPreviewResponseSchema.parse({
-      artifact,
-      preview: {
-        available: false,
-        reason: resolvedPath.reason
-      }
-    });
   }
 
   return runtimeArtifactPreviewResponseSchema.parse({
-    artifact,
-    preview: await readArtifactPreview({
-      artifact,
-      filePath: resolvedPath.filePath
-    })
+    artifact: buildRuntimeArtifactRecordFromProjection(record),
+    preview: record.artifactPreview ?? {
+      available: false,
+      reason:
+        "Artifact ref was observed, but no bounded preview was included in projection."
+    }
   });
 }
 

@@ -1927,6 +1927,31 @@ describe("buildHostServer", () => {
           updatedAt: observedAt
         }
       });
+
+      const projectedArtifactPreviewResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
+      });
+      expect(projectedArtifactPreviewResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactPreviewResponseSchema.parse(
+          projectedArtifactPreviewResponse.json()
+        )
+      ).toEqual({
+        artifact: {
+          createdAt: observedAt,
+          ref: projectedArtifactRef,
+          updatedAt: observedAt
+        },
+        preview: {
+          available: true,
+          bytesRead: 16,
+          content: "# Report\n\nReady.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        }
+      });
     } finally {
       await server.close();
     }

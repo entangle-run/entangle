@@ -3829,3 +3829,14 @@ local compatibility files for runtime source-change candidate list/detail GET
 routes. Source diff/file preview, review, apply, and source-history operations
 remain local-context backed until those operations move to a runner-mediated or
 backend-resolved federated path.
+
+## [2026-04-28] implementation | Added projected artifact preview API
+
+Added `references/314-projected-artifact-preview-api-slice.md`. Runtime
+artifact preview GET routes now prefer local same-machine preview files when
+available and otherwise fall back to bounded preview content carried by
+observed `artifact.ref` projection.
+
+The available preview contract now treats `sourcePath` as optional, so
+projection-backed previews do not expose or fabricate runner-local filesystem
+paths.

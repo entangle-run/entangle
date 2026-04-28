@@ -306,6 +306,8 @@ This repository currently contains:
 - runtime artifact list/detail APIs can now list and inspect observed
   `artifact.ref` projection records without requiring Host-readable
   runner-local artifact files;
+- runtime artifact preview APIs can now serve bounded projected
+  `artifact.ref` preview content without exposing a runner-local source path;
 - source-change candidate list/detail APIs can now list and inspect projected
   full candidate records carried by `source_change.ref` observations without
   requiring Host-readable runner-local candidate files;

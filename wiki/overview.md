@@ -74,6 +74,8 @@ The most accurate current description is:
   projection without runner-local turn files;
 - runtime artifact list/detail read APIs can now use observed `artifact.ref`
   projection without runner-local artifact files;
+- runtime artifact preview read APIs can now use bounded projected
+  `artifact.ref` preview content without exposing runner-local source paths;
 - source-change candidate list/detail read APIs can now use full candidate
   records carried by observed `source_change.ref` projection without
   runner-local candidate files;

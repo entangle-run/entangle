@@ -114,6 +114,7 @@ same-machine slice records.
 - [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
 - [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
+- [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 
 ## Audited Scope
 
@@ -289,6 +290,9 @@ The repository is not fully federated:
 - Host runtime artifact list/detail GET routes now merge projected
   `artifact.ref` records with local compatibility files and no longer require a
   Host-readable runtime context for projected remote artifacts;
+- Host runtime artifact preview GET routes now prefer local previews when
+  present and fall back to bounded projected `artifact.ref` preview content
+  without fabricating runner-local `sourcePath`;
 - joined runners now include the full bounded `SourceChangeCandidateRecord`
   when publishing `source_change.ref` observations, and Host runtime
   source-change candidate list/detail GET routes can merge those projected

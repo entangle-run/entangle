@@ -52,9 +52,9 @@ or stable User Node identity.
   approval lifecycle changes now have signed `approval.updated` observation
   reducers plus projected approval list/detail reads, while runner turn
   list/detail reads can now use observed turn projection and artifact
-  list/detail reads can now use observed `artifact.ref` projection, and
-  source-change candidate list/detail reads can now use observed full
-  `source_change.ref` candidate projection;
+  list/detail plus bounded preview reads can now use observed `artifact.ref`
+  projection, and source-change candidate list/detail reads can now use
+  observed full `source_change.ref` candidate projection;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 

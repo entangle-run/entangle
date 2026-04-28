@@ -80,7 +80,7 @@ export interface RuntimeArtifactCliPreviewSummaryRecord {
           RuntimeArtifactPreviewResponse["preview"],
           { available: true }
         >["contentType"];
-        sourcePath: string;
+        sourcePath?: string | undefined;
         truncated: boolean;
       }
     | {
