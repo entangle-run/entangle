@@ -102,6 +102,10 @@ The most accurate current description is:
   configured, the runner publishes accepted source-history records as git commit
   artifacts and emits projected artifact/source-history observations for that
   publication;
+- explicit source-history publication/retry and source-history replay are now
+  Host-signed control commands to the accepted runner assignment, with the
+  runner owning git publication or replay execution and emitting observation
+  evidence;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -274,7 +278,9 @@ The repository now also contains the first real implementation baseline:
   runner-owned source-history publication that turns accepted source-history
   commits into git commit artifacts with durable publication metadata; explicit
   operator publish/retry requests now travel as Host-signed
-  `runtime.source_history.publish` commands to the accepted runner assignment.
+  `runtime.source_history.publish` commands to the accepted runner assignment,
+  and explicit operator replay requests now travel as Host-signed
+  `runtime.source_history.replay` commands to the accepted runner assignment.
   Node-configured source mutation policy is now able to require approved runtime
   approval ids before source application or source publication, while
   validating approval operation and concrete resource scope before accepting a
@@ -868,11 +874,11 @@ The current implementation-truth audit now lives in
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
   runner-owned primary source-history commit artifact publication plus bounded
-  artifact history/diff/preview inspection; the next git gaps are runner-owned
-  source replay, protocol-owned artifact restore or source-change proposal
-  flows, non-primary publication targets, wiki publication/promotion, richer
-  source-history merge/reconcile workflows, and explicit fallback or
-  replication behavior, while the next deployment-grade gap is
+  artifact history/diff/preview inspection; the next git gaps are
+  protocol-owned artifact restore or source-change proposal flows, non-primary
+  publication targets, wiki publication/promotion, richer source-history
+  merge/reconcile workflows, and explicit fallback or replication behavior,
+  while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea
   volumes;
 - complete CLI parity where it adds real headless operational value;

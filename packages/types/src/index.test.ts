@@ -718,6 +718,29 @@ describe("federated runtime contracts", () => {
         sourceHistoryId: "source-history-alpha"
       }
     });
+    const sourceHistoryReplay = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        approvalId: "approval-source-history-replay-alpha",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-replay-alpha",
+        eventType: "runtime.source_history.replay",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        replayedBy: "operator-main",
+        replayId: "replay-source-history-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-alpha"
+      }
+    });
 
     expect(start.payload.eventType).toBe("runtime.start");
     expect(stop.payload.eventType).toBe("runtime.stop");
@@ -725,6 +748,9 @@ describe("federated runtime contracts", () => {
     expect(cancel.payload.eventType).toBe("runtime.session.cancel");
     expect(sourceHistoryPublish.payload.eventType).toBe(
       "runtime.source_history.publish"
+    );
+    expect(sourceHistoryReplay.payload.eventType).toBe(
+      "runtime.source_history.replay"
     );
   });
 
@@ -1250,6 +1276,45 @@ describe("federated runtime contracts", () => {
         sourceHistoryId: "source-history-source-change-turn-alpha"
       }
     });
+    const sourceHistoryReplayObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        eventType: "source_history.replayed",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        replay: {
+          approvalId: "approval-source-history-replay-alpha",
+          baseTree: "tree-base-alpha",
+          candidateId: "source-change-turn-alpha",
+          commit: "commit-source-history-alpha",
+          createdAt: observedAt,
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-rev-1",
+          headTree: "tree-head-alpha",
+          nodeId: "worker-it",
+          replayedBy: "operator-main",
+          replayedFileCount: 1,
+          replayedPath: "/workspace/source",
+          replayId: "replay-source-history-alpha",
+          sourceHistoryId: "source-history-source-change-turn-alpha",
+          status: "replayed",
+          turnId: "turn-alpha",
+          updatedAt: observedAt
+        },
+        replayId: "replay-source-history-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-source-change-turn-alpha",
+        status: "replayed"
+      }
+    });
 
     expect(sessionObservation.payload.eventType).toBe("session.updated");
     expect(conversationObservation.payload.eventType).toBe("conversation.updated");
@@ -1257,6 +1322,9 @@ describe("federated runtime contracts", () => {
     expect(artifactObservation.payload.eventType).toBe("artifact.ref");
     expect(sourceChangeObservation.payload.eventType).toBe("source_change.ref");
     expect(sourceHistoryObservation.payload.eventType).toBe("source_history.ref");
+    expect(sourceHistoryReplayObservation.payload.eventType).toBe(
+      "source_history.replayed"
+    );
   });
 
   it("accepts Host Authority API responses and status summaries", () => {

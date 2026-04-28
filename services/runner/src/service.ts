@@ -25,7 +25,8 @@ import type {
   SessionCancellationRequestRecord,
   SessionLifecycleState,
   SessionRecord,
-  SourceHistoryRecord
+  SourceHistoryRecord,
+  SourceHistoryReplayRecord
 } from "@entangle/types";
 import {
   agentEngineTurnResultSchema,
@@ -88,7 +89,8 @@ import {
 import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js";
 import {
   applyAcceptedSourceChangeCandidate,
-  publishSourceHistoryToPrimaryGitTarget
+  publishSourceHistoryToPrimaryGitTarget,
+  replaySourceHistoryToWorkspace
 } from "./source-history.js";
 import { syncWikiRepository } from "./wiki-repository.js";
 import type {
@@ -107,6 +109,13 @@ export type RunnerServiceStartResult = {
 export type RunnerSourceHistoryPublicationCommandResult = {
   message?: string;
   publicationState?: "failed" | "not_requested" | "published";
+  sourceHistoryId: string;
+};
+
+export type RunnerSourceHistoryReplayCommandResult = {
+  message?: string;
+  replayId: string;
+  replayStatus: "already_in_workspace" | "replayed" | "unavailable";
   sourceHistoryId: string;
 };
 
@@ -129,6 +138,10 @@ export type RunnerServiceObservationPublisher = {
   publishSourceHistoryRefObserved?(input: {
     history: SourceHistoryRecord;
     observedAt: string;
+  }): Promise<void>;
+  publishSourceHistoryReplayedObserved?(input: {
+    observedAt: string;
+    replay: SourceHistoryReplayRecord;
   }): Promise<void>;
   publishTurnUpdated(record: RunnerTurnRecord): Promise<void>;
   publishWikiRefObserved?(input: {
@@ -1639,6 +1652,19 @@ export class RunnerService {
     }
   }
 
+  private async publishSourceHistoryReplayObservation(
+    replay: SourceHistoryReplayRecord
+  ): Promise<void> {
+    try {
+      await this.observationPublisher?.publishSourceHistoryReplayedObserved?.({
+        observedAt: replay.updatedAt,
+        replay
+      });
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
   private async publishWikiRefObservation(
     artifactRef: ArtifactRef,
     observedAt: string,
@@ -1740,6 +1766,84 @@ export class RunnerService {
     return parsed;
   }
 
+  private formatApprovalResource(resource: ApprovalRecord["resource"]): string {
+    if (!resource) {
+      return "unspecified";
+    }
+
+    return resource.label
+      ? `${resource.kind}:${resource.id} (${resource.label})`
+      : `${resource.kind}:${resource.id}`;
+  }
+
+  private async assertSourceHistoryReplayApproval(input: {
+    approvalId?: string;
+    history: SourceHistoryRecord;
+    statePaths: RunnerStatePaths;
+  }): Promise<void> {
+    const required =
+      this.context.policyContext.sourceMutation.applyRequiresApproval;
+
+    if (!input.approvalId) {
+      if (!required) {
+        return;
+      }
+
+      throw new Error(
+        `Runtime '${this.context.binding.node.nodeId}' requires an approved approvalId before source history replay.`
+      );
+    }
+
+    const approval = await readApprovalRecord(input.statePaths, input.approvalId);
+    const expectedResource = {
+      id: input.history.sourceHistoryId,
+      kind: "source_history" as const,
+      label: input.history.sourceHistoryId
+    };
+
+    if (!approval) {
+      throw new Error(
+        `Approval '${input.approvalId}' was not found for runtime '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    if (approval.graphId !== this.context.binding.graphId) {
+      throw new Error(
+        `Approval '${input.approvalId}' belongs to graph '${approval.graphId}', not graph '${this.context.binding.graphId}'.`
+      );
+    }
+
+    if (approval.requestedByNodeId !== this.context.binding.node.nodeId) {
+      throw new Error(
+        `Approval '${input.approvalId}' was requested by node '${approval.requestedByNodeId}', not runtime '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    if (input.history.sessionId && approval.sessionId !== input.history.sessionId) {
+      throw new Error(
+        `Approval '${input.approvalId}' belongs to session '${approval.sessionId}', not session '${input.history.sessionId}'.`
+      );
+    }
+
+    if (approval.operation !== "source_application") {
+      throw new Error(
+        `Approval '${input.approvalId}' is scoped to operation '${approval.operation ?? "unspecified"}', but source history replay requires 'source_application'.`
+      );
+    }
+
+    if (!policyResourcesMatch(approval.resource, expectedResource)) {
+      throw new Error(
+        `Approval '${input.approvalId}' is scoped to resource '${this.formatApprovalResource(approval.resource)}', but source history replay requires '${this.formatApprovalResource(expectedResource)}'.`
+      );
+    }
+
+    if (approval.status !== "approved") {
+      throw new Error(
+        `Approval '${input.approvalId}' is '${approval.status}', but source history replay requires an approved approval.`
+      );
+    }
+  }
+
   async requestSourceHistoryPublication(input: {
     reason?: string;
     requestedAt?: string;
@@ -1793,6 +1897,62 @@ export class RunnerService {
         : {}),
       ...(publicationState ? { publicationState } : {}),
       sourceHistoryId: publication.history.sourceHistoryId
+    };
+  }
+
+  async requestSourceHistoryReplay(input: {
+    approvalId?: string;
+    reason?: string;
+    replayedAt?: string;
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<RunnerSourceHistoryReplayCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const history = await readSourceHistoryRecord(
+      statePaths,
+      input.sourceHistoryId
+    );
+
+    if (!history) {
+      throw new Error(
+        `Source history '${input.sourceHistoryId}' was not found for runtime '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    if (history.nodeId !== this.context.binding.node.nodeId) {
+      throw new Error(
+        `Source history '${input.sourceHistoryId}' belongs to node '${history.nodeId}', not '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    await this.assertSourceHistoryReplayApproval({
+      ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+      history,
+      statePaths
+    });
+
+    const replay = await replaySourceHistoryToWorkspace({
+      ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+      context: this.context,
+      history,
+      ...(input.reason ? { reason: input.reason } : {}),
+      replayedAt: input.replayedAt ?? new Date().toISOString(),
+      ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+      ...(input.replayId ? { replayId: input.replayId } : {}),
+      statePaths
+    });
+
+    await this.publishSourceHistoryReplayObservation(replay.replay);
+
+    return {
+      ...(replay.replayed ? {} : { message: replay.reason }),
+      replayId: replay.replay.replayId,
+      replayStatus: replay.replay.status,
+      sourceHistoryId: replay.replay.sourceHistoryId
     };
   }
 

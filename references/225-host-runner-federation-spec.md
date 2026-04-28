@@ -16,10 +16,11 @@ heartbeat, and assignment path with separate Host, agent runner, and User Node
 runner process roots over a live relay.
 
 Accepted assignment runtimes now also receive Host-signed runtime commands for
-start, stop, restart, session cancellation, and source-history publication
-request/retry. Source-history publication remains executed by the node runner;
-Host only requests it through control fabric and observes the result through
-receipts plus `artifact.ref` / `source_history.ref` observations.
+start, stop, restart, session cancellation, source-history publication
+request/retry, and source-history replay. Source-history publication and replay
+remain executed by the node runner; Host only requests them through control
+fabric and observes the result through receipts plus `artifact.ref`,
+`source_history.ref`, and `source_history.replayed` observations.
 
 The same-machine Docker launcher still exists as an adapter, and several deep
 runtime detail APIs still read runner-owned filesystem state through Host
@@ -79,9 +80,10 @@ Host must not need shared filesystem access to understand runner state.
   Done for generic JSON join configs and Host API bootstrap bundles.
 - Add local materializer that turns assignment plus fetched package/resource
   state into local workspace context. Done for the process runner path.
-- Add runner-owned command handlers for lifecycle, cancellation, and
-  source-history publication requests. Done for start/stop/restart,
-  `runtime.session.cancel`, and `runtime.source_history.publish`.
+- Add runner-owned command handlers for lifecycle, cancellation,
+  source-history publication requests, and source-history replay requests. Done
+  for start/stop/restart, `runtime.session.cancel`,
+  `runtime.source_history.publish`, and `runtime.source_history.replay`.
 - Rebase Docker local launcher to start a generic runner with join config,
   not a pre-assigned runner with a shared context path.
 - Add operator tooling to write join configs from Host status. Done through

@@ -23,6 +23,8 @@ import {
   sourceChangeCandidateRecordSchema,
   sourceChangeCandidateStatusSchema,
   sourceHistoryRecordSchema,
+  sourceHistoryReplayRecordSchema,
+  sourceHistoryReplayStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleSignedEnvelopeSchema } from "./signed-envelope.js";
@@ -43,6 +45,7 @@ export const entangleObservationEventTypeSchema = z.enum([
   "artifact.ref",
   "source_change.ref",
   "source_history.ref",
+  "source_history.replayed",
   "wiki.ref",
   "log.summary"
 ]);
@@ -223,6 +226,37 @@ export const sourceHistoryRefObservationPayloadSchema =
       }
     });
 
+export const sourceHistoryReplayedObservationPayloadSchema =
+  observedAtPayloadBaseSchema
+    .extend({
+      eventType: z.literal("source_history.replayed"),
+      graphId: identifierSchema,
+      nodeId: identifierSchema,
+      replay: sourceHistoryReplayRecordSchema,
+      replayId: identifierSchema,
+      sourceHistoryId: identifierSchema,
+      status: sourceHistoryReplayStatusSchema
+    })
+    .superRefine((value, context) => {
+      const expectedFields = [
+        ["replayId", value.replay.replayId, value.replayId],
+        ["sourceHistoryId", value.replay.sourceHistoryId, value.sourceHistoryId],
+        ["graphId", value.replay.graphId, value.graphId],
+        ["nodeId", value.replay.nodeId, value.nodeId],
+        ["status", value.replay.status, value.status]
+      ] as const;
+
+      for (const [field, actual, expected] of expectedFields) {
+        if (actual !== expected) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `source_history.replayed replay.${field} must match payload ${field}.`,
+            path: ["replay", field]
+          });
+        }
+      }
+    });
+
 export const wikiRefObservationPayloadSchema = observedAtPayloadBaseSchema.extend({
   artifactPreview: artifactContentPreviewSchema.optional(),
   artifactRef: artifactRefSchema,
@@ -257,6 +291,7 @@ export const entangleObservationEventPayloadSchema = z.discriminatedUnion(
     artifactRefObservationPayloadSchema,
     sourceChangeRefObservationPayloadSchema,
     sourceHistoryRefObservationPayloadSchema,
+    sourceHistoryReplayedObservationPayloadSchema,
     wikiRefObservationPayloadSchema,
     logSummaryObservationPayloadSchema
   ]
@@ -338,6 +373,9 @@ export type SourceChangeRefObservationPayload = z.infer<
 >;
 export type SourceHistoryRefObservationPayload = z.infer<
   typeof sourceHistoryRefObservationPayloadSchema
+>;
+export type SourceHistoryReplayedObservationPayload = z.infer<
+  typeof sourceHistoryReplayedObservationPayloadSchema
 >;
 export type WikiRefObservationPayload = z.infer<
   typeof wikiRefObservationPayloadSchema

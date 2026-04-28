@@ -166,6 +166,7 @@ import {
   sourceChangeRefProjectionRecordSchema,
   type SourceChangeRefProjectionRecord,
   sourceHistoryRefObservationPayloadSchema,
+  sourceHistoryReplayedObservationPayloadSchema,
   sourceHistoryRefProjectionRecordSchema,
   type SourceHistoryRefProjectionRecord,
   sessionUpdatedObservationPayloadSchema,
@@ -645,6 +646,10 @@ type RuntimeObservedStateChangedEventInput = Omit<
 >;
 type RuntimeAssignmentReceiptEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.assignment.receipt" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type SourceHistoryReplayedEventInput = Omit<
+  Extract<HostEventRecord, { type: "source_history.replayed" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type SessionUpdatedEventInput = Omit<
@@ -2940,6 +2945,34 @@ export async function recordSourceHistoryRefObservation(
     record
   );
   return record;
+}
+
+export async function recordSourceHistoryReplayedObservation(
+  input: unknown
+): Promise<HostEventRecord> {
+  await initializeHostState();
+
+  const observation = sourceHistoryReplayedObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const { replay } = observation;
+
+  return appendHostEvent({
+    ...(replay.approvalId ? { approvalId: replay.approvalId } : {}),
+    candidateId: replay.candidateId,
+    category: "runtime",
+    commit: replay.commit,
+    graphId: replay.graphId,
+    graphRevisionId: replay.graphRevisionId,
+    historyId: replay.sourceHistoryId,
+    message:
+      `Source history '${replay.sourceHistoryId}' for runtime '${replay.nodeId}' ` +
+      `replay '${replay.replayId}' completed with status '${replay.status}'.`,
+    nodeId: replay.nodeId,
+    replayId: replay.replayId,
+    replayStatus: replay.status,
+    turnId: replay.turnId,
+    type: "source_history.replayed"
+  } satisfies SourceHistoryReplayedEventInput);
 }
 
 export async function recordWikiRefObservation(

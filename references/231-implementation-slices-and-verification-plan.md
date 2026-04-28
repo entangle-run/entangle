@@ -343,10 +343,16 @@ Current status:
   Host-signed `runtime.source_history.publish` control command to the accepted
   runner assignment; the runner performs the git publication from runner-owned
   state and emits projection evidence;
-- the direct Host source-candidate apply mutation and source-history replay
-  mutation/list surfaces have been removed from Host, host-client, CLI, and
-  Studio; source application is now public only through signed User Node review
-  and runner-owned behavior;
+- explicit source-history replay now uses a Host-signed
+  `runtime.source_history.replay` control command to the accepted runner
+  assignment; the runner validates source-application approval policy, refuses
+  diverged workspace trees, persists runner-local replay records, and emits
+  `source_history.replayed` evidence;
+- the direct Host source-candidate apply mutation and previous direct
+  source-history replay mutation/list surfaces have been removed from Host,
+  host-client, CLI, and Studio; source application is now public only through
+  signed User Node review and runner-owned behavior, and explicit replay is a
+  runner-executed control request;
 - the direct Host wiki repository publication/list surfaces have been removed
   from Host, host-client, CLI, and Studio; wiki inspection remains public
   through runner-owned sync, signed `wiki.ref` projection, and projected memory
@@ -514,6 +520,7 @@ Implementation record:
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 - [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
+- [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
 
 Verification:
 

@@ -140,6 +140,7 @@ same-machine slice records.
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 - [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
 - [339-federated-source-history-publication-control-slice.md](339-federated-source-history-publication-control-slice.md)
+- [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
 
 ## Audited Scope
 
@@ -373,7 +374,12 @@ The repository is not fully federated:
   resulting `artifact.ref` plus updated `source_history.ref`. Operators can
   also request publication or explicit failed-publication retry through the
   Host-signed `runtime.source_history.publish` control command, which the
-  assigned runner handles from runner-owned source-history state;
+  assigned runner handles from runner-owned source-history state. Operators can
+  request source-history replay through the Host-signed
+  `runtime.source_history.replay` control command; the assigned runner enforces
+  source-application approval policy, replays only from expected source trees,
+  persists replay records locally, and emits `source_history.replayed`
+  observations;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -536,8 +542,10 @@ runner-owned protocol behavior. Session cancellation now uses signed
 with local cancellation files retained only as fallback compatibility.
 Source-history publication retry now has a Host-signed
 `runtime.source_history.publish` control command for accepted federated
+assignments. Source-history replay now has a Host-signed
+`runtime.source_history.replay` control command for accepted federated
 assignments, while non-primary target publication remains future work. The next
-blocking implementation areas are runner-owned source replay, richer
+blocking implementation areas are richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed

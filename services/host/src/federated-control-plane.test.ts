@@ -631,6 +631,16 @@ describe("Host federated control plane", () => {
       retryFailedPublication: true,
       sourceHistoryId: "source-history-alpha"
     });
+    await controlPlane.publishRuntimeSourceHistoryReplay({
+      approvalId: "approval-source-history-replay-alpha",
+      assignment,
+      commandId: "cmd-source-history-replay-alpha",
+      reason: "Replay source history.",
+      relayUrls,
+      replayedBy: "operator-main",
+      replayId: "replay-source-history-alpha",
+      sourceHistoryId: "source-history-alpha"
+    });
 
     expect(transport.publishedControlEvents.map((event) => event.payload)).toEqual([
       expect.objectContaining({
@@ -691,6 +701,21 @@ describe("Host federated control plane", () => {
         runnerId: "runner-alpha",
         runnerPubkey,
         sourceHistoryId: "source-history-alpha"
+      }),
+      expect.objectContaining({
+        approvalId: "approval-source-history-replay-alpha",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-replay-alpha",
+        eventType: "runtime.source_history.replay",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        replayedBy: "operator-main",
+        replayId: "replay-source-history-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-alpha"
       })
     ]);
     expect(transport.publishedControlEvents[3]?.payload).toMatchObject({
@@ -700,6 +725,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

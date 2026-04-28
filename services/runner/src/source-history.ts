@@ -5,18 +5,21 @@ import path from "node:path";
 import {
   artifactRecordSchema,
   sourceHistoryRecordSchema,
+  sourceHistoryReplayRecordSchema,
   type ArtifactRecord,
   type EffectiveRuntimeContext,
   type GitRepositoryTarget,
   type SourceChangeCandidateRecord,
-  type SourceHistoryRecord
+  type SourceHistoryRecord,
+  type SourceHistoryReplayRecord
 } from "@entangle/types";
 import type { RunnerStatePaths } from "./state-store.js";
 import {
   readSourceHistoryRecord,
   writeArtifactRecord,
   writeSourceChangeCandidateRecord,
-  writeSourceHistoryRecord
+  writeSourceHistoryRecord,
+  writeSourceHistoryReplayRecord
 } from "./state-store.js";
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 
@@ -48,6 +51,19 @@ export type SourceHistoryPublicationResult =
       history: SourceHistoryRecord;
       published: false;
       reason: string;
+    };
+
+export type SourceHistoryReplayResult =
+  | {
+      history: SourceHistoryRecord;
+      replay: SourceHistoryReplayRecord;
+      replayed: true;
+    }
+  | {
+      history: SourceHistoryRecord;
+      reason: string;
+      replay: SourceHistoryReplayRecord;
+      replayed: false;
     };
 
 const sourceHistoryBranchName = "entangle-source-history";
@@ -172,6 +188,31 @@ function buildSourceHistoryArtifactId(sourceHistoryId: string): string {
 
   const digest = createHash("sha256")
     .update(sourceHistoryId)
+    .digest("hex")
+    .slice(0, 12);
+  const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${digest}`;
+}
+
+function buildSourceHistoryReplayId(input: {
+  replayId?: string | undefined;
+  sourceHistoryId: string;
+}): string {
+  if (input.replayId) {
+    return input.replayId;
+  }
+
+  const raw = sanitizeIdentifier(
+    `replay-${input.sourceHistoryId}-${randomUUID().slice(0, 8)}`
+  );
+
+  if (raw.length <= 100) {
+    return raw;
+  }
+
+  const digest = createHash("sha256")
+    .update(`${input.sourceHistoryId}-${randomUUID()}`)
     .digest("hex")
     .slice(0, 12);
   const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
@@ -570,6 +611,42 @@ async function replaceSourceWorkspaceWithTree(input: {
   );
 }
 
+async function countSourceHistoryTreeFiles(input: {
+  gitDir: string;
+  runtimeRoot: string;
+  tree: string;
+}): Promise<number> {
+  const output = await runGitCommand(
+    input.runtimeRoot,
+    ["ls-tree", "-r", "-z", "--name-only", input.tree],
+    {
+      gitDir: input.gitDir
+    }
+  );
+
+  return output.split("\0").filter((entry) => entry.length > 0).length;
+}
+
+function pathIsInsideRoot(input: {
+  candidatePath: string;
+  rootPath: string;
+}): boolean {
+  const relativePath = path.relative(input.rootPath, input.candidatePath);
+
+  return (
+    relativePath === "" ||
+    (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
+}
+
+async function persistSourceHistoryReplay(input: {
+  record: SourceHistoryReplayRecord;
+  statePaths: RunnerStatePaths;
+}): Promise<SourceHistoryReplayRecord> {
+  await writeSourceHistoryReplayRecord(input.statePaths, input.record);
+  return input.record;
+}
+
 async function createSourceHistoryCommit(input: {
   candidate: SourceChangeCandidateRecord;
   context: EffectiveRuntimeContext;
@@ -808,6 +885,173 @@ export async function applyAcceptedSourceChangeCandidate(input: {
         `Source change candidate '${input.candidate.candidateId}' could not be applied: ` +
         sanitizeRuntimePathError(input.context, error)
     };
+  }
+}
+
+export async function replaySourceHistoryToWorkspace(input: {
+  approvalId?: string;
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  reason?: string;
+  replayedAt: string;
+  replayedBy?: string;
+  replayId?: string;
+  statePaths: RunnerStatePaths;
+}): Promise<SourceHistoryReplayResult> {
+  const replayId = buildSourceHistoryReplayId({
+    replayId: input.replayId,
+    sourceHistoryId: input.history.sourceHistoryId
+  });
+  const baseRecord = {
+    ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+    baseTree: input.history.baseTree,
+    candidateId: input.history.candidateId,
+    commit: input.history.commit,
+    createdAt: input.replayedAt,
+    graphId: input.history.graphId,
+    graphRevisionId: input.history.graphRevisionId,
+    headTree: input.history.headTree,
+    nodeId: input.history.nodeId,
+    ...(input.reason ? { reason: input.reason } : {}),
+    ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+    replayId,
+    sourceHistoryId: input.history.sourceHistoryId,
+    turnId: input.history.turnId,
+    updatedAt: input.replayedAt
+  };
+  const persistUnavailable = async (
+    unavailableReason: string
+  ): Promise<SourceHistoryReplayResult> => {
+    const replay = await persistSourceHistoryReplay({
+      record: sourceHistoryReplayRecordSchema.parse({
+        ...baseRecord,
+        status: "unavailable",
+        unavailableReason
+      }),
+      statePaths: input.statePaths
+    });
+
+    return {
+      history: input.history,
+      reason: unavailableReason,
+      replay,
+      replayed: false
+    };
+  };
+  const sourceWorkspaceRoot = input.context.workspace.sourceWorkspaceRoot;
+
+  if (!sourceWorkspaceRoot) {
+    return persistUnavailable(
+      `Runtime '${input.context.binding.node.nodeId}' does not have a configured source workspace root.`
+    );
+  }
+
+  if (
+    !pathIsInsideRoot({
+      candidatePath: sourceWorkspaceRoot,
+      rootPath: input.context.workspace.root
+    })
+  ) {
+    return persistUnavailable(
+      `Runtime '${input.context.binding.node.nodeId}' source workspace is outside the node workspace root.`
+    );
+  }
+
+  const gitDir = path.join(
+    input.context.workspace.runtimeRoot,
+    "source-snapshot.git"
+  );
+
+  try {
+    if (!(await pathIsDirectory(gitDir))) {
+      return persistUnavailable(
+        `Source history entry '${input.history.sourceHistoryId}' cannot be replayed because its shadow git repository is missing.`
+      );
+    }
+
+    if (!(await pathIsDirectory(sourceWorkspaceRoot))) {
+      return persistUnavailable(
+        `Runtime '${input.context.binding.node.nodeId}' source workspace is not a directory.`
+      );
+    }
+
+    await runGitCommand(sourceWorkspaceRoot, [
+      "cat-file",
+      "-e",
+      `${input.history.commit}^{commit}`
+    ], {
+      gitDir,
+      workTree: sourceWorkspaceRoot
+    });
+    await runGitCommand(sourceWorkspaceRoot, [
+      "cat-file",
+      "-e",
+      `${input.history.headTree}^{tree}`
+    ], {
+      gitDir,
+      workTree: sourceWorkspaceRoot
+    });
+
+    const currentTree = await writeCurrentSourceWorkspaceTree({
+      gitDir,
+      sourceWorkspaceRoot
+    });
+    const replayedFileCount = await countSourceHistoryTreeFiles({
+      gitDir,
+      runtimeRoot: input.context.workspace.runtimeRoot,
+      tree: input.history.headTree
+    });
+
+    if (
+      currentTree !== input.history.headTree &&
+      currentTree !== input.history.baseTree
+    ) {
+      return persistUnavailable(
+        `Source history entry '${input.history.sourceHistoryId}' cannot be replayed because the source workspace changed after the recorded base tree.`
+      );
+    }
+
+    const status =
+      currentTree === input.history.headTree ? "already_in_workspace" : "replayed";
+
+    if (status === "replayed") {
+      await replaceSourceWorkspaceWithTree({
+        gitDir,
+        headTree: input.history.headTree,
+        sourceWorkspaceRoot
+      });
+      const replayedTree = await writeCurrentSourceWorkspaceTree({
+        gitDir,
+        sourceWorkspaceRoot
+      });
+
+      if (replayedTree !== input.history.headTree) {
+        return persistUnavailable(
+          `Source history entry '${input.history.sourceHistoryId}' did not replay cleanly to the source workspace.`
+        );
+      }
+    }
+
+    const replay = await persistSourceHistoryReplay({
+      record: sourceHistoryReplayRecordSchema.parse({
+        ...baseRecord,
+        replayedFileCount,
+        replayedPath: sourceWorkspaceRoot,
+        status
+      }),
+      statePaths: input.statePaths
+    });
+
+    return {
+      history: input.history,
+      replay,
+      replayed: true
+    };
+  } catch (error) {
+    return persistUnavailable(
+      `Source history entry '${input.history.sourceHistoryId}' could not be replayed: ` +
+        sanitizeRuntimePathError(input.context, error)
+    );
   }
 }
 

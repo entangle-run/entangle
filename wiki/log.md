@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Added federated source-history replay control
+
+Added Host-signed `runtime.source_history.replay` control delivery for explicit
+source-history replay. Host now publishes a request to the accepted federated
+assignment instead of writing runner workspaces; the owning runner validates
+source-application approval policy, refuses diverged source trees, persists
+runner-owned replay records, and emits `source_history.replayed` observations
+plus assignment receipts for outcome evidence.
+
+Added `references/340-federated-source-history-replay-control-slice.md`.
+
 ## [2026-04-28] implementation | Added federated source-history publication control
 
 Added Host-signed `runtime.source_history.publish` control delivery for

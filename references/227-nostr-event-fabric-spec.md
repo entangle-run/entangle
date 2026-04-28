@@ -84,7 +84,8 @@ Nostr must not carry:
   - `runtime.stop`;
   - `runtime.restart`;
   - `runtime.session.cancel`;
-  - `runtime.source_history.publish`.
+  - `runtime.source_history.publish`;
+  - `runtime.source_history.replay`.
 - Add observe event payloads:
   - `runner.hello`;
   - `runner.heartbeat`;
@@ -97,6 +98,8 @@ Nostr must not carry:
   - `approval.updated`;
   - `artifact.ref`;
   - `source_change.ref`;
+  - `source_history.ref`;
+  - `source_history.replayed`;
   - `wiki.ref`;
   - `log.summary`.
 - Add dedupe and replay rules for event ids and correlation ids.

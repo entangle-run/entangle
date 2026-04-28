@@ -5,7 +5,11 @@ import {
   policyOperationSchema,
   policyResourceScopeSchema
 } from "../common/policy.js";
-import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import {
+  filesystemPathSchema,
+  identifierSchema,
+  nonEmptyStringSchema
+} from "../common/primitives.js";
 import { engineTurnOutcomeSchema } from "../engine/turn-contract.js";
 import {
   entangleA2AMessageTypeSchema,
@@ -294,6 +298,65 @@ export const sourceHistoryRecordSchema = z.object({
   updatedAt: nonEmptyStringSchema
 });
 
+export const sourceHistoryReplayStatusSchema = z.enum([
+  "already_in_workspace",
+  "replayed",
+  "unavailable"
+]);
+
+export const sourceHistoryReplayRecordSchema = z
+  .object({
+    approvalId: identifierSchema.optional(),
+    baseTree: nonEmptyStringSchema,
+    candidateId: identifierSchema,
+    commit: nonEmptyStringSchema,
+    createdAt: nonEmptyStringSchema,
+    graphId: identifierSchema,
+    graphRevisionId: identifierSchema,
+    headTree: nonEmptyStringSchema,
+    nodeId: identifierSchema,
+    reason: nonEmptyStringSchema.optional(),
+    replayedBy: identifierSchema.optional(),
+    replayedFileCount: z.number().int().nonnegative().optional(),
+    replayedPath: filesystemPathSchema.optional(),
+    replayId: identifierSchema,
+    sourceHistoryId: identifierSchema,
+    status: sourceHistoryReplayStatusSchema,
+    turnId: identifierSchema,
+    unavailableReason: nonEmptyStringSchema.optional(),
+    updatedAt: nonEmptyStringSchema
+  })
+  .superRefine((value, context) => {
+    if (value.status !== "unavailable") {
+      if (value.replayedFileCount === undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Available source-history replay records must include replayedFileCount.",
+          path: ["replayedFileCount"]
+        });
+      }
+
+      if (!value.replayedPath) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Available source-history replay records must include replayedPath.",
+          path: ["replayedPath"]
+        });
+      }
+    }
+
+    if (value.status === "unavailable" && !value.unavailableReason) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Unavailable source-history replay records must include unavailableReason.",
+        path: ["unavailableReason"]
+      });
+    }
+  });
+
 export const sessionRecordSchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
   entrypointNodeId: identifierSchema.optional(),
@@ -542,6 +605,12 @@ export type SourceChangeCandidateRecord = z.infer<
   typeof sourceChangeCandidateRecordSchema
 >;
 export type SourceHistoryRecord = z.infer<typeof sourceHistoryRecordSchema>;
+export type SourceHistoryReplayStatus = z.infer<
+  typeof sourceHistoryReplayStatusSchema
+>;
+export type SourceHistoryReplayRecord = z.infer<
+  typeof sourceHistoryReplayRecordSchema
+>;
 export type SessionRecord = z.infer<typeof sessionRecordSchema>;
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ApprovalRecord = z.infer<typeof approvalRecordSchema>;

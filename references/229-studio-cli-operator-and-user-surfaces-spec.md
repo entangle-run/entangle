@@ -162,7 +162,10 @@ Node.
   history now has the first inbound/outbound projection path. CLI also exposes
   `host runtimes source-history-publish` as an operator request surface that
   asks the accepted federated runner assignment to publish or retry a concrete
-  source-history record, instead of mutating runner files from Host.
+  source-history record, and `host runtimes source-history-replay` as an
+  operator request surface that asks the accepted runner to replay a concrete
+  source-history record under runner-owned policy checks, instead of mutating
+  runner files from Host.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner

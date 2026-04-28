@@ -9,7 +9,8 @@ import type {
   SessionCancellationRequestRecord,
   SessionRecord,
   SourceChangeCandidateRecord,
-  SourceHistoryRecord
+  SourceHistoryRecord,
+  SourceHistoryReplayRecord
 } from "@entangle/types";
 import {
   artifactRecordSchema,
@@ -20,7 +21,8 @@ import {
   sessionCancellationRequestRecordSchema,
   sessionRecordSchema,
   sourceChangeCandidateRecordSchema,
-  sourceHistoryRecordSchema
+  sourceHistoryRecordSchema,
+  sourceHistoryReplayRecordSchema
 } from "@entangle/types";
 
 export type RunnerStatePaths = {
@@ -31,6 +33,7 @@ export type RunnerStatePaths = {
   sessionCancellationsRoot: string;
   sessionsRoot: string;
   sourceChangeCandidatesRoot: string;
+  sourceHistoryReplaysRoot: string;
   sourceHistoryRoot: string;
   turnsRoot: string;
 };
@@ -66,6 +69,7 @@ export function buildRunnerStatePaths(runtimeRoot: string): RunnerStatePaths {
     sessionCancellationsRoot: path.join(runtimeRoot, "session-cancellations"),
     sessionsRoot: path.join(runtimeRoot, "sessions"),
     sourceChangeCandidatesRoot: path.join(runtimeRoot, "source-change-candidates"),
+    sourceHistoryReplaysRoot: path.join(runtimeRoot, "source-history-replays"),
     sourceHistoryRoot: path.join(runtimeRoot, "source-history"),
     turnsRoot: path.join(runtimeRoot, "turns")
   };
@@ -84,6 +88,7 @@ export async function ensureRunnerStatePaths(
     ensureDirectory(statePaths.sessionCancellationsRoot),
     ensureDirectory(statePaths.sessionsRoot),
     ensureDirectory(statePaths.sourceChangeCandidatesRoot),
+    ensureDirectory(statePaths.sourceHistoryReplaysRoot),
     ensureDirectory(statePaths.sourceHistoryRoot),
     ensureDirectory(statePaths.turnsRoot)
   ]);
@@ -142,6 +147,13 @@ function sourceHistoryRecordPath(
   sourceHistoryId: string
 ): string {
   return path.join(statePaths.sourceHistoryRoot, `${sourceHistoryId}.json`);
+}
+
+function sourceHistoryReplayRecordPath(
+  statePaths: RunnerStatePaths,
+  replayId: string
+): string {
+  return path.join(statePaths.sourceHistoryReplaysRoot, `${replayId}.json`);
 }
 
 function focusedRegisterStatePath(statePaths: RunnerStatePaths): string {
@@ -521,6 +533,38 @@ export async function listSourceHistoryRecords(
       sourceHistoryRecordSchema.parse(
         await readJsonFile<unknown>(
           path.join(statePaths.sourceHistoryRoot, fileName)
+        )
+      )
+    )
+  );
+}
+
+export async function writeSourceHistoryReplayRecord(
+  statePaths: RunnerStatePaths,
+  record: SourceHistoryReplayRecord
+): Promise<void> {
+  await writeJsonFile(
+    sourceHistoryReplayRecordPath(statePaths, record.replayId),
+    sourceHistoryReplayRecordSchema.parse(record)
+  );
+}
+
+export async function listSourceHistoryReplayRecords(
+  statePaths: RunnerStatePaths
+): Promise<SourceHistoryReplayRecord[]> {
+  if (!(await pathExists(statePaths.sourceHistoryReplaysRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.sourceHistoryReplaysRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sourceHistoryReplayRecordSchema.parse(
+        await readJsonFile<unknown>(
+          path.join(statePaths.sourceHistoryReplaysRoot, fileName)
         )
       )
     )

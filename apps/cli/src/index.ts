@@ -30,6 +30,7 @@ import {
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceHistoryPublishRequestSchema,
+  runtimeSourceHistoryReplayRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema,
@@ -3427,6 +3428,46 @@ hostRuntimesCommand
       });
       printJson(
         await client.publishRuntimeSourceHistory(
+          nodeId,
+          sourceHistoryId,
+          request
+        )
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-replay")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<sourceHistoryId>", "Source history entry identifier to replay.")
+  .option("--approval-id <approvalId>", "Approved source_application approval id.")
+  .option("--reason <reason>", "Operator-visible replay reason.")
+  .option("--replayed-by <operatorId>", "Operator id requesting replay.")
+  .option("--replay-id <replayId>", "Stable replay request id.")
+  .description(
+    "Ask the assigned runner to replay one source history entry through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      sourceHistoryId: string,
+      options: {
+        approvalId?: string;
+        reason?: string;
+        replayedBy?: string;
+        replayId?: string;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const request = runtimeSourceHistoryReplayRequestSchema.parse({
+        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.replayedBy ? { replayedBy: options.replayedBy } : {}),
+        ...(options.replayId ? { replayId: options.replayId } : {})
+      });
+      printJson(
+        await client.replayRuntimeSourceHistory(
           nodeId,
           sourceHistoryId,
           request

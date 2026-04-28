@@ -371,6 +371,22 @@ export const runtimeSourceHistoryPublishResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeSourceHistoryReplayRequestSchema = z.object({
+  approvalId: identifierSchema.optional(),
+  reason: nonEmptyStringSchema.optional(),
+  replayedBy: identifierSchema.optional(),
+  replayId: identifierSchema.optional()
+});
+
+export const runtimeSourceHistoryReplayResponseSchema = z.object({
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  nodeId: identifierSchema,
+  requestedAt: nonEmptyStringSchema,
+  sourceHistoryId: identifierSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
   "available",
   [
@@ -509,6 +525,12 @@ export type RuntimeSourceHistoryPublishRequest = z.input<
 >;
 export type RuntimeSourceHistoryPublishResponse = z.infer<
   typeof runtimeSourceHistoryPublishResponseSchema
+>;
+export type RuntimeSourceHistoryReplayRequest = z.input<
+  typeof runtimeSourceHistoryReplayRequestSchema
+>;
+export type RuntimeSourceHistoryReplayResponse = z.infer<
+  typeof runtimeSourceHistoryReplayResponseSchema
 >;
 export type RuntimeSourceChangeCandidateDiff = z.infer<
   typeof runtimeSourceChangeCandidateDiffSchema

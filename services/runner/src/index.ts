@@ -347,6 +347,21 @@ function createRuntimeObservationPublisher(input: {
         runnerPubkey: input.runnerPubkey,
         sourceHistoryId: record.history.sourceHistoryId
       }),
+    publishSourceHistoryReplayedObserved: (record) =>
+      publish({
+        eventType: "source_history.replayed",
+        graphId: record.replay.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.replay.nodeId,
+        observedAt: record.observedAt,
+        protocol: "entangle.observe.v1",
+        replay: record.replay,
+        replayId: record.replay.replayId,
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        sourceHistoryId: record.replay.sourceHistoryId,
+        status: record.replay.status
+      }),
     publishTurnUpdated: (record) =>
       publish({
         eventType: "turn.updated",
@@ -454,6 +469,8 @@ export async function createConfiguredRunnerJoinService(
           },
           publishSourceHistory: (request) =>
             configured.service.requestSourceHistoryPublication(request),
+          replaySourceHistory: (request) =>
+            configured.service.requestSourceHistoryReplay(request),
           runtimeContextPath,
           runtimeRoot: startResult.runtimeRoot,
           stop: () => configured.service.stop()

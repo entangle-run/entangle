@@ -78,6 +78,19 @@ export type RunnerAssignmentRuntimeHandle = {
     publicationState?: "failed" | "not_requested" | "published";
     sourceHistoryId: string;
   }>;
+  replaySourceHistory?(request: {
+    approvalId?: string;
+    reason?: string;
+    replayedAt?: string;
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<{
+    message?: string;
+    replayId: string;
+    replayStatus: "already_in_workspace" | "replayed" | "unavailable";
+    sourceHistoryId: string;
+  }>;
   runtimeContextPath: string;
   runtimeRoot?: string;
   stop(): Promise<void>;
@@ -241,6 +254,11 @@ export class RunnerJoinService {
 
     if (payload.eventType === "runtime.source_history.publish") {
       await this.handleRuntimeSourceHistoryPublishCommand(payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.source_history.replay") {
+      await this.handleRuntimeSourceHistoryReplayCommand(payload);
     }
   }
 
@@ -386,6 +404,7 @@ export class RunnerJoinService {
           | "runtime.restart"
           | "runtime.session.cancel"
           | "runtime.source_history.publish"
+          | "runtime.source_history.replay"
           | "runtime.start"
           | "runtime.stop";
       }
@@ -670,6 +689,70 @@ export class RunnerJoinService {
           error instanceof Error
             ? error.message
             : "Runtime source-history publication command failed."
+      });
+    }
+  }
+
+  private async handleRuntimeSourceHistoryReplayCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.source_history.replay" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime source-history replay command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.replaySourceHistory) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime source-history replay command cannot be applied because the assigned runtime is not running."
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.replaySourceHistory({
+        ...(payload.approvalId ? { approvalId: payload.approvalId } : {}),
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        replayedAt: payload.issuedAt,
+        ...(payload.replayedBy ? { replayedBy: payload.replayedBy } : {}),
+        ...(payload.replayId ? { replayId: payload.replayId } : {}),
+        sourceHistoryId: payload.sourceHistoryId
+      });
+
+      if (result.replayStatus === "unavailable") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Source history '${result.sourceHistoryId}' replay '${result.replayId}' is unavailable.`
+        });
+      }
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime source-history replay command failed."
       });
     }
   }

@@ -55,8 +55,11 @@ falling back to local compatibility. Explicit source-history publication and
 failed-publication retry now use a signed `runtime.source_history.publish`
 control command to accepted runner assignments; Host then relies on assignment
 receipts plus `artifact.ref` and `source_history.ref` observations for outcome
-evidence. The remaining deep runtime APIs still need to be moved off local file
-reads.
+evidence. Explicit source-history replay now uses a signed
+`runtime.source_history.replay` control command to the accepted runner
+assignment; the runner persists replay evidence locally and emits
+`source_history.replayed` observations for Host projection and audit. The
+remaining deep runtime APIs still need to be moved off local file reads.
 
 ## Target Model
 

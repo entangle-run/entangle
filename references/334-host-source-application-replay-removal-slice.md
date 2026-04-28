@@ -74,15 +74,17 @@ not a new production dependency.
 
 ## Migration/Compatibility Notes
 
-This is an intentional pre-release breaking change. Explicit source replay or
-manual retry should return later as runner-owned protocol behavior, not as a
-Host filesystem mutation.
+This is an intentional pre-release breaking change. Explicit source replay has
+returned as the runner-executed `runtime.source_history.replay` control command
+documented in `340-federated-source-history-replay-control-slice.md`. Manual
+retry and other source change proposal flows should remain runner-owned
+protocol behavior, not Host filesystem mutations.
 
 ## Risks And Mitigations
 
 - Risk: operators lose a manual source replay button. Mitigation: the main
-  accepted-review path is already runner-owned and covered by smoke; replay can
-  be reintroduced through a signed runner command.
+  accepted-review path is already runner-owned and covered by smoke; explicit
+  replay has returned through a signed runner command.
 - Risk: older docs still describe Host replay. Mitigation: the historical slice
   is marked superseded and this file records the current product boundary.
 

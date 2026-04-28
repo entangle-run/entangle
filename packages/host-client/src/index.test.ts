@@ -2778,6 +2778,67 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runner-owned runtime source history replay requests", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-source-history-replay-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-24T10:09:00.000Z",
+              sourceHistoryId: "source-history-source-change-turn-alpha",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.replayRuntimeSourceHistory(
+        "worker-it",
+        "source-history-source-change-turn-alpha",
+        {
+          approvalId: "approval-source-history-replay-alpha",
+          reason: "Replay accepted source.",
+          replayedBy: "operator-main",
+          replayId: "replay-source-history-alpha"
+        }
+      )
+    ).resolves.toMatchObject({
+      assignmentId: "assignment-alpha",
+      nodeId: "worker-it",
+      sourceHistoryId: "source-history-source-change-turn-alpha",
+      status: "requested"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          approvalId: "approval-source-history-replay-alpha",
+          reason: "Replay accepted source.",
+          replayedBy: "operator-main",
+          replayId: "replay-source-history-alpha"
+        }),
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/source-history/" +
+          "source-history-source-change-turn-alpha/replay"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

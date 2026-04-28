@@ -245,6 +245,8 @@ This repository currently contains:
   and pushes to the node's primary git target when policy allows it, while
   explicit operator publish/retry requests now travel as Host-signed
   `runtime.source_history.publish` commands to the accepted runner assignment
+  and explicit operator replay requests now travel as Host-signed
+  `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations. Node-configured source mutation
   policy is still able to require approved runtime
   approval ids before source application or source publication, and with
@@ -936,10 +938,10 @@ The highest-value remaining gaps are:
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, and bounded artifact
-  history/diff/preview inspection, especially runner-owned source replay,
-  protocol-owned artifact restore or source-change proposal flows, non-primary
-  publication targets, wiki publication/promotion, richer source-history
-  merge/reconcile workflows, and replicated fallback paths;
+  history/diff/preview inspection, especially protocol-owned artifact restore
+  or source-change proposal flows, non-primary publication targets, wiki
+  publication/promotion, richer source-history merge/reconcile workflows, and
+  replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

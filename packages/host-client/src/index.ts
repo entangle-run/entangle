@@ -63,6 +63,8 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishRequestSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReplayRequestSchema,
+  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -148,6 +150,8 @@ import {
   type RuntimeSourceHistoryListResponse,
   type RuntimeSourceHistoryPublishRequest,
   type RuntimeSourceHistoryPublishResponse,
+  type RuntimeSourceHistoryReplayRequest,
+  type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type RunnerRegistryInspectionResponse,
@@ -1142,6 +1146,28 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         runtimeSourceHistoryPublishResponseSchema
+      );
+    },
+
+    async replayRuntimeSourceHistory(
+      nodeId: string,
+      sourceHistoryId: string,
+      request: RuntimeSourceHistoryReplayRequest = {}
+    ): Promise<RuntimeSourceHistoryReplayResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/replay`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(
+              runtimeSourceHistoryReplayRequestSchema.parse(request)
+            )
+          }
+        ),
+        runtimeSourceHistoryReplayResponseSchema
       );
     },
 

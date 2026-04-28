@@ -68,6 +68,7 @@ import {
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -161,6 +162,16 @@ type TestFederatedAssignmentPublisher = {
     relayUrls: string[];
     requestedBy?: string;
     retryFailedPublication: boolean;
+    sourceHistoryId: string;
+  }): Promise<unknown>;
+  publishRuntimeSourceHistoryReplay?(input: {
+    approvalId?: string;
+    assignment: RuntimeAssignmentRecord;
+    commandId: string;
+    reason?: string;
+    relayUrls: string[];
+    replayedBy?: string;
+    replayId?: string;
     sourceHistoryId: string;
   }): Promise<unknown>;
 };
@@ -6527,13 +6538,22 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("publishes runner-owned source history publication commands for accepted assignments", async () => {
+  it("publishes runner-owned source history publication and replay commands for accepted assignments", async () => {
     const publishedRequests: Array<{
       assignment: RuntimeAssignmentRecord;
       reason?: string;
       relayUrls: string[];
       requestedBy?: string;
       retryFailedPublication: boolean;
+      sourceHistoryId: string;
+    }> = [];
+    const replayRequests: Array<{
+      approvalId?: string;
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      replayedBy?: string;
+      replayId?: string;
       sourceHistoryId: string;
     }> = [];
     const server = await createTestServer({
@@ -6547,6 +6567,18 @@ describe("buildHostServer", () => {
             relayUrls: input.relayUrls,
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
             retryFailedPublication: input.retryFailedPublication,
+            sourceHistoryId: input.sourceHistoryId
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeSourceHistoryReplay: (input) => {
+          replayRequests.push({
+            ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+            assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+            ...(input.replayId ? { replayId: input.replayId } : {}),
             sourceHistoryId: input.sourceHistoryId
           });
           return Promise.resolve();
@@ -6704,6 +6736,43 @@ describe("buildHostServer", () => {
         relayUrls: ["ws://relay.example"],
         requestedBy: "operator-main",
         retryFailedPublication: true,
+        sourceHistoryId: "source-history-candidate-alpha"
+      });
+
+      const replayResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-history-replay-alpha",
+          reason: "Operator requested source replay.",
+          replayedBy: "operator-main",
+          replayId: "replay-source-history-alpha"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/" +
+          "source-history-candidate-alpha/replay"
+      });
+
+      expect(replayResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryReplayResponseSchema.parse(replayResponse.json())
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        sourceHistoryId: "source-history-candidate-alpha",
+        status: "requested"
+      });
+      expect(replayRequests).toHaveLength(1);
+      expect(replayRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(replayRequests[0]).toMatchObject({
+        approvalId: "approval-source-history-replay-alpha",
+        reason: "Operator requested source replay.",
+        relayUrls: ["ws://relay.example"],
+        replayedBy: "operator-main",
+        replayId: "replay-source-history-alpha",
         sourceHistoryId: "source-history-candidate-alpha"
       });
     } finally {

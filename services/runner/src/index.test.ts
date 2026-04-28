@@ -340,6 +340,42 @@ function buildRuntimeSourceHistoryPublishEvent(
   };
 }
 
+function buildRuntimeSourceHistoryReplayEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:06.000Z",
+      eventId: "adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad",
+      payloadHash:
+        "cececececececececececececececececececececececececececececececece",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "edededededededededededededededededededededededededededededededededededededededededededededededededededededededededededededededed",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      approvalId: "approval-source-history-replay-alpha",
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-source-history-replay-alpha",
+      eventType: "runtime.source_history.replay",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:06.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Replay source history",
+      replayedBy: "operator-main",
+      replayId: "replay-source-history-alpha",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey,
+      sourceHistoryId: "source-history-alpha"
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -2041,6 +2077,7 @@ describe("runner runtime context", () => {
     const runtimeStarts: string[] = [];
     const runtimeCancellations: string[] = [];
     const runtimeSourceHistoryPublications: string[] = [];
+    const runtimeSourceHistoryReplays: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const configured = await createConfiguredRunnerJoinService(
@@ -2070,6 +2107,16 @@ describe("runner runtime context", () => {
                 sourceHistoryId: request.sourceHistoryId
               });
             },
+            replaySourceHistory: (request) => {
+              runtimeSourceHistoryReplays.push(
+                `${request.sourceHistoryId}:${request.replayId ?? "generated"}:${request.approvalId ?? "none"}`
+              );
+              return Promise.resolve({
+                replayId: request.replayId ?? "generated",
+                replayStatus: "replayed",
+                sourceHistoryId: request.sourceHistoryId
+              });
+            },
             runtimeContextPath,
             stop: () => {
               runtimeStops.push(runtimeContextPath);
@@ -2089,6 +2136,7 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeRestartEvent(assignment));
     await transport.dispatch(buildRuntimeSessionCancelEvent(assignment));
     await transport.dispatch(buildRuntimeSourceHistoryPublishEvent(assignment));
+    await transport.dispatch(buildRuntimeSourceHistoryReplayEvent(assignment));
 
     expect(runtimeStarts).toEqual([
       "/runner/assignments/assignment-alpha/runtime-context.json",
@@ -2102,6 +2150,9 @@ describe("runner runtime context", () => {
     expect(runtimeCancellations).toEqual(["session-alpha"]);
     expect(runtimeSourceHistoryPublications).toEqual([
       "source-history-alpha:retry:operator-main"
+    ]);
+    expect(runtimeSourceHistoryReplays).toEqual([
+      "source-history-alpha:replay-source-history-alpha:approval-source-history-replay-alpha"
     ]);
     expect(
       transport.observations.filter(

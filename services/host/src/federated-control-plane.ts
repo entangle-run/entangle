@@ -24,6 +24,7 @@ import {
   recordSessionUpdatedObservation,
   recordSourceChangeRefObservation,
   recordSourceHistoryRefObservation,
+  recordSourceHistoryReplayedObservation,
   recordTurnUpdatedObservation,
   recordWikiRefObservation
 } from "./state.js";
@@ -219,6 +220,15 @@ export class HostFederatedControlPlane {
 
     if (payload.eventType === "source_history.ref") {
       await recordSourceHistoryRefObservation(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "source_history.replayed") {
+      await recordSourceHistoryReplayedObservation(payload);
       return {
         action: "recorded",
         eventType: payload.eventType,
@@ -461,6 +471,46 @@ export class HostFederatedControlPlane {
         ...(input.reason ? { reason: input.reason } : {}),
         ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
         retryFailedPublication: input.retryFailedPublication ?? false,
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey,
+        sourceHistoryId: input.sourceHistoryId
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
+  publishRuntimeSourceHistoryReplay(input: {
+    approvalId?: string;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        eventType: "runtime.source_history.replay",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        protocol: "entangle.control.v1",
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+        ...(input.replayId ? { replayId: input.replayId } : {}),
         runnerId: input.assignment.runnerId,
         runnerPubkey: input.assignment.runnerPubkey,
         sourceHistoryId: input.sourceHistoryId
