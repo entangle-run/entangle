@@ -6,7 +6,14 @@ import {
   type ChildProcessByStdio
 } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdtemp,
+  mkdir,
+  readFile,
+  rm,
+  writeFile
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Readable } from "node:stream";
@@ -21,8 +28,14 @@ import {
   runnerJoinConfigSchema,
   runnerRegistryInspectionResponseSchema,
   runtimeAssignmentOfferResponseSchema,
+  runtimeApprovalInspectionResponseSchema,
+  runtimeApprovalListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
+  runtimeTurnInspectionResponseSchema,
+  runtimeTurnListResponseSchema,
+  sessionInspectionResponseSchema,
+  sessionListResponseSchema,
   sessionRecordSchema,
   userNodeConversationResponseSchema,
   userNodeMessagePublishResponseSchema,
@@ -345,6 +358,79 @@ async function createAgentPackage(packageRoot: string): Promise<void> {
   ]);
 }
 
+async function createSmokeOpenCodeExecutable(binRoot: string): Promise<string> {
+  await mkdir(binRoot, { recursive: true });
+  const executablePath = path.join(binRoot, "opencode");
+  await writeFile(
+    executablePath,
+    [
+      "#!/usr/bin/env node",
+      "const args = process.argv.slice(2);",
+      "if (args.includes('--version')) {",
+      "  console.log('1.14.20-smoke');",
+      "  process.exit(0);",
+      "}",
+      "if (args[0] !== 'run') {",
+      "  console.error(`Unsupported smoke opencode invocation: ${args.join(' ')}`);",
+      "  process.exit(64);",
+      "}",
+      "let input = '';",
+      "process.stdin.setEncoding('utf8');",
+      "process.stdin.on('data', (chunk) => { input += chunk; });",
+      "process.stdin.on('end', () => {",
+      "  const approvalId = process.env.ENTANGLE_SMOKE_ENGINE_APPROVAL_ID || 'approval-engine-smoke';",
+      "  const sourceChangeId = process.env.ENTANGLE_SMOKE_ENGINE_SOURCE_CHANGE_ID || 'source-change-engine-smoke';",
+      "  const actionBlock = JSON.stringify({",
+      "    approvalRequestDirectives: [",
+      "      {",
+      "        approvalId,",
+      "        approverNodeIds: ['user'],",
+      "        operation: 'source_application',",
+      "        reason: 'Approve deterministic smoke source application.',",
+      "        resource: {",
+      "          id: sourceChangeId,",
+      "          kind: 'source_change_candidate',",
+      "          label: sourceChangeId",
+      "        }",
+      "      }",
+      "    ]",
+      "  });",
+      "  console.log(JSON.stringify({",
+      "    part: {",
+      "      callID: 'tool-smoke-echo',",
+      "      state: {",
+      "        input: { command: 'echo smoke' },",
+      "        output: 'smoke ok',",
+      "        status: 'completed',",
+      "        time: { end: 12, start: 0 },",
+      "        title: 'echo smoke'",
+      "      },",
+      "      tool: 'bash'",
+      "    },",
+      "    sessionID: 'opencode-smoke-session',",
+      "    type: 'tool_use'",
+      "  }));",
+      "  console.log(JSON.stringify({",
+      "    part: {",
+      "      text: [",
+      "        'Smoke OpenCode adapter completed a deterministic turn.',",
+      "        '```entangle-actions',",
+      "        actionBlock,",
+      "        '```'",
+      "      ].join('\\n')",
+      "    },",
+      "    sessionID: 'opencode-smoke-session',",
+      "    type: 'text'",
+      "  }));",
+      "});",
+      ""
+    ].join("\n"),
+    "utf8"
+  );
+  await chmod(executablePath, 0o755);
+  return executablePath;
+}
+
 async function hostRequest(input: {
   baseUrl: string;
   body?: unknown;
@@ -483,6 +569,9 @@ async function main(): Promise<void> {
   const reviewerSessionId = `session-reviewer-${runId}`;
   const turnId = `turn-${runId}`;
   const reviewerTurnId = `turn-reviewer-${runId}`;
+  const engineApprovalId = `approval-engine-${runId}`;
+  const engineSourceChangeId = `source-change-engine-${runId}`;
+  const fakeOpenCodeBin = path.join(tempRoot, "fake-bin");
   const hostHome = path.join(tempRoot, "host-home");
   const hostSecrets = path.join(tempRoot, "host-secrets");
   const runnerRoot = path.join(tempRoot, "runner-root");
@@ -504,8 +593,10 @@ async function main(): Promise<void> {
     mkdir(runnerStateRoot, { recursive: true }),
     mkdir(userRunnerStateRoot, { recursive: true }),
     mkdir(reviewerUserRunnerStateRoot, { recursive: true }),
-    createAgentPackage(packageRoot)
+    createAgentPackage(packageRoot),
+    createSmokeOpenCodeExecutable(fakeOpenCodeBin)
   ]);
+  const smokePath = `${fakeOpenCodeBin}${path.delimiter}${process.env.PATH ?? ""}`;
 
   process.env.ENTANGLE_HOME = hostHome;
   process.env.ENTANGLE_SECRETS_HOME = hostSecrets;
@@ -833,6 +924,9 @@ async function main(): Promise<void> {
           ENTANGLE_HOST_LOGGER: "false",
           ENTANGLE_HOST_TOKEN: operatorToken,
           ENTANGLE_RUNNER_STATE_ROOT: runnerStateRoot,
+          ENTANGLE_SMOKE_ENGINE_APPROVAL_ID: engineApprovalId,
+          ENTANGLE_SMOKE_ENGINE_SOURCE_CHANGE_ID: engineSourceChangeId,
+          PATH: smokePath,
           ...(userClientStaticDir
             ? { ENTANGLE_USER_CLIENT_STATIC_DIR: userClientStaticDir }
             : {}),
@@ -1411,7 +1505,7 @@ async function main(): Promise<void> {
       {
         body: JSON.stringify({
           conversationId,
-          messageType: "question",
+          messageType: "task.request",
           responsePolicy: {
             closeOnResult: false,
             maxFollowups: 0,
@@ -1419,7 +1513,7 @@ async function main(): Promise<void> {
           },
           sessionId,
           summary:
-            "Process runner smoke: verify signed User Node message intake.",
+            "Process runner smoke: verify signed User Node task intake.",
           targetNodeId: "builder",
           turnId
         }),
@@ -1486,6 +1580,127 @@ async function main(): Promise<void> {
     printPass(
       "user-node-intake",
       `session=${userMessageIntake.sessionRecord.sessionId}; conversation=${userMessageIntake.conversationRecord.conversationId}`
+    );
+
+    const projectedBuilderTurn = await waitFor(
+      "Host projected builder turn read API",
+      async () => {
+        const turnList = runtimeTurnListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/turns"
+          })
+        );
+        const turn = turnList.turns.find(
+          (candidate) =>
+            candidate.conversationId === userMessage.conversationId &&
+            candidate.messageId === userMessage.eventId &&
+            candidate.phase === "blocked" &&
+            candidate.requestedApprovalIds.includes(engineApprovalId) &&
+            candidate.sessionId === userMessage.sessionId
+        );
+
+        if (!turn) {
+          return undefined;
+        }
+
+        const inspection = runtimeTurnInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/turns/${turn.turnId}`
+          })
+        );
+
+        return inspection.turn.requestedApprovalIds.includes(engineApprovalId)
+          ? inspection.turn
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-runtime-turn-read-api",
+      `turn=${projectedBuilderTurn.turnId}; phase=${projectedBuilderTurn.phase}`
+    );
+
+    const projectedBuilderApproval = await waitFor(
+      "Host projected builder approval read API",
+      async () => {
+        const approvalList = runtimeApprovalListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/approvals"
+          })
+        );
+        const approval = approvalList.approvals.find(
+          (candidate) =>
+            candidate.approvalId === engineApprovalId &&
+            candidate.requestedByNodeId === "builder" &&
+            candidate.sessionId === userMessage.sessionId &&
+            candidate.status === "pending"
+        );
+
+        if (!approval) {
+          return undefined;
+        }
+
+        const inspection = runtimeApprovalInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/approvals/${engineApprovalId}`
+          })
+        );
+
+        return inspection.approval.status === "pending"
+          ? inspection.approval
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-runtime-approval-read-api",
+      `approval=${projectedBuilderApproval.approvalId}; status=${projectedBuilderApproval.status}`
+    );
+
+    const projectedBuilderSession = await waitFor(
+      "Host projected builder session read API",
+      async () => {
+        const sessionList = sessionListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/sessions"
+          })
+        );
+        const summary = sessionList.sessions.find(
+          (candidate) =>
+            candidate.sessionId === userMessage.sessionId &&
+            candidate.nodeIds.includes("builder") &&
+            candidate.waitingApprovalIds.includes(engineApprovalId)
+        );
+
+        if (!summary) {
+          return undefined;
+        }
+
+        const inspection = sessionInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/sessions/${userMessage.sessionId}`
+          })
+        );
+        const node = inspection.nodes.find(
+          (candidate) =>
+            candidate.nodeId === "builder" &&
+            candidate.session.status === "waiting_approval" &&
+            candidate.session.waitingApprovalIds.includes(engineApprovalId)
+        );
+
+        return node ? { inspection, node, summary } : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-session-read-api",
+      `session=${projectedBuilderSession.inspection.sessionId}; node=${projectedBuilderSession.node.nodeId}; status=${projectedBuilderSession.node.session.status}`
     );
 
     const projectedUserConversation = await waitFor(

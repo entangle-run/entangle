@@ -303,6 +303,10 @@ This repository currently contains:
   approval files;
 - runner turn read APIs can now list and inspect observed `turn.updated`
   projection records without relying only on runner-local turn files;
+- the process-runner smoke now exercises the OpenCode adapter path with a
+  temporary deterministic `opencode` executable inside the spawned agent
+  runner process, then verifies projected turn, approval, and session read APIs
+  without requiring live model-provider credentials;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,
@@ -451,11 +455,12 @@ This repository currently contains:
   User Node runners as OS processes, assigns nodes through the relay, verifies
   runner-owned materialization, checks two Human Interface Runtime User Client
   endpoints, publishes from the primary User Node through the running User
-  Client JSON API, publishes from a second distinct User Node identity, records
-  a synthetic inbound agent message through the running User Node, inspects the
-  selected conversation through the User Client JSON API, submits a signed User
-  Node approval response through the same JSON API, and verifies Host
-  projection;
+  Client JSON API, exercises a deterministic OpenCode-adapter task turn,
+  verifies projected turn/approval/session read APIs, publishes from a second
+  distinct User Node identity, records a synthetic inbound agent message
+  through the running User Node, inspects the selected conversation through the
+  User Client JSON API, submits a signed User Node approval response through
+  the same JSON API, and verifies Host projection;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,

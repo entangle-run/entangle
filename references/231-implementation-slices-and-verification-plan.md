@@ -186,8 +186,10 @@ Current status:
   verifies Host projection of the User Node conversation without requiring
   model-provider credentials. It now also starts a second real joined runner
   process for the graph User Node, assigns it as a `human_interface` runtime,
-  verifies its projected User Client URL, checks User Client health, and proves
-  Host, agent runner, and User Node runner state roots are isolated.
+  verifies its projected User Client URL, checks User Client health, exercises
+  a deterministic OpenCode-adapter task turn through a temporary runner-local
+  `opencode` executable, verifies projected turn/approval/session read APIs,
+  and proves Host, agent runner, and User Node runner state roots are isolated.
 
 ### Slice 8: ProjectionStore
 
@@ -208,6 +210,7 @@ Implementation record:
 - [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
 - [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
 - [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
+- [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
 
 Verification:
 
@@ -240,6 +243,9 @@ Current status:
   when local runtime approval files are unavailable;
 - runtime turn list/detail GET routes now use observed turn projection when
   local runtime turn files are unavailable;
+- the process-runner smoke now exercises a deterministic OpenCode-adapter
+  `task.request` through a real joined agent runner process and asserts the
+  projected turn, approval, and session read APIs over signed observations;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime

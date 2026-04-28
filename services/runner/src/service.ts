@@ -2856,12 +2856,14 @@ export class RunnerService {
               }
             )
           : currentSession;
+        await this.publishSessionObservation(currentSession);
         currentConversation = await this.transitionConversationToAwaitingApproval({
           conversation: currentConversation,
           lastInboundMessageId: envelope.eventId,
           lastMessageType: envelope.message.messageType,
           statePaths
         });
+        await this.publishConversationObservation(currentConversation);
         turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "blocked");
         turnRecord = await this.runOptionalMemorySynthesis({
           ...memorySynthesisInput,

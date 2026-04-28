@@ -3782,3 +3782,16 @@ list/detail GET routes merge projected turns with local compatibility files.
 This lets remote turn activity observed through signed `turn.updated` events
 show up through the same Host API surfaces without requiring Host to read a
 runner-local `turns` directory.
+
+## [2026-04-28] implementation | Exercised projected runtime reads in process smoke
+
+Added `references/310-process-smoke-opencode-projection-read-api-slice.md`.
+The federated process-runner smoke now injects a temporary deterministic
+`opencode` executable into the spawned agent runner, sends a signed User Node
+`task.request`, and verifies Host projected turn, approval, and session read
+APIs over signed runner observations without requiring live model credentials.
+
+Runner blocked-turn handling now also publishes the final
+`waiting_approval` session and `awaiting_approval` conversation observations
+after engine approval directives, so Host projection does not depend on runner
+filesystem reads for that state transition.

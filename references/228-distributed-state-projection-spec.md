@@ -31,8 +31,10 @@ inspection for those sessions. Runner-owned approval lifecycle changes now emit
 them into observed approval activity. Runtime approval list/detail GET routes
 now read from that projection as well as local compatibility files. Runtime
 turn list/detail GET routes now read from observed turn projection as well as
-local compatibility files. The remaining deep runtime APIs still need to be
-moved off local file reads.
+local compatibility files. The process-runner smoke now verifies projected
+turn, approval, and session read APIs after a deterministic OpenCode-adapter
+task turn from a real joined runner process. The remaining deep runtime APIs
+still need to be moved off local file reads.
 
 ## Target Model
 
@@ -96,6 +98,8 @@ and refs so Host can inspect global state without reading runner disk.
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn
   list/detail read APIs.
+- Keep deterministic process smoke coverage for projected read APIs separate
+  from optional live provider-backed OpenCode testing.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 

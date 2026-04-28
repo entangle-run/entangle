@@ -65,16 +65,22 @@ mode, but canonical execution still falls back to injected same-machine context:
 
 - bootstrap can resolve `ENTANGLE_RUNNER_JOIN_CONFIG_PATH` and emit signed
   `runner.hello`/assignment receipts;
-- the existing execution materializer still depends on
-  `ENTANGLE_RUNTIME_CONTEXT_PATH` or an injected `effective-runtime-context.json`;
+- joined runners fetch authenticated portable bootstrap bundles from Host, while
+  direct runtime-context startup still exists as a compatibility/development
+  path;
 - identity secret delivery is currently env-var based;
 - A2A transport over NIP-59 is implemented;
-- control/observe event contracts and local transport helpers exist, but Host
-  and runner are not yet wired end-to-end through relay subscriptions for all
-  execution state;
+- Host and joined runners are wired end-to-end through relay-backed
+  control/observe subscriptions for registration, assignment, heartbeat,
+  runtime status, session/conversation updates, turn updates, approval updates,
+  and artifact/source/wiki refs; deeper mutation and detail surfaces are still
+  being moved off runner filesystem reads;
 - runner state is file-backed under `runtimeRoot`;
 - cancellation is polled from Host-written local files;
-- OpenCode is invoked by a safe one-shot process adapter.
+- OpenCode is invoked by a safe one-shot process adapter, and the process-runner
+  smoke now exercises that adapter with a deterministic runner-local fake
+  executable so projected turn/approval/session reads are covered without live
+  model credentials.
 
 `packages/host-client`, `apps/cli`, and `apps/studio` are Host clients. They
 cover graph, package sources, external principals, runtimes, turns, artifacts,
@@ -91,8 +97,9 @@ controls.
 - Host mounts Docker socket;
 - runner containers mount the same Host state and secret volumes;
 - local relay and Gitea are Compose services;
-- same-machine smokes prove the current adapter path. They do not yet prove
-  Host/runner separation without shared filesystem access.
+- same-machine smokes prove the adapter path; the federated process-runner
+  smoke proves separate Host/agent-runner/User-runner state roots and
+  projection-backed runtime reads without Host reading runner state.
 
 The local OpenCode reference confirms that OpenCode has a real coding-agent
 core: built-in primary agents (`build`, `plan`), subagents (`general`,

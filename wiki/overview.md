@@ -72,6 +72,10 @@ The most accurate current description is:
   approval files;
 - runner turn list/detail read APIs can now use observed `turn.updated`
   projection without runner-local turn files;
+- the process-runner smoke now exercises the OpenCode adapter with a temporary
+  deterministic `opencode` executable inside the spawned agent runner, then
+  verifies projected turn, approval, and session read APIs without live model
+  credentials;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, Docker launcher rebasing onto the assignment path, and the full
   multi-machine distributed proof.
@@ -706,10 +710,11 @@ The repository now also contains the first real implementation baseline:
 - a functional federated process smoke through
   `pnpm ops:smoke-federated-process-runner`, covering Host plus a real joined
   runner process with separate state roots, signed assignment over a live relay,
-  portable bootstrap materialization, signed runtime observations, and signed
-  User Node message intake persisted by the assigned runner and projected by
-  Host from runner-signed session/conversation observations without requiring a
-  live model-provider call;
+  portable bootstrap materialization, signed runtime observations, a
+  deterministic OpenCode-adapter task turn, projected turn/approval/session
+  read APIs, and signed User Node message intake persisted by the assigned
+  runner and projected by Host from runner-signed observations without requiring
+  a live model-provider call;
 - a same-machine diagnostics smoke through `pnpm ops:smoke-federated-dev:diagnostics`,
   which writes a temporary redacted diagnostics bundle against a running
   same-machine profile and validates its stable top-level shape;

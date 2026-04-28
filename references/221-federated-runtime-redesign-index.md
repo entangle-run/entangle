@@ -110,6 +110,7 @@ same-machine slice records.
 - [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
 - [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
 - [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
+- [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
 
 ## Audited Scope
 
@@ -237,9 +238,11 @@ The repository is not fully federated:
   runner process for the graph User Node, assigns it as a `human_interface`
   runtime, verifies its projected User Client endpoint, health route, state
   API, JSON publish API, and conversation-detail API, publishes a signed User
-  Node message to the assigned agent node through the running User Client, verifies
-  runner-owned session/conversation intake, and verifies Host projection of the
-  User Node conversation without requiring a live model-provider call;
+  Node message to the assigned agent node through the running User Client,
+  exercises a deterministic OpenCode-adapter task turn, verifies projected
+  turn/approval/session read APIs, verifies runner-owned
+  session/conversation intake, and verifies Host projection of the User Node
+  conversation without requiring a live model-provider call;
 - the same process smoke now proves two distinct User Nodes assigned to two
   distinct `human_interface` runner processes, with two User Client state
   checks, two signed publishes with distinct User Node pubkeys, and two Host
@@ -280,6 +283,11 @@ The repository is not fully federated:
   local-context backed;
 - Host runtime turn list/detail GET routes now merge projected turn records
   with local compatibility files;
+- the process-runner smoke now injects a temporary fake OpenCode executable
+  into the agent runner PATH, sends a signed User Node `task.request`, and
+  verifies Host runtime turn, approval, and session read APIs against signed
+  observations from the real joined runner process without requiring live model
+  credentials;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

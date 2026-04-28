@@ -8,8 +8,10 @@ import {
   sessionRecordSchema,
   type AgentEngineTurnRequest,
   type ApprovalRecord,
+  type ConversationRecord,
   type EffectiveRuntimeContext,
-  type RunnerTurnRecord
+  type RunnerTurnRecord,
+  type SessionRecord
 } from "@entangle/types";
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import { loadRuntimeContext } from "./runtime-context.js";
@@ -959,6 +961,8 @@ describe("RunnerService", () => {
     const context = await loadRuntimeContext(fixture.contextPath);
     const transport = new InMemoryRunnerTransport();
     const observedApprovals: ApprovalRecord[] = [];
+    const observedConversations: ConversationRecord[] = [];
+    const observedSessions: SessionRecord[] = [];
     const service = new RunnerService({
       context,
       engine: {
@@ -999,8 +1003,14 @@ describe("RunnerService", () => {
           observedApprovals.push(record);
           return Promise.resolve();
         },
-        publishConversationUpdated: () => Promise.resolve(),
-        publishSessionUpdated: () => Promise.resolve(),
+        publishConversationUpdated: (record) => {
+          observedConversations.push(record);
+          return Promise.resolve();
+        },
+        publishSessionUpdated: (record) => {
+          observedSessions.push(record);
+          return Promise.resolve();
+        },
         publishTurnUpdated: () => Promise.resolve()
       },
       transport
@@ -1065,6 +1075,15 @@ describe("RunnerService", () => {
       expect(sessionRecord?.waitingApprovalIds).toEqual([
         "approval-engine-source-apply"
       ]);
+      expect(observedConversations.at(-1)).toMatchObject({
+        conversationId: "engine-approval-conv",
+        status: "awaiting_approval"
+      });
+      expect(observedSessions.at(-1)).toMatchObject({
+        sessionId: "engine-approval-session",
+        status: "waiting_approval",
+        waitingApprovalIds: ["approval-engine-source-apply"]
+      });
       expect(turnRecord?.phase).toBe("blocked");
       expect(turnRecord?.requestedApprovalIds).toEqual([
         "approval-engine-source-apply"
