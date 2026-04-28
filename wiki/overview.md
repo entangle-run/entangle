@@ -79,6 +79,8 @@ The most accurate current description is:
 - source-change candidate list/detail read APIs can now use full candidate
   records carried by observed `source_change.ref` projection without
   runner-local candidate files;
+- source-change candidate diff read APIs can now fall back to projected
+  `diffExcerpt` evidence without runner-local shadow git state;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, then
   verifies projected turn, approval, and session read APIs without live model

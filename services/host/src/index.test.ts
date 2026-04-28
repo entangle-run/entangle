@@ -1739,6 +1739,8 @@ describe("buildHostServer", () => {
         additions: 4,
         checkedAt: observedAt,
         deletions: 1,
+        diffExcerpt:
+          "diff --git a/src/app.ts b/src/app.ts\n+export const ready = true;\n",
         fileCount: 1,
         files: [
           {
@@ -1893,6 +1895,30 @@ describe("buildHostServer", () => {
         )
       ).toEqual({
         candidate: projectedSourceCandidate
+      });
+
+      const projectedCandidateDiffResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-change-candidates/candidate-alpha/diff"
+      });
+      expect(projectedCandidateDiffResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateDiffResponseSchema.parse(
+          projectedCandidateDiffResponse.json()
+        )
+      ).toEqual({
+        candidate: projectedSourceCandidate,
+        diff: {
+          available: true,
+          bytesRead: Buffer.byteLength(
+            projectedSourceCandidate.sourceChangeSummary.diffExcerpt!,
+            "utf8"
+          ),
+          content: projectedSourceCandidate.sourceChangeSummary.diffExcerpt,
+          contentEncoding: "utf8",
+          contentType: "text/x-diff",
+          truncated: false
+        }
       });
 
       const projectedArtifactsResponse = await server.inject({

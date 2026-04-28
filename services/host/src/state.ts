@@ -13010,12 +13010,6 @@ export async function getRuntimeSourceChangeCandidateDiff(input: {
   candidateId: string;
   nodeId: string;
 }): Promise<RuntimeSourceChangeCandidateDiffResponse | null> {
-  const context = await getRuntimeContext(input.nodeId);
-
-  if (!context) {
-    return null;
-  }
-
   const candidates = await listRuntimeSourceChangeCandidates(input.nodeId);
 
   if (!candidates) {
@@ -13030,9 +13024,43 @@ export async function getRuntimeSourceChangeCandidateDiff(input: {
     return null;
   }
 
+  const context = await getRuntimeContext(input.nodeId);
+
+  if (context && candidate.snapshot) {
+    const diff = await readSourceChangeCandidateDiff({ candidate, context });
+
+    if (diff.available || !candidate.sourceChangeSummary.diffExcerpt) {
+      return runtimeSourceChangeCandidateDiffResponseSchema.parse({
+        candidate,
+        diff
+      });
+    }
+  }
+
+  if (candidate.sourceChangeSummary.diffExcerpt) {
+    return runtimeSourceChangeCandidateDiffResponseSchema.parse({
+      candidate,
+      diff: {
+        available: true,
+        bytesRead: Buffer.byteLength(
+          candidate.sourceChangeSummary.diffExcerpt,
+          "utf8"
+        ),
+        content: candidate.sourceChangeSummary.diffExcerpt,
+        contentEncoding: "utf8",
+        contentType: "text/x-diff",
+        truncated: candidate.sourceChangeSummary.truncated
+      }
+    });
+  }
+
   return runtimeSourceChangeCandidateDiffResponseSchema.parse({
     candidate,
-    diff: await readSourceChangeCandidateDiff({ candidate, context })
+    diff: {
+      available: false,
+      reason:
+        "Source change candidate diff is unavailable because no projected diff excerpt was observed."
+    }
   });
 }
 

@@ -215,6 +215,7 @@ Implementation record:
 - [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
+- [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 
 Verification:
 
@@ -262,7 +263,9 @@ Current status:
 - `source_change.ref` observations can now carry full bounded candidate
   records, and runtime source-change candidate list/detail GET routes can merge
   those projected candidates with local compatibility files;
-- deeper runtime source diff/file, artifact history, wiki, and mutation
+- runtime source-change candidate diff GET routes can fall back to projected
+  `diffExcerpt` evidence when local shadow-git state is unavailable;
+- deeper runtime source file preview, artifact history, wiki, and mutation
   endpoints still need projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
@@ -398,6 +401,7 @@ Implementation record:
 - [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
+- [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 
 Verification:
 

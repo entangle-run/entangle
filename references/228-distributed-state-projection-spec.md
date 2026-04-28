@@ -39,7 +39,9 @@ content without requiring or fabricating runner-local paths.
 Joined runners now include the full bounded `SourceChangeCandidateRecord` when
 publishing `source_change.ref`, and Host runtime source-change candidate
 list/detail GET routes can read those projected records without local runner
-files. The process-runner smoke now verifies projected turn, approval, and
+files. Source-change candidate diff GET routes now also fall back to projected
+`diffExcerpt` evidence when local shadow-git state is unavailable. The
+process-runner smoke now verifies projected turn, approval, and
 session read APIs after a deterministic OpenCode-adapter
 task turn from a real joined runner process. Joined runners now also publish
 session/conversation observations for later lifecycle transitions including
@@ -108,8 +110,9 @@ and refs so Host can inspect global state without reading runner disk.
   can read projection; artifact list/detail reads can read projected
   `artifact.ref` records; artifact preview can read bounded projected preview
   content; source-change candidate list/detail reads can read projected full
-  candidate records; deeper runtime source diff/file, artifact history, wiki,
-  and mutation surfaces still need projected equivalents.
+  candidate records; source-change diff can read projected `diffExcerpt`
+  evidence; deeper runtime source file preview, artifact history, wiki, and
+  mutation surfaces still need projected equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn

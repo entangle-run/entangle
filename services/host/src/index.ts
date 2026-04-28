@@ -2514,19 +2514,6 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         });
       }
 
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
       const candidateDiff = await getRuntimeSourceChangeCandidateDiff({
         candidateId: params.candidateId,
         nodeId: params.nodeId

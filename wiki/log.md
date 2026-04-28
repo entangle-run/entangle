@@ -3840,3 +3840,14 @@ observed `artifact.ref` projection.
 The available preview contract now treats `sourcePath` as optional, so
 projection-backed previews do not expose or fabricate runner-local filesystem
 paths.
+
+## [2026-04-28] implementation | Added projected source-candidate diff API
+
+Added `references/315-projected-source-candidate-diff-api-slice.md`. Runtime
+source-change candidate diff GET routes now prefer local shadow-git diffs when
+available and otherwise fall back to bounded `diffExcerpt` evidence carried by
+the projected source-change candidate record.
+
+Source file preview, review, apply, and source-history operations remain
+local-context backed until those paths move to a federated mutation or
+backend-resolved protocol.

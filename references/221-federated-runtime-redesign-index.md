@@ -115,6 +115,7 @@ same-machine slice records.
 - [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
+- [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 
 ## Audited Scope
 
@@ -297,6 +298,9 @@ The repository is not fully federated:
   when publishing `source_change.ref` observations, and Host runtime
   source-change candidate list/detail GET routes can merge those projected
   candidate records with local compatibility files;
+- Host runtime source-change candidate diff GET routes now prefer local
+  shadow-git diffs and fall back to projected `diffExcerpt` evidence from
+  observed source-change candidate records;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, approval, and session read APIs against signed

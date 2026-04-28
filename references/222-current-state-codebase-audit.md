@@ -54,7 +54,8 @@ or stable User Node identity.
   list/detail reads can now use observed turn projection and artifact
   list/detail plus bounded preview reads can now use observed `artifact.ref`
   projection, and source-change candidate list/detail reads can now use
-  observed full `source_change.ref` candidate projection;
+  observed full `source_change.ref` candidate projection, including bounded
+  projected diff fallback when `diffExcerpt` is present;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 
