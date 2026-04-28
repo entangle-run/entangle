@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Quarantined federated runtime filesystem reads
+
+Added a Host filesystem-context boundary so public deep runtime read paths no
+longer read Host-local `runtimeRoot` records for accepted federated
+assignments. Artifacts, memory, approvals, source-change candidates,
+source-history records, and turns now use runner projection for federated
+runtimes while preserving filesystem reads for non-federated adapters.
+
+Added `references/349-federated-runtime-filesystem-read-quarantine-slice.md`.
+
 ## [2026-04-28] verification | Covered wiki publication in process smoke
 
 Extended the federated process-runner smoke so the real Host plus joined runner

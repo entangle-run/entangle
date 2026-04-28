@@ -281,7 +281,9 @@ This repository currently contains:
   state, with CLI and Studio requesting that same Host control path, publishing
   a primary-git artifact and emitting `artifact.ref` projection evidence, now
   covered in the process-boundary smoke by checking the projected artifact ref
-  and matching primary git branch head.
+  and matching primary git branch head. Public deep runtime reads for accepted
+  federated assignments now ignore Host-local runtime files and use projected
+  runner evidence instead, while non-federated adapter reads remain available.
   Bounded engine-request
   summaries on executable turns so
   operators can inspect prompt part counts, aggregate prompt size, memory,
@@ -514,7 +516,9 @@ This repository currently contains:
   Node identity, records a synthetic inbound agent message
   through the running User Node, inspects the selected conversation through the
   User Client JSON API, submits a signed User Node approval response through
-  the same JSON API, and verifies Host projection;
+  the same JSON API, verifies Host projection, and now protects public deep
+  runtime reads from stale Host-local runtime files for accepted federated
+  assignments;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,

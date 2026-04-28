@@ -8431,6 +8431,24 @@ export async function getRuntimeContext(
   );
 }
 
+async function getRuntimeFilesystemContext(
+  nodeId: string
+): Promise<EffectiveRuntimeContext | null> {
+  const inspection = await getRuntimeInspectionInternal(nodeId);
+
+  if (
+    !inspection?.contextPath ||
+    !inspection.contextAvailable ||
+    inspection.backendKind === "federated"
+  ) {
+    return null;
+  }
+
+  return effectiveRuntimeContextSchema.parse(
+    await readJsonFile(inspection.contextPath)
+  );
+}
+
 function buildPortableWorkspaceLayout(
   workspace: EffectiveRuntimeContext["workspace"]
 ): EffectiveRuntimeContext["workspace"] {
@@ -8621,7 +8639,7 @@ export async function listRuntimeArtifacts(
   nodeId: string
 ): Promise<RuntimeArtifactListResponse | null> {
   const [context, projectedArtifacts] = await Promise.all([
-    getRuntimeContext(nodeId),
+    getRuntimeFilesystemContext(nodeId),
     listProjectedRuntimeArtifactRecords(nodeId)
   ]);
 
@@ -8852,7 +8870,7 @@ function mergeRuntimeMemoryPages(input: {
 export async function getRuntimeMemoryInspection(
   nodeId: string
 ): Promise<RuntimeMemoryInspectionResponse | null> {
-  const context = await getRuntimeContext(nodeId);
+  const context = await getRuntimeFilesystemContext(nodeId);
   const projectedPages = await listProjectedRuntimeMemoryPages(nodeId);
 
   if (!context && projectedPages.length === 0) {
@@ -9040,7 +9058,7 @@ export async function getRuntimeMemoryPageInspection(input: {
   nodeId: string;
   path: string;
 }): Promise<RuntimeMemoryPageInspectionResponse | null> {
-  const context = await getRuntimeContext(input.nodeId);
+  const context = await getRuntimeFilesystemContext(input.nodeId);
 
   if (context) {
     const resolvedPath = resolveRuntimeMemoryPagePath({
@@ -9190,7 +9208,7 @@ export async function getRuntimeArtifactPreview(input: {
   artifactId: string;
   nodeId: string;
 }): Promise<RuntimeArtifactPreviewResponse | null> {
-  const context = await getRuntimeContext(input.nodeId);
+  const context = await getRuntimeFilesystemContext(input.nodeId);
 
   if (context) {
     const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
@@ -9600,7 +9618,7 @@ export async function getRuntimeArtifactHistory(input: {
   limit: number;
   nodeId: string;
 }): Promise<RuntimeArtifactHistoryResponse | null> {
-  const context = await getRuntimeContext(input.nodeId);
+  const context = await getRuntimeFilesystemContext(input.nodeId);
 
   if (context) {
     const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
@@ -9644,7 +9662,7 @@ export async function getRuntimeArtifactDiff(input: {
   fromCommit?: string | undefined;
   nodeId: string;
 }): Promise<RuntimeArtifactDiffResponse | null> {
-  const context = await getRuntimeContext(input.nodeId);
+  const context = await getRuntimeFilesystemContext(input.nodeId);
 
   if (context) {
     const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
@@ -9710,7 +9728,7 @@ export async function listRuntimeApprovals(
   nodeId: string
 ): Promise<RuntimeApprovalListResponse | null> {
   const [context, projectedApprovals] = await Promise.all([
-    getRuntimeContext(nodeId),
+    getRuntimeFilesystemContext(nodeId),
     listProjectedRuntimeApprovalRecords(nodeId)
   ]);
 
@@ -9836,7 +9854,7 @@ export async function listRuntimeSourceChangeCandidates(
   nodeId: string
 ): Promise<RuntimeSourceChangeCandidateListResponse | null> {
   const [context, projectedCandidates] = await Promise.all([
-    getRuntimeContext(nodeId),
+    getRuntimeFilesystemContext(nodeId),
     listProjectedRuntimeSourceChangeCandidateRecords(nodeId)
   ]);
 
@@ -9886,7 +9904,7 @@ export async function listRuntimeSourceHistory(
   nodeId: string
 ): Promise<RuntimeSourceHistoryListResponse | null> {
   const [context, projectedHistory] = await Promise.all([
-    getRuntimeContext(nodeId),
+    getRuntimeFilesystemContext(nodeId),
     listProjectedRuntimeSourceHistoryRecords(nodeId)
   ]);
 
@@ -10145,7 +10163,7 @@ export async function getRuntimeSourceChangeCandidateDiff(input: {
     return null;
   }
 
-  const context = await getRuntimeContext(input.nodeId);
+  const context = await getRuntimeFilesystemContext(input.nodeId);
 
   if (context && candidate.snapshot) {
     const diff = await readSourceChangeCandidateDiff({ candidate, context });
@@ -10447,7 +10465,7 @@ export async function getRuntimeSourceChangeCandidateFilePreview(input: {
     return null;
   }
 
-  const context = await getRuntimeContext(input.nodeId);
+  const context = await getRuntimeFilesystemContext(input.nodeId);
   const localPreview =
     context && candidate.snapshot
       ? await readSourceChangeCandidateFilePreview({
@@ -10515,7 +10533,7 @@ export async function listRuntimeTurns(
   nodeId: string
 ): Promise<RuntimeTurnListResponse | null> {
   const [context, projectedTurns] = await Promise.all([
-    getRuntimeContext(nodeId),
+    getRuntimeFilesystemContext(nodeId),
     listProjectedRuntimeTurnRecords(nodeId)
   ]);
 
@@ -11258,6 +11276,10 @@ async function synchronizeRuntimeActivityEvents(input: {
   const activeTurnActivityIds = new Set<string>();
 
   for (const runtime of input.runtimes) {
+    if (runtime.backendKind === "federated") {
+      continue;
+    }
+
     if (!runtime.contextAvailable || !runtime.contextPath) {
       continue;
     }
@@ -11894,6 +11916,10 @@ async function collectSessionInspectionNodes(): Promise<
   const sessions = new Map<string, SessionInspectionResponse["nodes"]>();
 
   for (const runtime of runtimes) {
+    if (runtime.backendKind === "federated") {
+      continue;
+    }
+
     if (!runtime.contextAvailable || !runtime.contextPath) {
       continue;
     }

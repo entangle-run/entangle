@@ -2291,6 +2291,176 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("does not use Host runtime files for accepted federated runtime artifact reads", async () => {
+    const server = await createTestServer();
+
+    try {
+      const [
+        {
+          getRuntimeContext,
+          recordArtifactRefObservation,
+          recordRunnerHello,
+          recordRuntimeAssignmentAccepted
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+      const runtimeContext = await getRuntimeContext("worker-it");
+      expect(runtimeContext).toBeTruthy();
+
+      const staleArtifactRecord = artifactRecordSchema.parse({
+        createdAt: "2026-04-22T00:00:00.000Z",
+        ref: {
+          artifactId: "artifact-alpha",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "stale-local",
+            commit: "stale-local-commit",
+            path: "report.md"
+          },
+          status: "materialized"
+        },
+        updatedAt: "2026-04-22T00:00:00.000Z"
+      });
+      await mkdir(path.join(runtimeContext!.workspace.runtimeRoot, "artifacts"), {
+        recursive: true
+      });
+      await writeFile(
+        path.join(
+          runtimeContext!.workspace.runtimeRoot,
+          "artifacts",
+          "artifact-alpha.json"
+        ),
+        `${JSON.stringify(staleArtifactRecord, null, 2)}\n`,
+        "utf8"
+      );
+
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+      const runnerId = "runner-alpha";
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+      const trustResponse = await server.inject({
+        method: "POST",
+        url: `/v1/runners/${runnerId}/trust`
+      });
+      expect(trustResponse.statusCode).toBe(200);
+      const offerResponse = await server.inject({
+        method: "POST",
+        payload: {
+          assignmentId: "assignment-alpha",
+          leaseDurationSeconds: 600,
+          nodeId: "worker-it",
+          runnerId
+        },
+        url: "/v1/assignments"
+      });
+      expect(offerResponse.statusCode).toBe(200);
+      const offered = runtimeAssignmentOfferResponseSchema.parse(
+        offerResponse.json()
+      ).assignment;
+      await recordRuntimeAssignmentAccepted({
+        acceptedAt: new Date().toISOString(),
+        assignmentId: "assignment-alpha",
+        eventType: "assignment.accepted",
+        hostAuthorityPubkey,
+        lease: offered.lease,
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      const observedAt = new Date().toISOString();
+      await recordArtifactRefObservation({
+        artifactPreview: {
+          available: true,
+          bytesRead: 16,
+          content: "# Report\n\nReady.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        },
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "projected-runner",
+            commit: "projected-runner-commit",
+            path: "report.md"
+          },
+          status: "published"
+        },
+        eventType: "artifact.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      const artifactResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha"
+      });
+      expect(artifactResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactInspectionResponseSchema.parse(artifactResponse.json())
+          .artifact.ref
+      ).toMatchObject({
+        locator: {
+          branch: "projected-runner",
+          commit: "projected-runner-commit"
+        },
+        status: "published"
+      });
+
+      const previewResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
+      });
+      expect(previewResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactPreviewResponseSchema.parse(previewResponse.json())
+      ).toMatchObject({
+        preview: {
+          available: true,
+          content: "# Report\n\nReady."
+        }
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("records audit events for token-protected operator mutation requests", async () => {
     process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
     process.env.ENTANGLE_HOST_OPERATOR_ID = "ops-lead";

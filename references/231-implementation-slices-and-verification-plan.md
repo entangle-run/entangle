@@ -382,6 +382,10 @@ Current status:
   command with a real Host process, joined runner process, relay, and primary
   git backend by checking projected `artifact.ref` evidence and the remote git
   branch head;
+- public deep runtime read paths now quarantine Host filesystem reads for
+  accepted federated assignments, so artifacts, memory, approvals,
+  source-change candidates, source history, and turns are served from
+  projection/backend evidence instead of stale Host-local runtime files;
 - deeper artifact history computation, richer source/wiki mutation endpoints,
   non-primary publication, and artifact restore/promotion still need
   projection-backed or backend-resolved replacement.
@@ -660,6 +664,7 @@ Implementation records:
 - [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
 - [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 - [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
+- [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
 
 Current status:
 
@@ -678,6 +683,9 @@ Current status:
 - the same process proof now requests runner-owned wiki publication through
   Host-signed `runtime.wiki.publish`, observes the projected git
   `artifact.ref`, and verifies the primary git backend branch head;
+- Host public deep runtime read paths now ignore Host-local runtime files for
+  accepted federated assignments, keeping the process proof on projected
+  runner evidence even when a semantic Host context exists;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

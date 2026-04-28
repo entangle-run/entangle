@@ -318,7 +318,9 @@ The repository now also contains the first real implementation baseline:
   that same Host control path, publishing a primary-git artifact and emitting
   signed `artifact.ref` evidence, and the process-boundary smoke now verifies
   that request with a real joined runner by checking Host projection plus the
-  primary git branch head. With
+  primary git branch head. Public deep runtime reads for accepted federated
+  assignments now ignore Host-local runtime files and use projected runner
+  evidence instead, while non-federated adapter reads remain available. With
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without

@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
+[349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -54,7 +54,8 @@ coverage for assignment timelines, User Client JSON read-state convergence,
 runner-owned wiki publication control, and Studio wiki publication request
 controls over the federated Host boundary, plus process-boundary proof that
 wiki publication produces projected artifact evidence and a matching primary git
-branch.
+branch, and Host public deep runtime reads now ignore Host-local runtime files
+for accepted federated assignments.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

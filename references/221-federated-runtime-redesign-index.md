@@ -149,6 +149,7 @@ same-machine slice records.
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 - [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
+- [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
 
 ## Audited Scope
 
@@ -578,10 +579,11 @@ details. Runner-observed replay outcomes now project into typed
 surfaces. Explicit wiki publication now has Host API, host-client, CLI, and
 Studio request surfaces over the same control boundary. Per-assignment
 timelines now group assignment lifecycle state and
-runner receipts for Host API, CLI, and Studio summary inspection, while
+runner receipts for Host API, CLI, and Studio summary inspection. Public deep
+runtime reads now avoid Host-local runtime files for accepted federated
+assignments and rely on projection evidence instead, while
 non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
-replacing remaining deep filesystem-backed runtime
-inspection paths with projection-backed source/wiki services and object-backed
-artifact services, and turning the process smoke into the full multi-machine
+backend-resolved object/artifact services for history, diff, restore, and
+promotion, and turning the process smoke into the full multi-machine
 distributed proof.
