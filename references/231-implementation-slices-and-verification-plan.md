@@ -330,6 +330,7 @@ Implementation record:
 - [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
 - [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
+- [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 
 Current status:
 
@@ -404,6 +405,7 @@ Implementation record:
 - [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
 - [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
+- [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 
 Verification:
 

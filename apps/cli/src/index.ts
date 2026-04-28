@@ -26,12 +26,10 @@ import {
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
-  runtimeApprovalDecisionMutationRequestSchema,
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
-  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeWikiRepositoryPublicationRequestSchema,
@@ -106,6 +104,8 @@ import {
 import {
   buildUserNodeApprovalMetadata,
   buildUserNodeApprovalPublishRequestFromMessage,
+  buildUserNodeSourceChangeReviewMetadata,
+  buildUserNodeSourceChangeReviewPublishRequestFromMessage,
   hasUserNodeApprovalContextOptions
 } from "./user-node-message-command.js";
 import {
@@ -1338,6 +1338,18 @@ userNodesCommand
     "--approval-resource-label <label>",
     "Human-readable scoped resource label for approval.response context."
   )
+  .option(
+    "--source-candidate-id <candidateId>",
+    "Source-change candidate id for source_change.review messages."
+  )
+  .option(
+    "--source-review-decision <decision>",
+    "Source-change review decision for source_change.review messages."
+  )
+  .option(
+    "--source-review-reason <reason>",
+    "Reason/context carried on signed source_change.review metadata."
+  )
   .option("--conversation-id <conversationId>", "Conversation id to reuse.")
   .option("--session-id <sessionId>", "Session id to reuse.")
   .option("--turn-id <turnId>", "Turn id to use.")
@@ -1361,6 +1373,9 @@ userNodesCommand
       messageType: string;
       parentMessageId?: string;
       sessionId?: string;
+      sourceCandidateId?: string;
+      sourceReviewDecision?: string;
+      sourceReviewReason?: string;
       turnId?: string;
     },
     command: Command
@@ -1376,6 +1391,28 @@ userNodesCommand
       );
     }
 
+    if (
+      (options.sourceCandidateId ||
+        options.sourceReviewDecision ||
+        options.sourceReviewReason) &&
+      (!options.sourceCandidateId || !options.sourceReviewDecision)
+    ) {
+      throw new Error(
+        "User Node source review messages require both --source-candidate-id and --source-review-decision."
+      );
+    }
+
+    if (
+      (options.sourceCandidateId ||
+        options.sourceReviewDecision ||
+        options.sourceReviewReason) &&
+      options.messageType !== "source_change.review"
+    ) {
+      throw new Error(
+        "Use --message-type source_change.review with source review metadata."
+      );
+    }
+
     const request = userNodeMessagePublishRequestSchema.parse({
       ...(options.approvalId && options.approvalDecision
         ? {
@@ -1383,6 +1420,17 @@ userNodesCommand
               approvalId: options.approvalId,
               decision: options.approvalDecision,
               options
+            })
+          }
+        : {}),
+      ...(options.sourceCandidateId && options.sourceReviewDecision
+        ? {
+            sourceChangeReview: buildUserNodeSourceChangeReviewMetadata({
+              candidateId: options.sourceCandidateId,
+              decision: options.sourceReviewDecision,
+              ...(options.sourceReviewReason
+                ? { reason: options.sourceReviewReason }
+                : {})
             })
           }
         : {}),
@@ -1789,6 +1837,114 @@ program
                 : {}),
               ...(options.sessionId ? { sessionId: options.sessionId } : {}),
               summary: options.reason ?? `Rejected ${approvalId}.`,
+              targetNodeId: options.targetNode,
+              ...(options.turnId ? { turnId: options.turnId } : {})
+            };
+          })()
+    );
+    const response = await client.publishUserNodeMessage(
+      options.userNode,
+      request
+    );
+
+    printJson(
+      options.compact
+        ? { message: projectUserNodeMessagePublishSummary(response) }
+        : response
+    );
+  });
+
+program
+  .command("review-source-candidate")
+  .argument("[candidateId]", "Source-change candidate id unless --from-message supplies it.")
+  .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
+  .requiredOption(
+    "--decision <decision>",
+    "Signed source review decision: accepted or rejected."
+  )
+  .option("--target-node <nodeId>", "Target runtime node id.")
+  .option(
+    "--from-message <eventId>",
+    "Recorded inbound approval.request event id with a source_change_candidate resource."
+  )
+  .option("--reason <reason>", "Source review reason.")
+  .option("--body <body>", "Source review body.")
+  .option("--conversation-id <conversationId>", "Conversation id to reuse.")
+  .option("--session-id <sessionId>", "Session id to reuse.")
+  .option("--turn-id <turnId>", "Turn id to use.")
+  .option("--parent-message-id <eventId>", "Parent Nostr event id.")
+  .option("--compact", "Print a compact publish summary.")
+  .option(
+    "--host-url <url>",
+    "Base URL for entangle-host.",
+    process.env.ENTANGLE_HOST_URL ?? "http://localhost:7071"
+  )
+  .option(
+    "--host-token <token>",
+    "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
+    process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
+  )
+  .description("Publish a signed User Node source-change review.")
+  .action(async (
+    candidateId: string | undefined,
+    options: {
+      body?: string;
+      compact?: boolean;
+      conversationId?: string;
+      decision: string;
+      fromMessage?: string;
+      parentMessageId?: string;
+      reason?: string;
+      sessionId?: string;
+      targetNode?: string;
+      turnId?: string;
+      userNode: string;
+    },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const request = userNodeMessagePublishRequestSchema.parse(
+      options.fromMessage
+        ? buildUserNodeSourceChangeReviewPublishRequestFromMessage({
+            ...(candidateId ? { candidateId } : {}),
+            decision: options.decision,
+            message: await findUserNodeMessageByEventId({
+              client,
+              eventId: options.fromMessage,
+              userNodeId: options.userNode
+            }),
+            ...(options.reason ? { reason: options.reason } : {}),
+            ...(options.body ? { summary: options.body } : {})
+          })
+        : (() => {
+            if (!candidateId || !options.targetNode || !options.parentMessageId) {
+              throw new Error(
+                "Candidate id, --target-node, and --parent-message-id are required unless --from-message is supplied."
+              );
+            }
+
+            const review = buildUserNodeSourceChangeReviewMetadata({
+              candidateId,
+              decision: options.decision,
+              ...(options.reason ? { reason: options.reason } : {})
+            });
+
+            return {
+              ...(options.conversationId
+                ? { conversationId: options.conversationId }
+                : {}),
+              messageType: "source_change.review" as const,
+              parentMessageId: options.parentMessageId,
+              responsePolicy: {
+                closeOnResult: false,
+                maxFollowups: 0,
+                responseRequired: false
+              },
+              ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+              sourceChangeReview: review,
+              summary:
+                options.body ??
+                `${review.decision === "accepted" ? "Accepted" : "Rejected"} source change ${candidateId}.`,
               targetNodeId: options.targetNode,
               ...(options.turnId ? { turnId: options.turnId } : {})
             };
@@ -3223,106 +3379,17 @@ hostRuntimesCommand
   );
 
 hostRuntimesCommand
-  .command("approval-decision")
-  .argument("<nodeId>", "Node identifier in the active graph.")
-  .option("--approval-id <approvalId>", "Existing approval id to decide.")
-  .option("--approver <approverNodeId>", "Approver node id.", "user")
-  .option("--operation <operation>", "Policy operation for a new scoped approval.")
-  .option("--reason <reason>", "Decision reason.")
-  .option("--resource-id <resourceId>", "Policy resource id for a new scoped approval.")
-  .option(
-    "--resource-kind <resourceKind>",
-    "Policy resource kind for a new scoped approval."
-  )
-  .option("--resource-label <resourceLabel>", "Human-readable resource label.")
-  .option("--session-id <sessionId>", "Session id for a new scoped approval.")
-  .option(
-    "--status <status>",
-    "Decision status: approved or rejected.",
-    "approved"
-  )
-  .option("--summary", "Print a compact operator-oriented approval summary.")
-  .description("Record an operator decision for a scoped runtime approval.")
-  .action(
-    async (
-      nodeId: string,
-      options: {
-        approvalId?: string;
-        approver: string;
-        operation?: string;
-        reason?: string;
-        resourceId?: string;
-        resourceKind?: string;
-        resourceLabel?: string;
-        sessionId?: string;
-        status: string;
-        summary?: boolean;
-      },
-      command: Command
-    ) => {
-      if (
-        (options.resourceId || options.resourceKind || options.resourceLabel) &&
-        (!options.resourceId || !options.resourceKind)
-      ) {
-        throw new Error(
-          "Use --resource-id and --resource-kind together when setting approval scope."
-        );
-      }
-
-      const decision = runtimeApprovalDecisionMutationRequestSchema.parse({
-        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
-        approverNodeIds: [options.approver],
-        ...(options.operation ? { operation: options.operation } : {}),
-        ...(options.reason ? { reason: options.reason } : {}),
-        ...(options.resourceId && options.resourceKind
-          ? {
-              resource: {
-                id: options.resourceId,
-                kind: options.resourceKind,
-                ...(options.resourceLabel
-                  ? { label: options.resourceLabel }
-                  : {})
-              }
-            }
-          : {}),
-        ...(options.sessionId ? { sessionId: options.sessionId } : {}),
-        status: options.status
-      });
-      const client = createCliHostClient(command);
-      const response = await client.recordRuntimeApprovalDecision(
-        nodeId,
-        decision
-      );
-
-      printJson(
-        options.summary
-          ? { approval: projectRuntimeApprovalSummary(response.approval) }
-          : response
-      );
-    }
-  );
-
-hostRuntimesCommand
   .command("source-candidate")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<candidateId>", "Source change candidate identifier to inspect.")
   .option("--diff", "Include the bounded source diff when available.")
   .option("--file <path>", "Include a bounded preview for one changed source file.")
   .option("--apply", "Apply an accepted candidate into runtime source history.")
-  .option(
-    "--review <status>",
-    "Review the candidate as accepted, rejected, or superseded."
-  )
-  .option("--reason <reason>", "Attach a review or application reason.")
-  .option("--reviewed-by <operatorId>", "Attach the reviewing operator id.")
+  .option("--reason <reason>", "Attach an application reason.")
   .option("--applied-by <operatorId>", "Attach the applying operator id.")
   .option("--approval-id <approvalId>", "Attach an approved source application approval id.")
-  .option(
-    "--superseded-by <candidateId>",
-    "Candidate id that supersedes this candidate when --review superseded is used."
-  )
   .option("--summary", "Print a compact operator-oriented candidate summary.")
-  .description("Inspect, review, or apply one persisted source change candidate.")
+  .description("Inspect or apply one persisted source change candidate.")
   .action(
     async (
       nodeId: string,
@@ -3334,9 +3401,6 @@ hostRuntimesCommand
         diff?: boolean;
         file?: string;
         reason?: string;
-        review?: string;
-        reviewedBy?: string;
-        supersededBy?: string;
         summary?: boolean;
       },
       command: Command
@@ -3345,22 +3409,15 @@ hostRuntimesCommand
       const selectedInspectionModes = [
         options.apply,
         options.diff,
-        Boolean(options.file),
-        Boolean(options.review)
+        Boolean(options.file)
       ].filter(Boolean).length;
 
       if (selectedInspectionModes > 1) {
-        throw new Error("Use only one of --apply, --diff, --file, or --review.");
+        throw new Error("Use only one of --apply, --diff, or --file.");
       }
 
-      if (options.reason && !options.review && !options.apply) {
-        throw new Error(
-          "Use --reason only with --review or --apply."
-        );
-      }
-
-      if ((options.reviewedBy || options.supersededBy) && !options.review) {
-        throw new Error("Use --reviewed-by or --superseded-by only with --review.");
+      if (options.reason && !options.apply) {
+        throw new Error("Use --reason only with --apply.");
       }
 
       if ((options.appliedBy || options.approvalId) && !options.apply) {
@@ -3383,32 +3440,6 @@ hostRuntimesCommand
           options.summary
             ? {
                 sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
-              }
-            : response
-        );
-        return;
-      }
-
-      if (options.review) {
-        const review = runtimeSourceChangeCandidateReviewMutationRequestSchema.parse({
-          ...(options.reason ? { reason: options.reason } : {}),
-          ...(options.reviewedBy ? { reviewedBy: options.reviewedBy } : {}),
-          status: options.review,
-          ...(options.supersededBy
-            ? { supersededByCandidateId: options.supersededBy }
-            : {})
-        });
-        const response = await client.reviewRuntimeSourceChangeCandidate(
-          nodeId,
-          candidateId,
-          review
-        );
-        printJson(
-          options.summary
-            ? {
-                candidate: projectRuntimeSourceChangeCandidateSummary(
-                  response.candidate
-                )
               }
             : response
         );

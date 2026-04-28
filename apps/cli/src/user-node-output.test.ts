@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type {
   HostProjectionSnapshot,
   UserConversationProjectionRecord,
-  UserNodeIdentityRecord
+  UserNodeIdentityRecord,
+  UserNodeMessageRecord
 } from "@entangle/types";
 import {
   buildUserNodeClientSummariesForCli,
@@ -15,6 +16,7 @@ import {
 import {
   buildUserNodeApprovalPublishRequestFromMessage,
   buildUserNodeApprovalMetadata,
+  buildUserNodeSourceChangeReviewPublishRequestFromMessage,
   hasUserNodeApprovalContextOptions
 } from "./user-node-message-command.js";
 
@@ -265,42 +267,42 @@ describe("user node CLI output", () => {
   });
 
   it("builds approval responses from recorded approval request messages", () => {
+    const message: UserNodeMessageRecord = {
+      approval: {
+        approvalId: "approval-source-alpha",
+        approverNodeIds: ["user-a"],
+        operation: "source_application",
+        reason: "Review source change.",
+        resource: {
+          id: "source-change-alpha",
+          kind: "source_change_candidate",
+          label: "Source change alpha"
+        }
+      },
+      artifactRefs: [],
+      conversationId: "conversation-alpha",
+      createdAt: "2026-04-26T12:00:00.000Z",
+      direction: "inbound",
+      eventId: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      fromNodeId: "worker-it",
+      fromPubkey:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      messageType: "approval.request",
+      peerNodeId: "worker-it",
+      publishedRelays: [],
+      relayUrls: [],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      summary: "Please approve.",
+      toNodeId: "user-a",
+      toPubkey:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      turnId: "turn-alpha",
+      userNodeId: "user-a"
+    };
     const request = buildUserNodeApprovalPublishRequestFromMessage({
       decision: "approved",
-      message: {
-        approval: {
-          approvalId: "approval-source-alpha",
-          approverNodeIds: ["user-a"],
-          operation: "source_application",
-          reason: "Review source change.",
-          resource: {
-            id: "source-change-alpha",
-            kind: "source_change_candidate",
-            label: "Source change alpha"
-          }
-        },
-        artifactRefs: [],
-        conversationId: "conversation-alpha",
-        createdAt: "2026-04-26T12:00:00.000Z",
-        direction: "inbound",
-        eventId:
-          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-        fromNodeId: "worker-it",
-        fromPubkey:
-          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        messageType: "approval.request",
-        peerNodeId: "worker-it",
-        publishedRelays: [],
-        relayUrls: [],
-        schemaVersion: "1",
-        sessionId: "session-alpha",
-        summary: "Please approve.",
-        toNodeId: "user-a",
-        toPubkey:
-          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        turnId: "turn-alpha",
-        userNodeId: "user-a"
-      }
+      message
     });
 
     expect(request).toMatchObject({
@@ -319,6 +321,32 @@ describe("user node CLI output", () => {
       parentMessageId:
         "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       sessionId: "session-alpha",
+      targetNodeId: "worker-it",
+      turnId: "turn-alpha"
+    });
+
+    expect(
+      buildUserNodeSourceChangeReviewPublishRequestFromMessage({
+        decision: "accepted",
+        message,
+        reason: "Looks correct."
+      })
+    ).toMatchObject({
+      conversationId: "conversation-alpha",
+      messageType: "source_change.review",
+      parentMessageId:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-alpha",
+      sourceChangeReview: {
+        candidateId: "source-change-alpha",
+        decision: "accepted",
+        reason: "Looks correct."
+      },
       targetNodeId: "worker-it",
       turnId: "turn-alpha"
     });

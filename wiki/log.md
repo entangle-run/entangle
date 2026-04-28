@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Quarantined public direct approval and review mutations
+
+Studio and CLI no longer expose public operator actions for direct Host-side
+approval decisions or source-candidate reviews. Runtime approval and source
+candidate panels remain available for admin inspection, while approval
+responses and source reviews are submitted through signed User Node message
+paths.
+
+Added `references/322-public-direct-mutation-surface-quarantine-slice.md`.
+CLI now includes `entangle review-source-candidate` and generic
+`entangle user-nodes message --message-type source_change.review` support for
+signed source-candidate review messages.
+
 ## [2026-04-28] implementation | Signed User Node source-candidate reviews
 
 User Client source-change accept/reject now publishes signed

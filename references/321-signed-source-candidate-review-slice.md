@@ -64,8 +64,11 @@ User Node message and projects the runner observation.
 ## Migration And Compatibility Notes
 
 The older Host runtime source-candidate review mutation still exists as a
-non-canonical compatibility/admin path. The canonical User Node and User Client
-path is now signed A2A review.
+non-canonical compatibility/internal path. The public CLI and Studio review
+surfaces are quarantined in
+[322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md),
+so the canonical User Node, User Client, and CLI participant path is now signed
+A2A review.
 
 ## Risks And Mitigations
 
@@ -81,8 +84,5 @@ path is now signed A2A review.
 
 ## Open Questions
 
-- The old Studio/CLI admin source-candidate mutation path should be removed or
-  explicitly moved behind a debug/admin compatibility boundary in a follow-up
-  slice.
 - Source candidate apply/publish/replay, artifact restore/promote, and wiki
   publication still need equivalent runner-owned command paths.

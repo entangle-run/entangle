@@ -23,6 +23,7 @@ const entries: SourceHistoryRecord[] = [
       checkedAt: "2026-04-24T00:00:00.000Z",
       deletions: 0,
       fileCount: 1,
+      filePreviews: [],
       files: [],
       status: "changed",
       truncated: false
@@ -63,6 +64,7 @@ const entries: SourceHistoryRecord[] = [
       checkedAt: "2026-04-24T00:02:00.000Z",
       deletions: 1,
       fileCount: 2,
+      filePreviews: [],
       files: [],
       status: "changed",
       truncated: false

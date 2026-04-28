@@ -122,6 +122,7 @@ same-machine slice records.
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
+- [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 
 ## Audited Scope
 
@@ -327,6 +328,10 @@ The repository is not fully federated:
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`
   observation;
+- Studio and CLI public operator surfaces no longer expose direct Host approval
+  decisions or source-candidate review mutations. CLI now exposes signed User
+  Node source review through `entangle review-source-candidate` and generic
+  `entangle user-nodes message --message-type source_change.review`;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, source-change candidate list/detail/diff/file,
@@ -453,11 +458,13 @@ follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The User Client now emits signed source-candidate review messages to the owning
-runner, CLI can list projected User Client endpoints per User Node, Host status
-exposes first control/observe transport health to CLI and Studio, and operators
-can generate generic runner join configs from Host status. The next blocking
-implementation areas are richer projection-backed source/wiki review services,
-replacing remaining deep filesystem-backed runtime inspection paths with
-projection-backed source/wiki services and object-backed artifact services,
-adding deeper per-relay diagnostics, and turning the process smoke into the
-full multi-machine distributed proof.
+runner, CLI can publish signed source-candidate review messages as a User Node,
+public Studio/CLI operator approval-review mutations are quarantined, CLI can
+list projected User Client endpoints per User Node, Host status exposes first
+control/observe transport health to CLI and Studio, and operators can generate
+generic runner join configs from Host status. The next blocking implementation
+areas are richer projection-backed source/wiki review services, replacing
+remaining deep filesystem-backed runtime inspection paths with projection-backed
+source/wiki services and object-backed artifact services, adding deeper
+per-relay diagnostics, and turning the process smoke into the full
+multi-machine distributed proof.

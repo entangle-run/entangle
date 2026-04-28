@@ -66,6 +66,7 @@ function createTurn(
       checkedAt: "2026-04-24T11:00:00.000Z",
       deletions: 0,
       fileCount: 1,
+      filePreviews: [],
       files: [
         {
           additions: 2,

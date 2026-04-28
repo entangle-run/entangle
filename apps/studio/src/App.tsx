@@ -66,7 +66,6 @@ import type {
   RunnerTurnRecord,
   SessionCancellationResponse,
   SessionLaunchResponse,
-  SourceChangeCandidateReviewDecision,
   SourceChangeCandidateRecord,
   SourceHistoryRecord,
   UserNodeIdentityRecord
@@ -259,7 +258,6 @@ type FlowProjection = {
 type EventStreamState = "connecting" | "live" | "closed" | "error";
 type EdgeMutationAction = "create" | "delete" | "replace";
 type NodeMutationAction = "create" | "delete" | "replace";
-type ApprovalDecisionAction = "approved" | "rejected";
 
 function normalizeError(
   caught: unknown,
@@ -529,8 +527,6 @@ export function App() {
   const [approvalDetailError, setApprovalDetailError] = useState<string | null>(
     null
   );
-  const [pendingApprovalDecision, setPendingApprovalDecision] =
-    useState<ApprovalDecisionAction | null>(null);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [selectedArtifactInspection, setSelectedArtifactInspection] =
@@ -607,10 +603,6 @@ export function App() {
   ] = useState<RuntimeSourceChangeCandidateFilePreviewResponse | null>(null);
   const [sourceChangeCandidateDetailError, setSourceChangeCandidateDetailError] =
     useState<string | null>(null);
-  const [
-    pendingSourceChangeCandidateReview,
-    setPendingSourceChangeCandidateReview
-  ] = useState<SourceChangeCandidateReviewDecision | null>(null);
   const [selectedSourceHistory, setSelectedSourceHistory] = useState<
     SourceHistoryRecord[]
   >([]);
@@ -2194,55 +2186,6 @@ export function App() {
     [loadSelectedApprovalInspection, selectedRuntimeId]
   );
 
-  const decideSelectedApproval = useCallback(
-    async (status: ApprovalDecisionAction) => {
-      if (!selectedRuntimeId || !selectedApprovalInspection) {
-        return;
-      }
-
-      const { approval } = selectedApprovalInspection;
-      setPendingApprovalDecision(status);
-      setApprovalDetailError(null);
-
-      try {
-        const response = await client.recordRuntimeApprovalDecision(
-          selectedRuntimeId,
-          {
-            approvalId: approval.approvalId,
-            approverNodeIds: ["user"],
-            reason:
-              status === "approved"
-                ? "Approved from Entangle Studio."
-                : "Rejected from Entangle Studio.",
-            status
-          }
-        );
-
-        startTransition(() => {
-          setSelectedApprovalInspection(response);
-        });
-        await refreshSelectedRuntimeDetails(selectedRuntimeId);
-      } catch (caught: unknown) {
-        startTransition(() => {
-          setApprovalDetailError(
-            normalizeError(
-              caught,
-              "Unknown error while recording approval decision."
-            )
-          );
-        });
-      } finally {
-        setPendingApprovalDecision(null);
-      }
-    },
-    [
-      client,
-      refreshSelectedRuntimeDetails,
-      selectedApprovalInspection,
-      selectedRuntimeId
-    ]
-  );
-
   const selectRuntimeArtifact = useCallback(
     async (artifactId: string) => {
       if (!selectedRuntimeId) {
@@ -2307,7 +2250,6 @@ export function App() {
       setSelectedSourceChangeCandidateDiff(null);
       setSelectedSourceChangeCandidateFilePath(null);
       setSelectedSourceChangeCandidateFilePreview(null);
-      setPendingSourceChangeCandidateReview(null);
       setPendingSourceChangeCandidateApply(false);
       setSourceChangeCandidateDetailError(null);
       await loadSelectedSourceChangeCandidateInspection(
@@ -2335,60 +2277,6 @@ export function App() {
     },
     [
       loadSelectedSourceChangeCandidateFilePreview,
-      selectedRuntimeId,
-      selectedSourceChangeCandidateId
-    ]
-  );
-
-  const reviewSelectedSourceChangeCandidate = useCallback(
-    async (
-      status: SourceChangeCandidateReviewDecision,
-      supersededByCandidateId?: string
-    ) => {
-      if (!selectedRuntimeId || !selectedSourceChangeCandidateId) {
-        return;
-      }
-
-      try {
-        setPendingSourceChangeCandidateReview(status);
-        const response = await client.reviewRuntimeSourceChangeCandidate(
-          selectedRuntimeId,
-          selectedSourceChangeCandidateId,
-          {
-            status,
-            ...(supersededByCandidateId ? { supersededByCandidateId } : {})
-          }
-        );
-
-        startTransition(() => {
-          setSelectedSourceChangeCandidateInspection(response);
-          setSelectedSourceChangeCandidates((candidates) =>
-            candidates.map((candidate) =>
-              candidate.candidateId === response.candidate.candidateId
-                ? response.candidate
-                : candidate
-            )
-          );
-          setSourceChangeCandidateDetailError(null);
-        });
-
-        await refreshSelectedRuntimeDetails(selectedRuntimeId);
-      } catch (caught: unknown) {
-        startTransition(() => {
-          setSourceChangeCandidateDetailError(
-            normalizeError(
-              caught,
-              "Unknown error while reviewing source change candidate."
-            )
-          );
-        });
-      } finally {
-        setPendingSourceChangeCandidateReview(null);
-      }
-    },
-    [
-      client,
-      refreshSelectedRuntimeDetails,
       selectedRuntimeId,
       selectedSourceChangeCandidateId
     ]
@@ -5750,32 +5638,9 @@ export function App() {
 
                         {selectedApprovalInspection.approval.status ===
                         "pending" ? (
-                          <div className="action-row">
-                            <button
-                              className="action-button"
-                              disabled={pendingApprovalDecision !== null}
-                              onClick={() => {
-                                void decideSelectedApproval("approved");
-                              }}
-                              type="button"
-                            >
-                              {pendingApprovalDecision === "approved"
-                                ? "Approving..."
-                                : "Approve"}
-                            </button>
-                            <button
-                              className="action-button"
-                              disabled={pendingApprovalDecision !== null}
-                              onClick={() => {
-                                void decideSelectedApproval("rejected");
-                              }}
-                              type="button"
-                            >
-                              {pendingApprovalDecision === "rejected"
-                                ? "Rejecting..."
-                                : "Reject"}
-                            </button>
-                          </div>
+                          <p className="panel-caption">
+                            Awaiting signed User Node response
+                          </p>
                         ) : null}
                       </div>
                     ) : selectedApprovalId ? (
@@ -6008,62 +5873,9 @@ export function App() {
 
                         {selectedSourceChangeCandidateInspection.candidate.status ===
                         "pending_review" ? (
-                          <div className="source-file-selector">
-                            <button
-                              className="action-button"
-                              disabled={pendingSourceChangeCandidateReview !== null}
-                              onClick={() => {
-                                void reviewSelectedSourceChangeCandidate(
-                                  "accepted"
-                                );
-                              }}
-                              type="button"
-                            >
-                              {pendingSourceChangeCandidateReview === "accepted"
-                                ? "Accepting"
-                                : "Accept"}
-                            </button>
-                            <button
-                              className="action-button"
-                              disabled={pendingSourceChangeCandidateReview !== null}
-                              onClick={() => {
-                                void reviewSelectedSourceChangeCandidate(
-                                  "rejected"
-                                );
-                              }}
-                              type="button"
-                            >
-                              {pendingSourceChangeCandidateReview === "rejected"
-                                ? "Rejecting"
-                                : "Reject"}
-                            </button>
-                            {selectedSourceChangeCandidates
-                              .filter(
-                                (candidate) =>
-                                  candidate.candidateId !==
-                                  selectedSourceChangeCandidateInspection.candidate
-                                    .candidateId
-                              )
-                              .slice(0, 3)
-                              .map((candidate) => (
-                                <button
-                                  className="action-button"
-                                  disabled={
-                                    pendingSourceChangeCandidateReview !== null
-                                  }
-                                  key={candidate.candidateId}
-                                  onClick={() => {
-                                    void reviewSelectedSourceChangeCandidate(
-                                      "superseded",
-                                      candidate.candidateId
-                                    );
-                                  }}
-                                  type="button"
-                                >
-                                  {`Supersede by ${candidate.candidateId}`}
-                                </button>
-                              ))}
-                          </div>
+                          <p className="panel-caption">
+                            Awaiting signed User Node source review
+                          </p>
                         ) : null}
 
                         {selectedSourceChangeCandidateInspection.candidate.status ===

@@ -235,7 +235,8 @@ This repository currently contains:
   host events, runtime inspection, CLI output, and Studio details, plus
   durable pending source-change candidate records with host, CLI, and Studio
   inspection plus bounded candidate diff, listed-file previews, and audited
-  review lifecycle mutations for accepted/rejected/superseded decisions, and a
+  review lifecycle now driven publicly by signed User Node
+  `source_change.review` messages for accepted/rejected decisions, and a
   runtime-local source-history application path for accepted candidates that
   validates the current source tree before recording a local history commit,
   plus a separate source-history publication path that materializes an applied
@@ -249,9 +250,9 @@ This repository currently contains:
   any source-history publication, or before non-primary publication targets by
   default, and with accepted approval ids persisted on source records and
   source history events after validating approval operation and concrete
-  resource scope, plus a host/CLI/Studio operator decision surface that can
-  create scoped source-mutation approvals or decide existing pending approvals
-  through the same host boundary, plus runner-emitted `artifact.ref`,
+  resource scope, plus signed User Node approval-response commands and User
+  Client controls for participant approval decisions, plus runner-emitted
+  `artifact.ref`,
   `source_change.ref`, and `wiki.ref` observations during normal turns so Host
   projection receives portable work refs and bounded source-change summaries
   through the observe protocol, plus runner-owned local git snapshots of
@@ -419,10 +420,9 @@ This repository currently contains:
   coverage for deeper runtime auditability;
 - host read surfaces for persisted runner approval records through
   `GET /v1/runtimes/{nodeId}/approvals` and
-  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}`, plus an explicit
-  operator decision mutation through `POST /v1/runtimes/{nodeId}/approvals`
-  for scoped approval creation or pending approval decisions, with shared
-  host-client, CLI, and Studio coverage for approval-gate auditability;
+  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}`, with shared
+  host-client, CLI, and Studio read coverage for approval-gate auditability
+  while approval responses are submitted as signed User Node messages;
 - a host-owned session inspection surface through `GET /v1/sessions` and
   `GET /v1/sessions/{sessionId}`, aggregating persisted runner session state
   across the current host runtime set and exposing the same boundary through
@@ -847,9 +847,10 @@ This repository currently contains:
   approval-gated by default, and CLI/Studio/shared presentation surfaces expose
   the persisted source approval evidence, including approval operation and
   resource scope;
-- the operator scoped approval decision slice where headless and visual
-  operators can create exact operation/resource-scoped approval decisions or
-  approve/reject pending approval records through the shared host boundary;
+- the public direct-mutation quarantine slice where headless and visual
+  operator surfaces keep approval/source-candidate inspection while
+  approve/reject and source-candidate review move to signed User Node message
+  paths;
 - the node agent-runtime configuration slice where headless operators can use
   `entangle host nodes agent-runtime` to set or clear node-level runtime mode,
   engine profile, and default-agent overrides, while Studio's Managed Node

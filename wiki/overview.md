@@ -610,10 +610,10 @@ The repository now also contains the first real implementation baseline:
   active-work and approval-gate vocabulary;
 - a host-owned runtime approval inspection surface where `entangle-host` now
   exposes `GET /v1/runtimes/{nodeId}/approvals` plus
-  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}` and an explicit
-  `POST /v1/runtimes/{nodeId}/approvals` operator decision mutation, sharing
-  the same boundary through `packages/host-client`, CLI summaries/filters,
-  CLI approval decisions, and Studio selected-runtime drilldown;
+  `GET /v1/runtimes/{nodeId}/approvals/{approvalId}` through
+  `packages/host-client`, CLI summaries/filters, and Studio selected-runtime
+  drilldown, while public approval responses are signed User Node messages
+  rather than operator-side Host mutations;
 - a node agent-runtime configuration surface where the CLI can set or clear
   node-level runtime mode, engine profile, and default-agent overrides through
   `entangle host nodes agent-runtime`, while Studio's Managed Node Editor loads

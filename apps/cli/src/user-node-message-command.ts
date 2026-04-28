@@ -1,5 +1,6 @@
 import {
   entangleA2AApprovalResponseDecisionSchema,
+  entangleA2ASourceChangeReviewDecisionSchema,
   policyOperationSchema,
   policyResourceScopeSchema,
   type ParsedUserNodeMessagePublishRequest,
@@ -17,6 +18,10 @@ export type UserNodeApprovalContextCliOptions = {
 
 export type UserNodeApprovalMetadata = NonNullable<
   ParsedUserNodeMessagePublishRequest["approval"]
+>;
+
+export type UserNodeSourceChangeReviewMetadata = NonNullable<
+  ParsedUserNodeMessagePublishRequest["sourceChangeReview"]
 >;
 
 export function hasUserNodeApprovalContextOptions(
@@ -159,6 +164,69 @@ export function buildUserNodeApprovalPublishRequestFromMessage(input: {
     parentMessageId: input.message.eventId,
     sessionId: input.message.sessionId,
     summary: input.summary ?? defaultSummary,
+    targetNodeId: input.message.fromNodeId,
+    turnId: input.message.turnId
+  };
+}
+
+export function buildUserNodeSourceChangeReviewMetadata(input: {
+  candidateId: string;
+  decision: string;
+  reason?: string | undefined;
+}): UserNodeSourceChangeReviewMetadata {
+  return {
+    candidateId: input.candidateId,
+    decision: entangleA2ASourceChangeReviewDecisionSchema.parse(input.decision),
+    ...(input.reason ? { reason: input.reason } : {})
+  };
+}
+
+export function buildUserNodeSourceChangeReviewPublishRequestFromMessage(input: {
+  candidateId?: string | undefined;
+  decision: string;
+  message: UserNodeMessageRecord;
+  reason?: string | undefined;
+  summary?: string | undefined;
+}): UserNodeMessagePublishRequest {
+  const resource = input.message.approval?.resource;
+
+  if (
+    input.message.direction !== "inbound" ||
+    input.message.messageType !== "approval.request" ||
+    resource?.kind !== "source_change_candidate"
+  ) {
+    throw new Error(
+      "--from-message must reference an inbound approval.request for a source_change_candidate resource."
+    );
+  }
+
+  const candidateId = input.candidateId ?? resource.id;
+
+  if (input.candidateId && input.candidateId !== resource.id) {
+    throw new Error(
+      `Source candidate id '${input.candidateId}' does not match message resource id '${resource.id}'.`
+    );
+  }
+
+  const review = buildUserNodeSourceChangeReviewMetadata({
+    candidateId,
+    decision: input.decision,
+    ...(input.reason ? { reason: input.reason } : {})
+  });
+  const decisionLabel = review.decision === "accepted" ? "Accepted" : "Rejected";
+
+  return {
+    conversationId: input.message.conversationId,
+    messageType: "source_change.review",
+    parentMessageId: input.message.eventId,
+    responsePolicy: {
+      closeOnResult: false,
+      maxFollowups: 0,
+      responseRequired: false
+    },
+    sessionId: input.message.sessionId,
+    sourceChangeReview: review,
+    summary: input.summary ?? `${decisionLabel} source change ${candidateId}.`,
     targetNodeId: input.message.fromNodeId,
     turnId: input.message.turnId
   };
