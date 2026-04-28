@@ -30,7 +30,6 @@ import {
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceChangeCandidateApplyMutationRequestSchema,
-  runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeWikiRepositoryPublicationRequestSchema,
   sessionCancellationMutationRequestSchema,
@@ -3734,89 +3733,18 @@ hostRuntimesCommand
   .command("source-history-entry")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<sourceHistoryId>", "Source history entry identifier to inspect.")
-  .option("--publish", "Publish the source history entry as a git artifact.")
-  .option("--approval-id <approvalId>", "Attach an approved source publication approval id.")
-  .option("--published-by <operatorId>", "Attach the publishing operator id.")
-  .option("--reason <reason>", "Attach a publication reason.")
-  .option("--retry", "Retry after a failed source history publication attempt.")
-  .option(
-    "--target-git-service <serviceId>",
-    "Publish to a selected git service."
-  )
-  .option("--target-namespace <namespace>", "Publish to a selected git namespace.")
-  .option(
-    "--target-repository <repositoryName>",
-    "Publish to a selected git repository."
-  )
   .option("--summary", "Print a compact operator-oriented source history summary.")
-  .description("Inspect or publish one persisted source history entry.")
+  .description("Inspect one persisted source history entry.")
   .action(
     async (
       nodeId: string,
       sourceHistoryId: string,
       options: {
-        approvalId?: string;
-        publish?: boolean;
-        publishedBy?: string;
-        reason?: string;
-        retry?: boolean;
         summary?: boolean;
-        targetGitService?: string;
-        targetNamespace?: string;
-        targetRepository?: string;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      if (
-        (options.approvalId ||
-          options.publishedBy ||
-          options.reason ||
-          options.retry ||
-          options.targetGitService ||
-          options.targetNamespace ||
-          options.targetRepository) &&
-        !options.publish
-      ) {
-        throw new Error(
-          "Use --approval-id, --published-by, --reason, --retry, or target options only with --publish."
-        );
-      }
-
-      if (options.publish) {
-        const publish =
-          runtimeSourceHistoryPublishMutationRequestSchema.parse({
-            ...(options.approvalId ? { approvalId: options.approvalId } : {}),
-            ...(options.publishedBy ? { publishedBy: options.publishedBy } : {}),
-            ...(options.reason ? { reason: options.reason } : {}),
-            retry: options.retry ?? false,
-            ...(options.targetGitService
-              ? { targetGitServiceRef: options.targetGitService }
-              : {}),
-            ...(options.targetNamespace
-              ? { targetNamespace: options.targetNamespace }
-              : {}),
-            ...(options.targetRepository
-              ? { targetRepositoryName: options.targetRepository }
-              : {})
-          });
-        const response = await client.publishRuntimeSourceHistory(
-          nodeId,
-          sourceHistoryId,
-          publish
-        );
-
-        printJson(
-          options.summary
-            ? {
-                artifact: projectRuntimeArtifactSummary(response.artifact),
-                sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
-              }
-            : response
-        );
-        return;
-      }
-
       const response = await client.getRuntimeSourceHistory(
         nodeId,
         sourceHistoryId

@@ -260,6 +260,7 @@ Implementation record:
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
+- [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 
 Verification:
 
@@ -331,6 +332,9 @@ Current status:
   configured, the owning runner now publishes accepted source-history records as
   git commit artifacts, persists publication metadata locally, and emits both
   `artifact.ref` and updated `source_history.ref` observations;
+- the direct Host source-history publication mutation, host-client method, CLI
+  `--publish` path, and Studio publish/retry action have been removed so Host
+  observes source-history publication instead of owning the push;
 - deeper artifact history computation, wiki publication, and mutation endpoints
   still need projection-backed or backend-resolved replacement.
 
@@ -483,6 +487,7 @@ Implementation record:
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
+- [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 
 Verification:
 

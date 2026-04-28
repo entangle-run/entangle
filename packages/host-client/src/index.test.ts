@@ -3109,33 +3109,6 @@ describe("createHostClient", () => {
       }
     });
     await expect(
-      client.publishRuntimeSourceHistory(
-        "worker-it",
-        "source-history-source-change-turn-alpha",
-        {
-          publishedBy: "operator-alpha",
-          reason: "Publish source history.",
-          retry: true,
-          targetGitServiceRef: "gitea",
-          targetNamespace: "team-alpha",
-          targetRepositoryName: "graph-alpha"
-        }
-      )
-    ).resolves.toMatchObject({
-      artifact: {
-        ref: {
-          artifactId: "source-source-history-source-change-turn-alpha"
-        }
-      },
-      entry: {
-        publication: {
-          publication: {
-            state: "published"
-          }
-        }
-      }
-    });
-    await expect(
       client.replayRuntimeSourceHistory(
         "worker-it",
         "source-history-source-change-turn-alpha",
@@ -3188,18 +3161,6 @@ describe("createHostClient", () => {
       {
         method: undefined,
         url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha"
-      },
-      {
-        body: JSON.stringify({
-          publishedBy: "operator-alpha",
-          reason: "Publish source history.",
-          retry: true,
-          targetGitServiceRef: "gitea",
-          targetNamespace: "team-alpha",
-          targetRepositoryName: "graph-alpha"
-        }),
-        method: "POST",
-        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
       },
       {
         body: JSON.stringify({

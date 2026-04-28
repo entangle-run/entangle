@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Removed Host source-history publication
+
+Removed the direct Host source-history publication mutation, host-client method,
+CLI `source-history-entry --publish` path, and Studio publish/retry action.
+Source-history publication is now runner-owned: Host observes published
+artifact/source-history refs instead of reading runner runtime files to push a
+commit.
+
+Added `references/333-host-source-history-publication-removal-slice.md` and
+marked the older Host-mediated publication slice docs as superseded.
+
 ## [2026-04-28] implementation | Runner-owned source history publication
 
 Moved the default source-history publication path into the owning runner for

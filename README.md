@@ -239,18 +239,14 @@ This repository currently contains:
   `source_change.review` messages for accepted/rejected decisions, and a
   runtime-local source-history application path for accepted candidates that
   validates the current source tree before recording a local history commit,
-  plus a separate source-history publication path that materializes an applied
+  with runner-owned source-history publication that materializes an accepted
   source-history commit as a git commit artifact, records publication metadata,
-  records the resolved git target, requires explicit retry after failed
-  attempts, emits `source_history.published`, and can push to the runtime's
-  primary or selected git target, including host-owned provisioning for
-  selected non-primary `gitea_api` targets and local `file://` git remotes for
-  local-profile tests, with node-configured source mutation policy now able
-  to require approved runtime approval ids before source application, before
-  any source-history publication, or before non-primary publication targets by
-  default, and with accepted approval ids persisted on source records and
-  source history events after validating approval operation and concrete
-  resource scope, plus signed User Node approval-response commands and User
+  and pushes to the node's primary git target when policy allows it, with
+  node-configured source mutation policy still able to require approved runtime
+  approval ids before source application or source publication, and with
+  accepted approval ids persisted on source records after validating approval
+  operation and concrete resource scope, plus signed User Node
+  approval-response commands and User
   Client controls for participant approval decisions, plus runner-emitted
   `artifact.ref`, `source_change.ref`, `source_history.ref`, and `wiki.ref`
   observations during normal turns and accepted source reviews so Host
@@ -938,9 +934,10 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
-  source-history publication, safe artifact restore, and approval-gated
-  promotion model with restore/promotion history inspection plus direct
-  source-history replay, especially wiki promotion, richer source-history
+  runner-owned source-history publication, safe artifact restore, and
+  approval-gated promotion model with restore/promotion history inspection plus
+  direct source-history replay, especially runner-owned publication retry,
+  non-primary publication targets, wiki promotion, richer source-history
   merge/reconcile workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and

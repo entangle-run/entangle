@@ -2,6 +2,12 @@
 
 Date: 2026-04-25.
 
+> Partially superseded on 2026-04-28 by
+> `332-runner-owned-source-history-publication-slice.md` and
+> `333-host-source-history-publication-removal-slice.md`. Source application
+> policy gates remain relevant, but direct Host source-history publication
+> approval gates are no longer a public mutation path.
+
 ## Purpose
 
 This slice advances Entangle L3 workstreams B3 and B5 by making source

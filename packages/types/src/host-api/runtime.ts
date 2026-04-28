@@ -542,21 +542,6 @@ export const runtimeSourceHistoryInspectionResponseSchema = z.object({
   entry: sourceHistoryRecordSchema
 });
 
-export const runtimeSourceHistoryPublishMutationRequestSchema = z.object({
-  approvalId: identifierSchema.optional(),
-  publishedBy: identifierSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  retry: z.boolean().default(false),
-  targetGitServiceRef: identifierSchema.optional(),
-  targetNamespace: identifierSchema.optional(),
-  targetRepositoryName: identifierSchema.optional()
-});
-
-export const runtimeSourceHistoryPublicationResponseSchema = z.object({
-  artifact: artifactRecordSchema,
-  entry: sourceHistoryRecordSchema
-});
-
 export const runtimeSourceHistoryReplayRequestSchema = z.object({
   approvalId: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
@@ -812,12 +797,6 @@ export type RuntimeSourceHistoryListResponse = z.infer<
 >;
 export type RuntimeSourceHistoryInspectionResponse = z.infer<
   typeof runtimeSourceHistoryInspectionResponseSchema
->;
-export type RuntimeSourceHistoryPublishMutationRequest = z.input<
-  typeof runtimeSourceHistoryPublishMutationRequestSchema
->;
-export type RuntimeSourceHistoryPublicationResponse = z.infer<
-  typeof runtimeSourceHistoryPublicationResponseSchema
 >;
 export type RuntimeSourceHistoryReplayRequest = z.input<
   typeof runtimeSourceHistoryReplayRequestSchema

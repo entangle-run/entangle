@@ -28,7 +28,6 @@ import {
   externalPrincipalInspectionResponseSchema,
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
-  gitRepositoryProvisioningRecordSchema,
   hostAuthorityExportResponseSchema,
   hostAuthorityImportResponseSchema,
   hostAuthorityInspectionResponseSchema,
@@ -55,10 +54,6 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
-  runtimeArtifactPromotionListResponseSchema,
-  runtimeArtifactPromotionResponseSchema,
-  runtimeArtifactRestoreListResponseSchema,
-  runtimeArtifactRestoreResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
@@ -75,7 +70,6 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
-  runtimeSourceHistoryPublicationResponseSchema,
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -96,8 +90,7 @@ import {
   userNodeMessageRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
-  type RuntimeAssignmentRecord,
-  type RuntimeContextInspectionResponse
+  type RuntimeAssignmentRecord
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -865,117 +858,6 @@ async function applySingleWorkerGraph(input: {
   });
 
   expect(response.statusCode).toBe(200);
-}
-
-async function writeAppliedSourceHistoryFixture(input: {
-  candidateId: string;
-  runtimeContext: RuntimeContextInspectionResponse;
-  sourceHistoryId: string;
-}): Promise<void> {
-  const sourceWorkspaceRoot = input.runtimeContext.workspace.sourceWorkspaceRoot;
-
-  if (!sourceWorkspaceRoot) {
-    throw new Error("Expected source workspace root in runtime context.");
-  }
-
-  const gitDir = path.join(
-    input.runtimeContext.workspace.runtimeRoot,
-    "source-snapshot.git"
-  );
-  const gitEnv = {
-    GIT_DIR: gitDir,
-    GIT_WORK_TREE: sourceWorkspaceRoot
-  };
-
-  await runGitCommand({
-    args: ["init"],
-    cwd: sourceWorkspaceRoot,
-    env: gitEnv
-  });
-  await writeFile(
-    path.join(sourceWorkspaceRoot, "worker.ts"),
-    "export const generated = false;\n",
-    "utf8"
-  );
-  await runGitCommand({
-    args: ["add", "--all", "--", "."],
-    cwd: sourceWorkspaceRoot,
-    env: gitEnv
-  });
-  const baseTree = await runGitCommand({
-    args: ["write-tree"],
-    cwd: sourceWorkspaceRoot,
-    env: gitEnv
-  });
-
-  await writeFile(
-    path.join(sourceWorkspaceRoot, "worker.ts"),
-    "export const generated = true;\n",
-    "utf8"
-  );
-  await runGitCommand({
-    args: ["add", "--all", "--", "."],
-    cwd: sourceWorkspaceRoot,
-    env: gitEnv
-  });
-  const headTree = await runGitCommand({
-    args: ["write-tree"],
-    cwd: sourceWorkspaceRoot,
-    env: gitEnv
-  });
-  const commit = await runGitCommand({
-    args: ["commit-tree", headTree, "-m", `Apply ${input.candidateId}`],
-    cwd: sourceWorkspaceRoot,
-    env: {
-      ...gitEnv,
-      GIT_AUTHOR_EMAIL: "worker-it@entangle.invalid",
-      GIT_AUTHOR_NAME: "Worker IT",
-      GIT_COMMITTER_EMAIL: "worker-it@entangle.invalid",
-      GIT_COMMITTER_NAME: "Worker IT"
-    }
-  });
-  const timestamp = "2026-04-24T10:08:00.000Z";
-  const historyRecord = sourceHistoryRecordSchema.parse({
-    appliedAt: timestamp,
-    baseTree,
-    branch: "entangle/source-history",
-    candidateId: input.candidateId,
-    commit,
-    graphId: input.runtimeContext.binding.graphId,
-    graphRevisionId: input.runtimeContext.binding.graphRevisionId,
-    headTree,
-    mode: "applied_to_workspace",
-    nodeId: input.runtimeContext.binding.node.nodeId,
-    sessionId: "session-alpha",
-    sourceChangeSummary: {
-      additions: 9,
-      checkedAt: timestamp,
-      deletions: 2,
-      fileCount: 1,
-      files: [
-        {
-          additions: 9,
-          deletions: 2,
-          path: "worker.ts",
-          status: "modified"
-        }
-      ],
-      status: "changed",
-      truncated: false
-    },
-    sourceHistoryId: input.sourceHistoryId,
-    turnId: "turn-alpha",
-    updatedAt: timestamp
-  });
-
-  await writeJsonFile(
-    path.join(
-      input.runtimeContext.workspace.runtimeRoot,
-      "source-history",
-      `${input.sourceHistoryId}.json`
-    ),
-    historyRecord
-  );
 }
 
 afterEach(async () => {
@@ -4603,138 +4485,6 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("provisions a non-primary gitea_api publication target before git push", async () => {
-    const server = await createTestServer({ includeModelEndpoint: true });
-    const giteaApi = await createTestGiteaApiServer();
-    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
-
-    try {
-      await writeSecretRefFile(
-        "secret://git-services/gitea/provisioning",
-        "gitea-provisioning-token\n"
-      );
-
-      await server.inject({
-        method: "PUT",
-        payload: buildProvisioningCatalog({
-          apiBaseUrl: giteaApi.url
-        }),
-        url: "/v1/catalog"
-      });
-
-      const admittedPackageSourceId = await admitPackageSource(
-        server,
-        packageDirectory
-      );
-      await applySingleWorkerGraph({
-        packageSourceId: admittedPackageSourceId,
-        server,
-        workerPolicy: {
-          sourceMutation: {
-            applyRequiresApproval: false,
-            nonPrimaryPublishRequiresApproval: false,
-            publishRequiresApproval: false
-          }
-        }
-      });
-
-      const runtimeContext = runtimeContextInspectionResponseSchema.parse(
-        (
-          await server.inject({
-            method: "GET",
-            url: "/v1/runtimes/worker-it/context"
-          })
-        ).json()
-      );
-      await writeAppliedSourceHistoryFixture({
-        candidateId: "source-change-gitea-target",
-        runtimeContext,
-        sourceHistoryId: "source-history-gitea-target"
-      });
-
-      const publishResponse = await server.inject({
-        method: "POST",
-        payload: {
-          publishedBy: "operator-alpha",
-          reason: "Publish source history to a provisioned non-primary target.",
-          targetRepositoryName: "secondary-target"
-        },
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-gitea-target/publish"
-      });
-
-      expect(publishResponse.statusCode).toBe(200);
-      const publication = runtimeSourceHistoryPublicationResponseSchema.parse(
-        publishResponse.json()
-      );
-      expect(publication.entry.publication).toMatchObject({
-        targetGitServiceRef: "gitea",
-        targetNamespace: "team-alpha",
-        targetRepositoryName: "secondary-target"
-      });
-      expect(publication.artifact).toMatchObject({
-        publication: {
-          state: "failed"
-        },
-        ref: {
-          locator: {
-            repositoryName: "secondary-target"
-          }
-        }
-      });
-      expect(publication.artifact.publication?.lastError).toContain(
-        "Remote git operations require a git principal binding"
-      );
-
-      expect(
-        giteaApi.requests.some(
-          (request) =>
-            request.method === "POST" &&
-            request.url === "/api/v1/orgs/team-alpha/repos" &&
-            request.authorization === "token gitea-provisioning-token" &&
-            JSON.stringify(request.body) ===
-              JSON.stringify({
-                auto_init: false,
-                name: "secondary-target",
-                private: true
-              })
-        )
-      ).toBe(true);
-
-      const provisioningRecordPath = path.join(
-        process.env.ENTANGLE_HOME!,
-        "host",
-        "observed",
-        "git-repository-targets",
-        "gitea-team-alpha-secondary-target.json"
-      );
-      const provisioningRecord = gitRepositoryProvisioningRecordSchema.parse(
-        JSON.parse(await readFile(provisioningRecordPath, "utf8"))
-      );
-      expect(provisioningRecord).toMatchObject({
-        created: true,
-        state: "ready",
-        target: {
-          gitServiceRef: "gitea",
-          namespace: "team-alpha",
-          repositoryName: "secondary-target"
-        }
-      });
-
-      const runtimeResponse = await server.inject({
-        method: "GET",
-        url: "/v1/runtimes/worker-it"
-      });
-
-      expect(runtimeResponse.statusCode).toBe(200);
-      await expect(readFile(provisioningRecordPath, "utf8")).resolves.toContain(
-        "secondary-target"
-      );
-    } finally {
-      await Promise.all([server.close(), giteaApi.close()]);
-    }
-  });
-
   it("does not invent a primary git principal or default namespace when git bindings remain ambiguous", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
@@ -5416,44 +5166,6 @@ describe("buildHostServer", () => {
         status: "approved",
         updatedAt: "2026-04-24T00:00:51.000Z"
       });
-      const sourcePublicationApproval = approvalRecordSchema.parse({
-        approvalId: "approval-source-publication-alpha",
-        approverNodeIds: ["operator-alpha"],
-        graphId: runtimeContext.binding.graphId,
-        operation: "source_publication",
-        reason: "Approve source publication to a non-primary target.",
-        requestedAt: "2026-04-24T00:01:00.000Z",
-        requestedByNodeId: "worker-it",
-        resource: {
-          id:
-            "source-history-source-change-turn-alpha|gitea|team-alpha|missing-target",
-          kind: "source_history_publication",
-          label:
-            "source-history-source-change-turn-alpha -> gitea/team-alpha/missing-target"
-        },
-        sessionId: "session-alpha",
-        status: "approved",
-        updatedAt: "2026-04-24T00:01:01.000Z"
-      });
-      const sourcePublicationWrongResourceApproval = approvalRecordSchema.parse({
-        approvalId: "approval-source-publication-wrong-resource",
-        approverNodeIds: ["operator-alpha"],
-        graphId: runtimeContext.binding.graphId,
-        operation: "source_publication",
-        reason: "Approve source publication to a different target.",
-        requestedAt: "2026-04-24T00:01:20.000Z",
-        requestedByNodeId: "worker-it",
-        resource: {
-          id:
-            "source-history-source-change-turn-alpha|gitea|team-alpha|other-target",
-          kind: "source_history_publication",
-          label:
-            "source-history-source-change-turn-alpha -> gitea/team-alpha/other-target"
-        },
-        sessionId: "session-alpha",
-        status: "approved",
-        updatedAt: "2026-04-24T00:01:21.000Z"
-      });
       await mkdir(path.join(runtimeContext.workspace.runtimeRoot, "approvals"), {
         recursive: true
       });
@@ -5479,15 +5191,6 @@ describe("buildHostServer", () => {
         path.join(
           runtimeContext.workspace.runtimeRoot,
           "approvals",
-          `${sourcePublicationApproval.approvalId}.json`
-        ),
-        JSON.stringify(sourcePublicationApproval, null, 2),
-        "utf8"
-      );
-      await writeFile(
-        path.join(
-          runtimeContext.workspace.runtimeRoot,
-          "approvals",
           `${sourceApplicationWrongOperationApproval.approvalId}.json`
         ),
         JSON.stringify(sourceApplicationWrongOperationApproval, null, 2),
@@ -5502,16 +5205,6 @@ describe("buildHostServer", () => {
         JSON.stringify(sourceApplicationWrongResourceApproval, null, 2),
         "utf8"
       );
-      await writeFile(
-        path.join(
-          runtimeContext.workspace.runtimeRoot,
-          "approvals",
-          `${sourcePublicationWrongResourceApproval.approvalId}.json`
-        ),
-        JSON.stringify(sourcePublicationWrongResourceApproval, null, 2),
-        "utf8"
-      );
-
       const gitEnv = {
         GIT_DIR: gitDir,
         GIT_WORK_TREE: sourceWorkspaceRoot
@@ -5832,409 +5525,6 @@ describe("buildHostServer", () => {
         ).entry.commit
       ).toBe(sourceHistoryEntry.commit);
 
-      const policyBlockedPublishResponse = await server.inject({
-        method: "POST",
-        payload: {
-          publishedBy: "operator-alpha",
-          reason: "Try a non-primary target without an approval.",
-          targetRepositoryName: "missing-target"
-        },
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
-      });
-
-      expect(policyBlockedPublishResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(policyBlockedPublishResponse.json()).message
-      ).toContain("requires an approved approvalId");
-
-      const wrongResourcePublishResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-publication-wrong-resource",
-          publishedBy: "operator-alpha",
-          reason: "Try a non-primary target with an approval for another target.",
-          targetRepositoryName: "missing-target"
-        },
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
-      });
-
-      expect(wrongResourcePublishResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(wrongResourcePublishResponse.json()).message
-      ).toContain(
-        "source_history_publication:source-history-source-change-turn-alpha|gitea|team-alpha|missing-target"
-      );
-
-      const failedPublishResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-publication-alpha",
-          publishedBy: "operator-alpha",
-          reason: "Try a missing repository target before retrying.",
-          targetRepositoryName: "missing-target"
-        },
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
-      });
-
-      expect(failedPublishResponse.statusCode).toBe(200);
-      const failedPublication =
-        runtimeSourceHistoryPublicationResponseSchema.parse(
-          failedPublishResponse.json()
-        );
-      expect(failedPublication.entry.publication).toMatchObject({
-        artifactId: "source-source-history-source-change-turn-alpha",
-        approvalId: "approval-source-publication-alpha",
-        publication: {
-          state: "failed"
-        },
-        targetGitServiceRef: "gitea",
-        targetNamespace: "team-alpha",
-        targetRepositoryName: "missing-target"
-      });
-      expect(failedPublication.artifact).toMatchObject({
-        publication: {
-          state: "failed"
-        },
-        ref: {
-          locator: {
-            repositoryName: "missing-target"
-          }
-        }
-      });
-
-      const retryRequiredPublishResponse = await server.inject({
-        method: "POST",
-        payload: {},
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
-      });
-
-      expect(retryRequiredPublishResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(retryRequiredPublishResponse.json()).message
-      ).toContain("retry");
-
-      const publishResponse = await server.inject({
-        method: "POST",
-        payload: {
-          publishedBy: "operator-alpha",
-          reason: "Publish accepted source for downstream handoff.",
-          retry: true,
-          targetGitServiceRef: "gitea",
-          targetNamespace: "team-alpha",
-          targetRepositoryName: "team-alpha"
-        },
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
-      });
-
-      expect(publishResponse.statusCode).toBe(200);
-      const publishedSourceHistory =
-        runtimeSourceHistoryPublicationResponseSchema.parse(
-          publishResponse.json()
-        );
-      expect(publishedSourceHistory.entry.publication).toMatchObject({
-        artifactId: "source-source-history-source-change-turn-alpha",
-        publication: {
-          state: "published"
-        },
-        requestedBy: "operator-alpha",
-        targetGitServiceRef: "gitea",
-        targetNamespace: "team-alpha",
-        targetRepositoryName: "team-alpha"
-      });
-      expect(publishedSourceHistory.artifact).toMatchObject({
-        publication: {
-          remoteUrl: pathToFileURL(remoteSourceRepositoryPath).toString(),
-          state: "published"
-        },
-        ref: {
-          artifactKind: "commit",
-          backend: "git",
-          locator: {
-            repositoryName: "team-alpha"
-          },
-          status: "published"
-        }
-      });
-      await expect(
-        runGitCommand({
-          args: [
-            "rev-parse",
-            "refs/heads/worker-it/source-history/source-history-source-change-turn-alpha"
-          ],
-          cwd: remoteSourceRepositoryPath
-        })
-      ).resolves.toMatch(/^[0-9a-f]{40}$/);
-
-      const sourceArtifactResponse = await server.inject({
-        method: "GET",
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha"
-      });
-
-      expect(sourceArtifactResponse.statusCode).toBe(200);
-      const sourceArtifactInspection =
-        runtimeArtifactInspectionResponseSchema.parse(
-          sourceArtifactResponse.json()
-        );
-      expect(sourceArtifactInspection.artifact.publication?.state).toBe(
-        "published"
-      );
-      expect(sourceArtifactInspection.artifact.ref.backend).toBe("git");
-      if (sourceArtifactInspection.artifact.ref.backend !== "git") {
-        throw new Error("Expected the published source artifact to be git-backed.");
-      }
-      const sourceArtifactCommit =
-        sourceArtifactInspection.artifact.ref.locator.commit;
-
-      const sourceArtifactHistoryResponse = await server.inject({
-        method: "GET",
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/history?limit=5"
-      });
-
-      expect(sourceArtifactHistoryResponse.statusCode).toBe(200);
-      const sourceArtifactHistory =
-        runtimeArtifactHistoryResponseSchema.parse(
-          sourceArtifactHistoryResponse.json()
-        );
-      expect(sourceArtifactHistory.history).toMatchObject({
-        available: true,
-        inspectedPath: ".",
-        truncated: false
-      });
-      expect(
-        sourceArtifactHistory.history.available
-          ? sourceArtifactHistory.history.commits[0]?.commit
-          : undefined
-      ).toBe(sourceArtifactCommit);
-
-      const sourceArtifactDiffResponse = await server.inject({
-        method: "GET",
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/diff"
-      });
-
-      expect(sourceArtifactDiffResponse.statusCode).toBe(200);
-      const sourceArtifactDiff = runtimeArtifactDiffResponseSchema.parse(
-        sourceArtifactDiffResponse.json()
-      );
-      expect(sourceArtifactDiff.diff).toMatchObject({
-        available: true,
-        contentType: "text/x-diff",
-        toCommit: sourceArtifactCommit,
-        truncated: false
-      });
-      expect(
-        sourceArtifactDiff.diff.available
-          ? sourceArtifactDiff.diff.content
-          : undefined
-      ).toContain("generated = true");
-
-      const sourceArtifactRestoreResponse = await server.inject({
-        method: "POST",
-        payload: {
-          requestedBy: "user-main",
-          restoreId: "restore-source-history-alpha"
-        },
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/restore"
-      });
-
-      expect(sourceArtifactRestoreResponse.statusCode).toBe(200);
-      const sourceArtifactRestore = runtimeArtifactRestoreResponseSchema.parse(
-        sourceArtifactRestoreResponse.json()
-      );
-      expect(sourceArtifactRestore.restore).toMatchObject({
-        artifactId: "source-source-history-source-change-turn-alpha",
-        mode: "restore_workspace",
-        nodeId: "worker-it",
-        requestedBy: "user-main",
-        restoredFileCount: 1,
-        restoreId: "restore-source-history-alpha",
-        status: "restored"
-      });
-      await expect(
-        readFile(
-          path.join(
-            runtimeContext.workspace.artifactWorkspaceRoot,
-            "restores",
-            "restore-source-history-alpha",
-            "worker.ts"
-          ),
-          "utf8"
-        )
-      ).resolves.toBe("export const generated = true;\n");
-
-      const repeatedSourceArtifactRestoreResponse = await server.inject({
-        method: "POST",
-        payload: {
-          restoreId: "restore-source-history-alpha"
-        },
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/restore"
-      });
-
-      expect(repeatedSourceArtifactRestoreResponse.statusCode).toBe(200);
-      expect(
-        runtimeArtifactRestoreResponseSchema.parse(
-          repeatedSourceArtifactRestoreResponse.json()
-        ).restore
-      ).toMatchObject({
-        restoreId: "restore-source-history-alpha",
-        status: "unavailable"
-      });
-
-      const sourceArtifactRestoreListResponse = await server.inject({
-        method: "GET",
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/restores"
-      });
-
-      expect(sourceArtifactRestoreListResponse.statusCode).toBe(200);
-      expect(
-        runtimeArtifactRestoreListResponseSchema.parse(
-          sourceArtifactRestoreListResponse.json()
-        ).restores.map((restore) => restore.status)
-      ).toEqual(expect.arrayContaining(["restored", "unavailable"]));
-
-      const allArtifactRestoresResponse = await server.inject({
-        method: "GET",
-        url: "/v1/runtimes/worker-it/artifact-restores"
-      });
-
-      expect(allArtifactRestoresResponse.statusCode).toBe(200);
-      expect(
-        runtimeArtifactRestoreListResponseSchema.parse(
-          allArtifactRestoresResponse.json()
-        ).restores
-      ).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            artifactId: "source-source-history-source-change-turn-alpha",
-            restoreId: "restore-source-history-alpha"
-          })
-        ])
-      );
-
-      await writeFile(
-        path.join(sourceWorkspaceRoot, "worker.ts"),
-        "export const generated = false;\n",
-        "utf8"
-      );
-      await writeJsonFile(
-        path.join(
-          runtimeContext.workspace.runtimeRoot,
-          "approvals",
-          "approval-artifact-promotion-alpha.json"
-        ),
-        approvalRecordSchema.parse({
-          approvalId: "approval-artifact-promotion-alpha",
-          approverNodeIds: ["operator-alpha"],
-          graphId: runtimeContext.binding.graphId,
-          operation: "source_application",
-          reason: "Approve artifact promotion into the source workspace.",
-          requestedAt: "2026-04-24T00:02:00.000Z",
-          requestedByNodeId: "worker-it",
-          resource: {
-            id:
-              "source-source-history-source-change-turn-alpha|restore-source-history-alpha",
-            kind: "artifact",
-            label:
-              "source-source-history-source-change-turn-alpha from restore restore-source-history-alpha"
-          },
-          sessionId: "session-alpha",
-          status: "approved",
-          updatedAt: "2026-04-24T00:02:01.000Z"
-        })
-      );
-
-      const sourceArtifactPromotionResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-artifact-promotion-alpha",
-          overwrite: true,
-          promotedBy: "operator-alpha",
-          promotionId: "promotion-source-history-alpha",
-          reason: "Promote restored source artifact into the source workspace.",
-          restoreId: "restore-source-history-alpha"
-        },
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/promote"
-      });
-
-      expect(sourceArtifactPromotionResponse.statusCode).toBe(200);
-      const sourceArtifactPromotion =
-        runtimeArtifactPromotionResponseSchema.parse(
-          sourceArtifactPromotionResponse.json()
-        );
-      expect(sourceArtifactPromotion.promotion).toMatchObject({
-        approvalId: "approval-artifact-promotion-alpha",
-        artifactId: "source-source-history-source-change-turn-alpha",
-        promotedBy: "operator-alpha",
-        promotedFileCount: 1,
-        promotionId: "promotion-source-history-alpha",
-        restoreId: "restore-source-history-alpha",
-        status: "promoted",
-        target: "source_workspace"
-      });
-      await expect(
-        readFile(path.join(sourceWorkspaceRoot, "worker.ts"), "utf8")
-      ).resolves.toBe("export const generated = true;\n");
-      await expect(
-        readFile(
-          path.join(
-            runtimeContext.workspace.runtimeRoot,
-            "artifact-promotions",
-            "promotion-source-history-alpha.json"
-          ),
-          "utf8"
-        )
-      ).resolves.toContain("approval-artifact-promotion-alpha");
-
-      const sourceArtifactPromotionListResponse = await server.inject({
-        method: "GET",
-        url:
-          "/v1/runtimes/worker-it/artifacts/source-source-history-source-change-turn-alpha/promotions"
-      });
-
-      expect(sourceArtifactPromotionListResponse.statusCode).toBe(200);
-      expect(
-        runtimeArtifactPromotionListResponseSchema.parse(
-          sourceArtifactPromotionListResponse.json()
-        ).promotions
-      ).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            approvalId: "approval-artifact-promotion-alpha",
-            promotionId: "promotion-source-history-alpha"
-          })
-        ])
-      );
-
-      const allArtifactPromotionsResponse = await server.inject({
-        method: "GET",
-        url: "/v1/runtimes/worker-it/artifact-promotions"
-      });
-
-      expect(allArtifactPromotionsResponse.statusCode).toBe(200);
-      expect(
-        runtimeArtifactPromotionListResponseSchema.parse(
-          allArtifactPromotionsResponse.json()
-        ).promotions
-      ).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            artifactId: "source-source-history-source-change-turn-alpha",
-            promotionId: "promotion-source-history-alpha"
-          })
-        ])
-      );
-
       await writeJsonFile(
         path.join(
           runtimeContext.workspace.runtimeRoot,
@@ -6449,15 +5739,6 @@ describe("buildHostServer", () => {
         ).message
       ).toContain("already published");
 
-      const repeatedPublishResponse = await server.inject({
-        method: "POST",
-        payload: {},
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/publish"
-      });
-
-      expect(repeatedPublishResponse.statusCode).toBe(409);
-
       const repeatedApplyResponse = await server.inject({
         method: "POST",
         payload: {},
@@ -6489,34 +5770,6 @@ describe("buildHostServer", () => {
         historyId: "source-history-source-change-turn-alpha",
         mode: "applied_to_workspace"
       });
-      const sourceHistoryPublishedEvents = hostEventListResponseSchema
-        .parse(
-          (
-            await server.inject({
-              method: "GET",
-              url: "/v1/events?limit=20"
-            })
-          ).json()
-        )
-        .events.filter((event) => event.type === "source_history.published");
-      expect(sourceHistoryPublishedEvents).toHaveLength(2);
-      expect(sourceHistoryPublishedEvents).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            approvalId: "approval-source-publication-alpha",
-            artifactId: "source-source-history-source-change-turn-alpha",
-            historyId: "source-history-source-change-turn-alpha",
-            publicationState: "failed",
-            targetRepositoryName: "missing-target"
-          }),
-          expect.objectContaining({
-            artifactId: "source-source-history-source-change-turn-alpha",
-            historyId: "source-history-source-change-turn-alpha",
-            publicationState: "published",
-            targetRepositoryName: "team-alpha"
-          })
-        ])
-      );
       const sourceHistoryReplayedEvents = hostEventListResponseSchema
         .parse(
           (

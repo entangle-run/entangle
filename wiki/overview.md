@@ -266,16 +266,13 @@ The repository now also contains the first real implementation baseline:
   pending source-change candidate records with host, CLI, and Studio
   inspection plus bounded candidate diff, listed-file previews, and audited
   review lifecycle mutations plus runtime-local source-history application for
-  accepted candidates with signed `source_history.ref` projection, and a
-  separate source-history publication mutation that
-  turns applied source-history commits into git commit artifacts with durable
-  publication metadata, resolved target metadata, explicit retry after failed
-  attempts, and host-owned provisioning for selected non-primary `gitea_api`
-  targets, with node-configured source mutation policy now able to
-  require approved runtime approval ids before source application, before any
-  source-history publication, or before non-primary publication targets by
-  default, while validating approval operation and concrete resource scope
-  before accepting a supplied approval id, with a host/CLI/Studio operator
+  accepted candidates with signed `source_history.ref` projection, and
+  runner-owned source-history publication that turns accepted source-history
+  commits into git commit artifacts with durable publication metadata, with
+  node-configured source mutation policy now able to require approved runtime
+  approval ids before source application or source publication, while
+  validating approval operation and concrete resource scope before accepting a
+  supplied approval id, with a host/CLI/Studio operator
   decision path for creating scoped approvals or deciding pending approvals,
   with bounded host/CLI/Studio history and diff inspection for supported
   materialized git artifacts, plus a first safe host/CLI/Studio restore path

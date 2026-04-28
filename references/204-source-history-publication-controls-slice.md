@@ -2,6 +2,13 @@
 
 Date: 2026-04-25.
 
+> Superseded on 2026-04-28 by
+> `332-runner-owned-source-history-publication-slice.md` and
+> `333-host-source-history-publication-removal-slice.md`. Source-history
+> publication retry and target selection must be reintroduced as runner-owned
+> protocol behavior, not as Host filesystem mutation through
+> `source-history-entry --publish`.
+
 ## Purpose
 
 This slice advances Entangle L3 workstream B5 by making source-history

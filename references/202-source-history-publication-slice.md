@@ -2,6 +2,13 @@
 
 Date: 2026-04-25.
 
+> Superseded on 2026-04-28 by
+> `332-runner-owned-source-history-publication-slice.md` and
+> `333-host-source-history-publication-removal-slice.md`. Source-history
+> publication is now runner-owned; Host no longer exposes the direct
+> `/source-history/:sourceHistoryId/publish` mutation described in this
+> historical slice.
+
 ## Purpose
 
 This slice advances Entangle L3 workstream B5 by turning an applied

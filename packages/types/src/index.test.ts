@@ -85,8 +85,6 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
-  runtimeSourceHistoryPublicationResponseSchema,
-  runtimeSourceHistoryPublishMutationRequestSchema,
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -2148,59 +2146,6 @@ describe("source change candidate host API contracts", () => {
         entry: historyEntry
       }).entry.mode
     ).toBe("already_in_workspace");
-    const sourceArtifact = artifactRecordSchema.parse({
-      createdAt: "2026-04-24T00:04:00.000Z",
-      materialization: {
-        repoPath: "/tmp/entangle/workspace/source-history"
-      },
-      publication: {
-        publishedAt: "2026-04-24T00:04:00.000Z",
-        remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
-        state: "published"
-      },
-      ref: {
-        artifactId: "source-source-history-source-change-turn-alpha",
-        artifactKind: "commit",
-        backend: "git",
-        createdByNodeId: "worker-it",
-        locator: {
-          branch:
-            "worker-it/source-history/source-history-source-change-turn-alpha",
-          commit: "artifact-commit-alpha",
-          gitServiceRef: "gitea",
-          namespace: "team-alpha",
-          path: ".",
-          repositoryName: "graph-alpha"
-        },
-        preferred: true,
-        status: "published"
-      },
-      turnId: "turn-alpha",
-      updatedAt: "2026-04-24T00:04:00.000Z"
-    });
-    expect(
-      runtimeSourceHistoryPublishMutationRequestSchema.parse({
-        approvalId: "approval-source-publish-alpha",
-        publishedBy: "operator-alpha",
-        reason: "Publish source for peer review.",
-        retry: true,
-        targetGitServiceRef: "gitea",
-        targetNamespace: "team-alpha",
-        targetRepositoryName: "graph-alpha"
-      })
-    ).toMatchObject({
-      approvalId: "approval-source-publish-alpha",
-      publishedBy: "operator-alpha",
-      retry: true,
-      targetRepositoryName: "graph-alpha"
-    });
-    expect(
-      runtimeSourceHistoryPublicationResponseSchema.parse({
-        artifact: sourceArtifact,
-        entry: historyEntry
-      }).artifact.ref.artifactId
-    ).toBe("source-source-history-source-change-turn-alpha");
     const sourceHistoryReplay = {
       approvalId: "approval-source-replay-alpha",
       baseTree: "base-tree-alpha",
