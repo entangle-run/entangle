@@ -3253,6 +3253,24 @@ Runner typecheck, focused runner tests, runner lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-26] implementation | Preserved scoped approval response context
+
+Added `references/267-user-node-approval-response-context-slice.md`. User Node
+`approval.response` messages can now carry optional operation, resource, and
+reason metadata in addition to approval id and decision.
+
+The Human Interface Runtime sources those fields from the inbound approval
+request card and includes them in the signed response publish request. Host
+preserves the same context when recording outbound User Node approval
+responses and when recording inbound approval responses from other nodes. This
+keeps the signed user decision self-describing without changing runner
+approval-gate semantics, which still resolve execution by approval id.
+
+Types, Host, and runner typechecks passed, along with types tests, focused
+Host/runner tests, package lints,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check`.
+
 ## [2026-04-26] implementation | Added User Client source-change diff preview
 
 Added `references/266-user-node-source-change-diff-preview-slice.md`. The

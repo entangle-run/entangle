@@ -67,6 +67,7 @@ same-machine slice records.
 - [264-user-node-artifact-ref-rendering-slice.md](264-user-node-artifact-ref-rendering-slice.md)
 - [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
 - [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
+- [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
 
 ## Audited Scope
 
@@ -126,10 +127,10 @@ The repository is not fully federated:
 - user nodes have stable identities, a User Node-specific inbox API, projected
   conversation surfaces, and a first usable runner-served User Client with
   thread selection, inbound/outbound message history, approval response
-  controls, approval resource rendering, source-change diff preview,
-  artifact-ref rendering, server-side artifact preview, and message publishing,
-  but source/wiki review actions and projection-backed artifact/source preview
-  are still incomplete;
+  controls, approval resource rendering, signed approval-response context,
+  source-change diff preview, artifact-ref rendering, server-side artifact
+  preview, and message publishing, but source/wiki review actions and
+  projection-backed artifact/source preview are still incomplete;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
@@ -196,10 +197,10 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    reads.
 9. User Node identity records, assignable Human Interface Runtime, and User
    Client. The first assignable/minimal-client slice and inbound/outbound
-   message history, approval controls, approval resource rendering,
-   source-change diff preview, artifact-ref rendering, and server-side artifact
-   preview are implemented; source/wiki review actions and projection-backed
-   artifact/source preview remain open.
+   message history, approval controls, approval resource rendering, signed
+   approval-response context, source-change diff preview, artifact-ref
+   rendering, and server-side artifact preview are implemented; source/wiki
+   review actions and projection-backed artifact/source preview remain open.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs.

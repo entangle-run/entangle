@@ -94,7 +94,14 @@ describe("User Node A2A publishing", () => {
       request: {
         approval: {
           approvalId: "approval-alpha",
-          decision: "approved"
+          decision: "approved",
+          operation: "source_application",
+          reason: "Approved after diff review.",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "source-change-alpha"
+          }
         },
         artifactRefs: [],
         messageType: "approval.response",
@@ -121,7 +128,14 @@ describe("User Node A2A publishing", () => {
         metadata: {
           approval: {
             approvalId: "approval-alpha",
-            decision: "approved"
+            decision: "approved",
+            operation: "source_application",
+            reason: "Approved after diff review.",
+            resource: {
+              id: "source-change-alpha",
+              kind: "source_change_candidate",
+              label: "source-change-alpha"
+            }
           },
           sentBy: "user-node-gateway"
         }

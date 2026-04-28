@@ -213,6 +213,7 @@ Implementation record:
 - [264-user-node-artifact-ref-rendering-slice.md](264-user-node-artifact-ref-rendering-slice.md)
 - [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
 - [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
+- [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
 
 Current status:
 
@@ -232,8 +233,9 @@ Current status:
 - the User Client has a first usable server-rendered conversation list,
   selected thread metadata, `/api/state`, recorded inbound/outbound messages,
   approval response controls, approval resource rendering, source-change diff
-  preview, artifact-ref rendering, bounded artifact preview, and message
-  publishing that preserves selected conversation/session context;
+  preview, scoped approval-response context, artifact-ref rendering, bounded
+  artifact preview, and message publishing that preserves selected
+  conversation/session context;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;

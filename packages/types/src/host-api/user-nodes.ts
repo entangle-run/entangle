@@ -93,7 +93,10 @@ export const userNodeMessagePublishRequestSchema = z
     approval: z
       .object({
         approvalId: identifierSchema,
-        decision: entangleA2AApprovalResponseDecisionSchema
+        decision: entangleA2AApprovalResponseDecisionSchema,
+        operation: policyOperationSchema.optional(),
+        reason: nonEmptyStringSchema.optional(),
+        resource: policyResourceScopeSchema.optional()
       })
       .optional(),
     artifactRefs: z.array(artifactRefSchema).default([]),

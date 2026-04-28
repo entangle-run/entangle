@@ -43,7 +43,8 @@ User nodes are now partially runtime-capable:
   renders approve/reject controls that publish signed `approval.response`
   messages as the selected User Node. Approval request cards now render
   resource metadata and link to a source-change diff preview when the request
-  targets a `source_change_candidate`.
+  targets a `source_change_candidate`. The signed approval response can now
+  preserve the reviewed operation, resource, and reason context.
 - The User Client renders bounded artifact refs attached to message records,
   including backend, kind, summary, and locator details, and now exposes a
   server-side artifact preview page that renders bounded content without
@@ -122,7 +123,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Add Host APIs for listing user-node identities and projected inbox state.
   Basic identity, User Node-specific projected conversation inbox surfaces,
   inbound/outbound message history, server-side artifact preview, and
-  source-change diff preview now exist.
+  source-change diff preview now exist. Signed approval responses now preserve
+  scoped operation/resource context when the User Client has it.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
   Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that

@@ -59,7 +59,10 @@ export const entangleA2AApprovalResponseDecisionSchema = z.enum([
 export const entangleA2AApprovalResponseMetadataSchema = z.object({
   approval: z.object({
     approvalId: identifierSchema,
-    decision: entangleA2AApprovalResponseDecisionSchema
+    decision: entangleA2AApprovalResponseDecisionSchema,
+    operation: policyOperationSchema.optional(),
+    reason: nonEmptyStringSchema.optional(),
+    resource: policyResourceScopeSchema.optional()
   })
 });
 

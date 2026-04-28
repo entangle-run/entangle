@@ -855,6 +855,11 @@ describe("runner runtime context", () => {
         body: new URLSearchParams({
           approvalDecision: "approved",
           approvalId: "approval-alpha",
+          approvalOperation: "source_application",
+          approvalReason: "Approve source application.",
+          approvalResourceId: "source-change-turn-alpha",
+          approvalResourceKind: "source_change_candidate",
+          approvalResourceLabel: "source-change-turn-alpha",
           conversationId: "conversation-alpha",
           messageType: "approval.response",
           parentMessageId:
@@ -928,7 +933,14 @@ describe("runner runtime context", () => {
     expect(approvalPublishRequest?.body).toMatchObject({
       approval: {
         approvalId: "approval-alpha",
-        decision: "approved"
+        decision: "approved",
+        operation: "source_application",
+        reason: "Approve source application.",
+        resource: {
+          id: "source-change-turn-alpha",
+          kind: "source_change_candidate",
+          label: "source-change-turn-alpha"
+        }
       },
       conversationId: "conversation-alpha",
       messageType: "approval.response",

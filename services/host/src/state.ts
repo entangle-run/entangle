@@ -3437,7 +3437,16 @@ function extractUserNodeMessageApproval(
       ? {
           approvalId: metadata.data.approval.approvalId,
           approverNodeIds: [],
-          decision: metadata.data.approval.decision
+          decision: metadata.data.approval.decision,
+          ...(metadata.data.approval.operation
+            ? { operation: metadata.data.approval.operation }
+            : {}),
+          ...(metadata.data.approval.reason
+            ? { reason: metadata.data.approval.reason }
+            : {}),
+          ...(metadata.data.approval.resource
+            ? { resource: metadata.data.approval.resource }
+            : {})
         }
       : undefined;
   }
@@ -3496,7 +3505,16 @@ export async function recordUserNodePublishedMessage(input: {
           approval: {
             approvalId: input.request.approval.approvalId,
             approverNodeIds: [],
-            decision: input.request.approval.decision
+            decision: input.request.approval.decision,
+            ...(input.request.approval.operation
+              ? { operation: input.request.approval.operation }
+              : {}),
+            ...(input.request.approval.reason
+              ? { reason: input.request.approval.reason }
+              : {}),
+            ...(input.request.approval.resource
+              ? { resource: input.request.approval.resource }
+              : {})
           }
         }
       : {}),

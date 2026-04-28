@@ -49,6 +49,9 @@ Recently added:
 - User Client approval request cards now render approval resource metadata and
   provide a server-side source-change diff preview action when the resource is
   a `source_change_candidate`.
+- User Client approval responses now carry optional operation, resource, and
+  reason context from the reviewed request so the signed response is
+  self-describing in User Node history.
 - User Client message history now renders bounded artifact refs attached to
   messages.
 - User Client artifact refs now include a server-side `Preview` action that
@@ -125,10 +128,10 @@ Node.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and
-  reply/answer/approval publishing plus source-change diff preview,
-  artifact-ref rendering, and bounded artifact preview; projection-backed
-  artifact/source preview, richer source/wiki review actions, and the full
-  bundled client app remain open.
+  reply/answer/approval publishing with scoped approval-response context plus
+  source-change diff preview, artifact-ref rendering, and bounded artifact
+  preview; projection-backed artifact/source preview, richer source/wiki review
+  actions, and the full bundled client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

@@ -446,6 +446,15 @@ async function publishUserNodeMessage(input: {
     | {
         approvalId: string;
         decision: "approved" | "rejected";
+        operation?: string | undefined;
+        reason?: string | undefined;
+        resource?:
+          | {
+              id: string;
+              kind: string;
+              label?: string | undefined;
+            }
+          | undefined;
       }
     | undefined;
   conversationId?: string | undefined;
@@ -507,10 +516,28 @@ function renderApprovalControls(message: UserNodeMessageRecord): string {
   const conversationId = escapeHtml(message.conversationId);
   const eventId = escapeHtml(message.eventId);
   const fromNodeId = escapeHtml(message.fromNodeId);
+  const operation = message.approval.operation
+    ? escapeHtml(message.approval.operation)
+    : "";
+  const reason = message.approval.reason ? escapeHtml(message.approval.reason) : "";
+  const resourceId = message.approval.resource?.id
+    ? escapeHtml(message.approval.resource.id)
+    : "";
+  const resourceKind = message.approval.resource?.kind
+    ? escapeHtml(message.approval.resource.kind)
+    : "";
+  const resourceLabel = message.approval.resource?.label
+    ? escapeHtml(message.approval.resource.label)
+    : "";
   const sessionId = escapeHtml(message.sessionId);
 
   return `<form class="approval-actions" method="post" action="/messages">
     <input type="hidden" name="approvalId" value="${approvalId}" />
+    ${operation ? `<input type="hidden" name="approvalOperation" value="${operation}" />` : ""}
+    ${reason ? `<input type="hidden" name="approvalReason" value="${reason}" />` : ""}
+    ${resourceId ? `<input type="hidden" name="approvalResourceId" value="${resourceId}" />` : ""}
+    ${resourceKind ? `<input type="hidden" name="approvalResourceKind" value="${resourceKind}" />` : ""}
+    ${resourceLabel ? `<input type="hidden" name="approvalResourceLabel" value="${resourceLabel}" />` : ""}
     <input type="hidden" name="conversationId" value="${conversationId}" />
     <input type="hidden" name="messageType" value="approval.response" />
     <input type="hidden" name="parentMessageId" value="${eventId}" />
@@ -1062,6 +1089,15 @@ export async function startHumanInterfaceRuntime(input: {
           const form = new URLSearchParams(await readRequestBody(request));
           const approvalId = form.get("approvalId")?.trim() || undefined;
           const approvalDecision = form.get("approvalDecision")?.trim();
+          const approvalOperation =
+            form.get("approvalOperation")?.trim() || undefined;
+          const approvalReason = form.get("approvalReason")?.trim() || undefined;
+          const approvalResourceId =
+            form.get("approvalResourceId")?.trim() || undefined;
+          const approvalResourceKind =
+            form.get("approvalResourceKind")?.trim() || undefined;
+          const approvalResourceLabel =
+            form.get("approvalResourceLabel")?.trim() || undefined;
           const conversationId =
             form.get("conversationId")?.trim() || undefined;
           const parentMessageId =
@@ -1098,11 +1134,24 @@ export async function startHumanInterfaceRuntime(input: {
             ...(approvalId &&
             (approvalDecision === "approved" || approvalDecision === "rejected")
               ? {
-                  approval: {
-                    approvalId,
-                    decision: approvalDecision
-                  }
+                approval: {
+                  approvalId,
+                  decision: approvalDecision,
+                  ...(approvalOperation ? { operation: approvalOperation } : {}),
+                  ...(approvalReason ? { reason: approvalReason } : {}),
+                  ...(approvalResourceId && approvalResourceKind
+                    ? {
+                        resource: {
+                          id: approvalResourceId,
+                          kind: approvalResourceKind,
+                          ...(approvalResourceLabel
+                            ? { label: approvalResourceLabel }
+                            : {})
+                        }
+                      }
+                    : {})
                 }
+              }
               : {}),
             conversationId,
             hostApi: input.hostApi,

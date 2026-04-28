@@ -369,7 +369,13 @@ describe("federated runtime contracts", () => {
         messageType: "approval.response",
         approval: {
           approvalId: "approval-alpha",
-          decision: "approved"
+          decision: "approved",
+          operation: "source_application",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "source-change-alpha"
+          }
         },
         parentMessageId:
           "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -379,7 +385,12 @@ describe("federated runtime contracts", () => {
     ).toMatchObject({
       approval: {
         approvalId: "approval-alpha",
-        decision: "approved"
+        decision: "approved",
+        operation: "source_application",
+        resource: {
+          id: "source-change-alpha",
+          kind: "source_change_candidate"
+        }
       },
       artifactRefs: [],
       messageType: "approval.response",
