@@ -111,6 +111,7 @@ same-machine slice records.
 - [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
 - [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
 - [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
+- [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
 
 ## Audited Scope
 
@@ -288,6 +289,10 @@ The repository is not fully federated:
   verifies Host runtime turn, approval, and session read APIs against signed
   observations from the real joined runner process without requiring live model
   credentials;
+- joined runners now publish session/conversation observations after outbound
+  handoff writes, coordination close/result transitions, approval request and
+  response transitions, session completion, and failure/cancellation paths, so
+  Host projection can follow lifecycle state without runner filesystem access;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

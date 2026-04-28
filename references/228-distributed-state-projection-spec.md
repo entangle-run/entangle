@@ -33,8 +33,11 @@ now read from that projection as well as local compatibility files. Runtime
 turn list/detail GET routes now read from observed turn projection as well as
 local compatibility files. The process-runner smoke now verifies projected
 turn, approval, and session read APIs after a deterministic OpenCode-adapter
-task turn from a real joined runner process. The remaining deep runtime APIs
-still need to be moved off local file reads.
+task turn from a real joined runner process. Joined runners now also publish
+session/conversation observations for later lifecycle transitions including
+handoffs, coordination result/close, approval request/response, completion,
+cancellation, and failure paths. The remaining deep runtime APIs still need to
+be moved off local file reads.
 
 ## Target Model
 
@@ -85,7 +88,9 @@ and refs so Host can inspect global state without reading runner disk.
 - Continue changing runner service to emit observations whenever it currently
   writes local lifecycle state. Session, conversation, turn phase, artifact ref,
   artifact ref with bounded preview, source-change ref with bounded summary, and
-  wiki ref emissions now exist.
+  wiki ref emissions now exist, including later session/conversation lifecycle
+  transitions after handoffs, coordination messages, approvals, completion,
+  cancellation, and failure.
 - Preserve observation-event activity records during local compatibility
   synchronization and treat runtime-file imports as the only activity records
   eligible for local stale-record pruning.

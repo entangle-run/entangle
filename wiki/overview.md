@@ -76,6 +76,9 @@ The most accurate current description is:
   deterministic `opencode` executable inside the spawned agent runner, then
   verifies projected turn, approval, and session read APIs without live model
   credentials;
+- joined runners now publish session/conversation observations for later
+  lifecycle transitions after handoffs, coordination result/close, approval
+  request/response, completion, cancellation, and failure paths;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, Docker launcher rebasing onto the assignment path, and the full
   multi-machine distributed proof.

@@ -74,7 +74,8 @@ mode, but canonical execution still falls back to injected same-machine context:
   control/observe subscriptions for registration, assignment, heartbeat,
   runtime status, session/conversation updates, turn updates, approval updates,
   and artifact/source/wiki refs; deeper mutation and detail surfaces are still
-  being moved off runner filesystem reads;
+  being moved off runner filesystem reads, and later session/conversation
+  lifecycle transitions now publish observations as well;
 - runner state is file-backed under `runtimeRoot`;
 - cancellation is polled from Host-written local files;
 - OpenCode is invoked by a safe one-shot process adapter, and the process-runner

@@ -211,6 +211,7 @@ Implementation record:
 - [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
 - [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
 - [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
+- [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
 
 Verification:
 
@@ -246,6 +247,9 @@ Current status:
 - the process-runner smoke now exercises a deterministic OpenCode-adapter
   `task.request` through a real joined agent runner process and asserts the
   projected turn, approval, and session read APIs over signed observations;
+- joined runners now emit session/conversation observations for later lifecycle
+  transitions such as handoffs, coordination result/close, approval
+  request/response, completion, cancellation, and failure paths;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime

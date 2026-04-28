@@ -1923,6 +1923,12 @@ export class RunnerService {
     session: SessionRecord;
     statePaths: RunnerStatePaths;
   }): Promise<SessionRecord> {
+    const publishAndReturn = async (
+      session: SessionRecord
+    ): Promise<SessionRecord> => {
+      await this.publishSessionObservation(session);
+      return session;
+    };
     const [approvalRecords, conversationRecords] = await Promise.all([
       listApprovalRecords(input.statePaths),
       listConversationRecords(input.statePaths)
@@ -1958,43 +1964,51 @@ export class RunnerService {
       );
 
       if (activeSession.activeConversationIds.length === 0) {
-        return completeSession(input.statePaths, activeSession, {
-          lastMessageId: input.lastMessageId,
-          lastMessageType: input.lastMessageType
-        });
+        return publishAndReturn(
+          await completeSession(input.statePaths, activeSession, {
+            lastMessageId: input.lastMessageId,
+            lastMessageType: input.lastMessageType
+          })
+        );
       }
 
-      return activeSession;
+      return publishAndReturn(activeSession);
     }
 
     if (activeConversationIds.length > 0 || currentSession.status !== "active") {
-      return transitionSessionStatus(
-        input.statePaths,
-        currentSession,
-        currentSession.status,
-        {
-          lastMessageId: input.lastMessageId,
-          lastMessageType: input.lastMessageType
-        }
+      return publishAndReturn(
+        await transitionSessionStatus(
+          input.statePaths,
+          currentSession,
+          currentSession.status,
+          {
+            lastMessageId: input.lastMessageId,
+            lastMessageType: input.lastMessageType
+          }
+        )
       );
     }
 
     if (currentSession.waitingApprovalIds.length > 0) {
-      return transitionSessionStatus(
-        input.statePaths,
-        currentSession,
-        "waiting_approval",
-        {
-          lastMessageId: input.lastMessageId,
-          lastMessageType: input.lastMessageType
-        }
+      return publishAndReturn(
+        await transitionSessionStatus(
+          input.statePaths,
+          currentSession,
+          "waiting_approval",
+          {
+            lastMessageId: input.lastMessageId,
+            lastMessageType: input.lastMessageType
+          }
+        )
       );
     }
 
-    return completeSession(input.statePaths, currentSession, {
-      lastMessageId: input.lastMessageId,
-      lastMessageType: input.lastMessageType
-    });
+    return publishAndReturn(
+      await completeSession(input.statePaths, currentSession, {
+        lastMessageId: input.lastMessageId,
+        lastMessageType: input.lastMessageType
+      })
+    );
   }
 
   private async publishHandoffMessages(input: {
@@ -2053,7 +2067,7 @@ export class RunnerService {
           outboundConversation.conversationId
         )) ?? outboundConversation;
 
-      await writeConversationRecord(input.statePaths, {
+      const nextConversation = {
         ...latestConversation,
         lastMessageType: latestConversation.lastInboundMessageId
           ? latestConversation.lastMessageType
@@ -2062,7 +2076,9 @@ export class RunnerService {
         updatedAt: latestConversation.lastInboundMessageId
           ? latestConversation.updatedAt
           : publishedEnvelope.receivedAt
-      });
+      };
+      await writeConversationRecord(input.statePaths, nextConversation);
+      await this.publishConversationObservation(nextConversation);
       publishedEnvelopes.push(publishedEnvelope);
     }
 
@@ -2098,9 +2114,10 @@ export class RunnerService {
       input.statePaths,
       approval.approvalId
     );
+    let nextApprovalRecord: ApprovalRecord | undefined;
 
     if (!existingApproval || existingApproval.status === "pending") {
-      await writeApprovalRecord(input.statePaths, {
+      nextApprovalRecord = {
         approvalId: approval.approvalId,
         approverNodeIds: existingApproval
           ? mergeIdentifierLists(existingApproval.approverNodeIds, approverNodeIds)
@@ -2115,7 +2132,9 @@ export class RunnerService {
         sessionId: input.envelope.message.sessionId,
         status: "pending",
         updatedAt: input.envelope.receivedAt
-      });
+      };
+      await writeApprovalRecord(input.statePaths, nextApprovalRecord);
+      await this.publishApprovalObservation(nextApprovalRecord);
     }
 
     const waitingSession: SessionRecord = {
@@ -2140,6 +2159,8 @@ export class RunnerService {
       lastMessageType: input.envelope.message.messageType,
       statePaths: input.statePaths
     });
+    await this.publishSessionObservation(nextSession);
+    await this.publishConversationObservation(nextConversation);
 
     return {
       conversation: nextConversation,
@@ -2224,6 +2245,8 @@ export class RunnerService {
             lastMessageType: input.envelope.message.messageType
           })
         : rejectedSession;
+      await this.publishConversationObservation(nextConversation);
+      await this.publishSessionObservation(failedSession);
 
       return {
         conversation: nextConversation,
@@ -2237,6 +2260,7 @@ export class RunnerService {
       session: input.session,
       statePaths: input.statePaths
     });
+    await this.publishConversationObservation(nextConversation);
 
     return {
       conversation: nextConversation,
@@ -2345,21 +2369,23 @@ export class RunnerService {
         statePaths
       });
     } else if (envelope.message.messageType === "task.result") {
+      let nextConversation: ConversationRecord;
       if (envelope.message.responsePolicy.closeOnResult) {
-        await this.transitionConversationToClosed({
+        nextConversation = await this.transitionConversationToClosed({
           conversation: currentConversation,
           lastInboundMessageId: envelope.eventId,
           lastMessageType: envelope.message.messageType,
           statePaths
         });
       } else {
-        await this.transitionConversationToResolved({
+        nextConversation = await this.transitionConversationToResolved({
           conversation: currentConversation,
           lastInboundMessageId: envelope.eventId,
           lastMessageType: envelope.message.messageType,
           statePaths
         });
       }
+      await this.publishConversationObservation(nextConversation);
 
       await this.completeSessionIfNoOpenConversations({
         lastMessageId: envelope.eventId,
@@ -2368,12 +2394,13 @@ export class RunnerService {
         statePaths
       });
     } else if (envelope.message.messageType === "conversation.close") {
-      await this.transitionConversationToClosed({
+      const nextConversation = await this.transitionConversationToClosed({
         conversation: currentConversation,
         lastInboundMessageId: envelope.eventId,
         lastMessageType: envelope.message.messageType,
         statePaths
       });
+      await this.publishConversationObservation(nextConversation);
       await this.completeSessionIfNoOpenConversations({
         lastMessageId: envelope.eventId,
         lastMessageType: envelope.message.messageType,
@@ -2928,6 +2955,7 @@ export class RunnerService {
           updatedAt: nowIsoString()
         };
         await writeSessionRecord(statePaths, currentSession);
+        await this.publishSessionObservation(currentSession);
         turnRecord = {
           ...turnRecord,
           emittedHandoffMessageIds: publishedHandoffs.map(
@@ -2947,6 +2975,7 @@ export class RunnerService {
           lastMessageType: envelope.message.messageType
         }
       );
+      await this.publishConversationObservation(currentConversation);
       currentSession = await this.completeSessionIfNoOpenConversations({
         lastMessageId: envelope.eventId,
         lastMessageType: envelope.message.messageType,
@@ -2964,6 +2993,7 @@ export class RunnerService {
               lastMessageType: envelope.message.messageType
             }
           );
+          await this.publishConversationObservation(currentConversation);
         }
 
         turnRecord = await this.runOptionalMemorySynthesis({
@@ -3001,6 +3031,7 @@ export class RunnerService {
           lastOutboundMessageId: publishedEnvelope.eventId
         }
       );
+      await this.publishConversationObservation(currentConversation);
       currentSession = await transitionSessionStatus(
         statePaths,
         currentSession,
@@ -3066,7 +3097,7 @@ export class RunnerService {
         );
 
         if (currentSession) {
-          await cancelSessionForRequest({
+          const cancelledSession = await cancelSessionForRequest({
             lastMessageId: envelope.eventId,
             lastMessageType: envelope.message.messageType,
             request:
@@ -3083,6 +3114,7 @@ export class RunnerService {
             statePaths,
             turnId: turnRecord.turnId
           });
+          await this.publishSessionObservation(cancelledSession);
         } else if (cancellationRequest) {
           await markSessionCancellationRequestObserved({
             record: cancellationRequest,
@@ -3104,10 +3136,11 @@ export class RunnerService {
         currentSession &&
         isAllowedSessionLifecycleTransition(currentSession.status, "failed")
       ) {
-        await transitionSessionStatus(statePaths, currentSession, "failed", {
+        const failedSession = await transitionSessionStatus(statePaths, currentSession, "failed", {
           lastMessageId: envelope.eventId,
           lastMessageType: envelope.message.messageType
         });
+        await this.publishSessionObservation(failedSession);
       }
 
       throw error;

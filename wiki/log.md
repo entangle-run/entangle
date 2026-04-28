@@ -3795,3 +3795,14 @@ Runner blocked-turn handling now also publishes the final
 `waiting_approval` session and `awaiting_approval` conversation observations
 after engine approval directives, so Host projection does not depend on runner
 filesystem reads for that state transition.
+
+## [2026-04-28] implementation | Completed more runner lifecycle observations
+
+Added `references/311-runner-lifecycle-observation-completeness-slice.md`.
+Runner service now publishes session/conversation observations for later
+lifecycle transitions after outbound handoff writes, coordination
+`task.result` and `conversation.close`, approval request/response handling,
+normal completion, cancellation, and failure paths.
+
+This reduces the gap between runner-local lifecycle state and Host projection
+for remote deployments where Host cannot inspect `runtimeRoot`.

@@ -307,6 +307,9 @@ This repository currently contains:
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, then verifies projected turn, approval, and session read APIs
   without requiring live model-provider credentials;
+- joined runners now publish session/conversation observations for later
+  lifecycle transitions including handoffs, coordination result/close,
+  approval request/response, completion, cancellation, and failure paths;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,
