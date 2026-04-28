@@ -45,22 +45,26 @@ implementation" or as being in a control-plane-only stage.
 As of the 2026-04-26 federated-runtime pivot audit, the forward-looking product
 baseline is Entangle. Same-machine deployment is the first deployment topology,
 not the product identity or a separate runtime profile. The current
-implementation is still materially single-host in places: Host writes injected
-runtime context, Docker runners share Host-managed volumes, and Host still
-derives much of its runtime projection by reading runner-Entangle state. The active
-redesign pack under `references/221-federated-runtime-redesign-index.md`
-defines the required shift to Host Authority signing, generic runner
-registration, runtime assignments, signed observations, stable User Node
-identities, and projection-backed Studio/CLI surfaces.
+implementation still has same-workstation adapter and deep-detail migration
+work: Host writes injected runtime context for launcher compatibility, Docker
+runners can still share Host-managed volumes, and some Host runtime detail APIs
+still read runner-owned state. The active redesign pack under
+`references/221-federated-runtime-redesign-index.md` defines the required shift
+to Host Authority signing, generic runner registration, runtime assignments,
+signed observations, stable User Node identities, and projection-backed
+Studio/CLI surfaces.
 
 The most accurate current description is:
 
 - the architecture and contract layers are strong and largely stable;
-- the host and runner are already real local runtime components;
-- the remaining same-machine-era implementation is now subordinate to the federated
-  runtime pivot;
-- the largest gaps are Host-runner federation, stable user-node signing, and
-  projection state that does not depend on shared local filesystems.
+- the host, runner, generic join path, assignment path, Human Interface
+  Runtime, and User Client are already real runtime components;
+- the process-runner smoke now proves joined agent and User Node runners over a
+  live relay with signed messages, signed approvals, projected heartbeats, and
+  separate Host/runner state roots;
+- the largest remaining gaps are projection-backed replacement for deep runtime
+  detail APIs, Docker launcher rebasing onto the assignment path, and the full
+  multi-machine distributed proof.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish

@@ -3721,3 +3721,11 @@ Added `references/304-deployment-index-profile-cleanup-slice.md`.
 `deploy/README.md` now points at `deploy/federated-dev/README.md` and describes
 same-workstation operation as the active federated development profile rather
 than a separate local product profile.
+
+## [2026-04-28] documentation | Refined current gap summary
+
+Updated `wiki/overview.md` so the top-level project state no longer describes
+Host-runner federation and stable User Node signing as the largest current
+gaps. The current gap summary now reflects the live joined-runner/User Client
+smoke path and focuses remaining work on projection-backed deep detail APIs,
+Docker launcher rebasing, and the multi-machine distributed proof.
