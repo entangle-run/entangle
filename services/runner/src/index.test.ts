@@ -645,6 +645,8 @@ describe("runner runtime context", () => {
                   fromNodeId: "worker-it",
                   fromPubkey: remotePublicKey,
                   messageType: "approval.request",
+                  parentMessageId:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
                   peerNodeId: "worker-it",
                   publishedRelays: [],
                   relayUrls: [],
@@ -981,6 +983,9 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("Previous user message.");
       expect(pageBody).toContain("delivery published 1/1 relays");
       expect(pageBody).toContain("delivery received by User Client");
+      expect(pageBody).toContain(
+        "reply to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      );
       expect(pageBody).toContain("approval-alpha");
       expect(pageBody).toContain("approval-wiki");
       expect(pageBody).toContain("wiki_repository:worker-it");

@@ -3490,3 +3490,13 @@ prerequisite and the federated dev `strfry` startup command instead of exposing
 the lower-level Nostr pool `connection failed` error. The same pass also
 aligned the smoke's synthetic artifact ref with the current preferred-ref
 contract.
+
+## [2026-04-28] implementation | Preserved User Node parent message links
+
+Added `references/283-user-node-parent-message-read-model-slice.md`. User Node
+message records now preserve optional A2A `parentMessageId` values for inbound
+and outbound messages, and the runner-served User Client renders the parent
+link in conversation history.
+
+This makes human-node conversation state less flat and gives future delivery
+retry and thread repair work a durable parent/child message link to build on.

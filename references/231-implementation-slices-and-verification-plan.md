@@ -254,8 +254,8 @@ Current status:
   artifact-ref rendering, projection-backed bounded artifact preview with
   runtime fallback, delivery labels, local conversation read state, projected
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
-  context rendering, signed read receipts, and message publishing that
-  preserves selected conversation/session context;
+  context rendering, signed read receipts, parent-message links, and message
+  publishing that preserves selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;

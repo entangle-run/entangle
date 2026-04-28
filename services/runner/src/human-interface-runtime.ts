@@ -905,6 +905,12 @@ function renderMessageDelivery(message: UserNodeMessageRecord): string {
   return `<div class="message-meta">delivery ${escapeHtml(deliveryLabel)}</div>`;
 }
 
+function renderParentMessageLink(message: UserNodeMessageRecord): string {
+  return message.parentMessageId
+    ? `<div class="message-meta">reply to ${escapeHtml(message.parentMessageId)}</div>`
+    : "";
+}
+
 async function renderHome(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -1016,6 +1022,7 @@ async function renderHome(input: {
               ${renderApprovalResource(message, state.sourceChangeRefs, state.wikiRefs)}
               <div>${escapeHtml(message.summary)}</div>
               ${renderArtifactRefs(message)}
+              ${renderParentMessageLink(message)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
               ${renderApprovalControls(message)}
             </article>`

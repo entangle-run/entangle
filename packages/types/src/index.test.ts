@@ -330,6 +330,8 @@ describe("federated runtime contracts", () => {
       fromNodeId: "user-main",
       fromPubkey: userNodePubkey,
       messageType: "question",
+      parentMessageId:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       peerNodeId: "worker-it",
       publishedRelays: ["ws://localhost:7777"],
       relayUrls: ["ws://localhost:7777"],
@@ -356,6 +358,9 @@ describe("federated runtime contracts", () => {
         userNodeId: "user-main"
       }).message.eventId
     ).toBe(messageRecord.eventId);
+    expect(messageRecord.parentMessageId).toBe(
+      "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    );
 
     expect(
       userNodeInboundMessageRecordRequestSchema.parse({

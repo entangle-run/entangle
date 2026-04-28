@@ -3365,6 +3365,8 @@ describe("buildHostServer", () => {
           conversationId: "conversation-alpha",
           direction: "inbound",
           fromNodeId: "worker-it",
+          parentMessageId:
+            "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
           peerNodeId: "worker-it",
           summary: "The worker completed the task.",
           userNodeId: "user-main"
@@ -3401,6 +3403,8 @@ describe("buildHostServer", () => {
         ).messages[0]
       ).toMatchObject({
         direction: "inbound",
+        parentMessageId:
+          "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         summary: "The worker completed the task."
       });
 
@@ -3496,7 +3500,9 @@ describe("buildHostServer", () => {
             approvalId: "approval-alpha",
             operation: "source_application"
           },
-          messageType: "approval.request"
+          messageType: "approval.request",
+          parentMessageId:
+            "abababababababababababababababababababababababababababababababab"
         });
 
       const messageInspectionResponse = await server.inject({
@@ -3517,7 +3523,9 @@ describe("buildHostServer", () => {
           operation: "source_application"
         },
         conversationId: "conversation-alpha",
-        messageType: "approval.request"
+        messageType: "approval.request",
+        parentMessageId:
+          "abababababababababababababababababababababababababababababababab"
       });
 
       const inboxWithApprovalResponse = await server.inject({

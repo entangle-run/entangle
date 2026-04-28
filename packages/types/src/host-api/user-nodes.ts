@@ -54,6 +54,7 @@ export const userNodeMessageRecordSchema = z.object({
   fromNodeId: identifierSchema,
   fromPubkey: nostrPublicKeySchema,
   messageType: nonEmptyStringSchema,
+  parentMessageId: nostrEventIdSchema.optional(),
   peerNodeId: identifierSchema,
   publishedRelays: z.array(nonEmptyStringSchema).default([]),
   relayUrls: z.array(nonEmptyStringSchema).default([]),

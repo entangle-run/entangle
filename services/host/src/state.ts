@@ -3607,6 +3607,9 @@ export async function recordUserNodePublishedMessage(input: {
     fromNodeId: input.response.fromNodeId,
     fromPubkey: input.response.fromPubkey,
     messageType: input.response.messageType,
+    ...(input.request.parentMessageId
+      ? { parentMessageId: input.request.parentMessageId }
+      : {}),
     peerNodeId: input.response.targetNodeId,
     publishedRelays: input.response.publishedRelays,
     relayUrls: input.response.relayUrls,
@@ -3648,6 +3651,9 @@ export async function recordUserNodeInboundMessage(input: {
     fromNodeId: message.fromNodeId,
     fromPubkey: message.fromPubkey,
     messageType: message.messageType,
+    ...(message.parentMessageId
+      ? { parentMessageId: message.parentMessageId }
+      : {}),
     peerNodeId: message.fromNodeId,
     publishedRelays: [],
     relayUrls: [],
