@@ -10509,26 +10509,40 @@ export async function getRuntimeArtifactHistory(input: {
 }): Promise<RuntimeArtifactHistoryResponse | null> {
   const context = await getRuntimeContext(input.nodeId);
 
-  if (!context) {
-    return null;
+  if (context) {
+    const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+    const artifact = artifacts.find(
+      (candidate) => candidate.ref.artifactId === input.artifactId
+    );
+
+    if (artifact) {
+      return runtimeArtifactHistoryResponseSchema.parse({
+        artifact,
+        history: await readArtifactGitHistory({
+          artifact,
+          context,
+          limit: input.limit
+        })
+      });
+    }
   }
 
-  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
-  const artifact = artifacts.find(
-    (candidate) => candidate.ref.artifactId === input.artifactId
-  );
+  const artifactInspection = await getRuntimeArtifactInspection({
+    artifactId: input.artifactId,
+    nodeId: input.nodeId
+  });
 
-  if (!artifact) {
+  if (!artifactInspection) {
     return null;
   }
 
   return runtimeArtifactHistoryResponseSchema.parse({
-    artifact,
-    history: await readArtifactGitHistory({
-      artifact,
-      context,
-      limit: input.limit
-    })
+    artifact: artifactInspection.artifact,
+    history: {
+      available: false,
+      reason:
+        "Artifact git history is unavailable because only a projected artifact ref is available; no backend-resolved repository checkout is attached to Host."
+    }
   });
 }
 
@@ -10539,26 +10553,40 @@ export async function getRuntimeArtifactDiff(input: {
 }): Promise<RuntimeArtifactDiffResponse | null> {
   const context = await getRuntimeContext(input.nodeId);
 
-  if (!context) {
-    return null;
+  if (context) {
+    const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
+    const artifact = artifacts.find(
+      (candidate) => candidate.ref.artifactId === input.artifactId
+    );
+
+    if (artifact) {
+      return runtimeArtifactDiffResponseSchema.parse({
+        artifact,
+        diff: await readArtifactGitDiff({
+          artifact,
+          context,
+          fromCommit: input.fromCommit
+        })
+      });
+    }
   }
 
-  const artifacts = await listRuntimeArtifactRecords(context.workspace.runtimeRoot);
-  const artifact = artifacts.find(
-    (candidate) => candidate.ref.artifactId === input.artifactId
-  );
+  const artifactInspection = await getRuntimeArtifactInspection({
+    artifactId: input.artifactId,
+    nodeId: input.nodeId
+  });
 
-  if (!artifact) {
+  if (!artifactInspection) {
     return null;
   }
 
   return runtimeArtifactDiffResponseSchema.parse({
-    artifact,
-    diff: await readArtifactGitDiff({
-      artifact,
-      context,
-      fromCommit: input.fromCommit
-    })
+    artifact: artifactInspection.artifact,
+    diff: {
+      available: false,
+      reason:
+        "Artifact git diff is unavailable because only a projected artifact ref is available; no backend-resolved repository checkout is attached to Host."
+    }
   });
 }
 

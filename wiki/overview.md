@@ -86,6 +86,9 @@ The most accurate current description is:
 - runtime memory list/page read APIs can now fall back to observed `wiki.ref`
   projection records and bounded wiki previews when Host cannot read the
   runner's memory root;
+- artifact history/diff read APIs can now return projected artifact records
+  with explicit unavailable reasons when Host has no backend-resolved
+  repository checkout;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate

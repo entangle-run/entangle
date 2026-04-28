@@ -3893,3 +3893,13 @@ list/page APIs now prefer local memory files but can fall back to observed
 Projection-backed memory previews omit local `sourcePath`; this keeps remote
 User/Agent node wiki memory inspectable without pretending Host can read the
 runner's memory root.
+
+## [2026-04-28] implementation | Stabilized projected artifact history and diff reads
+
+Added `references/320-projected-artifact-history-diff-read-api-slice.md`.
+Artifact history/diff APIs now prefer local git materialization but can return
+projected artifact records with explicit unavailable history/diff reasons when
+Host only has an observed artifact ref.
+
+This removes another local-context read precondition from runtime inspection
+without pretending that projection alone can compute full git history.

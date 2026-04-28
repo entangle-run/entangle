@@ -114,7 +114,9 @@ and refs so Host can inspect global state without reading runner disk.
   candidate records; source-change diff can read projected `diffExcerpt`
   evidence; source-change file preview can read bounded projected file preview
   evidence; memory list/page reads can use observed `wiki.ref` records and
-  bounded wiki previews; deeper artifact history, wiki publication, and
+  bounded wiki previews; artifact history/diff reads can return projected
+  artifact records with explicit unavailable reasons when no backend checkout
+  is attached; deeper artifact history computation, wiki publication, and
   mutation surfaces still need projected or backend-resolved equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.

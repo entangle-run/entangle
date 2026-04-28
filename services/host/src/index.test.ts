@@ -2059,6 +2059,46 @@ describe("buildHostServer", () => {
           truncated: false
         }
       });
+
+      const projectedArtifactHistoryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/history"
+      });
+      expect(projectedArtifactHistoryResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactHistoryResponseSchema.parse(
+          projectedArtifactHistoryResponse.json()
+        )
+      ).toMatchObject({
+        artifact: {
+          ref: {
+            artifactId: "artifact-alpha"
+          }
+        },
+        history: {
+          available: false
+        }
+      });
+
+      const projectedArtifactDiffResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/diff"
+      });
+      expect(projectedArtifactDiffResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactDiffResponseSchema.parse(
+          projectedArtifactDiffResponse.json()
+        )
+      ).toMatchObject({
+        artifact: {
+          ref: {
+            artifactId: "artifact-alpha"
+          }
+        },
+        diff: {
+          available: false
+        }
+      });
     } finally {
       await server.close();
     }

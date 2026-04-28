@@ -56,8 +56,10 @@ or stable User Node identity.
   projection, and source-change candidate list/detail reads can now use
   observed full `source_change.ref` candidate projection, including bounded
   projected diff fallback and bounded projected file preview fallback when
-  those fields are present; runtime memory list/page reads can now fall back to
-  observed `wiki.ref` projection records with bounded previews;
+  those fields are present; artifact history/diff reads can now return
+  projected artifact records with explicit unavailable reasons when no
+  backend-resolved checkout exists; runtime memory list/page reads can now fall
+  back to observed `wiki.ref` projection records with bounded previews;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 

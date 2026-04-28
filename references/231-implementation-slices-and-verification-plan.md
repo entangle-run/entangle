@@ -225,7 +225,7 @@ Implementation record:
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
-- [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
+- [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 
 Verification:
 
@@ -282,8 +282,11 @@ Current status:
 - runtime memory list/page GET routes can fall back to observed `wiki.ref`
   projection records with bounded preview content when local memory files are
   unavailable;
-- deeper artifact history, wiki publication, and mutation endpoints still need
-  projection-backed or backend-resolved replacement.
+- runtime artifact history/diff GET routes can fall back to projected artifact
+  records with explicit unavailable reasons when no backend-resolved repository
+  checkout is attached to Host;
+- deeper artifact history computation, wiki publication, and mutation endpoints
+  still need projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -421,6 +424,8 @@ Implementation record:
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
+- [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
+- [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 
 Verification:
 

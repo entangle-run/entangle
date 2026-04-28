@@ -120,6 +120,7 @@ same-machine slice records.
 - [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md)
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
+- [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 
 ## Audited Scope
 
@@ -317,6 +318,10 @@ The repository is not fully federated:
   fall back to observed `wiki.ref` projection records with bounded preview
   content, so remote node wiki memory remains inspectable without Host-readable
   runner memory roots;
+- Host runtime artifact history/diff GET routes now prefer local git
+  materialization and fall back to projected artifact records with explicit
+  unavailable reasons when no backend-resolved repository checkout is attached
+  to Host;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, source-change candidate list/detail/diff/file,
