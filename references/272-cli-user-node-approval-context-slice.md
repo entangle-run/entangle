@@ -57,11 +57,16 @@ Implemented in this slice:
 
 Deferred:
 
-- automatic CLI context extraction from an existing inbox message id;
 - CLI rendering that marks an approval request as answered by a later signed
   response;
 - Host-side correlation validation between response context and the original
   request context.
+
+Follow-up implemented later:
+
+- `275-cli-user-node-approval-from-message-slice.md` added
+  `approve/reject --from-message <eventId>` so the CLI can source context from
+  recorded inbound approval-request messages.
 
 ## Tests Required
 

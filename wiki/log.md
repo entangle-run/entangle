@@ -3294,6 +3294,20 @@ focused Studio tests, Studio lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-28] implementation | Added CLI approval responses from inbox messages
+
+Added `references/275-cli-user-node-approval-from-message-slice.md`. CLI
+`approve` and `reject` can now use `--from-message <eventId>` to locate a
+recorded inbound User Node `approval.request` and publish a signed
+`approval.response` that preserves the original approval id, target node,
+conversation id, session id, parent event id, turn id, and scoped
+operation/resource/reason context.
+
+Manual approval id plus `--target-node` flows still work. CLI typecheck,
+focused CLI tests, CLI lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
+
 ## [2026-04-28] implementation | Projected source-change summaries from observed refs
 
 Added `references/270-source-change-ref-summary-projection-slice.md`.

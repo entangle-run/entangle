@@ -38,6 +38,7 @@ import {
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema,
+  type UserNodeMessageRecord,
   userNodeMessagePublishRequestSchema
 } from "@entangle/types";
 import {
@@ -98,6 +99,7 @@ import {
 } from "./user-node-output.js";
 import {
   buildUserNodeApprovalMetadata,
+  buildUserNodeApprovalPublishRequestFromMessage,
   hasUserNodeApprovalContextOptions
 } from "./user-node-message-command.js";
 import {
@@ -338,6 +340,32 @@ async function waitForHostSession(input: {
 
     await sleep(Math.min(input.intervalMs, remainingMs));
   }
+}
+
+async function findUserNodeMessageByEventId(input: {
+  client: ReturnType<typeof createCliHostClient>;
+  eventId: string;
+  userNodeId: string;
+}): Promise<UserNodeMessageRecord> {
+  const inbox = await input.client.getUserNodeInbox(input.userNodeId);
+
+  for (const conversation of sortUserConversationsForCli(inbox.conversations)) {
+    const detail = await input.client.getUserNodeConversation(
+      input.userNodeId,
+      conversation.conversationId
+    );
+    const message = detail.messages.find(
+      (candidate) => candidate.eventId === input.eventId
+    );
+
+    if (message) {
+      return message;
+    }
+  }
+
+  throw new Error(
+    `Message '${input.eventId}' was not found for User Node '${input.userNodeId}'.`
+  );
 }
 
 async function watchHostEvents(input: {
@@ -1353,9 +1381,13 @@ program
 
 program
   .command("approve")
-  .argument("<approvalId>", "Approval identifier.")
+  .argument("[approvalId]", "Approval identifier unless --from-message supplies it.")
   .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
-  .requiredOption("--target-node <nodeId>", "Target runtime node id.")
+  .option("--target-node <nodeId>", "Target runtime node id.")
+  .option(
+    "--from-message <eventId>",
+    "Recorded inbound approval.request event id to reuse conversation and scoped context."
+  )
   .option("--body <body>", "Approval response body.")
   .option(
     "--approval-operation <operation>",
@@ -1394,11 +1426,12 @@ program
   )
   .description("Publish a signed User Node approval response.")
   .action(async (
-    approvalId: string,
+    approvalId: string | undefined,
     options: {
       body?: string;
       compact?: boolean;
       conversationId?: string;
+      fromMessage?: string;
       approvalOperation?: string;
       approvalReason?: string;
       approvalResourceId?: string;
@@ -1406,31 +1439,53 @@ program
       approvalResourceLabel?: string;
       parentMessageId?: string;
       sessionId?: string;
-      targetNode: string;
+      targetNode?: string;
       turnId?: string;
       userNode: string;
     },
     command: Command
   ) => {
-    const request = userNodeMessagePublishRequestSchema.parse({
-      approval: buildUserNodeApprovalMetadata({
-        approvalId,
-        decision: "approved",
-        options
-      }),
-      ...(options.conversationId
-        ? { conversationId: options.conversationId }
-        : {}),
-      messageType: "approval.response",
-      ...(options.parentMessageId
-        ? { parentMessageId: options.parentMessageId }
-        : {}),
-      ...(options.sessionId ? { sessionId: options.sessionId } : {}),
-      summary: options.body ?? `Approved ${approvalId}.`,
-      targetNodeId: options.targetNode,
-      ...(options.turnId ? { turnId: options.turnId } : {})
-    });
     const client = createCliHostClient(command);
+    const request = userNodeMessagePublishRequestSchema.parse(
+      options.fromMessage
+        ? buildUserNodeApprovalPublishRequestFromMessage({
+            ...(approvalId ? { approvalId } : {}),
+            decision: "approved",
+            message: await findUserNodeMessageByEventId({
+              client,
+              eventId: options.fromMessage,
+              userNodeId: options.userNode
+            }),
+            options,
+            ...(options.body ? { summary: options.body } : {})
+          })
+        : (() => {
+            if (!approvalId || !options.targetNode) {
+              throw new Error(
+                "Approval id and --target-node are required unless --from-message is supplied."
+              );
+            }
+
+            return {
+              approval: buildUserNodeApprovalMetadata({
+                approvalId,
+                decision: "approved",
+                options
+              }),
+              ...(options.conversationId
+                ? { conversationId: options.conversationId }
+                : {}),
+              messageType: "approval.response" as const,
+              ...(options.parentMessageId
+                ? { parentMessageId: options.parentMessageId }
+                : {}),
+              ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+              summary: options.body ?? `Approved ${approvalId}.`,
+              targetNodeId: options.targetNode,
+              ...(options.turnId ? { turnId: options.turnId } : {})
+            };
+          })()
+    );
     const response = await client.publishUserNodeMessage(
       options.userNode,
       request
@@ -1445,9 +1500,13 @@ program
 
 program
   .command("reject")
-  .argument("<approvalId>", "Approval identifier.")
+  .argument("[approvalId]", "Approval identifier unless --from-message supplies it.")
   .requiredOption("--user-node <nodeId>", "Signing User Node identifier.")
-  .requiredOption("--target-node <nodeId>", "Target runtime node id.")
+  .option("--target-node <nodeId>", "Target runtime node id.")
+  .option(
+    "--from-message <eventId>",
+    "Recorded inbound approval.request event id to reuse conversation and scoped context."
+  )
   .option("--reason <reason>", "Rejection reason.")
   .option(
     "--approval-operation <operation>",
@@ -1486,7 +1545,7 @@ program
   )
   .description("Publish a signed User Node rejection response.")
   .action(async (
-    approvalId: string,
+    approvalId: string | undefined,
     options: {
       approvalOperation?: string;
       approvalReason?: string;
@@ -1495,34 +1554,57 @@ program
       approvalResourceLabel?: string;
       compact?: boolean;
       conversationId?: string;
+      fromMessage?: string;
       parentMessageId?: string;
       reason?: string;
       sessionId?: string;
-      targetNode: string;
+      targetNode?: string;
       turnId?: string;
       userNode: string;
     },
     command: Command
   ) => {
-    const request = userNodeMessagePublishRequestSchema.parse({
-      approval: buildUserNodeApprovalMetadata({
-        approvalId,
-        decision: "rejected",
-        options
-      }),
-      ...(options.conversationId
-        ? { conversationId: options.conversationId }
-        : {}),
-      messageType: "approval.response",
-      ...(options.parentMessageId
-        ? { parentMessageId: options.parentMessageId }
-        : {}),
-      ...(options.sessionId ? { sessionId: options.sessionId } : {}),
-      summary: options.reason ?? `Rejected ${approvalId}.`,
-      targetNodeId: options.targetNode,
-      ...(options.turnId ? { turnId: options.turnId } : {})
-    });
     const client = createCliHostClient(command);
+    const request = userNodeMessagePublishRequestSchema.parse(
+      options.fromMessage
+        ? buildUserNodeApprovalPublishRequestFromMessage({
+            ...(approvalId ? { approvalId } : {}),
+            decision: "rejected",
+            message: await findUserNodeMessageByEventId({
+              client,
+              eventId: options.fromMessage,
+              userNodeId: options.userNode
+            }),
+            options,
+            ...(options.reason ? { summary: options.reason } : {})
+          })
+        : (() => {
+            if (!approvalId || !options.targetNode) {
+              throw new Error(
+                "Approval id and --target-node are required unless --from-message is supplied."
+              );
+            }
+
+            return {
+              approval: buildUserNodeApprovalMetadata({
+                approvalId,
+                decision: "rejected",
+                options
+              }),
+              ...(options.conversationId
+                ? { conversationId: options.conversationId }
+                : {}),
+              messageType: "approval.response" as const,
+              ...(options.parentMessageId
+                ? { parentMessageId: options.parentMessageId }
+                : {}),
+              ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+              summary: options.reason ?? `Rejected ${approvalId}.`,
+              targetNodeId: options.targetNode,
+              ...(options.turnId ? { turnId: options.turnId } : {})
+            };
+          })()
+    );
     const response = await client.publishUserNodeMessage(
       options.userNode,
       request

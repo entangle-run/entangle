@@ -330,6 +330,7 @@ files are the active federated redesign pack.
 273. [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 274. [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
 275. [274-studio-user-node-runtime-summary-slice.md](274-studio-user-node-runtime-summary-slice.md)
+276. [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
 
 ## Role of this corpus
 

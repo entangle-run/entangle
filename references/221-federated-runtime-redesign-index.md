@@ -75,6 +75,7 @@ same-machine slice records.
 - [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 - [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
 - [274-studio-user-node-runtime-summary-slice.md](274-studio-user-node-runtime-summary-slice.md)
+- [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
 
 ## Audited Scope
 
@@ -152,7 +153,7 @@ The repository is not fully federated:
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist, and CLI
   signed approval responses can now carry scoped operation/resource/reason
-  context;
+  context or derive it from recorded inbound approval-request messages;
 - Studio's federation overview now joins User Node identity, runtime
   projection, User Client URL, and conversation projection into read-only
   operator summaries for Human Interface Runtimes;

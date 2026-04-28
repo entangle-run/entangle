@@ -62,6 +62,10 @@ Recently added:
 - CLI signed approval responses now have matching optional
   operation/resource/reason flags on `approve`, `reject`, and generic
   `user-nodes message` publishing.
+- CLI `approve` and `reject` can now use `--from-message <eventId>` to build
+  the signed response from a recorded inbound `approval.request`, preserving
+  target, conversation, session, parent message, turn, and scoped approval
+  context.
 - Studio User Node overview summaries now combine identity, runtime state,
   runner placement, User Client URL, conversation counts, active counts,
   pending approval counts, and unread counts from Host projection.
@@ -102,8 +106,8 @@ CLI has matching headless surfaces:
 - `entangle inbox list --user-node <nodeId>`
 - `entangle inbox show <conversationId> --user-node <nodeId>`
 - `entangle reply <messageId> "..." --user-node <nodeId>`
-- `entangle approve <approvalId> --user-node <nodeId> --approval-resource-kind <kind> --approval-resource-id <id>`
-- `entangle reject <approvalId> --user-node <nodeId> --approval-resource-kind <kind> --approval-resource-id <id>`
+- `entangle approve --user-node <nodeId> --from-message <eventId>`
+- `entangle reject --user-node <nodeId> --from-message <eventId>`
 - `entangle-runner join --config runner.toml`
 
 Studio and CLI must talk to Host and user-node gateways. They must not directly
@@ -132,8 +136,9 @@ Node.
 - Add CLI command groups for authority/runners/assignments/inbox/user-node
   actions. Authority, runner, assignment, User Node, projection inbox, reply,
   approve, and reject surfaces now exist; CLI signed approval responses now
-  accept scoped operation/resource/reason metadata; message history now has the
-  first inbound/outbound projection path.
+  accept scoped operation/resource/reason metadata and can derive context from
+  recorded approval-request messages; message history now has the first
+  inbound/outbound projection path.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
