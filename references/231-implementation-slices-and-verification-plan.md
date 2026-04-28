@@ -259,6 +259,7 @@ Implementation record:
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
+- [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 
 Verification:
 
@@ -326,6 +327,10 @@ Current status:
   `SourceHistoryRecord`, Host projection exposes `sourceHistoryRefs`, and
   runtime source-history list/detail GET routes can return projected entries
   without Host-readable runner filesystem context;
+- when source publication policy allows it and a primary git target is
+  configured, the owning runner now publishes accepted source-history records as
+  git commit artifacts, persists publication metadata locally, and emits both
+  `artifact.ref` and updated `source_history.ref` observations;
 - deeper artifact history computation, wiki publication, and mutation endpoints
   still need projection-backed or backend-resolved replacement.
 
@@ -477,6 +482,7 @@ Implementation record:
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
+- [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 
 Verification:
 

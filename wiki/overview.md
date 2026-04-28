@@ -98,6 +98,10 @@ The most accurate current description is:
 - accepted source-candidate reviews now also emit signed `source_history.ref`
   observations, so Host can project source-history records and serve
   source-history list/detail reads without a Host-readable runner filesystem;
+- when source publication policy allows it and a primary git target is
+  configured, the runner publishes accepted source-history records as git commit
+  artifacts and emits projected artifact/source-history observations for that
+  publication;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;

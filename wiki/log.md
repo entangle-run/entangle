@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Runner-owned source history publication
+
+Moved the default source-history publication path into the owning runner for
+accepted signed source-candidate reviews. When a primary git target is
+configured and source publication does not require extra approval, the runner
+materializes the source-history commit as a git artifact, pushes it to the
+primary target, records publication metadata locally, and emits both
+`artifact.ref` and updated `source_history.ref` observations.
+
+Added `references/332-runner-owned-source-history-publication-slice.md`. The
+process-runner smoke now requires the projected source-history record to show a
+published publication state.
+
 ## [2026-04-28] implementation | Projected runner source history refs
 
 Added signed `source_history.ref` observations for runner-owned source-history

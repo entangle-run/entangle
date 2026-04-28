@@ -255,8 +255,9 @@ This repository currently contains:
   `artifact.ref`, `source_change.ref`, `source_history.ref`, and `wiki.ref`
   observations during normal turns and accepted source reviews so Host
   projection receives portable work refs, bounded source-change summaries, and
-  concrete source-history records through the observe protocol, plus
-  runner-owned local git snapshots of
+  concrete source-history records through the observe protocol, with the runner
+  also publishing accepted source-history records to the node's primary git
+  target when policy allows it, plus runner-owned local git snapshots of
   `memory/wiki` into each node's
   `wiki-repository` workspace after completed turns, with durable sync outcomes
   carried through runner turns, host events, CLI output, and Studio turn

@@ -85,7 +85,10 @@ import {
   prepareSourceChangeHarvest
 } from "./source-change-harvester.js";
 import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js";
-import { applyAcceptedSourceChangeCandidate } from "./source-history.js";
+import {
+  applyAcceptedSourceChangeCandidate,
+  publishSourceHistoryToPrimaryGitTarget
+} from "./source-history.js";
 import { syncWikiRepository } from "./wiki-repository.js";
 import type {
   RunnerInboundEnvelope,
@@ -2350,7 +2353,20 @@ export class RunnerService {
 
       if (application.applied) {
         nextCandidate = application.candidate;
-        await this.publishSourceHistoryRefObservation(application.history);
+        let sourceHistory = application.history;
+        const publication = await publishSourceHistoryToPrimaryGitTarget({
+          context: this.context,
+          history: sourceHistory,
+          requestedAt: input.envelope.receivedAt,
+          statePaths: input.statePaths
+        });
+
+        if (publication.published) {
+          sourceHistory = publication.history;
+          await this.publishArtifactRefObservation(publication.artifact);
+        }
+
+        await this.publishSourceHistoryRefObservation(sourceHistory);
       } else {
         await writeSourceChangeCandidateRecord(
           input.statePaths,

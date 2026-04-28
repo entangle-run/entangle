@@ -155,7 +155,9 @@ function buildHttpsRuntimeContext(input: {
 
 describe("RunnerService", () => {
   it("publishes runner turn observations as executable message phases advance", async () => {
-    const fixture = await createRuntimeFixture();
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
     const context = await loadRuntimeContext(fixture.contextPath);
     const observedTurns: RunnerTurnRecord[] = [];
     const transport = new InMemoryRunnerTransport();
@@ -1697,7 +1699,9 @@ describe("RunnerService", () => {
   });
 
   it("applies signed source-change review messages as runner-owned candidate updates", async () => {
-    const fixture = await createRuntimeFixture();
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const runtimeContext = await loadRuntimeContext(fixture.contextPath);
@@ -1780,11 +1784,16 @@ describe("RunnerService", () => {
       updatedAt: "2026-04-24T10:02:00.000Z"
     });
 
+    const observedArtifacts: ObservedArtifactRecord[] = [];
     const observedSourceReviews: SourceChangeCandidateRecord[] = [];
     const observedSourceHistories: SourceHistoryRecord[] = [];
     const service = new RunnerService({
       context: runtimeContext,
       observationPublisher: {
+        publishArtifactRefObserved: (input) => {
+          observedArtifacts.push(input);
+          return Promise.resolve();
+        },
         publishConversationUpdated: () => Promise.resolve(),
         publishSessionUpdated: () => Promise.resolve(),
         publishSourceChangeRefObserved: (input) => {
@@ -1839,16 +1848,19 @@ describe("RunnerService", () => {
       receivedAt: "2026-04-24T10:06:00.000Z"
     });
 
-    const [candidateRecord, conversationRecord, sessionRecord, sourceHistory] =
-      await Promise.all([
-        readSourceChangeCandidateRecord(
-          statePaths,
-          "source-change-review-alpha"
-        ),
-        readConversationRecord(statePaths, "conv-source-review"),
-        readSessionRecord(statePaths, "session-source-review"),
-        listSourceHistoryRecords(statePaths)
-      ]);
+    const [
+      artifactRecords,
+      candidateRecord,
+      conversationRecord,
+      sessionRecord,
+      sourceHistory
+    ] = await Promise.all([
+      listArtifactRecords(statePaths),
+      readSourceChangeCandidateRecord(statePaths, "source-change-review-alpha"),
+      readConversationRecord(statePaths, "conv-source-review"),
+      readSessionRecord(statePaths, "session-source-review"),
+      listSourceHistoryRecords(statePaths)
+    ]);
 
     expect(result.handled).toBe(true);
     expect(candidateRecord).toMatchObject({
@@ -1865,14 +1877,41 @@ describe("RunnerService", () => {
       mode: "already_in_workspace",
       sourceHistoryId: "source-history-source-change-review-alpha"
     });
-    expect(sourceHistory).toEqual([
-      expect.objectContaining({
-        appliedBy: "reviewer-it",
-        candidateId: "source-change-review-alpha",
-        mode: "already_in_workspace",
-        sourceHistoryId: "source-history-source-change-review-alpha"
-      })
-    ]);
+    expect(sourceHistory).toHaveLength(1);
+    const historyRecord = sourceHistory[0]!;
+
+    expect(historyRecord.appliedBy).toBe("reviewer-it");
+    expect(historyRecord.candidateId).toBe("source-change-review-alpha");
+    expect(historyRecord.mode).toBe("already_in_workspace");
+    expect(historyRecord.publication?.artifactId).toBe(
+      "source-source-history-source-change-review-alpha"
+    );
+    expect(historyRecord.publication?.publication.state).toBe("published");
+    expect(historyRecord.sourceHistoryId).toBe(
+      "source-history-source-change-review-alpha"
+    );
+    const artifactRecord = artifactRecords.find(
+      (record) =>
+        record.ref.artifactId ===
+        "source-source-history-source-change-review-alpha"
+    );
+
+    expect(artifactRecord?.ref).toMatchObject({
+      artifactId: "source-source-history-source-change-review-alpha",
+      artifactKind: "commit",
+      backend: "git",
+      status: "published"
+    });
+    expect(observedArtifacts[0]).toMatchObject({
+      artifactRecord: {
+        ref: {
+          artifactId: "source-source-history-source-change-review-alpha",
+          artifactKind: "commit",
+          backend: "git",
+          status: "published"
+        }
+      }
+    });
     expect(observedSourceReviews).toHaveLength(1);
     const observedSourceReview: SourceChangeCandidateRecord =
       observedSourceReviews[0]!;
@@ -1882,13 +1921,17 @@ describe("RunnerService", () => {
     expect(observedSourceReview.application?.sourceHistoryId).toBe(
       "source-history-source-change-review-alpha"
     );
-    expect(observedSourceHistories).toEqual([
-      expect.objectContaining({
-        candidateId: "source-change-review-alpha",
-        commit: candidateRecord?.application?.commit,
-        sourceHistoryId: "source-history-source-change-review-alpha"
-      })
-    ]);
+    expect(observedSourceHistories).toHaveLength(1);
+    const observedSourceHistory = observedSourceHistories[0]!;
+
+    expect(observedSourceHistory.candidateId).toBe("source-change-review-alpha");
+    expect(observedSourceHistory.commit).toBe(candidateRecord?.application?.commit);
+    expect(observedSourceHistory.publication?.artifactId).toBe(
+      "source-source-history-source-change-review-alpha"
+    );
+    expect(observedSourceHistory.sourceHistoryId).toBe(
+      "source-history-source-change-review-alpha"
+    );
     expect(conversationRecord?.lastInboundMessageId).toBe(
       sourceReviewMessageId
     );

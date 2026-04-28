@@ -17,7 +17,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import type { Readable } from "node:stream";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   entangleA2AMessageSchema,
   entangleNostrRumorKind,
@@ -663,7 +663,18 @@ async function main(): Promise<void> {
   process.env.ENTANGLE_DEFAULT_RELAY_READ_URL = relayUrl;
   process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL = relayUrl;
   process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT = "file";
-  process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE = `file://${path.join(tempRoot, "git")}`;
+  process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE = "team-alpha";
+  const gitRemoteBase = pathToFileURL(path.join(tempRoot, "git")).toString();
+  process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE = gitRemoteBase;
+  const primaryGitRepositoryPath = path.join(
+    tempRoot,
+    "git",
+    "team-alpha",
+    `${graphId}.git`
+  );
+  await mkdir(path.dirname(primaryGitRepositoryPath), { recursive: true });
+  runGit(["init", "--bare", primaryGitRepositoryPath]);
+  printPass("git-backend", gitRemoteBase);
 
   let server:
     | Awaited<ReturnType<typeof import("../src/index.js").buildHostServer>>
@@ -1941,7 +1952,8 @@ async function main(): Promise<void> {
           })
         );
 
-        return inspection.entry.commit === history.commit
+        return inspection.entry.commit === history.commit &&
+          inspection.entry.publication?.publication.state === "published"
           ? inspection.entry
           : undefined;
       },
@@ -1950,7 +1962,8 @@ async function main(): Promise<void> {
     printPass(
       "projected-runtime-source-history-read-api",
       `sourceHistory=${projectedBuilderSourceHistory.sourceHistoryId}; ` +
-        `commit=${projectedBuilderSourceHistory.commit}`
+        `commit=${projectedBuilderSourceHistory.commit}; ` +
+        `publication=${projectedBuilderSourceHistory.publication?.publication.state}`
     );
 
     const projectedBuilderApproval = await waitFor(
@@ -2414,9 +2427,6 @@ async function main(): Promise<void> {
       "reviewer-user-node-message-history",
       reviewerUserMessage.conversationId
     );
-
-    runGit(["init", "--bare", path.join(tempRoot, "git", "smoke.git")]);
-    printPass("git-backend", `file://${path.join(tempRoot, "git")}`);
 
     assertCondition(
       !path

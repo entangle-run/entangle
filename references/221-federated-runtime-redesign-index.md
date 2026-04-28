@@ -132,6 +132,7 @@ same-machine slice records.
 - [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
+- [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 
 ## Audited Scope
 
@@ -357,7 +358,10 @@ The repository is not fully federated:
   runner-local source-history application when the shadow git snapshot and
   source workspace are still compatible, then emit a signed
   `source_history.ref` observation carrying the concrete `SourceHistoryRecord`
-  for Host projection and read-only source-history inspection;
+  for Host projection and read-only source-history inspection. When the node has
+  a primary git repository target and source publication does not require extra
+  approval, the runner also publishes a git commit artifact and emits the
+  resulting `artifact.ref` plus updated `source_history.ref`;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -506,9 +510,11 @@ same lifecycle path end-to-end through a live relay and real joined runner
 process, Studio/CLI now expose compact projected assignment receipt evidence
 for operator inspection, Host status now carries per-relay control/observe
 diagnostics for operator surfaces, and accepted signed source-candidate reviews
-now produce projected runner-owned source-history application evidence. The
-next blocking implementation areas are richer projection-backed source/wiki
-review services, assignment detail UI for grouped receipt timelines, replacing
-remaining deep filesystem-backed runtime inspection paths with
-projection-backed source/wiki services and object-backed artifact services, and
-turning the process smoke into the full multi-machine distributed proof.
+now produce projected runner-owned source-history application and primary git
+publication evidence. The next blocking implementation areas are explicit
+runner-owned publication retry/non-primary target commands, richer
+projection-backed source/wiki review services, assignment detail UI for grouped
+receipt timelines, replacing remaining deep filesystem-backed runtime
+inspection paths with projection-backed source/wiki services and object-backed
+artifact services, and turning the process smoke into the full multi-machine
+distributed proof.
