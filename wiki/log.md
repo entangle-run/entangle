@@ -4000,3 +4000,13 @@ state.
 
 This keeps the signed runner receipt audit trail visible through normal
 operator surfaces instead of requiring raw event-log inspection.
+
+## [2026-04-28] implementation | Added per-relay Host transport diagnostics
+
+Added `references/329-per-relay-transport-diagnostics-slice.md`. Host status
+now includes per-relay control/observe rows derived from configured relay URLs
+and the Host transport plane state.
+
+CLI status detail lines and Studio Host Status now expose those relay rows, so
+operators can inspect federated transport configuration without dropping to raw
+logs.

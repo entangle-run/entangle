@@ -50,6 +50,15 @@ function createStatus(): HostStatusResponse {
         lastFailureAt: "2026-04-25T08:00:02.000Z",
         lastFailureMessage: "subscription refused",
         relayUrls: ["ws://relay.entangle.test"],
+        relays: [
+          {
+            lastFailureAt: "2026-04-25T08:00:02.000Z",
+            lastFailureMessage: "subscription refused",
+            relayUrl: "ws://relay.entangle.test",
+            status: "degraded",
+            updatedAt: "2026-04-25T08:00:02.000Z"
+          }
+        ],
         status: "degraded",
         updatedAt: "2026-04-25T08:00:02.000Z"
       }
@@ -91,5 +100,8 @@ describe("host status presentation helpers", () => {
     );
     expect(detailLines).toContain("transport failure subscription refused");
     expect(detailLines).toContain("transport relays ws://relay.entangle.test");
+    expect(detailLines).toContain(
+      "transport relay ws://relay.entangle.test degraded · failure subscription refused"
+    );
   });
 });

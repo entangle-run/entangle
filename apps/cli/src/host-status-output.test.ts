@@ -43,6 +43,20 @@ function createStatus(): HostStatusResponse {
       controlObserve: {
         configuredRelayCount: 2,
         relayUrls: ["ws://relay-a.entangle.test", "ws://relay-b.entangle.test"],
+        relays: [
+          {
+            relayUrl: "ws://relay-a.entangle.test",
+            status: "subscribed",
+            subscribedAt: "2026-04-25T08:00:01.000Z",
+            updatedAt: "2026-04-25T08:00:01.000Z"
+          },
+          {
+            relayUrl: "ws://relay-b.entangle.test",
+            status: "subscribed",
+            subscribedAt: "2026-04-25T08:00:01.000Z",
+            updatedAt: "2026-04-25T08:00:01.000Z"
+          }
+        ],
         status: "subscribed",
         subscribedAt: "2026-04-25T08:00:01.000Z",
         updatedAt: "2026-04-25T08:00:01.000Z"
@@ -73,6 +87,16 @@ describe("host status CLI summary projection", () => {
       status: "degraded",
       transport: {
         controlObserve: {
+          relays: [
+            {
+              relayUrl: "ws://relay-a.entangle.test",
+              status: "subscribed"
+            },
+            {
+              relayUrl: "ws://relay-b.entangle.test",
+              status: "subscribed"
+            }
+          ],
           summary: "subscribed · 2 relays"
         }
       }
@@ -82,6 +106,9 @@ describe("host status CLI summary projection", () => {
     );
     expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
       "transport control/observe subscribed · 2 relays"
+    );
+    expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
+      "transport relay ws://relay-a.entangle.test subscribed · subscribed 2026-04-25T08:00:01.000Z"
     );
   });
 });

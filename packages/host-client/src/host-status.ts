@@ -1,4 +1,7 @@
-import type { HostStatusResponse } from "@entangle/types";
+import type {
+  HostStatusResponse,
+  HostTransportRelayHealth
+} from "@entangle/types";
 
 export function formatHostStatusLabel(status: HostStatusResponse): string {
   return `${status.service} · ${status.status}`;
@@ -47,6 +50,16 @@ export function formatHostTransportControlObserveSummary(
   return `${transport.status} · ${relayLabel}`;
 }
 
+export function formatHostTransportRelayDetail(
+  relay: HostTransportRelayHealth
+): string {
+  return [
+    `${relay.relayUrl} ${relay.status}`,
+    relay.subscribedAt ? `subscribed ${relay.subscribedAt}` : undefined,
+    relay.lastFailureMessage ? `failure ${relay.lastFailureMessage}` : undefined
+  ].filter((part): part is string => Boolean(part)).join(" · ");
+}
+
 export function formatHostStatusDetailLines(
   status: HostStatusResponse
 ): string[] {
@@ -85,6 +98,10 @@ export function formatHostStatusDetailLines(
 
   if (transport.relayUrls.length > 0) {
     detailLines.push(`transport relays ${transport.relayUrls.join(", ")}`);
+  }
+
+  for (const relay of transport.relays) {
+    detailLines.push(`transport relay ${formatHostTransportRelayDetail(relay)}`);
   }
 
   return detailLines;

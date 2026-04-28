@@ -20,6 +20,7 @@ import {
   formatHostStateLayoutSummary,
   formatHostStatusSessionDiagnosticsSummary,
   formatHostTransportControlObserveSummary,
+  formatHostTransportRelayDetail,
   formatRuntimeWorkspaceHealthSummary,
   formatRuntimeMemoryPageDetail,
   formatRuntimeMemoryPageLabel,
@@ -4713,10 +4714,25 @@ export function App() {
               </dd>
             </div>
             <div>
+              <dt>Relays</dt>
+              <dd>{status?.transport.controlObserve.relays.length ?? 0}</dd>
+            </div>
+            <div>
               <dt>State layout</dt>
               <dd>{status ? formatHostStateLayoutSummary(status) : "not loaded"}</dd>
             </div>
           </dl>
+
+          {status?.transport.controlObserve.relays.length ? (
+            <div className="compact-list">
+              {status.transport.controlObserve.relays.map((relay) => (
+                <div key={relay.relayUrl} className="compact-list-item">
+                  <strong>{relay.status}</strong>
+                  <span>{formatHostTransportRelayDetail(relay)}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           {error ? <p className="error-box">{error}</p> : null}
 

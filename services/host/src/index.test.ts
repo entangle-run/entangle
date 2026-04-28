@@ -1176,6 +1176,13 @@ describe("buildHostServer", () => {
         configuredRelayCount: 1,
         lastFailureMessage: "relay subscription failed",
         relayUrls: ["ws://relay.example"],
+        relays: [
+          {
+            lastFailureMessage: "relay subscription failed",
+            relayUrl: "ws://relay.example",
+            status: "degraded"
+          }
+        ],
         status: "degraded"
       });
     } finally {

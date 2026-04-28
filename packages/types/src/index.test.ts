@@ -1196,6 +1196,14 @@ describe("federated runtime contracts", () => {
           controlObserve: {
             configuredRelayCount: 1,
             relayUrls: ["ws://relay.entangle.test"],
+            relays: [
+              {
+                relayUrl: "ws://relay.entangle.test",
+                status: "subscribed",
+                subscribedAt: observedAt,
+                updatedAt: observedAt
+              }
+            ],
             status: "subscribed",
             subscribedAt: observedAt,
             updatedAt: observedAt
@@ -3606,6 +3614,15 @@ describe("reconciliation contracts", () => {
           lastFailureAt: "2026-04-24T00:00:00.000Z",
           lastFailureMessage: "relay refused subscription",
           relayUrls: ["ws://relay.entangle.test"],
+          relays: [
+            {
+              lastFailureAt: "2026-04-24T00:00:00.000Z",
+              lastFailureMessage: "relay refused subscription",
+              relayUrl: "ws://relay.entangle.test",
+              status: "degraded",
+              updatedAt: "2026-04-24T00:00:00.000Z"
+            }
+          ],
           status: "degraded",
           updatedAt: "2026-04-24T00:00:00.000Z"
         }

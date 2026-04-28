@@ -44,11 +44,29 @@ export const hostTransportPlaneStatusSchema = z.enum([
   "stopped"
 ]);
 
+export const hostTransportRelayStatusSchema = z.enum([
+  "configured",
+  "degraded",
+  "disabled",
+  "stopped",
+  "subscribed"
+]);
+
+export const hostTransportRelayHealthSchema = z.object({
+  lastFailureAt: nonEmptyStringSchema.optional(),
+  lastFailureMessage: nonEmptyStringSchema.optional(),
+  relayUrl: nonEmptyStringSchema,
+  status: hostTransportRelayStatusSchema,
+  subscribedAt: nonEmptyStringSchema.optional(),
+  updatedAt: nonEmptyStringSchema
+});
+
 export const hostTransportPlaneHealthSchema = z.object({
   configuredRelayCount: z.number().int().nonnegative(),
   lastFailureAt: nonEmptyStringSchema.optional(),
   lastFailureMessage: nonEmptyStringSchema.optional(),
   relayUrls: z.array(nonEmptyStringSchema),
+  relays: z.array(hostTransportRelayHealthSchema).default([]),
   status: hostTransportPlaneStatusSchema,
   subscribedAt: nonEmptyStringSchema.optional(),
   updatedAt: nonEmptyStringSchema
@@ -113,6 +131,12 @@ export type HostTransportPlaneHealth = z.infer<
 >;
 export type HostTransportPlaneStatus = z.infer<
   typeof hostTransportPlaneStatusSchema
+>;
+export type HostTransportRelayHealth = z.infer<
+  typeof hostTransportRelayHealthSchema
+>;
+export type HostTransportRelayStatus = z.infer<
+  typeof hostTransportRelayStatusSchema
 >;
 export type StateLayoutInspection = z.infer<
   typeof stateLayoutInspectionSchema

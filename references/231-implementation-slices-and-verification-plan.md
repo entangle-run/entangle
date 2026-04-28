@@ -506,6 +506,7 @@ Implementation record:
 - [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
 - [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
+- [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
 
 Verification:
 
@@ -523,9 +524,10 @@ User Nodes, to trusted runners plus projected assignment rows with Host-backed
 revoke actions. CLI approve/reject can now derive signed response context from
 directly looked-up recorded approval-request messages. Host status now exposes
 first federated control/observe transport health and both CLI and Studio render
-that Host-owned read model. Deeper per-relay diagnostics, richer Studio
-reassignment controls, and removal of old admin/debug approval mutation paths
-remain follow-up work.
+that Host-owned read model. Host status now also includes per-relay
+control/observe diagnostic rows, and Studio renders those rows in the Host
+Status panel. Richer Studio reassignment controls and removal of old admin/debug
+approval mutation paths remain follow-up work.
 
 CLI also now exposes `entangle runners join-config` to write Host-derived,
 schema-validated generic runner join configs without embedding secrets.

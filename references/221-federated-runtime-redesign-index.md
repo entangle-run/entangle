@@ -129,6 +129,7 @@ same-machine slice records.
 - [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
 - [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
+- [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
 
 ## Audited Scope
 
@@ -495,10 +496,11 @@ start/stop/restart commands locally and emit signed receipts/status, and Host
 runtime inspection no longer overwrites assigned federated runtime ownership
 through the local backend adapter. The process-runner smoke now proves that
 same lifecycle path end-to-end through a live relay and real joined runner
-process, and Studio/CLI now expose compact projected assignment receipt
-evidence for operator inspection. The next blocking implementation areas are
+process, Studio/CLI now expose compact projected assignment receipt evidence
+for operator inspection, and Host status now carries per-relay control/observe
+diagnostics for operator surfaces. The next blocking implementation areas are
 richer projection-backed source/wiki review services, assignment detail UI for
 grouped receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed
-artifact services, adding deeper per-relay diagnostics, and turning the process
-smoke into the full multi-machine distributed proof.
+artifact services, and turning the process smoke into the full multi-machine
+distributed proof.

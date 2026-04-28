@@ -72,6 +72,7 @@ import {
   hostAuthorityRecordSchema,
   type HostTransportPlaneHealth,
   type HostTransportPlaneStatus,
+  type HostTransportRelayHealth,
   gitRepositoryProvisioningRecordSchema,
   type AgentPackageManifest,
   agentPackageManifestSchema,
@@ -539,6 +540,41 @@ export function configureRuntimeBackendForProcess(
   runtimeBackendSingleton = undefined;
 }
 
+function buildHostTransportRelayHealth(input: {
+  lastFailureAt?: string | undefined;
+  lastFailureMessage?: string | undefined;
+  relayUrls: string[];
+  status: HostTransportPlaneStatus;
+  subscribedAt?: string | undefined;
+  updatedAt: string;
+}): HostTransportRelayHealth[] {
+  const relayStatus: HostTransportRelayHealth["status"] =
+    input.status === "subscribed"
+      ? "subscribed"
+      : input.status === "degraded"
+        ? "degraded"
+        : input.status === "disabled"
+          ? "disabled"
+          : input.status === "stopped"
+            ? "stopped"
+            : "configured";
+
+  return input.relayUrls.map((relayUrl) => ({
+    ...(input.lastFailureAt && relayStatus === "degraded"
+      ? { lastFailureAt: input.lastFailureAt }
+      : {}),
+    ...(input.lastFailureMessage && relayStatus === "degraded"
+      ? { lastFailureMessage: input.lastFailureMessage }
+      : {}),
+    relayUrl,
+    status: relayStatus,
+    ...(input.subscribedAt && relayStatus === "subscribed"
+      ? { subscribedAt: input.subscribedAt }
+      : {}),
+    updatedAt: input.updatedAt
+  }));
+}
+
 export function recordHostFederatedControlObserveTransportHealth(input: {
   lastFailureAt?: string;
   lastFailureMessage?: string;
@@ -550,6 +586,7 @@ export function recordHostFederatedControlObserveTransportHealth(input: {
   const relayUrls = [...new Set(input.relayUrls ?? [])].sort((left, right) =>
     left.localeCompare(right)
   );
+  const updatedAt = input.updatedAt ?? nowIsoString();
   const health: HostTransportPlaneHealth = {
     configuredRelayCount: relayUrls.length,
     ...(input.lastFailureAt ? { lastFailureAt: input.lastFailureAt } : {}),
@@ -557,9 +594,17 @@ export function recordHostFederatedControlObserveTransportHealth(input: {
       ? { lastFailureMessage: input.lastFailureMessage }
       : {}),
     relayUrls,
+    relays: buildHostTransportRelayHealth({
+      lastFailureAt: input.lastFailureAt,
+      lastFailureMessage: input.lastFailureMessage,
+      relayUrls,
+      status: input.status,
+      subscribedAt: input.subscribedAt,
+      updatedAt
+    }),
     status: input.status,
     ...(input.subscribedAt ? { subscribedAt: input.subscribedAt } : {}),
-    updatedAt: input.updatedAt ?? nowIsoString()
+    updatedAt
   };
 
   hostFederatedControlObserveTransportHealth = health;
@@ -16046,6 +16091,11 @@ function buildHostTransportHealth(input: {
     controlObserve: {
       configuredRelayCount: relayUrls.length,
       relayUrls,
+      relays: buildHostTransportRelayHealth({
+        relayUrls,
+        status: relayUrls.length > 0 ? "not_started" : "disabled",
+        updatedAt: input.timestamp
+      }),
       status: relayUrls.length > 0 ? ("not_started" as const) : ("disabled" as const),
       updatedAt: input.timestamp
     }

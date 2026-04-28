@@ -98,7 +98,7 @@ The most accurate current description is:
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
 - the largest remaining gaps are projection-backed replacement for deep runtime
-  detail APIs, Docker launcher rebasing onto the assignment path, and the full
+  detail APIs, object-backed source/wiki mutation services, and the full
   multi-machine distributed proof.
 
 The Human Interface Runtime now has a first usable running User Client for
