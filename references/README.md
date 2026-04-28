@@ -316,6 +316,7 @@ files are the active federated redesign pack.
 264. [263-user-node-approval-controls-slice.md](263-user-node-approval-controls-slice.md)
 265. [264-user-node-artifact-ref-rendering-slice.md](264-user-node-artifact-ref-rendering-slice.md)
 266. [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
+267. [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 
 ## Role of this corpus
 

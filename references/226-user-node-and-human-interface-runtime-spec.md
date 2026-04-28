@@ -41,7 +41,9 @@ User nodes are now partially runtime-capable:
   conversation detail API.
 - User Node message records now preserve approval metadata, and the User Client
   renders approve/reject controls that publish signed `approval.response`
-  messages as the selected User Node.
+  messages as the selected User Node. Approval request cards now render
+  resource metadata and link to a source-change diff preview when the request
+  targets a `source_change_candidate`.
 - The User Client renders bounded artifact refs attached to message records,
   including backend, kind, summary, and locator details, and now exposes a
   server-side artifact preview page that renders bounded content without
@@ -58,8 +60,8 @@ User nodes are now partially runtime-capable:
 Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
-  dedicated app with source/wiki review actions, projection-backed artifact
-  preview, and richer artifact/source workflow controls;
+  dedicated app with richer source/wiki review actions, projection-backed
+  artifact/source preview, and richer artifact/source workflow controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;
@@ -87,6 +89,7 @@ User Node capabilities:
 - approval/rejection;
 - artifact/source-change/wiki review;
 - bounded artifact preview;
+- bounded source-change diff preview;
 - per-node policy and edge constraints;
 - multiple user nodes in one graph.
 
@@ -118,7 +121,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   Host-provisioned development key backend.
 - Add Host APIs for listing user-node identities and projected inbox state.
   Basic identity, User Node-specific projected conversation inbox surfaces,
-  inbound/outbound message history, and server-side artifact preview now exist.
+  inbound/outbound message history, server-side artifact preview, and
+  source-change diff preview now exist.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
   Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that

@@ -6,6 +6,7 @@ import type {
   EffectiveRuntimeContext,
   RunnerJoinHostApi,
   RuntimeArtifactPreviewResponse,
+  RuntimeSourceChangeCandidateDiffResponse,
   UserNodeConversationResponse,
   UserConversationProjectionRecord,
   UserNodeMessageRecord,
@@ -14,6 +15,7 @@ import type {
 } from "@entangle/types";
 import {
   runtimeArtifactPreviewResponseSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
   userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeMessagePublishResponseSchema
@@ -335,6 +337,52 @@ async function fetchRuntimeArtifactPreview(input: {
   }
 }
 
+async function fetchRuntimeSourceChangeCandidateDiff(input: {
+  candidateId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<{
+  detail?: RuntimeSourceChangeCandidateDiffResponse;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for source-change diff preview."
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/source-change-candidates/${encodeURIComponent(input.candidateId)}/diff`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host source-change diff request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: runtimeSourceChangeCandidateDiffResponseSchema.parse(
+        await response.json()
+      )
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host source-change diff request failed."
+    };
+  }
+}
+
 function isMessageAddressedToUserNode(input: {
   message: EntangleA2AMessage;
   publicKey: string;
@@ -471,6 +519,26 @@ function renderApprovalControls(message: UserNodeMessageRecord): string {
     <button name="approvalDecision" value="approved" type="submit">Approve</button>
     <button name="approvalDecision" value="rejected" type="submit">Reject</button>
   </form>`;
+}
+
+function renderApprovalResource(message: UserNodeMessageRecord): string {
+  const resource = message.approval?.resource;
+
+  if (!resource) {
+    return "";
+  }
+
+  const resourceLabel = `${resource.kind}:${resource.id}`;
+  const sourceDiffAction =
+    resource.kind === "source_change_candidate"
+      ? `<a class="artifact-action" href="${escapeHtml(
+          `/source-change-candidates/diff?nodeId=${encodeURIComponent(message.fromNodeId)}` +
+            `&candidateId=${encodeURIComponent(resource.id)}` +
+            `&conversationId=${encodeURIComponent(message.conversationId)}`
+        )}">Review diff</a>`
+      : "";
+
+  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${sourceDiffAction}`;
 }
 
 function renderArtifactLocator(ref: ArtifactRef): string {
@@ -614,6 +682,7 @@ async function renderHome(input: {
             `<article class="message">
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
+              ${renderApprovalResource(message)}
               <div>${escapeHtml(message.summary)}</div>
               ${renderArtifactRefs(message)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
@@ -724,6 +793,88 @@ async function renderHome(input: {
           </section>
         </div>
       </div>
+    </main>
+  </body>
+</html>`;
+}
+
+async function renderSourceChangeCandidateDiffPage(input: {
+  candidateId: string;
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<string> {
+  const diff = await fetchRuntimeSourceChangeCandidateDiff({
+    candidateId: input.candidateId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId
+  });
+  const diffDetail = diff.detail;
+  const backHref = input.conversationId
+    ? `/?conversationId=${encodeURIComponent(input.conversationId)}`
+    : "/";
+  const diffResult = diffDetail?.diff;
+  const candidate = diffDetail?.candidate;
+  const diffBody = diff.error
+    ? `<section class="error">${escapeHtml(diff.error)}</section>`
+    : diffResult?.available
+      ? `<section>
+          <h2>Diff</h2>
+          <div class="meta">${escapeHtml(diffResult.contentType)} - ${diffResult.bytesRead} bytes${diffResult.truncated ? " - truncated" : ""}</div>
+          <pre>${escapeHtml(diffResult.content)}</pre>
+        </section>`
+      : `<section class="notice">${escapeHtml(diffResult?.reason ?? "Source-change diff is unavailable.")}</section>`;
+  const summary = candidate?.sourceChangeSummary;
+  const summaryBody = summary
+    ? `<section>
+        <h2>Summary</h2>
+        <div class="meta">${summary.fileCount} files - ${summary.additions} additions - ${summary.deletions} deletions${summary.truncated ? " - truncated" : ""}</div>
+        ${
+          summary.files.length > 0
+            ? `<ul>${summary.files
+                .map(
+                  (file) =>
+                    `<li>${escapeHtml(file.status)} ${escapeHtml(file.path)} +${file.additions} -${file.deletions}</li>`
+                )
+                .join("")}</ul>`
+            : ""
+        }
+      </section>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Entangle Source Diff - ${escapeHtml(input.candidateId)}</title>
+    <style>
+      :root { color-scheme: light; --ink: #202327; --muted: #626a73; --line: #d9dee5; --panel: #ffffff; --page: #f4f6f8; --accent: #1f8a70; --danger: #b1453d; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--page); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { display: grid; gap: 16px; margin: 0 auto; max-width: 960px; padding: 24px; }
+      header, section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+      h1, h2 { margin: 0; line-height: 1.1; }
+      h1 { font-size: 20px; }
+      h2 { font-size: 15px; margin-bottom: 10px; }
+      a { color: var(--accent); font-weight: 700; text-decoration: none; }
+      pre { background: #111418; border-radius: 7px; color: #eef3f7; margin: 12px 0 0; max-height: 70vh; overflow: auto; padding: 14px; white-space: pre-wrap; word-break: break-word; }
+      ul { margin: 10px 0 0; padding-left: 20px; }
+      li { margin: 4px 0; overflow-wrap: anywhere; }
+      .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+      .notice { border-color: rgba(31, 138, 112, .28); background: #ecf8f4; }
+      .error { border-color: rgba(177, 69, 61, .35); background: #fff1f0; color: var(--danger); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a href="${escapeHtml(backHref)}">Back to conversation</a>
+        <h1>${escapeHtml(input.candidateId)}</h1>
+        <div class="meta">Runtime ${escapeHtml(input.nodeId)}${candidate?.status ? ` - ${escapeHtml(candidate.status)}` : ""}</div>
+      </header>
+      ${summaryBody}
+      ${diffBody}
     </main>
   </body>
 </html>`;
@@ -859,6 +1010,43 @@ export async function startHumanInterfaceRuntime(input: {
           200,
           await renderArtifactPreviewPage({
             artifactId,
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/source-change-candidates/diff"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const candidateId =
+          requestUrl.searchParams.get("candidateId")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
+
+        if (!nodeId || !candidateId) {
+          writeHtml(
+            response,
+            400,
+            await renderSourceChangeCandidateDiffPage({
+              candidateId: candidateId || "unknown-candidate",
+              conversationId,
+              hostApi: input.hostApi,
+              nodeId: nodeId || "unknown-runtime"
+            })
+          );
+          return;
+        }
+
+        writeHtml(
+          response,
+          200,
+          await renderSourceChangeCandidateDiffPage({
+            candidateId,
             conversationId,
             hostApi: input.hostApi,
             nodeId

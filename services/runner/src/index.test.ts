@@ -502,7 +502,12 @@ describe("runner runtime context", () => {
                   approval: {
                     approvalId: "approval-alpha",
                     approverNodeIds: ["user-main"],
-                    operation: "source_application"
+                    operation: "source_application",
+                    resource: {
+                      id: "source-change-turn-alpha",
+                      kind: "source_change_candidate",
+                      label: "source-change-turn-alpha"
+                    }
                   },
                   artifactRefs: [
                     {
@@ -539,6 +544,54 @@ describe("runner runtime context", () => {
                 }
               ],
               userNodeId: "user-main"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "GET" &&
+          request.url ===
+            "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
+        ) {
+          response.end(
+            JSON.stringify({
+              candidate: {
+                candidateId: "source-change-turn-alpha",
+                conversationId: "conversation-alpha",
+                createdAt: "2026-04-26T12:02:00.000Z",
+                graphId: "graph-alpha",
+                nodeId: "worker-it",
+                sessionId: "session-alpha",
+                sourceChangeSummary: {
+                  additions: 3,
+                  checkedAt: "2026-04-26T12:02:00.000Z",
+                  deletions: 1,
+                  fileCount: 1,
+                  files: [
+                    {
+                      additions: 3,
+                      deletions: 1,
+                      path: "src/index.ts",
+                      status: "modified"
+                    }
+                  ],
+                  status: "changed",
+                  truncated: false
+                },
+                status: "pending_review",
+                turnId: "turn-approval",
+                updatedAt: "2026-04-26T12:02:00.000Z"
+              },
+              diff: {
+                available: true,
+                bytesRead: 51,
+                content:
+                  "diff --git a/src/index.ts b/src/index.ts\n+new behavior\n-old behavior\n",
+                contentEncoding: "utf8",
+                contentType: "text/x-diff",
+                truncated: false
+              }
             })
           );
           return;
@@ -753,7 +806,22 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain(
         "/artifacts/preview?nodeId=worker-it&amp;artifactId=artifact-alpha&amp;conversationId=conversation-alpha"
       );
+      expect(pageBody).toContain("source_change_candidate:source-change-turn-alpha");
+      expect(pageBody).toContain(
+        "/source-change-candidates/diff?nodeId=worker-it&amp;candidateId=source-change-turn-alpha&amp;conversationId=conversation-alpha"
+      );
       expect(pageBody).toContain("Approve");
+
+      const sourceDiffResponse = await fetch(
+        new URL(
+          "/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha&conversationId=conversation-alpha",
+          handle.clientUrl
+        )
+      );
+      const sourceDiffBody = await sourceDiffResponse.text();
+      expect(sourceDiffResponse.status).toBe(200);
+      expect(sourceDiffBody).toContain("src/index.ts");
+      expect(sourceDiffBody).toContain("+new behavior");
 
       const artifactPreviewResponse = await fetch(
         new URL(
@@ -826,6 +894,13 @@ describe("runner runtime context", () => {
         authorization: "Bearer host-secret",
         method: "GET",
         url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
+      })
+    );
+    expect(hostRequests).toContainEqual(
+      expect.objectContaining({
+        authorization: "Bearer host-secret",
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
       })
     );
     const publishRequest = hostRequests.find(

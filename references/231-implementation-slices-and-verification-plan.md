@@ -212,6 +212,7 @@ Implementation record:
 - [263-user-node-approval-controls-slice.md](263-user-node-approval-controls-slice.md)
 - [264-user-node-artifact-ref-rendering-slice.md](264-user-node-artifact-ref-rendering-slice.md)
 - [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
+- [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 
 Current status:
 
@@ -230,13 +231,15 @@ Current status:
 - CLI inbox commands and the runner-served User Client use that inbox API;
 - the User Client has a first usable server-rendered conversation list,
   selected thread metadata, `/api/state`, recorded inbound/outbound messages,
-  approval response controls, artifact-ref rendering, bounded artifact preview,
-  and message publishing that preserves selected conversation/session context;
+  approval response controls, approval resource rendering, source-change diff
+  preview, artifact-ref rendering, bounded artifact preview, and message
+  publishing that preserves selected conversation/session context;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application, projection-backed artifact preview,
-  source/wiki review controls, and message delivery/read state remain open.
+- final bundled User Client application, projection-backed artifact/source
+  preview, richer source/wiki review controls, and message delivery/read state
+  remain open.
 
 Verification:
 

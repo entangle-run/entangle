@@ -48,7 +48,9 @@ The current implementation has the first federated execution path:
   inbound records.
 - User Node message records now retain approval metadata, and the User Client
   can approve or reject inbound `approval.request` messages by publishing
-  signed `approval.response` messages.
+  signed `approval.response` messages. Approval request cards now show resource
+  metadata and link to source-change diff preview when the request targets a
+  concrete `source_change_candidate`.
 - The User Client renders bounded artifact refs from message records so humans
   can see handoff artifacts, and now provides a server-side artifact preview
   page for bounded Host artifact previews without exposing runtime-local source
@@ -62,7 +64,9 @@ The current implementation still does not have the final User Node client:
 - The current User Client is a usable runner-served shell, not a complete
   source/wiki review application, and artifact preview still depends on the
   existing Host deep runtime preview path rather than a projection-backed
-  artifact preview service.
+  artifact preview service. Source-change diff preview also depends on the
+  existing Host deep runtime diff path rather than a projection-backed source
+  review service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, but not delivery/read state or a local encrypted client
@@ -220,8 +224,9 @@ and signs through the User Node gateway boundary, not through Studio.
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
-artifact-ref rendering plus bounded artifact preview and message/approval
-publication that keeps the selected conversation/session context.
+artifact-ref rendering plus bounded artifact preview, source-change diff
+preview, and message/approval publication that keeps the selected
+conversation/session context.
 
 Impacted modules:
 
@@ -354,8 +359,8 @@ The fastest path to a product the user can test is:
    path.
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
-7. Expand source/wiki review actions, projection-backed artifact preview,
-   delivery/read state, and OpenCode parity.
+7. Expand richer source/wiki review actions, projection-backed artifact/source
+   preview, delivery/read state, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

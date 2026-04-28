@@ -3252,3 +3252,22 @@ architecture cleanup.
 Runner typecheck, focused runner tests, runner lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
+
+## [2026-04-26] implementation | Added User Client source-change diff preview
+
+Added `references/266-user-node-source-change-diff-preview-slice.md`. The
+runner-served User Client now renders approval resource metadata and shows a
+`Review diff` action when an inbound approval request targets a
+`source_change_candidate`.
+
+The new server-side `/source-change-candidates/diff` route calls the Host
+source-change candidate diff endpoint with the Human Interface Runtime's Host
+credentials and renders bounded diff content, candidate summary, file list,
+truncation status, or an unavailable reason. This lets a human graph
+participant inspect the concrete source change before publishing a signed
+approval response, while projection-backed source review remains a required
+architecture cleanup.
+
+Runner typecheck, focused runner tests, runner lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
