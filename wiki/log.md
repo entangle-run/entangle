@@ -3589,3 +3589,14 @@ through the same JSON publish route.
 The smoke still verifies agent-runner intake, Host projection, and User Node
 conversation history, so the JSON client path remains tied to signed User Node
 behavior rather than a Studio/operator shortcut.
+
+## [2026-04-28] implementation | Added dedicated User Client app
+
+Added `references/292-dedicated-user-client-app-slice.md` and
+`apps/user-client`. The new Vite/React app is the first dedicated human graph
+participant surface outside Studio.
+
+It consumes the Human Interface Runtime JSON API for runtime status, selected
+conversation detail, message publishing, and approval responses. The runner
+server-rendered shell remains available while a later slice decides how to
+serve the built app directly from the Human Interface Runtime.

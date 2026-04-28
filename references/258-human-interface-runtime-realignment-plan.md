@@ -234,22 +234,24 @@ This app can initially talk to Host using the same host-client APIs. The
 important architectural point is that it is launched as the User Node runtime
 and signs through the User Node gateway boundary, not through Studio.
 
-Status: first server-rendered runtime shell implemented. It is not yet a
-separate bundled app, but it now has a User Node inbox API, conversation list,
-selected thread metadata, recorded inbound/outbound messages, `/api/state`,
-selected-conversation JSON detail, JSON message publishing, and artifact-ref
-rendering plus projection-backed bounded artifact preview with runtime
-fallback, projected source-change summary rendering, projected source diff
-excerpts with runtime-diff fallback, projected wiki-ref rendering, projected
-wiki preview rendering, wiki-scoped approval context rendering, scoped
-approval-response context, and message/approval/read-receipt publication that
-keeps the selected conversation/session context. Message history now also shows
-parent-message links, derived delivery labels for outbound relay publish
-coverage, failed relay delivery details with retry actions, and inbound User
-Client receipt, and selected conversations are marked read through Host
-projection. Runtime identity, Host API, and relay status now render in the User
-Client, and the page polls `/api/state` for lightweight live refresh when inbox
-or projection state changes.
+Status: first server-rendered runtime shell implemented, and a first dedicated
+`apps/user-client` app now exists. The Human Interface Runtime has a User Node
+inbox API, conversation list, selected thread metadata, recorded inbound/
+outbound messages, `/api/state`, selected-conversation JSON detail, JSON
+message publishing, and artifact-ref rendering plus projection-backed bounded
+artifact preview with runtime fallback, projected source-change summary
+rendering, projected source diff excerpts with runtime-diff fallback, projected
+wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
+context rendering, scoped approval-response context, and message/approval/
+read-receipt publication that keeps the selected conversation/session context.
+Message history now also shows parent-message links, derived delivery labels
+for outbound relay publish coverage, failed relay delivery details with retry
+actions, and inbound User Client receipt, and selected conversations are marked
+read through Host projection. Runtime identity, Host API, and relay status now
+render in the server shell, and the page polls `/api/state` for lightweight
+live refresh when inbox or projection state changes. The dedicated app consumes
+the same JSON API for runtime status, conversation inspection, message publish,
+and approval response; serving its built assets from the runtime remains open.
 
 Impacted modules:
 

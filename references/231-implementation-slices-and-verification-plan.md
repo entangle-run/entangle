@@ -236,6 +236,7 @@ Implementation record:
 - [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
 - [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
 - [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
+- [292-dedicated-user-client-app-slice.md](292-dedicated-user-client-app-slice.md)
 
 Current status:
 
@@ -273,8 +274,12 @@ Current status:
   and stable publishing pubkey, and now drives the primary user publish,
   selected conversation inspection, and approval response through the running
   User Client JSON API;
-- final bundled User Client application, projection-backed source/wiki review,
-  and richer artifact object-backend review remain open.
+- a first dedicated `apps/user-client` app exists and consumes the Human
+  Interface Runtime JSON API for runtime state, conversations, message publish,
+  and approval response;
+- serving the built User Client app directly from the Human Interface Runtime,
+  projection-backed source/wiki review, and richer artifact object-backend
+  review remain open.
 
 Verification:
 

@@ -29,7 +29,7 @@
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",
     "test": "turbo run test --concurrency=1",
     "test:coverage": "vitest run --config vitest.config.ts packages/**/*.test.ts services/**/*.test.ts --coverage.enabled true",
-    "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck",
+    "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck && pnpm --filter @entangle/user-client typecheck",
     "verify": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

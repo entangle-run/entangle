@@ -13,7 +13,8 @@ architecture discovery.
 
 - `apps/`
   User-facing surfaces. The first scaffold includes `studio/` for the visual
-  operator experience and `cli/` for thin headless operation.
+  operator experience, `user-client/` for the human graph participant client,
+  and `cli/` for thin headless operation.
 - `services/`
   Long-running runtime components. The first scaffold includes `host/` and
   `runner/`.
@@ -147,7 +148,9 @@ This repository currently contains:
   identity/relay/Host API status, lightweight live state refresh, local JSON
   APIs for selected conversation detail and message publishing, and Host-backed
   message publishing,
-  plus projection of the User Client endpoint through Host, CLI, and Studio,
+  plus a first dedicated `apps/user-client` app that consumes those runtime
+  JSON APIs, plus projection of the User Client endpoint through Host, CLI, and
+  Studio,
   with CLI signed approve/reject and generic User Node message
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI

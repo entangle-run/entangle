@@ -67,7 +67,8 @@ human graph participants. It can inspect projected inbox state, publish
 User Node messages, respond to approval requests, review artifact/wiki/source
 evidence, use local JSON APIs for selected conversation detail and message
 publishing, and submit Host-mediated source-candidate accept/reject decisions
-with `reviewedBy` stamped as the running User Node id. Studio remains the
+with `reviewedBy` stamped as the running User Node id. A first dedicated
+`apps/user-client` app now consumes that runtime JSON API. Studio remains the
 operator surface, not the primary human-node client.
 
 The contract-ownership layer is now also explicit:
@@ -81,6 +82,7 @@ The repository now also contains the first real implementation baseline:
 
 - a `pnpm` + Turborepo monorepo scaffold;
 - `apps/studio` and `apps/cli`;
+- `apps/user-client` for the human graph participant surface;
 - `services/host` and `services/runner`;
 - `packages/types`, `validator`, `host-client`, `agent-engine`, and
   `package-scaffold`;

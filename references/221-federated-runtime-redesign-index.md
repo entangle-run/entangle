@@ -92,6 +92,7 @@ same-machine slice records.
 - [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
 - [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
 - [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
+- [292-dedicated-user-client-app-slice.md](292-dedicated-user-client-app-slice.md)
 
 ## Audited Scope
 
@@ -159,9 +160,10 @@ The repository is not fully federated:
   state, projected wiki-ref rendering, projected wiki preview rendering,
   wiki-scoped approval context rendering, signed read receipts,
   parent-message links, delivery retry state, runtime status, live state
-  refresh, message publishing, and local JSON APIs for conversation detail and
-  message publishing, but a separate bundled User Client app and richer
-  object-backend review still remain incomplete;
+  refresh, message publishing, local JSON APIs for conversation detail and
+  message publishing, and a first dedicated `apps/user-client` app, but richer
+  object-backend review and serving the built app from the runtime still remain
+  incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
@@ -266,8 +268,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
    runtime status, live state refresh, local JSON conversation/message APIs,
-   Host-mediated source-candidate accept/reject controls, and wiki publication
-   retry actions are implemented;
+   a first dedicated User Client app, Host-mediated source-candidate
+   accept/reject controls, and wiki publication retry actions are implemented;
    complete projection-backed source/wiki review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
