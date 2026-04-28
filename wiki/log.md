@@ -3280,6 +3280,20 @@ not yet have projected diff evidence. Runner typecheck, focused runner tests,
 runner lint, `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-28] implementation | Added Studio User Node runtime summaries
+
+Added `references/274-studio-user-node-runtime-summary-slice.md`. Studio's
+federation overview now joins User Node identities with runtime projection and
+User Node conversation projection so operators can see runtime state, runner
+placement, User Client URL, conversation count, active count, pending approval
+count, unread count, gateway count, and public-key prefix per User Node.
+
+This keeps Studio in the admin/operator role: it links to the running User
+Client instead of becoming the participant chat surface. Studio typecheck,
+focused Studio tests, Studio lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
+
 ## [2026-04-28] implementation | Projected source-change summaries from observed refs
 
 Added `references/270-source-change-ref-summary-projection-slice.md`.

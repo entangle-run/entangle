@@ -5,12 +5,15 @@ import type {
   UserNodeIdentityRecord
 } from "@entangle/types";
 import {
+  buildUserNodeRuntimeSummaries,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeIdentityDetail,
   formatUserNodeIdentityLabel,
+  formatUserNodeRuntimeSummaryDetail,
+  formatUserNodeRuntimeSummaryLabel,
   sortRuntimeProjectionsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
@@ -59,6 +62,26 @@ const projection: HostProjectionSnapshot = {
       restartGeneration: 0,
       runnerId: "runner-alpha",
       runtimeHandle: "federated:runner-alpha:assignment-alpha"
+    },
+    {
+      assignmentId: "assignment-user-a",
+      backendKind: "federated",
+      clientUrl: "http://127.0.0.1:4174/",
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "rev-1",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:03:00.000Z",
+      nodeId: "user-a",
+      observedState: "running",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:03:00.000Z"
+      },
+      restartGeneration: 0,
+      runnerId: "runner-user-a",
+      runtimeHandle: "federated:runner-user-a:assignment-user-a"
     }
   ],
   runners: [],
@@ -136,8 +159,8 @@ describe("Studio federation inspection helpers", () => {
     expect(summarizeFederationProjection(projection)).toMatchObject({
       assignmentCount: 1,
       freshness: "current",
-      runtimeCount: 1,
-      runningRuntimeCount: 1
+      runtimeCount: 2,
+      runningRuntimeCount: 2
     });
   });
 
@@ -189,5 +212,29 @@ describe("Studio federation inspection helpers", () => {
     ]);
     expect(formatUserNodeIdentityLabel(userNodes[0]!)).toBe("user-b · active");
     expect(formatUserNodeIdentityDetail(userNodes[0]!)).toContain("gateways 1");
+  });
+
+  it("builds User Node runtime summaries for operator visibility", () => {
+    const summaries = buildUserNodeRuntimeSummaries(userNodes, {
+      ...projection,
+      userConversations: conversations
+    });
+    const userSummary = summaries.find((summary) => summary.nodeId === "user-a");
+
+    expect(userSummary).toMatchObject({
+      activeConversationCount: 2,
+      clientUrl: "http://127.0.0.1:4174/",
+      conversationCount: 2,
+      pendingApprovalCount: 1,
+      runnerId: "runner-user-a",
+      runtimeObservedState: "running",
+      unreadCount: 2
+    });
+    expect(formatUserNodeRuntimeSummaryLabel(userSummary!)).toBe(
+      "user-a · active · running"
+    );
+    expect(formatUserNodeRuntimeSummaryDetail(userSummary!)).toContain(
+      "approvals 1"
+    );
   });
 });

@@ -328,8 +328,10 @@ Verification:
 
 This slice now includes first-pass CLI assignment/User Node/inbox/reply/
 approve/reject commands, scoped CLI approval-response context flags, and a
-Studio projection/User Node panel. Full Studio chat, signed approval card
-migration, and durable inbox/outbox projection remain follow-up work.
+Studio projection/User Node panel with runtime placement, User Client URL,
+conversation, active, unread, and pending-approval counts. Full Studio chat,
+signed approval card migration, and durable inbox/outbox projection remain
+follow-up work.
 
 ### Slice 13: Product Naming Migration
 

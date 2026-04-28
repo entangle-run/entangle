@@ -258,8 +258,11 @@ Studio should show operator visibility for user-node runtimes:
 Studio still does not become the user chat app.
 
 Status: partially implemented. Studio now renders an open action for projected
-runtimes that expose `clientUrl`; richer Human Interface Runtime health and
-conversation/approval counts remain open.
+runtimes that expose `clientUrl`, and the User Node overview joins identity,
+runtime state, runner placement, User Client URL, conversation counts, active
+counts, pending approval counts, and unread counts from Host projection. Richer
+Human Interface Runtime health, transport health, and assignment controls
+remain open.
 
 Impacted modules:
 

@@ -241,6 +241,11 @@ This repository currently contains:
   ids through the shared host/CLI/Studio boundary;
 - a host client, package scaffold utility, runtime-aware CLI, and Studio
   surface that now consume real host state instead of a fake graph;
+- a Studio federation overview that joins User Node identities with runtime
+  projection and conversation projection, so operators can see Human Interface
+  Runtime state, runner placement, User Client links, conversation counts,
+  active counts, unread counts, and pending approval counts without turning
+  Studio into the user chat client;
 - a safer package scaffold flow where `entangle package init` exposes package
   name, package id, node kind, and explicit `--force` overwrite controls over
   the shared scaffold utility;

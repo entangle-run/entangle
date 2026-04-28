@@ -74,6 +74,7 @@ same-machine slice records.
 - [271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
 - [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 - [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
+- [274-studio-user-node-runtime-summary-slice.md](274-studio-user-node-runtime-summary-slice.md)
 
 ## Audited Scope
 
@@ -152,6 +153,9 @@ The repository is not fully federated:
   though signed User Node reply/approve/reject commands now exist, and CLI
   signed approval responses can now carry scoped operation/resource/reason
   context;
+- Studio's federation overview now joins User Node identity, runtime
+  projection, User Client URL, and conversation projection into read-only
+  operator summaries for Human Interface Runtimes;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
   paths, and joined runners can now start node runtime services from
   materialized assignment context paths;

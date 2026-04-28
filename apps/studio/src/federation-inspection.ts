@@ -18,6 +18,21 @@ export type FederationProjectionSummary = {
   wikiRefCount: number;
 };
 
+export type UserNodeRuntimeSummary = {
+  activeConversationCount: number;
+  clientUrl?: string;
+  conversationCount: number;
+  gatewayCount: number;
+  graphId: string;
+  nodeId: string;
+  pendingApprovalCount: number;
+  publicKeyPrefix: string;
+  runnerId?: string;
+  runtimeObservedState?: string;
+  status: string;
+  unreadCount: number;
+};
+
 export function summarizeFederationProjection(
   projection: HostProjectionSnapshot | null
 ): FederationProjectionSummary {
@@ -73,6 +88,61 @@ export function sortUserNodeIdentitiesForStudio(
   );
 }
 
+function isActiveUserConversation(
+  conversation: UserConversationProjectionRecord
+): boolean {
+  return !["closed", "expired", "rejected", "resolved"].includes(
+    conversation.status
+  );
+}
+
+export function buildUserNodeRuntimeSummaries(
+  userNodes: UserNodeIdentityRecord[],
+  projection: HostProjectionSnapshot | null
+): UserNodeRuntimeSummary[] {
+  const runtimesByNodeId = new Map(
+    (projection?.runtimes ?? []).map((runtime) => [runtime.nodeId, runtime])
+  );
+  const conversationsByUserNodeId = new Map<
+    string,
+    UserConversationProjectionRecord[]
+  >();
+
+  for (const conversation of projection?.userConversations ?? []) {
+    const conversations =
+      conversationsByUserNodeId.get(conversation.userNodeId) ?? [];
+    conversations.push(conversation);
+    conversationsByUserNodeId.set(conversation.userNodeId, conversations);
+  }
+
+  return sortUserNodeIdentitiesForStudio(userNodes).map((userNode) => {
+    const conversations = conversationsByUserNodeId.get(userNode.nodeId) ?? [];
+    const runtime = runtimesByNodeId.get(userNode.nodeId);
+
+    return {
+      activeConversationCount: conversations.filter(isActiveUserConversation)
+        .length,
+      ...(runtime?.clientUrl ? { clientUrl: runtime.clientUrl } : {}),
+      conversationCount: conversations.length,
+      gatewayCount: userNode.gatewayIds.length,
+      graphId: userNode.graphId,
+      nodeId: userNode.nodeId,
+      pendingApprovalCount: conversations.reduce(
+        (total, conversation) => total + conversation.pendingApprovalIds.length,
+        0
+      ),
+      publicKeyPrefix: `${userNode.publicKey.slice(0, 12)}...`,
+      ...(runtime?.runnerId ? { runnerId: runtime.runnerId } : {}),
+      ...(runtime ? { runtimeObservedState: runtime.observedState } : {}),
+      status: userNode.status,
+      unreadCount: conversations.reduce(
+        (total, conversation) => total + conversation.unreadCount,
+        0
+      )
+    };
+  });
+}
+
 export function sortUserConversationsForStudio(
   conversations: UserConversationProjectionRecord[]
 ): UserConversationProjectionRecord[] {
@@ -122,5 +192,30 @@ export function formatUserNodeIdentityDetail(
     `graph ${userNode.graphId}`,
     `gateways ${userNode.gatewayIds.length}`,
     `pubkey ${userNode.publicKey.slice(0, 12)}...`
+  ].join(" · ");
+}
+
+export function formatUserNodeRuntimeSummaryLabel(
+  summary: UserNodeRuntimeSummary
+): string {
+  return [
+    summary.nodeId,
+    summary.status,
+    summary.runtimeObservedState
+  ].filter((part): part is string => Boolean(part)).join(" · ");
+}
+
+export function formatUserNodeRuntimeSummaryDetail(
+  summary: UserNodeRuntimeSummary
+): string {
+  return [
+    `graph ${summary.graphId}`,
+    summary.runnerId ? `runner ${summary.runnerId}` : "runner unassigned",
+    `conversations ${summary.conversationCount}`,
+    `active ${summary.activeConversationCount}`,
+    `approvals ${summary.pendingApprovalCount}`,
+    `unread ${summary.unreadCount}`,
+    `gateways ${summary.gatewayCount}`,
+    `pubkey ${summary.publicKeyPrefix}`
   ].join(" · ");
 }

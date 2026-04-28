@@ -62,6 +62,9 @@ Recently added:
 - CLI signed approval responses now have matching optional
   operation/resource/reason flags on `approve`, `reject`, and generic
   `user-nodes message` publishing.
+- Studio User Node overview summaries now combine identity, runtime state,
+  runner placement, User Client URL, conversation counts, active counts,
+  pending approval counts, and unread counts from Host projection.
 - User Client message history now shows derived delivery labels for outbound
   relay publish coverage and inbound User Client receipt.
 - User Client message history now renders bounded artifact refs attached to
@@ -136,8 +139,8 @@ Node.
   transport/projection health. Studio now has the first projection health and
   User Node summary panel.
 - Add Studio User Node runtime visibility and User Client open action. The
-  first `clientUrl` open action is implemented through projection; richer
-  assignment/health panels remain open.
+  first projection-derived User Node runtime summaries and `clientUrl` open
+  actions are implemented; richer assignment/health panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and

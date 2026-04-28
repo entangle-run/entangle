@@ -206,12 +206,13 @@ import {
   type SessionLaunchDraft
 } from "./session-launch.js";
 import {
+  buildUserNodeRuntimeSummaries,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
-  formatUserNodeIdentityDetail,
-  formatUserNodeIdentityLabel,
+  formatUserNodeRuntimeSummaryDetail,
+  formatUserNodeRuntimeSummaryLabel,
   sortRuntimeProjectionsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
@@ -3506,6 +3507,10 @@ export function App() {
     () => sortRuntimeProjectionsForStudio(projectionSnapshot?.runtimes ?? []),
     [projectionSnapshot]
   );
+  const userNodeRuntimeSummaries = useMemo(
+    () => buildUserNodeRuntimeSummaries(userNodes, projectionSnapshot),
+    [projectionSnapshot, userNodes]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3689,12 +3694,17 @@ export function App() {
           </div>
         )}
 
-        {userNodes.length > 0 ? (
+        {userNodeRuntimeSummaries.length > 0 ? (
           <div className="compact-list">
-            {userNodes.slice(0, 4).map((userNode) => (
-              <div key={userNode.nodeId} className="compact-list-item">
-                <strong>{formatUserNodeIdentityLabel(userNode)}</strong>
-                <span>{formatUserNodeIdentityDetail(userNode)}</span>
+            {userNodeRuntimeSummaries.slice(0, 4).map((summary) => (
+              <div key={summary.nodeId} className="compact-list-item">
+                <strong>{formatUserNodeRuntimeSummaryLabel(summary)}</strong>
+                <span>{formatUserNodeRuntimeSummaryDetail(summary)}</span>
+                {summary.clientUrl ? (
+                  <a href={summary.clientUrl} rel="noreferrer" target="_blank">
+                    Open User Client
+                  </a>
+                ) : null}
               </div>
             ))}
           </div>
