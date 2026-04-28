@@ -11,6 +11,7 @@ import type {
 } from "@entangle/nostr-fabric";
 import type { HostFederatedNostrTransport } from "./federated-nostr-transport.js";
 import {
+  recordApprovalUpdatedObservation,
   recordArtifactRefObservation,
   recordConversationUpdatedObservation,
   recordRunnerHeartbeat,
@@ -170,6 +171,15 @@ export class HostFederatedControlPlane {
 
     if (payload.eventType === "turn.updated") {
       await recordTurnUpdatedObservation(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "approval.updated") {
+      await recordApprovalUpdatedObservation(payload);
       return {
         action: "recorded",
         eventType: payload.eventType,

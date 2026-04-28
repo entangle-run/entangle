@@ -104,6 +104,7 @@ export type RunnerServiceObservationPublisher = {
     nodeId: string;
     observedAt: string;
   }): Promise<void>;
+  publishApprovalUpdated?(record: ApprovalRecord): Promise<void>;
   publishConversationUpdated(record: ConversationRecord): Promise<void>;
   publishSessionUpdated(record: SessionRecord): Promise<void>;
   publishSourceChangeRefObserved?(input: {
@@ -1577,6 +1578,22 @@ export class RunnerService {
     }
   }
 
+  private async publishApprovalObservation(record: ApprovalRecord): Promise<void> {
+    try {
+      await this.observationPublisher?.publishApprovalUpdated?.(record);
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
+  private async publishApprovalObservations(
+    approvalRecords: ApprovalRecord[]
+  ): Promise<void> {
+    for (const approvalRecord of approvalRecords) {
+      await this.publishApprovalObservation(approvalRecord);
+    }
+  }
+
   private async publishSourceChangeRefObservation(
     candidate: SourceChangeCandidateRecord
   ): Promise<void> {
@@ -2181,6 +2198,8 @@ export class RunnerService {
       };
     }
 
+    await this.publishApprovalObservation(nextApprovalRecord);
+
     const nextConversation = await this.transitionConversationAfterApprovalResponse({
       closeOnResult: input.envelope.message.responsePolicy.closeOnResult,
       conversation: input.conversation,
@@ -2779,6 +2798,9 @@ export class RunnerService {
           updatedAt: nowIsoString()
         };
         await writeRunnerTurnRecord(statePaths, turnRecord);
+        await this.publishApprovalObservations(
+          materializedApprovalRequests.approvalRecords
+        );
       }
 
       const memoryUpdate = await performPostTurnMemoryUpdate({

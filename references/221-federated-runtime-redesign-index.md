@@ -107,6 +107,7 @@ same-machine slice records.
 - [304-deployment-index-profile-cleanup-slice.md](304-deployment-index-profile-cleanup-slice.md)
 - [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
 - [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
+- [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
 
 ## Audited Scope
 
@@ -269,6 +270,9 @@ The repository is not fully federated:
 - the Host session detail route now also falls back to bounded projection-backed
   inspection for observed remote sessions when local runtime filesystem detail
   is unavailable;
+- runner-owned approval lifecycle changes now publish `approval.updated`
+  observations with bounded approval records, and Host reduces those signed
+  events into approval activity projection and typed approval trace events;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

@@ -7,6 +7,7 @@ import {
   entangleA2AMessageSchema,
   sessionRecordSchema,
   type AgentEngineTurnRequest,
+  type ApprovalRecord,
   type EffectiveRuntimeContext,
   type RunnerTurnRecord
 } from "@entangle/types";
@@ -957,6 +958,7 @@ describe("RunnerService", () => {
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
     const context = await loadRuntimeContext(fixture.contextPath);
     const transport = new InMemoryRunnerTransport();
+    const observedApprovals: ApprovalRecord[] = [];
     const service = new RunnerService({
       context,
       engine: {
@@ -991,6 +993,15 @@ describe("RunnerService", () => {
             toolRequests: []
           });
         }
+      },
+      observationPublisher: {
+        publishApprovalUpdated: (record) => {
+          observedApprovals.push(record);
+          return Promise.resolve();
+        },
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: () => Promise.resolve()
       },
       transport
     });
@@ -1041,6 +1052,14 @@ describe("RunnerService", () => {
         sessionId: "engine-approval-session",
         status: "pending"
       });
+      expect(observedApprovals).toEqual([
+        expect.objectContaining({
+          approvalId: "approval-engine-source-apply",
+          requestedByNodeId: "worker-it",
+          sessionId: "engine-approval-session",
+          status: "pending"
+        })
+      ]);
       expect(conversationRecord?.status).toBe("awaiting_approval");
       expect(sessionRecord?.status).toBe("waiting_approval");
       expect(sessionRecord?.waitingApprovalIds).toEqual([
@@ -1704,8 +1723,18 @@ describe("RunnerService", () => {
       updatedAt: "2026-04-24T10:03:00.000Z"
     });
 
+    const observedApprovals: ApprovalRecord[] = [];
     const service = new RunnerService({
       context: runtimeContext,
+      observationPublisher: {
+        publishApprovalUpdated: (record) => {
+          observedApprovals.push(record);
+          return Promise.resolve();
+        },
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: () => Promise.resolve()
+      },
       transport: new InMemoryRunnerTransport()
     });
     const approvalResponseMessage = entangleA2AMessageSchema.parse({
@@ -1755,6 +1784,13 @@ describe("RunnerService", () => {
 
     expect(result.handled).toBe(true);
     expect(approvalRecord?.status).toBe("approved");
+    expect(observedApprovals).toEqual([
+      expect.objectContaining({
+        approvalId: "approval-response-alpha",
+        approverNodeIds: ["reviewer-it"],
+        status: "approved"
+      })
+    ]);
     expect(conversationRecord?.status).toBe("closed");
     expect(sessionRecord?.status).toBe("completed");
     expect(sessionRecord?.activeConversationIds).toEqual([]);

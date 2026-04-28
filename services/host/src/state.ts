@@ -139,6 +139,7 @@ import {
   nostrSecretKeySchema,
   assignmentAcceptedObservationPayloadSchema,
   assignmentRejectedObservationPayloadSchema,
+  approvalUpdatedObservationPayloadSchema,
   artifactRefObservationPayloadSchema,
   artifactRefProjectionRecordSchema,
   type ArtifactRefProjectionRecord,
@@ -2704,6 +2705,90 @@ export async function recordTurnUpdatedObservation(
     type: "runner.turn.updated",
     updatedAt: record.updatedAt
   } satisfies RunnerTurnUpdatedEventInput);
+
+  return record;
+}
+
+export async function recordApprovalUpdatedObservation(
+  input: unknown
+): Promise<ObservedApprovalActivityRecord | undefined> {
+  await initializeHostState();
+
+  const observation = approvalUpdatedObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+
+  if (!observation.approval) {
+    return undefined;
+  }
+
+  const approvalRecord = observation.approval;
+
+  if (approvalRecord.graphId !== observation.graphId) {
+    throw new Error(
+      `Approval '${approvalRecord.approvalId}' belongs to graph '${approvalRecord.graphId}', not '${observation.graphId}'.`
+    );
+  }
+
+  if (approvalRecord.requestedByNodeId !== observation.nodeId) {
+    throw new Error(
+      `Approval '${approvalRecord.approvalId}' was requested by node '${approvalRecord.requestedByNodeId}', not observed node '${observation.nodeId}'.`
+    );
+  }
+
+  const fingerprint = buildObservationFingerprint(approvalRecord);
+  const existingRecord = await readObservedApprovalActivityRecord(
+    observation.nodeId,
+    approvalRecord.approvalId
+  );
+  const record = observedApprovalActivityRecordSchema.parse({
+    approvalId: approvalRecord.approvalId,
+    approverNodeIds: approvalRecord.approverNodeIds,
+    conversationId: approvalRecord.conversationId,
+    fingerprint,
+    graphId: approvalRecord.graphId,
+    nodeId: observation.nodeId,
+    ...(approvalRecord.operation ? { operation: approvalRecord.operation } : {}),
+    ...(approvalRecord.resource ? { resource: approvalRecord.resource } : {}),
+    requestedAt: approvalRecord.requestedAt,
+    requestedByNodeId: approvalRecord.requestedByNodeId,
+    schemaVersion: "1",
+    sessionId: approvalRecord.sessionId,
+    source: "observation_event",
+    status: approvalRecord.status,
+    updatedAt: approvalRecord.updatedAt
+  });
+
+  await writeJsonFileIfChanged(
+    path.join(
+      observedApprovalActivityRoot,
+      `${record.nodeId}--${record.approvalId}.json`
+    ),
+    record
+  );
+
+  if (existingRecord?.fingerprint === record.fingerprint) {
+    return record;
+  }
+
+  await appendHostEvent({
+    approvalId: record.approvalId,
+    approverNodeIds: record.approverNodeIds,
+    category: "session",
+    conversationId: record.conversationId,
+    graphId: record.graphId,
+    message:
+      `Approval '${record.approvalId}' on node '${record.nodeId}' ` +
+      `is now '${record.status}'.`,
+    nodeId: record.nodeId,
+    ...(record.operation ? { operation: record.operation } : {}),
+    ...(record.resource ? { resource: record.resource } : {}),
+    requestedAt: record.requestedAt,
+    requestedByNodeId: record.requestedByNodeId,
+    sessionId: record.sessionId,
+    status: record.status,
+    type: "approval.trace.event",
+    updatedAt: record.updatedAt
+  } satisfies ApprovalTraceEventInput);
 
   return record;
 }

@@ -66,6 +66,8 @@ The most accurate current description is:
   records during local compatibility synchronization, and the high-level
   session list plus bounded session detail can surface remote projected
   sessions without a Host-readable runner filesystem record;
+- approval lifecycle changes now flow through signed runner
+  `approval.updated` observations into Host approval activity projection;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, Docker launcher rebasing onto the assignment path, and the full
   multi-machine distributed proof.

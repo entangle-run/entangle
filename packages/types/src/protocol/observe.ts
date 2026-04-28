@@ -13,6 +13,7 @@ import {
 import { runtimeObservedStateSchema } from "../runtime/runtime-state.js";
 import {
   approvalLifecycleStateSchema,
+  approvalRecordSchema,
   conversationRecordSchema,
   conversationLifecycleStateSchema,
   runnerTurnRecordSchema,
@@ -139,6 +140,7 @@ export const turnUpdatedObservationPayloadSchema =
 
 export const approvalUpdatedObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
+    approval: approvalRecordSchema.optional(),
     approvalId: identifierSchema,
     eventType: z.literal("approval.updated"),
     graphId: identifierSchema,

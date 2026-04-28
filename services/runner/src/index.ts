@@ -269,6 +269,22 @@ function createRuntimeObservationPublisher(input: {
         runnerId: input.config.runnerId,
         runnerPubkey: input.runnerPubkey
       }),
+    publishApprovalUpdated: (record) =>
+      publish({
+        approval: record,
+        approvalId: record.approvalId,
+        eventType: "approval.updated",
+        graphId: record.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.requestedByNodeId,
+        observedAt: record.updatedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        sessionId: record.sessionId,
+        status: record.status,
+        updatedAt: record.updatedAt
+      }),
     publishConversationUpdated: (record) =>
       publish({
         conversation: record,

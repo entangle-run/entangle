@@ -6481,8 +6481,11 @@ describe("buildHostServer", () => {
       );
       const runnerPubkey =
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-      const { recordRunnerHello, recordSessionUpdatedObservation } =
-        await import("./state.js");
+      const {
+        recordApprovalUpdatedObservation,
+        recordRunnerHello,
+        recordSessionUpdatedObservation
+      } = await import("./state.js");
       const sessionActivityRoot = path.join(
         createdDirectories[0]!,
         "host",
@@ -6534,6 +6537,37 @@ describe("buildHostServer", () => {
         status: "active",
         updatedAt: "2026-04-28T08:00:10.000Z"
       });
+      await recordApprovalUpdatedObservation({
+        approval: {
+          approvalId: "approval-remote",
+          approverNodeIds: ["user-main"],
+          conversationId: "conv-remote",
+          graphId: "team-alpha",
+          operation: "source_application",
+          requestedAt: "2026-04-28T08:00:05.000Z",
+          requestedByNodeId: "worker-it",
+          resource: {
+            id: "source-remote",
+            kind: "source_change_candidate",
+            label: "source-remote"
+          },
+          sessionId: "session-remote",
+          status: "pending",
+          updatedAt: "2026-04-28T08:00:12.000Z"
+        },
+        approvalId: "approval-remote",
+        eventType: "approval.updated",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        nodeId: "worker-it",
+        observedAt: "2026-04-28T08:00:12.000Z",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-remote",
+        runnerPubkey,
+        sessionId: "session-remote",
+        status: "pending",
+        updatedAt: "2026-04-28T08:00:12.000Z"
+      });
       await writeJsonFile(
         path.join(sessionActivityRoot, "worker-it--session-stale.json"),
         {
@@ -6562,6 +6596,14 @@ describe("buildHostServer", () => {
       expect(sessionList.sessions).toContainEqual(
         expect.objectContaining({
           activeConversationIds: ["conv-remote"],
+          approvalStatusCounts: {
+            approved: 0,
+            expired: 0,
+            not_required: 0,
+            pending: 1,
+            rejected: 0,
+            withdrawn: 0
+          },
           graphId: "team-alpha",
           nodeIds: ["worker-it"],
           rootArtifactIds: ["artifact-remote"],
@@ -6603,7 +6645,7 @@ describe("buildHostServer", () => {
           approved: 0,
           expired: 0,
           not_required: 0,
-          pending: 0,
+          pending: 1,
           rejected: 0,
           withdrawn: 0
         },

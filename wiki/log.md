@@ -3750,3 +3750,15 @@ remote sessions when local runtime filesystem detail is unavailable.
 The fallback reconstructs public runtime summary fields from Host runtime
 projection and keeps local `contextPath`/`runtimeRoot` details out of the
 response.
+
+## [2026-04-28] implementation | Added signed approval observations
+
+Added `references/307-approval-observation-projection-slice.md`. The observe
+protocol now allows `approval.updated` events to carry a bounded full approval
+record, joined runners publish those events when approval gates are created or
+transitioned, and Host reduces them into observed approval activity plus typed
+approval trace events.
+
+This makes approval status counts in projected remote session summaries/details
+come from signed runner observations instead of only from same-workstation
+approval files.

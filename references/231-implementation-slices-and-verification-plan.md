@@ -205,6 +205,7 @@ Implementation record:
 - [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 - [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
 - [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
+- [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
 
 Verification:
 
@@ -231,6 +232,8 @@ Current status:
   surface projected remote sessions that have no local runtime session file;
 - Host session inspection now also falls back to bounded projected session
   detail for observed remote sessions when no local runtime session file exists;
+- approval lifecycle changes now flow through signed runner
+  `approval.updated` observations and Host approval activity projection;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime
