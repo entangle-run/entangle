@@ -91,6 +91,16 @@ export type RunnerAssignmentRuntimeHandle = {
     replayStatus: "already_in_workspace" | "replayed" | "unavailable";
     sourceHistoryId: string;
   }>;
+  publishWikiRepository?(request: {
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+  }): Promise<{
+    artifactId?: string;
+    message?: string;
+    publicationState?: "failed" | "not_requested" | "published";
+  }>;
   runtimeContextPath: string;
   runtimeRoot?: string;
   stop(): Promise<void>;
@@ -259,6 +269,11 @@ export class RunnerJoinService {
 
     if (payload.eventType === "runtime.source_history.replay") {
       await this.handleRuntimeSourceHistoryReplayCommand(payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.wiki.publish") {
+      await this.handleRuntimeWikiPublishCommand(payload);
     }
   }
 
@@ -406,7 +421,8 @@ export class RunnerJoinService {
           | "runtime.source_history.publish"
           | "runtime.source_history.replay"
           | "runtime.start"
-          | "runtime.stop";
+          | "runtime.stop"
+          | "runtime.wiki.publish";
       }
     >
   ): RuntimeAssignmentRecord | undefined {
@@ -753,6 +769,68 @@ export class RunnerJoinService {
           error instanceof Error
             ? error.message
             : "Runtime source-history replay command failed."
+      });
+    }
+  }
+
+  private async handleRuntimeWikiPublishCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.wiki.publish" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime wiki publication command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.publishWikiRepository) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime wiki publication command cannot be applied because the assigned runtime is not running."
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.publishWikiRepository({
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        requestedAt: payload.issuedAt,
+        ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {}),
+        retryFailedPublication: payload.retryFailedPublication
+      });
+
+      if (result.publicationState === "failed") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Wiki publication '${result.artifactId ?? "unknown"}' failed.`
+        });
+      }
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime wiki publication command failed."
       });
     }
   }

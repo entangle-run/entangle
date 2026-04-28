@@ -92,7 +92,10 @@ import {
   publishSourceHistoryToPrimaryGitTarget,
   replaySourceHistoryToWorkspace
 } from "./source-history.js";
-import { syncWikiRepository } from "./wiki-repository.js";
+import {
+  publishWikiRepositoryToPrimaryGitTarget,
+  syncWikiRepository
+} from "./wiki-repository.js";
 import type {
   RunnerInboundEnvelope,
   RunnerPublishedEnvelope,
@@ -117,6 +120,12 @@ export type RunnerSourceHistoryReplayCommandResult = {
   replayId: string;
   replayStatus: "already_in_workspace" | "replayed" | "unavailable";
   sourceHistoryId: string;
+};
+
+export type RunnerWikiPublicationCommandResult = {
+  artifactId?: string;
+  message?: string;
+  publicationState?: "failed" | "not_requested" | "published";
 };
 
 export type RunnerServiceObservationPublisher = {
@@ -1897,6 +1906,43 @@ export class RunnerService {
         : {}),
       ...(publicationState ? { publicationState } : {}),
       sourceHistoryId: publication.history.sourceHistoryId
+    };
+  }
+
+  async requestWikiRepositoryPublication(input: {
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+  }): Promise<RunnerWikiPublicationCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const publication = await publishWikiRepositoryToPrimaryGitTarget({
+      context: this.context,
+      ...(input.reason ? { reason: input.reason } : {}),
+      requestedAt: input.requestedAt ?? new Date().toISOString(),
+      ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+      retryFailedPublication: input.retryFailedPublication ?? false,
+      statePaths
+    });
+
+    if (!publication.published) {
+      return {
+        ...(publication.artifact?.ref.artifactId
+          ? { artifactId: publication.artifact.ref.artifactId }
+          : {}),
+        message: publication.reason,
+        publicationState: publication.artifact?.publication?.state ?? "failed"
+      };
+    }
+
+    await this.publishArtifactRefObservation(publication.artifact);
+
+    return {
+      artifactId: publication.artifact.ref.artifactId,
+      publicationState: publication.artifact.publication?.state ?? "published"
     };
   }
 

@@ -146,6 +146,7 @@ same-machine slice records.
 - [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 - [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 - [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
+- [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 
 ## Audited Scope
 
@@ -394,7 +395,12 @@ The repository is not fully federated:
   `sourceHistoryReplays`, and Host API, host-client, CLI, and Studio summary
   surfaces can inspect replay outcomes without reading runner-local files.
   Studio selected-runtime source-history detail now exposes the same replay
-  request path without restoring direct Host workspace mutation;
+  request path without restoring direct Host workspace mutation. Operators can
+  also request explicit wiki repository publication through the Host-signed
+  `runtime.wiki.publish` control command; the assigned runner syncs and
+  publishes its runner-owned wiki repository to the primary git target,
+  persists the artifact record, and emits `artifact.ref` projection evidence
+  without Host filesystem access;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -474,8 +480,10 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact
     previews, and projected memory/wiki read previews now project through
-    observed refs; complete source/wiki mutation and publication workflows
-    remain open.
+    observed refs; source-history publish/replay and primary wiki publication
+    requests now use Host-signed runner-executed control commands; complete
+    source/wiki mutation services, non-primary publication, and richer memory
+    promotion remain open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.
@@ -550,9 +558,12 @@ publication evidence, with the old direct Host publication, source-candidate
 apply, and source-history replay mutations removed from Host, CLI, Studio, and
 host-client. Direct Host-mediated wiki repository publication and artifact
 restore/promotion have also been removed from Host/CLI/Studio/host-client;
-wiki and artifact inspection currently remain through runner-owned refs plus
-signed projection, and explicit wiki/artifact mutation must return as
-runner-owned protocol behavior. Session cancellation now uses signed
+artifact inspection currently remains through runner-owned refs plus signed
+projection, and artifact mutation must return as runner-owned protocol
+behavior. Explicit wiki repository publication has returned as the Host-signed
+`runtime.wiki.publish` control command: the owning runner syncs and publishes
+its wiki repository to the primary git target, persists the artifact record,
+and emits `artifact.ref` evidence. Session cancellation now uses signed
 `runtime.session.cancel` control commands for accepted federated assignments,
 with local cancellation files retained only as fallback compatibility.
 Source-history publication retry now has a Host-signed
@@ -562,7 +573,9 @@ assignments. Source-history replay now has a Host-signed
 assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed
 `sourceHistoryReplays` with Host API, host-client, CLI, and Studio summary
-surfaces. Per-assignment timelines now group assignment lifecycle state and
+surfaces. Explicit wiki publication now has Host API, host-client, and CLI
+request surfaces over the same control boundary. Per-assignment timelines now
+group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection, while
 non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,

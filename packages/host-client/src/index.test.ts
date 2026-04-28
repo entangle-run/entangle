@@ -2980,6 +2980,58 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runner-owned runtime wiki publication requests", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-wiki-publish-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-24T10:10:00.000Z",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.publishRuntimeWikiRepository("worker-it", {
+        reason: "Publish current wiki repository snapshot.",
+        requestedBy: "operator-main",
+        retryFailedPublication: true
+      })
+    ).resolves.toMatchObject({
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-wiki-publish-alpha",
+      nodeId: "worker-it",
+      status: "requested"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          reason: "Publish current wiki repository snapshot.",
+          requestedBy: "operator-main",
+          retryFailedPublication: true
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/wiki-repository/publish"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

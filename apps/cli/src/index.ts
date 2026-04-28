@@ -31,6 +31,7 @@ import {
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceHistoryPublishRequestSchema,
   runtimeSourceHistoryReplayRequestSchema,
+  runtimeWikiPublishRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema,
@@ -3493,6 +3494,38 @@ hostRuntimesCommand
           request
         )
       );
+    }
+  );
+
+hostRuntimesCommand
+  .command("wiki-publish")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .option("--reason <reason>", "Operator-visible publication reason.")
+  .option("--requested-by <operatorId>", "Operator id requesting publication.")
+  .option(
+    "--retry-failed-publication",
+    "Retry wiki publication when the previous artifact publication failed."
+  )
+  .description(
+    "Ask the assigned runner to publish its wiki repository through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        reason?: string;
+        requestedBy?: string;
+        retryFailedPublication?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const request = runtimeWikiPublishRequestSchema.parse({
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
+        retryFailedPublication: options.retryFailedPublication ?? false
+      });
+      printJson(await client.publishRuntimeWikiRepository(nodeId, request));
     }
   );
 

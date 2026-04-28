@@ -8,6 +8,12 @@ joined runners emit signed `wiki.ref` observations when a concrete snapshot is
 available. Host projection and the runtime memory read APIs can inspect those
 bounded refs without reading runner-local wiki files.
 
+Follow-up slice
+`346-runner-owned-wiki-publication-control-slice.md` restores explicit wiki
+publication as a Host-signed `runtime.wiki.publish` control command executed by
+the accepted runner. This removal slice remains the record for why Host must
+not publish runner-local wiki repositories directly.
+
 Before this slice, Host also exposed direct wiki publication routes:
 
 - `GET /v1/runtimes/:nodeId/wiki-repository/publications`;
@@ -82,10 +88,11 @@ a new production dependency.
 
 ## Migration/Compatibility Notes
 
-This is an intentional pre-release breaking change. Existing callers must stop
-posting to Host for wiki repository publication. The supported current path is
-read-only projection through `wiki.ref`; explicit wiki repository publication
-must return later as a runner-owned protocol command or signed node message.
+This was an intentional pre-release breaking change. Existing callers must stop
+depending on Host-readable runner filesystem publication. The supported
+read-only path is projection through `wiki.ref`; explicit wiki repository
+publication now returns through the runner-owned
+`runtime.wiki.publish` control command recorded in slice `346`.
 
 Historical `wiki_repository.published` event formatting remains readable so old
 event logs do not become opaque, but no active public Host API creates new
@@ -106,8 +113,6 @@ events of that type.
 
 ## Open Questions
 
-- Define the exact runner-owned command/message shape for explicit wiki
-  repository publication and retry.
 - Decide whether wiki publication should be requested by a User Node message,
   Host control command, or both with different policy requirements.
 - Decide whether a node wiki should remain a runner-local repository with

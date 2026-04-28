@@ -519,6 +519,42 @@ export class HostFederatedControlPlane {
     });
   }
 
+  publishRuntimeWikiPublish(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        eventType: "runtime.wiki.publish",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        protocol: "entangle.control.v1",
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+        retryFailedPublication: input.retryFailedPublication ?? false,
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
   private publishRunnerHelloAck(input: {
     authRequired?: boolean;
     hostAuthorityPubkey: string;

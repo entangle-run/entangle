@@ -72,6 +72,7 @@ import {
   runtimeSourceHistoryReplayInspectionResponseSchema,
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
+  runtimeWikiPublishResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -176,6 +177,14 @@ type TestFederatedAssignmentPublisher = {
     replayedBy?: string;
     replayId?: string;
     sourceHistoryId: string;
+  }): Promise<unknown>;
+  publishRuntimeWikiPublish?(input: {
+    assignment: RuntimeAssignmentRecord;
+    commandId: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    retryFailedPublication: boolean;
   }): Promise<unknown>;
 };
 
@@ -6641,7 +6650,7 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("publishes runner-owned source history publication and replay commands for accepted assignments", async () => {
+  it("publishes runner-owned source history and wiki commands for accepted assignments", async () => {
     const publishedRequests: Array<{
       assignment: RuntimeAssignmentRecord;
       reason?: string;
@@ -6658,6 +6667,13 @@ describe("buildHostServer", () => {
       replayedBy?: string;
       replayId?: string;
       sourceHistoryId: string;
+    }> = [];
+    const wikiPublishRequests: Array<{
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+      retryFailedPublication: boolean;
     }> = [];
     const server = await createTestServer({
       federatedControlPlane: {
@@ -6683,6 +6699,16 @@ describe("buildHostServer", () => {
             ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
             ...(input.replayId ? { replayId: input.replayId } : {}),
             sourceHistoryId: input.sourceHistoryId
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeWikiPublish: (input) => {
+          wikiPublishRequests.push({
+            assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+            retryFailedPublication: input.retryFailedPublication
           });
           return Promise.resolve();
         }
@@ -6877,6 +6903,37 @@ describe("buildHostServer", () => {
         replayedBy: "operator-main",
         replayId: "replay-source-history-alpha",
         sourceHistoryId: "source-history-candidate-alpha"
+      });
+
+      const wikiPublishResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "Operator requested wiki publication retry.",
+          requestedBy: "operator-main",
+          retryFailedPublication: true
+        },
+        url: "/v1/runtimes/worker-it/wiki-repository/publish"
+      });
+
+      expect(wikiPublishResponse.statusCode).toBe(200);
+      expect(
+        runtimeWikiPublishResponseSchema.parse(wikiPublishResponse.json())
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        status: "requested"
+      });
+      expect(wikiPublishRequests).toHaveLength(1);
+      expect(wikiPublishRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(wikiPublishRequests[0]).toMatchObject({
+        reason: "Operator requested wiki publication retry.",
+        relayUrls: ["ws://relay.example"],
+        requestedBy: "operator-main",
+        retryFailedPublication: true
       });
     } finally {
       await server.close();

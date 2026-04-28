@@ -4191,3 +4191,15 @@ existing best-effort signed `read.receipt` behavior. The dedicated
 `apps/user-client` app now calls that runtime-local JSON route when opening a
 thread with unread messages, then refreshes state so projected unread counts
 converge without using Studio as the participant client.
+
+## [2026-04-28] implementation | Added runner-owned wiki publication control
+
+Added `references/346-runner-owned-wiki-publication-control-slice.md`.
+Explicit wiki repository publication now uses a Host-signed
+`runtime.wiki.publish` control command to the accepted runner assignment.
+
+The owning runner syncs its runner-local wiki repository, publishes the
+snapshot to the node's primary git target, persists the publication artifact
+record in runner-owned state, and emits signed `artifact.ref` evidence for Host
+projection. Host, host-client, and CLI request the command without reading or
+pushing runner-local wiki files.

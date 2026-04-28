@@ -274,6 +274,7 @@ Implementation record:
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
+- [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 
 Verification:
 
@@ -370,9 +371,14 @@ Current status:
   from Host, host-client, CLI, and Studio; wiki inspection remains public
   through runner-owned sync, signed `wiki.ref` projection, and projected memory
   read fallback;
-- deeper artifact history computation, explicit runner-owned wiki publication,
-  and mutation endpoints still need projection-backed or backend-resolved
-  replacement.
+- explicit wiki repository publication now uses a Host-signed
+  `runtime.wiki.publish` control command to the accepted runner assignment; the
+  runner syncs and publishes its wiki repository from runner-owned state to the
+  primary git target, persists artifact publication metadata, and emits
+  `artifact.ref` evidence;
+- deeper artifact history computation, richer source/wiki mutation endpoints,
+  non-primary publication, and artifact restore/promotion still need
+  projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -538,6 +544,7 @@ Implementation record:
 - [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
+- [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 
 Verification:
 

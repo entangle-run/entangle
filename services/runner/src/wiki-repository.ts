@@ -2,9 +2,18 @@ import { spawn } from "node:child_process";
 import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import type {
+  ArtifactRecord,
   EffectiveRuntimeContext,
+  GitRepositoryTarget,
   MemoryRepositorySyncOutcome
 } from "@entangle/types";
+import { artifactRecordSchema } from "@entangle/types";
+import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
+import type { RunnerStatePaths } from "./state-store.js";
+import {
+  readArtifactRecord,
+  writeArtifactRecord
+} from "./state-store.js";
 
 const wikiRepositoryBranchName = "entangle-wiki";
 
@@ -52,13 +61,17 @@ async function isDirectory(directoryPath: string): Promise<boolean> {
 async function runGitCommand(
   repoPath: string,
   args: string[],
-  options: { allowFailure?: boolean } = {}
+  options: { allowFailure?: boolean; env?: NodeJS.ProcessEnv | undefined } = {}
 ): Promise<{ ok: boolean; stdout: string; stderr: string }> {
   await mkdir(repoPath, { recursive: true });
 
   return new Promise((resolve, reject) => {
     const child = spawn("git", args, {
       cwd: repoPath,
+      env: {
+        ...process.env,
+        ...options.env
+      },
       stdio: ["ignore", "pipe", "pipe"]
     });
     let stdout = "";
@@ -183,6 +196,181 @@ async function readCurrentHeadCommit(
   return result.ok ? result.stdout : undefined;
 }
 
+function sanitizeIdentifier(input: string): string {
+  const normalized = input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+
+  return normalized.length > 0 ? normalized : "wiki";
+}
+
+function buildWikiPublicationArtifactId(input: {
+  commit: string;
+  nodeId: string;
+}): string {
+  return `wiki-${sanitizeIdentifier(input.nodeId)}-${input.commit.slice(0, 12)}`;
+}
+
+function buildWikiPublicationBranch(nodeId: string): string {
+  return `${sanitizeIdentifier(nodeId)}/wiki-repository`;
+}
+
+function buildGitRemoteName(gitServiceRef: string): string {
+  return `entangle-${sanitizeIdentifier(gitServiceRef)}`;
+}
+
+async function ensureGitRemote(input: {
+  env?: NodeJS.ProcessEnv | undefined;
+  remoteName: string;
+  remoteUrl: string;
+  repoPath: string;
+}): Promise<void> {
+  const currentRemote = await runGitCommand(
+    input.repoPath,
+    ["remote", "get-url", input.remoteName],
+    {
+      allowFailure: true,
+      env: input.env
+    }
+  );
+
+  if (!currentRemote.ok || !currentRemote.stdout) {
+    await runGitCommand(
+      input.repoPath,
+      ["remote", "add", input.remoteName, input.remoteUrl],
+      { env: input.env }
+    );
+    return;
+  }
+
+  if (currentRemote.stdout !== input.remoteUrl) {
+    await runGitCommand(
+      input.repoPath,
+      ["remote", "set-url", input.remoteName, input.remoteUrl],
+      { env: input.env }
+    );
+  }
+}
+
+function buildWikiPublicationArtifactRecord(input: {
+  branchName: string;
+  commit: string;
+  context: EffectiveRuntimeContext;
+  repositoryRoot: string;
+  target: GitRepositoryTarget;
+  timestamp: string;
+}): ArtifactRecord {
+  const artifactId = buildWikiPublicationArtifactId({
+    commit: input.commit,
+    nodeId: input.context.binding.node.nodeId
+  });
+
+  return artifactRecordSchema.parse({
+    createdAt: input.timestamp,
+    materialization: {
+      repoPath: input.repositoryRoot
+    },
+    publication: {
+      state: "not_requested"
+    },
+    ref: {
+      artifactId,
+      artifactKind: "knowledge_summary",
+      backend: "git",
+      contentSummary:
+        `Wiki repository snapshot for '${input.context.binding.node.nodeId}'.`,
+      createdByNodeId: input.context.binding.node.nodeId,
+      locator: {
+        branch: input.branchName,
+        commit: input.commit,
+        gitServiceRef: input.target.gitServiceRef,
+        namespace: input.target.namespace,
+        path: ".",
+        repositoryName: input.target.repositoryName
+      },
+      preferred: true,
+      status: "materialized"
+    },
+    updatedAt: input.timestamp
+  });
+}
+
+async function publishWikiArtifactRecord(input: {
+  artifactRecord: ArtifactRecord;
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  repositoryRoot: string;
+  target: GitRepositoryTarget;
+}): Promise<ArtifactRecord> {
+  const remoteName = buildGitRemoteName(input.target.gitServiceRef);
+  const attemptTimestamp = new Date().toISOString();
+  const failPublication = (lastError: string): ArtifactRecord =>
+    artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        lastAttemptAt: attemptTimestamp,
+        lastError,
+        remoteName,
+        remoteUrl: input.target.remoteUrl,
+        state: "failed"
+      },
+      updatedAt: attemptTimestamp
+    });
+
+  if (input.artifactRecord.ref.backend !== "git") {
+    throw new Error(
+      `Wiki publication requires a git artifact ref for '${input.artifactRecord.ref.artifactId}'.`
+    );
+  }
+
+  try {
+    const gitEnv = await buildGitCommandEnvForRemoteOperation({
+      context: input.context,
+      target: input.target
+    });
+    await ensureGitRemote({
+      env: gitEnv,
+      remoteName,
+      remoteUrl: input.target.remoteUrl,
+      repoPath: input.repositoryRoot
+    });
+    await runGitCommand(
+      input.repositoryRoot,
+      [
+        "push",
+        "--set-upstream",
+        remoteName,
+        `${input.artifactRecord.ref.locator.commit}:refs/heads/${input.branchName}`
+      ],
+      { env: gitEnv }
+    );
+
+    return artifactRecordSchema.parse({
+      ...input.artifactRecord,
+      publication: {
+        publishedAt: attemptTimestamp,
+        remoteName,
+        remoteUrl: input.target.remoteUrl,
+        state: "published"
+      },
+      ref: {
+        ...input.artifactRecord.ref,
+        status: "published"
+      },
+      updatedAt: attemptTimestamp
+    });
+  } catch (error) {
+    return failPublication(
+      error instanceof Error && error.message.trim().length > 0
+        ? sanitizeSyncFailureReason(input.context, error)
+        : "Unknown wiki publication failure."
+    );
+  }
+}
+
 export async function syncWikiRepository(
   context: EffectiveRuntimeContext,
   input: { turnId: string }
@@ -251,4 +439,134 @@ export async function syncWikiRepository(
       syncedAt
     };
   }
+}
+
+export type WikiRepositoryPublicationResult =
+  | {
+      artifact: ArtifactRecord;
+      published: true;
+      sync: MemoryRepositorySyncOutcome;
+    }
+  | {
+      artifact?: ArtifactRecord;
+      published: false;
+      reason: string;
+      sync?: MemoryRepositorySyncOutcome;
+    };
+
+export async function publishWikiRepositoryToPrimaryGitTarget(input: {
+  context: EffectiveRuntimeContext;
+  reason?: string;
+  requestedAt: string;
+  requestedBy?: string;
+  retryFailedPublication?: boolean;
+  statePaths: RunnerStatePaths;
+}): Promise<WikiRepositoryPublicationResult> {
+  const repositoryRoot = input.context.workspace.wikiRepositoryRoot;
+
+  if (!repositoryRoot) {
+    return {
+      published: false,
+      reason: "Runtime context does not define a wiki repository root."
+    };
+  }
+
+  const sync = await syncWikiRepository(input.context, {
+    turnId: "wiki-publication"
+  });
+
+  if (sync.status === "failed" || sync.status === "not_configured") {
+    return {
+      published: false,
+      reason: sync.reason,
+      sync
+    };
+  }
+
+  const commit = sync.commit ?? (await readCurrentHeadCommit(repositoryRoot));
+
+  if (!commit) {
+    return {
+      published: false,
+      reason: "Wiki repository has no committed snapshot.",
+      sync
+    };
+  }
+
+  const target = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  if (!target) {
+    return {
+      published: false,
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' has no primary git repository target.`,
+      sync
+    };
+  }
+
+  const branchName = buildWikiPublicationBranch(input.context.binding.node.nodeId);
+  const localArtifact = buildWikiPublicationArtifactRecord({
+    branchName,
+    commit,
+    context: input.context,
+    repositoryRoot,
+    target,
+    timestamp: input.requestedAt
+  });
+  const existingArtifact = await readArtifactRecord(
+    input.statePaths,
+    localArtifact.ref.artifactId
+  );
+  const publicationState = existingArtifact?.publication?.state;
+
+  if (existingArtifact && publicationState && publicationState !== "failed") {
+    return {
+      artifact: existingArtifact,
+      published: false,
+      reason:
+        `Wiki publication artifact '${existingArtifact.ref.artifactId}' already has publication metadata.`,
+      sync
+    };
+  }
+
+  if (
+    existingArtifact &&
+    publicationState === "failed" &&
+    !input.retryFailedPublication
+  ) {
+    return {
+      artifact: existingArtifact,
+      published: false,
+      reason:
+        `Wiki publication artifact '${existingArtifact.ref.artifactId}' already has failed publication metadata; retry is required.`,
+      sync
+    };
+  }
+
+  const artifact = await publishWikiArtifactRecord({
+    artifactRecord: existingArtifact ?? localArtifact,
+    branchName,
+    context: input.context,
+    repositoryRoot,
+    target
+  });
+
+  await writeArtifactRecord(input.statePaths, artifact);
+
+  if (artifact.publication?.state !== "published") {
+    return {
+      artifact,
+      published: false,
+      reason:
+        artifact.publication?.lastError ??
+        `Wiki publication artifact '${artifact.ref.artifactId}' was not published.`,
+      sync
+    };
+  }
+
+  return {
+    artifact,
+    published: true,
+    sync
+  };
 }

@@ -469,6 +469,8 @@ export async function createConfiguredRunnerJoinService(
           },
           publishSourceHistory: (request) =>
             configured.service.requestSourceHistoryPublication(request),
+          publishWikiRepository: (request) =>
+            configured.service.requestWikiRepositoryPublication(request),
           replaySourceHistory: (request) =>
             configured.service.requestSourceHistoryReplay(request),
           runtimeContextPath,

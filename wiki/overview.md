@@ -110,6 +110,10 @@ The most accurate current description is:
   evidence; Host now projects `source_history.replayed` outcomes into typed
   replay records for API, CLI, and Studio inspection without runner-local file
   access;
+- explicit wiki repository publication is now a Host-signed
+  `runtime.wiki.publish` control command to the accepted runner assignment; the
+  runner syncs and publishes its wiki repository from runner-owned state to the
+  primary git target and emits `artifact.ref` evidence;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -307,10 +311,10 @@ The repository now also contains the first real implementation baseline:
   `entangle deployment doctor` runtime wiki repository health warnings for
   uninitialized, dirty, or uncommitted snapshots. Direct Host-mediated
   wiki-repository publication has been removed from Host/CLI/Studio because it
-  required Host-readable runner filesystem state; the active federated wiki
-  surface is runner-owned sync plus projected signed `wiki.ref` records, and
-  explicit wiki publication must return later as runner-owned protocol
-  behavior. With
+  required Host-readable runner filesystem state; explicit wiki publication
+  now returns as a Host-signed `runtime.wiki.publish` command that the accepted
+  runner executes from runner-owned wiki state, publishing a primary-git
+  artifact and emitting signed `artifact.ref` evidence. With
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
@@ -887,8 +891,9 @@ The current implementation-truth audit now lives in
   runner-owned primary source-history commit artifact publication plus bounded
   artifact history/diff/preview inspection; the next git gaps are
   protocol-owned artifact restore or source-change proposal flows, non-primary
-  publication targets, wiki publication/promotion, richer source-history
-  merge/reconcile workflows, and explicit fallback or replication behavior,
+  publication targets, richer wiki promotion beyond primary-git publication,
+  source-history merge/reconcile workflows, and explicit fallback or
+  replication behavior,
   while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea
   volumes;

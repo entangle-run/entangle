@@ -275,10 +275,11 @@ This repository currently contains:
   inspection, and with `entangle deployment doctor`
   now warning on uninitialized, dirty, or uncommitted runtime wiki
   repositories. Direct Host-mediated wiki-repository publication has been
-  removed because it required Host-readable runner filesystem state; the
-  current federated wiki path is runner-owned sync plus signed `wiki.ref`
-  projection, and explicit wiki publication must return as runner-owned
-  protocol behavior. Bounded engine-request
+  removed because it required Host-readable runner filesystem state; explicit
+  wiki publication now returns through a Host-signed `runtime.wiki.publish`
+  control command that the accepted runner executes from runner-owned wiki
+  state, publishing a primary-git artifact and emitting `artifact.ref`
+  projection evidence. Bounded engine-request
   summaries on executable turns so
   operators can inspect prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
@@ -950,9 +951,9 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, and bounded artifact
   history/diff/preview inspection, especially protocol-owned artifact restore
-  or source-change proposal flows, non-primary publication targets, wiki
-  publication/promotion, richer source-history merge/reconcile workflows, and
-  replicated fallback paths;
+  or source-change proposal flows, non-primary publication targets, richer wiki
+  promotion beyond primary-git publication, source-history merge/reconcile
+  workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

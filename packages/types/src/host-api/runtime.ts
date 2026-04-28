@@ -381,6 +381,20 @@ export const runtimeSourceHistoryPublishResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeWikiPublishRequestSchema = z.object({
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional(),
+  retryFailedPublication: z.boolean().default(false)
+});
+
+export const runtimeWikiPublishResponseSchema = z.object({
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  nodeId: identifierSchema,
+  requestedAt: nonEmptyStringSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeSourceHistoryReplayRequestSchema = z.object({
   approvalId: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
@@ -544,6 +558,12 @@ export type RuntimeSourceHistoryPublishRequest = z.input<
 >;
 export type RuntimeSourceHistoryPublishResponse = z.infer<
   typeof runtimeSourceHistoryPublishResponseSchema
+>;
+export type RuntimeWikiPublishRequest = z.input<
+  typeof runtimeWikiPublishRequestSchema
+>;
+export type RuntimeWikiPublishResponse = z.infer<
+  typeof runtimeWikiPublishResponseSchema
 >;
 export type RuntimeSourceHistoryReplayRequest = z.input<
   typeof runtimeSourceHistoryReplayRequestSchema

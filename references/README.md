@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
+[346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -49,8 +49,9 @@ operator receipt/transport visibility, runner-owned source history, and removal
 of direct Host source/wiki/artifact filesystem mutation paths plus federated
 session-cancellation, source-history-publication, source-history-replay control
 delivery, matching Studio replay request controls, projected source-history
-replay outcome read models, per-assignment timeline read models, and process
-smoke coverage for assignment timelines.
+replay outcome read models, per-assignment timeline read models, process smoke
+coverage for assignment timelines, User Client JSON read-state convergence, and
+runner-owned wiki publication control.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -407,6 +408,7 @@ files are the active federated redesign pack.
 344. [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 345. [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 346. [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
+347. [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 
 ## Role of this corpus
 

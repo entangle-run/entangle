@@ -65,13 +65,14 @@ Deferred to later slices:
 - projection-backed artifact content and source diff fetching from remote git
   or object backends;
 - read-receipt and retry-state projection for User Client delivery UX;
-- explicit runner-owned wiki publication as the canonical portable wiki
-  content path.
 
 Implemented by follow-up slice:
 
 - [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
   carries bounded source-change summaries in observed source refs.
+- [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
+  restores explicit wiki publication as a Host-signed, runner-executed control
+  command without Host-readable runner filesystem access.
 
 ## Tests Required
 

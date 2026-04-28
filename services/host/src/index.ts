@@ -86,6 +86,8 @@ import {
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeSourceHistoryReplayResponseSchema,
+  runtimeWikiPublishRequestSchema,
+  runtimeWikiPublishResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -311,6 +313,16 @@ type HostFederatedAssignmentPublisher = {
     replayedBy?: string;
     replayId?: string;
     sourceHistoryId: string;
+  }): Promise<unknown>;
+  publishRuntimeWikiPublish?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
   }): Promise<unknown>;
 };
 
@@ -755,6 +767,39 @@ async function publishRuntimeSourceHistoryReplayCommandFromHost(
     ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
     ...(input.replayId ? { replayId: input.replayId } : {}),
     sourceHistoryId: input.sourceHistoryId
+  });
+
+  return commandId;
+}
+
+async function publishRuntimeWikiPublishCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    assignment: RuntimeAssignmentRecord;
+    reason?: string;
+    requestedBy?: string;
+    retryFailedPublication?: boolean;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeWikiPublish ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-wiki-publish-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeWikiPublish({
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+    retryFailedPublication: input.retryFailedPublication ?? false
   });
 
   return commandId;
@@ -2196,6 +2241,75 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
     return runtimeMemoryPageInspectionResponseSchema.parse(pageInspection);
   });
+
+  server.post(
+    "/v1/runtimes/:nodeId/wiki-repository/publish",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const body = parseRequestInput(
+        runtimeWikiPublishRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message: "Request body did not match the expected wiki publish schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            `Wiki publication for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const commandId = await publishRuntimeWikiPublishCommandFromHost(options, {
+        assignment,
+        ...(body.reason ? { reason: body.reason } : {}),
+        ...(body.requestedBy ? { requestedBy: body.requestedBy } : {}),
+        retryFailedPublication: body.retryFailedPublication
+      });
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            "Federated wiki publication requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeWikiPublishResponseSchema.parse({
+        assignmentId: assignment.assignmentId,
+        commandId,
+        nodeId: params.nodeId,
+        requestedAt: new Date().toISOString(),
+        status: "requested"
+      });
+    }
+  );
 
   server.get("/v1/runtimes/:nodeId/approvals", async (request, reply) => {
     const params = request.params as { nodeId: string };

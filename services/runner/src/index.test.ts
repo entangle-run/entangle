@@ -376,6 +376,40 @@ function buildRuntimeSourceHistoryReplayEvent(
   };
 }
 
+function buildRuntimeWikiPublishEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:07.000Z",
+      eventId: "babababababababababababababababababababababababababababababababa",
+      payloadHash:
+        "dededededededededededededededededededededededededededededededede",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "ecececececececececececececececececececececececececececececececececececececececececececececececececececececececececececececec",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-wiki-publish-alpha",
+      eventType: "runtime.wiki.publish",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:07.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Publish wiki",
+      requestedBy: "operator-main",
+      retryFailedPublication: true,
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -2092,6 +2126,7 @@ describe("runner runtime context", () => {
     const runtimeCancellations: string[] = [];
     const runtimeSourceHistoryPublications: string[] = [];
     const runtimeSourceHistoryReplays: string[] = [];
+    const runtimeWikiPublications: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const configured = await createConfiguredRunnerJoinService(
@@ -2119,6 +2154,15 @@ describe("runner runtime context", () => {
               return Promise.resolve({
                 publicationState: "published",
                 sourceHistoryId: request.sourceHistoryId
+              });
+            },
+            publishWikiRepository: (request) => {
+              runtimeWikiPublications.push(
+                `${request.retryFailedPublication ? "retry" : "publish"}:${request.requestedBy ?? "unknown"}`
+              );
+              return Promise.resolve({
+                artifactId: "wiki-worker-it-abc123",
+                publicationState: "published"
               });
             },
             replaySourceHistory: (request) => {
@@ -2151,6 +2195,7 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeSessionCancelEvent(assignment));
     await transport.dispatch(buildRuntimeSourceHistoryPublishEvent(assignment));
     await transport.dispatch(buildRuntimeSourceHistoryReplayEvent(assignment));
+    await transport.dispatch(buildRuntimeWikiPublishEvent(assignment));
 
     expect(runtimeStarts).toEqual([
       "/runner/assignments/assignment-alpha/runtime-context.json",
@@ -2168,6 +2213,7 @@ describe("runner runtime context", () => {
     expect(runtimeSourceHistoryReplays).toEqual([
       "source-history-alpha:replay-source-history-alpha:approval-source-history-replay-alpha"
     ]);
+    expect(runtimeWikiPublications).toEqual(["retry:operator-main"]);
     expect(
       transport.observations.filter(
         (payload) =>
