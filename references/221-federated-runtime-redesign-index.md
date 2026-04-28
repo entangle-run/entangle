@@ -125,6 +125,7 @@ same-machine slice records.
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 - [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 - [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
+- [325-federated-lifecycle-process-smoke-slice.md](325-federated-lifecycle-process-smoke-slice.md)
 
 ## Audited Scope
 
@@ -252,13 +253,14 @@ The repository is not fully federated:
 - `ops:smoke-federated-process-runner` now starts a real joined runner process,
   has it fetch authenticated runtime bootstrap context from Host API,
   materializes runner-owned workspace paths, starts the assigned node runtime,
-  reports signed runtime status through the relay, starts a second joined
-  runner process for the graph User Node, assigns it as a `human_interface`
-  runtime, verifies its projected User Client endpoint, health route, state
-  API, JSON publish API, and conversation-detail API, publishes a signed User
-  Node message to the assigned agent node through the running User Client,
-  exercises a deterministic OpenCode-adapter task turn, verifies projected
-  turn/approval/session read APIs, verifies runner-owned
+  reports signed runtime status through the relay, exercises signed federated
+  runtime stop/start/restart control commands through the live runner process,
+  starts a second joined runner process for the graph User Node, assigns it as
+  a `human_interface` runtime, verifies its projected User Client endpoint,
+  health route, state API, JSON publish API, and conversation-detail API,
+  publishes a signed User Node message to the assigned agent node through the
+  running User Client, exercises a deterministic OpenCode-adapter task turn,
+  verifies projected turn/approval/session read APIs, verifies runner-owned
   session/conversation intake, and verifies Host projection of the User Node
   conversation without requiring a live model-provider call;
 - the same process smoke now proves two distinct User Nodes assigned to two
@@ -482,9 +484,10 @@ generic runner join configs from Host status, Host publishes signed federated
 runtime lifecycle commands for accepted assignments, joined runners apply
 start/stop/restart commands locally and emit signed receipts/status, and Host
 runtime inspection no longer overwrites assigned federated runtime ownership
-through the local backend adapter. The next blocking implementation areas are
-richer projection-backed source/wiki review services, replacing remaining deep
-filesystem-backed runtime inspection paths with projection-backed source/wiki
-services and object-backed artifact services, adding deeper per-relay
-diagnostics, and turning the process smoke into the full multi-machine
-distributed proof.
+through the local backend adapter. The process-runner smoke now proves that
+same lifecycle path end-to-end through a live relay and real joined runner
+process. The next blocking implementation areas are richer projection-backed
+source/wiki review services, replacing remaining deep filesystem-backed runtime
+inspection paths with projection-backed source/wiki services and object-backed
+artifact services, adding deeper per-relay diagnostics, and turning the process
+smoke into the full multi-machine distributed proof.

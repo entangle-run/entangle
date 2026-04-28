@@ -134,6 +134,7 @@ Verification:
 - runner acceptance tests.
 - Host control-plane lifecycle payload tests;
 - runner lifecycle command tests.
+- process-runner smoke lifecycle command assertions.
 
 Current status:
 
@@ -145,6 +146,9 @@ Current status:
   plus `runtime.status` observations.
 - Host runtime synchronization no longer reconciles assigned federated nodes
   through the local Docker/memory backend adapter.
+- `ops:smoke-federated-process-runner` now proves Host stop/start/restart
+  requests reach a real joined runner through the relay and return as projected
+  signed runtime observations.
 
 ### Slice 6: Generic Runner Bootstrap
 

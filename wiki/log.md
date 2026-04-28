@@ -3957,3 +3957,14 @@ boundaries and no longer reconciles them through the local Docker/memory
 backend adapter. Unassigned nodes still use the local adapter path. The
 federated process-runner smoke passed after the change, including runner
 filesystem isolation and signed User Node source-change review.
+
+## [2026-04-28] verification | Proved federated lifecycle commands in process smoke
+
+Added `references/325-federated-lifecycle-process-smoke-slice.md`. The
+federated process-runner smoke now calls Host runtime stop, start, and restart
+routes for the accepted agent assignment, waits for the real joined runner to
+apply each command, and verifies projected signed `runtime.status`
+observations.
+
+The restart assertion waits for a post-command `lastSeenAt`, so the smoke
+cannot pass against stale pre-restart running state.

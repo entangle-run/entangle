@@ -32,6 +32,7 @@ import {
   runtimeApprovalListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
+  runtimeInspectionResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
@@ -494,6 +495,46 @@ async function waitForRunnerHeartbeat(input: {
   printPass(
     "runner-heartbeat",
     `runner=${input.runnerId}; assignments=${inspection.runner.heartbeat?.assignmentIds.length ?? 0}`
+  );
+}
+
+async function waitForRuntimeProjectionState(input: {
+  assignmentId: string;
+  baseUrl: string;
+  label: string;
+  minLastSeenAt?: string;
+  nodeId: string;
+  observedState: "failed" | "missing" | "running" | "starting" | "stopped";
+  stderr: () => string;
+  stdout: () => string;
+}) {
+  return waitFor(
+    input.label,
+    async () => {
+      const projection = hostProjectionSnapshotSchema.parse(
+        await hostRequest({
+          baseUrl: input.baseUrl,
+          path: "/v1/projection"
+        })
+      );
+      const runtime = projection.runtimes.find(
+        (candidate) =>
+          candidate.assignmentId === input.assignmentId &&
+          candidate.nodeId === input.nodeId &&
+          candidate.observedState === input.observedState
+      );
+
+      if (
+        runtime &&
+        (!input.minLastSeenAt ||
+          (runtime.lastSeenAt && runtime.lastSeenAt > input.minLastSeenAt))
+      ) {
+        return runtime;
+      }
+
+      return undefined;
+    },
+    () => `\nstdout:\n${input.stdout()}\nstderr:\n${input.stderr()}`
   );
 }
 
@@ -1223,6 +1264,86 @@ async function main(): Promise<void> {
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
     printPass("runtime-projection", "assignment=accepted; runtime=running");
+
+    const stopInspection = runtimeInspectionResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        method: "POST",
+        path: "/v1/runtimes/builder/stop"
+      })
+    );
+    assertCondition(
+      stopInspection.backendKind === "federated" &&
+        stopInspection.desiredState === "stopped",
+      "Federated runtime stop must return a stopped federated intent."
+    );
+    const stoppedRuntimeProjection = await waitForRuntimeProjectionState({
+      assignmentId: assignment.assignmentId,
+      baseUrl: hostBaseUrl,
+      label: "federated runtime stop projection",
+      nodeId: "builder",
+      observedState: "stopped",
+      stderr: () => runnerStderr,
+      stdout: () => runnerStdout
+    });
+    printPass(
+      "runtime-lifecycle-stop",
+      `runtime=${stoppedRuntimeProjection.observedState}`
+    );
+
+    const startInspection = runtimeInspectionResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        method: "POST",
+        path: "/v1/runtimes/builder/start"
+      })
+    );
+    assertCondition(
+      startInspection.backendKind === "federated" &&
+        startInspection.desiredState === "running",
+      "Federated runtime start must return a running federated intent."
+    );
+    const startedRuntimeProjection = await waitForRuntimeProjectionState({
+      assignmentId: assignment.assignmentId,
+      baseUrl: hostBaseUrl,
+      label: "federated runtime start projection",
+      nodeId: "builder",
+      observedState: "running",
+      stderr: () => runnerStderr,
+      stdout: () => runnerStdout
+    });
+    printPass(
+      "runtime-lifecycle-start",
+      `runtime=${startedRuntimeProjection.observedState}`
+    );
+
+    const restartBaseline = startedRuntimeProjection.lastSeenAt;
+    const restartInspection = runtimeInspectionResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        method: "POST",
+        path: "/v1/runtimes/builder/restart"
+      })
+    );
+    assertCondition(
+      restartInspection.backendKind === "federated" &&
+        restartInspection.restartGeneration > startInspection.restartGeneration,
+      "Federated runtime restart must increment Host restart generation."
+    );
+    const restartedRuntimeProjection = await waitForRuntimeProjectionState({
+      assignmentId: assignment.assignmentId,
+      baseUrl: hostBaseUrl,
+      label: "federated runtime restart projection",
+      ...(restartBaseline ? { minLastSeenAt: restartBaseline } : {}),
+      nodeId: "builder",
+      observedState: "running",
+      stderr: () => runnerStderr,
+      stdout: () => runnerStdout
+    });
+    printPass(
+      "runtime-lifecycle-restart",
+      `runtime=${restartedRuntimeProjection.observedState}; restartGeneration=${restartInspection.restartGeneration}`
+    );
 
     const materializedContextPath = path.join(
       runnerStateRoot,
