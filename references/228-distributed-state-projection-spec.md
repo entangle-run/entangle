@@ -61,8 +61,10 @@ assignment; the runner persists replay evidence locally and emits
 `source_history.replayed` observations for Host projection and audit. Host now
 stores those observations as typed `sourceHistoryReplays`, exposes
 source-history replay list/detail read APIs, and lets CLI/Studio summarize
-replay outcomes without reading runner-local replay files. The remaining deep
-runtime APIs still need to be moved off local file reads.
+replay outcomes without reading runner-local replay files. Host now also
+exposes a per-assignment timeline read model that joins assignment lifecycle
+state with projected runner receipts. The remaining deep runtime APIs still
+need to be moved off local file reads.
 
 ## Target Model
 
@@ -137,6 +139,8 @@ and refs so Host can inspect global state without reading runner disk.
   mutation surfaces still need projected or backend-resolved equivalents.
 - Treat `source_history.replayed` as the signed runner replay outcome feed for
   source-history replay list/detail read APIs.
+- Build per-assignment timelines from Host assignment state and
+  `assignment.receipt` projection instead of generic event scans in clients.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn

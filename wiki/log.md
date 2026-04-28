@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Added assignment timeline read model
+
+Added a Host-backed assignment timeline read model that joins assignment
+lifecycle state with projected runner receipts. Host API, shared host-client,
+CLI `assignments timeline`, and Studio assignment rows now expose grouped
+assignment progress without reading runner-local state.
+
+Added `references/343-assignment-timeline-read-model-slice.md`.
+
 ## [2026-04-28] implementation | Added projected source-history replay outcomes
 
 Added typed Host projection records for runner-observed

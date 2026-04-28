@@ -718,6 +718,52 @@ describe("createHostClient", () => {
           );
         }
 
+        if (url.endsWith("/timeline")) {
+          return Promise.resolve(
+            createMockResponse({
+              body: JSON.stringify({
+                assignment,
+                generatedAt: "2026-04-26T10:03:00.000Z",
+                receipts: [
+                  {
+                    assignmentId: "assignment-alpha",
+                    hostAuthorityPubkey:
+                      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    observedAt: "2026-04-26T10:02:00.000Z",
+                    projection: {
+                      source: "observation_event",
+                      updatedAt: "2026-04-26T10:02:00.000Z"
+                    },
+                    receiptKind: "started",
+                    runnerId: "runner-alpha",
+                    runnerPubkey:
+                      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                  }
+                ],
+                timeline: [
+                  {
+                    assignmentId: "assignment-alpha",
+                    entryKind: "assignment.offered",
+                    nodeId: "worker-it",
+                    runnerId: "runner-alpha",
+                    status: "offered",
+                    timestamp: "2026-04-26T10:00:00.000Z"
+                  },
+                  {
+                    assignmentId: "assignment-alpha",
+                    entryKind: "assignment.receipt",
+                    receiptKind: "started",
+                    runnerId: "runner-alpha",
+                    timestamp: "2026-04-26T10:02:00.000Z"
+                  }
+                ]
+              }),
+              ok: true,
+              status: 200
+            })
+          );
+        }
+
         if (url.endsWith("/v1/assignments") && init?.method === "POST") {
           return Promise.resolve(
             createMockResponse({
@@ -764,6 +810,23 @@ describe("createHostClient", () => {
       }
     });
     await expect(
+      client.getAssignmentTimeline("assignment-alpha")
+    ).resolves.toMatchObject({
+      receipts: [
+        {
+          receiptKind: "started"
+        }
+      ],
+      timeline: [
+        {
+          entryKind: "assignment.offered"
+        },
+        {
+          entryKind: "assignment.receipt"
+        }
+      ]
+    });
+    await expect(
       client.offerAssignment({
         assignmentId: "assignment-alpha",
         nodeId: "worker-it",
@@ -785,10 +848,11 @@ describe("createHostClient", () => {
     expect(requests.map((request) => request.url)).toEqual([
       "http://entangle-host.test/v1/assignments",
       "http://entangle-host.test/v1/assignments/assignment-alpha",
+      "http://entangle-host.test/v1/assignments/assignment-alpha/timeline",
       "http://entangle-host.test/v1/assignments",
       "http://entangle-host.test/v1/assignments/assignment-alpha/revoke"
     ]);
-    expect(JSON.parse(requests[2]!.body ?? "{}")).toMatchObject({
+    expect(JSON.parse(requests[3]!.body ?? "{}")).toMatchObject({
       assignmentId: "assignment-alpha",
       leaseDurationSeconds: 3600
     });

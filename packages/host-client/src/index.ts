@@ -19,6 +19,7 @@ import {
   runtimeAssignmentOfferResponseSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeAssignmentRevokeResponseSchema,
+  runtimeAssignmentTimelineResponseSchema,
   hostAuthorityExportResponseSchema,
   hostAuthorityImportRequestSchema,
   hostAuthorityImportResponseSchema,
@@ -110,6 +111,7 @@ import {
   type RuntimeAssignmentOfferResponse,
   type RuntimeAssignmentRevokeRequest,
   type RuntimeAssignmentRevokeResponse,
+  type RuntimeAssignmentTimelineResponse,
   type HostAuthorityExportResponse,
   type HostAuthorityImportRequest,
   type HostAuthorityImportResponse,
@@ -581,6 +583,15 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/assignments/${assignmentId}`),
         runtimeAssignmentInspectionResponseSchema
+      );
+    },
+
+    async getAssignmentTimeline(
+      assignmentId: string
+    ): Promise<RuntimeAssignmentTimelineResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/assignments/${assignmentId}/timeline`),
+        runtimeAssignmentTimelineResponseSchema
       );
     },
 

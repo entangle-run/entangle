@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RuntimeAssignmentRecord } from "@entangle/types";
 import {
   projectRuntimeAssignmentSummary,
+  projectRuntimeAssignmentTimelineSummary,
   sortRuntimeAssignmentsForCli
 } from "./assignment-output.js";
 
@@ -56,6 +57,62 @@ describe("assignment CLI output", () => {
       nodeId: "worker-b",
       runnerId: "runner-b",
       status: "offered"
+    });
+  });
+
+  it("projects compact assignment timeline summaries", () => {
+    expect(
+      projectRuntimeAssignmentTimelineSummary({
+        assignment: assignments[0]!,
+        generatedAt: "2026-04-26T12:03:00.000Z",
+        receipts: [
+          {
+            assignmentId: "assignment-b",
+            hostAuthorityPubkey:
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            observedAt: "2026-04-26T12:02:00.000Z",
+            projection: {
+              source: "observation_event",
+              updatedAt: "2026-04-26T12:02:00.000Z"
+            },
+            receiptKind: "started",
+            runnerId: "runner-b",
+            runnerPubkey:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        timeline: [
+          {
+            assignmentId: "assignment-b",
+            entryKind: "assignment.receipt",
+            receiptKind: "started",
+            runnerId: "runner-b",
+            timestamp: "2026-04-26T12:02:00.000Z"
+          },
+          {
+            assignmentId: "assignment-b",
+            entryKind: "assignment.offered",
+            nodeId: "worker-b",
+            runnerId: "runner-b",
+            status: "offered",
+            timestamp: "2026-04-26T12:00:00.000Z"
+          }
+        ]
+      })
+    ).toMatchObject({
+      assignment: {
+        assignmentId: "assignment-b"
+      },
+      receiptCount: 1,
+      timeline: [
+        {
+          entryKind: "assignment.offered"
+        },
+        {
+          entryKind: "assignment.receipt",
+          receiptKind: "started"
+        }
+      ]
     });
   });
 });

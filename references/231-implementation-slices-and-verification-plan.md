@@ -129,6 +129,7 @@ Implementation record:
 - [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
 - [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
+- [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 
 Verification:
 
@@ -162,6 +163,9 @@ Current status:
   assignment lifecycle receipts.
 - CLI and Studio now expose compact projected assignment receipt counts and
   recent receipt rows for operator inspection.
+- Host now exposes a per-assignment timeline read model built from assignment
+  lifecycle state plus projected runner receipts; CLI can inspect it directly,
+  and Studio groups receipt summaries under assignment rows.
 
 ### Slice 6: Generic Runner Bootstrap
 
@@ -572,6 +576,7 @@ Implementation record:
 - [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 - [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
+- [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 
 Verification:
 
@@ -603,8 +608,11 @@ operator panel. Studio selected-runtime source-history detail now exposes the
 federated replay request path through Host, matching the CLI
 `host runtimes source-history-replay` command. CLI can now inspect projected
 replay outcomes through source-history replay list/detail commands, and Studio
-summarizes projected replay outcome counts in the Federation panel. A richer
-per-assignment detail timeline remains follow-up work.
+summarizes projected replay outcome counts in the Federation panel. CLI can now
+inspect per-assignment timelines, and Studio shows grouped receipt summaries
+under projected assignment rows. A richer assignment detail page that joins
+control command ids, transport diagnostics, runtime status, and source-history
+outcomes remains follow-up work.
 
 ### Slice 13: Product Naming Migration
 

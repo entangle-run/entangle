@@ -111,6 +111,9 @@ The most accurate current description is:
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
+- assignment timelines now join Host assignment lifecycle state with projected
+  runner receipts, so Host API, CLI, and Studio can inspect grouped assignment
+  progress without scanning generic events or reading runner-local state;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, object-backed source/wiki mutation services, and the full
   multi-machine distributed proof.

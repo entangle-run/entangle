@@ -1,5 +1,6 @@
 import type {
   AssignmentReceiptProjectionRecord,
+  AssignmentProjectionRecord,
   HostProjectionSnapshot,
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
@@ -94,6 +95,29 @@ export function formatAssignmentReceiptDetail(
     `observed ${receipt.observedAt}`,
     receipt.receiptMessage
   ].filter((part): part is string => Boolean(part)).join(" · ");
+}
+
+export function summarizeAssignmentReceiptsForStudio(input: {
+  assignment: AssignmentProjectionRecord;
+  receipts: AssignmentReceiptProjectionRecord[];
+}): string {
+  const receipts = sortAssignmentReceiptsForStudio(
+    input.receipts.filter(
+      (receipt) => receipt.assignmentId === input.assignment.assignmentId
+    )
+  );
+
+  if (receipts.length === 0) {
+    return "no runner receipts yet";
+  }
+
+  const latest = receipts[0]!;
+
+  return [
+    `${receipts.length} receipt${receipts.length === 1 ? "" : "s"}`,
+    `latest ${latest.receiptKind}`,
+    `at ${latest.observedAt}`
+  ].join(" · ");
 }
 
 export function formatRuntimeProjectionLabel(

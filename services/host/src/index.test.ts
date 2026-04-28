@@ -46,6 +46,7 @@ import {
   runtimeAssignmentListResponseSchema,
   runtimeAssignmentOfferResponseSchema,
   runtimeAssignmentRevokeResponseSchema,
+  runtimeAssignmentTimelineResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeArtifactDiffResponseSchema,
@@ -1281,7 +1282,8 @@ describe("buildHostServer", () => {
       const [
         {
           recordRunnerHello,
-          recordRuntimeAssignmentAccepted
+          recordRuntimeAssignmentAccepted,
+          recordRuntimeAssignmentReceiptObservation
         }
       ] = await Promise.all([import("./state.js")]);
       const packageDirectory = await createAdmittedPackageDirectory(
@@ -1384,6 +1386,35 @@ describe("buildHostServer", () => {
           inspectionResponse.json()
         ).assignment.status
       ).toBe("accepted");
+
+      await recordRuntimeAssignmentReceiptObservation({
+        assignmentId: "assignment-alpha",
+        eventType: "assignment.receipt",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        message: "Assignment runtime started.",
+        observedAt: new Date().toISOString(),
+        protocol: "entangle.observe.v1",
+        receiptKind: "started",
+        runnerId,
+        runnerPubkey
+      });
+
+      const timelineResponse = await server.inject({
+        method: "GET",
+        url: "/v1/assignments/assignment-alpha/timeline"
+      });
+      expect(timelineResponse.statusCode).toBe(200);
+      const timeline = runtimeAssignmentTimelineResponseSchema.parse(
+        timelineResponse.json()
+      );
+      expect(timeline.receipts[0]).toMatchObject({
+        assignmentId: "assignment-alpha",
+        receiptKind: "started"
+      });
+      expect(timeline.timeline.map((entry) => entry.entryKind)).toContain(
+        "assignment.receipt"
+      );
 
       const projectionResponse = await server.inject({
         method: "GET",

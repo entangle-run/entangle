@@ -50,6 +50,7 @@ import {
   runtimeAssignmentListResponseSchema,
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeResponseSchema,
+  runtimeAssignmentTimelineResponseSchema,
   runtimeProjectionRecordSchema,
   runnerRegistrationRecordSchema,
   runnerJoinConfigSchema,
@@ -1535,6 +1536,43 @@ describe("federated runtime contracts", () => {
         }
       }).assignment.status
     ).toBe("revoked");
+    expect(
+      runtimeAssignmentTimelineResponseSchema.parse({
+        assignment,
+        generatedAt: observedAt,
+        receipts: [
+          {
+            assignmentId: "assignment-alpha",
+            hostAuthorityPubkey: authorityPubkey,
+            observedAt,
+            projection: {
+              source: "observation_event",
+              updatedAt: observedAt
+            },
+            receiptKind: "started",
+            runnerId: "runner-alpha",
+            runnerPubkey
+          }
+        ],
+        timeline: [
+          {
+            assignmentId: "assignment-alpha",
+            entryKind: "assignment.offered",
+            nodeId: "worker-it",
+            runnerId: "runner-alpha",
+            status: "offered",
+            timestamp: observedAt
+          },
+          {
+            assignmentId: "assignment-alpha",
+            entryKind: "assignment.receipt",
+            receiptKind: "started",
+            runnerId: "runner-alpha",
+            timestamp: observedAt
+          }
+        ]
+      }).timeline[1]?.receiptKind
+    ).toBe("started");
   });
 
   it("accepts federated runtime observation records", () => {

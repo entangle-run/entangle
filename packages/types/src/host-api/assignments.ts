@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
-import { runtimeAssignmentRecordSchema } from "../federation/assignment.js";
+import {
+  runtimeAssignmentRecordSchema,
+  runtimeAssignmentStatusSchema
+} from "../federation/assignment.js";
+import { assignmentReceiptProjectionRecordSchema } from "../projection/projection.js";
 
 export const runtimeAssignmentListResponseSchema = z.object({
   assignments: z.array(runtimeAssignmentRecordSchema),
@@ -9,6 +13,32 @@ export const runtimeAssignmentListResponseSchema = z.object({
 
 export const runtimeAssignmentInspectionResponseSchema = z.object({
   assignment: runtimeAssignmentRecordSchema
+});
+
+export const runtimeAssignmentTimelineEntrySchema = z.object({
+  assignmentId: identifierSchema,
+  entryKind: z.enum([
+    "assignment.offered",
+    "assignment.accepted",
+    "assignment.rejected",
+    "assignment.revoked",
+    "assignment.receipt"
+  ]),
+  message: nonEmptyStringSchema.optional(),
+  nodeId: identifierSchema.optional(),
+  receiptKind: z
+    .enum(["received", "materialized", "started", "stopped", "failed"])
+    .optional(),
+  runnerId: identifierSchema.optional(),
+  status: runtimeAssignmentStatusSchema.optional(),
+  timestamp: nonEmptyStringSchema
+});
+
+export const runtimeAssignmentTimelineResponseSchema = z.object({
+  assignment: runtimeAssignmentRecordSchema,
+  generatedAt: nonEmptyStringSchema,
+  receipts: z.array(assignmentReceiptProjectionRecordSchema),
+  timeline: z.array(runtimeAssignmentTimelineEntrySchema)
 });
 
 export const runtimeAssignmentOfferRequestSchema = z.object({
@@ -37,6 +67,12 @@ export type RuntimeAssignmentListResponse = z.infer<
 >;
 export type RuntimeAssignmentInspectionResponse = z.infer<
   typeof runtimeAssignmentInspectionResponseSchema
+>;
+export type RuntimeAssignmentTimelineEntry = z.infer<
+  typeof runtimeAssignmentTimelineEntrySchema
+>;
+export type RuntimeAssignmentTimelineResponse = z.infer<
+  typeof runtimeAssignmentTimelineResponseSchema
 >;
 export type RuntimeAssignmentOfferRequest = z.infer<
   typeof runtimeAssignmentOfferRequestSchema

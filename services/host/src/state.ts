@@ -150,6 +150,9 @@ import {
   type RuntimeAssignmentInspectionResponse,
   runtimeAssignmentListResponseSchema,
   type RuntimeAssignmentListResponse,
+  runtimeAssignmentTimelineResponseSchema,
+  type RuntimeAssignmentTimelineEntry,
+  type RuntimeAssignmentTimelineResponse,
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentOfferResponseSchema,
   type RuntimeAssignmentOfferResponse,
@@ -2269,6 +2272,104 @@ export async function getRuntimeAssignment(
 
   return runtimeAssignmentInspectionResponseSchema.parse({
     assignment
+  });
+}
+
+function buildRuntimeAssignmentTimelineEntries(input: {
+  assignment: RuntimeAssignmentRecord;
+  receipts: AssignmentReceiptProjectionRecord[];
+}): RuntimeAssignmentTimelineEntry[] {
+  const { assignment, receipts } = input;
+  const entries: RuntimeAssignmentTimelineEntry[] = [
+    {
+      assignmentId: assignment.assignmentId,
+      entryKind: "assignment.offered",
+      message: "Assignment offered to runner.",
+      nodeId: assignment.nodeId,
+      runnerId: assignment.runnerId,
+      status: "offered",
+      timestamp: assignment.offeredAt
+    }
+  ];
+
+  if (assignment.acceptedAt) {
+    entries.push({
+      assignmentId: assignment.assignmentId,
+      entryKind: "assignment.accepted",
+      message: "Runner accepted assignment.",
+      nodeId: assignment.nodeId,
+      runnerId: assignment.runnerId,
+      status: "accepted",
+      timestamp: assignment.acceptedAt
+    });
+  }
+
+  if (assignment.rejectedAt) {
+    entries.push({
+      assignmentId: assignment.assignmentId,
+      entryKind: "assignment.rejected",
+      message: assignment.rejectionReason ?? "Runner rejected assignment.",
+      nodeId: assignment.nodeId,
+      runnerId: assignment.runnerId,
+      status: "rejected",
+      timestamp: assignment.rejectedAt
+    });
+  }
+
+  if (assignment.revokedAt) {
+    entries.push({
+      assignmentId: assignment.assignmentId,
+      entryKind: "assignment.revoked",
+      message: assignment.revocationReason ?? "Assignment revoked.",
+      nodeId: assignment.nodeId,
+      runnerId: assignment.runnerId,
+      status: "revoked",
+      timestamp: assignment.revokedAt
+    });
+  }
+
+  for (const receipt of receipts) {
+    entries.push({
+      assignmentId: receipt.assignmentId,
+      entryKind: "assignment.receipt",
+      ...(receipt.receiptMessage ? { message: receipt.receiptMessage } : {}),
+      receiptKind: receipt.receiptKind,
+      runnerId: receipt.runnerId,
+      timestamp: receipt.observedAt
+    });
+  }
+
+  return entries.sort((left, right) => {
+    const timeOrder = left.timestamp.localeCompare(right.timestamp);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.entryKind.localeCompare(right.entryKind);
+  });
+}
+
+export async function getRuntimeAssignmentTimeline(
+  assignmentId: string
+): Promise<RuntimeAssignmentTimelineResponse | undefined> {
+  await initializeHostState();
+
+  const assignment = await readRuntimeAssignmentRecord(assignmentId);
+
+  if (!assignment) {
+    return undefined;
+  }
+
+  const receipts = (await listAssignmentReceiptProjectionRecords()).filter(
+    (receipt) => receipt.assignmentId === assignment.assignmentId
+  );
+
+  return runtimeAssignmentTimelineResponseSchema.parse({
+    assignment,
+    generatedAt: nowIsoString(),
+    receipts,
+    timeline: buildRuntimeAssignmentTimelineEntries({
+      assignment,
+      receipts
+    })
   });
 }
 

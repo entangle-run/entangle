@@ -88,6 +88,7 @@ import {
 } from "./runner-join-config-command.js";
 import {
   projectRuntimeAssignmentSummary,
+  projectRuntimeAssignmentTimelineSummary,
   sortRuntimeAssignmentsForCli
 } from "./assignment-output.js";
 import { projectHostProjectionSummary } from "./projection-output.js";
@@ -1161,6 +1162,25 @@ assignmentsCommand
     printJson(
       options.summary
         ? { assignment: projectRuntimeAssignmentSummary(response.assignment) }
+        : response
+    );
+  });
+
+assignmentsCommand
+  .command("timeline")
+  .argument("<assignmentId>", "Runtime assignment identifier.")
+  .option("--summary", "Print compact assignment timeline summaries.")
+  .description("Inspect assignment status and runner receipt timeline.")
+  .action(async (
+    assignmentId: string,
+    options: { summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.getAssignmentTimeline(assignmentId);
+    printJson(
+      options.summary
+        ? projectRuntimeAssignmentTimelineSummary(response)
         : response
     );
   });

@@ -201,6 +201,7 @@ import {
   formatAssignmentReceiptLabel,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
+  summarizeAssignmentReceiptsForStudio,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeRuntimeSummaryDetail,
@@ -3220,6 +3221,12 @@ export function App() {
               <div key={assignment.assignmentId} className="compact-list-item">
                 <strong>{formatAssignmentProjectionLabel(assignment)}</strong>
                 <span>{formatAssignmentProjectionDetail(assignment)}</span>
+                <span>
+                  {summarizeAssignmentReceiptsForStudio({
+                    assignment,
+                    receipts: assignmentReceiptRows
+                  })}
+                </span>
                 <button
                   className="action-button"
                   disabled={

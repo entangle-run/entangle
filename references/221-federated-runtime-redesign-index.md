@@ -143,6 +143,7 @@ same-machine slice records.
 - [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
+- [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 
 ## Audited Scope
 
@@ -362,7 +363,10 @@ The repository is not fully federated:
   verifies received/started/stopped receipt events from the real lifecycle path;
 - Host projection now includes bounded `assignmentReceipts` derived from typed
   receipt events, and Studio/CLI now expose compact receipt summaries for
-  operator inspection without scanning the general event stream;
+  operator inspection without scanning the general event stream. Host now also
+  exposes a per-assignment timeline read model that joins assignment lifecycle
+  state with runner receipt projection, CLI can inspect it, and Studio groups
+  receipt summaries under projected assignment rows;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`
@@ -553,10 +557,11 @@ assignments. Source-history replay now has a Host-signed
 assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed
 `sourceHistoryReplays` with Host API, host-client, CLI, and Studio summary
-surfaces, while non-primary target publication remains future work. The next
-blocking implementation areas are richer
-projection-backed source/wiki review services, assignment detail UI for grouped
-receipt timelines, replacing remaining deep filesystem-backed runtime
+surfaces. Per-assignment timelines now group assignment lifecycle state and
+runner receipts for Host API, CLI, and Studio summary inspection, while
+non-primary target publication remains future work. The next blocking
+implementation areas are richer projection-backed source/wiki review services,
+replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed
 artifact services, and turning the process smoke into the full multi-machine
 distributed proof.

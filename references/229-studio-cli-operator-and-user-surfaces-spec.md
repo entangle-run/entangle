@@ -19,7 +19,8 @@ runtime detail, sessions, approvals, turns, artifacts, memory, source
 candidates/history, projected wiki refs, recovery, event refresh, and
 federated source-history replay requests from selected source-history detail.
 Federation summary also includes the projected source-history replay outcome
-count.
+count. Assignment inspection now includes a Host-backed timeline, and Studio
+groups projected runner receipts under assignment rows.
 
 Missing surfaces:
 
@@ -171,7 +172,8 @@ Node.
   runner files from Host. CLI also exposes
   `host runtimes source-history-replays` and
   `host runtimes source-history-replay-get` for inspecting observed replay
-  outcomes from Host projection.
+  outcomes from Host projection. CLI also exposes `assignments timeline` for
+  the per-assignment lifecycle and receipt read model.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner
@@ -182,7 +184,8 @@ Node.
   offer/revoke controls. Studio source-history detail now has a federated
   replay request form mirroring the CLI request path without direct workspace
   mutation, and the federation summary includes projected replay outcome
-  counts.
+  counts. Studio assignment rows now include grouped runner receipt summaries
+  for the same assignment timeline model.
 - Add Studio User Node runtime visibility and User Client open action. The
   first projection-derived User Node runtime summaries and `clientUrl` open
   actions are implemented; richer reassignment and health panels remain open.

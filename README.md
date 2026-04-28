@@ -357,6 +357,9 @@ This repository currently contains:
 - joined runners now publish session/conversation observations for later
   lifecycle transitions including handoffs, coordination result/close,
   approval request/response, completion, cancellation, and failure paths;
+- assignment timelines now join Host assignment lifecycle state with
+  runner-signed receipt projection, with Host API, host-client, CLI, and Studio
+  grouped receipt summaries sharing the same read model;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

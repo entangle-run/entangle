@@ -29,6 +29,7 @@ import {
   runtimeAssignmentOfferResponseSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeAssignmentRevokeResponseSchema,
+  runtimeAssignmentTimelineResponseSchema,
   hostAuthorityExportResponseSchema,
   hostAuthorityImportRequestSchema,
   hostAuthorityImportResponseSchema,
@@ -128,6 +129,7 @@ import {
   getNodeInspection,
   getRunnerRegistryEntry,
   getRuntimeAssignment,
+  getRuntimeAssignmentTimeline,
   getRuntimeBootstrapBundle,
   getRuntimeContext,
   getRuntimeIdentitySecret,
@@ -1303,6 +1305,22 @@ export async function buildHostServer(options: HostServerOptions = {}) {
   server.get("/v1/assignments", async () =>
     runtimeAssignmentListResponseSchema.parse(await listRuntimeAssignments())
   );
+
+  server.get("/v1/assignments/:assignmentId/timeline", async (request, reply) => {
+    const params = request.params as { assignmentId: string };
+    const assignmentId = identifierSchema.parse(params.assignmentId);
+    const timeline = await getRuntimeAssignmentTimeline(assignmentId);
+
+    if (!timeline) {
+      reply.status(404);
+      return hostErrorResponseSchema.parse({
+        code: "not_found",
+        message: `Runtime assignment '${assignmentId}' was not found.`
+      });
+    }
+
+    return runtimeAssignmentTimelineResponseSchema.parse(timeline);
+  });
 
   server.get("/v1/assignments/:assignmentId", async (request, reply) => {
     const params = request.params as { assignmentId: string };

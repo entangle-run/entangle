@@ -20,6 +20,7 @@ import {
   sortAssignmentReceiptsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
+  summarizeAssignmentReceiptsForStudio,
   summarizeFederationProjection
 } from "./federation-inspection.js";
 
@@ -212,6 +213,12 @@ describe("Studio federation inspection helpers", () => {
     expect(formatAssignmentReceiptDetail(receipts[0]!)).toContain(
       "Assignment runtime is running."
     );
+    expect(
+      summarizeAssignmentReceiptsForStudio({
+        assignment: projection.assignments[0]!,
+        receipts: projection.assignmentReceipts
+      })
+    ).toContain("1 receipt");
   });
 
   it("sorts and formats runtime projections", () => {
