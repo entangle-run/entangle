@@ -622,6 +622,70 @@ describe("federated runtime contracts", () => {
     expect(event.payload.eventType).toBe("runtime.assignment.offer");
   });
 
+  it("accepts signed runtime lifecycle control commands from Host Authority", () => {
+    const start = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-start-alpha",
+        eventType: "runtime.start",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
+    const stop = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-stop-alpha",
+        eventType: "runtime.stop",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
+    const restart = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-restart-alpha",
+        eventType: "runtime.restart",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
+
+    expect(start.payload.eventType).toBe("runtime.start");
+    expect(stop.payload.eventType).toBe("runtime.stop");
+    expect(restart.payload.eventType).toBe("runtime.restart");
+  });
+
   it("rejects control and observation events signed by the wrong entity", () => {
     expect(
       entangleControlEventSchema.safeParse({

@@ -3943,3 +3943,17 @@ Host only has an observed artifact ref.
 
 This removes another local-context read precondition from runtime inspection
 without pretending that projection alone can compute full git history.
+
+## [2026-04-28] implementation | Added federated runtime lifecycle control
+
+Added `references/324-federated-runtime-lifecycle-control-slice.md`. The
+control protocol now includes `runtime.start` alongside stop/restart, Host
+publishes signed lifecycle control commands for accepted/active runtime
+assignments, and joined runners apply those commands to runner-local runtime
+handles before publishing signed receipts and `runtime.status` observations.
+
+Host runtime synchronization now treats assigned nodes as federated ownership
+boundaries and no longer reconciles them through the local Docker/memory
+backend adapter. Unassigned nodes still use the local adapter path. The
+federated process-runner smoke passed after the change, including runner
+filesystem isolation and signed User Node source-change review.

@@ -15,6 +15,7 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.assignment.offer",
   "runtime.assignment.revoke",
   "assignment.lease.renew",
+  "runtime.start",
   "runtime.stop",
   "runtime.restart"
 ]);
@@ -87,6 +88,15 @@ export const assignmentLeaseRenewPayloadSchema = controlPayloadBaseSchema.extend
   lease: assignmentLeaseSchema
 });
 
+export const runtimeStartPayloadSchema = controlPayloadBaseSchema.extend({
+  assignmentId: identifierSchema.optional(),
+  commandId: identifierSchema,
+  eventType: z.literal("runtime.start"),
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  reason: nonEmptyStringSchema.optional()
+});
+
 export const runtimeStopPayloadSchema = controlPayloadBaseSchema.extend({
   assignmentId: identifierSchema.optional(),
   commandId: identifierSchema,
@@ -112,6 +122,7 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeAssignmentOfferPayloadSchema,
     runtimeAssignmentRevokePayloadSchema,
     assignmentLeaseRenewPayloadSchema,
+    runtimeStartPayloadSchema,
     runtimeStopPayloadSchema,
     runtimeRestartPayloadSchema
   ]
@@ -169,6 +180,7 @@ export type RuntimeAssignmentRevokePayload = z.infer<
 export type AssignmentLeaseRenewPayload = z.infer<
   typeof assignmentLeaseRenewPayloadSchema
 >;
+export type RuntimeStartPayload = z.infer<typeof runtimeStartPayloadSchema>;
 export type RuntimeStopPayload = z.infer<typeof runtimeStopPayloadSchema>;
 export type RuntimeRestartPayload = z.infer<typeof runtimeRestartPayloadSchema>;
 export type EntangleControlEventPayload = z.infer<

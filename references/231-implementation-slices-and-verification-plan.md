@@ -125,12 +125,26 @@ assignment state separate from Docker runtime state.
 Implementation record:
 
 - [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
+- [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
 
 Verification:
 
 - assignment reducer tests;
 - Host API tests;
 - runner acceptance tests.
+- Host control-plane lifecycle payload tests;
+- runner lifecycle command tests.
+
+Current status:
+
+- Host runtime lifecycle routes publish signed `runtime.start`,
+  `runtime.stop`, and `runtime.restart` control commands for accepted/active
+  federated assignments.
+- Joined runners preserve assignment materialization context paths, apply
+  lifecycle commands to runner-local runtime handles, and emit signed receipts
+  plus `runtime.status` observations.
+- Host runtime synchronization no longer reconciles assigned federated nodes
+  through the local Docker/memory backend adapter.
 
 ### Slice 6: Generic Runner Bootstrap
 

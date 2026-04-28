@@ -172,6 +172,98 @@ function buildAssignmentOfferEvent(
   };
 }
 
+function buildRuntimeStartEvent(assignment: RuntimeAssignmentRecord): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:01.000Z",
+      eventId: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      payloadHash:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-start-alpha",
+      eventType: "runtime.start",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:01.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Operator start",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey
+    }
+  };
+}
+
+function buildRuntimeStopEvent(assignment: RuntimeAssignmentRecord): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:02.000Z",
+      eventId: "1111111111111111111111111111111111111111111111111111111111111111",
+      payloadHash:
+        "2222222222222222222222222222222222222222222222222222222222222222",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "33333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-stop-alpha",
+      eventType: "runtime.stop",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:02.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Operator stop",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey
+    }
+  };
+}
+
+function buildRuntimeRestartEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:03.000Z",
+      eventId: "4444444444444444444444444444444444444444444444444444444444444444",
+      payloadHash:
+        "5555555555555555555555555555555555555555555555555555555555555555",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "66666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-restart-alpha",
+      eventType: "runtime.restart",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:03.000Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Operator restart",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -1864,6 +1956,82 @@ describe("runner runtime context", () => {
       observedState: "stopped"
     });
     expect(configured.service.getAcceptedAssignments()).toEqual([]);
+  });
+
+  it("handles federated runtime lifecycle commands for accepted assignments", async () => {
+    const fixture = await createRunnerJoinFixture();
+    const transport = new FakeRunnerJoinTransport();
+    const runtimeStops: string[] = [];
+    const runtimeStarts: string[] = [];
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const configured = await createConfiguredRunnerJoinService(
+      fixture.configPath,
+      {
+        clock: () => "2026-04-26T12:00:00.000Z",
+        materializer: () =>
+          Promise.resolve({
+            accepted: true,
+            runtimeContextPath: "/runner/assignments/assignment-alpha/runtime-context.json"
+          }),
+        nonceFactory: () => "nonce-alpha",
+        runtimeStarter: ({ runtimeContextPath }) => {
+          runtimeStarts.push(runtimeContextPath);
+          return Promise.resolve({
+            clientUrl: "http://127.0.0.1:4173/",
+            runtimeContextPath,
+            stop: () => {
+              runtimeStops.push(runtimeContextPath);
+              return Promise.resolve();
+            }
+          });
+        },
+        transport
+      }
+    );
+    const assignment = buildAssignment();
+
+    await configured.service.start();
+    await transport.dispatch(buildAssignmentOfferEvent(assignment));
+    await transport.dispatch(buildRuntimeStopEvent(assignment));
+    await transport.dispatch(buildRuntimeStartEvent(assignment));
+    await transport.dispatch(buildRuntimeRestartEvent(assignment));
+
+    expect(runtimeStarts).toEqual([
+      "/runner/assignments/assignment-alpha/runtime-context.json",
+      "/runner/assignments/assignment-alpha/runtime-context.json",
+      "/runner/assignments/assignment-alpha/runtime-context.json"
+    ]);
+    expect(runtimeStops).toEqual([
+      "/runner/assignments/assignment-alpha/runtime-context.json",
+      "/runner/assignments/assignment-alpha/runtime-context.json"
+    ]);
+    expect(
+      transport.observations.filter(
+        (payload) =>
+          payload.eventType === "assignment.receipt" &&
+          payload.assignmentId === "assignment-alpha"
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ receiptKind: "received" }),
+        expect.objectContaining({ receiptKind: "stopped" }),
+        expect.objectContaining({ receiptKind: "started" })
+      ])
+    );
+    expect(
+      transport.observations.filter(
+        (payload) => payload.eventType === "runtime.status"
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ observedState: "stopped" }),
+        expect.objectContaining({ observedState: "starting" }),
+        expect.objectContaining({ observedState: "running" })
+      ])
+    );
+
+    await configured.service.stop();
   });
 
   it("materializes assignment offers to runner-owned storage by default", async () => {

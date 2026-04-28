@@ -82,6 +82,7 @@ export class RunnerJoinService {
     string,
     RunnerAssignmentRuntimeHandle
   >();
+  private readonly assignmentRuntimeContextPaths = new Map<string, string>();
   private lastHelloAck:
     | Extract<
         EntangleControlEvent["payload"],
@@ -150,6 +151,7 @@ export class RunnerJoinService {
       await this.stopAssignmentRuntime(assignment, "Runner join service stopped.");
     }
     this.acceptedAssignments.clear();
+    this.assignmentRuntimeContextPaths.clear();
 
     if (subscription) {
       await subscription.close();
@@ -190,6 +192,7 @@ export class RunnerJoinService {
         await this.stopAssignmentRuntime(assignment, payload.reason);
       }
       this.acceptedAssignments.delete(payload.assignmentId);
+      this.assignmentRuntimeContextPaths.delete(payload.assignmentId);
       await this.publishObservation({
         assignmentId: payload.assignmentId,
         eventType: "assignment.receipt",
@@ -197,6 +200,21 @@ export class RunnerJoinService {
         observedAt: this.now(),
         receiptKind: "stopped"
       });
+      return;
+    }
+
+    if (payload.eventType === "runtime.start") {
+      await this.handleRuntimeStartCommand(event, payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.stop") {
+      await this.handleRuntimeStopCommand(payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.restart") {
+      await this.handleRuntimeRestartCommand(event, payload);
     }
   }
 
@@ -265,9 +283,17 @@ export class RunnerJoinService {
       return;
     }
 
+    if (materialized.runtimeContextPath) {
+      this.assignmentRuntimeContextPaths.set(
+        assignment.assignmentId,
+        materialized.runtimeContextPath
+      );
+    }
+
     let runtimeHandle: RunnerAssignmentRuntimeHandle | undefined;
     if (materialized.runtimeContextPath) {
       if (!this.input.runtimeStarter) {
+        this.assignmentRuntimeContextPaths.delete(assignment.assignmentId);
         await this.rejectAssignment(
           assignment,
           "No assignment runtime starter is configured for this runner."
@@ -288,6 +314,7 @@ export class RunnerJoinService {
           runtimeContextPath: materialized.runtimeContextPath
         });
       } catch (error) {
+        this.assignmentRuntimeContextPaths.delete(assignment.assignmentId);
         await this.publishRuntimeStatus(
           assignment,
           "failed",
@@ -323,6 +350,182 @@ export class RunnerJoinService {
         ? { lease: materialized.lease ?? assignment.lease }
         : {})
     });
+  }
+
+  private resolveRuntimeCommandAssignment(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.restart" | "runtime.start" | "runtime.stop" }
+    >
+  ): RuntimeAssignmentRecord | undefined {
+    if (
+      payload.runnerId !== this.input.config.runnerId ||
+      payload.runnerPubkey !== this.input.runnerPubkey
+    ) {
+      return undefined;
+    }
+
+    const assignment = payload.assignmentId
+      ? this.acceptedAssignments.get(payload.assignmentId)
+      : [...this.acceptedAssignments.values()].find(
+          (candidate) =>
+            candidate.graphId === payload.graphId &&
+            candidate.nodeId === payload.nodeId
+        );
+
+    if (
+      assignment &&
+      assignment.graphId === payload.graphId &&
+      assignment.nodeId === payload.nodeId
+    ) {
+      return assignment;
+    }
+
+    return undefined;
+  }
+
+  private async publishRuntimeCommandFailure(input: {
+    assignmentId: string | undefined;
+    message: string;
+  }): Promise<void> {
+    if (!input.assignmentId) {
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: input.assignmentId,
+      eventType: "assignment.receipt",
+      message: input.message,
+      observedAt: this.now(),
+      receiptKind: "failed"
+    });
+  }
+
+  private async handleRuntimeStartCommand(
+    event: EntangleControlEvent,
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.start" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message: "Runtime start command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const existingHandle = this.assignmentRuntimeHandles.get(
+      assignment.assignmentId
+    );
+    if (existingHandle) {
+      await this.publishRuntimeStatus(
+        assignment,
+        "running",
+        "Assignment runtime is already running.",
+        existingHandle.clientUrl
+      );
+      return;
+    }
+
+    await this.startAssignmentRuntime(
+      assignment,
+      event,
+      payload.reason ?? "Runtime start requested by Host."
+    );
+  }
+
+  private async handleRuntimeStopCommand(
+    payload: Extract<EntangleControlEvent["payload"], { eventType: "runtime.stop" }>
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message: "Runtime stop command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    if (this.assignmentRuntimeHandles.has(assignment.assignmentId)) {
+      await this.stopAssignmentRuntime(
+        assignment,
+        payload.reason ?? "Runtime stop requested by Host."
+      );
+    } else {
+      await this.publishRuntimeStatus(
+        assignment,
+        "stopped",
+        payload.reason ?? "Assignment runtime is already stopped."
+      );
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "stopped"
+    });
+  }
+
+  private async handleRuntimeRestartCommand(
+    event: EntangleControlEvent,
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.restart" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message: "Runtime restart command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    if (this.assignmentRuntimeHandles.has(assignment.assignmentId)) {
+      await this.stopAssignmentRuntime(
+        assignment,
+        payload.reason ?? "Runtime restart requested by Host."
+      );
+    }
+
+    await this.startAssignmentRuntime(
+      assignment,
+      event,
+      payload.reason ?? "Runtime restart requested by Host."
+    );
   }
 
   private startHeartbeatTimer(): void {
@@ -371,6 +574,87 @@ export class RunnerJoinService {
       "stopped",
       reason ?? "Assignment runtime stopped."
     );
+  }
+
+  private async startAssignmentRuntime(
+    assignment: RuntimeAssignmentRecord,
+    event: EntangleControlEvent,
+    reason: string
+  ): Promise<void> {
+    const runtimeContextPath = this.assignmentRuntimeContextPaths.get(
+      assignment.assignmentId
+    );
+
+    if (!runtimeContextPath) {
+      await this.publishRuntimeStatus(
+        assignment,
+        "failed",
+        "Assignment runtime cannot start without a materialized runtime context."
+      );
+      await this.publishObservation({
+        assignmentId: assignment.assignmentId,
+        eventType: "assignment.receipt",
+        message:
+          "Assignment runtime cannot start without a materialized runtime context.",
+        observedAt: this.now(),
+        receiptKind: "failed"
+      });
+      return;
+    }
+
+    if (!this.input.runtimeStarter) {
+      await this.publishRuntimeStatus(
+        assignment,
+        "failed",
+        "No assignment runtime starter is configured for this runner."
+      );
+      await this.publishObservation({
+        assignmentId: assignment.assignmentId,
+        eventType: "assignment.receipt",
+        message: "No assignment runtime starter is configured for this runner.",
+        observedAt: this.now(),
+        receiptKind: "failed"
+      });
+      return;
+    }
+
+    await this.publishRuntimeStatus(assignment, "starting", reason);
+
+    try {
+      const runtimeHandle = await this.input.runtimeStarter({
+        assignment,
+        controlEvent: event,
+        runtimeContextPath
+      });
+      this.assignmentRuntimeHandles.set(assignment.assignmentId, runtimeHandle);
+      this.assignmentRuntimeContextPaths.set(
+        assignment.assignmentId,
+        runtimeHandle.runtimeContextPath
+      );
+      await this.publishObservation({
+        assignmentId: assignment.assignmentId,
+        eventType: "assignment.receipt",
+        observedAt: this.now(),
+        receiptKind: "started"
+      });
+      await this.publishRuntimeStatus(
+        assignment,
+        "running",
+        "Assignment runtime is running.",
+        runtimeHandle.clientUrl
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Assignment runtime start failed.";
+      await this.publishObservation({
+        assignmentId: assignment.assignmentId,
+        eventType: "assignment.receipt",
+        message,
+        observedAt: this.now(),
+        receiptKind: "failed"
+      });
+      await this.publishRuntimeStatus(assignment, "failed", message);
+    }
   }
 
   private async rejectAssignment(

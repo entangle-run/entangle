@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
@@ -265,6 +266,30 @@ type HostFederatedAssignmentPublisher = {
   publishRuntimeAssignmentRevoke(input: {
     assignment: RuntimeAssignmentRecord;
     authRequired?: boolean;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeStart?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeStop?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeRestart?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
     correlationId?: string;
     reason?: string;
     relayUrls: string[];
@@ -556,6 +581,65 @@ async function publishRuntimeAssignmentRevokeFromHost(
     ...(reason ? { reason } : {}),
     relayUrls: options.federatedControlRelayUrls
   });
+}
+
+function selectFederatedRuntimeControlAssignment(input: {
+  assignments: RuntimeAssignmentRecord[];
+  nodeId: string;
+}): RuntimeAssignmentRecord | undefined {
+  return input.assignments
+    .filter(
+      (assignment) =>
+        assignment.nodeId === input.nodeId &&
+        (assignment.status === "accepted" || assignment.status === "active")
+    )
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+}
+
+async function publishRuntimeLifecycleCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    assignment: RuntimeAssignmentRecord;
+    command: "restart" | "start" | "stop";
+    reason?: string;
+  }
+): Promise<boolean> {
+  if (
+    !options.federatedControlPlane ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return false;
+  }
+
+  const publisher =
+    input.command === "start"
+      ? options.federatedControlPlane.publishRuntimeStart?.bind(
+          options.federatedControlPlane
+        )
+      : input.command === "stop"
+        ? options.federatedControlPlane.publishRuntimeStop?.bind(
+            options.federatedControlPlane
+          )
+        : options.federatedControlPlane.publishRuntimeRestart?.bind(
+            options.federatedControlPlane
+          );
+
+  if (!publisher) {
+    return false;
+  }
+
+  await publisher({
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId: `cmd-${input.command}-${randomUUID()}`,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls
+  });
+
+  return true;
 }
 
 export async function buildHostServer(options: HostServerOptions = {}) {
@@ -3088,6 +3172,10 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       });
     }
 
+    const assignment = selectFederatedRuntimeControlAssignment({
+      assignments: (await listRuntimeAssignments()).assignments,
+      nodeId: params.nodeId
+    });
     const updatedInspection = await setRuntimeDesiredState(params.nodeId, "running");
 
     if (!updatedInspection) {
@@ -3095,6 +3183,14 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         code: "not_found",
         message: `Runtime '${params.nodeId}' was not found in the active graph.`,
         statusCode: 404
+      });
+    }
+
+    if (assignment) {
+      await publishRuntimeLifecycleCommandFromHost(options, {
+        assignment,
+        command: "start",
+        reason: "Operator start requested through Host."
       });
     }
 
@@ -3113,6 +3209,10 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       });
     }
 
+    const assignment = selectFederatedRuntimeControlAssignment({
+      assignments: (await listRuntimeAssignments()).assignments,
+      nodeId: params.nodeId
+    });
     const updatedInspection = await setRuntimeDesiredState(params.nodeId, "stopped");
 
     if (!updatedInspection) {
@@ -3120,6 +3220,14 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         code: "not_found",
         message: `Runtime '${params.nodeId}' was not found in the active graph.`,
         statusCode: 404
+      });
+    }
+
+    if (assignment) {
+      await publishRuntimeLifecycleCommandFromHost(options, {
+        assignment,
+        command: "stop",
+        reason: "Operator stop requested through Host."
       });
     }
 
@@ -3151,6 +3259,10 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       });
     }
 
+    const assignment = selectFederatedRuntimeControlAssignment({
+      assignments: (await listRuntimeAssignments()).assignments,
+      nodeId: params.nodeId
+    });
     const updatedInspection = await restartRuntime(params.nodeId);
 
     if (!updatedInspection) {
@@ -3158,6 +3270,14 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         code: "not_found",
         message: `Runtime '${params.nodeId}' was not found in the active graph.`,
         statusCode: 404
+      });
+    }
+
+    if (assignment) {
+      await publishRuntimeLifecycleCommandFromHost(options, {
+        assignment,
+        command: "restart",
+        reason: "Operator restart requested through Host."
       });
     }
 

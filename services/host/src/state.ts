@@ -6684,6 +6684,7 @@ async function buildRuntimeResolution(input: {
   node: NodeBinding;
   packageSources: Map<string, PackageSourceRecord>;
   repositoryProvisioningCache: Map<string, GitRepositoryProvisioningRecord>;
+  runtimeAssignments: RuntimeAssignmentRecord[];
 }): Promise<RuntimeResolution> {
   const {
     activeRevisionId,
@@ -6691,7 +6692,8 @@ async function buildRuntimeResolution(input: {
     graph,
     node,
     packageSources,
-    repositoryProvisioningCache
+    repositoryProvisioningCache,
+    runtimeAssignments
   } = input;
   const workspace = buildWorkspaceLayout(node.nodeId);
   const packageSource = node.packageSourceRef
@@ -7023,6 +7025,10 @@ async function buildRuntimeResolution(input: {
   );
 
   const existingIntent = await readRuntimeIntentRecord(node.nodeId);
+  const federatedAssignment = selectRuntimeProjectionAssignment({
+    assignments: runtimeAssignments,
+    nodeId: node.nodeId
+  });
   const recoveryPolicyRecord = await ensureRuntimeRecoveryPolicyRecord(node.nodeId);
   const operatorStopped =
     existingIntent?.desiredState === "stopped" &&
@@ -7077,6 +7083,57 @@ async function buildRuntimeResolution(input: {
   }
 
   const existingObservedRecord = await readObservedRuntimeRecord(node.nodeId);
+  if (federatedAssignment) {
+    const federatedObservedRecord =
+      existingObservedRecord?.backendKind === "federated" &&
+      (!existingObservedRecord.assignmentId ||
+        existingObservedRecord.assignmentId === federatedAssignment.assignmentId) &&
+      (!existingObservedRecord.runnerId ||
+        existingObservedRecord.runnerId === federatedAssignment.runnerId)
+        ? existingObservedRecord
+        : undefined;
+
+    if (existingObservedRecord && existingObservedRecord !== federatedObservedRecord) {
+      await rm(path.join(observedRuntimesRoot, `${node.nodeId}.json`), {
+        force: true
+      });
+    }
+
+    const agentRuntime = context
+      ? await buildRuntimeAgentRuntimeInspection(context)
+      : undefined;
+    const runnerId =
+      federatedObservedRecord?.runnerId ?? federatedAssignment.runnerId;
+    const runtimeHandle =
+      federatedObservedRecord?.runtimeHandle ??
+      `federated:${runnerId}:${federatedAssignment.assignmentId}`;
+
+    return {
+      binding: effectiveBinding,
+      context,
+      primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
+      inspection: buildRuntimeInspectionFromState({
+        agentRuntime,
+        backendKind: "federated",
+        context,
+        desiredState: intentRecord.desiredState,
+        graphId: graph.graphId,
+        graphRevisionId: activeRevisionId,
+        nodeId: node.nodeId,
+        observedState: federatedObservedRecord?.observedState ?? "missing",
+        packageSourceId: packageSource?.packageSourceId,
+        primaryGitRepositoryProvisioning: gitRepositoryProvisioning,
+        reason: intentRecord.reason,
+        restartGeneration: intentRecord.restartGeneration,
+        runtimeHandle,
+        statusMessage:
+          federatedObservedRecord?.statusMessage ??
+          `Runtime '${node.nodeId}' is assigned to federated runner '${runnerId}' and waiting for runner observation.`,
+        workspaceHealth: undefined
+      })
+    };
+  }
+
   let currentIntentRecord = intentRecord;
   let { inspection, observedRecord } = await reconcileObservedRuntimeState({
     context,
@@ -7390,6 +7447,7 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
     string,
     GitRepositoryProvisioningRecord
   >();
+  const runtimeAssignments = await listRuntimeAssignmentRecords();
   const nodeInspections: NodeInspectionResponse[] = [];
   const inspections: RuntimeInspectionInternal[] = [];
 
@@ -7411,7 +7469,8 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
       graph,
       node,
       packageSources,
-      repositoryProvisioningCache
+      repositoryProvisioningCache,
+      runtimeAssignments
     });
     nodeInspections.push(
       nodeInspectionResponseSchema.parse({

@@ -375,6 +375,80 @@ describe("Host federated control plane", () => {
     expect(published.event.envelope.recipientPubkey).toBe(runnerPubkey);
   });
 
+  it("publishes runtime lifecycle commands as signed Host control payloads", async () => {
+    const { authority, controlPlaneModule, hostSecretKey } =
+      await setupHostState();
+    const runnerSecretKey = generateSecretKey();
+    const runnerPubkey = getPublicKey(runnerSecretKey);
+    const transport = new FakeHostFederatedTransport(hostSecretKey);
+    const controlPlane = new controlPlaneModule.HostFederatedControlPlane({
+      clock: () => "2026-04-26T12:00:11.000Z",
+      transport
+    });
+    const assignment = buildAssignment({
+      hostAuthorityPubkey: authority.authority.publicKey,
+      runnerPubkey
+    });
+    const relayUrls = ["ws://relay.example.test"];
+
+    await controlPlane.publishRuntimeStart({
+      assignment,
+      commandId: "cmd-start-alpha",
+      relayUrls
+    });
+    await controlPlane.publishRuntimeStop({
+      assignment,
+      commandId: "cmd-stop-alpha",
+      relayUrls
+    });
+    await controlPlane.publishRuntimeRestart({
+      assignment,
+      commandId: "cmd-restart-alpha",
+      relayUrls
+    });
+
+    expect(transport.publishedControlEvents.map((event) => event.payload)).toEqual([
+      expect.objectContaining({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-start-alpha",
+        eventType: "runtime.start",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }),
+      expect.objectContaining({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-stop-alpha",
+        eventType: "runtime.stop",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }),
+      expect.objectContaining({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-restart-alpha",
+        eventType: "runtime.restart",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      })
+    ]);
+    expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
+      relayUrls,
+      relayUrls
+    ]);
+  });
+
   it("subscribes observation intake through the same handler used by direct ingestion", async () => {
     const { authority, controlPlaneModule, hostSecretKey, stateModule } =
       await setupHostState();

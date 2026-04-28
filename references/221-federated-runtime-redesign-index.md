@@ -124,6 +124,7 @@ same-machine slice records.
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 - [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
+- [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
 
 ## Audited Scope
 
@@ -173,9 +174,11 @@ The repository is not fully federated:
 - Docker direct runtime-context runners can still mount shared Host and secret
   volumes, but Docker join mode now supports inline JSON join config delivery
   without mounting those Host volumes into the managed runner container;
-- Host can publish signed assignment control payloads and project
-  runner-signed runtime status observations, but node runtime start/stop still
-  has a Docker launcher path that must be demoted to an adapter;
+- Host can publish signed assignment control payloads, signed runtime
+  start/stop/restart commands for accepted assignments, and project
+  runner-signed runtime status observations; node runtime lifecycle now uses
+  the federated path when a runner assignment owns the node, while Docker/memory
+  reconciliation remains the unassigned local adapter path;
 - Host still reconstructs some sessions, approvals, source history, and wiki
   details by reading runner-owned runtime paths;
 - Host session launch now signs `task.request` with stable User Node identity
@@ -325,6 +328,13 @@ The repository is not fully federated:
   materialization and fall back to projected artifact records with explicit
   unavailable reasons when no backend-resolved repository checkout is attached
   to Host;
+- Host runtime synchronization no longer reconciles nodes with active/offered
+  federated assignments through the local backend; assigned runtime inspection
+  reports `backendKind: "federated"` and waits for signed runner observation;
+- Host runtime lifecycle routes now publish signed `runtime.start`,
+  `runtime.stop`, and `runtime.restart` commands to accepted/active assigned
+  runners, and joined runners handle those commands by starting/stopping their
+  runner-local runtime handles and emitting receipts/status observations;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`
@@ -467,10 +477,14 @@ runner, CLI can publish signed source-candidate review messages as a User Node,
 public Studio/CLI operator approval-review mutations are quarantined, the
 underlying Host/client direct approval-review APIs are removed, CLI can list
 projected User Client endpoints per User Node, Host status exposes first
-control/observe transport health to CLI and Studio, and operators can generate
-generic runner join configs from Host status. The next blocking implementation
-areas are richer projection-backed source/wiki review services, replacing
-remaining deep filesystem-backed runtime inspection paths with projection-backed
-source/wiki services and object-backed artifact services, adding deeper
-per-relay diagnostics, and turning the process smoke into the full
-multi-machine distributed proof.
+control/observe transport health to CLI and Studio, operators can generate
+generic runner join configs from Host status, Host publishes signed federated
+runtime lifecycle commands for accepted assignments, joined runners apply
+start/stop/restart commands locally and emit signed receipts/status, and Host
+runtime inspection no longer overwrites assigned federated runtime ownership
+through the local backend adapter. The next blocking implementation areas are
+richer projection-backed source/wiki review services, replacing remaining deep
+filesystem-backed runtime inspection paths with projection-backed source/wiki
+services and object-backed artifact services, adding deeper per-relay
+diagnostics, and turning the process smoke into the full multi-machine
+distributed proof.

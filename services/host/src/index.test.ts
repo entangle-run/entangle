@@ -140,6 +140,24 @@ type TestFederatedAssignmentPublisher = {
     reason?: string;
     relayUrls: string[];
   }): Promise<unknown>;
+  publishRuntimeStart?(input: {
+    assignment: RuntimeAssignmentRecord;
+    commandId: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeStop?(input: {
+    assignment: RuntimeAssignmentRecord;
+    commandId: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeRestart?(input: {
+    assignment: RuntimeAssignmentRecord;
+    commandId: string;
+    reason?: string;
+    relayUrls: string[];
+  }): Promise<unknown>;
 };
 
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
@@ -1287,6 +1305,13 @@ describe("buildHostServer", () => {
       reason?: string;
       relayUrls: string[];
     }> = [];
+    const publishedLifecycleCommands: Array<{
+      assignment: RuntimeAssignmentRecord;
+      command: "restart" | "start" | "stop";
+      commandId: string;
+      reason?: string;
+      relayUrls: string[];
+    }> = [];
     const server = await createTestServer({
       federatedControlPlane: {
         publishRuntimeAssignmentOffer: (input) => {
@@ -1299,6 +1324,36 @@ describe("buildHostServer", () => {
         publishRuntimeAssignmentRevoke: (input) => {
           publishedRevokes.push({
             assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeStart: (input) => {
+          publishedLifecycleCommands.push({
+            assignment: input.assignment,
+            command: "start",
+            commandId: input.commandId,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeStop: (input) => {
+          publishedLifecycleCommands.push({
+            assignment: input.assignment,
+            command: "stop",
+            commandId: input.commandId,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeRestart: (input) => {
+          publishedLifecycleCommands.push({
+            assignment: input.assignment,
+            command: "restart",
+            commandId: input.commandId,
             ...(input.reason ? { reason: input.reason } : {}),
             relayUrls: input.relayUrls
           });
@@ -1436,6 +1491,48 @@ describe("buildHostServer", () => {
         },
         status: "accepted"
       });
+
+      const stopRuntimeResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/stop"
+      });
+      expect(stopRuntimeResponse.statusCode).toBe(200);
+      expect(runtimeInspectionResponseSchema.parse(stopRuntimeResponse.json()))
+        .toMatchObject({
+          backendKind: "federated",
+          desiredState: "stopped",
+          nodeId: "worker-it"
+        });
+
+      const startRuntimeResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/start"
+      });
+      expect(startRuntimeResponse.statusCode).toBe(200);
+
+      const restartRuntimeResponse = await server.inject({
+        method: "POST",
+        url: "/v1/runtimes/worker-it/restart"
+      });
+      expect(restartRuntimeResponse.statusCode).toBe(200);
+      expect(publishedLifecycleCommands.map((command) => command.command)).toEqual([
+        "stop",
+        "start",
+        "restart"
+      ]);
+      for (const command of publishedLifecycleCommands) {
+        expect(command.assignment).toMatchObject({
+          assignmentId: "assignment-alpha",
+          nodeId: "worker-it",
+          runnerId
+        });
+        expect(command.relayUrls).toEqual(["ws://relay.example"]);
+      }
+      expect(
+        publishedLifecycleCommands.every((command) =>
+          command.commandId.startsWith(`cmd-${command.command}-`)
+        )
+      ).toBe(true);
 
       const revokeResponse = await server.inject({
         method: "POST",
