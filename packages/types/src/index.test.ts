@@ -74,9 +74,6 @@ import {
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   runtimeStatusObservationPayloadSchema,
-  runtimeWikiRepositoryPublicationListResponseSchema,
-  runtimeWikiRepositoryPublicationRequestSchema,
-  runtimeWikiRepositoryPublicationResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
@@ -2133,78 +2130,6 @@ describe("source change candidate host API contracts", () => {
         entry: historyEntry
       }).entry.mode
     ).toBe("already_in_workspace");
-    const wikiArtifact = artifactRecordSchema.parse({
-      createdAt: "2026-04-24T00:06:00.000Z",
-      materialization: {
-        repoPath: "/tmp/entangle/workspace/wiki-repository"
-      },
-      publication: {
-        publishedAt: "2026-04-24T00:06:00.000Z",
-        remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
-        state: "published"
-      },
-      ref: {
-        artifactId: "wiki-repository-worker-it-wiki-commit",
-        artifactKind: "knowledge_summary",
-        backend: "git",
-        createdByNodeId: "worker-it",
-        locator: {
-          branch: "worker-it/wiki-repository/entangle-wiki",
-          commit: "artifact-wiki-commit-alpha",
-          gitServiceRef: "gitea",
-          namespace: "team-alpha",
-          path: ".",
-          repositoryName: "graph-alpha"
-        },
-        preferred: true,
-        status: "published"
-      },
-      updatedAt: "2026-04-24T00:06:00.000Z"
-    });
-    const wikiPublication = {
-      artifactId: "wiki-repository-worker-it-wiki-commit",
-      branch: "worker-it/wiki-repository/entangle-wiki",
-      commit: "wiki-commit-alpha",
-      createdAt: "2026-04-24T00:06:00.000Z",
-      graphId: "team-alpha",
-      graphRevisionId: "team-alpha-20260424-000000",
-      nodeId: "worker-it",
-      publication: {
-        publishedAt: "2026-04-24T00:06:00.000Z",
-        remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
-        state: "published"
-      },
-      publicationId: "wiki-publication-alpha",
-      requestedBy: "operator-alpha",
-      targetGitServiceRef: "gitea",
-      targetNamespace: "team-alpha",
-      targetRepositoryName: "graph-alpha",
-      updatedAt: "2026-04-24T00:06:00.000Z"
-    };
-    expect(
-      runtimeWikiRepositoryPublicationRequestSchema.parse({
-        publicationId: "wiki-publication-alpha",
-        publishedBy: "operator-alpha",
-        reason: "Publish wiki repository.",
-        retry: true,
-        targetGitServiceRef: "gitea",
-        targetNamespace: "team-alpha",
-        targetRepositoryName: "graph-alpha"
-      }).targetRepositoryName
-    ).toBe("graph-alpha");
-    expect(
-      runtimeWikiRepositoryPublicationResponseSchema.parse({
-        artifact: wikiArtifact,
-        publication: wikiPublication
-      }).publication.publicationId
-    ).toBe("wiki-publication-alpha");
-    expect(
-      runtimeWikiRepositoryPublicationListResponseSchema.parse({
-        publications: [wikiPublication]
-      }).publications[0]?.artifactId
-    ).toBe("wiki-repository-worker-it-wiki-commit");
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {

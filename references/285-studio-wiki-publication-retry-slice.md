@@ -2,10 +2,14 @@
 
 ## Current Repo Truth
 
-Host, host-client, CLI, and Studio already support publishing a runtime wiki
-repository as a git-backed artifact. CLI exposes `--retry`, and Host requires
-retry when the current wiki commit already has a non-published publication
-attempt.
+Superseded by `335-host-wiki-publication-removal-slice.md`. Host, host-client,
+CLI, and Studio no longer support direct runtime wiki repository publication
+because that path required Host-readable runner filesystem state.
+
+Historical context from this slice: Host, host-client, CLI, and Studio once
+supported publishing a runtime wiki repository as a git-backed artifact. CLI
+exposed `--retry`, and Host required retry when the current wiki commit already
+had a non-published publication attempt.
 
 Studio could create a first wiki publication attempt but always sent
 `retry: false`, so an operator could get stuck after a failed attempt unless
@@ -13,10 +17,9 @@ they switched to CLI.
 
 ## Target Model
 
-Studio should provide the same operator-level wiki publication path as CLI. If
-the selected runtime has any non-published wiki repository publication attempt,
-the Studio action should retry publication through the same Host API and make
-the button label explicit.
+The target model described by this slice was replaced. Explicit wiki
+publication should return as runner-owned protocol behavior, not as a Studio
+button that asks Host to publish a runner-local repository.
 
 ## Impacted Modules/Files
 
@@ -28,6 +31,10 @@ the button label explicit.
 - `wiki/log.md`
 
 ## Concrete Changes Required
+
+Supersession note: the Studio wiki publication retry action described here was
+removed by `335-host-wiki-publication-removal-slice.md` because it depended on
+a direct Host filesystem mutation against runner-owned wiki state.
 
 - Detect retryable wiki repository publication attempts in Studio.
 - Send `retry: true` to `publishRuntimeWikiRepository` when a retryable attempt

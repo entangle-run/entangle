@@ -135,6 +135,7 @@ same-machine slice records.
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
+- [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 
 ## Audited Scope
 
@@ -189,9 +190,10 @@ The repository is not fully federated:
   runner-signed runtime status observations; node runtime lifecycle now uses
   the federated path when a runner assignment owns the node, while Docker/memory
   reconciliation remains the unassigned local adapter path;
-- Host still reconstructs some deep wiki/source mutation and publication
-  details by reading runner-owned runtime paths, though source-history list and
-  detail reads can now use runner-observed projection;
+- Host still has some local adapter/debug read fallbacks, but direct public
+  source and wiki mutation/publication routes that depended on Host-readable
+  runner paths have been removed; source-history list/detail and wiki memory
+  reads can use runner-observed projection;
 - Host session launch now signs `task.request` with stable User Node identity
   material, and User Nodes are assignable to `human_interface` runners;
 - joined runners can start a minimal Human Interface Runtime for assigned User
@@ -433,9 +435,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    rendering, signed read receipts, parent-message links, delivery retry state,
    runtime status, live state refresh, local JSON conversation/message APIs,
    a first dedicated User Client app, signed source-candidate accept/reject
-   messages handled by the owning runner, wiki publication retry actions, and CLI User Client
-   endpoint discovery are implemented; complete projection-backed source/wiki
-   review remains open.
+   messages handled by the owning runner, removal of Host-mediated wiki
+   publication controls, and CLI User Client endpoint discovery are
+   implemented; complete projection-backed source/wiki review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.
@@ -515,9 +517,12 @@ diagnostics for operator surfaces, and accepted signed source-candidate reviews
 now produce projected runner-owned source-history application and primary git
 publication evidence, with the old direct Host publication, source-candidate
 apply, and source-history replay mutations removed from Host, CLI, Studio, and
-host-client. The next blocking implementation areas are explicit runner-owned
-publication retry/non-primary target commands, runner-owned source replay,
-richer
+host-client. Direct Host-mediated wiki repository publication has also been
+removed from Host/CLI/Studio/host-client; wiki inspection currently remains
+through runner-owned sync plus signed `wiki.ref` projection, and explicit wiki
+publication must return as runner-owned protocol behavior. The next blocking
+implementation areas are explicit runner-owned publication retry/non-primary
+target commands, runner-owned source replay, richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed

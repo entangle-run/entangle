@@ -41,10 +41,12 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[271-user-client-source-summary-projection-slice.md](271-user-client-source-summary-projection-slice.md)
+[335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
-Interface Runtime/User Client work, and runner-emitted artifact/source/wiki
-observed refs with bounded source-change summaries.
+Interface Runtime/User Client work, runner-emitted artifact/source/wiki
+observed refs, projection-backed read surfaces, federated runtime lifecycle,
+operator receipt/transport visibility, runner-owned source history, and removal
+of direct Host source/wiki filesystem mutation paths.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -341,6 +343,56 @@ files are the active federated redesign pack.
 284. [283-user-node-parent-message-read-model-slice.md](283-user-node-parent-message-read-model-slice.md)
 285. [284-user-node-delivery-retry-state-slice.md](284-user-node-delivery-retry-state-slice.md)
 286. [285-studio-wiki-publication-retry-slice.md](285-studio-wiki-publication-retry-slice.md)
+287. [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
+288. [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
+289. [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
+290. [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
+291. [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
+292. [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
+293. [292-dedicated-user-client-app-slice.md](292-dedicated-user-client-app-slice.md)
+294. [293-runtime-served-user-client-assets-slice.md](293-runtime-served-user-client-assets-slice.md)
+295. [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
+296. [295-user-client-review-json-actions-slice.md](295-user-client-review-json-actions-slice.md)
+297. [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
+298. [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
+299. [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
+300. [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
+301. [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
+302. [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
+303. [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
+304. [303-runner-heartbeat-config-smoke-slice.md](303-runner-heartbeat-config-smoke-slice.md)
+305. [304-deployment-index-profile-cleanup-slice.md](304-deployment-index-profile-cleanup-slice.md)
+306. [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
+307. [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
+308. [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
+309. [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
+310. [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
+311. [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
+312. [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
+313. [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
+314. [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
+315. [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
+316. [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
+317. [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
+318. [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md)
+319. [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
+320. [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
+321. [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
+322. [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
+323. [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
+324. [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
+325. [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
+326. [325-federated-lifecycle-process-smoke-slice.md](325-federated-lifecycle-process-smoke-slice.md)
+327. [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
+328. [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
+329. [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
+330. [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
+331. [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
+332. [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
+333. [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
+334. [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
+335. [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
+336. [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 
 ## Role of this corpus
 

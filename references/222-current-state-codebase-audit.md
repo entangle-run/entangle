@@ -97,7 +97,7 @@ mode, but canonical execution still falls back to injected same-machine context:
 
 `packages/host-client`, `apps/cli`, and `apps/studio` are Host clients. They
 cover graph, package sources, external principals, runtimes, turns, artifacts,
-memory, wiki publications, source changes, approvals, recovery, sessions, and
+memory, projected wiki refs, source changes, approvals, recovery, sessions, and
 same-machine reliability commands. They now expose Host Authority status,
 runner registry, assignments, stable User Node identities, projection-backed
 inbox listing, and signed User Node reply/approval message publication. Studio

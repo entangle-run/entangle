@@ -9,14 +9,14 @@ local doctor/diagnostics/repair, Host status/events, Host Authority, runner
 registry, runtime assignments, User Node identities, signed User Node message
 publication, projection-backed inbox inspection, catalog, package sources,
 external principals, graph, nodes, edges, runtimes, runtime context, turns,
-artifacts, memory, approvals, source candidates/history, wiki publications,
+artifacts, memory, approvals, source candidates/history, projected wiki refs,
 recovery, sessions, launch, and graph templates.
 
 Studio covers Host status, federation projection summary, User Node identity
 summary, projected User Node conversations, graph editing/validation/revisions/
 diff, package source admission, external principals, runtime lifecycle,
 runtime detail, sessions, approvals, turns, artifacts, memory, source
-candidates/history, wiki publications, recovery, and event refresh.
+candidates/history, projected wiki refs, recovery, and event refresh.
 
 Missing surfaces:
 

@@ -2,6 +2,13 @@
 
 Date: 2026-04-26.
 
+## Superseded Boundary
+
+This same-machine Host-mediated publication surface has been superseded by
+`335-host-wiki-publication-removal-slice.md`. The active federated boundary is:
+the runner owns wiki sync and emits signed `wiki.ref` observations; Host does
+not publish a runner wiki repository by reading runner-local filesystem state.
+
 ## Purpose
 
 This slice advances Entangle B4/B5 by giving each node's runner-owned

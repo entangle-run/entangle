@@ -262,6 +262,7 @@ Implementation record:
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
+- [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 
 Verification:
 
@@ -340,8 +341,13 @@ Current status:
   mutation/list surfaces have been removed from Host, host-client, CLI, and
   Studio; source application is now public only through signed User Node review
   and runner-owned behavior;
-- deeper artifact history computation, wiki publication, and mutation endpoints
-  still need projection-backed or backend-resolved replacement.
+- the direct Host wiki repository publication/list surfaces have been removed
+  from Host, host-client, CLI, and Studio; wiki inspection remains public
+  through runner-owned sync, signed `wiki.ref` projection, and projected memory
+  read fallback;
+- deeper artifact history computation, explicit runner-owned wiki publication,
+  and mutation endpoints still need projection-backed or backend-resolved
+  replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -494,6 +500,7 @@ Implementation record:
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
 - [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
+- [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 
 Verification:
 

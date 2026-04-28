@@ -481,43 +481,6 @@ export const runtimeMemoryPageInspectionResponseSchema = z.object({
   preview: runtimeMemoryPagePreviewSchema
 });
 
-export const runtimeWikiRepositoryPublicationRequestSchema = z.object({
-  publicationId: identifierSchema.optional(),
-  publishedBy: identifierSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  retry: z.boolean().default(false),
-  targetGitServiceRef: identifierSchema.optional(),
-  targetNamespace: identifierSchema.optional(),
-  targetRepositoryName: identifierSchema.optional()
-});
-
-export const runtimeWikiRepositoryPublicationRecordSchema = z.object({
-  artifactId: identifierSchema,
-  branch: nonEmptyStringSchema,
-  commit: nonEmptyStringSchema,
-  createdAt: nonEmptyStringSchema,
-  graphId: identifierSchema,
-  graphRevisionId: identifierSchema,
-  nodeId: identifierSchema,
-  publication: artifactPublicationSchema,
-  publicationId: identifierSchema,
-  reason: nonEmptyStringSchema.optional(),
-  requestedBy: identifierSchema.optional(),
-  targetGitServiceRef: identifierSchema.optional(),
-  targetNamespace: identifierSchema.optional(),
-  targetRepositoryName: identifierSchema.optional(),
-  updatedAt: nonEmptyStringSchema
-});
-
-export const runtimeWikiRepositoryPublicationResponseSchema = z.object({
-  artifact: artifactRecordSchema,
-  publication: runtimeWikiRepositoryPublicationRecordSchema
-});
-
-export const runtimeWikiRepositoryPublicationListResponseSchema = z.object({
-  publications: z.array(runtimeWikiRepositoryPublicationRecordSchema)
-});
-
 export const runtimeApprovalListResponseSchema = z.object({
   approvals: z.array(approvalRecordSchema)
 });
@@ -690,18 +653,6 @@ export type RuntimeMemoryPagePreview = z.infer<
 >;
 export type RuntimeMemoryPageInspectionResponse = z.infer<
   typeof runtimeMemoryPageInspectionResponseSchema
->;
-export type RuntimeWikiRepositoryPublicationRequest = z.input<
-  typeof runtimeWikiRepositoryPublicationRequestSchema
->;
-export type RuntimeWikiRepositoryPublicationRecord = z.infer<
-  typeof runtimeWikiRepositoryPublicationRecordSchema
->;
-export type RuntimeWikiRepositoryPublicationResponse = z.infer<
-  typeof runtimeWikiRepositoryPublicationResponseSchema
->;
-export type RuntimeWikiRepositoryPublicationListResponse = z.infer<
-  typeof runtimeWikiRepositoryPublicationListResponseSchema
 >;
 export type RuntimeApprovalListResponse = z.infer<typeof runtimeApprovalListResponseSchema>;
 export type RuntimeApprovalInspectionResponse = z.infer<typeof runtimeApprovalInspectionResponseSchema>;

@@ -66,7 +66,7 @@ omits preview `sourcePath`.
 
 - Risk: a projected wiki ref is mistaken for the complete wiki repository.
   Mitigation: docs call this a bounded read model; full wiki publication remains
-  a git/object-backed concern.
+  a future runner-owned git/object-backed concern.
 - Risk: local pages and projected refs duplicate paths.
   Mitigation: local pages win for identical paths because they are higher
   fidelity in compatibility deployments.

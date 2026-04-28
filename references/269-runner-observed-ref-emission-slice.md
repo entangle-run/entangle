@@ -65,7 +65,8 @@ Deferred to later slices:
 - projection-backed artifact content and source diff fetching from remote git
   or object backends;
 - read-receipt and retry-state projection for User Client delivery UX;
-- remote wiki publication as the canonical portable wiki content path.
+- explicit runner-owned wiki publication as the canonical portable wiki
+  content path.
 
 Implemented by follow-up slice:
 
@@ -96,8 +97,8 @@ work. Runners without a federated observation publisher still write the same
 local records as before.
 
 The emitted wiki ref is a bounded logical wiki ref for the node's current wiki
-snapshot. It does not replace the explicit wiki-repository publication path,
-which remains the portable git-backed publication workflow.
+snapshot. It does not replace a future explicit runner-owned wiki-repository
+publication path, which should be the portable git-backed publication workflow.
 
 ## Risks And Mitigations
 

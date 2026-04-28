@@ -70,9 +70,6 @@ import {
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
   runtimeMemoryPageQuerySchema,
-  runtimeWikiRepositoryPublicationListResponseSchema,
-  runtimeWikiRepositoryPublicationRequestSchema,
-  runtimeWikiRepositoryPublicationResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryListQuerySchema,
   runtimeRecoveryPolicyMutationRequestSchema,
@@ -150,7 +147,6 @@ import {
   listRuntimeApprovals,
   listRuntimeSourceChangeCandidates,
   listRuntimeSourceHistory,
-  listRuntimeWikiRepositoryPublications,
   listRuntimeTurns,
   listHostEvents,
   getCatalogInspection,
@@ -184,7 +180,6 @@ import {
   replaceEdge,
   replaceManagedNode,
   offerRuntimeAssignment,
-  publishRuntimeWikiRepository,
   requestRuntimeBoundSessionCancellation,
   requestSessionCancellation,
   revokeRunnerRegistration,
@@ -2245,123 +2240,6 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
     return runtimeMemoryPageInspectionResponseSchema.parse(pageInspection);
   });
-
-  server.get(
-    "/v1/runtimes/:nodeId/wiki-repository/publications",
-    async (request, reply) => {
-      const params = request.params as { nodeId: string };
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const publications =
-        await listRuntimeWikiRepositoryPublications(params.nodeId);
-
-      if (!publications) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      return runtimeWikiRepositoryPublicationListResponseSchema.parse(
-        publications
-      );
-    }
-  );
-
-  server.post(
-    "/v1/runtimes/:nodeId/wiki-repository/publish",
-    async (request, reply) => {
-      const params = request.params as { nodeId: string };
-      const publish = parseRequestInput(
-        runtimeWikiRepositoryPublicationRequestSchema,
-        request.body ?? {},
-        {
-          detailsKey: "bodyIssues",
-          message:
-            "Request body did not match the expected wiki-repository publication schema."
-        }
-      );
-      const inspection = await getRuntimeInspection(params.nodeId);
-
-      if (!inspection) {
-        reply.status(404);
-        return hostErrorResponseSchema.parse({
-          code: "not_found",
-          message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      const publishResult = await publishRuntimeWikiRepository({
-        nodeId: params.nodeId,
-        publish
-      });
-
-      if (!publishResult) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
-        });
-      }
-
-      if (!publishResult.ok) {
-        throw new HostHttpError({
-          code: publishResult.code,
-          message: publishResult.message,
-          statusCode: 409
-        });
-      }
-
-      return runtimeWikiRepositoryPublicationResponseSchema.parse(
-        publishResult.publication
-      );
-    }
-  );
 
   server.get("/v1/runtimes/:nodeId/approvals", async (request, reply) => {
     const params = request.params as { nodeId: string };

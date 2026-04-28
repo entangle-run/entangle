@@ -53,11 +53,11 @@ The latest implementation state includes:
 - `entangle deployment doctor` live checks now inspect runtime wiki repositories for
   initialization, clean working trees, branch availability, and committed HEADs
   when runtime context is available;
-- clean runtime wiki repository HEADs can now be published through the host as
-  `knowledge_summary` git artifacts, with durable publication records,
-  `wiki_repository.published` events, shared host-client helpers, CLI
-  `wiki-publications` / `wiki-publish` commands, and Studio Runtime Memory
-  controls;
+- direct Host-mediated runtime wiki repository publication has been removed
+  because it required Host-readable runner filesystem state. The active
+  federated wiki path is runner-owned sync, signed `wiki.ref` observation, and
+  projected read surfaces; explicit publication/retry should return as a
+  runner-owned protocol behavior;
 - host state now carries an explicit `state-layout.json` compatibility record,
   `GET /v1/host/status` exposes machine-readable layout status, CLI/Studio
   render that status through the shared host-client formatter, and `entangle

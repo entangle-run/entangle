@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Removed Host wiki publication
+
+Removed the direct Host wiki repository publication/list routes, host-client
+methods, CLI `wiki-publications` / `wiki-publish` commands, and Studio Runtime
+Memory publish/retry controls. Wiki inspection now stays on the federated path:
+runner-owned wiki sync emits signed `wiki.ref` observations, and Host exposes
+projection-backed read surfaces instead of publishing runner-local filesystem
+state.
+
+Added `references/335-host-wiki-publication-removal-slice.md` and marked the
+older Host-mediated wiki publication/retry docs as superseded.
+
 ## [2026-04-28] implementation | Removed Host source apply and replay mutations
 
 Removed the direct Host source-candidate apply mutation, source-history replay

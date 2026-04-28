@@ -74,9 +74,9 @@ mutation.
   metadata remains visible through observed source-history/artifact records;
   retry should be reintroduced as a runner-owned command.
 - Risk: tests lose coverage for git repository target provisioning through
-  source-history publication. Mitigation: wiki repository publication still
-  exercises the shared git publication helper, and runner-owned publication is
-  covered by runner tests plus the federated process smoke.
+  source-history publication. Mitigation: runner-owned publication is covered
+  by runner tests plus the federated process smoke; the later wiki publication
+  removal slice also removed the old shared Host git publication helpers.
 - Risk: old docs imply the removed command exists. Mitigation: supersession
   notes were added to the historical slice docs.
 

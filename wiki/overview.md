@@ -286,10 +286,12 @@ The repository now also contains the first real implementation baseline:
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus
   `entangle deployment doctor` runtime wiki repository health warnings for
-  uninitialized, dirty, or uncommitted snapshots, plus host-mediated
-  wiki-repository publication as `knowledge_summary` git artifacts with
-  durable publication records, `wiki_repository.published` events, and
-  host-client/CLI/Studio controls, and with
+  uninitialized, dirty, or uncommitted snapshots. Direct Host-mediated
+  wiki-repository publication has been removed from Host/CLI/Studio because it
+  required Host-readable runner filesystem state; the active federated wiki
+  surface is runner-owned sync plus projected signed `wiki.ref` records, and
+  explicit wiki publication must return later as runner-owned protocol
+  behavior. With
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
