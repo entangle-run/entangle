@@ -3577,3 +3577,15 @@ These local JSON routes let a bundled or external User Client consume the
 running User Node boundary without scraping HTML, while message publishing
 still goes through the existing Host User Node gateway and stable User Node
 identity path.
+
+## [2026-04-28] verification | Covered Human Interface JSON API in process smoke
+
+Added `references/291-human-interface-json-api-smoke-slice.md`. The process
+runner smoke now publishes the primary User Node message through the running
+User Client `POST /api/messages` route, reads the selected conversation through
+`GET /api/conversations/:conversationId`, and sends the approval response
+through the same JSON publish route.
+
+The smoke still verifies agent-runner intake, Host projection, and User Node
+conversation history, so the JSON client path remains tied to signed User Node
+behavior rather than a Studio/operator shortcut.

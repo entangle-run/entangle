@@ -235,6 +235,7 @@ Implementation record:
 - [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
 - [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
 - [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
+- [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
 
 Current status:
 
@@ -269,7 +270,9 @@ Current status:
   approval-response operation/resource/reason metadata;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
-  and stable publishing pubkey;
+  and stable publishing pubkey, and now drives the primary user publish,
+  selected conversation inspection, and approval response through the running
+  User Client JSON API;
 - final bundled User Client application, projection-backed source/wiki review,
   and richer artifact object-backend review remain open.
 
@@ -396,6 +399,8 @@ Current status:
   exposing and serving a User Client endpoint;
 - the same process proof now includes a second User Node assigned to a second
   `human_interface` runner;
+- the same process proof now uses the running User Client JSON API for the
+  first user publish, selected conversation inspection, and approval response;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

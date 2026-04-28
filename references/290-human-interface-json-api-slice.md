@@ -45,6 +45,10 @@ Authority power.
   Node gateway used by the form client.
 - Extended the runtime publish helper to forward optional artifact refs,
   intent, turn id, and response policy when provided by JSON clients.
+- Updated the process runner smoke in
+  `291-human-interface-json-api-smoke-slice.md` to exercise JSON publish,
+  selected-conversation inspection, and JSON approval response through the
+  running User Client.
 - Kept existing HTML routes and form behavior unchanged.
 
 ## Tests Required
@@ -56,6 +60,7 @@ Authority power.
 - Runner full `index.test.ts`.
 - Runner lint.
 - `git diff --check`.
+- Process runner smoke with a live relay when available.
 
 ## Migration And Compatibility Notes
 

@@ -91,6 +91,7 @@ same-machine slice records.
 - [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
 - [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
 - [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
+- [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
 
 ## Audited Scope
 
@@ -208,8 +209,9 @@ The repository is not fully federated:
   materializes runner-owned workspace paths, starts the assigned node runtime,
   reports signed runtime status through the relay, starts a second joined
   runner process for the graph User Node, assigns it as a `human_interface`
-  runtime, verifies its projected User Client endpoint and health route,
-  publishes a signed User Node message to the assigned agent node, verifies
+  runtime, verifies its projected User Client endpoint, health route, state
+  API, JSON publish API, and conversation-detail API, publishes a signed User
+  Node message to the assigned agent node through the running User Client, verifies
   runner-owned session/conversation intake, and verifies Host projection of the
   User Node conversation without requiring a live model-provider call;
 - the same process smoke now proves two distinct User Nodes assigned to two
@@ -263,8 +265,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    fallback, delivery labels, local conversation read state, projected wiki-ref
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
-   runtime status, live state refresh, Host-mediated source-candidate
-   accept/reject controls, and wiki publication retry actions are implemented;
+   runtime status, live state refresh, local JSON conversation/message APIs,
+   Host-mediated source-candidate accept/reject controls, and wiki publication
+   retry actions are implemented;
    complete projection-backed source/wiki review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval

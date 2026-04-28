@@ -87,8 +87,9 @@ verifies that the assigned agent runner persisted both received conversations
 and that Host projection contains both User Node conversations from
 runner-signed observations. It also publishes a synthetic signed agent-to-user
 message through the relay and verifies that the running User Node records it as
-inbound inbox history, then submits a signed approval response through the User
-Client. Live OpenCode/model-provider behavior remains
+inbound inbox history, uses the running User Client JSON API for selected
+conversation inspection, then submits a signed approval response through the
+same JSON User Client API. Live OpenCode/model-provider behavior remains
 intentionally manual until API-backed provider testing is available.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
@@ -400,9 +401,11 @@ This repository currently contains:
   that starts a Host HTTP server, launches separate generic joined agent and
   User Node runners as OS processes, assigns nodes through the relay, verifies
   runner-owned materialization, checks two Human Interface Runtime User Client
-  endpoints, publishes from two distinct User Node identities, records a
-  synthetic inbound agent message through the running User Node, submits a
-  signed User Node approval response through the User Client, and verifies Host
+  endpoints, publishes from the primary User Node through the running User
+  Client JSON API, publishes from a second distinct User Node identity, records
+  a synthetic inbound agent message through the running User Node, inspects the
+  selected conversation through the User Client JSON API, submits a signed User
+  Node approval response through the same JSON API, and verifies Host
   projection;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable

@@ -1301,10 +1301,10 @@ async function main(): Promise<void> {
       `context=${materializedReviewerUserContextPath}`
     );
 
-    const userMessage = userNodeMessagePublishResponseSchema.parse(
-      await hostRequest({
-        baseUrl: hostBaseUrl,
-        body: {
+    const userMessageResponse = await fetch(
+      new URL("/api/messages", userClientUrl),
+      {
+        body: JSON.stringify({
           conversationId,
           messageType: "question",
           responsePolicy: {
@@ -1317,13 +1317,22 @@ async function main(): Promise<void> {
             "Process runner smoke: verify signed User Node message intake.",
           targetNodeId: "builder",
           turnId
+        }),
+        headers: {
+          "content-type": "application/json"
         },
-        method: "POST",
-        path: "/v1/user-nodes/user/messages"
-      })
+        method: "POST"
+      }
+    );
+    assertCondition(
+      userMessageResponse.ok,
+      `User Client JSON publish failed with HTTP ${userMessageResponse.status}: ${await userMessageResponse.text()}`
+    );
+    const userMessage = userNodeMessagePublishResponseSchema.parse(
+      await userMessageResponse.json()
     );
     printPass(
-      "user-node-publish",
+      "user-client-json-publish",
       `message=${userMessage.eventId}; relays=${userMessage.publishedRelays.length}`
     );
 
@@ -1413,6 +1422,27 @@ async function main(): Promise<void> {
       "User Node conversation detail must include the published User Node message."
     );
     printPass("user-node-message-history", userMessage.conversationId);
+
+    const userClientConversationResponse = await fetch(
+      new URL(
+        `/api/conversations/${encodeURIComponent(userMessage.conversationId)}`,
+        userClientUrl
+      )
+    );
+    assertCondition(
+      userClientConversationResponse.ok,
+      `User Client conversation API failed with HTTP ${userClientConversationResponse.status}: ${await userClientConversationResponse.text()}`
+    );
+    const userClientConversation = userNodeConversationResponseSchema.parse(
+      await userClientConversationResponse.json()
+    );
+    assertCondition(
+      userClientConversation.messages.some(
+        (message) => message.eventId === userMessage.eventId
+      ),
+      "User Client conversation API must include the JSON-published User Node message."
+    );
+    printPass("user-client-conversation-api", userMessage.conversationId);
 
     const builderIdentitySecret = runtimeIdentitySecretResponseSchema.parse(
       await hostRequest({
@@ -1567,24 +1597,27 @@ async function main(): Promise<void> {
     );
     printPass("user-node-approval-request", approvalId);
 
-    const approvalResponse = await fetch(new URL("/messages", userClientUrl), {
-      body: new URLSearchParams({
-        approvalDecision: "approved",
-        approvalId,
+    const approvalResponse = await fetch(new URL("/api/messages", userClientUrl), {
+      body: JSON.stringify({
+        approval: {
+          approvalId,
+          decision: "approved"
+        },
         conversationId: userMessage.conversationId,
         messageType: "approval.response",
         parentMessageId: syntheticApprovalRequestMessageId,
         sessionId: userMessage.sessionId,
+        summary: `Approved ${approvalId}.`,
         targetNodeId: "builder"
       }),
       headers: {
-        "content-type": "application/x-www-form-urlencoded"
+        "content-type": "application/json"
       },
       method: "POST"
     });
     assertCondition(
       approvalResponse.ok,
-      `User Client approval response failed with HTTP ${approvalResponse.status}: ${await approvalResponse.text()}`
+      `User Client JSON approval response failed with HTTP ${approvalResponse.status}: ${await approvalResponse.text()}`
     );
     await waitFor(
       "Host User Node approval response history",

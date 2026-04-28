@@ -344,9 +344,11 @@ federated path.
 Status: the no-LLM version is implemented in
 `pnpm ops:smoke-federated-process-runner`. It starts separate agent and User
 Node runner processes, assigns both nodes, verifies the User Client health
-route, publishes a signed User Node message, verifies agent-runner intake, and
-projects the conversation through Host. Manual provider-backed OpenCode testing
-is available with `--keep-running`.
+route, publishes a signed User Node message through the running User Client
+JSON API, verifies agent-runner intake, inspects the selected conversation
+through the running User Client JSON API, and projects the conversation through
+Host. Manual provider-backed OpenCode testing is available with
+`--keep-running`.
 
 Then extend the demo to two User Nodes:
 
@@ -357,7 +359,9 @@ Then extend the demo to two User Nodes:
 
 Status: implemented in `pnpm ops:smoke-federated-process-runner` as a
 same-machine, topology-agnostic process proof. The remaining proof is the
-multi-machine version.
+multi-machine version. The same smoke now also sends the approval response
+through the running User Client JSON API rather than only through the HTML form
+route.
 
 ### Slice I: Engine Adapter Upgrade
 

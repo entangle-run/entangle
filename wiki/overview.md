@@ -65,7 +65,8 @@ The most accurate current description is:
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish
 User Node messages, respond to approval requests, review artifact/wiki/source
-evidence, and submit Host-mediated source-candidate accept/reject decisions
+evidence, use local JSON APIs for selected conversation detail and message
+publishing, and submit Host-mediated source-candidate accept/reject decisions
 with `reviewedBy` stamped as the running User Node id. Studio remains the
 operator surface, not the primary human-node client.
 
