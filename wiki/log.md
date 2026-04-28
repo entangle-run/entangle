@@ -3478,3 +3478,15 @@ and the User Client renders the preview from projection.
 
 This keeps human-node wiki review on the federated observation path while
 leaving full wiki repositories in git/object-backed artifact space.
+
+## [2026-04-28] fix | Added process runner relay preflight
+
+Added `references/282-process-runner-smoke-relay-preflight-slice.md`. The
+process runner smoke now checks the configured Nostr relay with a WebSocket
+REQ/EOSE preflight before creating Host and runner processes.
+
+When the relay is unavailable, the smoke now reports the missing relay
+prerequisite and the federated dev `strfry` startup command instead of exposing
+the lower-level Nostr pool `connection failed` error. The same pass also
+aligned the smoke's synthetic artifact ref with the current preferred-ref
+contract.

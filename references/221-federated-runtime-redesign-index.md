@@ -191,6 +191,9 @@ The repository is not fully federated:
   distinct `human_interface` runner processes, with two User Client state
   checks, two signed publishes with distinct User Node pubkeys, and two Host
   projected conversations;
+- the process runner smoke now preflights the configured Nostr relay and fails
+  with an actionable relay prerequisite message before starting Host or runner
+  processes when the relay is unavailable;
 - `RuntimeBackend` is currently the main runtime abstraction, but it is really
   a Docker launcher adapter.
 

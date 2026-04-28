@@ -90,6 +90,113 @@ function waitForShutdownSignal(): Promise<void> {
   });
 }
 
+async function assertRelayReachable(relayUrl: string): Promise<void> {
+  const WebSocketConstructor = globalThis.WebSocket;
+
+  if (!WebSocketConstructor) {
+    throw new Error(
+      "Nostr relay preflight failed: this Node runtime does not expose global WebSocket."
+    );
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const subscriptionId = `entangle-process-runner-smoke-${Date.now()}`;
+    const socket = new WebSocketConstructor(relayUrl);
+    let settled = false;
+    const timer = setTimeout(() => {
+      settle(
+        new Error(
+          `Nostr relay preflight timed out at ${relayUrl}. Start the federated dev relay with ` +
+            "`docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml up -d strfry` " +
+            "or pass --relay-url to a reachable relay."
+        )
+      );
+    }, Math.min(timeoutMs, 5000));
+
+    function settle(error?: Error): void {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+
+      try {
+        socket.close(1000, "process runner smoke relay preflight complete");
+      } catch {
+        // Ignore close failures after the result has been decided.
+      }
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    }
+
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify(["REQ", subscriptionId, { limit: 1 }]));
+    });
+
+    socket.addEventListener("message", (event) => {
+      if (typeof event.data !== "string") {
+        settle(
+          new Error(
+            `Nostr relay preflight failed at ${relayUrl}: relay returned a non-string frame.`
+          )
+        );
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(event.data) as unknown;
+        const messageType = Array.isArray(parsed) ? parsed[0] : undefined;
+
+        if (messageType === "EOSE" || messageType === "EVENT") {
+          socket.send(JSON.stringify(["CLOSE", subscriptionId]));
+          settle();
+          return;
+        }
+
+        if (Array.isArray(parsed) && parsed[0] === "NOTICE") {
+          settle(
+            new Error(
+              `Nostr relay preflight failed at ${relayUrl}: ${String(parsed[1] ?? "relay notice")}`
+            )
+          );
+        }
+      } catch {
+        settle(
+          new Error(
+            `Nostr relay preflight failed at ${relayUrl}: relay returned a non-JSON frame.`
+          )
+        );
+      }
+    });
+
+    socket.addEventListener("error", () => {
+      settle(
+        new Error(
+          `Nostr relay preflight failed: could not connect to ${relayUrl}. Start the federated dev relay with ` +
+            "`docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml up -d strfry` " +
+            "or pass --relay-url to a reachable relay."
+        )
+      );
+    });
+
+    socket.addEventListener("close", (event) => {
+      if (!settled && event.code !== 1000) {
+        settle(
+          new Error(
+            `Nostr relay preflight failed at ${relayUrl}: relay closed before EOSE with code ${event.code}.`
+          )
+        );
+      }
+    });
+  });
+}
+
 async function waitFor<T>(
   label: string,
   resolveValue: () => Promise<T | undefined> | T | undefined,
@@ -289,6 +396,9 @@ async function stopRunnerProcess(
 }
 
 async function main(): Promise<void> {
+  await assertRelayReachable(relayUrl);
+  printPass("relay-preflight", relayUrl);
+
   const tempRoot = await mkdtemp(
     path.join(os.tmpdir(), "entangle-process-runner-smoke-")
   );
@@ -1347,6 +1457,7 @@ async function main(): Promise<void> {
                 path: "reports/synthetic-review.md",
                 repositoryName: "smoke-artifacts"
               },
+              preferred: true,
               sessionId: userMessage.sessionId,
               status: "published"
             }
