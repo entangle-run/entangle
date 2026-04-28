@@ -1882,6 +1882,52 @@ describe("buildHostServer", () => {
         nodeId: "worker-it"
       });
 
+      const projectedMemoryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/memory"
+      });
+      expect(projectedMemoryResponse.statusCode).toBe(200);
+      const projectedMemory = runtimeMemoryInspectionResponseSchema.parse(
+        projectedMemoryResponse.json()
+      );
+      expect(projectedMemory.pages).toContainEqual(
+        expect.objectContaining({
+          kind: "summary",
+          path: "wiki/summaries/working-context.md",
+          sizeBytes: 24,
+          updatedAt: observedAt
+        })
+      );
+
+      const projectedMemoryPageResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/memory/page?path=" +
+          encodeURIComponent("wiki/summaries/working-context.md")
+      });
+      expect(projectedMemoryPageResponse.statusCode).toBe(200);
+      expect(
+        runtimeMemoryPageInspectionResponseSchema.parse(
+          projectedMemoryPageResponse.json()
+        )
+      ).toEqual({
+        nodeId: "worker-it",
+        page: {
+          kind: "summary",
+          path: "wiki/summaries/working-context.md",
+          sizeBytes: 24,
+          updatedAt: observedAt
+        },
+        preview: {
+          available: true,
+          bytesRead: 24,
+          content: "# Working Context\nReady.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        }
+      });
+
       const projectedCandidatesResponse = await server.inject({
         method: "GET",
         url: "/v1/runtimes/worker-it/source-change-candidates"

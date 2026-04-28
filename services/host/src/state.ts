@@ -8386,22 +8386,103 @@ async function collectRuntimeMemoryPageSummaries(
   return pages.sort((left, right) => left.path.localeCompare(right.path));
 }
 
+function normalizeProjectedWikiMemoryPath(
+  record: WikiRefProjectionRecord
+): string {
+  const locatorPath =
+    record.artifactRef.backend === "wiki" ? record.artifactRef.locator.path : "";
+  const normalized = path.posix.normalize(locatorPath.replace(/\\/g, "/"));
+  const withoutLeadingSlash = normalized.replace(/^\/+/, "");
+
+  if (
+    !withoutLeadingSlash ||
+    withoutLeadingSlash === "." ||
+    withoutLeadingSlash === ".." ||
+    withoutLeadingSlash.startsWith("../")
+  ) {
+    return `wiki/refs/${record.artifactId}.md`;
+  }
+
+  return withoutLeadingSlash.startsWith("wiki/")
+    ? withoutLeadingSlash
+    : `wiki/${withoutLeadingSlash}`;
+}
+
+function projectWikiRefToRuntimeMemoryPageSummary(
+  record: WikiRefProjectionRecord
+): RuntimeMemoryPageSummary {
+  const pagePath = normalizeProjectedWikiMemoryPath(record);
+
+  return {
+    kind: classifyRuntimeMemoryPage(pagePath),
+    path: pagePath,
+    sizeBytes:
+      record.artifactPreview?.available === true
+        ? record.artifactPreview.bytesRead
+        : 0,
+    updatedAt: record.projection.updatedAt
+  };
+}
+
+async function listProjectedRuntimeMemoryPages(
+  nodeId: string
+): Promise<RuntimeMemoryPageSummary[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph || !graph.nodes.some((node) => node.nodeId === nodeId)) {
+    return [];
+  }
+
+  return (await listWikiRefProjectionRecords())
+    .filter((record) => record.graphId === graph.graphId && record.nodeId === nodeId)
+    .map(projectWikiRefToRuntimeMemoryPageSummary)
+    .sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function mergeRuntimeMemoryPages(input: {
+  localPages: RuntimeMemoryPageSummary[];
+  projectedPages: RuntimeMemoryPageSummary[];
+}): RuntimeMemoryPageSummary[] {
+  const pages = new Map<string, RuntimeMemoryPageSummary>();
+
+  for (const page of input.projectedPages) {
+    pages.set(page.path, page);
+  }
+
+  for (const page of input.localPages) {
+    pages.set(page.path, page);
+  }
+
+  return [...pages.values()].sort((left, right) =>
+    left.path.localeCompare(right.path)
+  );
+}
+
 export async function getRuntimeMemoryInspection(
   nodeId: string
 ): Promise<RuntimeMemoryInspectionResponse | null> {
   const context = await getRuntimeContext(nodeId);
+  const projectedPages = await listProjectedRuntimeMemoryPages(nodeId);
 
-  if (!context) {
+  if (!context && projectedPages.length === 0) {
     return null;
   }
 
-  const pages = await collectRuntimeMemoryPageSummaries(context.workspace.memoryRoot);
+  const localPages = context
+    ? await collectRuntimeMemoryPageSummaries(context.workspace.memoryRoot)
+    : [];
+  const pages = mergeRuntimeMemoryPages({
+    localPages,
+    projectedPages
+  });
 
   return runtimeMemoryInspectionResponseSchema.parse({
     focusedRegisters: pages.filter((page) =>
       focusedMemoryRegisterPaths.has(page.path)
     ),
-    memoryRoot: context.workspace.memoryRoot,
+    memoryRoot: context
+      ? context.workspace.memoryRoot
+      : `projection://${nodeId}/wiki-refs`,
     nodeId,
     pages,
     taskPages: pages.filter((page) => page.kind === "task")
@@ -8508,38 +8589,93 @@ async function readRuntimeMemoryPreview(
   }
 }
 
+function readProjectedRuntimeMemoryPreview(
+  record: WikiRefProjectionRecord
+): RuntimeMemoryPageInspectionResponse["preview"] {
+  if (!record.artifactPreview) {
+    return {
+      available: false,
+      reason:
+        "Memory page preview is unavailable because the projected wiki ref did not include preview content."
+    };
+  }
+
+  if (!record.artifactPreview.available) {
+    return {
+      available: false,
+      reason: record.artifactPreview.reason
+    };
+  }
+
+  return {
+    available: true,
+    bytesRead: record.artifactPreview.bytesRead,
+    content: record.artifactPreview.content,
+    contentEncoding: record.artifactPreview.contentEncoding,
+    contentType: record.artifactPreview.contentType,
+    truncated: record.artifactPreview.truncated
+  };
+}
+
+async function getProjectedRuntimeMemoryPageInspection(input: {
+  nodeId: string;
+  path: string;
+}): Promise<RuntimeMemoryPageInspectionResponse | null> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph || !graph.nodes.some((node) => node.nodeId === input.nodeId)) {
+    return null;
+  }
+
+  const record = (await listWikiRefProjectionRecords()).find(
+    (candidate) =>
+      candidate.graphId === graph.graphId &&
+      candidate.nodeId === input.nodeId &&
+      normalizeProjectedWikiMemoryPath(candidate) === input.path
+  );
+
+  if (!record) {
+    return null;
+  }
+
+  return runtimeMemoryPageInspectionResponseSchema.parse({
+    nodeId: input.nodeId,
+    page: projectWikiRefToRuntimeMemoryPageSummary(record),
+    preview: readProjectedRuntimeMemoryPreview(record)
+  });
+}
+
 export async function getRuntimeMemoryPageInspection(input: {
   nodeId: string;
   path: string;
 }): Promise<RuntimeMemoryPageInspectionResponse | null> {
   const context = await getRuntimeContext(input.nodeId);
 
-  if (!context) {
-    return null;
+  if (context) {
+    const resolvedPath = resolveRuntimeMemoryPagePath({
+      memoryRoot: context.workspace.memoryRoot,
+      pagePath: input.path
+    });
+
+    if (!("reason" in resolvedPath) && (await pathExists(resolvedPath.filePath))) {
+      const page = await buildRuntimeMemoryPageSummary({
+        filePath: resolvedPath.filePath,
+        memoryRoot: context.workspace.memoryRoot
+      });
+
+      if (page) {
+        return runtimeMemoryPageInspectionResponseSchema.parse({
+          nodeId: input.nodeId,
+          page,
+          preview: await readRuntimeMemoryPreview(resolvedPath.filePath)
+        });
+      }
+    }
   }
 
-  const resolvedPath = resolveRuntimeMemoryPagePath({
-    memoryRoot: context.workspace.memoryRoot,
-    pagePath: input.path
-  });
-
-  if ("reason" in resolvedPath) {
-    return null;
-  }
-
-  const page = await buildRuntimeMemoryPageSummary({
-    filePath: resolvedPath.filePath,
-    memoryRoot: context.workspace.memoryRoot
-  });
-
-  if (!page) {
-    return null;
-  }
-
-  return runtimeMemoryPageInspectionResponseSchema.parse({
+  return getProjectedRuntimeMemoryPageInspection({
     nodeId: input.nodeId,
-    page,
-    preview: await readRuntimeMemoryPreview(resolvedPath.filePath)
+    path: input.path
   });
 }
 

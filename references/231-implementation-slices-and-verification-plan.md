@@ -224,6 +224,8 @@ Implementation record:
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
+- [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
+- [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 
 Verification:
 
@@ -277,7 +279,10 @@ Current status:
 - runtime source-change candidate file preview GET routes can fall back to
   bounded projected file preview evidence when local shadow-git state is
   unavailable;
-- deeper artifact history, wiki, and mutation endpoints still need
+- runtime memory list/page GET routes can fall back to observed `wiki.ref`
+  projection records with bounded preview content when local memory files are
+  unavailable;
+- deeper artifact history, wiki publication, and mutation endpoints still need
   projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime

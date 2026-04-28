@@ -40,7 +40,7 @@ export interface RuntimeMemoryPagePreviewCliSummaryRecord {
           RuntimeMemoryPageInspectionResponse["preview"],
           { available: true }
         >["contentType"];
-        sourcePath: string;
+        sourcePath?: string | undefined;
         truncated: boolean;
       }
     | {

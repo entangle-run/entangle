@@ -83,6 +83,9 @@ The most accurate current description is:
   `diffExcerpt` evidence without runner-local shadow git state;
 - source-change candidate file preview read APIs can now fall back to bounded
   projected text previews from observed source-change summaries;
+- runtime memory list/page read APIs can now fall back to observed `wiki.ref`
+  projection records and bounded wiki previews when Host cannot read the
+  runner's memory root;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate

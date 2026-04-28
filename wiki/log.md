@@ -3883,3 +3883,13 @@ runner source harvesting emits previews for the first changed non-deleted files.
 The Host source-change candidate file preview API now prefers local shadow-git
 content when present and otherwise falls back to the projected bounded preview,
 so basic source review can work without Host-readable runner filesystem state.
+
+## [2026-04-28] implementation | Added projected memory/wiki read APIs
+
+Added `references/319-projected-memory-wiki-read-api-slice.md`. Runtime memory
+list/page APIs now prefer local memory files but can fall back to observed
+`wiki.ref` projection records with bounded preview content.
+
+Projection-backed memory previews omit local `sourcePath`; this keeps remote
+User/Agent node wiki memory inspectable without pretending Host can read the
+runner's memory root.

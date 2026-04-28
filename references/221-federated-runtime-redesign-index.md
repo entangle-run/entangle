@@ -119,6 +119,7 @@ same-machine slice records.
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 - [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md)
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
+- [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 
 ## Audited Scope
 
@@ -312,6 +313,10 @@ The repository is not fully federated:
 - Host runtime source-change candidate file preview GET routes now prefer local
   shadow-git file content and fall back to bounded projected file previews from
   observed source-change candidate records;
+- Host runtime memory list/page GET routes now prefer local memory files and
+  fall back to observed `wiki.ref` projection records with bounded preview
+  content, so remote node wiki memory remains inspectable without Host-readable
+  runner memory roots;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, source-change candidate list/detail/diff/file,
@@ -380,9 +385,10 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
     operation/resource/reason context.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
-    source-change summaries, bounded source file previews, and bounded artifact
-    previews now project through observed refs; complete source/wiki review
-    remains open.
+    source-change summaries, bounded source file previews, bounded artifact
+    previews, and projected memory/wiki read previews now project through
+    observed refs; complete source/wiki mutation and publication workflows
+    remain open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.

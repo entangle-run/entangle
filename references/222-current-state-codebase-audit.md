@@ -56,7 +56,8 @@ or stable User Node identity.
   projection, and source-change candidate list/detail reads can now use
   observed full `source_change.ref` candidate projection, including bounded
   projected diff fallback and bounded projected file preview fallback when
-  those fields are present;
+  those fields are present; runtime memory list/page reads can now fall back to
+  observed `wiki.ref` projection records with bounded previews;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 
@@ -80,7 +81,9 @@ mode, but canonical execution still falls back to injected same-machine context:
   runtime status, session/conversation updates, turn updates, approval updates,
   and artifact/source/wiki refs; `source_change.ref` observations can now carry
   the full bounded candidate record including bounded changed-file previews;
-  deeper mutation and detail surfaces are still being moved off runner filesystem reads, and later
+  memory read APIs can use observed `wiki.ref` projection for bounded remote
+  wiki inspection; deeper mutation and detail surfaces are still being moved
+  off runner filesystem reads, and later
   session/conversation lifecycle transitions now publish observations as well;
 - runner state is file-backed under `runtimeRoot`;
 - cancellation is polled from Host-written local files;
