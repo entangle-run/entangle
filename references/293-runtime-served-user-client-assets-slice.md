@@ -56,12 +56,11 @@ boundary:
 
 ## Migration And Compatibility Notes
 
-No deployment is forced to ship built assets yet. Existing runtimes continue to
-serve the built-in shell unless `ENTANGLE_USER_CLIENT_STATIC_DIR` is set.
+Existing non-Docker runtimes continue to serve the built-in shell unless
+`ENTANGLE_USER_CLIENT_STATIC_DIR` is set.
 
-A future packaging slice can decide whether runner images should build
-`apps/user-client` during image build, copy prebuilt assets into the runner, or
-mount a static asset directory.
+The follow-up `294-docker-user-client-packaging-slice.md` made the federated
+dev runner image build and bundle `apps/user-client` by default.
 
 ## Risks And Mitigations
 
@@ -75,8 +74,6 @@ mount a static asset directory.
 
 ## Open Questions
 
-- Should the federated dev runner image build and include `apps/user-client`
-  assets by default?
 - Should Host expose the active User Client UI mode in runtime projection?
 - Should the server-rendered shell be kept as a recovery/debug page once the
   bundled app is the default?

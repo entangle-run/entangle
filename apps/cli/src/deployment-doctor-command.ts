@@ -75,6 +75,8 @@ const requiredFederatedDevProfilePaths = [
   "deploy/federated-dev/docker/host.Dockerfile",
   "deploy/federated-dev/docker/runner.Dockerfile",
   "deploy/federated-dev/docker/studio.Dockerfile",
+  "apps/user-client/package.json",
+  "apps/user-client/src/App.tsx",
   "package.json",
   "pnpm-lock.yaml"
 ];
@@ -824,6 +826,26 @@ export async function buildDeploymentDoctorReport(
       remediation:
         "Rebuild the runner image so the default OpenCode engine is available inside runtime containers.",
       summary: "Runner OpenCode"
+    });
+
+    checkCommand({
+      args: [
+        "run",
+        "--rm",
+        "--entrypoint",
+        "sh",
+        options.runnerImage ?? "entangle-runner:federated-dev",
+        "-lc",
+        'test -f "$ENTANGLE_USER_CLIENT_STATIC_DIR/index.html"'
+      ],
+      category: "runner",
+      checks,
+      command: "docker",
+      deps: commandDeps,
+      options,
+      remediation:
+        "Rebuild the runner image so the Human Interface Runtime can serve the bundled User Client app.",
+      summary: "Runner User Client assets"
     });
   }
 

@@ -7,6 +7,7 @@ import type {
 } from "@entangle/types";
 import type {
   DockerContainerInspect,
+  DockerContainerPortBinding,
   DockerEngineApi
 } from "./docker-engine-client.js";
 import { DockerEngineClient } from "./docker-engine-client.js";
@@ -71,6 +72,111 @@ function sanitizeIdentifier(input: string): string {
 
 function buildContainerName(nodeId: string): string {
   return sanitizeIdentifier(`entangle-runner-${nodeId}`);
+}
+
+function hashIdentifier(input: string): number {
+  let hash = 0;
+
+  for (const character of input) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+
+  return hash;
+}
+
+function normalizePortEnv(input: {
+  fallback: number;
+  max: number;
+  min: number;
+  name: string;
+}): number {
+  const rawValue = process.env[input.name]?.trim();
+  const value = rawValue ? Number(rawValue) : input.fallback;
+
+  return Number.isInteger(value) && value >= input.min && value <= input.max
+    ? value
+    : input.fallback;
+}
+
+function normalizeDockerHumanInterfacePublicHost(): string {
+  const configuredHost =
+    process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PUBLIC_HOST?.trim();
+
+  if (!configuredHost) {
+    return "localhost";
+  }
+
+  try {
+    return new URL(configuredHost).hostname || "localhost";
+  } catch {
+    return configuredHost.replace(/^https?:\/\//u, "").replace(/\/+$/u, "");
+  }
+}
+
+function resolveDockerHumanInterfacePort(nodeId: string): number {
+  const basePort = normalizePortEnv({
+    fallback: 41000,
+    max: 65535,
+    min: 1,
+    name: "ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE"
+  });
+  const availableRange = Math.max(1, 65535 - basePort + 1);
+  const configuredRange = normalizePortEnv({
+    fallback: Math.min(1000, availableRange),
+    max: availableRange,
+    min: 1,
+    name: "ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_RANGE"
+  });
+  const range = Math.min(configuredRange, availableRange);
+
+  return basePort + (hashIdentifier(nodeId) % range);
+}
+
+function isHumanInterfaceRuntimeContext(
+  context: EffectiveRuntimeContext | undefined
+): boolean {
+  return context?.binding?.node?.nodeKind === "user";
+}
+
+function buildDockerHumanInterfaceExposure(input: {
+  context: EffectiveRuntimeContext;
+  nodeId: string;
+}):
+  | {
+      env: string[];
+      labels: Record<string, string>;
+      ports: DockerContainerPortBinding[];
+    }
+  | undefined {
+  if (!isHumanInterfaceRuntimeContext(input.context)) {
+    return undefined;
+  }
+
+  const port = resolveDockerHumanInterfacePort(input.nodeId);
+  const publicHost = normalizeDockerHumanInterfacePublicHost();
+  const bindHost =
+    process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_BIND_HOST?.trim() || "0.0.0.0";
+  const publicUrl = `http://${publicHost}:${port}/`;
+
+  return {
+    env: [
+      `ENTANGLE_HUMAN_INTERFACE_HOST=0.0.0.0`,
+      `ENTANGLE_HUMAN_INTERFACE_PORT=${port}`,
+      `ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL=${publicUrl}`
+    ],
+    labels: {
+      "io.entangle.human_interface.port": String(port),
+      "io.entangle.human_interface.public_url": publicUrl
+    },
+    ports: [
+      {
+        containerPort: port,
+        hostIp: bindHost,
+        hostPort: port,
+        protocol: "tcp"
+      }
+    ]
+  };
 }
 
 function mapContainerStateToObservedState(
@@ -239,10 +345,15 @@ class DockerRuntimeBackend implements RuntimeBackend {
     }
 
     if (!inspection) {
+      const humanInterfaceExposure = buildDockerHumanInterfaceExposure({
+        context: input.context,
+        nodeId: input.nodeId
+      });
       const containerEnv = [
         this.bootstrapMode === "join"
           ? `ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${launchConfigPath}`
           : `ENTANGLE_RUNTIME_CONTEXT_PATH=${launchConfigPath}`,
+        ...(humanInterfaceExposure?.env ?? []),
         ...Object.entries(input.secretEnvironment ?? {})
           .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
           .map(([key, value]) => `${key}=${value}`)
@@ -272,12 +383,14 @@ class DockerRuntimeBackend implements RuntimeBackend {
           "io.entangle.node_id": input.nodeId,
           "io.entangle.restart_generation": String(input.restartGeneration),
           "io.entangle.runner_bootstrap": this.bootstrapMode,
+          ...(humanInterfaceExposure?.labels ?? {}),
           ...(this.bootstrapMode === "join"
             ? { "io.entangle.runner_join_config_path": launchConfigPath }
             : { "io.entangle.runtime_context_path": launchConfigPath })
         },
         mounts: [...mounts],
-        networkName: this.networkName
+        networkName: this.networkName,
+        ports: humanInterfaceExposure?.ports
       });
       await this.dockerClient.startContainer(containerName);
       inspection = await this.dockerClient.inspectContainer(containerName);
@@ -330,20 +443,29 @@ class DockerRuntimeBackend implements RuntimeBackend {
 
     const labels = inspection.Config.Labels ?? {};
     const envEntries = new Set(inspection.Config.Env ?? []);
+    const humanInterfaceExposure = input.context
+      ? buildDockerHumanInterfaceExposure({
+          context: input.context,
+          nodeId: input.nodeId
+        })
+      : undefined;
     const requiredEnvEntries = [
       this.bootstrapMode === "join"
         ? `ENTANGLE_RUNNER_JOIN_CONFIG_PATH=${launchConfigPath}`
         : `ENTANGLE_RUNTIME_CONTEXT_PATH=${launchConfigPath}`,
+      ...(humanInterfaceExposure?.env ?? []),
       ...Object.entries(input.secretEnvironment ?? {})
         .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
         .map(([key, value]) => `${key}=${value}`)
     ];
+    const labelEntries = Object.entries(humanInterfaceExposure?.labels ?? {});
 
     return (
       inspection.Config.Image !== this.runnerImage ||
       labels["io.entangle.graph_revision_id"] !== input.graphRevisionId ||
       labels["io.entangle.restart_generation"] !== String(input.restartGeneration) ||
       labels["io.entangle.runner_bootstrap"] !== this.bootstrapMode ||
+      labelEntries.some(([key, value]) => labels[key] !== value) ||
       (this.bootstrapMode === "join"
         ? labels["io.entangle.runner_join_config_path"] !== launchConfigPath
         : labels["io.entangle.runtime_context_path"] !== launchConfigPath) ||

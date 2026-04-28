@@ -241,6 +241,11 @@ describe("deployment doctor command helpers", () => {
           summary: "Runner OpenCode"
         }),
         expect.objectContaining({
+          category: "runner",
+          status: "pass",
+          summary: "Runner User Client assets"
+        }),
+        expect.objectContaining({
           category: "state",
           status: "pass",
           summary: "Entangle state layout"

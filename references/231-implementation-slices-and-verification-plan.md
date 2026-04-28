@@ -238,6 +238,7 @@ Implementation record:
 - [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
 - [292-dedicated-user-client-app-slice.md](292-dedicated-user-client-app-slice.md)
 - [293-runtime-served-user-client-assets-slice.md](293-runtime-served-user-client-assets-slice.md)
+- [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
 
 Current status:
 
@@ -280,8 +281,11 @@ Current status:
   and approval response;
 - the Human Interface Runtime can serve configured static User Client assets
   from `ENTANGLE_USER_CLIENT_STATIC_DIR`;
-- packaging the built User Client app into deployment images,
-  projection-backed source/wiki review, and richer artifact object-backend
+- the federated dev runner image now bundles the built User Client app and sets
+  `ENTANGLE_USER_CLIENT_STATIC_DIR` by default;
+- the Docker launcher adapter can publish a configurable, deterministic host
+  port and public User Client URL for User Node runtime contexts;
+- projection-backed source/wiki review and richer artifact object-backend
   review remain open.
 
 Verification:

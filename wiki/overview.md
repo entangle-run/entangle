@@ -69,8 +69,11 @@ evidence, use local JSON APIs for selected conversation detail and message
 publishing, and submit Host-mediated source-candidate accept/reject decisions
 with `reviewedBy` stamped as the running User Node id. A first dedicated
 `apps/user-client` app now consumes that runtime JSON API, and the runtime can
-serve static User Client assets from `ENTANGLE_USER_CLIENT_STATIC_DIR`. Studio
-remains the operator surface, not the primary human-node client.
+serve static User Client assets from `ENTANGLE_USER_CLIENT_STATIC_DIR`. The
+federated dev runner image now bundles that built app, and the Docker launcher
+adapter can publish a browser-openable User Client port for User Node runtime
+contexts. Studio remains the operator surface, not the primary human-node
+client.
 
 The contract-ownership layer is now also explicit:
 
@@ -645,7 +648,8 @@ The repository now also contains the first real implementation baseline:
 - a first same-machine reliability doctor through `entangle deployment doctor`, with
   read-only human-readable and JSON diagnostics for same-machine profile files,
   Node/pnpm/Docker/Compose, the runner image, OpenCode availability on the host
-  and inside the runner image, `.entangle/host`, Entangle state layout
+  and inside the runner image, bundled User Client assets in the runner image,
+  `.entangle/host`, Entangle state layout
   compatibility, live host status, host-reported state layout status,
   host-reported runtime workspace health, git principals, Studio, Gitea, and
   the local relay, plus strict and offline modes, and `entangle deployment

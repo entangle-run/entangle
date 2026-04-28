@@ -150,8 +150,10 @@ This repository currently contains:
   message publishing,
   plus a first dedicated `apps/user-client` app that consumes those runtime
   JSON APIs and can be served by the Human Interface Runtime from
-  `ENTANGLE_USER_CLIENT_STATIC_DIR`, plus projection of the User Client
-  endpoint through Host, CLI, and Studio,
+  `ENTANGLE_USER_CLIENT_STATIC_DIR`, with the federated dev runner image now
+  bundling that built app by default and the Docker launcher now able to publish
+  a browser-openable User Client port for User Node runtime contexts, plus
+  projection of the User Client endpoint through Host, CLI, and Studio,
   with CLI signed approve/reject and generic User Node message
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI
@@ -772,12 +774,13 @@ This repository currently contains:
 - the first same-machine reliability diagnostic slice where `entangle deployment doctor`
   performs read-only checks over same-machine profile files, Node/pnpm/Docker/Compose,
   the runner image, OpenCode availability on the host and inside the runner
-  image, `.entangle/host`, Entangle state layout compatibility, host status,
-  host-reported state layout status, runtime workspace health, git principals,
-  Studio, Gitea, and the local relay, with human-readable and JSON output plus
-  strict/offline modes, while `entangle deployment diagnostics` writes a redacted
-  JSON support bundle containing doctor output, bounded Compose status/logs,
-  runner-image inspection, live host state, and bounded runtime evidence for
+  image, bundled User Client assets inside the runner image, `.entangle/host`,
+  Entangle state layout compatibility, host status, host-reported state layout
+  status, runtime workspace health, git principals, Studio, Gitea, and the local
+  relay, with human-readable and JSON output plus strict/offline modes, while
+  `entangle deployment diagnostics` writes a redacted JSON support bundle
+  containing doctor output, bounded Compose status/logs, runner-image
+  inspection, live host state, and bounded runtime evidence for
   turns, engine failures, permission decisions, approval blockers, and artifact
   counts when available, and `entangle deployment backup` / `entangle deployment restore`
   now provide the first versioned

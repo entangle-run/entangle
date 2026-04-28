@@ -3610,3 +3610,15 @@ Interface Runtime can now serve dedicated User Client static assets from
 
 The dynamic runtime APIs remain under `/api/*`, and the server-rendered shell
 continues to be the fallback when no static asset directory is configured.
+
+## [2026-04-28] implementation | Packaged Docker User Client runtime assets
+
+Added `references/294-docker-user-client-packaging-slice.md`. The federated dev
+runner image now builds and bundles `apps/user-client`, sets
+`ENTANGLE_USER_CLIENT_STATIC_DIR=/app/user-client`, and verifies the static app
+payload during image build.
+
+The Docker launcher adapter can now publish a host port and public User Client
+URL for User Node runtime contexts, so projected User Client links can be
+opened from the operator workstation instead of pointing at container-internal
+loopback addresses when that adapter is used.

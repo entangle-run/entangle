@@ -94,6 +94,7 @@ same-machine slice records.
 - [291-human-interface-json-api-smoke-slice.md](291-human-interface-json-api-smoke-slice.md)
 - [292-dedicated-user-client-app-slice.md](292-dedicated-user-client-app-slice.md)
 - [293-runtime-served-user-client-assets-slice.md](293-runtime-served-user-client-assets-slice.md)
+- [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
 
 ## Audited Scope
 
@@ -163,8 +164,10 @@ The repository is not fully federated:
   parent-message links, delivery retry state, runtime status, live state
   refresh, message publishing, local JSON APIs for conversation detail and
   message publishing, a first dedicated `apps/user-client` app, and optional
-  runtime static serving for that app, but richer object-backend review and
-  packaging the built app into deployment images still remain incomplete;
+  runtime static serving for that app; the federated dev runner image now
+  bundles the built app and the Docker launcher adapter can publish a
+  browser-openable User Client port for User Node runtime contexts, but richer
+  object-backend review remains incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior

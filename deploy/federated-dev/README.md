@@ -76,6 +76,9 @@ required workspace package build outputs.
 
 The runner runtime image also includes the operational git toolchain required
 by the first artifact backend: `git`, `openssh-client`, and CA certificates.
+It also builds and bundles `apps/user-client` at `/app/user-client` and sets
+`ENTANGLE_USER_CLIENT_STATIC_DIR=/app/user-client`, so Docker-backed
+Human Interface Runtimes serve the dedicated User Client app by default.
 
 Then start the stable deployment services:
 
@@ -258,6 +261,25 @@ pnpm ops:smoke-federated-dev:runtime
 The direct runtime smoke mutates the active host catalog and graph for the
 smoke run. Prefer the disposable runtime variant unless the current profile is
 dedicated to operational testing.
+
+## User Client Ports
+
+When the Docker launcher starts a User Node runtime, it publishes the Human
+Interface Runtime on a deterministic host port and injects
+`ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL` into the runner container. Studio and CLI
+show that projected User Client URL through Host runtime projection.
+
+Defaults:
+
+- host port base: `41000`
+- host port range: `1000`
+- public host: `localhost`
+- bind host: `0.0.0.0`
+
+Override these with `ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE`,
+`ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_RANGE`,
+`ENTANGLE_DOCKER_HUMAN_INTERFACE_PUBLIC_HOST`, and
+`ENTANGLE_DOCKER_HUMAN_INTERFACE_BIND_HOST`.
 
 ## Operator Token
 

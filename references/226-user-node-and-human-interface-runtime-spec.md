@@ -39,10 +39,13 @@ User nodes are now partially runtime-capable:
   `GET /api/conversations/:conversationId` and `POST /api/messages`.
 - A first dedicated `apps/user-client` Vite/React app now consumes those local
   JSON routes for runtime status, conversation inspection, message publishing,
-  and approval responses. The runner-served shell remains the smoke path until
-  deployment packaging makes the built app the default.
+  and approval responses.
 - The Human Interface Runtime can serve dedicated User Client static assets
   from `ENTANGLE_USER_CLIENT_STATIC_DIR` while keeping `/api/*` routes dynamic.
+- The federated dev runner image now builds and bundles that dedicated app at
+  `/app/user-client`, sets `ENTANGLE_USER_CLIENT_STATIC_DIR` by default, and
+  the Docker launcher adapter can publish a host port plus
+  `ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL` for User Node runtime contexts.
 - Host now persists outbound User Node messages it publishes and exposes them
   through `GET /v1/user-nodes/:nodeId/inbox/:conversationId`; the User Client
   renders those recorded messages for the selected thread.
@@ -159,7 +162,10 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   Vite/React app that consumes Human Interface Runtime JSON APIs.
 - Serve dedicated User Client assets from the running Human Interface Runtime.
   Done when `ENTANGLE_USER_CLIENT_STATIC_DIR` points at a built/static app
-  directory; deployment packaging remains open.
+  directory, and now enabled by default in the federated dev runner image.
+- Publish a browser-openable User Client URL when the Docker launcher adapter is
+  used for a User Node runtime context. Done with deterministic, configurable
+  host-port publication for User Node contexts.
 - Keep session launch publishing signed `task.request` from the selected User
   Node identity.
 - Move user-facing `reply`, `answer`, `approve`, and `reject` flows onto the

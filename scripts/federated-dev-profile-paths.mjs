@@ -7,6 +7,8 @@ export const requiredFederatedDevProfilePaths = [
   "deploy/federated-dev/docker/host.Dockerfile",
   "deploy/federated-dev/docker/runner.Dockerfile",
   "deploy/federated-dev/docker/studio.Dockerfile",
+  "apps/user-client/package.json",
+  "apps/user-client/src/App.tsx",
   "package.json",
   "pnpm-lock.yaml"
 ];

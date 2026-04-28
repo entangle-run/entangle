@@ -187,7 +187,15 @@ describe("DockerEngineClient", () => {
             type: "volume"
           }
         ],
-        networkName: "entangle"
+        networkName: "entangle",
+        ports: [
+          {
+            containerPort: 42000,
+            hostIp: "127.0.0.1",
+            hostPort: 42000,
+            protocol: "tcp"
+          }
+        ]
       })
     ).resolves.toBe("container-123");
     await expect(client.startContainer("runner")).resolves.toBeUndefined();
@@ -203,6 +211,9 @@ describe("DockerEngineClient", () => {
     ]);
     expect(requests[3]?.body).toMatchObject({
       Env: ["ENTANGLE_RUNTIME_CONTEXT_PATH=/state/context.json"],
+      ExposedPorts: {
+        "42000/tcp": {}
+      },
       HostConfig: {
         Mounts: [
           {
@@ -211,7 +222,15 @@ describe("DockerEngineClient", () => {
             Type: "volume"
           }
         ],
-        NetworkMode: "entangle"
+        NetworkMode: "entangle",
+        PortBindings: {
+          "42000/tcp": [
+            {
+              HostIp: "127.0.0.1",
+              HostPort: "42000"
+            }
+          ]
+        }
       },
       Image: "entangle-runner:federated-dev",
       Labels: {

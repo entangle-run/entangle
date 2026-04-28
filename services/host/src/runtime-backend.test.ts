@@ -52,8 +52,16 @@ function createFakeDockerClient(): MockedDockerEngineApi {
   };
 }
 
-function buildRuntimeContext(): EffectiveRuntimeContext {
-  return {} as EffectiveRuntimeContext;
+function buildRuntimeContext(
+  input: { nodeKind?: "user" | "worker" } = {}
+): EffectiveRuntimeContext {
+  return {
+    binding: {
+      node: {
+        nodeKind: input.nodeKind ?? "worker"
+      }
+    }
+  } as EffectiveRuntimeContext;
 }
 
 describe("createRuntimeBackend", () => {
@@ -66,6 +74,10 @@ describe("createRuntimeBackend", () => {
     delete process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME;
     delete process.env.ENTANGLE_DOCKER_SHARED_STATE_TARGET;
     delete process.env.ENTANGLE_DOCKER_SHARED_STATE_VOLUME;
+    delete process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_BIND_HOST;
+    delete process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE;
+    delete process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_RANGE;
+    delete process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PUBLIC_HOST;
   });
 
   it("converges a missing container into a running runtime through the injected Docker client", async () => {
@@ -250,6 +262,84 @@ describe("createRuntimeBackend", () => {
       "io.entangle.runner_bootstrap": "join",
       "io.entangle.runner_join_config_path": "/entangle-state/runner-join.json"
     });
+    expect(result).toMatchObject({
+      backendKind: "docker",
+      observedState: "running"
+    });
+  });
+
+  it("publishes a reachable User Client port for Docker-backed User Node runtimes", async () => {
+    process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+    process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_BIND_HOST = "127.0.0.1";
+    process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE = "42000";
+    process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_RANGE = "1";
+    process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PUBLIC_HOST = "localhost";
+
+    const dockerClient = createFakeDockerClient();
+    dockerClient.inspectImage.mockResolvedValue(true);
+    dockerClient.inspectContainer
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(
+        buildContainerInspection({
+          Config: {
+            Env: [
+              "ENTANGLE_RUNTIME_CONTEXT_PATH=/entangle-state/user-context.json",
+              "ENTANGLE_HUMAN_INTERFACE_HOST=0.0.0.0",
+              "ENTANGLE_HUMAN_INTERFACE_PORT=42000",
+              "ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL=http://localhost:42000/"
+            ],
+            Image: "entangle-runner:federated-dev",
+            Labels: {
+              "io.entangle.graph_revision_id": "rev-1",
+              "io.entangle.human_interface.port": "42000",
+              "io.entangle.human_interface.public_url": "http://localhost:42000/",
+              "io.entangle.restart_generation": "0",
+              "io.entangle.runtime_context_path":
+                "/entangle-state/user-context.json"
+            }
+          }
+        })
+      );
+
+    const backend = createRuntimeBackend(
+      "/repo/.entangle/host",
+      "/repo/.entangle-secrets",
+      {
+        dockerClient
+      }
+    );
+    const result = await backend.reconcileRuntime({
+      context: buildRuntimeContext({ nodeKind: "user" }),
+      contextPath: "/entangle-state/user-context.json",
+      desiredState: "running",
+      graphId: "team-alpha",
+      graphRevisionId: "rev-1",
+      nodeId: "human-reviewer",
+      reason: undefined,
+      restartGeneration: 0
+    });
+
+    const createContainerInput = dockerClient.createContainer.mock.calls[0]?.[0];
+
+    expect(createContainerInput?.env).toEqual(
+      expect.arrayContaining([
+        "ENTANGLE_HUMAN_INTERFACE_HOST=0.0.0.0",
+        "ENTANGLE_HUMAN_INTERFACE_PORT=42000",
+        "ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL=http://localhost:42000/"
+      ])
+    );
+    expect(createContainerInput?.labels).toMatchObject({
+      "io.entangle.human_interface.port": "42000",
+      "io.entangle.human_interface.public_url": "http://localhost:42000/"
+    });
+    expect(createContainerInput?.ports).toEqual([
+      {
+        containerPort: 42000,
+        hostIp: "127.0.0.1",
+        hostPort: 42000,
+        protocol: "tcp"
+      }
+    ]);
     expect(result).toMatchObject({
       backendKind: "docker",
       observedState: "running"

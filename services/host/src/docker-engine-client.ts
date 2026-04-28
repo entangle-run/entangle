@@ -45,6 +45,13 @@ export type DockerContainerMount =
       type: "volume";
     };
 
+export type DockerContainerPortBinding = {
+  containerPort: number;
+  hostIp?: string | undefined;
+  hostPort: number;
+  protocol: "tcp";
+};
+
 export type DockerCreateContainerInput = {
   containerName: string;
   env: string[];
@@ -52,6 +59,7 @@ export type DockerCreateContainerInput = {
   labels: Record<string, string>;
   mounts: DockerContainerMount[];
   networkName: string | undefined;
+  ports?: DockerContainerPortBinding[] | undefined;
 };
 
 type DockerApiVersionResponse = {
@@ -250,8 +258,30 @@ export class DockerEngineClient implements DockerEngineApi {
   }
 
   async createContainer(input: DockerCreateContainerInput): Promise<string> {
+    const portEntries =
+      input.ports?.map((port) => {
+        const key = `${port.containerPort}/${port.protocol}`;
+
+        return [
+          key,
+          [
+            {
+              HostIp: port.hostIp ?? "",
+              HostPort: String(port.hostPort)
+            }
+          ]
+        ] as const;
+      }) ?? [];
+    const portBindings =
+      portEntries.length > 0 ? Object.fromEntries(portEntries) : undefined;
+    const exposedPorts =
+      portEntries.length > 0
+        ? Object.fromEntries(portEntries.map(([key]) => [key, {}]))
+        : undefined;
+
     const response = await this.request<DockerCreateContainerResponse>({
       body: {
+        ...(exposedPorts ? { ExposedPorts: exposedPorts } : {}),
         Env: input.env,
         HostConfig: {
           Mounts: input.mounts.map((mount) => ({
@@ -260,7 +290,8 @@ export class DockerEngineClient implements DockerEngineApi {
             Target: mount.target,
             Type: mount.type
           })),
-          NetworkMode: input.networkName
+          NetworkMode: input.networkName,
+          ...(portBindings ? { PortBindings: portBindings } : {})
         },
         Image: input.image,
         Labels: input.labels
