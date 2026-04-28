@@ -545,6 +545,44 @@ describe("runner runtime context", () => {
         }
 
         if (
+          request.method === "GET" &&
+          request.url ===
+            "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
+        ) {
+          response.end(
+            JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-26T12:02:00.000Z",
+                ref: {
+                  artifactId: "artifact-alpha",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  contentSummary: "Review report.",
+                  locator: {
+                    branch: "main",
+                    commit: "abc123",
+                    path: "reports/review.md",
+                    repositoryName: "worker-artifacts"
+                  },
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-26T12:02:00.000Z"
+              },
+              preview: {
+                available: true,
+                bytesRead: 27,
+                content: "Review report preview body.",
+                contentEncoding: "utf8",
+                contentType: "text/markdown",
+                sourcePath: "/runtime/worker-it/artifacts/reports/review.md",
+                truncated: false
+              }
+            })
+          );
+          return;
+        }
+
+        if (
           request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
@@ -712,7 +750,23 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("approval-alpha");
       expect(pageBody).toContain("artifact-alpha");
       expect(pageBody).toContain("reports/review.md");
+      expect(pageBody).toContain(
+        "/artifacts/preview?nodeId=worker-it&amp;artifactId=artifact-alpha&amp;conversationId=conversation-alpha"
+      );
       expect(pageBody).toContain("Approve");
+
+      const artifactPreviewResponse = await fetch(
+        new URL(
+          "/artifacts/preview?nodeId=worker-it&artifactId=artifact-alpha&conversationId=conversation-alpha",
+          handle.clientUrl
+        )
+      );
+      const artifactPreviewBody = await artifactPreviewResponse.text();
+      expect(artifactPreviewResponse.status).toBe(200);
+      expect(artifactPreviewBody).toContain("Review report preview body.");
+      expect(artifactPreviewBody).not.toContain(
+        "/runtime/worker-it/artifacts/reports/review.md"
+      );
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
         body: new URLSearchParams({
@@ -765,6 +819,13 @@ describe("runner runtime context", () => {
         authorization: "Bearer host-secret",
         method: "GET",
         url: "/v1/user-nodes/user-main/inbox"
+      })
+    );
+    expect(hostRequests).toContainEqual(
+      expect.objectContaining({
+        authorization: "Bearer host-secret",
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
       })
     );
     const publishRequest = hostRequests.find(

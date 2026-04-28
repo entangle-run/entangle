@@ -3234,3 +3234,21 @@ relay-backed smoke rerun. The relay-backed
 `pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000`
 smoke passed after adding the artifact ref to the synthetic agent-to-user
 message.
+
+## [2026-04-26] implementation | Added User Client artifact preview
+
+Added `references/265-user-node-artifact-preview-slice.md`. The runner-served
+User Client now renders a `Preview` action for artifact refs in message
+history and serves a server-side `/artifacts/preview` page that calls the Host
+artifact preview endpoint with the Human Interface Runtime's Host credentials.
+
+The browser-facing page shows bounded preview content, content type,
+truncation status, or an unavailable reason, and intentionally does not render
+the Host preview response's runtime-local `sourcePath`. This gives human graph
+participants a first artifact-inspection workflow inside their own running
+User Node client while keeping projection-backed artifact preview as the next
+architecture cleanup.
+
+Runner typecheck, focused runner tests, runner lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.

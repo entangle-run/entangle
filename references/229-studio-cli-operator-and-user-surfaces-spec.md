@@ -47,7 +47,11 @@ Recently added:
   message metadata and publish signed `approval.response` messages through the
   Host User Node gateway.
 - User Client message history now renders bounded artifact refs attached to
-  messages; preview/review actions remain a follow-up.
+  messages.
+- User Client artifact refs now include a server-side `Preview` action that
+  renders bounded Host artifact previews without exposing runtime-local source
+  paths in browser output. Projection-backed artifact preview and richer
+  review controls remain follow-up work.
 
 ## Target Model
 
@@ -118,8 +122,9 @@ Node.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and
-  reply/answer/approval publishing plus artifact-ref rendering; artifact
-  preview/review actions and the full bundled client app remain open.
+  reply/answer/approval publishing plus artifact-ref rendering and bounded
+  artifact preview; projection-backed artifact preview, source/wiki review
+  actions, and the full bundled client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

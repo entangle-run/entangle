@@ -65,6 +65,7 @@ same-machine slice records.
 - [262-user-node-inbound-message-intake-slice.md](262-user-node-inbound-message-intake-slice.md)
 - [263-user-node-approval-controls-slice.md](263-user-node-approval-controls-slice.md)
 - [264-user-node-artifact-ref-rendering-slice.md](264-user-node-artifact-ref-rendering-slice.md)
+- [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
 
 ## Audited Scope
 
@@ -124,8 +125,9 @@ The repository is not fully federated:
 - user nodes have stable identities, a User Node-specific inbox API, projected
   conversation surfaces, and a first usable runner-served User Client with
   thread selection, inbound/outbound message history, approval response
-  controls, artifact-ref rendering, and message publishing, but artifact
-  preview/review actions are still incomplete;
+  controls, artifact-ref rendering, server-side artifact preview, and message
+  publishing, but source/wiki review actions and projection-backed artifact
+  preview are still incomplete;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
@@ -192,8 +194,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    reads.
 9. User Node identity records, assignable Human Interface Runtime, and User
    Client. The first assignable/minimal-client slice and inbound/outbound
-   message history, approval controls, and artifact-ref rendering are
-   implemented; artifact preview/review actions remain open.
+   message history, approval controls, artifact-ref rendering, and server-side
+   artifact preview are implemented; source/wiki review actions and
+   projection-backed artifact preview remain open.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs.
@@ -247,7 +250,7 @@ Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
 follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
-The next blocking implementation areas are artifact/source/wiki preview and
-review actions in the User Client, replacing remaining deep filesystem-backed
-runtime inspection paths, and turning the process smoke into the full
-multi-machine distributed proof.
+The next blocking implementation areas are source/wiki review actions in the
+User Client, replacing remaining deep filesystem-backed runtime inspection
+paths with projection-backed artifact/source/wiki services, and turning the
+process smoke into the full multi-machine distributed proof.

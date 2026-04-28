@@ -50,7 +50,9 @@ The current implementation has the first federated execution path:
   can approve or reject inbound `approval.request` messages by publishing
   signed `approval.response` messages.
 - The User Client renders bounded artifact refs from message records so humans
-  can see handoff artifacts before full preview/review controls exist.
+  can see handoff artifacts, and now provides a server-side artifact preview
+  page for bounded Host artifact previews without exposing runtime-local source
+  paths in browser output.
 - The process-boundary smoke now includes two User Nodes assigned to two
   distinct `human_interface` runners, each exposing its own User Client and
   publishing with a distinct stable User Node pubkey.
@@ -58,7 +60,9 @@ The current implementation has the first federated execution path:
 The current implementation still does not have the final User Node client:
 
 - The current User Client is a usable runner-served shell, not a complete
-  artifact/source/wiki preview and review application.
+  source/wiki review application, and artifact preview still depends on the
+  existing Host deep runtime preview path rather than a projection-backed
+  artifact preview service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, but not delivery/read state or a local encrypted client
@@ -216,8 +220,8 @@ and signs through the User Node gateway boundary, not through Studio.
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
-artifact-ref rendering plus message/approval publication that keeps the
-selected conversation/session context.
+artifact-ref rendering plus bounded artifact preview and message/approval
+publication that keeps the selected conversation/session context.
 
 Impacted modules:
 
@@ -350,8 +354,8 @@ The fastest path to a product the user can test is:
    path.
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
-7. Expand artifact preview/review actions, delivery/read state, and OpenCode
-   parity.
+7. Expand source/wiki review actions, projection-backed artifact preview,
+   delivery/read state, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

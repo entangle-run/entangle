@@ -43,7 +43,9 @@ User nodes are now partially runtime-capable:
   renders approve/reject controls that publish signed `approval.response`
   messages as the selected User Node.
 - The User Client renders bounded artifact refs attached to message records,
-  including backend, kind, summary, and locator details.
+  including backend, kind, summary, and locator details, and now exposes a
+  server-side artifact preview page that renders bounded content without
+  exposing runtime-local preview paths to the browser.
 - The process-boundary smoke now starts one real joined agent runner and one
   real joined User Node `human_interface` runner, assigns both through the same
   control plane, verifies User Client `/health`, and proves the signed User
@@ -56,7 +58,8 @@ User nodes are now partially runtime-capable:
 Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
-  dedicated app with artifact/source/wiki preview and review actions;
+  dedicated app with source/wiki review actions, projection-backed artifact
+  preview, and richer artifact/source workflow controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;
@@ -83,6 +86,7 @@ User Node capabilities:
 - reply/answer;
 - approval/rejection;
 - artifact/source-change/wiki review;
+- bounded artifact preview;
 - per-node policy and edge constraints;
 - multiple user nodes in one graph.
 
@@ -113,8 +117,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Add `UserNodeIdentityRecord` and key-ref contracts. Done for the current
   Host-provisioned development key backend.
 - Add Host APIs for listing user-node identities and projected inbox state.
-  Basic identity, User Node-specific projected conversation inbox surfaces, and
-  inbound/outbound message history now exist.
+  Basic identity, User Node-specific projected conversation inbox surfaces,
+  inbound/outbound message history, and server-side artifact preview now exist.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
   Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that

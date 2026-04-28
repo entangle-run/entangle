@@ -5,6 +5,7 @@ import type {
   EntangleA2AMessage,
   EffectiveRuntimeContext,
   RunnerJoinHostApi,
+  RuntimeArtifactPreviewResponse,
   UserNodeConversationResponse,
   UserConversationProjectionRecord,
   UserNodeMessageRecord,
@@ -12,6 +13,7 @@ import type {
   UserNodeMessagePublishType
 } from "@entangle/types";
 import {
+  runtimeArtifactPreviewResponseSchema,
   userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeMessagePublishResponseSchema
@@ -289,6 +291,50 @@ async function fetchUserNodeConversation(input: {
   }
 }
 
+async function fetchRuntimeArtifactPreview(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<{
+  detail?: RuntimeArtifactPreviewResponse;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for artifact preview."
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/artifacts/${encodeURIComponent(input.artifactId)}/preview`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host artifact preview request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: runtimeArtifactPreviewResponseSchema.parse(await response.json())
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host artifact preview request failed."
+    };
+  }
+}
+
 function isMessageAddressedToUserNode(input: {
   message: EntangleA2AMessage;
   publicKey: string;
@@ -445,21 +491,45 @@ function renderArtifactLocator(ref: ArtifactRef): string {
   }
 }
 
-function renderArtifactRefs(refs: ArtifactRef[]): string {
-  if (refs.length === 0) {
+function resolveArtifactPreviewNodeId(input: {
+  message: UserNodeMessageRecord;
+  ref: ArtifactRef;
+}): string {
+  if (input.ref.backend === "wiki") {
+    return input.ref.locator.nodeId;
+  }
+
+  return input.message.direction === "inbound"
+    ? input.message.fromNodeId
+    : input.message.toNodeId;
+}
+
+function renderArtifactRefs(message: UserNodeMessageRecord): string {
+  if (message.artifactRefs.length === 0) {
     return "";
   }
 
   return `<div class="artifact-list">
-    ${refs
-      .map(
-        (ref) =>
+    ${message.artifactRefs
+      .map((ref) => {
+        const previewNodeId = resolveArtifactPreviewNodeId({
+          message,
+          ref
+        });
+        const previewUrl =
+          `/artifacts/preview?nodeId=${encodeURIComponent(previewNodeId)}` +
+          `&artifactId=${encodeURIComponent(ref.artifactId)}` +
+          `&conversationId=${encodeURIComponent(message.conversationId)}`;
+
+        return (
           `<div class="artifact-ref">
             <div><strong>${escapeHtml(ref.artifactId)}</strong> ${escapeHtml(ref.backend)}${ref.artifactKind ? ` ${escapeHtml(ref.artifactKind)}` : ""}</div>
             ${ref.contentSummary ? `<div>${escapeHtml(ref.contentSummary)}</div>` : ""}
             <div class="message-meta">${escapeHtml(renderArtifactLocator(ref))}</div>
+            <a class="artifact-action" href="${escapeHtml(previewUrl)}">Preview</a>
           </div>`
-      )
+        );
+      })
       .join("")}
   </div>`;
 }
@@ -545,7 +615,7 @@ async function renderHome(input: {
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
               <div>${escapeHtml(message.summary)}</div>
-              ${renderArtifactRefs(message.artifactRefs)}
+              ${renderArtifactRefs(message)}
               <div class="message-meta">${escapeHtml(message.eventId)}</div>
               ${renderApprovalControls(message)}
             </article>`
@@ -593,6 +663,7 @@ async function renderHome(input: {
       .approval-actions { display: flex; gap: 8px; margin-top: 4px; }
       .artifact-list { display: grid; gap: 6px; }
       .artifact-ref { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
+      .artifact-action { color: var(--accent); font-weight: 700; text-decoration: none; width: fit-content; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
       dt { color: var(--muted); font-size: 13px; }
@@ -658,6 +729,68 @@ async function renderHome(input: {
 </html>`;
 }
 
+async function renderArtifactPreviewPage(input: {
+  artifactId: string;
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<string> {
+  const preview = await fetchRuntimeArtifactPreview({
+    artifactId: input.artifactId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId
+  });
+  const previewDetail = preview.detail;
+  const backHref = input.conversationId
+    ? `/?conversationId=${encodeURIComponent(input.conversationId)}`
+    : "/";
+  const artifact = previewDetail?.artifact.ref;
+  const previewResult = previewDetail?.preview;
+  const previewBody = preview.error
+    ? `<section class="error">${escapeHtml(preview.error)}</section>`
+    : previewResult?.available
+      ? `<section>
+          <h2>Preview</h2>
+          <div class="meta">${escapeHtml(previewResult.contentType)} - ${previewResult.bytesRead} bytes${previewResult.truncated ? " - truncated" : ""}</div>
+          <pre>${escapeHtml(previewResult.content)}</pre>
+        </section>`
+      : `<section class="notice">${escapeHtml(previewResult?.reason ?? "Artifact preview is unavailable.")}</section>`;
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Entangle Artifact Preview - ${escapeHtml(input.artifactId)}</title>
+    <style>
+      :root { color-scheme: light; --ink: #202327; --muted: #626a73; --line: #d9dee5; --panel: #ffffff; --page: #f4f6f8; --accent: #1f8a70; --danger: #b1453d; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--page); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { display: grid; gap: 16px; margin: 0 auto; max-width: 960px; padding: 24px; }
+      header, section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+      h1, h2 { margin: 0; line-height: 1.1; }
+      h1 { font-size: 20px; }
+      h2 { font-size: 15px; margin-bottom: 10px; }
+      a { color: var(--accent); font-weight: 700; text-decoration: none; }
+      pre { background: #111418; border-radius: 7px; color: #eef3f7; margin: 12px 0 0; max-height: 70vh; overflow: auto; padding: 14px; white-space: pre-wrap; word-break: break-word; }
+      .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+      .notice { border-color: rgba(31, 138, 112, .28); background: #ecf8f4; }
+      .error { border-color: rgba(177, 69, 61, .35); background: #fff1f0; color: var(--danger); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a href="${escapeHtml(backHref)}">Back to conversation</a>
+        <h1>${escapeHtml(input.artifactId)}</h1>
+        <div class="meta">Runtime ${escapeHtml(input.nodeId)}${artifact?.backend ? ` - ${escapeHtml(artifact.backend)}` : ""}${artifact?.artifactKind ? ` - ${escapeHtml(artifact.artifactKind)}` : ""}</div>
+      </header>
+      ${previewBody}
+    </main>
+  </body>
+</html>`;
+}
+
 export async function startHumanInterfaceRuntime(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -692,6 +825,43 @@ export async function startHumanInterfaceRuntime(input: {
           await buildUserClientState({
             context: input.context,
             hostApi: input.hostApi
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/artifacts/preview"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const artifactId =
+          requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
+
+        if (!nodeId || !artifactId) {
+          writeHtml(
+            response,
+            400,
+            await renderArtifactPreviewPage({
+              artifactId: artifactId || "unknown-artifact",
+              conversationId,
+              hostApi: input.hostApi,
+              nodeId: nodeId || "unknown-runtime"
+            })
+          );
+          return;
+        }
+
+        writeHtml(
+          response,
+          200,
+          await renderArtifactPreviewPage({
+            artifactId,
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId
           })
         );
         return;
