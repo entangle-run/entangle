@@ -212,6 +212,7 @@ Implementation record:
 - [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
 - [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
 - [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
+- [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 
 Verification:
 
@@ -250,7 +251,11 @@ Current status:
 - joined runners now emit session/conversation observations for later lifecycle
   transitions such as handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
-- deep runtime detail endpoints still need projection-backed replacement.
+- runtime artifact list/detail GET routes now merge projected `artifact.ref`
+  records with local compatibility files and can serve remote artifact refs
+  without Host-readable runner filesystem context;
+- deeper runtime source, artifact preview/history, wiki, and mutation endpoints
+  still need projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -382,6 +387,7 @@ Implementation record:
 
 - [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
 - [277-projected-artifact-preview-slice.md](277-projected-artifact-preview-slice.md)
+- [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 
 Verification:
 

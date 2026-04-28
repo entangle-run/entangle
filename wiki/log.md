@@ -3806,3 +3806,14 @@ normal completion, cancellation, and failure paths.
 
 This reduces the gap between runner-local lifecycle state and Host projection
 for remote deployments where Host cannot inspect `runtimeRoot`.
+
+## [2026-04-28] implementation | Added projected artifact read APIs
+
+Added `references/312-projected-artifact-read-api-slice.md`. Host runtime
+artifact list/detail GET routes now merge observed `artifact.ref` projection
+records with local compatibility files.
+
+Projected artifact refs can now be listed and inspected for nodes in the active
+graph even when Host has no readable runner-local runtime context. Deep preview,
+history, diff, restore, and promotion operations remain local-context backed
+until object-backend resolution replaces those filesystem reads.

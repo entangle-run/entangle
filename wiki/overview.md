@@ -72,6 +72,8 @@ The most accurate current description is:
   approval files;
 - runner turn list/detail read APIs can now use observed `turn.updated`
   projection without runner-local turn files;
+- runtime artifact list/detail read APIs can now use observed `artifact.ref`
+  projection without runner-local artifact files;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, then
   verifies projected turn, approval, and session read APIs without live model

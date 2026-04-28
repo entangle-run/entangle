@@ -112,6 +112,7 @@ same-machine slice records.
 - [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
 - [310-process-smoke-opencode-projection-read-api-slice.md](310-process-smoke-opencode-projection-read-api-slice.md)
 - [311-runner-lifecycle-observation-completeness-slice.md](311-runner-lifecycle-observation-completeness-slice.md)
+- [312-projected-artifact-read-api-slice.md](312-projected-artifact-read-api-slice.md)
 
 ## Audited Scope
 
@@ -284,6 +285,9 @@ The repository is not fully federated:
   local-context backed;
 - Host runtime turn list/detail GET routes now merge projected turn records
   with local compatibility files;
+- Host runtime artifact list/detail GET routes now merge projected
+  `artifact.ref` records with local compatibility files and no longer require a
+  Host-readable runtime context for projected remote artifacts;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, approval, and session read APIs against signed

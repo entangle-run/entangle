@@ -8172,17 +8172,66 @@ export async function getRuntimeBootstrapBundle(
   });
 }
 
+function buildRuntimeArtifactRecordFromProjection(
+  record: ArtifactRefProjectionRecord
+): ArtifactRecord {
+  return artifactRecordSchema.parse({
+    createdAt: record.projection.updatedAt,
+    ref: record.artifactRef,
+    updatedAt: record.projection.updatedAt
+  });
+}
+
+async function listProjectedRuntimeArtifactRecords(
+  nodeId: string
+): Promise<ArtifactRecord[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return [];
+  }
+
+  const records = await listArtifactRefProjectionRecords();
+
+  return records
+    .filter(
+      (record) =>
+        record.graphId === graph.graphId && record.nodeId === nodeId
+    )
+    .map(buildRuntimeArtifactRecordFromProjection)
+    .sort((left, right) =>
+      left.ref.artifactId.localeCompare(right.ref.artifactId)
+    );
+}
+
 export async function listRuntimeArtifacts(
   nodeId: string
 ): Promise<RuntimeArtifactListResponse | null> {
-  const context = await getRuntimeContext(nodeId);
+  const [context, projectedArtifacts] = await Promise.all([
+    getRuntimeContext(nodeId),
+    listProjectedRuntimeArtifactRecords(nodeId)
+  ]);
 
   if (!context) {
-    return null;
+    return runtimeArtifactListResponseSchema.parse({
+      artifacts: projectedArtifacts
+    });
+  }
+
+  const artifactRecordsById = new Map(
+    projectedArtifacts.map((artifact) => [artifact.ref.artifactId, artifact])
+  );
+
+  for (const artifact of await listRuntimeArtifactRecords(
+    context.workspace.runtimeRoot
+  )) {
+    artifactRecordsById.set(artifact.ref.artifactId, artifact);
   }
 
   return runtimeArtifactListResponseSchema.parse({
-    artifacts: await listRuntimeArtifactRecords(context.workspace.runtimeRoot)
+    artifacts: [...artifactRecordsById.values()].sort((left, right) =>
+      left.ref.artifactId.localeCompare(right.ref.artifactId)
+    )
   });
 }
 

@@ -303,6 +303,9 @@ This repository currently contains:
   approval files;
 - runner turn read APIs can now list and inspect observed `turn.updated`
   projection records without relying only on runner-local turn files;
+- runtime artifact list/detail APIs can now list and inspect observed
+  `artifact.ref` projection records without requiring Host-readable
+  runner-local artifact files;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, then verifies projected turn, approval, and session read APIs

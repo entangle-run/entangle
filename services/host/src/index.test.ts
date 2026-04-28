@@ -1688,6 +1688,14 @@ describe("buildHostServer", () => {
           recordWikiRefObservation
         }
       ] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
       const authorityResponse = await server.inject({
         method: "GET",
         url: "/v1/authority"
@@ -1722,6 +1730,10 @@ describe("buildHostServer", () => {
           path: "report.md"
         },
         status: "published"
+      };
+      const projectedArtifactRef = {
+        ...artifactRef,
+        preferred: true
       };
 
       await recordArtifactRefObservation({
@@ -1839,6 +1851,39 @@ describe("buildHostServer", () => {
           content: "# Working Context\nReady."
         },
         nodeId: "worker-it"
+      });
+
+      const projectedArtifactsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts"
+      });
+      expect(projectedArtifactsResponse.statusCode).toBe(200);
+      const projectedArtifacts = runtimeArtifactListResponseSchema.parse(
+        projectedArtifactsResponse.json()
+      );
+      expect(projectedArtifacts.artifacts).toContainEqual(
+        expect.objectContaining({
+          createdAt: observedAt,
+          ref: projectedArtifactRef,
+          updatedAt: observedAt
+        })
+      );
+
+      const projectedArtifactResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha"
+      });
+      expect(projectedArtifactResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactInspectionResponseSchema.parse(
+          projectedArtifactResponse.json()
+        )
+      ).toEqual({
+        artifact: {
+          createdAt: observedAt,
+          ref: projectedArtifactRef,
+          updatedAt: observedAt
+        }
       });
     } finally {
       await server.close();

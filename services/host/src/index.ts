@@ -1673,19 +1673,6 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       });
     }
 
-    if (!inspection.contextAvailable) {
-      throw new HostHttpError({
-        code: "conflict",
-        details: {
-          nodeId: params.nodeId
-        },
-        message:
-          inspection.reason ??
-          `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-        statusCode: 409
-      });
-    }
-
     const artifacts = await listRuntimeArtifacts(params.nodeId);
 
     if (!artifacts) {
@@ -2147,19 +2134,6 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         return hostErrorResponseSchema.parse({
           code: "not_found",
           message: `Runtime '${params.nodeId}' was not found in the active graph.`
-        });
-      }
-
-      if (!inspection.contextAvailable) {
-        throw new HostHttpError({
-          code: "conflict",
-          details: {
-            nodeId: params.nodeId
-          },
-          message:
-            inspection.reason ??
-            `Runtime '${params.nodeId}' does not currently have a realizable runtime context.`,
-          statusCode: 409
         });
       }
 

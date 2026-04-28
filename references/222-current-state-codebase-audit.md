@@ -51,7 +51,8 @@ or stable User Node identity.
   session list/detail can now fall back to projected observed sessions, and
   approval lifecycle changes now have signed `approval.updated` observation
   reducers plus projected approval list/detail reads, while runner turn
-  list/detail reads can now use observed turn projection;
+  list/detail reads can now use observed turn projection and artifact
+  list/detail reads can now use observed `artifact.ref` projection;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 
@@ -81,7 +82,8 @@ mode, but canonical execution still falls back to injected same-machine context:
 - OpenCode is invoked by a safe one-shot process adapter, and the process-runner
   smoke now exercises that adapter with a deterministic runner-local fake
   executable so projected turn/approval/session reads are covered without live
-  model credentials.
+  model credentials. Projected artifact list/detail reads are now covered by
+  Host API tests.
 
 `packages/host-client`, `apps/cli`, and `apps/studio` are Host clients. They
 cover graph, package sources, external principals, runtimes, turns, artifacts,

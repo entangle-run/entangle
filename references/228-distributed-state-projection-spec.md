@@ -31,7 +31,9 @@ inspection for those sessions. Runner-owned approval lifecycle changes now emit
 them into observed approval activity. Runtime approval list/detail GET routes
 now read from that projection as well as local compatibility files. Runtime
 turn list/detail GET routes now read from observed turn projection as well as
-local compatibility files. The process-runner smoke now verifies projected
+local compatibility files. Runtime artifact list/detail GET routes now read
+from observed `artifact.ref` projection as well as local compatibility files.
+The process-runner smoke now verifies projected
 turn, approval, and session read APIs after a deterministic OpenCode-adapter
 task turn from a real joined runner process. Joined runners now also publish
 session/conversation observations for later lifecycle transitions including
@@ -97,8 +99,9 @@ and refs so Host can inspect global state without reading runner disk.
 - Continue replacing session, approval, turn, source, and wiki detail endpoints
   with projection-backed read models. The high-level session list and bounded
   session inspection now have projection fallbacks; approval and turn read APIs
-  can read projection; deeper runtime source, artifact, wiki, and mutation
-  surfaces still need projected equivalents.
+  can read projection; artifact list/detail reads can read projected
+  `artifact.ref` records; deeper runtime source, artifact preview/history,
+  wiki, and mutation surfaces still need projected equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn
