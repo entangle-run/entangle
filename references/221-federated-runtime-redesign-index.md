@@ -131,6 +131,7 @@ same-machine slice records.
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 - [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
+- [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 
 ## Audited Scope
 
@@ -185,8 +186,9 @@ The repository is not fully federated:
   runner-signed runtime status observations; node runtime lifecycle now uses
   the federated path when a runner assignment owns the node, while Docker/memory
   reconciliation remains the unassigned local adapter path;
-- Host still reconstructs some sessions, approvals, source history, and wiki
-  details by reading runner-owned runtime paths;
+- Host still reconstructs some deep wiki/source mutation and publication
+  details by reading runner-owned runtime paths, though source-history list and
+  detail reads can now use runner-observed projection;
 - Host session launch now signs `task.request` with stable User Node identity
   material, and User Nodes are assignable to `human_interface` runners;
 - joined runners can start a minimal Human Interface Runtime for assigned User
@@ -353,7 +355,9 @@ The repository is not fully federated:
   to runner-local candidate state before emitting a new `source_change.ref`
   observation. Accepted reviews now also cause the owning runner to record a
   runner-local source-history application when the shadow git snapshot and
-  source workspace are still compatible;
+  source workspace are still compatible, then emit a signed
+  `source_history.ref` observation carrying the concrete `SourceHistoryRecord`
+  for Host projection and read-only source-history inspection;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -502,9 +506,9 @@ same lifecycle path end-to-end through a live relay and real joined runner
 process, Studio/CLI now expose compact projected assignment receipt evidence
 for operator inspection, Host status now carries per-relay control/observe
 diagnostics for operator surfaces, and accepted signed source-candidate reviews
-now produce runner-owned source-history application evidence. The next blocking
-implementation areas are richer projection-backed source/wiki review services,
-assignment detail UI for grouped receipt timelines, replacing remaining deep
-filesystem-backed runtime inspection paths with projection-backed source/wiki
-services and object-backed artifact services, and turning the process smoke
-into the full multi-machine distributed proof.
+now produce projected runner-owned source-history application evidence. The
+next blocking implementation areas are richer projection-backed source/wiki
+review services, assignment detail UI for grouped receipt timelines, replacing
+remaining deep filesystem-backed runtime inspection paths with
+projection-backed source/wiki services and object-backed artifact services, and
+turning the process smoke into the full multi-machine distributed proof.

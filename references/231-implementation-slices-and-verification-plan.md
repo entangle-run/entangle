@@ -258,6 +258,7 @@ Implementation record:
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
+- [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 
 Verification:
 
@@ -321,6 +322,10 @@ Current status:
   runner-local source-history application and emit the updated candidate through
   `source_change.ref`, so Host projection can see `candidate.application`
   without Host mutating runner-owned files;
+- signed `source_history.ref` observations now carry the runner-owned
+  `SourceHistoryRecord`, Host projection exposes `sourceHistoryRefs`, and
+  runtime source-history list/detail GET routes can return projected entries
+  without Host-readable runner filesystem context;
 - deeper artifact history computation, wiki publication, and mutation endpoints
   still need projection-backed or backend-resolved replacement.
 
@@ -471,6 +476,7 @@ Implementation record:
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 - [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
+- [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 
 Verification:
 

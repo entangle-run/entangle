@@ -1780,7 +1780,7 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("projects artifact, source-change, and wiki refs from runner observations", async () => {
+  it("projects artifact, source-change, source-history, and wiki refs from runner observations", async () => {
     const server = await createTestServer();
 
     try {
@@ -1789,6 +1789,7 @@ describe("buildHostServer", () => {
           recordArtifactRefObservation,
           recordRunnerHello,
           recordSourceChangeRefObservation,
+          recordSourceHistoryRefObservation,
           recordWikiRefObservation
         }
       ] = await Promise.all([import("./state.js")]);
@@ -1878,6 +1879,23 @@ describe("buildHostServer", () => {
         turnId: "turn-alpha",
         updatedAt: observedAt
       });
+      const projectedSourceHistory = sourceHistoryRecordSchema.parse({
+        appliedAt: observedAt,
+        appliedBy: "user-main",
+        baseTree: "tree-base-alpha",
+        branch: "entangle-source-history",
+        candidateId: "candidate-alpha",
+        commit: "commit-source-history-alpha",
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-rev-1",
+        headTree: "tree-head-alpha",
+        mode: "already_in_workspace",
+        nodeId: "worker-it",
+        sourceChangeSummary,
+        sourceHistoryId: "source-history-candidate-alpha",
+        turnId: "turn-alpha",
+        updatedAt: observedAt
+      });
 
       await recordArtifactRefObservation({
         artifactPreview: {
@@ -1912,6 +1930,18 @@ describe("buildHostServer", () => {
         runnerPubkey,
         sourceChangeSummary,
         status: "pending_review"
+      });
+      await recordSourceHistoryRefObservation({
+        eventType: "source_history.ref",
+        graphId: "team-alpha",
+        history: projectedSourceHistory,
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-candidate-alpha"
       });
       await recordWikiRefObservation({
         artifactPreview: {
@@ -1976,6 +2006,14 @@ describe("buildHostServer", () => {
           status: "changed"
         },
         status: "pending_review"
+      });
+      expect(projection.sourceHistoryRefs[0]).toMatchObject({
+        history: {
+          candidateId: "candidate-alpha",
+          commit: "commit-source-history-alpha"
+        },
+        nodeId: "worker-it",
+        sourceHistoryId: "source-history-candidate-alpha"
       });
       expect(projection.wikiRefs[0]).toMatchObject({
         artifactId: "wiki-alpha",
@@ -2104,6 +2142,34 @@ describe("buildHostServer", () => {
           contentType: "text/plain",
           truncated: false
         }
+      });
+
+      const projectedSourceHistoryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/source-history"
+      });
+      expect(projectedSourceHistoryResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryListResponseSchema.parse(
+          projectedSourceHistoryResponse.json()
+        )
+      ).toEqual({
+        history: [projectedSourceHistory]
+      });
+
+      const projectedSourceHistoryEntryResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-history/" +
+          "source-history-candidate-alpha"
+      });
+      expect(projectedSourceHistoryEntryResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryInspectionResponseSchema.parse(
+          projectedSourceHistoryEntryResponse.json()
+        )
+      ).toEqual({
+        entry: projectedSourceHistory
       });
 
       const projectedArtifactsResponse = await server.inject({

@@ -848,6 +848,49 @@ describe("federated runtime contracts", () => {
           status: "pending_review"
         }
       ],
+      sourceHistoryRefs: [
+        {
+          graphId: "team-alpha",
+          history: {
+            appliedAt: "2026-04-26T12:01:00.000Z",
+            appliedBy: "user-main",
+            baseTree: "tree-base-alpha",
+            branch: "entangle-source-history",
+            candidateId: "candidate-alpha",
+            commit: "commit-source-history-alpha",
+            graphId: "team-alpha",
+            graphRevisionId: "team-alpha-rev-1",
+            headTree: "tree-head-alpha",
+            mode: "already_in_workspace",
+            nodeId: "worker-it",
+            sourceChangeSummary: {
+              additions: 4,
+              checkedAt: "2026-04-26T12:00:00.000Z",
+              deletions: 1,
+              fileCount: 1,
+              files: [
+                {
+                  additions: 4,
+                  deletions: 1,
+                  path: "src/app.ts",
+                  status: "modified"
+                }
+              ],
+              status: "changed",
+              truncated: false
+            },
+            sourceHistoryId: "source-history-candidate-alpha",
+            turnId: "turn-alpha",
+            updatedAt: "2026-04-26T12:01:00.000Z"
+          },
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          projection,
+          runnerId: "runner-alpha",
+          runnerPubkey,
+          sourceHistoryId: "source-history-candidate-alpha"
+        }
+      ],
       userConversations: [
         {
           conversationId: "conv-alpha",
@@ -895,6 +938,9 @@ describe("federated runtime contracts", () => {
     expect(snapshot.runtimes[0]?.nodeId).toBe("worker-it");
     expect(snapshot.sourceChangeRefs[0]?.candidateId).toBe("candidate-alpha");
     expect(snapshot.sourceChangeRefs[0]?.sourceChangeSummary?.fileCount).toBe(1);
+    expect(snapshot.sourceHistoryRefs[0]?.sourceHistoryId).toBe(
+      "source-history-candidate-alpha"
+    );
     expect(snapshot.userConversations[0]?.userNodeId).toBe("user-main");
     expect(snapshot.wikiRefs[0]?.artifactId).toBe("wiki-alpha");
     expect(snapshot.wikiRefs[0]?.artifactPreview?.available).toBe(true);
@@ -1112,12 +1158,63 @@ describe("federated runtime contracts", () => {
         status: "pending_review"
       }
     });
+    const sourceHistoryObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        eventType: "source_history.ref",
+        graphId: "team-alpha",
+        history: {
+          appliedAt: observedAt,
+          appliedBy: "user-main",
+          baseTree: "tree-base-alpha",
+          branch: "entangle-source-history",
+          candidateId: "source-change-turn-alpha",
+          commit: "commit-source-history-alpha",
+          graphId: "team-alpha",
+          graphRevisionId: "team-alpha-rev-1",
+          headTree: "tree-head-alpha",
+          mode: "already_in_workspace",
+          nodeId: "worker-it",
+          sourceChangeSummary: {
+            additions: 2,
+            checkedAt: observedAt,
+            deletions: 1,
+            fileCount: 1,
+            files: [
+              {
+                additions: 2,
+                deletions: 1,
+                path: "src/index.ts",
+                status: "modified"
+              }
+            ],
+            status: "changed",
+            truncated: false
+          },
+          sourceHistoryId: "source-history-source-change-turn-alpha",
+          turnId: "turn-alpha",
+          updatedAt: observedAt
+        },
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-source-change-turn-alpha"
+      }
+    });
 
     expect(sessionObservation.payload.eventType).toBe("session.updated");
     expect(conversationObservation.payload.eventType).toBe("conversation.updated");
     expect(turnObservation.payload.eventType).toBe("turn.updated");
     expect(artifactObservation.payload.eventType).toBe("artifact.ref");
     expect(sourceChangeObservation.payload.eventType).toBe("source_change.ref");
+    expect(sourceHistoryObservation.payload.eventType).toBe("source_history.ref");
   });
 
   it("accepts Host Authority API responses and status summaries", () => {

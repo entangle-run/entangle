@@ -26,6 +26,7 @@ export type HostProjectionCliSummary = {
   runtimes: RuntimeProjectionCliSummary[];
   runnerCount: number;
   runningRuntimeCount: number;
+  sourceHistoryRefCount: number;
   userConversationCount: number;
 };
 
@@ -73,6 +74,7 @@ export function projectHostProjectionSummary(
     runningRuntimeCount: projection.runtimes.filter(
       (runtime) => runtime.observedState === "running"
     ).length,
+    sourceHistoryRefCount: projection.sourceHistoryRefs.length,
     userConversationCount: projection.userConversations.length
   };
 }

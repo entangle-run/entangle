@@ -69,6 +69,7 @@ const projection: HostProjectionSnapshot = {
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],
+  sourceHistoryRefs: [],
   userConversations: [
     {
       conversationId: "conversation-alpha",

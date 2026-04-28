@@ -169,6 +169,9 @@ import {
   sourceChangeRefObservationPayloadSchema,
   sourceChangeRefProjectionRecordSchema,
   type SourceChangeRefProjectionRecord,
+  sourceHistoryRefObservationPayloadSchema,
+  sourceHistoryRefProjectionRecordSchema,
+  type SourceHistoryRefProjectionRecord,
   sessionUpdatedObservationPayloadSchema,
   turnUpdatedObservationPayloadSchema,
   entangleA2AApprovalRequestMetadataSchema,
@@ -424,6 +427,10 @@ const observedArtifactRefsRoot = path.join(observedRoot, "artifact-refs");
 const observedSourceChangeRefsRoot = path.join(
   observedRoot,
   "source-change-refs"
+);
+const observedSourceHistoryRefsRoot = path.join(
+  observedRoot,
+  "source-history-refs"
 );
 const observedWikiRefsRoot = path.join(observedRoot, "wiki-refs");
 const runtimeRecoveryPoliciesRoot = path.join(
@@ -2517,6 +2524,16 @@ function observedSourceChangeRefRecordPath(input: {
   );
 }
 
+function observedSourceHistoryRefRecordPath(input: {
+  nodeId: string;
+  sourceHistoryId: string;
+}): string {
+  return path.join(
+    observedSourceHistoryRefsRoot,
+    `${input.nodeId}--${input.sourceHistoryId}.json`
+  );
+}
+
 function observedWikiRefRecordPath(input: {
   artifactId: string;
   nodeId: string;
@@ -2954,6 +2971,37 @@ export async function recordSourceChangeRefObservation(
   return record;
 }
 
+export async function recordSourceHistoryRefObservation(
+  input: unknown
+): Promise<SourceHistoryRefProjectionRecord> {
+  await initializeHostState();
+
+  const observation = sourceHistoryRefObservationPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(observation);
+  const record = sourceHistoryRefProjectionRecordSchema.parse({
+    graphId: observation.graphId,
+    history: observation.history,
+    hostAuthorityPubkey: observation.hostAuthorityPubkey,
+    nodeId: observation.nodeId,
+    projection: {
+      source: "observation_event",
+      updatedAt: observation.observedAt
+    },
+    runnerId: observation.runnerId,
+    runnerPubkey: observation.runnerPubkey,
+    sourceHistoryId: observation.sourceHistoryId
+  });
+
+  await writeJsonFileIfChanged(
+    observedSourceHistoryRefRecordPath({
+      nodeId: record.nodeId,
+      sourceHistoryId: record.sourceHistoryId
+    }),
+    record
+  );
+  return record;
+}
+
 export async function recordWikiRefObservation(
   input: unknown
 ): Promise<WikiRefProjectionRecord> {
@@ -3345,6 +3393,30 @@ async function listSourceChangeRefProjectionRecords(): Promise<
   );
 }
 
+async function listSourceHistoryRefProjectionRecords(): Promise<
+  SourceHistoryRefProjectionRecord[]
+> {
+  if (!(await pathExists(observedSourceHistoryRefsRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedSourceHistoryRefsRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        sourceHistoryRefProjectionRecordSchema.parse(
+          await readJsonFile(path.join(observedSourceHistoryRefsRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.sourceHistoryId}`.localeCompare(
+      `${right.nodeId}--${right.sourceHistoryId}`
+    )
+  );
+}
+
 async function listWikiRefProjectionRecords(): Promise<WikiRefProjectionRecord[]> {
   if (!(await pathExists(observedWikiRefsRoot))) {
     return [];
@@ -3594,17 +3666,19 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     assignmentReceipts,
     artifactRefs,
     sourceChangeRefs,
+    sourceHistoryRefs,
     userConversations,
     wikiRefs
   ] = await Promise.all([
-      listRunnerRegistry(),
-      listRuntimeAssignmentRecords(),
-      listAssignmentReceiptProjectionRecords(),
-      listArtifactRefProjectionRecords(),
-      listSourceChangeRefProjectionRecords(),
-      listUserConversationProjectionRecords(),
-      listWikiRefProjectionRecords()
-    ]);
+    listRunnerRegistry(),
+    listRuntimeAssignmentRecords(),
+    listAssignmentReceiptProjectionRecords(),
+    listArtifactRefProjectionRecords(),
+    listSourceChangeRefProjectionRecords(),
+    listSourceHistoryRefProjectionRecords(),
+    listUserConversationProjectionRecords(),
+    listWikiRefProjectionRecords()
+  ]);
   const runtimeProjections = await listRuntimeProjectionRecords({
     assignments,
     hostAuthorityPubkey: authority.publicKey
@@ -3658,6 +3732,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     })),
     schemaVersion: "1",
     sourceChangeRefs,
+    sourceHistoryRefs,
     userConversations,
     wikiRefs
   });
@@ -6192,6 +6267,7 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(observedRuntimesRoot),
     ensureDirectory(observedArtifactRefsRoot),
     ensureDirectory(observedSourceChangeRefsRoot),
+    ensureDirectory(observedSourceHistoryRefsRoot),
     ensureDirectory(observedWikiRefsRoot),
     ensureDirectory(observedRunnerHeartbeatRoot),
     ensureDirectory(runtimeRecoveryHistoryRoot),
@@ -10870,6 +10946,27 @@ async function listProjectedRuntimeSourceChangeCandidateRecords(
     .sort((left, right) => left.candidateId.localeCompare(right.candidateId));
 }
 
+async function listProjectedRuntimeSourceHistoryRecords(
+  nodeId: string
+): Promise<SourceHistoryRecord[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return [];
+  }
+
+  const records = await listSourceHistoryRefProjectionRecords();
+
+  return records
+    .filter(
+      (record) => record.graphId === graph.graphId && record.nodeId === nodeId
+    )
+    .map((record) => record.history)
+    .sort((left, right) =>
+      left.sourceHistoryId.localeCompare(right.sourceHistoryId)
+    );
+}
+
 export async function listRuntimeSourceChangeCandidates(
   nodeId: string
 ): Promise<RuntimeSourceChangeCandidateListResponse | null> {
@@ -10923,14 +11020,31 @@ export async function getRuntimeSourceChangeCandidateInspection(input: {
 export async function listRuntimeSourceHistory(
   nodeId: string
 ): Promise<RuntimeSourceHistoryListResponse | null> {
-  const context = await getRuntimeContext(nodeId);
+  const [context, projectedHistory] = await Promise.all([
+    getRuntimeContext(nodeId),
+    listProjectedRuntimeSourceHistoryRecords(nodeId)
+  ]);
 
   if (!context) {
-    return null;
+    return runtimeSourceHistoryListResponseSchema.parse({
+      history: projectedHistory
+    });
+  }
+
+  const historyById = new Map(
+    projectedHistory.map((history) => [history.sourceHistoryId, history])
+  );
+
+  for (const history of await listRuntimeSourceHistoryRecords(
+    context.workspace.runtimeRoot
+  )) {
+    historyById.set(history.sourceHistoryId, history);
   }
 
   return runtimeSourceHistoryListResponseSchema.parse({
-    history: await listRuntimeSourceHistoryRecords(context.workspace.runtimeRoot)
+    history: [...historyById.values()].sort((left, right) =>
+      left.sourceHistoryId.localeCompare(right.sourceHistoryId)
+    )
   });
 }
 

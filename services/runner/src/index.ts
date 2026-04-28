@@ -334,6 +334,19 @@ function createRuntimeObservationPublisher(input: {
         sourceChangeSummary: record.candidate.sourceChangeSummary,
         status: record.candidate.status
       }),
+    publishSourceHistoryRefObserved: (record) =>
+      publish({
+        eventType: "source_history.ref",
+        graphId: record.history.graphId,
+        history: record.history,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.history.nodeId,
+        observedAt: record.observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        sourceHistoryId: record.history.sourceHistoryId
+      }),
     publishTurnUpdated: (record) =>
       publish({
         eventType: "turn.updated",

@@ -38,6 +38,8 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
+  runtimeSourceHistoryInspectionResponseSchema,
+  runtimeSourceHistoryListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -1906,6 +1908,49 @@ async function main(): Promise<void> {
       `candidate=${reviewedBuilderSourceCandidate.candidateId}; ` +
         `status=${reviewedBuilderSourceCandidate.status}; ` +
         `sourceHistory=${reviewedBuilderSourceCandidate.application?.sourceHistoryId}`
+    );
+
+    const projectedBuilderSourceHistory = await waitFor(
+      "Host projected builder source-history read API",
+      async () => {
+        const sourceHistoryId =
+          reviewedBuilderSourceCandidate.application?.sourceHistoryId;
+
+        if (!sourceHistoryId) {
+          return undefined;
+        }
+
+        const historyList = runtimeSourceHistoryListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/source-history"
+          })
+        );
+        const history = historyList.history.find(
+          (entry) => entry.sourceHistoryId === sourceHistoryId
+        );
+
+        if (!history) {
+          return undefined;
+        }
+
+        const inspection = runtimeSourceHistoryInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/source-history/${sourceHistoryId}`
+          })
+        );
+
+        return inspection.entry.commit === history.commit
+          ? inspection.entry
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-runtime-source-history-read-api",
+      `sourceHistory=${projectedBuilderSourceHistory.sourceHistoryId}; ` +
+        `commit=${projectedBuilderSourceHistory.commit}`
     );
 
     const projectedBuilderApproval = await waitFor(

@@ -22,6 +22,7 @@ import {
   recordRuntimeAssignmentRejected,
   recordSessionUpdatedObservation,
   recordSourceChangeRefObservation,
+  recordSourceHistoryRefObservation,
   recordTurnUpdatedObservation,
   recordWikiRefObservation
 } from "./state.js";
@@ -208,6 +209,15 @@ export class HostFederatedControlPlane {
 
     if (payload.eventType === "source_change.ref") {
       await recordSourceChangeRefObservation(payload);
+      return {
+        action: "recorded",
+        eventType: payload.eventType,
+        runnerId: payload.runnerId
+      };
+    }
+
+    if (payload.eventType === "source_history.ref") {
+      await recordSourceHistoryRefObservation(payload);
       return {
         action: "recorded",
         eventType: payload.eventType,

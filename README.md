@@ -252,10 +252,11 @@ This repository currently contains:
   source history events after validating approval operation and concrete
   resource scope, plus signed User Node approval-response commands and User
   Client controls for participant approval decisions, plus runner-emitted
-  `artifact.ref`,
-  `source_change.ref`, and `wiki.ref` observations during normal turns so Host
-  projection receives portable work refs and bounded source-change summaries
-  through the observe protocol, plus runner-owned local git snapshots of
+  `artifact.ref`, `source_change.ref`, `source_history.ref`, and `wiki.ref`
+  observations during normal turns and accepted source reviews so Host
+  projection receives portable work refs, bounded source-change summaries, and
+  concrete source-history records through the observe protocol, plus
+  runner-owned local git snapshots of
   `memory/wiki` into each node's
   `wiki-repository` workspace after completed turns, with durable sync outcomes
   carried through runner turns, host events, CLI output, and Studio turn

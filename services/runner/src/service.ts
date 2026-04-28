@@ -24,7 +24,8 @@ import type {
   RunnerTurnRecord,
   SessionCancellationRequestRecord,
   SessionLifecycleState,
-  SessionRecord
+  SessionRecord,
+  SourceHistoryRecord
 } from "@entangle/types";
 import {
   agentEngineTurnResultSchema,
@@ -113,6 +114,10 @@ export type RunnerServiceObservationPublisher = {
   publishSourceChangeRefObserved?(input: {
     artifactRefs: ArtifactRef[];
     candidate: SourceChangeCandidateRecord;
+    observedAt: string;
+  }): Promise<void>;
+  publishSourceHistoryRefObserved?(input: {
+    history: SourceHistoryRecord;
     observedAt: string;
   }): Promise<void>;
   publishTurnUpdated(record: RunnerTurnRecord): Promise<void>;
@@ -1611,6 +1616,19 @@ export class RunnerService {
     }
   }
 
+  private async publishSourceHistoryRefObservation(
+    history: SourceHistoryRecord
+  ): Promise<void> {
+    try {
+      await this.observationPublisher?.publishSourceHistoryRefObserved?.({
+        history,
+        observedAt: history.updatedAt
+      });
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
   private async publishWikiRefObservation(
     artifactRef: ArtifactRef,
     observedAt: string,
@@ -2332,6 +2350,7 @@ export class RunnerService {
 
       if (application.applied) {
         nextCandidate = application.candidate;
+        await this.publishSourceHistoryRefObservation(application.history);
       } else {
         await writeSourceChangeCandidateRecord(
           input.statePaths,

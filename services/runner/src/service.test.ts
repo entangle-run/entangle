@@ -12,7 +12,8 @@ import {
   type EffectiveRuntimeContext,
   type RunnerTurnRecord,
   type SessionRecord,
-  type SourceChangeCandidateRecord
+  type SourceChangeCandidateRecord,
+  type SourceHistoryRecord
 } from "@entangle/types";
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import { loadRuntimeContext } from "./runtime-context.js";
@@ -1780,6 +1781,7 @@ describe("RunnerService", () => {
     });
 
     const observedSourceReviews: SourceChangeCandidateRecord[] = [];
+    const observedSourceHistories: SourceHistoryRecord[] = [];
     const service = new RunnerService({
       context: runtimeContext,
       observationPublisher: {
@@ -1787,6 +1789,10 @@ describe("RunnerService", () => {
         publishSessionUpdated: () => Promise.resolve(),
         publishSourceChangeRefObserved: (input) => {
           observedSourceReviews.push(input.candidate);
+          return Promise.resolve();
+        },
+        publishSourceHistoryRefObserved: (input) => {
+          observedSourceHistories.push(input.history);
           return Promise.resolve();
         },
         publishTurnUpdated: () => Promise.resolve()
@@ -1876,6 +1882,13 @@ describe("RunnerService", () => {
     expect(observedSourceReview.application?.sourceHistoryId).toBe(
       "source-history-source-change-review-alpha"
     );
+    expect(observedSourceHistories).toEqual([
+      expect.objectContaining({
+        candidateId: "source-change-review-alpha",
+        commit: candidateRecord?.application?.commit,
+        sourceHistoryId: "source-history-source-change-review-alpha"
+      })
+    ]);
     expect(conversationRecord?.lastInboundMessageId).toBe(
       sourceReviewMessageId
     );

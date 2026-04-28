@@ -203,6 +203,59 @@ function buildAssignmentReceipt(input: {
   }).event;
 }
 
+function buildSourceHistoryRef(input: {
+  hostAuthorityPubkey: string;
+  runnerPubkey: string;
+  runnerSecretKey: Uint8Array;
+}): EntangleObservationEvent {
+  return buildEntangleObservationNostrEvent({
+    payload: {
+      eventType: "source_history.ref",
+      graphId: "graph-alpha",
+      history: {
+        appliedAt: "2026-04-26T12:00:04.000Z",
+        appliedBy: "user-main",
+        baseTree: "tree-base-alpha",
+        branch: "entangle-source-history",
+        candidateId: "candidate-alpha",
+        commit: "commit-source-history-alpha",
+        graphId: "graph-alpha",
+        graphRevisionId: "graph-alpha-rev-1",
+        headTree: "tree-head-alpha",
+        mode: "already_in_workspace",
+        nodeId: "worker-it",
+        sourceChangeSummary: {
+          additions: 1,
+          checkedAt: "2026-04-26T12:00:03.000Z",
+          deletions: 0,
+          fileCount: 1,
+          files: [
+            {
+              additions: 1,
+              deletions: 0,
+              path: "src/index.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
+        sourceHistoryId: "source-history-candidate-alpha",
+        turnId: "turn-alpha",
+        updatedAt: "2026-04-26T12:00:04.000Z"
+      },
+      hostAuthorityPubkey: input.hostAuthorityPubkey,
+      nodeId: "worker-it",
+      observedAt: "2026-04-26T12:00:04.000Z",
+      protocol: "entangle.observe.v1",
+      runnerId: "runner-alpha",
+      runnerPubkey: input.runnerPubkey,
+      sourceHistoryId: "source-history-candidate-alpha"
+    },
+    signerSecretKey: input.runnerSecretKey
+  }).event;
+}
+
 function buildAssignment(input: {
   hostAuthorityPubkey: string;
   runnerPubkey: string;
@@ -338,8 +391,24 @@ describe("Host federated control plane", () => {
       runnerId: "runner-alpha"
     });
 
+    const sourceHistoryResult = await controlPlane.handleObservationEvent(
+      buildSourceHistoryRef({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey,
+        runnerSecretKey
+      })
+    );
+    expect(sourceHistoryResult).toMatchObject({
+      action: "recorded",
+      eventType: "source_history.ref",
+      runnerId: "runner-alpha"
+    });
+
     const projection = await stateModule.getHostProjectionSnapshot();
     expect(projection.runners).toHaveLength(1);
+    expect(projection.sourceHistoryRefs[0]).toMatchObject({
+      sourceHistoryId: "source-history-candidate-alpha"
+    });
     expect(projection.assignmentReceipts[0]).toMatchObject({
       assignmentId: "assignment-alpha",
       receiptKind: "started",

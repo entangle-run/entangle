@@ -22,6 +22,7 @@ import {
   sessionLifecycleStateSchema,
   sourceChangeCandidateRecordSchema,
   sourceChangeCandidateStatusSchema,
+  sourceHistoryRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleSignedEnvelopeSchema } from "./signed-envelope.js";
@@ -41,6 +42,7 @@ export const entangleObservationEventTypeSchema = z.enum([
   "approval.updated",
   "artifact.ref",
   "source_change.ref",
+  "source_history.ref",
   "wiki.ref",
   "log.summary"
 ]);
@@ -194,6 +196,33 @@ export const sourceChangeRefObservationPayloadSchema =
     }
   });
 
+export const sourceHistoryRefObservationPayloadSchema =
+  observedAtPayloadBaseSchema
+    .extend({
+      eventType: z.literal("source_history.ref"),
+      graphId: identifierSchema,
+      history: sourceHistoryRecordSchema,
+      nodeId: identifierSchema,
+      sourceHistoryId: identifierSchema
+    })
+    .superRefine((value, context) => {
+      const expectedFields = [
+        ["sourceHistoryId", value.history.sourceHistoryId, value.sourceHistoryId],
+        ["graphId", value.history.graphId, value.graphId],
+        ["nodeId", value.history.nodeId, value.nodeId]
+      ] as const;
+
+      for (const [field, actual, expected] of expectedFields) {
+        if (actual !== expected) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `source_history.ref history.${field} must match payload ${field}.`,
+            path: ["history", field]
+          });
+        }
+      }
+    });
+
 export const wikiRefObservationPayloadSchema = observedAtPayloadBaseSchema.extend({
   artifactPreview: artifactContentPreviewSchema.optional(),
   artifactRef: artifactRefSchema,
@@ -227,6 +256,7 @@ export const entangleObservationEventPayloadSchema = z.discriminatedUnion(
     approvalUpdatedObservationPayloadSchema,
     artifactRefObservationPayloadSchema,
     sourceChangeRefObservationPayloadSchema,
+    sourceHistoryRefObservationPayloadSchema,
     wikiRefObservationPayloadSchema,
     logSummaryObservationPayloadSchema
   ]
@@ -305,6 +335,9 @@ export type ArtifactRefObservationPayload = z.infer<
 >;
 export type SourceChangeRefObservationPayload = z.infer<
   typeof sourceChangeRefObservationPayloadSchema
+>;
+export type SourceHistoryRefObservationPayload = z.infer<
+  typeof sourceHistoryRefObservationPayloadSchema
 >;
 export type WikiRefObservationPayload = z.infer<
   typeof wikiRefObservationPayloadSchema

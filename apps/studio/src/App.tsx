@@ -3691,6 +3691,10 @@ export function App() {
             <span>Source refs</span>
           </div>
           <div>
+            <strong>{federationSummary.sourceHistoryRefCount}</strong>
+            <span>History refs</span>
+          </div>
+          <div>
             <strong>{federationSummary.wikiRefCount}</strong>
             <span>Wiki refs</span>
           </div>

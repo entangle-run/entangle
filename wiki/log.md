@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Projected runner source history refs
+
+Added signed `source_history.ref` observations for runner-owned source-history
+applications. Accepted source-candidate reviews now let the runner emit both
+the updated `source_change.ref` and the concrete `SourceHistoryRecord`; Host
+records that into projection state and can serve source-history list/detail
+read APIs from projection when it has no runner-local filesystem context.
+
+Added `references/331-projected-source-history-ref-slice.md`. CLI projection
+summaries and Studio federation metrics now include projected source-history
+ref counts.
+
 ## [2026-04-28] implementation | Removed direct Host approval and review APIs
 
 Removed the remaining Host and shared host-client mutation APIs for direct

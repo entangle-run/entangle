@@ -116,6 +116,7 @@ const projection: HostProjectionSnapshot = {
   ],
   schemaVersion: "1",
   sourceChangeRefs: [],
+  sourceHistoryRefs: [],
   userConversations: [],
   wikiRefs: []
 };

@@ -95,6 +95,9 @@ The most accurate current description is:
   list/detail/diff/file, signed source-candidate review, runner-owned
   source-history application, approval, and session read APIs without live model
   credentials;
+- accepted source-candidate reviews now also emit signed `source_history.ref`
+  observations, so Host can project source-history records and serve
+  source-history list/detail reads without a Host-readable runner filesystem;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -259,7 +262,8 @@ The repository now also contains the first real implementation baseline:
   pending source-change candidate records with host, CLI, and Studio
   inspection plus bounded candidate diff, listed-file previews, and audited
   review lifecycle mutations plus runtime-local source-history application for
-  accepted candidates, and a separate source-history publication mutation that
+  accepted candidates with signed `source_history.ref` projection, and a
+  separate source-history publication mutation that
   turns applied source-history commits into git commit artifacts with durable
   publication metadata, resolved target metadata, explicit retry after failed
   attempts, and host-owned provisioning for selected non-primary `gitea_api`
