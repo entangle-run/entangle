@@ -138,11 +138,13 @@ This repository currently contains:
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, projected source-change summary rendering,
   projected source-change diff excerpt rendering, source-change diff fallback,
-  artifact-ref rendering, projected bounded artifact preview with runtime
-  fallback, delivery labels, local conversation read state, projected wiki-ref
-  rendering, projected wiki preview rendering, signed read receipts,
-  parent-message links, delivery retry state, runtime identity/relay/Host API
-  status, lightweight live state refresh, and Host-backed message publishing,
+  Host-mediated source-candidate accept/reject controls stamped with the
+  running User Node id, artifact-ref rendering, projected bounded artifact
+  preview with runtime fallback, delivery labels, local conversation read
+  state, projected wiki-ref rendering, projected wiki preview rendering,
+  signed read receipts, parent-message links, delivery retry state, runtime
+  identity/relay/Host API status, lightweight live state refresh, and
+  Host-backed message publishing,
   plus projection of the User Client endpoint through Host, CLI, and Studio,
   with CLI signed approve/reject and generic User Node message
   commands able to

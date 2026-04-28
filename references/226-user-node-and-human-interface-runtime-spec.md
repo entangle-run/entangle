@@ -47,7 +47,9 @@ User nodes are now partially runtime-capable:
   messages as the selected User Node. Approval request cards now render
   resource metadata and link to a source-change diff preview when the request
   targets a `source_change_candidate`. The signed approval response can now
-  preserve the reviewed operation, resource, and reason context.
+  preserve the reviewed operation, resource, and reason context. The same
+  source-change cards and diff page now include Host-mediated accept/reject
+  candidate review controls stamped with the running User Node id.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,
@@ -66,8 +68,8 @@ User nodes are now partially runtime-capable:
 Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
-  dedicated app with richer source/wiki review actions and richer
-  artifact/source workflow controls;
+  dedicated app with richer projection-backed source/wiki review actions and
+  richer artifact/source workflow controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;
@@ -131,7 +133,9 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   Basic identity, User Node-specific projected conversation inbox surfaces,
   inbound/outbound message history, server-side artifact preview, and
   source-change diff preview now exist. Signed approval responses now preserve
-  scoped operation/resource context when the User Client has it.
+  scoped operation/resource context when the User Client has it, and
+  source-candidate review controls now submit Host review mutations with the
+  running User Node id as `reviewedBy`.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
   Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that

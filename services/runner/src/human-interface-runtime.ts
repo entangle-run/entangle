@@ -9,6 +9,7 @@ import type {
   RunnerJoinHostApi,
   RuntimeArtifactPreviewResponse,
   RuntimeSourceChangeCandidateDiffResponse,
+  RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
   UserNodeConversationResponse,
   UserConversationProjectionRecord,
@@ -21,6 +22,7 @@ import {
   hostProjectionSnapshotSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
@@ -69,6 +71,12 @@ type UserClientState = {
 type ApprovalResource = NonNullable<
   NonNullable<UserNodeMessageRecord["approval"]>["resource"]
 >;
+
+type SourceChangeCandidateReviewRecord = NonNullable<
+  RuntimeSourceChangeCandidateInspectionResponse["candidate"]["review"]
+>;
+
+type UserSourceCandidateReviewStatus = "accepted" | "rejected";
 
 function escapeHtml(value: string): string {
   return value
@@ -230,6 +238,7 @@ function buildUserClientStateFingerprint(state: UserClientState): string {
     sourceChangeRefs: state.sourceChangeRefs.map((ref) => [
       ref.nodeId,
       ref.candidateId,
+      ref.status,
       ref.projection.updatedAt
     ]),
     wikiRefs: state.wikiRefs.map((ref) => [
@@ -584,6 +593,69 @@ async function fetchRuntimeSourceChangeCandidateDiff(input: {
   }
 }
 
+async function reviewRuntimeSourceChangeCandidate(input: {
+  candidateId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  reason?: string | undefined;
+  reviewedBy: string;
+  status: UserSourceCandidateReviewStatus;
+}): Promise<{
+  detail?: RuntimeSourceChangeCandidateInspectionResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for source-change review.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/source-change-candidates/${encodeURIComponent(input.candidateId)}/review`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          ...(input.reason ? { reason: input.reason } : {}),
+          reviewedBy: input.reviewedBy,
+          status: input.status
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "PATCH"
+      }
+    );
+    const body = await response.text();
+
+    if (!response.ok) {
+      return {
+        error: `Host source-change review request failed with HTTP ${response.status}: ${body}`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+        JSON.parse(body)
+      )
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host source-change review request failed.",
+      statusCode: 500
+    };
+  }
+}
+
 function isMessageAddressedToUserNode(input: {
   message: EntangleA2AMessage;
   publicKey: string;
@@ -778,6 +850,41 @@ function renderSourceChangeSummary(ref?: SourceChangeRefProjectionRecord): strin
   </div>`;
 }
 
+function renderSourceChangeReviewControls(input: {
+  candidateId: string;
+  conversationId?: string | undefined;
+  nodeId: string;
+  review?: SourceChangeCandidateReviewRecord | undefined;
+  status?: SourceChangeRefProjectionRecord["status"] | undefined;
+}): string {
+  if (input.status && input.status !== "pending_review") {
+    const review = input.review;
+    const reviewDetail = review
+      ? [
+          review.decidedBy ? `by ${review.decidedBy}` : undefined,
+          review.reason ? review.reason : undefined
+        ]
+          .filter(Boolean)
+          .join(" - ")
+      : "";
+
+    return `<div class="message-meta">source review ${escapeHtml(input.status)}${reviewDetail ? ` - ${escapeHtml(reviewDetail)}` : ""}</div>`;
+  }
+
+  return `<form class="source-review-actions" method="post" action="/source-change-candidates/review">
+    <input type="hidden" name="nodeId" value="${escapeHtml(input.nodeId)}" />
+    <input type="hidden" name="candidateId" value="${escapeHtml(input.candidateId)}" />
+    ${input.conversationId ? `<input type="hidden" name="conversationId" value="${escapeHtml(input.conversationId)}" />` : ""}
+    <label>Review reason
+      <textarea name="reason" rows="2"></textarea>
+    </label>
+    <div class="source-review-buttons">
+      <button name="status" value="accepted" type="submit">Accept candidate</button>
+      <button class="danger-button" name="status" value="rejected" type="submit">Reject candidate</button>
+    </div>
+  </form>`;
+}
+
 function findProjectedSourceChangeRef(input: {
   candidateId: string;
   nodeId: string;
@@ -848,8 +955,17 @@ function renderApprovalResource(
             `&conversationId=${encodeURIComponent(message.conversationId)}`
         )}">Review diff</a>`
       : "";
+  const sourceReviewControls =
+    resource.kind === "source_change_candidate"
+      ? renderSourceChangeReviewControls({
+          candidateId: resource.id,
+          conversationId: message.conversationId,
+          nodeId: message.fromNodeId,
+          status: sourceChangeRef?.status
+        })
+      : "";
 
-  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}`;
+  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}${sourceReviewControls}`;
 }
 
 function renderArtifactLocator(ref: ArtifactRef): string {
@@ -1165,6 +1281,7 @@ async function renderHome(input: {
           sourceChangeRefs: (state.sourceChangeRefs || []).map((ref) => [
             ref.nodeId,
             ref.candidateId,
+            ref.status,
             ref.projection?.updatedAt
           ]),
           wikiRefs: (state.wikiRefs || []).map((ref) => [
@@ -1229,6 +1346,7 @@ async function renderHome(input: {
       textarea { resize: vertical; }
       button { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); cursor: pointer; font-weight: 700; }
       button:disabled { opacity: .5; cursor: not-allowed; }
+      .danger-button { background: var(--danger); border-color: var(--danger); color: #fff; }
       .muted, .meta, .empty { color: var(--muted); }
       .meta { font-size: 13px; }
       .notice { border-color: rgba(31, 138, 112, .28); background: #ecf8f4; }
@@ -1241,7 +1359,9 @@ async function renderHome(input: {
       .message { border-top: 1px solid var(--line); display: grid; gap: 6px; padding: 12px 0; }
       .message:first-child { border-top: 0; padding-top: 0; }
       .message-meta { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-      .approval-actions, .retry-action { display: flex; gap: 8px; margin-top: 4px; }
+      .approval-actions, .retry-action, .source-review-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+      .source-review-actions { display: grid; gap: 8px; margin-top: 8px; }
+      .source-review-actions label { margin: 0; }
       .delivery-errors { color: var(--danger); font-size: 12px; margin: 4px 0 0; padding-left: 18px; }
       .artifact-list { display: grid; gap: 6px; }
       .artifact-ref { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
@@ -1371,6 +1491,14 @@ async function renderSourceChangeCandidateDiffPage(input: {
         </section>`
         : `<section class="notice">${escapeHtml(diffResult?.reason ?? projection.error ?? "Source-change diff is unavailable.")}</section>`;
   const summary = projectedSummary ?? candidate?.sourceChangeSummary;
+  const candidateStatus = projectedRef?.status ?? candidate?.status;
+  const reviewControls = renderSourceChangeReviewControls({
+    candidateId: input.candidateId,
+    conversationId: input.conversationId,
+    nodeId: input.nodeId,
+    review: candidate?.review,
+    status: candidateStatus
+  });
   const summaryBody = summary
     ? `<section>
         <h2>Summary</h2>
@@ -1405,11 +1533,19 @@ async function renderSourceChangeCandidateDiffPage(input: {
       h2 { font-size: 15px; margin-bottom: 10px; }
       a { color: var(--accent); font-weight: 700; text-decoration: none; }
       pre { background: #111418; border-radius: 7px; color: #eef3f7; margin: 12px 0 0; max-height: 70vh; overflow: auto; padding: 14px; white-space: pre-wrap; word-break: break-word; }
+      label { display: grid; gap: 6px; margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+      textarea, button { font: inherit; border-radius: 7px; border: 1px solid var(--line); padding: 10px; min-width: 0; }
+      textarea { width: 100%; background: #fff; color: var(--ink); resize: vertical; }
+      button { background: var(--accent); border-color: var(--accent); color: #fff; cursor: pointer; font-weight: 700; }
       ul { margin: 10px 0 0; padding-left: 20px; }
       li { margin: 4px 0; overflow-wrap: anywhere; }
       .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
       .notice { border-color: rgba(31, 138, 112, .28); background: #ecf8f4; }
       .error { border-color: rgba(177, 69, 61, .35); background: #fff1f0; color: var(--danger); }
+      .danger-button { background: var(--danger); border-color: var(--danger); }
+      .source-review-actions { display: grid; gap: 8px; }
+      .source-review-actions label { margin: 0; }
+      .source-review-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
     </style>
   </head>
   <body>
@@ -1419,6 +1555,10 @@ async function renderSourceChangeCandidateDiffPage(input: {
         <h1>${escapeHtml(input.candidateId)}</h1>
         <div class="meta">Runtime ${escapeHtml(input.nodeId)}${projectedRef?.status || candidate?.status ? ` - ${escapeHtml(projectedRef?.status ?? candidate?.status ?? "")}` : ""}</div>
       </header>
+      <section>
+        <h2>Review</h2>
+        ${reviewControls}
+      </section>
       ${summaryBody}
       ${diffBody}
     </main>
@@ -1615,6 +1755,102 @@ export async function startHumanInterfaceRuntime(input: {
             nodeId
           })
         );
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/source-change-candidates/review"
+      ) {
+        let selectedConversationIdForError: string | undefined;
+
+        try {
+          const form = new URLSearchParams(await readRequestBody(request));
+          const candidateId = form.get("candidateId")?.trim() ?? "";
+          const conversationId =
+            form.get("conversationId")?.trim() || undefined;
+          const nodeId = form.get("nodeId")?.trim() ?? "";
+          const reason = form.get("reason")?.trim() || undefined;
+          const rawStatus = form.get("status")?.trim();
+          selectedConversationIdForError = conversationId;
+
+          if (rawStatus !== "accepted" && rawStatus !== "rejected") {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  "Source-change review status must be accepted or rejected.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          if (!nodeId || !candidateId) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: "Runtime node and source-change candidate are required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const review = await reviewRuntimeSourceChangeCandidate({
+            candidateId,
+            hostApi: input.hostApi,
+            nodeId,
+            reason,
+            reviewedBy: input.context.binding.node.nodeId,
+            status: rawStatus
+          });
+
+          if (review.error) {
+            writeHtml(
+              response,
+              review.statusCode ?? 500,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: review.error,
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          writeHtml(
+            response,
+            200,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: `Reviewed ${candidateId} as ${review.detail?.candidate.status ?? rawStatus}.`,
+              selectedConversationId: conversationId
+            })
+          );
+        } catch (error) {
+          writeHtml(
+            response,
+            500,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice:
+                error instanceof Error
+                  ? error.message
+                  : "Source-change review failed.",
+              selectedConversationId: selectedConversationIdForError
+            })
+          );
+        }
         return;
       }
 

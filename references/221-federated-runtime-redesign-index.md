@@ -88,6 +88,7 @@ same-machine slice records.
 - [285-studio-wiki-publication-retry-slice.md](285-studio-wiki-publication-retry-slice.md)
 - [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
 - [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
+- [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
 
 ## Audited Scope
 
@@ -149,11 +150,13 @@ The repository is not fully federated:
   thread selection, inbound/outbound message history, approval response
   controls, approval resource rendering, signed approval-response context,
   source-change projection summary cards, source-change diff preview,
-  artifact-ref rendering, projected bounded artifact preview with runtime
-  fallback, delivery labels, local conversation read state, projected wiki-ref
-  rendering, projected wiki preview rendering, wiki-scoped approval context
-  rendering, signed read receipts, parent-message links, delivery retry state,
-  runtime status, live state refresh, and message publishing, but a separate
+  Host-mediated source-candidate accept/reject controls stamped with the
+  running User Node id, artifact-ref rendering, projected bounded artifact
+  preview with runtime fallback, delivery labels, local conversation read
+  state, projected wiki-ref rendering, projected wiki preview rendering,
+  wiki-scoped approval context rendering, signed read receipts,
+  parent-message links, delivery retry state, runtime status, live state
+  refresh, and message publishing, but a separate
   bundled User Client app and richer object-backend review still remain
   incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
@@ -254,8 +257,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    fallback, delivery labels, local conversation read state, projected wiki-ref
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
-   runtime status, live state refresh, and wiki publication retry actions are
-   implemented; complete projection-backed source review remains open.
+   runtime status, live state refresh, Host-mediated source-candidate
+   accept/reject controls, and wiki publication retry actions are implemented;
+   complete projection-backed source/wiki review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.
@@ -313,8 +317,9 @@ Plan readiness: Slices 1 through 14 plus startup/materialization/process-smoke
 follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
-The next blocking implementation areas are richer source/wiki review actions in
-the User Client, replacing remaining deep filesystem-backed runtime inspection
-paths with projection-backed source/wiki services and object-backed artifact
-services, and turning the process smoke into the full multi-machine
+The User Client now includes the first Host-mediated source-candidate review
+action. The next blocking implementation areas are richer projection-backed
+source/wiki review services, replacing remaining deep filesystem-backed runtime
+inspection paths with projection-backed source/wiki services and object-backed
+artifact services, and turning the process smoke into the full multi-machine
 distributed proof.

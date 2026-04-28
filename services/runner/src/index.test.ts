@@ -414,6 +414,45 @@ describe("runner runtime context", () => {
       url: string;
     }> = [];
     let conversationUnreadCount = 1;
+    const sourceChangeCandidate = (
+      status: "pending_review" | "accepted" | "rejected" = "pending_review",
+      review?: {
+        decidedAt: string;
+        decidedBy: string;
+        decision: "accepted" | "rejected";
+        reason: string;
+      }
+    ) => ({
+      candidateId: "source-change-turn-alpha",
+      conversationId: "conversation-alpha",
+      createdAt: "2026-04-26T12:02:00.000Z",
+      graphId: "graph-alpha",
+      nodeId: "worker-it",
+      ...(review ? { review } : {}),
+      sessionId: "session-alpha",
+      sourceChangeSummary: {
+        additions: 3,
+        checkedAt: "2026-04-26T12:02:00.000Z",
+        deletions: 1,
+        fileCount: 1,
+        files: [
+          {
+            additions: 3,
+            deletions: 1,
+            path: "src/index.ts",
+            status: "modified"
+          }
+        ],
+        status: "changed",
+        truncated: false
+      },
+      status,
+      turnId: "turn-approval",
+      updatedAt:
+        status === "pending_review"
+          ? "2026-04-26T12:02:00.000Z"
+          : "2026-04-26T12:04:00.000Z"
+    });
     const hostServer = createServer((request, response) => {
       void (async () => {
         const chunks: Buffer[] = [];
@@ -756,39 +795,40 @@ describe("runner runtime context", () => {
         }
 
         if (
+          request.method === "PATCH" &&
+          request.url ===
+            "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review"
+        ) {
+          const body = requestRecord.body as
+            | {
+                reason?: string;
+                reviewedBy?: string;
+                status?: "accepted" | "rejected";
+              }
+            | undefined;
+          const status = body?.status ?? "accepted";
+
+          response.end(
+            JSON.stringify({
+              candidate: sourceChangeCandidate(status, {
+                decidedAt: "2026-04-26T12:04:00.000Z",
+                decidedBy: body?.reviewedBy ?? "user-main",
+                decision: status,
+                reason: body?.reason ?? "Reviewed by user."
+              })
+            })
+          );
+          return;
+        }
+
+        if (
           request.method === "GET" &&
           request.url ===
             "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
         ) {
           response.end(
             JSON.stringify({
-              candidate: {
-                candidateId: "source-change-turn-alpha",
-                conversationId: "conversation-alpha",
-                createdAt: "2026-04-26T12:02:00.000Z",
-                graphId: "graph-alpha",
-                nodeId: "worker-it",
-                sessionId: "session-alpha",
-                sourceChangeSummary: {
-                  additions: 3,
-                  checkedAt: "2026-04-26T12:02:00.000Z",
-                  deletions: 1,
-                  fileCount: 1,
-                  files: [
-                    {
-                      additions: 3,
-                      deletions: 1,
-                      path: "src/index.ts",
-                      status: "modified"
-                    }
-                  ],
-                  status: "changed",
-                  truncated: false
-                },
-                status: "pending_review",
-                turnId: "turn-approval",
-                updatedAt: "2026-04-26T12:02:00.000Z"
-              },
+              candidate: sourceChangeCandidate(),
               diff: {
                 available: true,
                 bytesRead: 51,
@@ -1050,6 +1090,8 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain(
         "/source-change-candidates/diff?nodeId=worker-it&amp;candidateId=source-change-turn-alpha&amp;conversationId=conversation-alpha"
       );
+      expect(pageBody).toContain("Accept candidate");
+      expect(pageBody).toContain("Reject candidate");
       expect(pageBody).toContain("Approve");
 
       const sourceDiffResponse = await fetch(
@@ -1063,6 +1105,8 @@ describe("runner runtime context", () => {
       expect(sourceDiffBody).toContain("src/index.ts");
       expect(sourceDiffBody).toContain("projection excerpt");
       expect(sourceDiffBody).toContain("+projected behavior");
+      expect(sourceDiffBody).toContain("Accept candidate");
+      expect(sourceDiffBody).toContain("Reject candidate");
       expect(
         hostRequests.some(
           (record) =>
@@ -1070,6 +1114,28 @@ describe("runner runtime context", () => {
             "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
         )
       ).toBe(false);
+
+      const sourceReviewResponse = await fetch(
+        new URL("/source-change-candidates/review", handle.clientUrl),
+        {
+          body: new URLSearchParams({
+            candidateId: "source-change-turn-alpha",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Looks good for application.",
+            status: "accepted"
+          }),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded"
+          },
+          method: "POST"
+        }
+      );
+      const sourceReviewBody = await sourceReviewResponse.text();
+      expect(sourceReviewResponse.status).toBe(200);
+      expect(sourceReviewBody).toContain(
+        "Reviewed source-change-turn-alpha as accepted."
+      );
 
       const artifactPreviewResponse = await fetch(
         new URL(
@@ -1165,6 +1231,20 @@ describe("runner runtime context", () => {
             "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
       )
     ).toBe(false);
+    const sourceReviewRequest = hostRequests.find(
+      (request) =>
+        request.method === "PATCH" &&
+        request.url ===
+          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review"
+    );
+    expect(sourceReviewRequest).toMatchObject({
+      authorization: "Bearer host-secret"
+    });
+    expect(sourceReviewRequest?.body).toMatchObject({
+      reason: "Looks good for application.",
+      reviewedBy: "user-main",
+      status: "accepted"
+    });
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&

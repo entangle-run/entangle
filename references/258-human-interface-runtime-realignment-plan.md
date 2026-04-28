@@ -55,7 +55,9 @@ The current implementation has the first federated execution path:
   approval cards also render bounded projected source summaries when Host
   projection has a matching observed source-change ref, and the source diff
   review page now renders projected `diffExcerpt` evidence before falling back
-  to the older runtime-local diff endpoint.
+  to the older runtime-local diff endpoint. Source-change cards and the diff
+  page now include Host-mediated accept/reject candidate review controls that
+  stamp `reviewedBy` with the running User Node id.
 - The User Client renders bounded artifact refs from message records so humans
   can see handoff artifacts, and now provides a server-side artifact preview
   page that prefers bounded projection-carried artifact previews from
@@ -74,9 +76,9 @@ The current implementation still does not have the final User Node client:
   source/wiki review application. Artifact preview now prefers bounded
   projection-carried preview content, and falls back to the existing Host deep
   runtime preview path only when projection has no preview. Source-change cards
-  can now render projected summaries and projected bounded diff excerpts, but
-  complete source review still needs a projection/object-backed source review
-  service.
+  can now render projected summaries, projected bounded diff excerpts, and
+  accept/reject source-candidate review actions, but complete source/wiki
+  review still needs a projection/object-backed review service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, local read markers, signed read receipts, delivery retry

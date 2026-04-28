@@ -62,6 +62,13 @@ The most accurate current description is:
 - the largest gaps are Host-runner federation, stable user-node signing, and
   projection state that does not depend on shared local filesystems.
 
+The Human Interface Runtime now has a first usable running User Client for
+human graph participants. It can inspect projected inbox state, publish
+User Node messages, respond to approval requests, review artifact/wiki/source
+evidence, and submit Host-mediated source-candidate accept/reject decisions
+with `reviewedBy` stamped as the running User Node id. Studio remains the
+operator surface, not the primary human-node client.
+
 The contract-ownership layer is now also explicit:
 
 - `packages/types` should own the primary `zod` schemas and host API DTO

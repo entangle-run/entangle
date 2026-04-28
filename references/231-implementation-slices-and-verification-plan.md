@@ -230,6 +230,10 @@ Implementation record:
 - [279-user-client-wiki-ref-projection-slice.md](279-user-client-wiki-ref-projection-slice.md)
 - [280-user-node-read-receipt-slice.md](280-user-node-read-receipt-slice.md)
 - [281-projected-wiki-preview-slice.md](281-projected-wiki-preview-slice.md)
+- [283-user-node-parent-message-read-model-slice.md](283-user-node-parent-message-read-model-slice.md)
+- [284-user-node-delivery-retry-state-slice.md](284-user-node-delivery-retry-state-slice.md)
+- [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
+- [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
 
 Current status:
 
@@ -254,8 +258,10 @@ Current status:
   artifact-ref rendering, projection-backed bounded artifact preview with
   runtime fallback, delivery labels, local conversation read state, projected
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
-  context rendering, signed read receipts, parent-message links, and message
-  delivery retry state, and message publishing that preserves selected
+  context rendering, signed read receipts, parent-message links, message
+  delivery retry state, runtime status, live state refresh, and
+  Host-mediated source-candidate accept/reject controls stamped with the
+  running User Node id, and message publishing that preserves selected
   conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
@@ -263,8 +269,8 @@ Current status:
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application and richer artifact object-backend
-  review remain open.
+- final bundled User Client application, projection-backed source/wiki review,
+  and richer artifact object-backend review remain open.
 
 Verification:
 

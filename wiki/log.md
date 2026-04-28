@@ -3543,3 +3543,15 @@ page.
 The page now computes a bounded state fingerprint and polls `/api/state` so it
 can reload when inbox, source-change, or wiki projection state changes, without
 moving user-node chat ownership into Studio.
+
+## [2026-04-28] implementation | Added User Client source candidate review
+
+Added `references/288-user-client-source-candidate-review-slice.md`. The
+runner-served User Client now renders accept/reject controls for
+`source_change_candidate` approval resources and on the source diff page.
+
+The Human Interface Runtime submits the existing Host source-candidate review
+mutation with `reviewedBy` set to the running User Node id. This gives the
+human-node client a concrete source review action without making Studio the
+user-node UI and without conflating review with source application or
+publication.
