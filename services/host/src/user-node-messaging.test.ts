@@ -143,6 +143,53 @@ describe("User Node A2A publishing", () => {
     });
   });
 
+  it("builds read receipts with parent message context", () => {
+    const userSecretKey = generateSecretKey();
+    const workerSecretKey = generateSecretKey();
+    const message = buildUserNodeA2AMessage({
+      request: {
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        messageType: "read.receipt",
+        parentMessageId:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        sessionId: "session-alpha",
+        summary: "Read conversation-alpha.",
+        targetNodeId: "worker-it"
+      },
+      runtimeContext: buildRuntimeContext(getPublicKey(workerSecretKey)),
+      userNode: {
+        nodeId: "user-main",
+        publicKey: getPublicKey(userSecretKey),
+        secretKey: userSecretKey
+      }
+    });
+
+    expect(message).toMatchObject({
+      conversationId: "conversation-alpha",
+      fromNodeId: "user-main",
+      messageType: "read.receipt",
+      parentMessageId:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      responsePolicy: {
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      toNodeId: "worker-it",
+      work: {
+        metadata: {
+          sentBy: "user-node-gateway"
+        },
+        summary: "Read conversation-alpha."
+      }
+    });
+  });
+
   it("publishes private Nostr-wrapped User Node messages through an injected pool", async () => {
     const userSecretKey = generateSecretKey();
     const workerSecretKey = generateSecretKey();

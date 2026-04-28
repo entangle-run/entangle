@@ -413,6 +413,7 @@ describe("runner runtime context", () => {
       method: string;
       url: string;
     }> = [];
+    let conversationUnreadCount = 1;
     const hostServer = createServer((request, response) => {
       void (async () => {
         const chunks: Buffer[] = [];
@@ -563,7 +564,7 @@ describe("runner runtime context", () => {
                   },
                   sessionId: "session-alpha",
                   status: "working",
-                  unreadCount: 0,
+                  unreadCount: conversationUnreadCount,
                   userNodeId: "user-main"
                 }
               ],
@@ -688,6 +689,7 @@ describe("runner runtime context", () => {
           request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/inbox/conversation-alpha/read"
         ) {
+          conversationUnreadCount = 0;
           response.end(
             JSON.stringify({
               conversation: {
@@ -1106,7 +1108,9 @@ describe("runner runtime context", () => {
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&
-        request.url === "/v1/user-nodes/user-main/messages"
+        request.url === "/v1/user-nodes/user-main/messages" &&
+        (request.body as { messageType?: string } | undefined)?.messageType ===
+          "answer"
     );
     expect(publishRequest).toMatchObject({
       authorization: "Bearer host-secret"
@@ -1116,6 +1120,27 @@ describe("runner runtime context", () => {
       messageType: "answer",
       sessionId: "session-alpha",
       summary: "The reviewed answer is ready.",
+      targetNodeId: "worker-it"
+    });
+    const readReceiptRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/user-nodes/user-main/messages" &&
+        (request.body as { messageType?: string } | undefined)?.messageType ===
+          "read.receipt"
+    );
+    expect(readReceiptRequest?.body).toMatchObject({
+      conversationId: "conversation-alpha",
+      messageType: "read.receipt",
+      parentMessageId:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-alpha",
+      summary: "Read conversation-alpha.",
       targetNodeId: "worker-it"
     });
     const approvalPublishRequest = hostRequests.find(

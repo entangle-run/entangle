@@ -3457,3 +3457,14 @@ wiki refs inside the message card.
 This keeps node memory/wiki visible to the human User Node through Host
 projection without reading runner-local wiki files or pushing wiki content
 through Nostr.
+
+## [2026-04-28] implementation | Added signed User Node read receipts
+
+Added `references/280-user-node-read-receipt-slice.md`. A2A now supports
+`read.receipt`, User Node publish contracts accept it, and the runner-served
+User Client publishes a signed read receipt when an opened conversation had
+unread inbound messages before being marked read locally.
+
+The local read marker remains the inbox source of truth; the read receipt is a
+peer-visible signed notification carried through the existing User Node
+gateway.

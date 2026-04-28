@@ -21,6 +21,7 @@ export const entangleA2AMessageTypeSchema = z.enum([
   "answer",
   "approval.request",
   "approval.response",
+  "read.receipt",
   "conversation.close"
 ]);
 
@@ -78,6 +79,7 @@ function requiresParentMessage(
     case "answer":
     case "approval.request":
     case "approval.response":
+    case "read.receipt":
     case "conversation.close":
       return true;
     default:

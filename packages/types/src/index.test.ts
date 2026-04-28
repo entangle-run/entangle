@@ -444,6 +444,18 @@ describe("federated runtime contracts", () => {
         turnId: "turn-alpha"
       }).fromPubkey
     ).toBe(userNodePubkey);
+
+    expect(
+      userNodeMessagePublishRequestSchema.parse({
+        conversationId: "conversation-alpha",
+        messageType: "read.receipt",
+        parentMessageId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        sessionId: "session-alpha",
+        summary: "Read conversation-alpha.",
+        targetNodeId: "worker-it"
+      }).messageType
+    ).toBe("read.receipt");
   });
 
   it("requires active assignments to carry a lease", () => {
@@ -2184,6 +2196,34 @@ describe("Entangle A2A machine-readable contracts", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts read receipt messages with parent message context", () => {
+    const result = entangleA2AMessageSchema.parse({
+      conversationId: "conv-alpha",
+      fromNodeId: "user-main",
+      fromPubkey: "1111111111111111111111111111111111111111111111111111111111111111",
+      graphId: "graph-alpha",
+      intent: "read_receipt",
+      messageType: "read.receipt",
+      parentMessageId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-alpha",
+      toNodeId: "worker-it",
+      toPubkey: "2222222222222222222222222222222222222222222222222222222222222222",
+      turnId: "turn-read",
+      work: {
+        summary: "Read conversation conv-alpha."
+      }
+    });
+
+    expect(result.messageType).toBe("read.receipt");
   });
 
   it("rejects response-required messages with no allowed follow-up", () => {

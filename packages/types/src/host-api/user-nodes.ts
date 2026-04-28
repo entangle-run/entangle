@@ -102,6 +102,7 @@ export const userNodeMessagePublishTypeSchema = z.enum([
   "question",
   "answer",
   "approval.response",
+  "read.receipt",
   "conversation.close"
 ]);
 

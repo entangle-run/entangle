@@ -353,6 +353,46 @@ async function markUserNodeConversationRead(input: {
   }
 }
 
+async function publishConversationReadReceipt(input: {
+  conversation: UserConversationProjectionRecord;
+  conversationHistory?: UserNodeConversationResponse | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  userNodeId: string;
+}): Promise<{ error?: string }> {
+  const latestInboundMessage = input.conversationHistory?.messages
+    .filter((message) => message.direction === "inbound")
+    .at(-1);
+
+  if (!latestInboundMessage || input.conversation.unreadCount === 0) {
+    return {};
+  }
+
+  try {
+    await publishUserNodeMessage({
+      conversationId: input.conversation.conversationId,
+      hostApi: input.hostApi,
+      messageType: "read.receipt",
+      parentMessageId: latestInboundMessage.eventId,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: latestInboundMessage.sessionId,
+      summary: `Read ${input.conversation.conversationId}.`,
+      targetNodeId: latestInboundMessage.fromNodeId,
+      userNodeId: input.userNodeId
+    });
+
+    return {};
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Read receipt publish failed."
+    };
+  }
+}
+
 async function fetchHostProjection(input: {
   hostApi?: RunnerJoinHostApi | undefined;
 }): Promise<{
@@ -557,6 +597,11 @@ async function publishUserNodeMessage(input: {
   hostApi?: RunnerJoinHostApi | undefined;
   messageType: UserNodeMessagePublishType;
   parentMessageId?: string | undefined;
+  responsePolicy?: {
+    closeOnResult: boolean;
+    maxFollowups: number;
+    responseRequired: boolean;
+  };
   sessionId?: string | undefined;
   summary: string;
   targetNodeId: string;
@@ -577,6 +622,7 @@ async function publishUserNodeMessage(input: {
         ...(input.conversationId ? { conversationId: input.conversationId } : {}),
         messageType: input.messageType,
         ...(input.parentMessageId ? { parentMessageId: input.parentMessageId } : {}),
+        ...(input.responsePolicy ? { responsePolicy: input.responsePolicy } : {}),
         ...(input.sessionId ? { sessionId: input.sessionId } : {}),
         summary: input.summary,
         targetNodeId: input.targetNodeId
@@ -858,18 +904,11 @@ async function renderHome(input: {
   notice?: string;
   selectedConversationId?: string | undefined;
 }): Promise<string> {
-  const readState = input.selectedConversationId
-    ? await markUserNodeConversationRead({
-        conversationId: input.selectedConversationId,
-        hostApi: input.hostApi,
-        userNodeId: input.context.binding.node.nodeId
-      })
-    : undefined;
-  const state = await buildUserClientState({
+  let state = await buildUserClientState({
     context: input.context,
     hostApi: input.hostApi
   });
-  const selectedConversation = input.selectedConversationId
+  let selectedConversation = input.selectedConversationId
     ? state.conversations.find(
         (conversation) =>
           conversation.conversationId === input.selectedConversationId
@@ -882,6 +921,33 @@ async function renderHome(input: {
         userNodeId: state.userNodeId
       })
     : undefined;
+  const readState = selectedConversation
+    ? await markUserNodeConversationRead({
+        conversationId: selectedConversation.conversationId,
+        hostApi: input.hostApi,
+        userNodeId: input.context.binding.node.nodeId
+      })
+    : undefined;
+  const readReceiptState = selectedConversation
+    ? await publishConversationReadReceipt({
+        conversation: selectedConversation,
+        conversationHistory: selectedConversationHistory?.detail,
+        hostApi: input.hostApi,
+        userNodeId: state.userNodeId
+      })
+    : undefined;
+
+  if (selectedConversation && !readState?.error) {
+    const selectedConversationId = selectedConversation.conversationId;
+    state = await buildUserClientState({
+      context: input.context,
+      hostApi: input.hostApi
+    });
+    selectedConversation = state.conversations.find(
+      (conversation) => conversation.conversationId === selectedConversationId
+    );
+  }
+
   const selectedTargetNodeId =
     selectedConversation?.peerNodeId ?? state.targets[0]?.nodeId ?? "";
   const targetOptions = state.targets
@@ -953,7 +1019,9 @@ async function renderHome(input: {
     peerNodeId: selectedConversation?.peerNodeId,
     wikiRefs: state.wikiRefs
   });
-  const errorMessage = [state.error, readState?.error].filter(Boolean).join(" ");
+  const errorMessage = [state.error, readState?.error, readReceiptState?.error]
+    .filter(Boolean)
+    .join(" ");
 
   return `<!doctype html>
 <html lang="en">
