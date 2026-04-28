@@ -127,6 +127,7 @@ Implementation record:
 - [236-assignment-lifecycle-slice.md](236-assignment-lifecycle-slice.md)
 - [324-federated-runtime-lifecycle-control-slice.md](324-federated-runtime-lifecycle-control-slice.md)
 - [326-assignment-receipt-audit-trail-slice.md](326-assignment-receipt-audit-trail-slice.md)
+- [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
 
 Verification:
 
@@ -138,6 +139,7 @@ Verification:
 - process-runner smoke lifecycle command assertions.
 - typed Host event and control-plane tests for `assignment.receipt`
   observations.
+- Host projection contract/reducer tests for assignment receipt projection.
 
 Current status:
 
@@ -155,6 +157,8 @@ Current status:
 - Signed runner `assignment.receipt` observations now become
   `runtime.assignment.receipt` Host audit events, and the process smoke verifies
   receipt kinds from the real lifecycle path.
+- Host projection now exposes bounded `assignmentReceipts` for recent
+  assignment lifecycle receipts.
 
 ### Slice 6: Generic Runner Bootstrap
 

@@ -3979,3 +3979,14 @@ identity.
 The process-runner smoke now verifies `received`, `started`, and `stopped`
 receipt events from the real lifecycle command path in addition to runtime
 projection state.
+
+## [2026-04-28] implementation | Projected assignment receipts
+
+Added `references/327-assignment-receipt-projection-slice.md`. Host projection
+snapshots now include bounded `assignmentReceipts` records derived from typed
+receipt events.
+
+This gives operator surfaces a compact read model for recent assignment
+received/materialized/started/stopped/failed receipts without scanning the full
+Host event stream. The federated process-runner smoke still passes with the
+expanded projection schema.

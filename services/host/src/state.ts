@@ -46,6 +46,8 @@ import {
   type EntangleSignedEnvelope,
   hostProjectionSnapshotSchema,
   type HostProjectionSnapshot,
+  assignmentReceiptProjectionRecordSchema,
+  type AssignmentReceiptProjectionRecord,
   observedApprovalActivityRecordSchema,
   observedArtifactActivityRecordSchema,
   observedConversationActivityRecordSchema,
@@ -3218,6 +3220,38 @@ async function listRuntimeProjectionRecords(input: {
     .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
 }
 
+async function listAssignmentReceiptProjectionRecords(): Promise<
+  AssignmentReceiptProjectionRecord[]
+> {
+  const events = (await listHostEvents(500)).events;
+
+  return events
+    .filter((event) => event.type === "runtime.assignment.receipt")
+    .map((event) =>
+      assignmentReceiptProjectionRecordSchema.parse({
+        assignmentId: event.assignmentId,
+        hostAuthorityPubkey: event.hostAuthorityPubkey,
+        observedAt: event.observedAt,
+        projection: {
+          source: "observation_event",
+          updatedAt: event.timestamp
+        },
+        receiptKind: event.receiptKind,
+        ...(event.receiptMessage
+          ? { receiptMessage: event.receiptMessage }
+          : {}),
+        runnerId: event.runnerId,
+        runnerPubkey: event.runnerPubkey
+      })
+    )
+    .sort((left, right) => {
+      const timeOrder = right.observedAt.localeCompare(left.observedAt);
+      return timeOrder !== 0
+        ? timeOrder
+        : left.assignmentId.localeCompare(right.assignmentId);
+    });
+}
+
 async function listArtifactRefProjectionRecords(): Promise<
   ArtifactRefProjectionRecord[]
 > {
@@ -3512,6 +3546,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
   const [
     runnerList,
     assignments,
+    assignmentReceipts,
     artifactRefs,
     sourceChangeRefs,
     userConversations,
@@ -3519,6 +3554,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
   ] = await Promise.all([
       listRunnerRegistry(),
       listRuntimeAssignmentRecords(),
+      listAssignmentReceiptProjectionRecords(),
       listArtifactRefProjectionRecords(),
       listSourceChangeRefProjectionRecords(),
       listUserConversationProjectionRecords(),
@@ -3536,6 +3572,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
 
   return hostProjectionSnapshotSchema.parse({
     artifactRefs,
+    assignmentReceipts,
     assignments: assignments.map((assignment) => ({
       assignmentId: assignment.assignmentId,
       graphId: assignment.graphId,

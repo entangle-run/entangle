@@ -775,6 +775,18 @@ describe("federated runtime contracts", () => {
           status: "active"
         }
       ],
+      assignmentReceipts: [
+        {
+          assignmentId: "assignment-alpha",
+          hostAuthorityPubkey: authorityPubkey,
+          observedAt,
+          projection,
+          receiptKind: "started",
+          receiptMessage: "Assignment runtime is running.",
+          runnerId: "runner-alpha",
+          runnerPubkey
+        }
+      ],
       freshness: "current",
       generatedAt: observedAt,
       hostAuthorityPubkey: authorityPubkey,
@@ -878,6 +890,7 @@ describe("federated runtime contracts", () => {
     });
 
     expect(snapshot.artifactRefs[0]?.artifactId).toBe("artifact-alpha");
+    expect(snapshot.assignmentReceipts[0]?.receiptKind).toBe("started");
     expect(snapshot.artifactRefs[0]?.artifactPreview?.available).toBe(true);
     expect(snapshot.runtimes[0]?.nodeId).toBe("worker-it");
     expect(snapshot.sourceChangeRefs[0]?.candidateId).toBe("candidate-alpha");

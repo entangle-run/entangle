@@ -340,6 +340,12 @@ describe("Host federated control plane", () => {
 
     const projection = await stateModule.getHostProjectionSnapshot();
     expect(projection.runners).toHaveLength(1);
+    expect(projection.assignmentReceipts[0]).toMatchObject({
+      assignmentId: "assignment-alpha",
+      receiptKind: "started",
+      receiptMessage: "Assignment runtime is running.",
+      runnerId: "runner-alpha"
+    });
     expect(projection.runners[0]).toMatchObject({
       assignmentIds: ["assignment-alpha"],
       operationalState: "ready",

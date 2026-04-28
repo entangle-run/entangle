@@ -65,6 +65,23 @@ export const assignmentProjectionRecordSchema = z.object({
   status: runtimeAssignmentStatusSchema
 });
 
+export const assignmentReceiptProjectionRecordSchema = z.object({
+  assignmentId: identifierSchema,
+  hostAuthorityPubkey: nostrPublicKeySchema,
+  observedAt: nonEmptyStringSchema,
+  projection: projectionMetadataSchema,
+  receiptKind: z.enum([
+    "received",
+    "materialized",
+    "started",
+    "stopped",
+    "failed"
+  ]),
+  receiptMessage: nonEmptyStringSchema.optional(),
+  runnerId: identifierSchema,
+  runnerPubkey: nostrPublicKeySchema
+});
+
 export const runtimeProjectionRecordSchema = z.object({
   assignmentId: identifierSchema.optional(),
   backendKind: runtimeBackendKindSchema,
@@ -133,6 +150,9 @@ export const wikiRefProjectionRecordSchema =
 
 export const hostProjectionSnapshotSchema = z.object({
   artifactRefs: z.array(artifactRefProjectionRecordSchema).default([]),
+  assignmentReceipts: z
+    .array(assignmentReceiptProjectionRecordSchema)
+    .default([]),
   assignments: z.array(assignmentProjectionRecordSchema).default([]),
   freshness: projectionFreshnessSchema.default("unknown"),
   generatedAt: nonEmptyStringSchema,
@@ -155,6 +175,9 @@ export type RunnerProjectionRecord = z.infer<
 >;
 export type AssignmentProjectionRecord = z.infer<
   typeof assignmentProjectionRecordSchema
+>;
+export type AssignmentReceiptProjectionRecord = z.infer<
+  typeof assignmentReceiptProjectionRecordSchema
 >;
 export type RuntimeProjectionRecord = z.infer<
   typeof runtimeProjectionRecordSchema
