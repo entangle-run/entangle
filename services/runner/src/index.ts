@@ -352,6 +352,7 @@ export async function createConfiguredRunnerJoinService(
   joinConfigPath?: string,
   input: {
     clock?: () => string;
+    heartbeatIntervalMs?: number;
     materializer?: RunnerAssignmentMaterializer;
     nonceFactory?: () => string;
     runtimeStarter?: RunnerAssignmentRuntimeStarter;
@@ -374,6 +375,9 @@ export async function createConfiguredRunnerJoinService(
   const service = new RunnerJoinService({
     ...(input.clock ? { clock: input.clock } : {}),
     config,
+    ...(input.heartbeatIntervalMs !== undefined
+      ? { heartbeatIntervalMs: input.heartbeatIntervalMs }
+      : {}),
     materializer:
       input.materializer ??
       createFileSystemAssignmentMaterializer({
@@ -505,6 +509,7 @@ export async function runRunnerServiceUntilSignal(input: {
 export async function runGenericRunnerUntilSignal(input: {
   abortSignal?: AbortSignal;
   clock?: () => string;
+  heartbeatIntervalMs?: number;
   joinConfigPath?: string;
   materializer?: RunnerAssignmentMaterializer;
   nonceFactory?: () => string;
@@ -519,6 +524,9 @@ export async function runGenericRunnerUntilSignal(input: {
     input.joinConfigPath,
     {
       ...(input.clock ? { clock: input.clock } : {}),
+      ...(input.heartbeatIntervalMs !== undefined
+        ? { heartbeatIntervalMs: input.heartbeatIntervalMs }
+        : {}),
       ...(input.materializer ? { materializer: input.materializer } : {}),
       ...(input.nonceFactory ? { nonceFactory: input.nonceFactory } : {}),
       ...(input.runtimeStarter ? { runtimeStarter: input.runtimeStarter } : {}),

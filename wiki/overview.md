@@ -91,7 +91,10 @@ without probing relay state directly.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
-scripts.
+scripts. Generic joined runners now also emit periodic signed
+`runner.heartbeat` observations carrying accepted assignment ids and
+capacity-derived operational state, keeping Host projection live after the
+initial `runner.hello`.
 
 The contract-ownership layer is now also explicit:
 

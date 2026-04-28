@@ -96,12 +96,21 @@ stale/offline projection.
 Implementation record:
 
 - [235-runner-registry-slice.md](235-runner-registry-slice.md)
+- [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
 
 Verification:
 
 - Host registry tests;
 - CLI runner commands;
 - Studio helper tests.
+- runner join heartbeat timer tests.
+
+Current status:
+
+- Host projects signed heartbeat observations.
+- Generic joined runners now emit periodic signed `runner.heartbeat`
+  observations with accepted assignment ids and a capacity-derived
+  operational state.
 
 ### Slice 5: Assignment Lifecycle
 
@@ -132,6 +141,7 @@ Implementation record:
 - [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
 - [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
 - [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
+- [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
 
 Verification:
 
@@ -142,6 +152,7 @@ Verification:
   under runner-owned assignment state.
 - CLI join-config helper tests and runner package typecheck/build for
   `entangle-runner join --config`.
+- runner heartbeat timer tests for the generic join service.
 
 ### Slice 7: Local Adapter Rebase
 

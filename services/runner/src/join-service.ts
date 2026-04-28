@@ -14,6 +14,12 @@ type RunnerJoinTransportSubscription = {
   close(): Promise<void>;
 };
 
+type HeartbeatTimer = ReturnType<typeof setInterval> & {
+  unref?: () => void;
+};
+
+const defaultHeartbeatIntervalMs = 30_000;
+
 export type RunnerJoinTransport = {
   close(): Promise<void>;
   publishObservationEvent(input: {
@@ -83,6 +89,7 @@ export class RunnerJoinService {
       >
     | undefined;
   private lastHelloEventId: string | undefined;
+  private heartbeatTimer: HeartbeatTimer | undefined;
   private startedAt: string | undefined;
   private subscription: RunnerJoinTransportSubscription | undefined;
 
@@ -90,6 +97,7 @@ export class RunnerJoinService {
     private readonly input: {
       clock?: () => string;
       config: RunnerJoinConfig;
+      heartbeatIntervalMs?: number;
       materializer?: RunnerAssignmentMaterializer;
       nonceFactory?: () => string;
       runnerPubkey: string;
@@ -128,6 +136,7 @@ export class RunnerJoinService {
       relayUrls: this.input.config.relayUrls
     });
     this.lastHelloEventId = hello.event.envelope.eventId;
+    this.startHeartbeatTimer();
 
     return this.buildStatus(startedAt);
   }
@@ -135,6 +144,7 @@ export class RunnerJoinService {
   async stop(): Promise<void> {
     const subscription = this.subscription;
     this.subscription = undefined;
+    this.stopHeartbeatTimer();
 
     for (const assignment of this.acceptedAssignments.values()) {
       await this.stopAssignmentRuntime(assignment, "Runner join service stopped.");
@@ -315,6 +325,34 @@ export class RunnerJoinService {
     });
   }
 
+  private startHeartbeatTimer(): void {
+    if (this.heartbeatTimer) {
+      return;
+    }
+
+    const intervalMs =
+      this.input.heartbeatIntervalMs ?? defaultHeartbeatIntervalMs;
+
+    if (intervalMs <= 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      void this.publishHeartbeat().catch(() => undefined);
+    }, intervalMs) as HeartbeatTimer;
+    timer.unref?.();
+    this.heartbeatTimer = timer;
+  }
+
+  private stopHeartbeatTimer(): void {
+    if (!this.heartbeatTimer) {
+      return;
+    }
+
+    clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = undefined;
+  }
+
   private async stopAssignmentRuntime(
     assignment: RuntimeAssignmentRecord,
     reason: string | undefined
@@ -364,6 +402,26 @@ export class RunnerJoinService {
         runnerPubkey: this.input.runnerPubkey
       } as EntangleObservationEventPayload,
       relayUrls: this.input.config.relayUrls
+    });
+  }
+
+  private publishHeartbeat(): Promise<{
+    event: {
+      envelope: {
+        eventId: string;
+      };
+    };
+  }> {
+    const maxAssignments = this.input.config.capabilities.maxAssignments;
+    const acceptedAssignmentIds = [...this.acceptedAssignments.keys()];
+    const operationalState =
+      acceptedAssignmentIds.length >= maxAssignments ? "busy" : "ready";
+
+    return this.publishObservation({
+      assignmentIds: acceptedAssignmentIds,
+      eventType: "runner.heartbeat",
+      observedAt: this.now(),
+      operationalState
     });
   }
 

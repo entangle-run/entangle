@@ -102,6 +102,7 @@ same-machine slice records.
 - [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
 - [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
 - [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
+- [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
 
 ## Audited Scope
 
@@ -208,6 +209,9 @@ The repository is not fully federated:
 - runner A2A transport exists, Host startup subscribes to control/observe relay
   paths, and joined runners can now start node runtime services from
   materialized assignment context paths;
+- generic joined runners now emit periodic signed `runner.heartbeat`
+  observations with accepted assignment ids and capacity-derived operational
+  state;
 - Host projection now exposes runtime projection records from observed runtime
   state, intents, and assignment records without invoking backend
   reconciliation;
@@ -248,6 +252,8 @@ The repository is not fully federated:
 - CLI can now write validated Host-derived generic runner join configs through
   `entangle runners join-config`, and the runner package exposes an
   `entangle-runner` bin for `join --config` startup;
+- generic joined runners now keep Host projection live through periodic signed
+  `runner.heartbeat` observations after startup;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

@@ -3693,3 +3693,13 @@ embedding secrets.
 The runner package now advertises an `entangle-runner` bin for
 `join --config`, so generic runner startup is documented as an operator path
 rather than only as smoke-script internals.
+
+## [2026-04-28] implementation | Added runner join heartbeats
+
+Added `references/302-runner-heartbeat-loop-slice.md`. Generic joined runners
+now emit periodic signed `runner.heartbeat` observations through the existing
+observe transport after `runner.hello`, carrying accepted assignment ids and a
+capacity-derived operational state.
+
+This closes the runner-side liveness gap for remote runners without adding
+shared filesystem assumptions or changing existing assignment event order.

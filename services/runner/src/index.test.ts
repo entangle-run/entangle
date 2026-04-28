@@ -1642,6 +1642,71 @@ describe("runner runtime context", () => {
     expect(transport.isClosed()).toBe(true);
   });
 
+  it("emits periodic join heartbeats with accepted assignment ids", async () => {
+    const fixture = await createRunnerJoinFixture();
+    const transport = new FakeRunnerJoinTransport();
+    process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
+    vi.useFakeTimers();
+
+    const configured = await createConfiguredRunnerJoinService(
+      fixture.configPath,
+      {
+        clock: () => "2026-04-26T12:00:00.000Z",
+        heartbeatIntervalMs: 1_000,
+        materializer: ({ assignment }) =>
+          Promise.resolve({
+            accepted: true,
+            ...(assignment.lease ? { lease: assignment.lease } : {})
+          }),
+        nonceFactory: () => "nonce-alpha",
+        transport
+      }
+    );
+    let stopped = false;
+
+    try {
+      await configured.service.start();
+
+      expect(transport.observations.map((payload) => payload.eventType)).toEqual([
+        "runner.hello"
+      ]);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(transport.observations.at(-1)).toMatchObject({
+        assignmentIds: [],
+        eventType: "runner.heartbeat",
+        observedAt: "2026-04-26T12:00:00.000Z",
+        operationalState: "ready",
+        runnerId: "runner-alpha"
+      });
+
+      await transport.dispatch(buildAssignmentOfferEvent(buildAssignment()));
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(transport.observations.at(-1)).toMatchObject({
+        assignmentIds: ["assignment-alpha"],
+        eventType: "runner.heartbeat",
+        observedAt: "2026-04-26T12:00:00.000Z",
+        operationalState: "busy",
+        runnerId: "runner-alpha"
+      });
+
+      await configured.service.stop();
+      stopped = true;
+      const observationCountAfterStop = transport.observations.length;
+
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(transport.observations).toHaveLength(observationCountAfterStop);
+    } finally {
+      if (!stopped) {
+        await configured.service.stop();
+      }
+      vi.useRealTimers();
+    }
+  });
+
   it("accepts assignment offers only after injected materialization succeeds", async () => {
     const fixture = await createRunnerJoinFixture();
     const transport = new FakeRunnerJoinTransport();
