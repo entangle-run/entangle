@@ -64,16 +64,12 @@ import {
   runtimeRecoveryInspectionResponseSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeListResponseSchema,
-  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
-  runtimeSourceHistoryReplayListResponseSchema,
-  runtimeSourceHistoryReplayRequestSchema,
-  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -160,16 +156,12 @@ import {
   type RuntimeRecoveryInspectionResponse,
   type RuntimeRecoveryPolicyMutationRequest,
   type RuntimeListResponse,
-  type RuntimeSourceChangeCandidateApplyMutationRequest,
   type RuntimeSourceChangeCandidateDiffResponse,
   type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
   type RuntimeSourceHistoryInspectionResponse,
   type RuntimeSourceHistoryListResponse,
-  type RuntimeSourceHistoryReplayListResponse,
-  type RuntimeSourceHistoryReplayRequest,
-  type RuntimeSourceHistoryReplayResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type RunnerRegistryInspectionResponse,
@@ -1242,29 +1234,6 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
-    async applyRuntimeSourceChangeCandidate(
-      nodeId: string,
-      candidateId: string,
-      apply: RuntimeSourceChangeCandidateApplyMutationRequest = {}
-    ): Promise<RuntimeSourceHistoryInspectionResponse> {
-      const request =
-        runtimeSourceChangeCandidateApplyMutationRequestSchema.parse(apply);
-
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/apply`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json"
-            },
-            body: JSON.stringify(request)
-          }
-        ),
-        runtimeSourceHistoryInspectionResponseSchema
-      );
-    },
-
     async listRuntimeSourceHistory(
       nodeId: string
     ): Promise<RuntimeSourceHistoryListResponse> {
@@ -1283,49 +1252,6 @@ export function createHostClient(options: HostClientOptions) {
           `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}`
         ),
         runtimeSourceHistoryInspectionResponseSchema
-      );
-    },
-
-    async listRuntimeSourceHistoryReplays(
-      nodeId: string
-    ): Promise<RuntimeSourceHistoryReplayListResponse> {
-      return parseResponse(
-        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/source-history-replays`),
-        runtimeSourceHistoryReplayListResponseSchema
-      );
-    },
-
-    async listRuntimeSourceHistoryReplaysForEntry(
-      nodeId: string,
-      sourceHistoryId: string
-    ): Promise<RuntimeSourceHistoryReplayListResponse> {
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/replays`
-        ),
-        runtimeSourceHistoryReplayListResponseSchema
-      );
-    },
-
-    async replayRuntimeSourceHistory(
-      nodeId: string,
-      sourceHistoryId: string,
-      replay: RuntimeSourceHistoryReplayRequest = {}
-    ): Promise<RuntimeSourceHistoryReplayResponse> {
-      const request = runtimeSourceHistoryReplayRequestSchema.parse(replay);
-
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/replay`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json"
-            },
-            body: JSON.stringify(request)
-          }
-        ),
-        runtimeSourceHistoryReplayResponseSchema
       );
     },
 
@@ -1642,6 +1568,5 @@ export {
 export {
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
-  formatRuntimeSourceHistoryReplayStatus,
   sortRuntimeSourceHistoryForPresentation
 } from "./runtime-source-history.js";

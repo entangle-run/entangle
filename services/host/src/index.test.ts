@@ -70,8 +70,6 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
-  runtimeSourceHistoryReplayListResponseSchema,
-  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -5383,122 +5381,50 @@ describe("buildHostServer", () => {
         available: false
       });
 
-      await writeFile(
-        path.join(sourceWorkspaceRoot, "worker.ts"),
-        "export const generated = false;\n",
-        "utf8"
-      );
-
-      const policyBlockedApplyResponse = await server.inject({
-        method: "POST",
-        payload: {
-          appliedBy: "operator-alpha",
-          reason: "Try applying without the node-required approval."
-        },
-        url:
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
+      const sourceHistoryCommit = await runGitCommand({
+        args: ["commit-tree", headTree, "-m", "Apply source-change-turn-alpha"],
+        cwd: sourceWorkspaceRoot,
+        env: {
+          ...gitEnv,
+          GIT_AUTHOR_EMAIL: "worker-it@entangle.invalid",
+          GIT_AUTHOR_NAME: "Worker IT",
+          GIT_COMMITTER_EMAIL: "worker-it@entangle.invalid",
+          GIT_COMMITTER_NAME: "Worker IT"
+        }
       });
-
-      expect(policyBlockedApplyResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(policyBlockedApplyResponse.json()).message
-      ).toContain("requires an approved approvalId");
-
-      const wrongSessionApplyResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-application-other-session",
-          appliedBy: "operator-alpha",
-          reason: "Try applying with an approval from another session."
-        },
-        url:
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
-      });
-
-      expect(wrongSessionApplyResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(wrongSessionApplyResponse.json()).message
-      ).toContain("not session 'session-alpha'");
-
-      const wrongOperationApplyResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-application-wrong-operation",
-          appliedBy: "operator-alpha",
-          reason: "Try applying with an approval for another operation."
-        },
-        url:
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
-      });
-
-      expect(wrongOperationApplyResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(wrongOperationApplyResponse.json()).message
-      ).toContain("requires 'source_application'");
-
-      const wrongResourceApplyResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-application-wrong-resource",
-          appliedBy: "operator-alpha",
-          reason: "Try applying with an approval for another resource."
-        },
-        url:
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
-      });
-
-      expect(wrongResourceApplyResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(wrongResourceApplyResponse.json()).message
-      ).toContain("requires 'source_change_candidate:source-change-turn-alpha");
-
-      const applyResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-application-alpha",
-          appliedBy: "operator-alpha",
-          reason: "Promote the accepted change into source history."
-        },
-        url:
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
-      });
-
-      expect(applyResponse.statusCode).toBe(200);
-      const sourceHistoryEntry =
-        runtimeSourceHistoryInspectionResponseSchema.parse(
-          applyResponse.json()
-        ).entry;
-      expect(sourceHistoryEntry).toMatchObject({
+      const sourceHistoryEntry = sourceHistoryRecordSchema.parse({
+        appliedAt: "2026-04-24T10:07:00.000Z",
         appliedBy: "operator-alpha",
         applicationApprovalId: "approval-source-application-alpha",
+        baseTree,
         candidateId: "source-change-turn-alpha",
+        branch: "entangle-source-history",
+        commit: sourceHistoryCommit,
+        conversationId: "conv-alpha",
+        graphId: runtimeContext.binding.graphId,
+        graphRevisionId: runtimeContext.binding.graphRevisionId,
+        headTree,
         mode: "applied_to_workspace",
         nodeId: "worker-it",
-        reason: "Promote the accepted change into source history.",
-        sourceHistoryId: "source-history-source-change-turn-alpha"
+        reason: "Runner applied the accepted signed review.",
+        sessionId: "session-alpha",
+        sourceChangeSummary: candidateRecord.sourceChangeSummary,
+        sourceHistoryId: "source-history-source-change-turn-alpha",
+        turnId: "turn-alpha",
+        updatedAt: "2026-04-24T10:07:00.000Z"
       });
-      expect(sourceHistoryEntry.commit).toMatch(/^[0-9a-f]{40}$/);
-
-      const appliedCandidateFile = sourceChangeCandidateRecordSchema.parse(
-        JSON.parse(
-          await readFile(
-            path.join(
-              runtimeContext.workspace.runtimeRoot,
-              "source-change-candidates",
-              "source-change-turn-alpha.json"
-            ),
-            "utf8"
-          )
-        ) as unknown
+      await mkdir(
+        path.join(runtimeContext.workspace.runtimeRoot, "source-history"),
+        { recursive: true }
       );
-      expect(appliedCandidateFile.application).toMatchObject({
-        approvalId: "approval-source-application-alpha",
-        mode: "applied_to_workspace",
-        sourceHistoryId: "source-history-source-change-turn-alpha"
-      });
-      await expect(
-        readFile(path.join(sourceWorkspaceRoot, "worker.ts"), "utf8")
-      ).resolves.toBe("export const generated = true;\n");
+      await writeJsonFile(
+        path.join(
+          runtimeContext.workspace.runtimeRoot,
+          "source-history",
+          "source-history-source-change-turn-alpha.json"
+        ),
+        sourceHistoryEntry
+      );
 
       const sourceHistoryListResponse = await server.inject({
         method: "GET",
@@ -5524,91 +5450,6 @@ describe("buildHostServer", () => {
           sourceHistoryInspectionResponse.json()
         ).entry.commit
       ).toBe(sourceHistoryEntry.commit);
-
-      await writeJsonFile(
-        path.join(
-          runtimeContext.workspace.runtimeRoot,
-          "approvals",
-          "approval-source-history-replay-alpha.json"
-        ),
-        approvalRecordSchema.parse({
-          approvalId: "approval-source-history-replay-alpha",
-          approverNodeIds: ["operator-alpha"],
-          graphId: runtimeContext.binding.graphId,
-          operation: "source_application",
-          reason: "Approve source history replay into the source workspace.",
-          requestedAt: "2026-04-24T00:05:00.000Z",
-          requestedByNodeId: "worker-it",
-          resource: {
-            id: "source-history-source-change-turn-alpha",
-            kind: "source_history",
-            label: "source-history-source-change-turn-alpha"
-          },
-          sessionId: "session-alpha",
-          status: "approved",
-          updatedAt: "2026-04-24T00:05:01.000Z"
-        })
-      );
-
-      const sourceHistoryReplayResponse = await server.inject({
-        method: "POST",
-        payload: {
-          approvalId: "approval-source-history-replay-alpha",
-          replayedBy: "operator-alpha",
-          replayId: "replay-source-history-alpha",
-          reason: "Replay the accepted source history."
-        },
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/replay"
-      });
-
-      expect(sourceHistoryReplayResponse.statusCode).toBe(200);
-      const sourceHistoryReplay = runtimeSourceHistoryReplayResponseSchema.parse(
-        sourceHistoryReplayResponse.json()
-      );
-      expect(sourceHistoryReplay.replay).toMatchObject({
-        approvalId: "approval-source-history-replay-alpha",
-        replayId: "replay-source-history-alpha",
-        sourceHistoryId: "source-history-source-change-turn-alpha",
-        status: "already_in_workspace"
-      });
-
-      const sourceHistoryReplayListResponse = await server.inject({
-        method: "GET",
-        url:
-          "/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/replays"
-      });
-
-      expect(sourceHistoryReplayListResponse.statusCode).toBe(200);
-      expect(
-        runtimeSourceHistoryReplayListResponseSchema.parse(
-          sourceHistoryReplayListResponse.json()
-        ).replays
-      ).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            replayId: "replay-source-history-alpha"
-          })
-        ])
-      );
-
-      const allSourceHistoryReplaysResponse = await server.inject({
-        method: "GET",
-        url: "/v1/runtimes/worker-it/source-history-replays"
-      });
-
-      expect(allSourceHistoryReplaysResponse.statusCode).toBe(200);
-      expect(
-        runtimeSourceHistoryReplayListResponseSchema.parse(
-          allSourceHistoryReplaysResponse.json()
-        ).replays
-      ).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            sourceHistoryId: "source-history-source-change-turn-alpha"
-          })
-        ])
-      );
 
       const wikiRepositoryRoot = runtimeContext.workspace.wikiRepositoryRoot;
       if (!wikiRepositoryRoot) {
@@ -5739,54 +5580,6 @@ describe("buildHostServer", () => {
         ).message
       ).toContain("already published");
 
-      const repeatedApplyResponse = await server.inject({
-        method: "POST",
-        payload: {},
-        url:
-          "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
-      });
-
-      expect(repeatedApplyResponse.statusCode).toBe(409);
-      expect(
-        hostErrorResponseSchema.parse(repeatedApplyResponse.json())
-      ).toMatchObject({
-        code: "conflict"
-      });
-
-      const sourceHistoryEvents = hostEventListResponseSchema
-        .parse(
-          (
-            await server.inject({
-              method: "GET",
-              url: "/v1/events?limit=20"
-            })
-          ).json()
-        )
-        .events.filter((event) => event.type === "source_history.updated");
-      expect(sourceHistoryEvents).toHaveLength(1);
-      expect(sourceHistoryEvents[0]).toMatchObject({
-        approvalId: "approval-source-application-alpha",
-        candidateId: "source-change-turn-alpha",
-        historyId: "source-history-source-change-turn-alpha",
-        mode: "applied_to_workspace"
-      });
-      const sourceHistoryReplayedEvents = hostEventListResponseSchema
-        .parse(
-          (
-            await server.inject({
-              method: "GET",
-              url: "/v1/events?limit=20"
-            })
-          ).json()
-        )
-        .events.filter((event) => event.type === "source_history.replayed");
-      expect(sourceHistoryReplayedEvents).toHaveLength(1);
-      expect(sourceHistoryReplayedEvents[0]).toMatchObject({
-        approvalId: "approval-source-history-replay-alpha",
-        historyId: "source-history-source-change-turn-alpha",
-        replayId: "replay-source-history-alpha",
-        replayStatus: "already_in_workspace"
-      });
       const wikiRepositoryPublishedEvents = hostEventListResponseSchema
         .parse(
           (

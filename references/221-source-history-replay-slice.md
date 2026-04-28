@@ -2,6 +2,11 @@
 
 Date: 2026-04-26.
 
+> Superseded on 2026-04-28 by
+> `334-host-source-application-replay-removal-slice.md`. Direct Host
+> source-history replay was removed because source workspace mutation must be
+> runner-owned and protocol-driven, not Host filesystem mutation.
+
 ## Purpose
 
 This slice adds the first direct source-history replay path for Entangle.

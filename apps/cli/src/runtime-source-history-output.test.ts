@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SourceHistoryRecord } from "@entangle/types";
-import {
-  projectRuntimeSourceHistoryReplaySummary,
-  projectRuntimeSourceHistorySummary
-} from "./runtime-source-history-output.js";
+import { projectRuntimeSourceHistorySummary } from "./runtime-source-history-output.js";
 
 const entry: SourceHistoryRecord = {
   appliedAt: "2026-04-24T00:03:00.000Z",
@@ -64,32 +61,5 @@ describe("runtime source history CLI output", () => {
     expect(projectRuntimeSourceHistorySummary(entry).detailLines).toContain(
       "commit commit-alpha"
     );
-  });
-
-  it("projects compact source history replay summaries", () => {
-    expect(
-      projectRuntimeSourceHistoryReplaySummary({
-        baseTree: "base-tree-alpha",
-        candidateId: "source-change-turn-alpha",
-        commit: "commit-alpha",
-        createdAt: "2026-04-24T10:04:00.000Z",
-        graphId: "team-alpha",
-        graphRevisionId: "team-alpha-20260424-000000",
-        headTree: "head-tree-alpha",
-        nodeId: "worker-it",
-        replayedFileCount: 2,
-        replayedPath: "/tmp/entangle/source",
-        replayId: "replay-source-history-alpha",
-        sourceHistoryId: "source-history-source-change-turn-alpha",
-        status: "replayed",
-        turnId: "turn-alpha",
-        updatedAt: "2026-04-24T10:04:00.000Z"
-      })
-    ).toMatchObject({
-      candidateId: "source-change-turn-alpha",
-      replayId: "replay-source-history-alpha",
-      sourceHistoryId: "source-history-source-change-turn-alpha",
-      status: "2 files replayed"
-    });
   });
 });

@@ -542,87 +542,6 @@ export const runtimeSourceHistoryInspectionResponseSchema = z.object({
   entry: sourceHistoryRecordSchema
 });
 
-export const runtimeSourceHistoryReplayRequestSchema = z.object({
-  approvalId: identifierSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  replayedBy: identifierSchema.optional(),
-  replayId: identifierSchema.optional()
-});
-
-export const runtimeSourceHistoryReplayStatusSchema = z.enum([
-  "already_in_workspace",
-  "replayed",
-  "unavailable"
-]);
-
-export const runtimeSourceHistoryReplayRecordSchema = z
-  .object({
-    approvalId: identifierSchema.optional(),
-    baseTree: nonEmptyStringSchema,
-    candidateId: identifierSchema,
-    commit: nonEmptyStringSchema,
-    createdAt: nonEmptyStringSchema,
-    graphId: identifierSchema,
-    graphRevisionId: identifierSchema,
-    headTree: nonEmptyStringSchema,
-    nodeId: identifierSchema,
-    reason: nonEmptyStringSchema.optional(),
-    replayedBy: identifierSchema.optional(),
-    replayedFileCount: z.number().int().nonnegative().optional(),
-    replayedPath: filesystemPathSchema.optional(),
-    replayId: identifierSchema,
-    sourceHistoryId: identifierSchema,
-    status: runtimeSourceHistoryReplayStatusSchema,
-    turnId: identifierSchema,
-    unavailableReason: nonEmptyStringSchema.optional(),
-    updatedAt: nonEmptyStringSchema
-  })
-  .superRefine((value, context) => {
-    if (value.status !== "unavailable") {
-      if (value.replayedFileCount === undefined) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Available source-history replay records must include replayedFileCount.",
-          path: ["replayedFileCount"]
-        });
-      }
-
-      if (!value.replayedPath) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Available source-history replay records must include replayedPath.",
-          path: ["replayedPath"]
-        });
-      }
-    }
-
-    if (value.status === "unavailable" && !value.unavailableReason) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Unavailable source-history replay records must include unavailableReason.",
-        path: ["unavailableReason"]
-      });
-    }
-  });
-
-export const runtimeSourceHistoryReplayResponseSchema = z.object({
-  entry: sourceHistoryRecordSchema,
-  replay: runtimeSourceHistoryReplayRecordSchema
-});
-
-export const runtimeSourceHistoryReplayListResponseSchema = z.object({
-  replays: z.array(runtimeSourceHistoryReplayRecordSchema)
-});
-
-export const runtimeSourceChangeCandidateApplyMutationRequestSchema = z.object({
-  approvalId: identifierSchema.optional(),
-  appliedBy: identifierSchema.optional(),
-  reason: nonEmptyStringSchema.optional()
-});
-
 export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
   "available",
   [
@@ -797,24 +716,6 @@ export type RuntimeSourceHistoryListResponse = z.infer<
 >;
 export type RuntimeSourceHistoryInspectionResponse = z.infer<
   typeof runtimeSourceHistoryInspectionResponseSchema
->;
-export type RuntimeSourceHistoryReplayRequest = z.input<
-  typeof runtimeSourceHistoryReplayRequestSchema
->;
-export type RuntimeSourceHistoryReplayStatus = z.infer<
-  typeof runtimeSourceHistoryReplayStatusSchema
->;
-export type RuntimeSourceHistoryReplayRecord = z.infer<
-  typeof runtimeSourceHistoryReplayRecordSchema
->;
-export type RuntimeSourceHistoryReplayResponse = z.infer<
-  typeof runtimeSourceHistoryReplayResponseSchema
->;
-export type RuntimeSourceHistoryReplayListResponse = z.infer<
-  typeof runtimeSourceHistoryReplayListResponseSchema
->;
-export type RuntimeSourceChangeCandidateApplyMutationRequest = z.infer<
-  typeof runtimeSourceChangeCandidateApplyMutationRequestSchema
 >;
 export type RuntimeSourceChangeCandidateDiff = z.infer<
   typeof runtimeSourceChangeCandidateDiffSchema

@@ -2952,7 +2952,7 @@ describe("createHostClient", () => {
     ]);
   });
 
-  it("applies source change candidates and inspects source history through the host surface", async () => {
+  it("inspects source history through the host surface", async () => {
     const requests: Array<{ body?: string; method?: string; url: string }> = [];
     const sourceHistoryEntry = {
       appliedAt: "2026-04-24T00:03:00.000Z",
@@ -2980,72 +2980,6 @@ describe("createHostClient", () => {
       turnId: "turn-alpha",
       updatedAt: "2026-04-24T00:03:00.000Z"
     };
-    const publishedSourceHistoryEntry = {
-      ...sourceHistoryEntry,
-      publication: {
-        artifactId: "source-source-history-source-change-turn-alpha",
-        branch: "worker-it/source-history/source-history-source-change-turn-alpha",
-        publication: {
-          publishedAt: "2026-04-24T00:04:00.000Z",
-          remoteName: "entangle-gitea",
-          remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
-          state: "published"
-        },
-        requestedAt: "2026-04-24T00:04:00.000Z",
-        requestedBy: "operator-alpha",
-        targetGitServiceRef: "gitea",
-        targetNamespace: "team-alpha",
-        targetRepositoryName: "graph-alpha"
-      },
-      updatedAt: "2026-04-24T00:04:00.000Z"
-    };
-    const sourceArtifact = {
-      createdAt: "2026-04-24T00:04:00.000Z",
-      materialization: {
-        repoPath: "/tmp/entangle/workspace/source-history"
-      },
-      publication: {
-        publishedAt: "2026-04-24T00:04:00.000Z",
-        remoteName: "entangle-gitea",
-        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
-        state: "published"
-      },
-      ref: {
-        artifactId: "source-source-history-source-change-turn-alpha",
-        artifactKind: "commit",
-        backend: "git",
-        createdByNodeId: "worker-it",
-        locator: {
-          branch: "worker-it/source-history/source-history-source-change-turn-alpha",
-          commit: "artifact-commit-alpha",
-          gitServiceRef: "gitea",
-          namespace: "team-alpha",
-          path: ".",
-          repositoryName: "graph-alpha"
-        },
-        preferred: true,
-        status: "published"
-      },
-      turnId: "turn-alpha",
-      updatedAt: "2026-04-24T00:04:00.000Z"
-    };
-    const sourceHistoryReplay = {
-      baseTree: "base-tree-alpha",
-      candidateId: "source-change-turn-alpha",
-      commit: "commit-alpha",
-      createdAt: "2026-04-24T00:05:00.000Z",
-      graphId: "team-alpha",
-      graphRevisionId: "team-alpha-20260424-000000",
-      headTree: "head-tree-alpha",
-      nodeId: "worker-it",
-      replayedFileCount: 1,
-      replayedPath: "/tmp/entangle/source",
-      replayId: "replay-source-history-source-change-turn-alpha",
-      sourceHistoryId: "source-history-source-change-turn-alpha",
-      status: "replayed",
-      turnId: "turn-alpha",
-      updatedAt: "2026-04-24T00:05:00.000Z"
-    };
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
       fetchImpl: (url, init) => {
@@ -3057,14 +2991,7 @@ describe("createHostClient", () => {
 
         const body = url.endsWith("/source-history")
           ? { history: [sourceHistoryEntry] }
-          : url.endsWith("/source-history-replays") ||
-              url.endsWith("/replays")
-            ? { replays: [sourceHistoryReplay] }
-            : url.endsWith("/replay")
-              ? { entry: sourceHistoryEntry, replay: sourceHistoryReplay }
-              : url.endsWith("/publish")
-                ? { artifact: sourceArtifact, entry: publishedSourceHistoryEntry }
-                : { entry: sourceHistoryEntry };
+          : { entry: sourceHistoryEntry };
 
         return Promise.resolve(
           createMockResponse({
@@ -3076,21 +3003,6 @@ describe("createHostClient", () => {
       }
     });
 
-    await expect(
-      client.applyRuntimeSourceChangeCandidate(
-        "worker-it",
-        "source-change-turn-alpha",
-        {
-          appliedBy: "operator-alpha",
-          reason: "Promote accepted source."
-        }
-      )
-    ).resolves.toMatchObject({
-      entry: {
-        mode: "already_in_workspace",
-        sourceHistoryId: "source-history-source-change-turn-alpha"
-      }
-    });
     await expect(client.listRuntimeSourceHistory("worker-it")).resolves.toMatchObject({
       history: [
         {
@@ -3108,52 +3020,7 @@ describe("createHostClient", () => {
         commit: "commit-alpha"
       }
     });
-    await expect(
-      client.replayRuntimeSourceHistory(
-        "worker-it",
-        "source-history-source-change-turn-alpha",
-        {
-          reason: "Replay source history.",
-          replayedBy: "operator-alpha",
-          replayId: "replay-source-history-source-change-turn-alpha"
-        }
-      )
-    ).resolves.toMatchObject({
-      replay: {
-        replayId: "replay-source-history-source-change-turn-alpha",
-        status: "replayed"
-      }
-    });
-    await expect(
-      client.listRuntimeSourceHistoryReplaysForEntry(
-        "worker-it",
-        "source-history-source-change-turn-alpha"
-      )
-    ).resolves.toMatchObject({
-      replays: [
-        {
-          replayId: "replay-source-history-source-change-turn-alpha"
-        }
-      ]
-    });
-    await expect(
-      client.listRuntimeSourceHistoryReplays("worker-it")
-    ).resolves.toMatchObject({
-      replays: [
-        {
-          sourceHistoryId: "source-history-source-change-turn-alpha"
-        }
-      ]
-    });
     expect(requests).toEqual([
-      {
-        body: JSON.stringify({
-          appliedBy: "operator-alpha",
-          reason: "Promote accepted source."
-        }),
-        method: "POST",
-        url: "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/apply"
-      },
       {
         method: undefined,
         url: "http://entangle-host.test/v1/runtimes/worker-it/source-history"
@@ -3161,23 +3028,6 @@ describe("createHostClient", () => {
       {
         method: undefined,
         url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha"
-      },
-      {
-        body: JSON.stringify({
-          reason: "Replay source history.",
-          replayedBy: "operator-alpha",
-          replayId: "replay-source-history-source-change-turn-alpha"
-        }),
-        method: "POST",
-        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/replay"
-      },
-      {
-        method: undefined,
-        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history/source-history-source-change-turn-alpha/replays"
-      },
-      {
-        method: undefined,
-        url: "http://entangle-host.test/v1/runtimes/worker-it/source-history-replays"
       }
     ]);
   });

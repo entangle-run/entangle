@@ -261,6 +261,7 @@ Implementation record:
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
+- [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 
 Verification:
 
@@ -335,6 +336,10 @@ Current status:
 - the direct Host source-history publication mutation, host-client method, CLI
   `--publish` path, and Studio publish/retry action have been removed so Host
   observes source-history publication instead of owning the push;
+- the direct Host source-candidate apply mutation and source-history replay
+  mutation/list surfaces have been removed from Host, host-client, CLI, and
+  Studio; source application is now public only through signed User Node review
+  and runner-owned behavior;
 - deeper artifact history computation, wiki publication, and mutation endpoints
   still need projection-backed or backend-resolved replacement.
 
@@ -488,6 +493,7 @@ Implementation record:
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
+- [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 
 Verification:
 

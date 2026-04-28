@@ -4,9 +4,10 @@ Date: 2026-04-25.
 
 > Partially superseded on 2026-04-28 by
 > `332-runner-owned-source-history-publication-slice.md` and
-> `333-host-source-history-publication-removal-slice.md`. Source application
-> policy gates remain relevant, but direct Host source-history publication
-> approval gates are no longer a public mutation path.
+> `333-host-source-history-publication-removal-slice.md`, then
+> `334-host-source-application-replay-removal-slice.md`. Source mutation policy
+> remains relevant, but direct Host source apply, source-history replay, and
+> source-history publication mutations are no longer public mutation paths.
 
 ## Purpose
 

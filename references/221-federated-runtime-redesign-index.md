@@ -134,6 +134,7 @@ same-machine slice records.
 - [331-projected-source-history-ref-slice.md](331-projected-source-history-ref-slice.md)
 - [332-runner-owned-source-history-publication-slice.md](332-runner-owned-source-history-publication-slice.md)
 - [333-host-source-history-publication-removal-slice.md](333-host-source-history-publication-removal-slice.md)
+- [334-host-source-application-replay-removal-slice.md](334-host-source-application-replay-removal-slice.md)
 
 ## Audited Scope
 
@@ -512,9 +513,11 @@ process, Studio/CLI now expose compact projected assignment receipt evidence
 for operator inspection, Host status now carries per-relay control/observe
 diagnostics for operator surfaces, and accepted signed source-candidate reviews
 now produce projected runner-owned source-history application and primary git
-publication evidence, with the old direct Host publication mutation removed
-from Host, CLI, Studio, and host-client. The next blocking implementation areas
-are explicit runner-owned publication retry/non-primary target commands, richer
+publication evidence, with the old direct Host publication, source-candidate
+apply, and source-history replay mutations removed from Host, CLI, Studio, and
+host-client. The next blocking implementation areas are explicit runner-owned
+publication retry/non-primary target commands, runner-owned source replay,
+richer
 projection-backed source/wiki review services, assignment detail UI for grouped
 receipt timelines, replacing remaining deep filesystem-backed runtime
 inspection paths with projection-backed source/wiki services and object-backed

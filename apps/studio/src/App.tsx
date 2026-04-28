@@ -59,8 +59,6 @@ import type {
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryInspectionResponse,
-  RuntimeSourceHistoryReplayRecord,
-  RuntimeSourceHistoryReplayResponse,
   RuntimeTurnInspectionResponse,
   RuntimeWikiRepositoryPublicationRecord,
   RuntimeWikiRepositoryPublicationResponse,
@@ -193,7 +191,6 @@ import {
 import {
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
-  formatRuntimeSourceHistoryReplayStatus,
   sortRuntimeSourceHistory
 } from "./runtime-source-history-inspection.js";
 import {
@@ -615,16 +612,8 @@ export function App() {
     useState<string | null>(null);
   const [selectedSourceHistoryInspection, setSelectedSourceHistoryInspection] =
     useState<RuntimeSourceHistoryInspectionResponse | null>(null);
-  const [selectedSourceHistoryReplay, setSelectedSourceHistoryReplay] =
-    useState<RuntimeSourceHistoryReplayResponse | null>(null);
-  const [selectedSourceHistoryReplays, setSelectedSourceHistoryReplays] =
-    useState<RuntimeSourceHistoryReplayRecord[]>([]);
   const [sourceHistoryDetailError, setSourceHistoryDetailError] =
     useState<string | null>(null);
-  const [pendingSourceChangeCandidateApply, setPendingSourceChangeCandidateApply] =
-    useState(false);
-  const [pendingSourceHistoryReplay, setPendingSourceHistoryReplay] =
-    useState(false);
   const [selectedSessions, setSelectedSessions] = useState<HostSessionSummary[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -1371,21 +1360,13 @@ export function App() {
       nextSelectedSourceHistory.some(
         (entry) => entry.sourceHistoryId === currentSelectedSourceHistoryId
       );
-    const selectedSourceHistoryResults = shouldRefreshSelectedSourceHistory
+    const selectedSourceHistoryResult = shouldRefreshSelectedSourceHistory
       ? (
           await Promise.allSettled([
-            client.getRuntimeSourceHistory(nodeId, currentSelectedSourceHistoryId),
-            client.listRuntimeSourceHistoryReplaysForEntry(
-              nodeId,
-              currentSelectedSourceHistoryId
-            )
+            client.getRuntimeSourceHistory(nodeId, currentSelectedSourceHistoryId)
           ])
-        )
+        )[0]
       : null;
-    const selectedSourceHistoryResult =
-      selectedSourceHistoryResults?.[0] ?? null;
-    const selectedSourceHistoryReplaysResult =
-      selectedSourceHistoryResults?.[1] ?? null;
     const currentSelectedSessionId = selectedSessionId;
     const shouldRefreshSelectedSession =
       currentSelectedSessionId !== null &&
@@ -1829,42 +1810,20 @@ export function App() {
 
         if (!selectedSourceHistoryId) {
           setSelectedSourceHistoryInspection(null);
-          setSelectedSourceHistoryReplay(null);
-          setSelectedSourceHistoryReplays([]);
           setSourceHistoryDetailError(null);
         } else if (!shouldRefreshSelectedSourceHistory) {
           setSelectedSourceHistoryId(null);
           setSelectedSourceHistoryInspection(null);
-          setSelectedSourceHistoryReplay(null);
-          setSelectedSourceHistoryReplays([]);
           setSourceHistoryDetailError(null);
-        } else if (
-          selectedSourceHistoryResult?.status === "fulfilled" &&
-          selectedSourceHistoryReplaysResult?.status === "fulfilled"
-        ) {
+        } else if (selectedSourceHistoryResult?.status === "fulfilled") {
           setSelectedSourceHistoryInspection(selectedSourceHistoryResult.value);
-          setSelectedSourceHistoryReplays(
-            selectedSourceHistoryReplaysResult.value.replays
-          );
           setSourceHistoryDetailError(null);
         } else if (selectedSourceHistoryResult?.status === "rejected") {
           setSelectedSourceHistoryInspection(null);
-          setSelectedSourceHistoryReplay(null);
-          setSelectedSourceHistoryReplays([]);
           setSourceHistoryDetailError(
             normalizeError(
               selectedSourceHistoryResult.reason,
               "Unknown error while loading source history detail."
-            )
-          );
-        } else if (selectedSourceHistoryReplaysResult?.status === "rejected") {
-          setSelectedSourceHistoryInspection(null);
-          setSelectedSourceHistoryReplay(null);
-          setSelectedSourceHistoryReplays([]);
-          setSourceHistoryDetailError(
-            normalizeError(
-              selectedSourceHistoryReplaysResult.reason,
-              "Unknown error while loading source history replay history."
             )
           );
         }
@@ -1878,8 +1837,6 @@ export function App() {
         );
         setSelectedSourceHistoryId(null);
         setSelectedSourceHistoryInspection(null);
-        setSelectedSourceHistoryReplay(null);
-        setSelectedSourceHistoryReplays([]);
         setSourceHistoryDetailError(null);
       }
 
@@ -2252,7 +2209,6 @@ export function App() {
       setSelectedSourceChangeCandidateDiff(null);
       setSelectedSourceChangeCandidateFilePath(null);
       setSelectedSourceChangeCandidateFilePreview(null);
-      setPendingSourceChangeCandidateApply(false);
       setSourceChangeCandidateDetailError(null);
       await loadSelectedSourceChangeCandidateInspection(
         selectedRuntimeId,
@@ -2284,69 +2240,6 @@ export function App() {
     ]
   );
 
-  const applySelectedSourceChangeCandidate = useCallback(async () => {
-    if (!selectedRuntimeId || !selectedSourceChangeCandidateId) {
-      return;
-    }
-
-    try {
-      setPendingSourceChangeCandidateApply(true);
-      const response = await client.applyRuntimeSourceChangeCandidate(
-        selectedRuntimeId,
-        selectedSourceChangeCandidateId,
-        {}
-      );
-      const candidateResponse = await client.getRuntimeSourceChangeCandidate(
-        selectedRuntimeId,
-        selectedSourceChangeCandidateId
-      );
-
-      startTransition(() => {
-        setSelectedSourceHistory((history) =>
-          sortRuntimeSourceHistory([
-            response.entry,
-            ...history.filter(
-              (entry) => entry.sourceHistoryId !== response.entry.sourceHistoryId
-            )
-          ])
-        );
-      setSelectedSourceHistoryId(response.entry.sourceHistoryId);
-      setSelectedSourceHistoryInspection(response);
-      setSelectedSourceHistoryReplay(null);
-      setSelectedSourceHistoryReplays([]);
-      setSourceHistoryError(null);
-        setSourceHistoryDetailError(null);
-        setSelectedSourceChangeCandidateInspection(candidateResponse);
-        setSelectedSourceChangeCandidates((candidates) =>
-          candidates.map((candidate) =>
-            candidate.candidateId === candidateResponse.candidate.candidateId
-              ? candidateResponse.candidate
-              : candidate
-          )
-        );
-        setSourceChangeCandidateDetailError(null);
-      });
-
-      await refreshSelectedRuntimeDetails(selectedRuntimeId);
-    } catch (caught: unknown) {
-      startTransition(() => {
-        setSourceChangeCandidateDetailError(
-          normalizeError(
-            caught,
-            "Unknown error while applying source change candidate."
-          )
-        );
-      });
-    } finally {
-      setPendingSourceChangeCandidateApply(false);
-    }
-  }, [
-    client,
-    refreshSelectedRuntimeDetails,
-    selectedRuntimeId,
-    selectedSourceChangeCandidateId
-  ]);
-
   const selectRuntimeSourceHistory = useCallback(
     async (sourceHistoryId: string) => {
       if (!selectedRuntimeId) {
@@ -2355,29 +2248,21 @@ export function App() {
 
       setSelectedSourceHistoryId(sourceHistoryId);
       setSelectedSourceHistoryInspection(null);
-      setSelectedSourceHistoryReplay(null);
-      setSelectedSourceHistoryReplays([]);
       setSourceHistoryDetailError(null);
 
       try {
-        const [response, replays] = await Promise.all([
-          client.getRuntimeSourceHistory(selectedRuntimeId, sourceHistoryId),
-          client.listRuntimeSourceHistoryReplaysForEntry(
-            selectedRuntimeId,
-            sourceHistoryId
-          )
-        ]);
+        const response = await client.getRuntimeSourceHistory(
+          selectedRuntimeId,
+          sourceHistoryId
+        );
 
         startTransition(() => {
           setSelectedSourceHistoryInspection(response);
-          setSelectedSourceHistoryReplays(replays.replays);
           setSourceHistoryDetailError(null);
         });
       } catch (caught: unknown) {
         startTransition(() => {
           setSelectedSourceHistoryInspection(null);
-          setSelectedSourceHistoryReplay(null);
-          setSelectedSourceHistoryReplays([]);
           setSourceHistoryDetailError(
             normalizeError(
               caught,
@@ -2389,55 +2274,6 @@ export function App() {
     },
     [client, selectedRuntimeId]
   );
-
-  const replaySelectedSourceHistory = useCallback(async () => {
-    if (!selectedRuntimeId || !selectedSourceHistoryId) {
-      return;
-    }
-
-    try {
-      setPendingSourceHistoryReplay(true);
-      setSourceHistoryDetailError(null);
-      const response = await client.replayRuntimeSourceHistory(
-        selectedRuntimeId,
-        selectedSourceHistoryId,
-        {
-          reason: "Studio source history replay",
-          replayedBy: "studio-operator"
-        }
-      );
-
-      startTransition(() => {
-        setSelectedSourceHistoryReplay(response);
-        setSelectedSourceHistoryInspection({ entry: response.entry });
-        setSelectedSourceHistoryReplays((replays) => [
-          response.replay,
-          ...replays.filter(
-            (replay) =>
-              replay.replayId !== response.replay.replayId ||
-              replay.updatedAt !== response.replay.updatedAt
-          )
-        ]);
-        setSourceHistoryDetailError(null);
-        setSourceHistoryError(null);
-      });
-
-      await refreshSelectedRuntimeDetails(selectedRuntimeId);
-    } catch (caught: unknown) {
-      startTransition(() => {
-        setSourceHistoryDetailError(
-          normalizeError(caught, "Unknown error while replaying source history.")
-        );
-      });
-    } finally {
-      setPendingSourceHistoryReplay(false);
-    }
-  }, [
-    client,
-    refreshSelectedRuntimeDetails,
-    selectedRuntimeId,
-    selectedSourceHistoryId
-  ]);
 
   const publishSelectedWikiRepository = useCallback(async () => {
     if (!selectedRuntimeId) {
@@ -3073,11 +2909,7 @@ export function App() {
       setSourceHistoryError(null);
       setSelectedSourceHistoryId(null);
       setSelectedSourceHistoryInspection(null);
-      setSelectedSourceHistoryReplay(null);
-      setSelectedSourceHistoryReplays([]);
       setSourceHistoryDetailError(null);
-      setPendingSourceChangeCandidateApply(false);
-      setPendingSourceHistoryReplay(false);
       setSessionError(null);
       setSelectedSessions([]);
       setSelectedSessionId(null);
@@ -3144,11 +2976,7 @@ export function App() {
     setSourceHistoryError(null);
     setSelectedSourceHistoryId(null);
     setSelectedSourceHistoryInspection(null);
-    setSelectedSourceHistoryReplay(null);
-    setSelectedSourceHistoryReplays([]);
     setSourceHistoryDetailError(null);
-    setPendingSourceChangeCandidateApply(false);
-    setPendingSourceHistoryReplay(false);
     setSessionError(null);
     setSelectedSessions([]);
     setSelectedSessionId(null);
@@ -5850,26 +5678,6 @@ export function App() {
                           </p>
                         ) : null}
 
-                        {selectedSourceChangeCandidateInspection.candidate.status ===
-                          "accepted" &&
-                        !selectedSourceChangeCandidateInspection.candidate
-                          .application ? (
-                          <div className="source-file-selector">
-                            <button
-                              className="action-button"
-                              disabled={pendingSourceChangeCandidateApply}
-                              onClick={() => {
-                                void applySelectedSourceChangeCandidate();
-                              }}
-                              type="button"
-                            >
-                              {pendingSourceChangeCandidateApply
-                                ? "Applying"
-                                : "Apply to source history"}
-                            </button>
-                          </div>
-                        ) : null}
-
                         <div className="artifact-preview-panel">
                           <div className="section-header">
                             <h3>Source Diff</h3>
@@ -6039,21 +5847,6 @@ export function App() {
                           </span>
                         </div>
 
-                        <div className="source-file-selector">
-                          <button
-                            className="action-button"
-                            disabled={pendingSourceHistoryReplay}
-                            onClick={() => {
-                              void replaySelectedSourceHistory();
-                            }}
-                            type="button"
-                          >
-                            {pendingSourceHistoryReplay
-                              ? "Replaying"
-                              : "Replay to source"}
-                          </button>
-                        </div>
-
                         <ul className="detail-list">
                           {formatRuntimeSourceHistoryDetailLines(
                             selectedSourceHistoryInspection.entry
@@ -6061,45 +5854,6 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
-
-                        {selectedSourceHistoryReplay ? (
-                          <dl className="status-list compact-list">
-                            <div>
-                              <dt>Replay</dt>
-                              <dd>{selectedSourceHistoryReplay.replay.replayId}</dd>
-                            </div>
-                            <div>
-                              <dt>Status</dt>
-                              <dd>
-                                {formatRuntimeSourceHistoryReplayStatus(
-                                  selectedSourceHistoryReplay.replay
-                                )}
-                              </dd>
-                            </div>
-                          </dl>
-                        ) : null}
-
-                        {selectedSourceHistoryReplays.length > 0 ? (
-                          <ul className="detail-list">
-                            {selectedSourceHistoryReplays
-                              .slice(0, 4)
-                              .map((replay, index) => (
-                                <li
-                                  key={`${replay.replayId}-${replay.updatedAt}-${index}`}
-                                >
-                                  {replay.replayId} ·{" "}
-                                  {formatRuntimeSourceHistoryReplayStatus(
-                                    replay
-                                  )}{" "}
-                                  · {replay.updatedAt}
-                                </li>
-                              ))}
-                          </ul>
-                        ) : (
-                          <div className="inline-empty-state">
-                            <p>No source history replay attempts recorded.</p>
-                          </div>
-                        )}
                       </div>
                     ) : selectedSourceHistoryId ? (
                       <div className="inline-empty-state">

@@ -29,8 +29,6 @@ import {
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
-  runtimeSourceChangeCandidateApplyMutationRequestSchema,
-  runtimeSourceHistoryReplayRequestSchema,
   runtimeWikiRepositoryPublicationRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
@@ -163,7 +161,6 @@ import {
   sortRuntimeSourceChangeCandidatesForCli
 } from "./runtime-source-change-candidate-output.js";
 import {
-  projectRuntimeSourceHistoryReplaySummary,
   projectRuntimeSourceHistorySummary
 } from "./runtime-source-history-output.js";
 import { projectRuntimeWikiRepositoryPublicationSummary } from "./runtime-wiki-repository-output.js";
@@ -3383,66 +3380,27 @@ hostRuntimesCommand
   .argument("<candidateId>", "Source change candidate identifier to inspect.")
   .option("--diff", "Include the bounded source diff when available.")
   .option("--file <path>", "Include a bounded preview for one changed source file.")
-  .option("--apply", "Apply an accepted candidate into runtime source history.")
-  .option("--reason <reason>", "Attach an application reason.")
-  .option("--applied-by <operatorId>", "Attach the applying operator id.")
-  .option("--approval-id <approvalId>", "Attach an approved source application approval id.")
   .option("--summary", "Print a compact operator-oriented candidate summary.")
-  .description("Inspect or apply one persisted source change candidate.")
+  .description("Inspect one persisted source change candidate.")
   .action(
     async (
       nodeId: string,
       candidateId: string,
       options: {
-        appliedBy?: string;
-        approvalId?: string;
-        apply?: boolean;
         diff?: boolean;
         file?: string;
-        reason?: string;
         summary?: boolean;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
       const selectedInspectionModes = [
-        options.apply,
         options.diff,
         Boolean(options.file)
       ].filter(Boolean).length;
 
       if (selectedInspectionModes > 1) {
-        throw new Error("Use only one of --apply, --diff, or --file.");
-      }
-
-      if (options.reason && !options.apply) {
-        throw new Error("Use --reason only with --apply.");
-      }
-
-      if ((options.appliedBy || options.approvalId) && !options.apply) {
-        throw new Error("Use --applied-by or --approval-id only with --apply.");
-      }
-
-      if (options.apply) {
-        const apply =
-          runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
-            ...(options.approvalId ? { approvalId: options.approvalId } : {}),
-            ...(options.appliedBy ? { appliedBy: options.appliedBy } : {}),
-            ...(options.reason ? { reason: options.reason } : {})
-          });
-        const response = await client.applyRuntimeSourceChangeCandidate(
-          nodeId,
-          candidateId,
-          apply
-        );
-        printJson(
-          options.summary
-            ? {
-                sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
-              }
-            : response
-        );
-        return;
+        throw new Error("Use only one of --diff or --file.");
       }
 
       if (options.diff) {
@@ -3648,84 +3606,6 @@ hostRuntimesCommand
           ? history.map(projectRuntimeSourceHistorySummary)
           : history
       });
-    }
-  );
-
-hostRuntimesCommand
-  .command("source-history-replays")
-  .argument("<nodeId>", "Node identifier in the active graph.")
-  .option("--source-history-id <sourceHistoryId>", "Filter replay records by source history id.")
-  .option("--summary", "Print compact operator-oriented replay summaries.")
-  .description("Inspect persisted source-history replay attempts.")
-  .action(
-    async (
-      nodeId: string,
-      options: {
-        sourceHistoryId?: string;
-        summary?: boolean;
-      },
-      command: Command
-    ) => {
-      const client = createCliHostClient(command);
-      const response = options.sourceHistoryId
-        ? await client.listRuntimeSourceHistoryReplaysForEntry(
-            nodeId,
-            options.sourceHistoryId
-          )
-        : await client.listRuntimeSourceHistoryReplays(nodeId);
-
-      printJson({
-        replays: options.summary
-          ? response.replays.map(projectRuntimeSourceHistoryReplaySummary)
-          : response.replays
-      });
-    }
-  );
-
-hostRuntimesCommand
-  .command("source-history-replay")
-  .argument("<nodeId>", "Node identifier in the active graph.")
-  .argument("<sourceHistoryId>", "Source history entry identifier to replay.")
-  .option("--approval-id <approvalId>", "Attach an approved source application approval id.")
-  .option("--replayed-by <operatorId>", "Attach the replaying operator id.")
-  .option("--reason <reason>", "Attach a replay reason.")
-  .option("--replay-id <replayId>", "Stable replay identifier.")
-  .option("--summary", "Print a compact operator-oriented replay summary.")
-  .description("Replay one source history entry into the source workspace.")
-  .action(
-    async (
-      nodeId: string,
-      sourceHistoryId: string,
-      options: {
-        approvalId?: string;
-        reason?: string;
-        replayedBy?: string;
-        replayId?: string;
-        summary?: boolean;
-      },
-      command: Command
-    ) => {
-      const client = createCliHostClient(command);
-      const replay = runtimeSourceHistoryReplayRequestSchema.parse({
-        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
-        ...(options.reason ? { reason: options.reason } : {}),
-        ...(options.replayedBy ? { replayedBy: options.replayedBy } : {}),
-        ...(options.replayId ? { replayId: options.replayId } : {})
-      });
-      const response = await client.replayRuntimeSourceHistory(
-        nodeId,
-        sourceHistoryId,
-        replay
-      );
-
-      printJson(
-        options.summary
-          ? {
-              replay: projectRuntimeSourceHistoryReplaySummary(response.replay),
-              sourceHistory: projectRuntimeSourceHistorySummary(response.entry)
-            }
-          : response
-      );
     }
   );
 

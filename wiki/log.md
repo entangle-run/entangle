@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Removed Host source apply and replay mutations
+
+Removed the direct Host source-candidate apply mutation, source-history replay
+mutation/list routes, host-client methods, CLI commands, and Studio controls.
+Source application is now exposed publicly through signed User Node review and
+runner-owned source-history behavior; explicit replay must return as a
+runner-owned protocol command instead of Host filesystem mutation.
+
+Added
+`references/334-host-source-application-replay-removal-slice.md` and marked the
+older direct source-history replay slice as superseded.
+
 ## [2026-04-28] implementation | Removed Host source-history publication
 
 Removed the direct Host source-history publication mutation, host-client method,

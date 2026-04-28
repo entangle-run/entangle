@@ -236,8 +236,8 @@ This repository currently contains:
   durable pending source-change candidate records with host, CLI, and Studio
   inspection plus bounded candidate diff, listed-file previews, and audited
   review lifecycle now driven publicly by signed User Node
-  `source_change.review` messages for accepted/rejected decisions, and a
-  runtime-local source-history application path for accepted candidates that
+  `source_change.review` messages for accepted/rejected decisions, and
+  runner-owned source-history application for accepted candidates that
   validates the current source tree before recording a local history commit,
   with runner-owned source-history publication that materializes an accepted
   source-history commit as a git commit artifact, records publication metadata,
@@ -935,8 +935,8 @@ The highest-value remaining gaps are:
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, safe artifact restore, and
-  approval-gated promotion model with restore/promotion history inspection plus
-  direct source-history replay, especially runner-owned publication retry,
+  approval-gated promotion model with restore/promotion history inspection,
+  especially runner-owned publication retry, runner-owned source replay,
   non-primary publication targets, wiki promotion, richer source-history
   merge/reconcile workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

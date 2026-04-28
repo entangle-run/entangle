@@ -78,15 +78,12 @@ import {
   runtimeWikiRepositoryPublicationRequestSchema,
   runtimeWikiRepositoryPublicationResponseSchema,
   runtimeRecoveryInspectionResponseSchema,
-  runtimeSourceChangeCandidateApplyMutationRequestSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
-  runtimeSourceHistoryReplayListResponseSchema,
-  runtimeSourceHistoryReplayResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionCancellationRequestRecordSchema,
@@ -2076,16 +2073,6 @@ describe("source change candidate host API contracts", () => {
       }).candidate.status
     ).toBe("pending_review");
     expect(
-      runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
-        approvalId: "approval-source-apply-alpha",
-        appliedBy: "operator-alpha",
-        reason: "Accepted for the source history."
-      })
-    ).toMatchObject({
-      approvalId: "approval-source-apply-alpha",
-      appliedBy: "operator-alpha"
-    });
-    expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
           ...candidate,
@@ -2146,37 +2133,6 @@ describe("source change candidate host API contracts", () => {
         entry: historyEntry
       }).entry.mode
     ).toBe("already_in_workspace");
-    const sourceHistoryReplay = {
-      approvalId: "approval-source-replay-alpha",
-      baseTree: "base-tree-alpha",
-      candidateId: "source-change-turn-alpha",
-      commit: "commit-alpha",
-      createdAt: "2026-04-24T00:05:00.000Z",
-      graphId: "team-alpha",
-      graphRevisionId: "team-alpha-20260424-000000",
-      headTree: "head-tree-alpha",
-      nodeId: "worker-it",
-      reason: "Replay source history into the workspace.",
-      replayedBy: "operator-alpha",
-      replayedFileCount: 1,
-      replayedPath: "/tmp/entangle/workspace/source",
-      replayId: "replay-source-history-alpha",
-      sourceHistoryId: "source-history-source-change-turn-alpha",
-      status: "replayed",
-      turnId: "turn-alpha",
-      updatedAt: "2026-04-24T00:05:00.000Z"
-    };
-    expect(
-      runtimeSourceHistoryReplayResponseSchema.parse({
-        entry: historyEntry,
-        replay: sourceHistoryReplay
-      }).replay.status
-    ).toBe("replayed");
-    expect(
-      runtimeSourceHistoryReplayListResponseSchema.parse({
-        replays: [sourceHistoryReplay]
-      }).replays[0]?.replayId
-    ).toBe("replay-source-history-alpha");
     const wikiArtifact = artifactRecordSchema.parse({
       createdAt: "2026-04-24T00:06:00.000Z",
       materialization: {
