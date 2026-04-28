@@ -6583,6 +6583,55 @@ describe("buildHostServer", () => {
       await expect(
         stat(path.join(sessionActivityRoot, "worker-it--session-stale.json"))
       ).rejects.toThrow();
+
+      const inspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions/session-remote"
+      });
+
+      expect(inspectionResponse.statusCode).toBe(200);
+      const inspection = sessionInspectionResponseSchema.parse(
+        inspectionResponse.json()
+      );
+      expect(inspection).toMatchObject({
+        graphId: "team-alpha",
+        sessionId: "session-remote"
+      });
+      expect(inspection.nodes).toHaveLength(1);
+      expect(inspection.nodes[0]).toMatchObject({
+        approvalStatusCounts: {
+          approved: 0,
+          expired: 0,
+          not_required: 0,
+          pending: 0,
+          rejected: 0,
+          withdrawn: 0
+        },
+        conversationStatusCounts: {
+          acknowledged: 0,
+          awaiting_approval: 0,
+          blocked: 0,
+          closed: 0,
+          expired: 0,
+          opened: 0,
+          rejected: 0,
+          resolved: 0,
+          working: 0
+        },
+        nodeId: "worker-it",
+        runtime: {
+          backendKind: "memory",
+          contextAvailable: false,
+          desiredState: "running",
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          observedState: "running"
+        },
+        session: {
+          activeConversationIds: ["conv-remote"],
+          sessionId: "session-remote"
+        }
+      });
     } finally {
       await server.close();
     }

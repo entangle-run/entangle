@@ -14947,6 +14947,105 @@ async function listProjectedSessionSummaries(): Promise<HostSessionSummary[]> {
   });
 }
 
+function buildRuntimeInspectionFromProjection(
+  projection: RuntimeProjectionRecord
+): RuntimeInspectionResponse {
+  return runtimeInspectionResponseSchema.parse({
+    backendKind: projection.backendKind,
+    contextAvailable: false,
+    desiredState: projection.desiredState,
+    graphId: projection.graphId,
+    graphRevisionId: projection.graphRevisionId,
+    nodeId: projection.nodeId,
+    observedState: projection.observedState,
+    restartGeneration: projection.restartGeneration,
+    runtimeHandle: projection.runtimeHandle,
+    statusMessage: projection.statusMessage
+  });
+}
+
+async function collectProjectedSessionInspectionNodes(): Promise<
+  Map<string, SessionInspectionResponse["nodes"]>
+> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return new Map();
+  }
+
+  const activeNodeIds = new Set(graph.nodes.map((node) => node.nodeId));
+  const authority = await ensureHostAuthorityMaterialized();
+  const [assignments, sessionRecords, conversationRecords, approvalRecords] =
+    await Promise.all([
+      listRuntimeAssignmentRecords(),
+      listObservedSessionActivityRecords(),
+      listObservedConversationActivityRecords(),
+      listObservedApprovalActivityRecords()
+    ]);
+  const runtimeProjections = await listRuntimeProjectionRecords({
+    assignments,
+    hostAuthorityPubkey: authority.publicKey
+  });
+  const runtimeProjectionsByNodeId = new Map(
+    runtimeProjections.map((projection) => [projection.nodeId, projection])
+  );
+  const scopedSessionRecords = sessionRecords.filter(
+    (record) =>
+      record.graphId === graph.graphId &&
+      activeNodeIds.has(record.nodeId) &&
+      record.session?.graphId === graph.graphId
+  );
+  const scopedConversationRecords = conversationRecords.filter(
+    (record) =>
+      record.graphId === graph.graphId && activeNodeIds.has(record.nodeId)
+  );
+  const scopedApprovalRecords = approvalRecords.filter(
+    (record) =>
+      record.graphId === graph.graphId && activeNodeIds.has(record.nodeId)
+  );
+  const sessions = new Map<string, SessionInspectionResponse["nodes"]>();
+
+  for (const record of scopedSessionRecords) {
+    if (!record.session) {
+      continue;
+    }
+
+    const projection = runtimeProjectionsByNodeId.get(record.nodeId);
+
+    if (!projection) {
+      continue;
+    }
+
+    const approvalRecordsForSession = scopedApprovalRecords.filter(
+      (approvalRecord) =>
+        approvalRecord.nodeId === record.nodeId &&
+        approvalRecord.sessionId === record.sessionId
+    );
+    const conversationRecordsForSession = scopedConversationRecords.filter(
+      (conversationRecord) =>
+        conversationRecord.nodeId === record.nodeId &&
+        conversationRecord.sessionId === record.sessionId
+    );
+    const entries = sessions.get(record.sessionId) ?? [];
+    entries.push({
+      approvalStatusCounts: countObservedApprovalStatuses(approvalRecordsForSession),
+      conversationStatusCounts: countObservedConversationStatuses(
+        conversationRecordsForSession
+      ),
+      nodeId: record.nodeId,
+      runtime: buildRuntimeInspectionFromProjection(projection),
+      session: record.session
+    });
+    sessions.set(record.sessionId, entries);
+  }
+
+  for (const entries of sessions.values()) {
+    entries.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
+  }
+
+  return sessions;
+}
+
 export async function listSessions(): Promise<SessionListResponse> {
   const sessions = await collectSessionInspectionNodes();
   const filesystemSummaries = Array.from(sessions.entries()).map(
@@ -14981,7 +15080,9 @@ export async function getSessionInspection(
   sessionId: string
 ): Promise<SessionInspectionResponse | null> {
   const sessions = await collectSessionInspectionNodes();
-  const nodes = sessions.get(sessionId);
+  const nodes =
+    sessions.get(sessionId) ??
+    (await collectProjectedSessionInspectionNodes()).get(sessionId);
 
   if (!nodes || nodes.length === 0) {
     return null;

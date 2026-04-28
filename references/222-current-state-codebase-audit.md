@@ -47,8 +47,8 @@ or stable User Node identity.
 - it still observes several deep runtime details by reading
   `context.workspace.runtimeRoot`, but observed activity records now mark
   whether they came from signed observation events or local filesystem
-  compatibility sync, and local pruning preserves signed observation-event
-  records;
+  compatibility sync, local pruning preserves signed observation-event records,
+  and session list/detail can now fall back to projected observed sessions;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 

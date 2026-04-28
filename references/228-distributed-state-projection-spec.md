@@ -25,8 +25,9 @@ reading runner disk. Observed activity records now carry a source marker so
 local filesystem synchronization can prune stale local imports without deleting
 records sourced from signed observations. The Host session list now also has a
 projection fallback for remote sessions that have no Host-readable runner
-filesystem record. The deep runtime APIs still need to be moved off local file
-reads.
+filesystem record, and the session detail route can return bounded projected
+inspection for those sessions. The remaining deep runtime APIs still need to be
+moved off local file reads.
 
 ## Target Model
 
@@ -82,8 +83,9 @@ and refs so Host can inspect global state without reading runner disk.
   synchronization and treat runtime-file imports as the only activity records
   eligible for local stale-record pruning.
 - Continue replacing session, approval, turn, source, and wiki detail endpoints
-  with projection-backed read models. The high-level session list now has a
-  projection fallback; deep session inspection remains local-detail backed.
+  with projection-backed read models. The high-level session list and bounded
+  session inspection now have projection fallbacks; deeper runtime source,
+  artifact, wiki, approval, and turn detail still need projected equivalents.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 

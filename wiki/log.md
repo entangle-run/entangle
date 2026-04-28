@@ -3740,3 +3740,13 @@ Local runtime activity synchronization now prunes stale filesystem-imported
 activity without deleting signed remote observations, and the Host session list
 can surface projected remote sessions that do not have a Host-readable runner
 session file.
+
+## [2026-04-28] implementation | Added projected session inspection fallback
+
+Added `references/306-projected-session-inspection-slice.md`. The Host session
+detail route now falls back to bounded projection-backed inspection for observed
+remote sessions when local runtime filesystem detail is unavailable.
+
+The fallback reconstructs public runtime summary fields from Host runtime
+projection and keeps local `contextPath`/`runtimeRoot` details out of the
+response.

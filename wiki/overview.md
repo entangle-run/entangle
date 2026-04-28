@@ -64,8 +64,8 @@ The most accurate current description is:
   separate Host/runner state roots;
 - Host activity projection now preserves runner-signed observation-event
   records during local compatibility synchronization, and the high-level
-  session list can surface remote projected sessions without a Host-readable
-  runner filesystem record;
+  session list plus bounded session detail can surface remote projected
+  sessions without a Host-readable runner filesystem record;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, Docker launcher rebasing onto the assignment path, and the full
   multi-machine distributed proof.

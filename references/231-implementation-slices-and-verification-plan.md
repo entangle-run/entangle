@@ -204,6 +204,7 @@ Implementation record:
 - [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
 - [270-source-change-ref-summary-projection-slice.md](270-source-change-ref-summary-projection-slice.md)
 - [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
+- [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
 
 Verification:
 
@@ -228,6 +229,8 @@ Current status:
   from same-workstation filesystem imports, local synchronization no longer
   deletes observation-event activity records, and Host session listing can
   surface projected remote sessions that have no local runtime session file;
+- Host session inspection now also falls back to bounded projected session
+  detail for observed remote sessions when no local runtime session file exists;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime

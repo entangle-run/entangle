@@ -295,8 +295,8 @@ This repository currently contains:
   joined runner processes;
 - observed activity projection now preserves signed remote session activity
   during same-workstation compatibility synchronization, and Host session
-  listing can surface projected remote sessions without a Host-readable runner
-  session file;
+  listing plus bounded session detail can surface projected remote sessions
+  without a Host-readable runner session file;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,
