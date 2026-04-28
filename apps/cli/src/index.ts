@@ -347,25 +347,9 @@ async function findUserNodeMessageByEventId(input: {
   eventId: string;
   userNodeId: string;
 }): Promise<UserNodeMessageRecord> {
-  const inbox = await input.client.getUserNodeInbox(input.userNodeId);
-
-  for (const conversation of sortUserConversationsForCli(inbox.conversations)) {
-    const detail = await input.client.getUserNodeConversation(
-      input.userNodeId,
-      conversation.conversationId
-    );
-    const message = detail.messages.find(
-      (candidate) => candidate.eventId === input.eventId
-    );
-
-    if (message) {
-      return message;
-    }
-  }
-
-  throw new Error(
-    `Message '${input.eventId}' was not found for User Node '${input.userNodeId}'.`
-  );
+  return (
+    await input.client.getUserNodeMessage(input.userNodeId, input.eventId)
+  ).message;
 }
 
 async function watchHostEvents(input: {

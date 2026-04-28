@@ -54,8 +54,8 @@ Implemented in this slice:
 - added `--from-message <eventId>` to `entangle reject`;
 - made the approval id argument optional when `--from-message` is supplied;
 - kept approval id plus `--target-node` required for manual mode;
-- added CLI inbox lookup that searches recorded User Node conversations for the
-  referenced message;
+- added direct Host/client message lookup for the referenced recorded User Node
+  message;
 - added helper logic that validates the referenced message is an inbound
   `approval.request` and builds a signed `approval.response` request preserving
   the recorded context;
@@ -64,7 +64,6 @@ Implemented in this slice:
 Deferred:
 
 - a direct `inbox approve <eventId>` command namespace;
-- paging/limits for very large inbox histories;
 - UI output that shows which original request was answered by a response.
 
 ## Tests Required
@@ -90,15 +89,15 @@ and `reject <approvalId> --target-node <nodeId>` flows still work.
 
 ## Risks And Mitigations
 
-- Risk: searching every conversation is inefficient for large inboxes.
-  Mitigation: current local profile histories are small; a future indexed
-  message lookup route can replace the client-side search without changing the
-  command contract.
+- Risk: direct lookup could be mistaken for transport truth.
+  Mitigation: `276-user-node-message-lookup-slice.md` keeps it as a Host
+  recorded-message read model; signing and transport still happen through A2A.
 - Risk: an operator supplies an approval id that does not match the message.
   Mitigation: helper validation rejects mismatches instead of publishing a
   contradictory signed response.
 
 ## Open Questions
 
-Should Host expose `GET /v1/user-nodes/:nodeId/messages/:eventId` so CLI and
-User Client can resolve a recorded message without scanning conversations?
+Should CLI also expose `entangle inbox approve <eventId>` and
+`entangle inbox reject <eventId>` aliases for the now-supported
+message-centric workflow?

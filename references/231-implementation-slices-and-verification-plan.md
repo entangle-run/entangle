@@ -276,6 +276,7 @@ Implementation record:
 - [241-signed-user-node-messages-slice.md](241-signed-user-node-messages-slice.md)
 - [272-cli-user-node-approval-context-slice.md](272-cli-user-node-approval-context-slice.md)
 - [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
+- [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
 
 Verification:
 
@@ -331,9 +332,9 @@ This slice now includes first-pass CLI assignment/User Node/inbox/reply/
 approve/reject commands, scoped CLI approval-response context flags, and a
 Studio projection/User Node panel with runtime placement, User Client URL,
 conversation, active, unread, and pending-approval counts. CLI approve/reject
-can now derive signed response context from recorded approval-request messages.
-Full Studio chat, signed approval card migration, and durable inbox/outbox
-projection remain follow-up work.
+can now derive signed response context from directly looked-up recorded
+approval-request messages. Full Studio chat, signed approval card migration,
+and durable inbox/outbox projection remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

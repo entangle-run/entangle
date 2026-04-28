@@ -144,7 +144,8 @@ This repository currently contains:
   through Host, CLI, and Studio, with CLI signed approve/reject and generic
   User Node message commands also able to carry scoped approval-response
   operation/resource/reason context, and CLI approve/reject commands able to
-  derive that context directly from recorded inbound approval-request messages;
+  derive that context directly from Host-recorded inbound approval-request
+  messages through direct User Node message lookup;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
   Nostr public keys are injected as non-secret route metadata, and runner turn
   requests now receive a bounded peer-route summary for controlled

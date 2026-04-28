@@ -76,6 +76,7 @@ same-machine slice records.
 - [273-user-client-projected-source-diff-excerpt-slice.md](273-user-client-projected-source-diff-excerpt-slice.md)
 - [274-studio-user-node-runtime-summary-slice.md](274-studio-user-node-runtime-summary-slice.md)
 - [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
+- [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
 
 ## Audited Scope
 
@@ -157,6 +158,9 @@ The repository is not fully federated:
 - Studio's federation overview now joins User Node identity, runtime
   projection, User Client URL, and conversation projection into read-only
   operator summaries for Human Interface Runtimes;
+- Host now exposes direct recorded User Node message lookup by event id, and
+  CLI `approve/reject --from-message` uses that read model instead of scanning
+  conversations;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
   paths, and joined runners can now start node runtime services from
   materialized assignment context paths;

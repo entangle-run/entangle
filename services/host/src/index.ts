@@ -30,6 +30,7 @@ import {
   hostAuthorityImportResponseSchema,
   hostAuthorityInspectionResponseSchema,
   identifierSchema,
+  nostrEventIdSchema,
   hostEventListQuerySchema,
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
@@ -109,6 +110,7 @@ import {
   userNodeIdentityListResponseSchema,
   userNodeInboxResponseSchema,
   userNodeInboundMessageRecordRequestSchema,
+  userNodeMessageInspectionResponseSchema,
   userNodeMessageRecordSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
@@ -146,6 +148,7 @@ import {
   getRuntimeTurnInspection,
   getUserNodeConversation,
   getUserNodeIdentity,
+  getUserNodeMessage,
   getUserNodeSigningMaterial,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
@@ -692,6 +695,29 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       }
 
       return userNodeConversationResponseSchema.parse(inspection);
+    }
+  );
+
+  server.get(
+    "/v1/user-nodes/:nodeId/messages/:eventId",
+    async (request, reply) => {
+      const params = request.params as {
+        eventId: string;
+        nodeId: string;
+      };
+      const nodeId = identifierSchema.parse(params.nodeId);
+      const eventId = nostrEventIdSchema.parse(params.eventId);
+      const inspection = await getUserNodeMessage(nodeId, eventId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Message '${eventId}' was not found for User Node '${nodeId}'.`
+        });
+      }
+
+      return userNodeMessageInspectionResponseSchema.parse(inspection);
     }
   );
 

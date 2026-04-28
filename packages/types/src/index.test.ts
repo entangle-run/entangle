@@ -106,6 +106,7 @@ import {
   userNodeIdentityRecordSchema,
   userNodeInboxResponseSchema,
   userNodeInboundMessageRecordRequestSchema,
+  userNodeMessageInspectionResponseSchema,
   userNodeMessageRecordSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
@@ -325,6 +326,13 @@ describe("federated runtime contracts", () => {
         userNodeId: "user-main"
       }).messages[0]?.approval?.approvalId
     ).toBe("approval-alpha");
+    expect(
+      userNodeMessageInspectionResponseSchema.parse({
+        generatedAt: observedAt,
+        message: messageRecord,
+        userNodeId: "user-main"
+      }).message.eventId
+    ).toBe(messageRecord.eventId);
 
     expect(
       userNodeInboundMessageRecordRequestSchema.parse({

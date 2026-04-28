@@ -80,6 +80,12 @@ export const userNodeConversationResponseSchema = z.object({
   userNodeId: identifierSchema
 });
 
+export const userNodeMessageInspectionResponseSchema = z.object({
+  generatedAt: nonEmptyStringSchema,
+  message: userNodeMessageRecordSchema,
+  userNodeId: identifierSchema
+});
+
 export const userNodeMessagePublishTypeSchema = z.enum([
   "task.request",
   "question",
@@ -143,6 +149,9 @@ export type UserNodeIdentityInspectionResponse = z.infer<
 export type UserNodeInboxResponse = z.infer<typeof userNodeInboxResponseSchema>;
 export type UserNodeConversationResponse = z.infer<
   typeof userNodeConversationResponseSchema
+>;
+export type UserNodeMessageInspectionResponse = z.infer<
+  typeof userNodeMessageInspectionResponseSchema
 >;
 export type UserNodeInboundMessageRecordRequest = z.infer<
   typeof userNodeInboundMessageRecordRequestSchema

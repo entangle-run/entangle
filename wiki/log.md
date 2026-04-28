@@ -3308,6 +3308,19 @@ focused CLI tests, CLI lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
 
+## [2026-04-28] implementation | Added direct User Node message lookup
+
+Added `references/276-user-node-message-lookup-slice.md`. Host now exposes
+`GET /v1/user-nodes/:nodeId/messages/:eventId` over recorded User Node message
+state, with a shared host-client method and contract schema. CLI
+`approve/reject --from-message` now uses this direct lookup instead of scanning
+every projected conversation.
+
+Types, Host, host-client, and CLI typechecks passed, along with types tests,
+focused Host tests, focused CLI tests, package lints,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check`.
+
 ## [2026-04-28] implementation | Projected source-change summaries from observed refs
 
 Added `references/270-source-change-ref-summary-projection-slice.md`.

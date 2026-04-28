@@ -91,6 +91,7 @@ import {
   userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
   userNodeIdentityListResponseSchema,
+  userNodeMessageInspectionResponseSchema,
   userNodeMessageRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
@@ -3433,6 +3434,27 @@ describe("buildHostServer", () => {
           },
           messageType: "approval.request"
         });
+
+      const messageInspectionResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/user-nodes/user-main/messages/efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+      });
+      expect(messageInspectionResponse.statusCode).toBe(200);
+      expect(
+        userNodeMessageInspectionResponseSchema.parse(
+          messageInspectionResponse.json()
+        ).message
+      ).toMatchObject({
+        approval: {
+          approvalId: "approval-alpha",
+          operation: "source_application"
+        },
+        conversationId: "conversation-alpha",
+        messageType: "approval.request"
+      });
 
       const inboxWithApprovalResponse = await server.inject({
         headers: {

@@ -171,6 +171,7 @@ import {
   type UserNodeConversationResponse,
   type UserNodeInboundMessageRecordRequest,
   userNodeConversationResponseSchema,
+  userNodeMessageInspectionResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
   userNodeIdentityListResponseSchema,
@@ -181,6 +182,7 @@ import {
   type UserConversationProjectionRecord,
   type UserNodeIdentityRecord,
   type UserNodeMessagePublishResponse,
+  type UserNodeMessageInspectionResponse,
   type UserNodeMessageRecord,
   wikiRefObservationPayloadSchema,
   wikiRefProjectionRecordSchema,
@@ -3623,6 +3625,34 @@ export async function getUserNodeConversation(
     conversationId,
     generatedAt: nowIsoString(),
     messages,
+    userNodeId: nodeId
+  });
+}
+
+export async function getUserNodeMessage(
+  nodeId: string,
+  eventId: string
+): Promise<UserNodeMessageInspectionResponse | undefined> {
+  await initializeHostState();
+
+  const inspection = await getUserNodeIdentity(nodeId);
+
+  if (!inspection) {
+    return undefined;
+  }
+
+  const recordPath = observedUserNodeMessageRecordPath({
+    eventId,
+    userNodeId: nodeId
+  });
+
+  if (!(await pathExists(recordPath))) {
+    return undefined;
+  }
+
+  return userNodeMessageInspectionResponseSchema.parse({
+    generatedAt: nowIsoString(),
+    message: userNodeMessageRecordSchema.parse(await readJsonFile(recordPath)),
     userNodeId: nodeId
   });
 }

@@ -65,7 +65,8 @@ Recently added:
 - CLI `approve` and `reject` can now use `--from-message <eventId>` to build
   the signed response from a recorded inbound `approval.request`, preserving
   target, conversation, session, parent message, turn, and scoped approval
-  context.
+  context. Host now exposes direct recorded message lookup so this does not
+  require scanning every conversation.
 - Studio User Node overview summaries now combine identity, runtime state,
   runner placement, User Client URL, conversation counts, active counts,
   pending approval counts, and unread counts from Host projection.
@@ -137,8 +138,8 @@ Node.
   actions. Authority, runner, assignment, User Node, projection inbox, reply,
   approve, and reject surfaces now exist; CLI signed approval responses now
   accept scoped operation/resource/reason metadata and can derive context from
-  recorded approval-request messages; message history now has the first
-  inbound/outbound projection path.
+  recorded approval-request messages through direct message lookup; message
+  history now has the first inbound/outbound projection path.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health and
