@@ -41,10 +41,11 @@ publishing `source_change.ref`, and Host runtime source-change candidate
 list/detail GET routes can read those projected records without local runner
 files. Source-change candidate diff GET routes now also fall back to projected
 `diffExcerpt` evidence when local shadow-git state is unavailable. The
-process-runner smoke now verifies projected turn, approval, and
-session read APIs after a deterministic OpenCode-adapter
-task turn from a real joined runner process. Joined runners now also publish
-session/conversation observations for later lifecycle transitions including
+process-runner smoke now verifies projected turn, source-change candidate
+list/detail/diff, approval, and session read APIs after a deterministic
+OpenCode-adapter task turn from a real joined runner process. Joined runners
+now also publish session/conversation observations for later lifecycle
+transitions including
 handoffs, coordination result/close, approval request/response, completion,
 cancellation, and failure paths. The remaining deep runtime APIs still need to
 be moved off local file reads.

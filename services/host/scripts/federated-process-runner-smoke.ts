@@ -32,6 +32,9 @@ import {
   runtimeApprovalListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
+  runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateInspectionResponseSchema,
+  runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionInspectionResponseSchema,
@@ -365,6 +368,8 @@ async function createSmokeOpenCodeExecutable(binRoot: string): Promise<string> {
     executablePath,
     [
       "#!/usr/bin/env node",
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
       "const args = process.argv.slice(2);",
       "if (args.includes('--version')) {",
       "  console.log('1.14.20-smoke');",
@@ -380,6 +385,13 @@ async function createSmokeOpenCodeExecutable(binRoot: string): Promise<string> {
       "process.stdin.on('end', () => {",
       "  const approvalId = process.env.ENTANGLE_SMOKE_ENGINE_APPROVAL_ID || 'approval-engine-smoke';",
       "  const sourceChangeId = process.env.ENTANGLE_SMOKE_ENGINE_SOURCE_CHANGE_ID || 'source-change-engine-smoke';",
+      "  const sourceRoot = process.cwd();",
+      "  fs.mkdirSync(path.join(sourceRoot, 'src'), { recursive: true });",
+      "  fs.writeFileSync(",
+      "    path.join(sourceRoot, 'src', 'smoke-generated.ts'),",
+      "    `export const smokeSourceChange = '${sourceChangeId}';\\n`,",
+      "    'utf8'",
+      "  );",
       "  const actionBlock = JSON.stringify({",
       "    approvalRequestDirectives: [",
       "      {",
@@ -1620,6 +1632,61 @@ async function main(): Promise<void> {
     printPass(
       "projected-runtime-turn-read-api",
       `turn=${projectedBuilderTurn.turnId}; phase=${projectedBuilderTurn.phase}`
+    );
+
+    const projectedBuilderSourceCandidate = await waitFor(
+      "Host projected builder source-change candidate read API",
+      async () => {
+        const candidateList =
+          runtimeSourceChangeCandidateListResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: "/v1/runtimes/builder/source-change-candidates"
+            })
+          );
+        const candidate = candidateList.candidates.find(
+          (entry) =>
+            entry.turnId === projectedBuilderTurn.turnId &&
+            entry.sourceChangeSummary.files.some(
+              (file) => file.path === "src/smoke-generated.ts"
+            )
+        );
+
+        if (!candidate) {
+          return undefined;
+        }
+
+        const inspection =
+          runtimeSourceChangeCandidateInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runtimes/builder/source-change-candidates/${candidate.candidateId}`
+            })
+          );
+
+        const diff = runtimeSourceChangeCandidateDiffResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/source-change-candidates/${candidate.candidateId}/diff`
+          })
+        );
+
+        return inspection.candidate.candidateId === candidate.candidateId &&
+          diff.diff.available &&
+          diff.diff.content.includes("smoke-generated.ts")
+          ? { candidate, diff }
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-runtime-source-change-read-api",
+      `candidate=${projectedBuilderSourceCandidate.candidate.candidateId}; ` +
+        `diff=${
+          projectedBuilderSourceCandidate.diff.diff.available
+            ? "available"
+            : "unavailable"
+        }`
     );
 
     const projectedBuilderApproval = await waitFor(

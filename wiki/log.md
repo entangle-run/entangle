@@ -3851,3 +3851,13 @@ the projected source-change candidate record.
 Source file preview, review, apply, and source-history operations remain
 local-context backed until those paths move to a federated mutation or
 backend-resolved protocol.
+
+## [2026-04-28] verification | Proved projected source candidates in process smoke
+
+Added `references/316-process-smoke-projected-source-candidate-slice.md`. The
+deterministic fake OpenCode executable used by the federated process-runner
+smoke now writes a source file in the runner-owned source workspace.
+
+The smoke now waits for the projected source-change candidate list/detail/diff
+Host APIs and verifies the projected diff for the generated source file, still
+without requiring live model credentials.

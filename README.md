@@ -90,8 +90,11 @@ runner-signed observations. It also publishes a synthetic signed agent-to-user
 message through the relay and verifies that the running User Node records it as
 inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits a signed approval response through the
-same JSON User Client API. Live OpenCode/model-provider behavior remains
-intentionally manual until API-backed provider testing is available.
+same JSON User Client API. The fake OpenCode executable mutates the source
+workspace, so the smoke also verifies projected source-change candidate
+list/detail/diff reads without live model credentials. Live
+OpenCode/model-provider behavior remains intentionally manual until API-backed
+provider testing is available.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -315,7 +318,8 @@ This repository currently contains:
   `diffExcerpt` evidence when runner-local shadow git state is unavailable;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
-  runner process, then verifies projected turn, approval, and session read APIs
+  runner process, mutates the source workspace, then verifies projected turn,
+  source-change candidate list/detail/diff, approval, and session read APIs
   without requiring live model-provider credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions including handoffs, coordination result/close,

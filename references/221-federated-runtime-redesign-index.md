@@ -116,6 +116,7 @@ same-machine slice records.
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
+- [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 
 ## Audited Scope
 
@@ -303,9 +304,9 @@ The repository is not fully federated:
   observed source-change candidate records;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
-  verifies Host runtime turn, approval, and session read APIs against signed
-  observations from the real joined runner process without requiring live model
-  credentials;
+  verifies Host runtime turn, source-change candidate list/detail/diff,
+  approval, and session read APIs against signed observations from the real
+  joined runner process without requiring live model credentials;
 - joined runners now publish session/conversation observations after outbound
   handoff writes, coordination close/result transitions, approval request and
   response transitions, session completion, and failure/cancellation paths, so

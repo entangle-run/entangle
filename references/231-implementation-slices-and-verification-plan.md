@@ -188,8 +188,9 @@ Current status:
   process for the graph User Node, assigns it as a `human_interface` runtime,
   verifies its projected User Client URL, checks User Client health, exercises
   a deterministic OpenCode-adapter task turn through a temporary runner-local
-  `opencode` executable, verifies projected turn/approval/session read APIs,
-  and proves Host, agent runner, and User Node runner state roots are isolated.
+  `opencode` executable, verifies projected turn/source-change
+  candidate/approval/session read APIs, and proves Host, agent runner, and
+  User Node runner state roots are isolated.
 
 ### Slice 8: ProjectionStore
 
@@ -216,6 +217,7 @@ Implementation record:
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
+- [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 
 Verification:
 
@@ -250,7 +252,8 @@ Current status:
   local runtime turn files are unavailable;
 - the process-runner smoke now exercises a deterministic OpenCode-adapter
   `task.request` through a real joined agent runner process and asserts the
-  projected turn, approval, and session read APIs over signed observations;
+  projected turn, source-change candidate list/detail/diff, approval, and
+  session read APIs over signed observations;
 - joined runners now emit session/conversation observations for later lifecycle
   transitions such as handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -402,6 +405,7 @@ Implementation record:
 - [313-projected-source-candidate-read-api-slice.md](313-projected-source-candidate-read-api-slice.md)
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
+- [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 
 Verification:
 
