@@ -234,6 +234,7 @@ Implementation record:
 - [284-user-node-delivery-retry-state-slice.md](284-user-node-delivery-retry-state-slice.md)
 - [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
 - [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
+- [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
 
 Current status:
 
@@ -259,10 +260,10 @@ Current status:
   runtime fallback, delivery labels, local conversation read state, projected
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
   context rendering, signed read receipts, parent-message links, message
-  delivery retry state, runtime status, live state refresh, and
-  Host-mediated source-candidate accept/reject controls stamped with the
-  running User Node id, and message publishing that preserves selected
-  conversation/session context;
+  delivery retry state, runtime status, live state refresh, local JSON APIs for
+  selected conversation detail and message publishing, and Host-mediated
+  source-candidate accept/reject controls stamped with the running User Node id,
+  and message publishing that preserves selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;

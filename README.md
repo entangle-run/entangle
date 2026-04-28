@@ -143,8 +143,9 @@ This repository currently contains:
   preview with runtime fallback, delivery labels, local conversation read
   state, projected wiki-ref rendering, projected wiki preview rendering,
   signed read receipts, parent-message links, delivery retry state, runtime
-  identity/relay/Host API status, lightweight live state refresh, and
-  Host-backed message publishing,
+  identity/relay/Host API status, lightweight live state refresh, local JSON
+  APIs for selected conversation detail and message publishing, and Host-backed
+  message publishing,
   plus projection of the User Client endpoint through Host, CLI, and Studio,
   with CLI signed approve/reject and generic User Node message
   commands able to

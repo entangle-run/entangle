@@ -26,6 +26,7 @@ import {
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
+  userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
 import { getPublicKey } from "nostr-tools";
@@ -192,6 +193,16 @@ async function readRequestBody(request: IncomingMessage): Promise<string> {
   }
 
   return Buffer.concat(chunks).toString("utf8");
+}
+
+async function readRequestJson(request: IncomingMessage): Promise<unknown> {
+  const body = await readRequestBody(request);
+
+  if (!body.trim()) {
+    return {};
+  }
+
+  return JSON.parse(body) as unknown;
 }
 
 function writeHtml(response: ServerResponse, statusCode: number, body: string): void {
@@ -730,18 +741,21 @@ async function publishUserNodeMessage(input: {
           | undefined;
       }
     | undefined;
+  artifactRefs?: ArtifactRef[] | undefined;
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
+  intent?: string | undefined;
   messageType: UserNodeMessagePublishType;
   parentMessageId?: string | undefined;
   responsePolicy?: {
     closeOnResult: boolean;
     maxFollowups: number;
     responseRequired: boolean;
-  };
+  } | undefined;
   sessionId?: string | undefined;
   summary: string;
   targetNodeId: string;
+  turnId?: string | undefined;
   userNodeId: string;
 }): Promise<UserNodeMessagePublishResponse> {
   if (!input.hostApi) {
@@ -756,13 +770,16 @@ async function publishUserNodeMessage(input: {
     {
       body: JSON.stringify({
         ...(input.approval ? { approval: input.approval } : {}),
+        ...(input.artifactRefs ? { artifactRefs: input.artifactRefs } : {}),
         ...(input.conversationId ? { conversationId: input.conversationId } : {}),
+        ...(input.intent ? { intent: input.intent } : {}),
         messageType: input.messageType,
         ...(input.parentMessageId ? { parentMessageId: input.parentMessageId } : {}),
         ...(input.responsePolicy ? { responsePolicy: input.responsePolicy } : {}),
         ...(input.sessionId ? { sessionId: input.sessionId } : {}),
         summary: input.summary,
-        targetNodeId: input.targetNodeId
+        targetNodeId: input.targetNodeId,
+        ...(input.turnId ? { turnId: input.turnId } : {})
       }),
       headers: {
         ...buildHostApiHeaders(input.hostApi),
@@ -1681,6 +1698,77 @@ export async function startHumanInterfaceRuntime(input: {
             hostApi: input.hostApi
           })
         );
+        return;
+      }
+
+      const apiConversationMatch = requestUrl.pathname.match(
+        /^\/api\/conversations\/([^/]+)$/u
+      );
+
+      if (request.method === "GET" && apiConversationMatch) {
+        const conversationId = decodeURIComponent(apiConversationMatch[1] ?? "");
+        const conversation = await fetchUserNodeConversation({
+          conversationId,
+          hostApi: input.hostApi,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if (conversation.error || !conversation.detail) {
+          writeJson(response, 502, {
+            error: conversation.error ?? "Conversation detail is unavailable."
+          });
+          return;
+        }
+
+        writeJson(response, 200, conversation.detail);
+        return;
+      }
+
+      if (request.method === "POST" && requestUrl.pathname === "/api/messages") {
+        let publishRequest;
+
+        try {
+          publishRequest = userNodeMessagePublishRequestSchema.parse(
+            await readRequestJson(request)
+          );
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "User Client message request is invalid."
+          });
+          return;
+        }
+
+        try {
+          writeJson(
+            response,
+            200,
+            await publishUserNodeMessage({
+              approval: publishRequest.approval,
+              artifactRefs: publishRequest.artifactRefs,
+              conversationId: publishRequest.conversationId,
+              hostApi: input.hostApi,
+              intent: publishRequest.intent,
+              messageType: publishRequest.messageType,
+              parentMessageId: publishRequest.parentMessageId,
+              responsePolicy: publishRequest.responsePolicy,
+              sessionId: publishRequest.sessionId,
+              summary: publishRequest.summary,
+              targetNodeId: publishRequest.targetNodeId,
+              turnId: publishRequest.turnId,
+              userNodeId: input.context.binding.node.nodeId
+            })
+          );
+        } catch (error) {
+          writeJson(response, 502, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "User Client message publish failed."
+          });
+        }
         return;
       }
 

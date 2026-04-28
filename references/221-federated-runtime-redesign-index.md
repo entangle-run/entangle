@@ -90,6 +90,7 @@ same-machine slice records.
 - [287-user-client-runtime-status-live-refresh-slice.md](287-user-client-runtime-status-live-refresh-slice.md)
 - [288-user-client-source-candidate-review-slice.md](288-user-client-source-candidate-review-slice.md)
 - [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
+- [290-human-interface-json-api-slice.md](290-human-interface-json-api-slice.md)
 
 ## Audited Scope
 
@@ -157,9 +158,9 @@ The repository is not fully federated:
   state, projected wiki-ref rendering, projected wiki preview rendering,
   wiki-scoped approval context rendering, signed read receipts,
   parent-message links, delivery retry state, runtime status, live state
-  refresh, and message publishing, but a separate
-  bundled User Client app and richer object-backend review still remain
-  incomplete;
+  refresh, message publishing, and local JSON APIs for conversation detail and
+  message publishing, but a separate bundled User Client app and richer
+  object-backend review still remain incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior

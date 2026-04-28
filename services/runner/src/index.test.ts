@@ -1054,6 +1054,62 @@ describe("runner runtime context", () => {
         userNodeId: "user-main"
       });
 
+      const conversationApiResponse = await fetch(
+        new URL("/api/conversations/conversation-alpha", handle.clientUrl)
+      );
+      expect(conversationApiResponse.status).toBe(200);
+      const conversationApiBody = (await conversationApiResponse.json()) as {
+        conversationId: string;
+        messages: Array<{
+          direction: string;
+          messageType: string;
+          summary: string;
+        }>;
+        userNodeId: string;
+      };
+      expect(conversationApiBody).toMatchObject({
+        conversationId: "conversation-alpha",
+        userNodeId: "user-main"
+      });
+      expect(
+        conversationApiBody.messages.find(
+          (message) =>
+            message.direction === "outbound" &&
+            message.summary === "Previous user message."
+        )
+      ).toBeDefined();
+      expect(
+        conversationApiBody.messages.find(
+          (message) =>
+            message.direction === "inbound" &&
+            message.messageType === "approval.request" &&
+            message.summary === "Approve source application."
+        )
+      ).toBeDefined();
+
+      const jsonPublishResponse = await fetch(
+        new URL("/api/messages", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            messageType: "answer",
+            sessionId: "session-alpha",
+            summary: "The JSON client answer is ready.",
+            targetNodeId: "worker-it"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonPublishResponse.status).toBe(200);
+      await expect(jsonPublishResponse.json()).resolves.toMatchObject({
+        conversationId: "conversation-alpha",
+        messageType: "answer",
+        targetNodeId: "worker-it"
+      });
+
       const pageResponse = await fetch(
         new URL("/?conversationId=conversation-alpha", handle.clientUrl)
       );
@@ -1250,7 +1306,9 @@ describe("runner runtime context", () => {
         request.method === "POST" &&
         request.url === "/v1/user-nodes/user-main/messages" &&
         (request.body as { messageType?: string } | undefined)?.messageType ===
-          "answer"
+          "answer" &&
+        (request.body as { summary?: string } | undefined)?.summary ===
+          "The reviewed answer is ready."
     );
     expect(publishRequest).toMatchObject({
       authorization: "Bearer host-secret"
@@ -1260,6 +1318,22 @@ describe("runner runtime context", () => {
       messageType: "answer",
       sessionId: "session-alpha",
       summary: "The reviewed answer is ready.",
+      targetNodeId: "worker-it"
+    });
+    const jsonPublishRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/user-nodes/user-main/messages" &&
+        (request.body as { messageType?: string } | undefined)?.messageType ===
+          "answer" &&
+        (request.body as { summary?: string } | undefined)?.summary ===
+          "The JSON client answer is ready."
+    );
+    expect(jsonPublishRequest?.body).toMatchObject({
+      conversationId: "conversation-alpha",
+      messageType: "answer",
+      sessionId: "session-alpha",
+      summary: "The JSON client answer is ready.",
       targetNodeId: "worker-it"
     });
     const readReceiptRequest = hostRequests.find(

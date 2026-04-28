@@ -34,7 +34,9 @@ User nodes are now partially runtime-capable:
   session ids. `/api/state` now also includes the User Node runtime identity,
   Host API status, primary relay profile, and relay URLs; the rendered page
   polls `/api/state` and refreshes when inbox/source/wiki projection state
-  changes.
+  changes. The Human Interface Runtime also exposes local JSON routes for
+  selected conversation detail and message publishing through
+  `GET /api/conversations/:conversationId` and `POST /api/messages`.
 - Host now persists outbound User Node messages it publishes and exposes them
   through `GET /v1/user-nodes/:nodeId/inbox/:conversationId`; the User Client
   renders those recorded messages for the selected thread.
@@ -135,7 +137,9 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   source-change diff preview now exist. Signed approval responses now preserve
   scoped operation/resource context when the User Client has it, and
   source-candidate review controls now submit Host review mutations with the
-  running User Node id as `reviewedBy`.
+  running User Node id as `reviewedBy`. The Human Interface Runtime also
+  exposes local JSON APIs for selected conversation detail and message
+  publishing, preparing the same runtime boundary for a bundled user client.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
   Done.
 - Add a User Interaction Gateway/Human Interface Runtime service boundary that

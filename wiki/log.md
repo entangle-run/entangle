@@ -3566,3 +3566,14 @@ The probe reuses OpenCode server Basic auth environment variables when present,
 records combined CLI/server version evidence, and fails as
 `provider_unavailable` before the run process starts if the server is
 unreachable or unhealthy.
+
+## [2026-04-28] implementation | Added Human Interface JSON API
+
+Added `references/290-human-interface-json-api-slice.md`. The runner-served
+Human Interface Runtime now exposes `GET /api/conversations/:conversationId`
+and `POST /api/messages` alongside `/api/state`.
+
+These local JSON routes let a bundled or external User Client consume the
+running User Node boundary without scraping HTML, while message publishing
+still goes through the existing Host User Node gateway and stable User Node
+identity path.

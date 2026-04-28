@@ -39,7 +39,8 @@ The current implementation has the first federated execution path:
 - Host now exposes a User Node-specific inbox API, and the runner-served User
   Client uses it to render a conversation list, selected thread metadata, and
   conversation/session-preserving message publication. The client also exposes
-  `/api/state` for automation and for replacing the shell with a richer app.
+  `/api/state`, selected-conversation JSON detail, and JSON message publishing
+  for automation and for replacing the shell with a richer app.
 - Host now records outbound messages published through the User Node gateway,
   exposes them through conversation detail, and the User Client renders those
   messages for the selected thread.
@@ -235,19 +236,20 @@ and signs through the User Node gateway boundary, not through Studio.
 
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
-selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
-artifact-ref rendering plus projection-backed bounded artifact preview with
-runtime fallback, projected source-change summary rendering, projected source
-diff excerpts with runtime-diff fallback, projected wiki-ref rendering,
-projected wiki preview rendering, wiki-scoped approval context rendering,
-scoped approval-response context, and message/approval/read-receipt
-publication that keeps the selected conversation/session context. Message
-history now also shows parent-message links, derived delivery labels for
-outbound relay publish coverage, failed relay delivery details with retry
-actions, and inbound User Client receipt, and selected conversations are marked
-read through Host projection. Runtime identity, Host API, and relay status now
-render in the User Client, and the page polls `/api/state` for lightweight live
-refresh when inbox or projection state changes.
+selected thread metadata, recorded inbound/outbound messages, `/api/state`,
+selected-conversation JSON detail, JSON message publishing, and artifact-ref
+rendering plus projection-backed bounded artifact preview with runtime
+fallback, projected source-change summary rendering, projected source diff
+excerpts with runtime-diff fallback, projected wiki-ref rendering, projected
+wiki preview rendering, wiki-scoped approval context rendering, scoped
+approval-response context, and message/approval/read-receipt publication that
+keeps the selected conversation/session context. Message history now also shows
+parent-message links, derived delivery labels for outbound relay publish
+coverage, failed relay delivery details with retry actions, and inbound User
+Client receipt, and selected conversations are marked read through Host
+projection. Runtime identity, Host API, and relay status now render in the User
+Client, and the page polls `/api/state` for lightweight live refresh when inbox
+or projection state changes.
 
 Impacted modules:
 
