@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { artifactRefSchema } from "../artifacts/artifact-ref.js";
+import {
+  artifactContentPreviewSchema,
+  artifactRefSchema
+} from "../artifacts/artifact-ref.js";
 import { nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { assignmentLeaseSchema } from "../federation/assignment.js";
@@ -147,6 +150,7 @@ export const approvalUpdatedObservationPayloadSchema =
 
 export const artifactRefObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
+    artifactPreview: artifactContentPreviewSchema.optional(),
     artifactRef: artifactRefSchema,
     eventType: z.literal("artifact.ref"),
     graphId: identifierSchema,

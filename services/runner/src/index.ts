@@ -255,6 +255,9 @@ function createRuntimeObservationPublisher(input: {
   return {
     publishArtifactRefObserved: (record) =>
       publish({
+        ...(record.artifactPreview
+          ? { artifactPreview: record.artifactPreview }
+          : {}),
         artifactRef: record.artifactRecord.ref,
         eventType: "artifact.ref",
         graphId: record.graphId,

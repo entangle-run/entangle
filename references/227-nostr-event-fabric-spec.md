@@ -41,7 +41,7 @@ Nostr carries:
 - heartbeats;
 - bounded lifecycle observations;
 - bounded log summaries;
-- artifact refs and hashes;
+- artifact refs, hashes, and bounded text previews;
 - source-change refs;
 - wiki publication refs;
 - approval requests and responses.
@@ -122,7 +122,8 @@ validation.
 ## Risks And Mitigations
 
 - Risk: Nostr becomes a blob transport.
-  Mitigation: schema limits and artifact-ref-only policy.
+  Mitigation: schema limits, bounded preview payloads, and artifact-ref-first
+  policy for full artifact content.
 - Risk: relay history replay corrupts projection.
   Mitigation: idempotent event handling and monotonic assignment revisions.
 - Risk: sensitive observations leak.

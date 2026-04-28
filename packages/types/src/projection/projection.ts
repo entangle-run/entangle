@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { artifactRefSchema } from "../artifacts/artifact-ref.js";
+import {
+  artifactContentPreviewSchema,
+  artifactRefSchema
+} from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { runtimeAssignmentStatusSchema } from "../federation/assignment.js";
@@ -106,6 +109,7 @@ const runnerObservationProjectionBaseSchema = z.object({
 export const artifactRefProjectionRecordSchema =
   runnerObservationProjectionBaseSchema.extend({
     artifactId: identifierSchema,
+    artifactPreview: artifactContentPreviewSchema.optional(),
     artifactRef: artifactRefSchema
   });
 

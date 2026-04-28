@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { open, stat } from "node:fs/promises";
 import type {
   AgentEngineTurnResult,
+  ArtifactContentPreview,
   ArtifactRecord,
   ArtifactRef,
   ApprovalRecord,
@@ -96,6 +98,7 @@ export type RunnerServiceStartResult = {
 export type RunnerServiceObservationPublisher = {
   publishArtifactRefObserved?(input: {
     artifactRecord: ArtifactRecord;
+    artifactPreview?: ArtifactContentPreview | undefined;
     graphId: string;
     nodeId: string;
     observedAt: string;
@@ -166,8 +169,81 @@ const handoffAllowedRelations = new Set([
   "routes_to"
 ]);
 
+const artifactProjectionPreviewMaxBytes = 12 * 1024;
+
 function nowIsoString(): string {
   return new Date().toISOString();
+}
+
+function inferArtifactContentPreviewType(
+  artifactRecord: ArtifactRecord
+): Extract<ArtifactContentPreview, { available: true }>["contentType"] {
+  const artifactPath = artifactRecord.ref.locator.path;
+  const normalizedPath = artifactPath.toLowerCase();
+
+  return normalizedPath.endsWith(".md") || normalizedPath.endsWith(".markdown")
+    ? "text/markdown"
+    : "text/plain";
+}
+
+async function buildArtifactContentPreview(
+  artifactRecord: ArtifactRecord
+): Promise<ArtifactContentPreview | undefined> {
+  const localPath = artifactRecord.materialization?.localPath;
+
+  if (!localPath) {
+    return undefined;
+  }
+
+  try {
+    if (!(await stat(localPath)).isFile()) {
+      return {
+        available: false,
+        reason: "Artifact preview is unavailable because the artifact is not a file."
+      };
+    }
+
+    const file = await open(localPath, "r");
+
+    try {
+      const buffer = Buffer.alloc(artifactProjectionPreviewMaxBytes + 1);
+      const { bytesRead } = await file.read(
+        buffer,
+        0,
+        artifactProjectionPreviewMaxBytes + 1,
+        0
+      );
+      const truncated = bytesRead > artifactProjectionPreviewMaxBytes;
+      const previewBuffer = buffer.subarray(
+        0,
+        Math.min(bytesRead, artifactProjectionPreviewMaxBytes)
+      );
+
+      if (previewBuffer.includes(0)) {
+        return {
+          available: false,
+          reason:
+            "Artifact preview is unavailable because the artifact content is not text."
+        };
+      }
+
+      return {
+        available: true,
+        bytesRead: previewBuffer.length,
+        content: previewBuffer.toString("utf8"),
+        contentEncoding: "utf8",
+        contentType: inferArtifactContentPreviewType(artifactRecord),
+        truncated
+      };
+    } finally {
+      await file.close();
+    }
+  } catch {
+    return {
+      available: false,
+      reason: "Artifact preview is unavailable because the artifact cannot be read."
+    };
+  }
 }
 
 function buildSyntheticTurnId(prefix: string): string {
@@ -1410,6 +1486,7 @@ export class RunnerService {
     try {
       await this.observationPublisher?.publishArtifactRefObserved?.({
         artifactRecord,
+        artifactPreview: await buildArtifactContentPreview(artifactRecord),
         graphId: this.context.binding.graphId,
         nodeId: this.context.binding.node.nodeId,
         observedAt: artifactRecord.updatedAt

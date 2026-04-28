@@ -442,6 +442,41 @@ describe("runner runtime context", () => {
         if (request.method === "GET" && request.url === "/v1/projection") {
           response.end(
             JSON.stringify({
+              artifactRefs: [
+                {
+                  artifactId: "artifact-alpha",
+                  artifactPreview: {
+                    available: true,
+                    bytesRead: 28,
+                    content: "Projected report preview body.",
+                    contentEncoding: "utf8",
+                    contentType: "text/markdown",
+                    truncated: false
+                  },
+                  artifactRef: {
+                    artifactId: "artifact-alpha",
+                    artifactKind: "report_file",
+                    backend: "git",
+                    contentSummary: "Review report.",
+                    locator: {
+                      branch: "main",
+                      commit: "abc123",
+                      path: "reports/review.md",
+                      repositoryName: "worker-artifacts"
+                    },
+                    status: "materialized"
+                  },
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:02:00.000Z"
+                  },
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey
+                }
+              ],
               generatedAt: "2026-04-26T12:02:00.000Z",
               hostAuthorityPubkey: hostPublicKey,
               schemaVersion: "1",
@@ -888,7 +923,8 @@ describe("runner runtime context", () => {
       );
       const artifactPreviewBody = await artifactPreviewResponse.text();
       expect(artifactPreviewResponse.status).toBe(200);
-      expect(artifactPreviewBody).toContain("Review report preview body.");
+      expect(artifactPreviewBody).toContain("Projected report preview body.");
+      expect(artifactPreviewBody).toContain("projection excerpt");
       expect(artifactPreviewBody).not.toContain(
         "/runtime/worker-it/artifacts/reports/review.md"
       );
@@ -951,13 +987,13 @@ describe("runner runtime context", () => {
         url: "/v1/user-nodes/user-main/inbox"
       })
     );
-    expect(hostRequests).toContainEqual(
-      expect.objectContaining({
-        authorization: "Bearer host-secret",
-        method: "GET",
-        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
-      })
-    );
+    expect(
+      hostRequests.some(
+        (request) =>
+          request.method === "GET" &&
+          request.url === "/v1/runtimes/worker-it/artifacts/artifact-alpha/preview"
+      )
+    ).toBe(false);
     expect(
       hostRequests.some(
         (request) =>

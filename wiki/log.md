@@ -3422,3 +3422,15 @@ outcome through the observe protocol.
 Runner typecheck, focused runner tests, runner lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
+
+## [2026-04-28] implementation | Added projected artifact previews
+
+Added `references/277-projected-artifact-preview-slice.md`. `artifact.ref`
+observations can now carry bounded text previews, Host projection stores them,
+and the runner-served User Client prefers projected artifact preview content
+before falling back to the older runtime artifact preview endpoint.
+
+Runner-produced report artifacts now emit preview excerpts without exposing
+runtime-local source paths through the projection. Types, Host, and runner
+typechecks passed, along with types tests, focused Host/runner tests, and
+`git diff --check` during the implementation slice.

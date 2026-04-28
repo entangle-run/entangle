@@ -1685,6 +1685,14 @@ describe("buildHostServer", () => {
       };
 
       await recordArtifactRefObservation({
+        artifactPreview: {
+          available: true,
+          bytesRead: 16,
+          content: "# Report\n\nReady.",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        },
         artifactRef,
         eventType: "artifact.ref",
         graphId: "team-alpha",
@@ -1756,6 +1764,10 @@ describe("buildHostServer", () => {
 
       expect(projection.artifactRefs[0]).toMatchObject({
         artifactId: "artifact-alpha",
+        artifactPreview: {
+          available: true,
+          content: "# Report\n\nReady."
+        },
         nodeId: "worker-it",
         projection: {
           source: "observation_event",

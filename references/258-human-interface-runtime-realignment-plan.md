@@ -58,8 +58,9 @@ The current implementation has the first federated execution path:
   to the older runtime-local diff endpoint.
 - The User Client renders bounded artifact refs from message records so humans
   can see handoff artifacts, and now provides a server-side artifact preview
-  page for bounded Host artifact previews without exposing runtime-local source
-  paths in browser output.
+  page that prefers bounded projection-carried artifact previews from
+  `artifact.ref` observations before falling back to the older Host runtime
+  preview path.
 - The process-boundary smoke now includes two User Nodes assigned to two
   distinct `human_interface` runners, each exposing its own User Client and
   publishing with a distinct stable User Node pubkey.
@@ -67,11 +68,12 @@ The current implementation has the first federated execution path:
 The current implementation still does not have the final User Node client:
 
 - The current User Client is a usable runner-served shell, not a complete
-  source/wiki review application, and artifact preview still depends on the
-  existing Host deep runtime preview path rather than a projection-backed
-  artifact preview service. Source-change cards can now render projected
-  summaries and projected bounded diff excerpts, but complete source review
-  still needs a projection/object-backed source review service.
+  source/wiki review application. Artifact preview now prefers bounded
+  projection-carried preview content, and falls back to the existing Host deep
+  runtime preview path only when projection has no preview. Source-change cards
+  can now render projected summaries and projected bounded diff excerpts, but
+  complete source review still needs a projection/object-backed source review
+  service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, but not delivery/read state or a local encrypted client
@@ -229,12 +231,12 @@ and signs through the User Node gateway boundary, not through Studio.
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
-artifact-ref rendering plus bounded artifact preview, projected source-change
-summary rendering, projected source diff excerpts with runtime-diff fallback,
-scoped approval-response context, and message/approval publication that keeps
-the selected conversation/session context. Message history now also shows
-derived delivery labels for outbound relay publish coverage and inbound User
-Client receipt.
+artifact-ref rendering plus projection-backed bounded artifact preview with
+runtime fallback, projected source-change summary rendering, projected source
+diff excerpts with runtime-diff fallback, scoped approval-response context, and
+message/approval publication that keeps the selected conversation/session
+context. Message history now also shows derived delivery labels for outbound
+relay publish coverage and inbound User Client receipt.
 
 Impacted modules:
 
@@ -370,8 +372,9 @@ The fastest path to a product the user can test is:
    path.
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
-7. Expand projection-backed artifact/source content preview, richer wiki
-   review actions, delivery retry state, read receipts, and OpenCode parity.
+7. Expand complete projection-backed source/wiki review, richer artifact
+   object-backend review, delivery retry state, read receipts, and OpenCode
+   parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

@@ -138,9 +138,10 @@ The repository is not fully federated:
   thread selection, inbound/outbound message history, approval response
   controls, approval resource rendering, signed approval-response context,
   source-change projection summary cards, source-change diff preview,
-  artifact-ref rendering, server-side artifact preview, delivery labels, and
-  message publishing, but wiki review actions, read receipts, and
-  projection-backed artifact/source content preview are still incomplete;
+  artifact-ref rendering, projected bounded artifact preview with runtime
+  fallback, delivery labels, and message publishing, but wiki review actions,
+  read receipts, and complete projection-backed source/wiki review are still
+  incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
@@ -228,16 +229,16 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    message history, approval controls, approval resource rendering, signed
    approval-response context, source-change projection summaries,
    projected source-change diff excerpts, source-change diff preview fallback,
-   artifact-ref rendering, server-side artifact preview, and delivery labels
-   are implemented; wiki review actions, read receipts, and projection-backed
-   artifact/source content preview remain open.
+   artifact-ref rendering, projected bounded artifact preview with runtime
+   fallback, and delivery labels are implemented; wiki review actions, read
+   receipts, and complete projection-backed source/wiki review remain open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
-    source-change summaries now project through observed refs; projection-backed
-    content preview remains open.
+    source-change summaries and bounded artifact previews now project through
+    observed refs; complete source/wiki review remains open.
 12. Studio and CLI operator/user-node federation surfaces.
 13. Product naming migration with no local-product compatibility marker.
 14. Distributed smoke test.
@@ -290,5 +291,6 @@ bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The next blocking implementation areas are richer source/wiki review actions in
 the User Client, replacing remaining deep filesystem-backed runtime inspection
-paths with projection-backed artifact/source/wiki services, and turning the
-process smoke into the full multi-machine distributed proof.
+paths with projection-backed source/wiki services and object-backed artifact
+services, and turning the process smoke into the full multi-machine
+distributed proof.

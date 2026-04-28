@@ -627,6 +627,14 @@ describe("federated runtime contracts", () => {
       artifactRefs: [
         {
           artifactId: "artifact-alpha",
+          artifactPreview: {
+            available: true,
+            bytesRead: 18,
+            content: "# Report\n\nReady.\n",
+            contentEncoding: "utf8",
+            contentType: "text/markdown",
+            truncated: false
+          },
           artifactRef: {
             artifactId: "artifact-alpha",
             artifactKind: "report_file",
@@ -753,6 +761,7 @@ describe("federated runtime contracts", () => {
     });
 
     expect(snapshot.artifactRefs[0]?.artifactId).toBe("artifact-alpha");
+    expect(snapshot.artifactRefs[0]?.artifactPreview?.available).toBe(true);
     expect(snapshot.runtimes[0]?.nodeId).toBe("worker-it");
     expect(snapshot.sourceChangeRefs[0]?.candidateId).toBe("candidate-alpha");
     expect(snapshot.sourceChangeRefs[0]?.sourceChangeSummary?.fileCount).toBe(1);
@@ -875,6 +884,42 @@ describe("federated runtime contracts", () => {
         updatedAt: observedAt
       }
     });
+    const artifactObservation = entangleObservationEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.observe.v1",
+        recipientPubkey: authorityPubkey,
+        signerPubkey: runnerPubkey
+      }),
+      payload: {
+        artifactPreview: {
+          available: true,
+          bytesRead: 18,
+          content: "# Report\n\nReady.\n",
+          contentEncoding: "utf8",
+          contentType: "text/markdown",
+          truncated: false
+        },
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/report",
+            commit: "commit-alpha",
+            path: "reports/session-alpha/turn-alpha.md"
+          },
+          status: "published"
+        },
+        eventType: "artifact.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
     const sourceChangeObservation = entangleObservationEventSchema.parse({
       envelope: buildSignedEnvelope({
         protocol: "entangle.observe.v1",
@@ -915,6 +960,7 @@ describe("federated runtime contracts", () => {
     expect(sessionObservation.payload.eventType).toBe("session.updated");
     expect(conversationObservation.payload.eventType).toBe("conversation.updated");
     expect(turnObservation.payload.eventType).toBe("turn.updated");
+    expect(artifactObservation.payload.eventType).toBe("artifact.ref");
     expect(sourceChangeObservation.payload.eventType).toBe("source_change.ref");
   });
 

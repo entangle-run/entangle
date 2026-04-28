@@ -26,6 +26,21 @@ export const artifactLifecycleStateSchema = z.enum([
   "failed"
 ]);
 
+export const artifactContentPreviewSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    bytesRead: z.number().int().nonnegative(),
+    content: z.string(),
+    contentEncoding: z.literal("utf8"),
+    contentType: z.enum(["text/markdown", "text/plain"]),
+    truncated: z.boolean()
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: nonEmptyStringSchema
+  })
+]);
+
 const artifactRefBaseSchema = z.object({
   artifactId: identifierSchema,
   artifactKind: artifactKindSchema.optional(),
@@ -231,6 +246,9 @@ export const artifactRecordSchema = z.object({
 export type ArtifactBackend = z.infer<typeof artifactBackendSchema>;
 export type ArtifactKind = z.infer<typeof artifactKindSchema>;
 export type ArtifactLifecycleState = z.infer<typeof artifactLifecycleStateSchema>;
+export type ArtifactContentPreview = z.infer<
+  typeof artifactContentPreviewSchema
+>;
 export type GitArtifactLocator = z.infer<typeof gitArtifactLocatorSchema>;
 export type WikiArtifactLocator = z.infer<typeof wikiArtifactLocatorSchema>;
 export type LocalFileArtifactLocator = z.infer<typeof localFileArtifactLocatorSchema>;

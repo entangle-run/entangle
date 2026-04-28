@@ -10,8 +10,8 @@ artifacts, source-change candidates, source history, artifact restore/promotion
 records, wiki publications, and cancellation requests. Host events are then
 derived from those local records.
 
-This works for Local because Host and runner share a volume. It cannot work
-when Host and runner live on separate machines.
+This works only for a same-machine compatibility profile where Host and runner
+share a volume. It cannot work when Host and runner live on separate machines.
 
 Federated projection foundations now exist for Host Authority, runner
 registry/heartbeat, assignments, User Node identity, signed User Node messages,
@@ -19,7 +19,10 @@ and observed artifact/source/wiki refs. Joined agent runners now emit
 `artifact.ref`, `source_change.ref`, and `wiki.ref` observations during normal
 turn execution, so those projection records are no longer only test-fed.
 Observed `source_change.ref` records now include bounded source-change
-summaries. The deep runtime APIs still need to be moved off local file reads.
+summaries. Observed `artifact.ref` records can now include bounded text
+previews, and Host projection exposes those previews to the User Client without
+reading runner disk. The deep runtime APIs still need to be moved off local file
+reads.
 
 ## Target Model
 
@@ -69,7 +72,8 @@ and refs so Host can inspect global state without reading runner disk.
   functions.
 - Continue changing runner service to emit observations whenever it currently
   writes local lifecycle state. Session, conversation, turn phase, artifact ref,
-  source-change ref with bounded summary, and wiki ref emissions now exist.
+  artifact ref with bounded preview, source-change ref with bounded summary, and
+  wiki ref emissions now exist.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 

@@ -247,16 +247,17 @@ Current status:
   approval response controls, approval resource rendering, source-change diff
   preview, projected source-change summary rendering, projected source diff
   excerpts with runtime-diff fallback, scoped approval-response context,
-  artifact-ref rendering, bounded artifact preview, delivery labels, and
-  message publishing that preserves selected conversation/session context;
+  artifact-ref rendering, projection-backed bounded artifact preview with
+  runtime fallback, delivery labels, and message publishing that preserves
+  selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
-- final bundled User Client application, projection-backed artifact/source
-  content preview, richer wiki review controls, delivery retry state, and read
+- final bundled User Client application, complete projection-backed source/wiki
+  review, richer artifact object-backend review, delivery retry state, and read
   receipts remain open.
 
 Verification:
@@ -292,6 +293,7 @@ source-change refs, and wiki refs.
 Implementation record:
 
 - [242-observed-artifact-source-wiki-refs-slice.md](242-observed-artifact-source-wiki-refs-slice.md)
+- [277-projected-artifact-preview-slice.md](277-projected-artifact-preview-slice.md)
 
 Verification:
 

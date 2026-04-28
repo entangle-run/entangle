@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { AddressInfo } from "node:net";
 import type {
   ArtifactRef,
+  ArtifactRefProjectionRecord,
   EntangleA2AMessage,
   EffectiveRuntimeContext,
   HostProjectionSnapshot,
@@ -627,6 +628,16 @@ function findProjectedSourceChangeRef(input: {
   );
 }
 
+function findProjectedArtifactRef(input: {
+  artifactId: string;
+  nodeId: string;
+  projection?: HostProjectionSnapshot | undefined;
+}): ArtifactRefProjectionRecord | undefined {
+  return input.projection?.artifactRefs.find(
+    (ref) => ref.nodeId === input.nodeId && ref.artifactId === input.artifactId
+  );
+}
+
 function renderApprovalResource(
   message: UserNodeMessageRecord,
   sourceChangeRefs: SourceChangeRefProjectionRecord[]
@@ -1037,26 +1048,42 @@ async function renderArtifactPreviewPage(input: {
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
 }): Promise<string> {
-  const preview = await fetchRuntimeArtifactPreview({
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+  const projectedRef = findProjectedArtifactRef({
     artifactId: input.artifactId,
-    hostApi: input.hostApi,
-    nodeId: input.nodeId
+    nodeId: input.nodeId,
+    projection: projection.detail
   });
-  const previewDetail = preview.detail;
+  const preview = projectedRef?.artifactPreview
+    ? undefined
+    : await fetchRuntimeArtifactPreview({
+        artifactId: input.artifactId,
+        hostApi: input.hostApi,
+        nodeId: input.nodeId
+      });
+  const previewDetail = preview?.detail;
   const backHref = input.conversationId
     ? `/?conversationId=${encodeURIComponent(input.conversationId)}`
     : "/";
-  const artifact = previewDetail?.artifact.ref;
-  const previewResult = previewDetail?.preview;
-  const previewBody = preview.error
+  const artifact = projectedRef?.artifactRef ?? previewDetail?.artifact.ref;
+  const previewResult = projectedRef?.artifactPreview ?? previewDetail?.preview;
+  const previewBody = preview?.error
     ? `<section class="error">${escapeHtml(preview.error)}</section>`
     : previewResult?.available
       ? `<section>
           <h2>Preview</h2>
-          <div class="meta">${escapeHtml(previewResult.contentType)} - ${previewResult.bytesRead} bytes${previewResult.truncated ? " - truncated" : ""}</div>
+          <div class="meta">${projectedRef?.artifactPreview ? "projection excerpt - " : ""}${escapeHtml(previewResult.contentType)} - ${previewResult.bytesRead} bytes${previewResult.truncated ? " - truncated" : ""}</div>
           <pre>${escapeHtml(previewResult.content)}</pre>
         </section>`
-      : `<section class="notice">${escapeHtml(previewResult?.reason ?? "Artifact preview is unavailable.")}</section>`;
+      : `<section class="notice">${escapeHtml(previewResult?.reason ?? projection.error ?? "Artifact preview is unavailable.")}</section>`;
+  const artifactDetailBody = artifact
+    ? `<section>
+        <h2>Reference</h2>
+        <div class="meta">${escapeHtml(artifact.backend)}${artifact.artifactKind ? ` - ${escapeHtml(artifact.artifactKind)}` : ""}${artifact.status ? ` - ${escapeHtml(artifact.status)}` : ""}</div>
+        ${artifact.contentSummary ? `<p>${escapeHtml(artifact.contentSummary)}</p>` : ""}
+        <div class="meta">${escapeHtml(renderArtifactLocator(artifact))}</div>
+      </section>`
+    : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -1087,6 +1114,7 @@ async function renderArtifactPreviewPage(input: {
         <h1>${escapeHtml(input.artifactId)}</h1>
         <div class="meta">Runtime ${escapeHtml(input.nodeId)}${artifact?.backend ? ` - ${escapeHtml(artifact.backend)}` : ""}${artifact?.artifactKind ? ` - ${escapeHtml(artifact.artifactKind)}` : ""}</div>
       </header>
+      ${artifactDetailBody}
       ${previewBody}
     </main>
   </body>

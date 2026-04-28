@@ -13,7 +13,7 @@ import {
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import { loadRuntimeContext } from "./runtime-context.js";
 import type { RunnerMemorySynthesisInput } from "./memory-synthesizer.js";
-import { RunnerService } from "./service.js";
+import { RunnerService, type RunnerServiceObservationPublisher } from "./service.js";
 import {
   buildRunnerStatePaths,
   listArtifactRecords,
@@ -39,6 +39,10 @@ import {
   runnerSecretHex
 } from "./test-fixtures.js";
 import { InMemoryRunnerTransport } from "./transport.js";
+
+type ObservedArtifactRecord = Parameters<
+  NonNullable<RunnerServiceObservationPublisher["publishArtifactRefObserved"]>
+>[0];
 
 const docsPublicKey =
   "3333333333333333333333333333333333333333333333333333333333333333";
@@ -198,7 +202,7 @@ describe("RunnerService", () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);
     const transport = new InMemoryRunnerTransport();
-    const observedArtifactIds: string[] = [];
+    const observedArtifacts: ObservedArtifactRecord[] = [];
     const observedSourceCandidateIds: string[] = [];
     const observedWikiArtifactIds: string[] = [];
     const service = new RunnerService({
@@ -230,7 +234,7 @@ describe("RunnerService", () => {
       },
       observationPublisher: {
         publishArtifactRefObserved: (record) => {
-          observedArtifactIds.push(record.artifactRecord.ref.artifactId);
+          observedArtifacts.push(record);
           return Promise.resolve();
         },
         publishConversationUpdated: () => Promise.resolve(),
@@ -302,9 +306,16 @@ describe("RunnerService", () => {
       kind: "shadow_git_tree"
     });
     expect(observedSourceCandidateIds).toEqual([candidateId]);
-    expect(observedArtifactIds.some((artifactId) => artifactId.startsWith("report-"))).toBe(
-      true
+    const observedReportArtifact = observedArtifacts.find((record) =>
+      record.artifactRecord.ref.artifactId.startsWith("report-")
     );
+    if (!observedReportArtifact?.artifactPreview?.available) {
+      throw new Error("Expected the report artifact observation to include preview content.");
+    }
+    expect(observedReportArtifact.artifactPreview.content).toContain(
+      "# Entangle Turn Report"
+    );
+    expect(observedReportArtifact.artifactPreview.contentType).toBe("text/markdown");
     expect(observedWikiArtifactIds).toEqual([`wiki-${turn?.turnId}`]);
   });
 
