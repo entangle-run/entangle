@@ -130,8 +130,10 @@ describe("runtime trace helpers", () => {
         stopReason: "completed",
         toolExecutions: [
           {
+            durationMs: 650,
             outcome: "success",
             sequence: 1,
+            title: "Run tests",
             toolCallId: "toolu_alpha",
             toolId: "inspect_artifact_input"
           },
@@ -197,7 +199,7 @@ describe("runtime trace helpers", () => {
         "Permission: rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request.",
         "Usage: 13 input / 7 output tokens",
         "Tool executions: 2 total (1 success, 1 error)",
-        "Recent tools: 1. inspect_artifact_input (success), 2. inspect_memory_ref (error:tool_result_error) - Tool 'inspect_memory_ref' returned an error result.",
+        "Recent tools: 1. inspect_artifact_input - Run tests (success, 650ms), 2. inspect_memory_ref (error:tool_result_error) - Tool 'inspect_memory_ref' returned an error result.",
         "Memory synthesis: updated 6 summary pages",
         "Source changes: 2 files (+7/-3)",
         "Source change candidates: source-change-turn-alpha"

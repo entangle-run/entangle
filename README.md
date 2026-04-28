@@ -180,11 +180,13 @@ This repository currently contains:
   applying bounded probe/run process timeouts, and carrying generic
   engine-session ids, engine versions, and permission-block observations on
   persisted turn outcomes, including `policy_denied` results when OpenCode
-  one-shot CLI auto-rejects a permission request, with the Local runner image
-  now installing pinned `opencode-ai@1.14.20` and verifying `opencode
-  --version` during image build, and with host runtime inspection exposing a
-  generic agent-runtime summary for effective mode, engine profile, state
-  scope, last engine version/session, last permission decision, last turn,
+  one-shot CLI auto-rejects a permission request, plus bounded generic tool
+  evidence from OpenCode JSON events, including tool titles, redacted input
+  summaries, output summaries, durations, and call ids, with the federated dev
+  runner image now installing pinned `opencode-ai@1.14.20` and verifying
+  `opencode --version` during image build, and with host runtime inspection
+  exposing a generic agent-runtime summary for effective mode, engine profile,
+  state scope, last engine version/session, last permission decision, last turn,
   bounded failure evidence, and generic workspace-health status for
   source/artifact/engine-state/wiki surfaces through the shared host-client,
   CLI, and Studio surfaces, with runner-owned source workspace change

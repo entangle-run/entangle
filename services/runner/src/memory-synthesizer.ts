@@ -117,6 +117,10 @@ function renderCurrentTurnOutcomeForPrompt(
             [
               `  - #${toolExecution.sequence} ${toolExecution.toolId}`,
               `[${toolExecution.outcome}]`,
+              ...(toolExecution.title ? [`title="${toolExecution.title}"`] : []),
+              ...(toolExecution.durationMs !== undefined
+                ? [`duration_ms=${toolExecution.durationMs}`]
+                : []),
               ...(toolExecution.errorCode
                 ? [`error=${toolExecution.errorCode}`]
                 : []),

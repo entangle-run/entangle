@@ -156,7 +156,7 @@ The repository now also contains the first real implementation baseline:
 - a first L3 Agentic Node Runtime foundation where deployment catalogs must
   carry at least one agent engine profile, graph and node bindings can select
   an `agentRuntime`, effective runtime context exposes the resolved
-  `agentRuntimeContext`, the default local engine profile is OpenCode, and
+  `agentRuntimeContext`, the default engine profile is OpenCode, and
   per-node source, engine-state, and wiki-repository workspace roots now exist,
   with the runner wired to a first safe OpenCode CLI/process adapter for
   primary node turns that now isolates OpenCode DB/config/XDG state under the
@@ -164,11 +164,13 @@ The repository now also contains the first real implementation baseline:
   bounded probe/run process timeouts, and persists generic engine-session ids
   plus engine versions and permission-block observations on turn outcomes,
   including `policy_denied` results when OpenCode one-shot CLI auto-rejects a
-  permission request, while the Local runner image now installs pinned
-  `opencode-ai@1.14.20` and verifies `opencode --version` during image build,
-  and host runtime inspection now carries a generic agent-runtime summary
-  plus workspace-health status consumed by the shared host-client, CLI, and
-  Studio, and runner-owned source workspace change
+  permission request, plus bounded generic tool evidence from OpenCode JSON
+  events, including tool titles, redacted input summaries, output summaries,
+  durations, and call ids, while the federated dev runner image now installs
+  pinned `opencode-ai@1.14.20` and verifies `opencode --version` during image
+  build, and host runtime inspection now carries a generic agent-runtime
+  summary plus workspace-health status consumed by the shared host-client, CLI,
+  and Studio, and runner-owned source workspace change
   harvesting now records bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus durable
   pending source-change candidate records with host, CLI, and Studio

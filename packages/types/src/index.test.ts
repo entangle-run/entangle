@@ -3175,11 +3175,23 @@ describe("host event contracts", () => {
       ],
       providerStopReason: "opencode_process_exit_0",
       stopReason: "completed",
-      toolExecutions: []
+      toolExecutions: [
+        {
+          durationMs: 650,
+          inputSummary: '{"command":"pnpm test"}',
+          outcome: "success",
+          outputSummary: "Tests passed.",
+          sequence: 1,
+          title: "Run tests",
+          toolCallId: "tool-call-alpha",
+          toolId: "bash"
+        }
+      ]
     });
 
     expect(result.engineSessionId).toBe("engine-session-alpha");
     expect(result.engineVersion).toBe("0.10.0");
+    expect(result.toolExecutions[0]?.title).toBe("Run tests");
     expect(result.permissionObservations[0]?.operation).toBe(
       "command_execution"
     );

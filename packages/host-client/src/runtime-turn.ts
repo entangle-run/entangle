@@ -184,6 +184,16 @@ export function formatRuntimeTurnDetailLines(
     }
 
     if (turn.engineOutcome.toolExecutions.length > 0) {
+      const toolEvidenceLines = turn.engineOutcome.toolExecutions
+        .filter(
+          (execution) =>
+            execution.title ||
+            execution.inputSummary ||
+            execution.outputSummary ||
+            execution.durationMs !== undefined
+        )
+        .slice(0, 3)
+        .map((execution) => formatToolExecutionEvidenceLine(execution));
       const successCount = turn.engineOutcome.toolExecutions.filter(
         (execution) => execution.outcome === "success"
       ).length;
@@ -192,6 +202,8 @@ export function formatRuntimeTurnDetailLines(
       lines.push(
         `tool executions ${turn.engineOutcome.toolExecutions.length} total (${successCount} success, ${errorCount} error)`
       );
+
+      lines.push(...toolEvidenceLines);
 
       lines.push(
         ...turn.engineOutcome.toolExecutions
@@ -258,6 +270,24 @@ function formatCount(
 
 function formatIncluded(included: boolean): string {
   return included ? "included" : "not included";
+}
+
+function formatToolExecutionEvidenceLine(
+  execution: NonNullable<
+    RunnerTurnRecord["engineOutcome"]
+  >["toolExecutions"][number]
+): string {
+  const title = execution.title ? `: ${execution.title}` : "";
+  const duration =
+    execution.durationMs !== undefined ? ` (${execution.durationMs}ms)` : "";
+  const input = execution.inputSummary
+    ? ` input ${truncateRuntimeTurnDetail(execution.inputSummary)}`
+    : "";
+  const output = execution.outputSummary
+    ? ` output ${truncateRuntimeTurnDetail(execution.outputSummary)}`
+    : "";
+
+  return `tool #${execution.sequence} ${execution.toolId}${title}${duration}${input}${output}`;
 }
 
 function truncateRuntimeTurnDetail(value: string, maxLength = 96): string {

@@ -90,18 +90,7 @@ function buildRunnerTurnDetailLines(
 
       const executionLabels = engineOutcome.toolExecutions
         .slice(0, 3)
-        .map((toolExecution) => {
-          const outcomeLabel =
-            toolExecution.outcome === "success"
-              ? "success"
-              : toolExecution.errorCode
-                ? `error:${toolExecution.errorCode}`
-                : "error";
-          const messageLabel = toolExecution.message
-            ? ` - ${truncateRuntimeTraceDetail(toolExecution.message)}`
-            : "";
-          return `${toolExecution.sequence}. ${toolExecution.toolId} (${outcomeLabel})${messageLabel}`;
-        })
+        .map(formatToolExecutionLabel)
         .join(", ");
 
       if (executionLabels.length > 0) {
@@ -135,6 +124,31 @@ function buildRunnerTurnDetailLines(
   }
 
   return detailLines;
+}
+
+function formatToolExecutionLabel(
+  toolExecution: NonNullable<
+    Extract<HostEventRecord, { type: "runner.turn.updated" }>["engineOutcome"]
+  >["toolExecutions"][number]
+): string {
+  const outcomeLabel =
+    toolExecution.outcome === "success"
+      ? "success"
+      : toolExecution.errorCode
+        ? `error:${toolExecution.errorCode}`
+        : "error";
+  const titleLabel = toolExecution.title
+    ? ` - ${truncateRuntimeTraceDetail(toolExecution.title)}`
+    : "";
+  const durationLabel =
+    toolExecution.durationMs !== undefined
+      ? `, ${toolExecution.durationMs}ms`
+      : "";
+  const messageLabel = toolExecution.message
+    ? ` - ${truncateRuntimeTraceDetail(toolExecution.message)}`
+    : "";
+
+  return `${toolExecution.sequence}. ${toolExecution.toolId}${titleLabel} (${outcomeLabel}${durationLabel})${messageLabel}`;
 }
 
 function buildSessionUpdatedDetailLines(

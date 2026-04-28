@@ -77,6 +77,16 @@ same-machine slice records.
 - [274-studio-user-node-runtime-summary-slice.md](274-studio-user-node-runtime-summary-slice.md)
 - [275-cli-user-node-approval-from-message-slice.md](275-cli-user-node-approval-from-message-slice.md)
 - [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
+- [277-projected-artifact-preview-slice.md](277-projected-artifact-preview-slice.md)
+- [278-user-node-local-read-state-slice.md](278-user-node-local-read-state-slice.md)
+- [279-user-client-wiki-ref-projection-slice.md](279-user-client-wiki-ref-projection-slice.md)
+- [280-user-node-read-receipt-slice.md](280-user-node-read-receipt-slice.md)
+- [281-projected-wiki-preview-slice.md](281-projected-wiki-preview-slice.md)
+- [282-process-runner-smoke-relay-preflight-slice.md](282-process-runner-smoke-relay-preflight-slice.md)
+- [283-user-node-parent-message-read-model-slice.md](283-user-node-parent-message-read-model-slice.md)
+- [284-user-node-delivery-retry-state-slice.md](284-user-node-delivery-retry-state-slice.md)
+- [285-studio-wiki-publication-retry-slice.md](285-studio-wiki-publication-retry-slice.md)
+- [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
 
 ## Audited Scope
 
@@ -142,12 +152,16 @@ The repository is not fully federated:
   fallback, delivery labels, local conversation read state, projected wiki-ref
   rendering, projected wiki preview rendering, wiki-scoped approval context
   rendering, signed read receipts, parent-message links, delivery retry state,
-  and message publishing, but full wiki review actions and complete
-  projection-backed source/wiki review are still incomplete;
+  and message publishing, but a separate bundled User Client app and richer
+  object-backend review still remain incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
   instead of only by direct Host tests;
+- OpenCode-backed runner turns now preserve bounded generic tool evidence,
+  including tool titles, redacted input summaries, output summaries, and
+  durations, while keeping OpenCode-specific event payloads behind the engine
+  adapter boundary;
 - `source_change.ref` observations and Host projection records now carry the
   runner's bounded `sourceChangeSummary`, so source candidates can be listed
   and triaged from projection without reading runner-local detail files;

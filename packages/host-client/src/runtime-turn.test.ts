@@ -35,8 +35,12 @@ function createTurn(
       stopReason: "completed",
       toolExecutions: [
         {
+          durationMs: 650,
+          inputSummary: '{"command":"pnpm test"}',
           outcome: "success",
+          outputSummary: "Tests passed.",
           sequence: 1,
+          title: "Run tests",
           toolCallId: "toolu-alpha",
           toolId: "inspect_artifact_input"
         },
@@ -171,6 +175,7 @@ describe("runtime turn presentation helpers", () => {
         "permission rejected command_execution: OpenCode one-shot CLI auto-rejected the permission request.",
         "usage 42 input / 12 output tokens",
         "tool executions 2 total (1 success, 1 error)",
+        'tool #1 inspect_artifact_input: Run tests (650ms) input {"command":"pnpm test"} output Tests passed.',
         "tool error #2 inspect_memory_ref: tool_execution_failed - Tool 'inspect_memory_ref' failed during execution.",
         "memory synthesis succeeded with 2 summary pages",
         "wiki repository committed bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb on entangle-wiki (4 changed files)"

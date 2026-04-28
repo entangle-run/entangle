@@ -100,12 +100,12 @@ checks offline Entangle state layout compatibility when the host is not running.
 Verification covered focused typecheck/lint/tests for the touched packages and
 passed `CI=1 TURBO_DAEMON=false pnpm verify`.
 
-## [2026-04-26] implementation | Installed OpenCode in the Local runner image
+## [2026-04-26] implementation | Installed OpenCode in the runner image
 
 Closed a concrete OpenCode availability gap for Entangle: the default
-node engine is OpenCode, so the Local runner image now installs pinned
+node engine is OpenCode, so the federated dev runner image now installs pinned
 `opencode-ai@1.14.20` and verifies `opencode --version` during image build.
-The pin matches the local OpenCode resource checkout at
+At the time of the slice, the pin matched the OpenCode resource checkout at
 `0595c289046d7f45d82a563ad0c76b3ccfca050b`.
 
 `entangle deployment doctor` now also checks `opencode --version` inside the
@@ -3521,3 +3521,14 @@ retry capability.
 
 This closes the operator-side wiki publication action gap without adding a new
 protocol or Host contract.
+
+## [2026-04-28] implementation | Added bounded OpenCode tool evidence
+
+Added `references/286-opencode-tool-evidence-slice.md`. The OpenCode adapter
+now preserves bounded generic tool evidence from `opencode run --format=json`
+events: tool titles, redacted input summaries, output summaries, durations,
+and OpenCode call ids when present.
+
+The shared runtime-turn and runtime-trace presentation helpers now surface this
+evidence for CLI and Studio consumers, and memory synthesis receives tool title
+and duration context without embedding raw provider event payloads.

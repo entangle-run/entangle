@@ -313,12 +313,19 @@ Keep OpenCode default. Move beyond only one-shot `opencode run` where needed
 by attaching to OpenCode server APIs for sessions, permissions, events, abort,
 and long-running state. Preserve Entangle policy and projection ownership.
 
+Implementation record:
+
+- [286-opencode-tool-evidence-slice.md](286-opencode-tool-evidence-slice.md)
+  adds bounded generic tool evidence from OpenCode JSON events while preserving
+  the adapter boundary.
+
 Verification:
 
 - OpenCode adapter tests using mocked server/SDK;
 - permission bridge tests;
 - cancellation tests;
-- source/artifact/wiki observation tests.
+- source/artifact/wiki observation tests;
+- bounded tool evidence contract and presentation tests.
 
 ### Slice 12: Studio And CLI Federation Surfaces
 

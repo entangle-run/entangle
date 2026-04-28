@@ -76,6 +76,7 @@ export const engineTurnFailureSchema = z.object({
 });
 
 export const engineToolExecutionObservationSchema = z.object({
+  durationMs: z.number().int().nonnegative().optional(),
   errorCode: z
     .enum([
       "invalid_input",
@@ -84,9 +85,12 @@ export const engineToolExecutionObservationSchema = z.object({
       "tool_result_error"
     ])
     .optional(),
+  inputSummary: nonEmptyStringSchema.optional(),
   message: nonEmptyStringSchema.optional(),
   outcome: z.enum(["success", "error"]),
+  outputSummary: nonEmptyStringSchema.optional(),
   sequence: z.number().int().positive(),
+  title: nonEmptyStringSchema.optional(),
   toolCallId: nonEmptyStringSchema,
   toolId: nonEmptyStringSchema
 });

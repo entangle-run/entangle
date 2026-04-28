@@ -215,9 +215,20 @@ describe("OpenCode runner engine adapter", () => {
             }),
             JSON.stringify({
               part: {
-                id: "tool-1",
+                callID: "tool-call-1",
+                id: "tool-part-1",
                 state: {
-                  status: "completed"
+                  input: {
+                    apiKey: "secret-value",
+                    command: "pnpm test"
+                  },
+                  output: "Tests passed.",
+                  status: "completed",
+                  time: {
+                    end: 1650,
+                    start: 1000
+                  },
+                  title: "Run tests"
                 },
                 tool: "bash"
               },
@@ -243,13 +254,21 @@ describe("OpenCode runner engine adapter", () => {
       stopReason: "completed",
       toolExecutions: [
         {
+          durationMs: 650,
+          inputSummary:
+            '{"apiKey":"[redacted]","command":"pnpm test"}',
           outcome: "success",
+          outputSummary: "Tests passed.",
           sequence: 1,
-          toolCallId: "tool-1",
+          title: "Run tests",
+          toolCallId: "tool-call-1",
           toolId: "bash"
         }
       ]
     });
+    expect(result.toolExecutions[0]?.inputSummary).not.toContain(
+      "secret-value"
+    );
     expect(mock.calls).toHaveLength(2);
     expect(mock.calls[0]!.command).toBe("opencode");
     expect(mock.calls[0]!.args).toEqual(["--version"]);

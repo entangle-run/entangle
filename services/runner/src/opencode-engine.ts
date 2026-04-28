@@ -61,9 +61,17 @@ const maxCapturedStdoutCharacters = 12_000;
 const maxEntangleActionBlockCharacters = 8_000;
 const maxEngineVersionCharacters = 200;
 const maxFailureMessageCharacters = 1_000;
+const maxToolInputSummaryCharacters = 600;
+const maxToolOutputSummaryCharacters = 1_000;
+const maxToolSummaryArrayEntries = 8;
+const maxToolSummaryObjectEntries = 20;
+const maxToolSummaryDepth = 4;
+const maxToolTitleCharacters = 240;
 const defaultOpenCodeProcessTimeoutMs = 120_000;
 const opencodeAutoRejectedPermissionPattern =
   /permission requested:\s*([^(;]+?)\s*\((.*?)\);\s*auto-rejecting/i;
+const sensitiveSummaryKeyPattern =
+  /(authorization|api[_-]?key|credential|password|private[_-]?key|secret|token)/i;
 const ansiEscapePattern = new RegExp(
   `${String.fromCharCode(27)}\\[[0-9;?]*[ -/]*[@-~]`,
   "g"
@@ -123,6 +131,72 @@ function extractErrorMessage(value: unknown): string | undefined {
   } catch {
     return "Unserializable OpenCode error.";
   }
+}
+
+function summarizeToolValue(
+  value: unknown,
+  maxCharacters: number
+): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === "string") {
+    const summary = truncate(value, maxCharacters);
+    return summary.length > 0 ? summary : undefined;
+  }
+
+  try {
+    const summary = truncate(
+      JSON.stringify(normalizeToolSummaryValue(value, 0)),
+      maxCharacters
+    );
+    return summary.length > 0 ? summary : undefined;
+  } catch {
+    const summary = truncate(
+      "Unserializable OpenCode tool value.",
+      maxCharacters
+    );
+    return summary.length > 0 ? summary : undefined;
+  }
+}
+
+function normalizeToolSummaryValue(value: unknown, depth: number): unknown {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  if (depth >= maxToolSummaryDepth) {
+    return "[nested]";
+  }
+
+  if (Array.isArray(value)) {
+    const entries = value
+      .slice(0, maxToolSummaryArrayEntries)
+      .map((entry) => normalizeToolSummaryValue(entry, depth + 1));
+
+    if (value.length > maxToolSummaryArrayEntries) {
+      entries.push(`[${value.length - maxToolSummaryArrayEntries} more]`);
+    }
+
+    return entries;
+  }
+
+  const output: Record<string, unknown> = {};
+  const entries = Object.entries(value).slice(0, maxToolSummaryObjectEntries);
+
+  for (const [key, entryValue] of entries) {
+    output[key] = sensitiveSummaryKeyPattern.test(key)
+      ? "[redacted]"
+      : normalizeToolSummaryValue(entryValue, depth + 1);
+  }
+
+  const omittedCount = Object.keys(value).length - entries.length;
+  if (omittedCount > 0) {
+    output.__truncated = `${omittedCount} more keys`;
+  }
+
+  return output;
 }
 
 function chooseOpenCodeWorkspace(context: EffectiveRuntimeContext): string {
@@ -369,11 +443,33 @@ function collectToolExecution(
   const status = state.status;
   const toolId = typeof part.tool === "string" ? part.tool : "unknown_tool";
   const toolCallId =
-    typeof part.id === "string"
+    typeof part.callID === "string"
+      ? part.callID
+      : typeof part.id === "string"
       ? part.id
       : `${toolId}-${toolExecutions.length + 1}`;
+  const title =
+    typeof state.title === "string"
+      ? truncate(state.title, maxToolTitleCharacters)
+      : undefined;
+  const inputSummary = summarizeToolValue(
+    state.input,
+    maxToolInputSummaryCharacters
+  );
+  const outputSummary =
+    status === "completed"
+      ? summarizeToolValue(state.output, maxToolOutputSummaryCharacters)
+      : undefined;
+  const durationMs =
+    isRecord(state.time) &&
+    typeof state.time.start === "number" &&
+    typeof state.time.end === "number" &&
+    state.time.end >= state.time.start
+      ? Math.round(state.time.end - state.time.start)
+      : undefined;
 
   toolExecutions.push({
+    ...(durationMs !== undefined ? { durationMs } : {}),
     ...(status === "error"
       ? {
           errorCode: "tool_execution_failed" as const,
@@ -381,8 +477,11 @@ function collectToolExecution(
             extractErrorMessage(state.error) ?? "OpenCode tool execution failed."
         }
       : {}),
+    ...(inputSummary ? { inputSummary } : {}),
     outcome: status === "error" ? "error" : "success",
+    ...(outputSummary ? { outputSummary } : {}),
     sequence: toolExecutions.length + 1,
+    ...(title ? { title } : {}),
     toolCallId,
     toolId
   });

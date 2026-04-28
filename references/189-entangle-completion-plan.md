@@ -468,9 +468,9 @@ Current partial implementation:
 - the adapter now applies a bounded timeout to the version probe and one-shot
   run process, sends `SIGTERM` on timeout, and records classified
   `provider_unavailable` evidence;
-- the Local runner image now installs pinned `opencode-ai@1.14.20` and runs
-  `opencode --version` during image build, using the version observed in the
-  local OpenCode resource checkout;
+- the federated dev runner image now installs pinned `opencode-ai@1.14.20` and
+  runs `opencode --version` during image build, using the version observed in
+  the OpenCode resource checkout at the time of that slice;
 - `entangle deployment doctor` now probes `opencode --version` inside the configured
   runner image in addition to the host PATH so default-engine availability is
   checked where runner turns actually execute;
