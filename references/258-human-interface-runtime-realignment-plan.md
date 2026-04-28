@@ -53,7 +53,9 @@ The current implementation has the first federated execution path:
   concrete `source_change_candidate`. The response can now preserve the scoped
   operation/resource/reason context that the human reviewed. Source-change
   approval cards also render bounded projected source summaries when Host
-  projection has a matching observed source-change ref.
+  projection has a matching observed source-change ref, and the source diff
+  review page now renders projected `diffExcerpt` evidence before falling back
+  to the older runtime-local diff endpoint.
 - The User Client renders bounded artifact refs from message records so humans
   can see handoff artifacts, and now provides a server-side artifact preview
   page for bounded Host artifact previews without exposing runtime-local source
@@ -68,8 +70,8 @@ The current implementation still does not have the final User Node client:
   source/wiki review application, and artifact preview still depends on the
   existing Host deep runtime preview path rather than a projection-backed
   artifact preview service. Source-change cards can now render projected
-  summaries, but source-change diff preview still depends on the existing Host
-  deep runtime diff path rather than a projection-backed source review service.
+  summaries and projected bounded diff excerpts, but complete source review
+  still needs a projection/object-backed source review service.
 - Studio is not, and should not become, the actual user-node client.
 - The projected User Node conversation surface has first inbound/outbound
   message records, but not delivery/read state or a local encrypted client
@@ -227,11 +229,12 @@ and signs through the User Node gateway boundary, not through Studio.
 Status: first server-rendered runtime shell implemented. It is not yet a
 separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
-artifact-ref rendering plus bounded artifact preview, source-change diff
-preview, projected source-change summary rendering, scoped approval-response
-context, and message/approval publication that keeps the selected
-conversation/session context. Message history now also shows derived delivery
-labels for outbound relay publish coverage and inbound User Client receipt.
+artifact-ref rendering plus bounded artifact preview, projected source-change
+summary rendering, projected source diff excerpts with runtime-diff fallback,
+scoped approval-response context, and message/approval publication that keeps
+the selected conversation/session context. Message history now also shows
+derived delivery labels for outbound relay publish coverage and inbound User
+Client receipt.
 
 Impacted modules:
 
