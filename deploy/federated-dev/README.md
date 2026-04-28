@@ -181,7 +181,7 @@ with `Ctrl-C` when the manual test is done.
 To rediscover running User Client endpoints through Host projection, run:
 
 ```sh
-pnpm --filter @entangle/cli dev -- user-nodes clients --summary
+pnpm --filter @entangle/cli dev user-nodes clients --summary
 ```
 
 To prepare an extra generic runner against an already-running Host without
@@ -189,12 +189,12 @@ using the smoke script, write a Host-derived join config and start the runner:
 
 ```sh
 export ENTANGLE_RUNNER_NOSTR_SECRET_KEY="$(openssl rand -hex 32)"
-pnpm --filter @entangle/cli dev -- runners join-config \
+pnpm --filter @entangle/cli dev runners join-config \
   --runner runner-extra \
   --output runner-join.json \
   --heartbeat-interval-ms 30000 \
   --summary
-pnpm --filter @entangle/runner start -- join --config runner-join.json
+pnpm --filter @entangle/runner start join --config runner-join.json
 ```
 
 If the Host is protected by `ENTANGLE_HOST_OPERATOR_TOKEN`, also make a Host

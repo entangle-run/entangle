@@ -138,6 +138,7 @@ same-machine slice records.
 - [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 - [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 - [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
+- [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
 
 ## Audited Scope
 
@@ -199,7 +200,8 @@ The repository is not fully federated:
 - Host session launch now signs `task.request` with stable User Node identity
   material, and User Nodes are assignable to `human_interface` runners;
 - joined runners can start a minimal Human Interface Runtime for assigned User
-  Nodes, and Host projection can expose the runtime's `clientUrl`;
+  Nodes, and Host projection can expose and retain the runtime's `clientUrl`
+  across later Host runtime synchronization passes;
 - user nodes have stable identities, a User Node-specific inbox API, projected
   conversation surfaces, and a first usable runner-served User Client with
   thread selection, inbound/outbound message history, approval response
@@ -463,6 +465,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 - Multiple user nodes can exist in one graph and can be assigned to distinct
   `human_interface` runners on different machines or networks.
 - A running User Node exposes a User Client endpoint through Host projection.
+- Host runtime synchronization does not prune valid observed User Node
+  `human_interface` runtime projection records.
 - User-node replies and approvals are signed by stable user-node identity.
 - Agent nodes and human nodes communicate through the same A2A model.
 - Host observes runtime state through signed events, not runner-local files.

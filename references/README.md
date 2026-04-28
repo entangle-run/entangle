@@ -396,6 +396,7 @@ files are the active federated redesign pack.
 336. [335-host-wiki-publication-removal-slice.md](335-host-wiki-publication-removal-slice.md)
 337. [336-host-artifact-restore-promotion-removal-slice.md](336-host-artifact-restore-promotion-removal-slice.md)
 338. [337-federated-session-cancellation-control-slice.md](337-federated-session-cancellation-control-slice.md)
+339. [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
 
 ## Role of this corpus
 

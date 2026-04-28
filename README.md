@@ -114,8 +114,8 @@ config:
 
 ```bash
 export ENTANGLE_RUNNER_NOSTR_SECRET_KEY="$(openssl rand -hex 32)"
-pnpm --filter @entangle/cli dev -- runners join-config --runner runner-a --output runner-join.json --summary
-pnpm --filter @entangle/runner start -- join --config runner-join.json
+pnpm --filter @entangle/cli dev runners join-config --runner runner-a --output runner-join.json --summary
+pnpm --filter @entangle/runner start join --config runner-join.json
 ```
 
 Managed Docker runners in the federated dev profile use the same join path.
@@ -179,7 +179,8 @@ This repository currently contains:
   a browser-openable User Client port for User Node runtime contexts, and with
   the dedicated app now using runtime-local JSON routes for artifact preview,
   source diff, source-candidate review, and wiki preview cards, plus
-  projection of the User Client endpoint through Host, CLI, and Studio,
+  projection of the User Client endpoint through Host, CLI, and Studio, with
+  Host runtime synchronization retaining observed User Node runtime endpoints,
   including `entangle user-nodes clients` for User Node-focused endpoint
   discovery,
   with CLI signed approve/reject and generic User Node message

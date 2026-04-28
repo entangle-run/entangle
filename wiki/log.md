@@ -4103,3 +4103,17 @@ snapshot and source workspace are compatible.
 The runner republishes the candidate with `candidate.application`, and the
 process-runner smoke now requires that projected source-history application
 evidence after User Client source review.
+
+## [2026-04-28] implementation | Preserved User Node runtime projection records
+
+Added `references/338-user-node-runtime-projection-retention-slice.md`. Host
+runtime synchronization now keeps observed federated runtime records for active
+graph User Nodes, so live Human Interface Runtime/User Client endpoints remain
+visible through Host projection after runtime inspection refreshes.
+
+The regression test records a signed User Node `runtime.status` observation
+with a `clientUrl`, triggers Host runtime synchronization, and verifies that
+projection still reports the User Node runtime as running with the same User
+Client URL. The process-runner smoke and adjacent docs now also print
+copyable `pnpm --filter ... dev ...` commands without passing a literal `--`
+argument to the CLI.

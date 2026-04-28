@@ -395,6 +395,7 @@ Implementation record:
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 - [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
+- [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
 
 Current status:
 
@@ -407,6 +408,9 @@ Current status:
 - Host bootstrap and identity-secret APIs now support User Nodes;
 - Host projection, Studio, and CLI can carry/display the Human Interface
   Runtime `clientUrl`;
+- Host runtime synchronization retains observed Human Interface Runtime
+  projection records for active User Nodes instead of pruning them as
+  non-runtime graph nodes;
 - the process-boundary smoke covers one assigned agent runner plus one assigned
   User Node `human_interface` runner with a live User Client health check;
 - Host now exposes a User Node-specific projected inbox API;

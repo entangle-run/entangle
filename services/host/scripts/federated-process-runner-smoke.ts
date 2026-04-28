@@ -2491,17 +2491,17 @@ async function main(): Promise<void> {
       printPass("manual-reviewer-user-client", reviewerUserClientUrl);
       console.log("Manual signed task command:");
       console.log(
-        `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
+        `${cliEnvironment} pnpm --filter @entangle/cli dev ` +
           `user-nodes message user builder "Implement a small change and report what you changed." ` +
           `--message-type task.request --compact`
       );
       console.log("Manual projection command:");
       console.log(
-        `${cliEnvironment} pnpm --filter @entangle/cli dev -- host projection --summary`
+        `${cliEnvironment} pnpm --filter @entangle/cli dev host projection --summary`
       );
       console.log("Manual User Node inbox command:");
       console.log(
-        `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
+        `${cliEnvironment} pnpm --filter @entangle/cli dev ` +
           `inbox list --user-node user --summary`
       );
       console.log("Manual User Client URL:");
@@ -2510,7 +2510,7 @@ async function main(): Promise<void> {
       console.log(reviewerUserClientUrl);
       console.log("Manual runner turn event command:");
       console.log(
-        `${cliEnvironment} pnpm --filter @entangle/cli dev -- ` +
+        `${cliEnvironment} pnpm --filter @entangle/cli dev ` +
           `host events list --node-id builder --type-prefix runner.turn.updated ` +
           `--limit 20 --summary`
       );

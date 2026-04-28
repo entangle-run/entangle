@@ -158,19 +158,26 @@ function buildRunnerHeartbeat(input: {
 }
 
 function buildRuntimeStatus(input: {
+  assignmentId?: string;
+  clientUrl?: string;
+  graphId?: string;
+  graphRevisionId?: string;
   hostAuthorityPubkey: string;
+  nodeId?: string;
+  observedAt?: string;
   runnerPubkey: string;
   runnerSecretKey: Uint8Array;
 }): EntangleObservationEvent {
   return buildEntangleObservationNostrEvent({
     payload: {
-      assignmentId: "assignment-alpha",
+      assignmentId: input.assignmentId ?? "assignment-alpha",
+      ...(input.clientUrl ? { clientUrl: input.clientUrl } : {}),
       eventType: "runtime.status",
-      graphId: "graph-alpha",
-      graphRevisionId: "graph-alpha-rev-1",
+      graphId: input.graphId ?? "graph-alpha",
+      graphRevisionId: input.graphRevisionId ?? "graph-alpha-rev-1",
       hostAuthorityPubkey: input.hostAuthorityPubkey,
-      nodeId: "worker-it",
-      observedAt: "2026-04-26T12:00:03.000Z",
+      nodeId: input.nodeId ?? "worker-it",
+      observedAt: input.observedAt ?? "2026-04-26T12:00:03.000Z",
       observedState: "running",
       protocol: "entangle.observe.v1",
       restartGeneration: 0,
@@ -314,6 +321,82 @@ describe("Host federated control plane", () => {
 
     await runtime?.close();
     expect(transport.subscription).toBeUndefined();
+  });
+
+  it("preserves projected User Node runtime observations across Host runtime synchronization", async () => {
+    const { authority, controlPlaneModule, hostSecretKey, stateModule } =
+      await setupHostState();
+    const graphResponse = await stateModule.applyGraph({
+      edges: [],
+      graphId: "graph-alpha",
+      name: "Graph Alpha",
+      nodes: [
+        {
+          displayName: "User Main",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      ],
+      schemaVersion: "1"
+    });
+    expect(graphResponse.validation.ok).toBe(true);
+    expect(graphResponse.activeRevisionId).toBeDefined();
+
+    const runnerSecretKey = generateSecretKey();
+    const runnerPubkey = getPublicKey(runnerSecretKey);
+    const transport = new FakeHostFederatedTransport(hostSecretKey);
+    const controlPlane = new controlPlaneModule.HostFederatedControlPlane({
+      clock: () => "2026-04-26T12:00:05.000Z",
+      transport
+    });
+
+    await controlPlane.handleObservationEvent(
+      buildRunnerHello({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey,
+        runnerSecretKey
+      })
+    );
+    await controlPlane.handleObservationEvent(
+      buildRuntimeStatus({
+        assignmentId: "assignment-user-main",
+        clientUrl: "http://127.0.0.1:4173/",
+        graphId: "graph-alpha",
+        graphRevisionId: graphResponse.activeRevisionId,
+        hostAuthorityPubkey: authority.authority.publicKey,
+        nodeId: "user-main",
+        runnerPubkey,
+        runnerSecretKey
+      })
+    );
+
+    expect(
+      (await stateModule.getHostProjectionSnapshot()).runtimes.find(
+        (runtime) => runtime.nodeId === "user-main"
+      )
+    ).toMatchObject({
+      clientUrl: "http://127.0.0.1:4173/",
+      nodeId: "user-main",
+      observedState: "running",
+      projection: {
+        source: "observation_event"
+      }
+    });
+
+    await stateModule.listRuntimeInspections();
+
+    expect(
+      (await stateModule.getHostProjectionSnapshot()).runtimes.find(
+        (runtime) => runtime.nodeId === "user-main"
+      )
+    ).toMatchObject({
+      clientUrl: "http://127.0.0.1:4173/",
+      nodeId: "user-main",
+      observedState: "running",
+      projection: {
+        source: "observation_event"
+      }
+    });
   });
 
   it("records signed runner observations and publishes hello ack control events", async () => {

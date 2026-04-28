@@ -7556,7 +7556,8 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
   const catalog = await readCatalog();
   const packageSources = await listPackageSourceRecordMap();
   const runtimeNodes = graph.nodes.filter((node) => node.nodeKind !== "user");
-  const activeNodeIds = new Set(runtimeNodes.map((node) => node.nodeId));
+  const runtimeNodeIds = new Set(runtimeNodes.map((node) => node.nodeId));
+  const graphNodeIds = new Set(graph.nodes.map((node) => node.nodeId));
   await ensureUserNodeIdentitiesForGraph(graph);
   const repositoryProvisioningCache = new Map<
     string,
@@ -7567,15 +7568,15 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
   const inspections: RuntimeInspectionInternal[] = [];
 
   for (const nodeId of await listObservedRuntimeNodeIds()) {
-    if (!activeNodeIds.has(nodeId)) {
+    if (!graphNodeIds.has(nodeId)) {
       await runtimeBackend.removeInactiveRuntime(nodeId);
     }
   }
 
-  await removeJsonFilesExcept(nodeBindingsRoot, activeNodeIds);
-  await removeJsonFilesExcept(runtimeIntentsRoot, activeNodeIds);
-  await removeJsonFilesExcept(runtimeRecoveryControllersRoot, activeNodeIds);
-  await removeJsonFilesExcept(observedRuntimesRoot, activeNodeIds);
+  await removeJsonFilesExcept(nodeBindingsRoot, runtimeNodeIds);
+  await removeJsonFilesExcept(runtimeIntentsRoot, runtimeNodeIds);
+  await removeJsonFilesExcept(runtimeRecoveryControllersRoot, runtimeNodeIds);
+  await removeJsonFilesExcept(observedRuntimesRoot, graphNodeIds);
 
   for (const node of runtimeNodes) {
     const resolution = await buildRuntimeResolution({
@@ -7600,7 +7601,7 @@ async function performCurrentGraphRuntimeStateSynchronization(): Promise<Current
     repositoryProvisioningCache.keys()
   );
   for (const recordId of await listRuntimeSourceHistoryPublicationTargetRecordIds(
-    activeNodeIds
+    runtimeNodeIds
   )) {
     retainedRepositoryProvisioningRecordIds.add(recordId);
   }
