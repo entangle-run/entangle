@@ -179,6 +179,7 @@ Implementation record:
 - [252-federated-runtime-projection-surface-slice.md](252-federated-runtime-projection-surface-slice.md)
 - [255-public-runtime-api-path-boundary-slice.md](255-public-runtime-api-path-boundary-slice.md)
 - [257-federated-session-conversation-observations-slice.md](257-federated-session-conversation-observations-slice.md)
+- [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
 
 Verification:
 
@@ -194,6 +195,9 @@ Current status:
   projection for the first User Node conversation path;
 - turn phase observations now flow from joined runners to Host
   `runner.turn.updated` events;
+- joined agent runners now emit observed artifact, source-change candidate, and
+  wiki refs during normal turn execution, feeding Host projection through the
+  same `entangle.observe.v1` path;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime
@@ -242,8 +246,8 @@ Current status:
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
 - final bundled User Client application, projection-backed artifact/source
-  preview, richer source/wiki review controls, delivery retry state, and read
-  receipts remain open.
+  content preview, richer source/wiki review controls, delivery retry state,
+  and read receipts remain open.
 
 Verification:
 

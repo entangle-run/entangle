@@ -198,6 +198,9 @@ describe("RunnerService", () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);
     const transport = new InMemoryRunnerTransport();
+    const observedArtifactIds: string[] = [];
+    const observedSourceCandidateIds: string[] = [];
+    const observedWikiArtifactIds: string[] = [];
     const service = new RunnerService({
       context,
       engine: {
@@ -223,6 +226,23 @@ describe("RunnerService", () => {
             toolExecutions: [],
             toolRequests: []
           };
+        }
+      },
+      observationPublisher: {
+        publishArtifactRefObserved: (record) => {
+          observedArtifactIds.push(record.artifactRecord.ref.artifactId);
+          return Promise.resolve();
+        },
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishSourceChangeRefObserved: (record) => {
+          observedSourceCandidateIds.push(record.candidate.candidateId);
+          return Promise.resolve();
+        },
+        publishTurnUpdated: () => Promise.resolve(),
+        publishWikiRefObserved: (record) => {
+          observedWikiArtifactIds.push(record.artifactRef.artifactId);
+          return Promise.resolve();
         }
       },
       transport
@@ -281,6 +301,11 @@ describe("RunnerService", () => {
     expect(candidate?.snapshot).toMatchObject({
       kind: "shadow_git_tree"
     });
+    expect(observedSourceCandidateIds).toEqual([candidateId]);
+    expect(observedArtifactIds.some((artifactId) => artifactId.startsWith("report-"))).toBe(
+      true
+    );
+    expect(observedWikiArtifactIds).toEqual([`wiki-${turn?.turnId}`]);
   });
 
   it("cancels an active engine turn when an external cancellation request is observed", async () => {

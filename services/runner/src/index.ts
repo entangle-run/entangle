@@ -253,6 +253,18 @@ function createRuntimeObservationPublisher(input: {
   };
 
   return {
+    publishArtifactRefObserved: (record) =>
+      publish({
+        artifactRef: record.artifactRecord.ref,
+        eventType: "artifact.ref",
+        graphId: record.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.nodeId,
+        observedAt: record.observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey
+      }),
     publishConversationUpdated: (record) =>
       publish({
         conversation: record,
@@ -283,6 +295,20 @@ function createRuntimeObservationPublisher(input: {
         status: record.status,
         updatedAt: record.updatedAt
       }),
+    publishSourceChangeRefObserved: (record) =>
+      publish({
+        artifactRefs: record.artifactRefs,
+        candidateId: record.candidate.candidateId,
+        eventType: "source_change.ref",
+        graphId: record.candidate.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.candidate.nodeId,
+        observedAt: record.observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey,
+        status: record.candidate.status
+      }),
     publishTurnUpdated: (record) =>
       publish({
         eventType: "turn.updated",
@@ -298,6 +324,18 @@ function createRuntimeObservationPublisher(input: {
         turn: record,
         turnId: record.turnId,
         updatedAt: record.updatedAt
+      }),
+    publishWikiRefObserved: (record) =>
+      publish({
+        artifactRef: record.artifactRef,
+        eventType: "wiki.ref",
+        graphId: record.graphId,
+        hostAuthorityPubkey: input.config.hostAuthorityPubkey,
+        nodeId: record.nodeId,
+        observedAt: record.observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: input.config.runnerId,
+        runnerPubkey: input.runnerPubkey
       })
   };
 }

@@ -3304,3 +3304,20 @@ architecture cleanup.
 Runner typecheck, focused runner tests, runner lint,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check` passed for this slice.
+
+## [2026-04-28] implementation | Emitted observed work refs from runners
+
+Added `references/269-runner-observed-ref-emission-slice.md`. Joined agent
+runners now emit `artifact.ref`, `source_change.ref`, and `wiki.ref`
+observations during normal turn execution, using the same non-blocking
+observation behavior already used for session, conversation, and turn updates.
+
+The runner now publishes artifact refs for retrieved, failed-retrieval, and
+produced artifact records; source-change refs when candidates are persisted;
+wiki refs when wiki-repository sync has a concrete snapshot commit; and a final
+turn observation after wiki sync so Host projection can receive the sync
+outcome through the observe protocol.
+
+Runner typecheck, focused runner tests, runner lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.

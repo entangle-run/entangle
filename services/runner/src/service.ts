@@ -17,6 +17,7 @@ import type {
   EntangleA2AMessage,
   MemorySynthesisOutcome,
   RunnerPhase,
+  SourceChangeCandidateRecord,
   RunnerTurnRecord,
   SessionCancellationRequestRecord,
   SessionLifecycleState,
@@ -93,9 +94,26 @@ export type RunnerServiceStartResult = {
 };
 
 export type RunnerServiceObservationPublisher = {
+  publishArtifactRefObserved?(input: {
+    artifactRecord: ArtifactRecord;
+    graphId: string;
+    nodeId: string;
+    observedAt: string;
+  }): Promise<void>;
   publishConversationUpdated(record: ConversationRecord): Promise<void>;
   publishSessionUpdated(record: SessionRecord): Promise<void>;
+  publishSourceChangeRefObserved?(input: {
+    artifactRefs: ArtifactRef[];
+    candidate: SourceChangeCandidateRecord;
+    observedAt: string;
+  }): Promise<void>;
   publishTurnUpdated(record: RunnerTurnRecord): Promise<void>;
+  publishWikiRefObserved?(input: {
+    artifactRef: ArtifactRef;
+    graphId: string;
+    nodeId: string;
+    observedAt: string;
+  }): Promise<void>;
 };
 
 export type RunnerServiceHandleResult =
@@ -1287,6 +1305,38 @@ function buildFailedEngineTurnOutcome(
   });
 }
 
+function buildWikiArtifactRefForTurn(input: {
+  context: EffectiveRuntimeContext;
+  turnRecord: RunnerTurnRecord;
+}): ArtifactRef | undefined {
+  const outcome = input.turnRecord.memoryRepositorySyncOutcome;
+
+  if (
+    !outcome ||
+    (outcome.status !== "committed" && outcome.status !== "unchanged") ||
+    !outcome.commit
+  ) {
+    return undefined;
+  }
+
+  return {
+    artifactId: `wiki-${input.turnRecord.turnId}`,
+    artifactKind: "knowledge_summary",
+    backend: "wiki",
+    contentSummary: `Wiki repository ${outcome.status} at ${outcome.commit}.`,
+    createdByNodeId: input.context.binding.node.nodeId,
+    locator: {
+      nodeId: input.context.binding.node.nodeId,
+      path: "/"
+    },
+    preferred: true,
+    ...(input.turnRecord.sessionId
+      ? { sessionId: input.turnRecord.sessionId }
+      : {}),
+    status: "materialized"
+  };
+}
+
 export class RunnerService {
   private readonly cancellationPollIntervalMs: number;
   private readonly artifactBackend: RunnerArtifactBackend;
@@ -1349,6 +1399,59 @@ export class RunnerService {
   private async publishTurnObservation(record: RunnerTurnRecord): Promise<void> {
     try {
       await this.observationPublisher?.publishTurnUpdated(record);
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
+  private async publishArtifactRefObservation(
+    artifactRecord: ArtifactRecord
+  ): Promise<void> {
+    try {
+      await this.observationPublisher?.publishArtifactRefObserved?.({
+        artifactRecord,
+        graphId: this.context.binding.graphId,
+        nodeId: this.context.binding.node.nodeId,
+        observedAt: artifactRecord.updatedAt
+      });
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
+  private async publishArtifactRefObservations(
+    artifactRecords: ArtifactRecord[]
+  ): Promise<void> {
+    for (const artifactRecord of artifactRecords) {
+      await this.publishArtifactRefObservation(artifactRecord);
+    }
+  }
+
+  private async publishSourceChangeRefObservation(
+    candidate: SourceChangeCandidateRecord
+  ): Promise<void> {
+    try {
+      await this.observationPublisher?.publishSourceChangeRefObserved?.({
+        artifactRefs: [],
+        candidate,
+        observedAt: candidate.updatedAt
+      });
+    } catch {
+      // Observation transport failures must not corrupt runner-local state.
+    }
+  }
+
+  private async publishWikiRefObservation(
+    artifactRef: ArtifactRef,
+    observedAt: string
+  ): Promise<void> {
+    try {
+      await this.observationPublisher?.publishWikiRefObserved?.({
+        artifactRef,
+        graphId: this.context.binding.graphId,
+        nodeId: this.context.binding.node.nodeId,
+        observedAt
+      });
     } catch {
       // Observation transport failures must not corrupt runner-local state.
     }
@@ -2194,6 +2297,19 @@ export class RunnerService {
     };
 
     await writeRunnerTurnRecord(input.statePaths, nextTurnRecord);
+    await this.publishTurnObservation(nextTurnRecord);
+    const wikiArtifactRef = buildWikiArtifactRefForTurn({
+      context: this.context,
+      turnRecord: nextTurnRecord
+    });
+
+    if (wikiArtifactRef) {
+      await this.publishWikiRefObservation(
+        wikiArtifactRef,
+        memoryRepositorySyncOutcome.syncedAt
+      );
+    }
+
     return nextTurnRecord;
   }
 
@@ -2330,6 +2446,7 @@ export class RunnerService {
               writeArtifactRecord(statePaths, artifactRecord)
             )
           );
+          await this.publishArtifactRefObservations(error.artifactRecords);
         }
 
         throw error;
@@ -2340,6 +2457,7 @@ export class RunnerService {
           writeArtifactRecord(statePaths, artifactRecord)
         )
       );
+      await this.publishArtifactRefObservations(retrievedArtifacts.artifacts);
       const consumedArtifactIds = retrievedArtifacts.artifacts.map(
         (artifactRecord) => artifactRecord.ref.artifactId
       );
@@ -2396,6 +2514,7 @@ export class RunnerService {
         });
         if (sourceChangeCandidate) {
           await writeSourceChangeCandidateRecord(statePaths, sourceChangeCandidate);
+          await this.publishSourceChangeRefObservation(sourceChangeCandidate);
         }
         turnRecord = {
           ...turnRecord,
@@ -2433,6 +2552,7 @@ export class RunnerService {
       });
       if (sourceChangeCandidate) {
         await writeSourceChangeCandidateRecord(statePaths, sourceChangeCandidate);
+        await this.publishSourceChangeRefObservation(sourceChangeCandidate);
       }
       turnRecord = {
         ...turnRecord,
@@ -2459,6 +2579,7 @@ export class RunnerService {
           writeArtifactRecord(statePaths, artifactRecord)
         )
       );
+      await this.publishArtifactRefObservations(materializedArtifacts.artifacts);
       turnRecord = {
         ...turnRecord,
         producedArtifactIds,

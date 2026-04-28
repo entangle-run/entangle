@@ -15,8 +15,10 @@ when Host and runner live on separate machines.
 
 Federated projection foundations now exist for Host Authority, runner
 registry/heartbeat, assignments, User Node identity, signed User Node messages,
-and observed artifact/source/wiki refs. The deep runtime APIs still need to be
-moved off local file reads.
+and observed artifact/source/wiki refs. Joined agent runners now emit
+`artifact.ref`, `source_change.ref`, and `wiki.ref` observations during normal
+turn execution, so those projection records are no longer only test-fed. The
+deep runtime APIs still need to be moved off local file reads.
 
 ## Target Model
 
@@ -64,8 +66,9 @@ and refs so Host can inspect global state without reading runner disk.
 - Replace Host APIs that read `runtimeRoot` with projection-backed APIs.
 - Preserve local file readers only behind explicit local debug/migration
   functions.
-- Change runner service to emit observations whenever it currently writes local
-  lifecycle state.
+- Continue changing runner service to emit observations whenever it currently
+  writes local lifecycle state. Session, conversation, turn phase, artifact ref,
+  source-change ref, and wiki ref emissions now exist.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 
@@ -75,7 +78,8 @@ and refs so Host can inspect global state without reading runner disk.
 - Idempotency tests for duplicate observations.
 - Out-of-order assignment observation tests.
 - Host API tests proving projection-backed responses.
-- Runner observation emission tests.
+- Runner observation emission tests, including artifact/source/wiki ref
+  emissions during normal turns.
 - Negative tests proving Host APIs do not require runner filesystem paths in
   federated mode.
 

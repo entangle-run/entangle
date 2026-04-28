@@ -199,10 +199,13 @@ This repository currently contains:
   source history events after validating approval operation and concrete
   resource scope, plus a host/CLI/Studio operator decision surface that can
   create scoped source-mutation approvals or decide existing pending approvals
-  through the same host boundary, plus runner-owned local git snapshots of
-  `memory/wiki` into each node's `wiki-repository` workspace after completed
-  turns, with durable sync outcomes carried through runner turns, host events,
-  CLI output, and Studio turn inspection, and with `entangle deployment doctor`
+  through the same host boundary, plus runner-emitted `artifact.ref`,
+  `source_change.ref`, and `wiki.ref` observations during normal turns so Host
+  projection receives portable work refs through the observe protocol, plus
+  runner-owned local git snapshots of `memory/wiki` into each node's
+  `wiki-repository` workspace after completed turns, with durable sync outcomes
+  carried through runner turns, host events, CLI output, and Studio turn
+  inspection, and with `entangle deployment doctor`
   now warning on uninitialized, dirty, or uncommitted runtime wiki
   repositories, plus a host-mediated wiki-repository publication path that
   turns a clean node wiki HEAD into a `knowledge_summary` git artifact with

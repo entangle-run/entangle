@@ -69,6 +69,7 @@ same-machine slice records.
 - [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 - [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
 - [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
+- [269-runner-observed-ref-emission-slice.md](269-runner-observed-ref-emission-slice.md)
 
 ## Audited Scope
 
@@ -133,6 +134,10 @@ The repository is not fully federated:
   preview, delivery labels, and message publishing, but source/wiki review
   actions, read receipts, and projection-backed artifact/source preview are
   still incomplete;
+- joined agent runners now emit `artifact.ref`, `source_change.ref`, and
+  `wiki.ref` observations during normal turn execution, so Host's observed
+  artifact/source/wiki projection reducers are fed by real runner behavior
+  instead of only by direct Host tests;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
@@ -206,7 +211,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    projection-backed artifact/source preview remain open.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
-    refs.
+    refs. Runner emission of observed artifact/source/wiki refs is implemented;
+    projection-backed content preview remains open.
 12. Studio and CLI operator/user-node federation surfaces.
 13. Product naming migration with no local-product compatibility marker.
 14. Distributed smoke test.
