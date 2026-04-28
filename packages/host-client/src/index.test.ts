@@ -2684,32 +2684,12 @@ describe("createHostClient", () => {
         status: "pending"
       }
     });
-    await expect(
-      client.recordRuntimeApprovalDecision("worker-it", {
-        approvalId: "approval-alpha",
-        status: "approved"
-      })
-    ).resolves.toMatchObject({
-      approval: {
-        approvalId: "approval-alpha",
-        status: "approved"
-      }
-    });
     expect(requests).toEqual([
       {
         url: "http://entangle-host.test/v1/runtimes/worker-it/approvals"
       },
       {
         url: "http://entangle-host.test/v1/runtimes/worker-it/approvals/approval-alpha"
-      },
-      {
-        body: JSON.stringify({
-          approvalId: "approval-alpha",
-          approverNodeIds: ["user"],
-          status: "approved"
-        }),
-        method: "POST",
-        url: "http://entangle-host.test/v1/runtimes/worker-it/approvals"
       }
     ]);
   });
@@ -2969,84 +2949,6 @@ describe("createHostClient", () => {
     });
     expect(requests).toEqual([
       "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/file?path=src%2Findex.ts"
-    ]);
-  });
-
-  it("reviews source change candidates through the host surface", async () => {
-    const requests: Array<{ body?: string; method?: string; url: string }> = [];
-    const reviewedCandidate = {
-      candidateId: "source-change-turn-alpha",
-      createdAt: "2026-04-24T00:01:00.000Z",
-      graphId: "team-alpha",
-      nodeId: "worker-it",
-      review: {
-        decidedAt: "2026-04-24T00:02:00.000Z",
-        decidedBy: "operator-alpha",
-        decision: "accepted",
-        reason: "Reviewed by the operator."
-      },
-      sourceChangeSummary: {
-        additions: 1,
-        checkedAt: "2026-04-24T00:01:00.000Z",
-        deletions: 0,
-        fileCount: 1,
-        files: [],
-        status: "changed",
-        truncated: false
-      },
-      status: "accepted",
-      turnId: "turn-alpha",
-      updatedAt: "2026-04-24T00:02:00.000Z"
-    };
-    const client = createHostClient({
-      baseUrl: "http://entangle-host.test",
-      fetchImpl: (url, init) => {
-        requests.push({
-          body: init?.body,
-          method: init?.method,
-          url
-        });
-
-        return Promise.resolve(
-          createMockResponse({
-            body: JSON.stringify({
-              candidate: reviewedCandidate
-            }),
-            ok: true,
-            status: 200
-          })
-        );
-      }
-    });
-
-    await expect(
-      client.reviewRuntimeSourceChangeCandidate(
-        "worker-it",
-        "source-change-turn-alpha",
-        {
-          reason: "Reviewed by the operator.",
-          reviewedBy: "operator-alpha",
-          status: "accepted"
-        }
-      )
-    ).resolves.toMatchObject({
-      candidate: {
-        review: {
-          decision: "accepted"
-        },
-        status: "accepted"
-      }
-    });
-    expect(requests).toEqual([
-      {
-        body: JSON.stringify({
-          reason: "Reviewed by the operator.",
-          reviewedBy: "operator-alpha",
-          status: "accepted"
-        }),
-        method: "PATCH",
-        url: "http://entangle-host.test/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/review"
-      }
     ]);
   });
 

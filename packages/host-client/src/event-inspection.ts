@@ -18,7 +18,6 @@ export const runtimeTraceEventTypePrefixes = [
   "approval.trace.event",
   "artifact.trace.event",
   "runner.turn.updated",
-  "source_change_candidate.reviewed",
   "source_history.updated",
   "source_history.published",
   "source_history.replayed",

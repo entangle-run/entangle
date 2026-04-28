@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Removed direct Host approval and review APIs
+
+Removed the remaining Host and shared host-client mutation APIs for direct
+runtime approval decisions and source-candidate reviews. Approval responses and
+source reviews now have only the signed User Node A2A path as their canonical
+implementation path.
+
+Removed the `source_change_candidate.reviewed` Host event schema and runtime
+trace prefix. Review history is represented by User Node message history plus
+runner-observed `source_change.ref` projection. Added
+`references/323-direct-host-approval-review-api-removal-slice.md`.
+
 ## [2026-04-28] implementation | Quarantined public direct approval and review mutations
 
 Studio and CLI no longer expose public operator actions for direct Host-side

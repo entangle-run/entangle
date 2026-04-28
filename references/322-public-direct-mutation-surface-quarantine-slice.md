@@ -7,9 +7,11 @@ approvals or review source-change candidates by mutating Host runtime state
 directly. Those paths predated stable User Node identities and were useful for
 same-machine bootstrap, but they bypass the federated actor model.
 
-The Host routes and shared host-client methods still exist for compatibility
-and for remaining source-history workflows, but they are no longer the public
-operator/user path for approval responses or source-candidate review.
+At the start of this slice, the Host routes and shared host-client methods
+still existed for compatibility, but they were no longer the public
+operator/user path for approval responses or source-candidate review. They were
+removed in
+[323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md).
 
 ## Target Model
 
@@ -56,15 +58,16 @@ participant actions through User Node signing commands.
   from recorded inbound User Node messages.
 - Studio typecheck/build to verify the removed mutation callbacks do not leave
   stale state or imports.
-- Host/client tests remain unchanged in this slice because the internal
-  compatibility routes are intentionally not removed yet.
+- Host/client tests are updated in the follow-up API removal slice.
 
 ## Migration And Compatibility Notes
 
-This slice quarantines direct public mutation surfaces; it does not delete the
-underlying Host compatibility routes. Remaining non-canonical direct mutations
-need dedicated follow-up slices once source apply/publish, artifact
-restore/promote, and wiki publication have runner-owned command paths.
+This slice quarantines direct public mutation surfaces. The follow-up
+[323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
+deletes the underlying Host compatibility routes for approval decisions and
+source-candidate review. Remaining non-canonical direct mutations need
+dedicated follow-up slices once source apply/publish, artifact restore/promote,
+and wiki publication have runner-owned command paths.
 
 Operators should use Studio/CLI for inspection and assignment. Human graph
 participants should use the User Client or CLI User Node signing commands for
@@ -79,14 +82,11 @@ approval responses and source-candidate reviews.
   Mitigation: Studio now shows the pending state without pretending the Host is
   the approving actor.
 - Risk: Host compatibility routes can be mistaken for canonical product
-  behavior. Mitigation: docs and roadmap mark them as compatibility/internal
-  debt pending runner-owned command replacements.
+  behavior. Mitigation: the approval/review routes are removed in the follow-up
+  API removal slice.
 
 ## Open Questions
 
-- Should the Host compatibility routes be removed entirely before the next
-  public release, or kept behind an explicit debug capability flag until all
-  source/artifact/wiki mutations are runner-owned?
 - Should source apply/publish become signed User Node messages, Host-signed
   runner control commands, or a two-step protocol where User Node approval and
   Host policy command are separate signed events?

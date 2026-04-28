@@ -63,12 +63,12 @@ User Node message and projects the runner observation.
 
 ## Migration And Compatibility Notes
 
-The older Host runtime source-candidate review mutation still exists as a
-non-canonical compatibility/internal path. The public CLI and Studio review
-surfaces are quarantined in
+The older Host runtime source-candidate review mutation has been removed in
+[323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md).
+The public CLI and Studio review surfaces were first quarantined in
 [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md),
-so the canonical User Node, User Client, and CLI participant path is now signed
-A2A review.
+so the canonical User Node, User Client, and CLI participant path is signed A2A
+review.
 
 ## Risks And Mitigations
 

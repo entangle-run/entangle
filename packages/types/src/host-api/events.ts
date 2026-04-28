@@ -30,8 +30,6 @@ import {
   sessionLifecycleStateSchema,
   sessionCancellationRequestStatusSchema,
   sourceHistoryApplicationModeSchema,
-  sourceChangeCandidateReviewDecisionSchema,
-  sourceChangeCandidateStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
@@ -287,23 +285,6 @@ export const runnerTurnUpdatedEventSchema = hostEventBaseSchema.extend({
   type: z.literal("runner.turn.updated")
 });
 
-export const sourceChangeCandidateReviewedEventSchema =
-  hostEventBaseSchema.extend({
-    candidateId: identifierSchema,
-    category: z.literal("runtime"),
-    graphId: identifierSchema,
-    graphRevisionId: identifierSchema,
-    nodeId: identifierSchema,
-    previousStatus: sourceChangeCandidateStatusSchema,
-    reason: nonEmptyStringSchema.optional(),
-    reviewedAt: nonEmptyStringSchema,
-    reviewedBy: identifierSchema.optional(),
-    status: sourceChangeCandidateReviewDecisionSchema,
-    supersededByCandidateId: identifierSchema.optional(),
-    turnId: identifierSchema,
-    type: z.literal("source_change_candidate.reviewed")
-  });
-
 export const sourceHistoryUpdatedEventSchema = hostEventBaseSchema.extend({
   approvalId: identifierSchema.optional(),
   candidateId: identifierSchema,
@@ -461,7 +442,6 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   sessionUpdatedEventSchema,
   sessionCancellationRequestedEventSchema,
   runnerTurnUpdatedEventSchema,
-  sourceChangeCandidateReviewedEventSchema,
   sourceHistoryUpdatedEventSchema,
   sourceHistoryPublishedEventSchema,
   sourceHistoryReplayedEventSchema,
@@ -533,9 +513,6 @@ export type SessionCancellationRequestedEvent = z.infer<
   typeof sessionCancellationRequestedEventSchema
 >;
 export type RunnerTurnUpdatedEvent = z.infer<typeof runnerTurnUpdatedEventSchema>;
-export type SourceChangeCandidateReviewedEvent = z.infer<
-  typeof sourceChangeCandidateReviewedEventSchema
->;
 export type SourceHistoryUpdatedEvent = z.infer<
   typeof sourceHistoryUpdatedEventSchema
 >;

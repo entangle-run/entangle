@@ -47,26 +47,6 @@ function createSessionEvent(): HostEventRecord {
   };
 }
 
-function createSourceChangeCandidateReviewedEvent(): HostEventRecord {
-  return {
-    candidateId: "source-change-turn-alpha",
-    category: "runtime",
-    eventId: "evt-source-change-reviewed",
-    graphId: "team-alpha",
-    graphRevisionId: "team-alpha-20260424-000000",
-    message:
-      "Source change candidate 'source-change-turn-alpha' for runtime 'worker-it' was reviewed as 'accepted'.",
-    nodeId: "worker-it",
-    previousStatus: "pending_review",
-    reviewedAt: "2026-04-24T10:00:20.000Z",
-    schemaVersion: "1",
-    status: "accepted",
-    timestamp: "2026-04-24T10:00:20.000Z",
-    turnId: "turn-alpha",
-    type: "source_change_candidate.reviewed"
-  };
-}
-
 function createSourceHistoryUpdatedEvent(): HostEventRecord {
   return {
     candidateId: "source-change-turn-alpha",
@@ -178,12 +158,6 @@ describe("host event inspection helpers", () => {
         typePrefixes: [...runtimeTraceEventTypePrefixes]
       })
     ).toBe(false);
-    expect(
-      hostEventMatchesFilter(createSourceChangeCandidateReviewedEvent(), {
-        nodeId: "worker-it",
-        typePrefixes: [...runtimeTraceEventTypePrefixes]
-      })
-    ).toBe(true);
     expect(
       hostEventMatchesFilter(createSourceHistoryUpdatedEvent(), {
         nodeId: "worker-it",

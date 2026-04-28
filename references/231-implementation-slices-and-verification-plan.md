@@ -331,6 +331,7 @@ Implementation record:
 - [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
+- [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 
 Current status:
 
@@ -406,6 +407,7 @@ Implementation record:
 - [276-user-node-message-lookup-slice.md](276-user-node-message-lookup-slice.md)
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
+- [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 
 Verification:
 

@@ -56,7 +56,6 @@ import {
   runnerRegistryEntrySchema,
   runnerRegistryListResponseSchema,
   runnerTrustMutationResponseSchema,
-  runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeAssignmentRecordSchema,
@@ -84,7 +83,6 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
-  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublicationResponseSchema,
@@ -1830,29 +1828,6 @@ describe("runtime approval host API contracts", () => {
     ).toBe("source_history_publication");
   });
 
-  it("accepts scoped runtime approval decision mutations", () => {
-    const decision = runtimeApprovalDecisionMutationRequestSchema.parse({
-      operation: "source_application",
-      reason: "Approve source application.",
-      resource: {
-        id: "source-change-alpha",
-        kind: "source_change_candidate",
-        label: "source-change-alpha"
-      },
-      sessionId: "session-alpha"
-    });
-
-    expect(decision).toMatchObject({
-      approverNodeIds: ["user"],
-      operation: "source_application",
-      resource: {
-        id: "source-change-alpha",
-        kind: "source_change_candidate"
-      },
-      sessionId: "session-alpha",
-      status: "approved"
-    });
-  });
 });
 
 describe("runtime turn host API contracts", () => {
@@ -1920,13 +1895,6 @@ describe("source change candidate host API contracts", () => {
         candidate
       }).candidate.status
     ).toBe("pending_review");
-    expect(
-      runtimeSourceChangeCandidateReviewMutationRequestSchema.parse({
-        reason: "Reviewed by the operator.",
-        reviewedBy: "operator-alpha",
-        status: "accepted"
-      }).status
-    ).toBe("accepted");
     expect(
       runtimeSourceChangeCandidateApplyMutationRequestSchema.parse({
         approvalId: "approval-source-apply-alpha",
@@ -3093,26 +3061,6 @@ describe("host event contracts", () => {
       type: "runner.turn.updated",
       updatedAt: "2026-04-24T00:00:01.000Z"
     });
-    const reviewedCandidateEvent = hostEventRecordSchema.parse({
-      candidateId: "source-change-turn-alpha",
-      approvalId: "approval-source-apply-alpha",
-      category: "runtime",
-      eventId: "evt-source-change-reviewed",
-      graphId: "graph-alpha",
-      graphRevisionId: "graph-alpha-20260424-000000",
-      message:
-        "Source change candidate 'source-change-turn-alpha' for runtime 'worker-it' was reviewed as 'accepted'.",
-      nodeId: "worker-it",
-      previousStatus: "pending_review",
-      reason: "Reviewed by the operator.",
-      reviewedAt: "2026-04-24T00:00:02.000Z",
-      reviewedBy: "operator-alpha",
-      schemaVersion: "1",
-      status: "accepted",
-      timestamp: "2026-04-24T00:00:02.000Z",
-      turnId: "turn-alpha",
-      type: "source_change_candidate.reviewed"
-    });
     const sourceHistoryEvent = hostEventRecordSchema.parse({
       approvalId: "approval-source-apply-alpha",
       candidateId: "source-change-turn-alpha",
@@ -3236,8 +3184,6 @@ describe("host event contracts", () => {
     expect(runnerTurnEvent.sourceChangeCandidateIds).toEqual([
       "source-change-turn-alpha"
     ]);
-    expect(reviewedCandidateEvent.type).toBe("source_change_candidate.reviewed");
-    expect(reviewedCandidateEvent.status).toBe("accepted");
     expect(sourceHistoryEvent.type).toBe("source_history.updated");
     expect(sourceHistoryEvent.mode).toBe("already_in_workspace");
     expect(sourceHistoryPublishedEvent.type).toBe("source_history.published");

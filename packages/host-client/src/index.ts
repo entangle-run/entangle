@@ -38,7 +38,6 @@ import {
   packageSourceDeletionResponseSchema,
   packageSourceInspectionResponseSchema,
   packageSourceListResponseSchema,
-  runtimeApprovalDecisionMutationRequestSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
   runtimeArtifactDiffQuerySchema,
@@ -70,7 +69,6 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
-  runtimeSourceChangeCandidateReviewMutationRequestSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublicationResponseSchema,
@@ -138,7 +136,6 @@ import {
   type PackageSourceDeletionResponse,
   type PackageSourceInspectionResponse,
   type PackageSourceListResponse,
-  type RuntimeApprovalDecisionMutationRequest,
   type RuntimeApprovalInspectionResponse,
   type RuntimeApprovalListResponse,
   type RuntimeArtifactDiffQuery,
@@ -170,7 +167,6 @@ import {
   type RuntimeSourceChangeCandidateFilePreviewResponse,
   type RuntimeSourceChangeCandidateInspectionResponse,
   type RuntimeSourceChangeCandidateListResponse,
-  type RuntimeSourceChangeCandidateReviewMutationRequest,
   type RuntimeSourceHistoryInspectionResponse,
   type RuntimeSourceHistoryListResponse,
   type RuntimeSourceHistoryPublicationResponse,
@@ -1200,25 +1196,6 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
-    async recordRuntimeApprovalDecision(
-      nodeId: string,
-      decision: RuntimeApprovalDecisionMutationRequest
-    ): Promise<RuntimeApprovalInspectionResponse> {
-      const request =
-        runtimeApprovalDecisionMutationRequestSchema.parse(decision);
-
-      return parseResponse(
-        await hostFetch(`${baseUrl}/v1/runtimes/${nodeId}/approvals`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json"
-          },
-          body: JSON.stringify(request)
-        }),
-        runtimeApprovalInspectionResponseSchema
-      );
-    },
-
     async listRuntimeSourceChangeCandidates(
       nodeId: string
     ): Promise<RuntimeSourceChangeCandidateListResponse> {
@@ -1266,29 +1243,6 @@ export function createHostClient(options: HostClientOptions) {
           `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/file?${query.toString()}`
         ),
         runtimeSourceChangeCandidateFilePreviewResponseSchema
-      );
-    },
-
-    async reviewRuntimeSourceChangeCandidate(
-      nodeId: string,
-      candidateId: string,
-      review: RuntimeSourceChangeCandidateReviewMutationRequest
-    ): Promise<RuntimeSourceChangeCandidateInspectionResponse> {
-      const request =
-        runtimeSourceChangeCandidateReviewMutationRequestSchema.parse(review);
-
-      return parseResponse(
-        await hostFetch(
-          `${baseUrl}/v1/runtimes/${nodeId}/source-change-candidates/${candidateId}/review`,
-          {
-            method: "PATCH",
-            headers: {
-              "content-type": "application/json"
-            },
-            body: JSON.stringify(request)
-          }
-        ),
-        runtimeSourceChangeCandidateInspectionResponseSchema
       );
     },
 

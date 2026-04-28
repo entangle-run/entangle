@@ -10,10 +10,6 @@ import {
   nostrSecretKeySchema,
   sha256DigestSchema
 } from "../common/crypto.js";
-import {
-  policyOperationSchema,
-  policyResourceScopeSchema
-} from "../common/policy.js";
 import { filesystemPathSchema, identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   agentEngineFailureClassificationSchema,
@@ -38,7 +34,6 @@ import {
 import {
   approvalRecordSchema,
   runnerTurnRecordSchema,
-  sourceChangeCandidateReviewDecisionSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
   sourceChangeSummarySchema
@@ -531,16 +526,6 @@ export const runtimeApprovalInspectionResponseSchema = z.object({
   approval: approvalRecordSchema
 });
 
-export const runtimeApprovalDecisionMutationRequestSchema = z.object({
-  approvalId: identifierSchema.optional(),
-  approverNodeIds: z.array(identifierSchema).min(1).default(["user"]),
-  operation: policyOperationSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  resource: policyResourceScopeSchema.optional(),
-  sessionId: identifierSchema.optional(),
-  status: z.enum(["approved", "rejected"]).default("approved")
-});
-
 export const runtimeSourceChangeCandidateListResponseSchema = z.object({
   candidates: z.array(sourceChangeCandidateRecordSchema)
 });
@@ -646,33 +631,6 @@ export const runtimeSourceHistoryReplayResponseSchema = z.object({
 export const runtimeSourceHistoryReplayListResponseSchema = z.object({
   replays: z.array(runtimeSourceHistoryReplayRecordSchema)
 });
-
-export const runtimeSourceChangeCandidateReviewMutationRequestSchema = z
-  .object({
-    reason: nonEmptyStringSchema.optional(),
-    reviewedBy: identifierSchema.optional(),
-    status: sourceChangeCandidateReviewDecisionSchema,
-    supersededByCandidateId: identifierSchema.optional()
-  })
-  .superRefine((value, context) => {
-    if (value.status === "superseded" && !value.supersededByCandidateId) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Superseded source change candidate reviews must include supersededByCandidateId.",
-        path: ["supersededByCandidateId"]
-      });
-    }
-
-    if (value.status !== "superseded" && value.supersededByCandidateId) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Only superseded source change candidate reviews may include supersededByCandidateId.",
-        path: ["supersededByCandidateId"]
-      });
-    }
-  });
 
 export const runtimeSourceChangeCandidateApplyMutationRequestSchema = z.object({
   approvalId: identifierSchema.optional(),
@@ -843,9 +801,6 @@ export type RuntimeWikiRepositoryPublicationListResponse = z.infer<
 >;
 export type RuntimeApprovalListResponse = z.infer<typeof runtimeApprovalListResponseSchema>;
 export type RuntimeApprovalInspectionResponse = z.infer<typeof runtimeApprovalInspectionResponseSchema>;
-export type RuntimeApprovalDecisionMutationRequest = z.infer<
-  typeof runtimeApprovalDecisionMutationRequestSchema
->;
 export type RuntimeSourceChangeCandidateListResponse = z.infer<
   typeof runtimeSourceChangeCandidateListResponseSchema
 >;
@@ -878,9 +833,6 @@ export type RuntimeSourceHistoryReplayResponse = z.infer<
 >;
 export type RuntimeSourceHistoryReplayListResponse = z.infer<
   typeof runtimeSourceHistoryReplayListResponseSchema
->;
-export type RuntimeSourceChangeCandidateReviewMutationRequest = z.infer<
-  typeof runtimeSourceChangeCandidateReviewMutationRequestSchema
 >;
 export type RuntimeSourceChangeCandidateApplyMutationRequest = z.infer<
   typeof runtimeSourceChangeCandidateApplyMutationRequestSchema

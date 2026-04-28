@@ -123,6 +123,7 @@ same-machine slice records.
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
+- [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 
 ## Audited Scope
 
@@ -332,6 +333,10 @@ The repository is not fully federated:
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
   `entangle user-nodes message --message-type source_change.review`;
+- Host and `packages/host-client` no longer expose direct approval-decision or
+  source-candidate review mutation APIs. Approval responses and source reviews
+  must use signed User Node A2A messages, and review projection is carried by
+  runner-observed `source_change.ref`;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
   verifies Host runtime turn, source-change candidate list/detail/diff/file,
@@ -459,8 +464,9 @@ bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The User Client now emits signed source-candidate review messages to the owning
 runner, CLI can publish signed source-candidate review messages as a User Node,
-public Studio/CLI operator approval-review mutations are quarantined, CLI can
-list projected User Client endpoints per User Node, Host status exposes first
+public Studio/CLI operator approval-review mutations are quarantined, the
+underlying Host/client direct approval-review APIs are removed, CLI can list
+projected User Client endpoints per User Node, Host status exposes first
 control/observe transport health to CLI and Studio, and operators can generate
 generic runner join configs from Host status. The next blocking implementation
 areas are richer projection-backed source/wiki review services, replacing
