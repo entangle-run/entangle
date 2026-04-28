@@ -32,6 +32,8 @@ import {
   runtimeAssignmentTimelineResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeArtifactInspectionResponseSchema,
+  runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
@@ -43,6 +45,7 @@ import {
   runtimeSourceHistoryListResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  runtimeWikiPublishResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sessionRecordSchema,
@@ -1990,6 +1993,80 @@ async function main(): Promise<void> {
       `sourceHistory=${projectedBuilderSourceHistory.sourceHistoryId}; ` +
         `commit=${projectedBuilderSourceHistory.commit}; ` +
         `publication=${projectedBuilderSourceHistory.publication?.publication.state}`
+    );
+
+    const wikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          reason:
+            "Process runner smoke requested runner-owned wiki publication.",
+          requestedBy: "process-runner-smoke",
+          retryFailedPublication: false
+        },
+        method: "POST",
+        path: "/v1/runtimes/builder/wiki-repository/publish"
+      })
+    );
+    assertCondition(
+      wikiPublicationRequest.status === "requested" &&
+        wikiPublicationRequest.assignmentId === assignment.assignmentId,
+      "Wiki publication request must be accepted as a federated runner command."
+    );
+    printPass(
+      "wiki-publication-request",
+      `command=${wikiPublicationRequest.commandId}; assignment=${wikiPublicationRequest.assignmentId}`
+    );
+
+    const projectedWikiPublicationArtifact = await waitFor(
+      "Host projected runner-owned wiki publication artifact",
+      async () => {
+        const artifactList = runtimeArtifactListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/artifacts"
+          })
+        );
+        const artifact = artifactList.artifacts.find(
+          (entry) =>
+            entry.ref.backend === "git" &&
+            entry.ref.artifactKind === "knowledge_summary" &&
+            entry.ref.createdByNodeId === "builder" &&
+            entry.ref.locator.branch === "builder/wiki-repository" &&
+            entry.ref.status === "published"
+        );
+
+        if (!artifact) {
+          return undefined;
+        }
+
+        const inspection = runtimeArtifactInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${artifact.ref.artifactId}`
+          })
+        );
+
+        return inspection.artifact.ref.status === "published"
+          ? inspection.artifact
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    const wikiRemoteHead = runGit([
+      "--git-dir",
+      primaryGitRepositoryPath,
+      "rev-parse",
+      "refs/heads/builder/wiki-repository"
+    ]);
+    assertCondition(
+      wikiRemoteHead === projectedWikiPublicationArtifact.ref.locator.commit,
+      "Published wiki artifact commit must match the remote wiki branch head."
+    );
+    printPass(
+      "projected-runtime-wiki-publication",
+      `artifact=${projectedWikiPublicationArtifact.ref.artifactId}; ` +
+        `commit=${projectedWikiPublicationArtifact.ref.locator.commit.slice(0, 12)}`
     );
 
     const projectedBuilderApproval = await waitFor(

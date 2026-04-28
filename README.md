@@ -279,7 +279,9 @@ This repository currently contains:
   wiki publication now returns through a Host-signed `runtime.wiki.publish`
   control command that the accepted runner executes from runner-owned wiki
   state, with CLI and Studio requesting that same Host control path, publishing
-  a primary-git artifact and emitting `artifact.ref` projection evidence.
+  a primary-git artifact and emitting `artifact.ref` projection evidence, now
+  covered in the process-boundary smoke by checking the projected artifact ref
+  and matching primary git branch head.
   Bounded engine-request
   summaries on executable turns so
   operators can inspect prompt part counts, aggregate prompt size, memory,
@@ -506,8 +508,10 @@ This repository currently contains:
   runner-owned materialization, checks two Human Interface Runtime User Client
   endpoints, publishes from the primary User Node through the running User
   Client JSON API, exercises a deterministic OpenCode-adapter task turn,
-  verifies projected turn/approval/session read APIs, publishes from a second
-  distinct User Node identity, records a synthetic inbound agent message
+  verifies projected turn/approval/session read APIs, requests runner-owned
+  wiki publication through Host-signed control and verifies the projected git
+  artifact plus primary git branch head, publishes from a second distinct User
+  Node identity, records a synthetic inbound agent message
   through the running User Node, inspects the selected conversation through the
   User Client JSON API, submits a signed User Node approval response through
   the same JSON API, and verifies Host projection;

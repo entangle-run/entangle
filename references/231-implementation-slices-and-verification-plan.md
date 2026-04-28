@@ -378,6 +378,10 @@ Current status:
   primary git target, persists artifact publication metadata, and emits
   `artifact.ref` evidence; Host API, host-client, CLI, and Studio can request
   that command without reading runner-local files;
+- `ops:smoke-federated-process-runner` now verifies that same wiki publication
+  command with a real Host process, joined runner process, relay, and primary
+  git backend by checking projected `artifact.ref` evidence and the remote git
+  branch head;
 - deeper artifact history computation, richer source/wiki mutation endpoints,
   non-primary publication, and artifact restore/promotion still need
   projection-backed or backend-resolved replacement.
@@ -655,6 +659,7 @@ Implementation records:
 - [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md)
 - [254-process-runner-federated-smoke-slice.md](254-process-runner-federated-smoke-slice.md)
 - [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
+- [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
 
 Current status:
 
@@ -670,6 +675,9 @@ Current status:
   review, and approval response;
 - the same process proof now validates assignment timeline projection for real
   runner acceptance and lifecycle receipts;
+- the same process proof now requests runner-owned wiki publication through
+  Host-signed `runtime.wiki.publish`, observes the projected git
+  `artifact.ref`, and verifies the primary git backend branch head;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

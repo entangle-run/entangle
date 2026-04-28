@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-28] verification | Covered wiki publication in process smoke
+
+Extended the federated process-runner smoke so the real Host plus joined runner
+path now requests runner-owned wiki publication through Host-signed
+`runtime.wiki.publish`, waits for projected git `artifact.ref` evidence, and
+verifies the primary git backend branch head matches the projected commit.
+
+Added `references/348-process-smoke-wiki-publication-control-slice.md`.
+
 ## [2026-04-28] verification | Covered assignment timeline in process smoke
 
 Extended the federated process-runner smoke so the real joined runner path now

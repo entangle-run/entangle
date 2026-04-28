@@ -316,7 +316,9 @@ The repository now also contains the first real implementation baseline:
   now returns as a Host-signed `runtime.wiki.publish` command that the accepted
   runner executes from runner-owned wiki state, with CLI and Studio requesting
   that same Host control path, publishing a primary-git artifact and emitting
-  signed `artifact.ref` evidence. With
+  signed `artifact.ref` evidence, and the process-boundary smoke now verifies
+  that request with a real joined runner by checking Host projection plus the
+  primary git branch head. With
   bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without

@@ -148,6 +148,7 @@ same-machine slice records.
 - [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
+- [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
 
 ## Audited Scope
 

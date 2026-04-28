@@ -115,6 +115,9 @@ The command publishes only to the runtime context's primary git repository
 target. Non-primary wiki promotion and richer repo-per-node memory topology
 remain future work.
 
+Follow-up process-boundary smoke coverage is recorded in
+`348-process-smoke-wiki-publication-control-slice.md`.
+
 ## Risks And Mitigations
 
 - Risk: operators expect synchronous publication results from the Host request.
