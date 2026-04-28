@@ -130,6 +130,7 @@ same-machine slice records.
 - [327-assignment-receipt-projection-slice.md](327-assignment-receipt-projection-slice.md)
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 - [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
+- [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 
 ## Audited Scope
 
@@ -227,10 +228,10 @@ The repository is not fully federated:
 - the User Client source-change review page now renders projected
   `diffExcerpt` evidence from matching `source_change.ref` records before
   falling back to the runtime-local diff endpoint;
-- older Studio/CLI approval controls still include Host mutation paths even
-  though signed User Node reply/approve/reject commands now exist, and CLI
-  signed approval responses can now carry scoped operation/resource/reason
-  context or derive it from recorded inbound approval-request messages;
+- public Studio/CLI approval controls now use signed User Node message paths
+  instead of Host approval-review mutations, and CLI signed approval responses
+  can carry scoped operation/resource/reason context or derive it from recorded
+  inbound approval-request messages;
 - Studio's federation overview now joins User Node identity, runtime
   projection, User Client URL, and conversation projection into read-only
   operator summaries for Human Interface Runtimes;
@@ -350,7 +351,9 @@ The repository is not fully federated:
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`
-  observation;
+  observation. Accepted reviews now also cause the owning runner to record a
+  runner-local source-history application when the shadow git snapshot and
+  source workspace are still compatible;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -497,10 +500,11 @@ runtime inspection no longer overwrites assigned federated runtime ownership
 through the local backend adapter. The process-runner smoke now proves that
 same lifecycle path end-to-end through a live relay and real joined runner
 process, Studio/CLI now expose compact projected assignment receipt evidence
-for operator inspection, and Host status now carries per-relay control/observe
-diagnostics for operator surfaces. The next blocking implementation areas are
-richer projection-backed source/wiki review services, assignment detail UI for
-grouped receipt timelines, replacing remaining deep filesystem-backed runtime
-inspection paths with projection-backed source/wiki services and object-backed
-artifact services, and turning the process smoke into the full multi-machine
-distributed proof.
+for operator inspection, Host status now carries per-relay control/observe
+diagnostics for operator surfaces, and accepted signed source-candidate reviews
+now produce runner-owned source-history application evidence. The next blocking
+implementation areas are richer projection-backed source/wiki review services,
+assignment detail UI for grouped receipt timelines, replacing remaining deep
+filesystem-backed runtime inspection paths with projection-backed source/wiki
+services and object-backed artifact services, and turning the process smoke
+into the full multi-machine distributed proof.

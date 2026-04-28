@@ -11,7 +11,8 @@ import {
   type ConversationRecord,
   type EffectiveRuntimeContext,
   type RunnerTurnRecord,
-  type SessionRecord
+  type SessionRecord,
+  type SourceChangeCandidateRecord
 } from "@entangle/types";
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import { loadRuntimeContext } from "./runtime-context.js";
@@ -23,6 +24,7 @@ import {
   listApprovalRecords,
   listRunnerTurnRecords,
   listSourceChangeCandidateRecords,
+  listSourceHistoryRecords,
   readApprovalRecord,
   readConversationRecord,
   readRunnerTurnRecord,
@@ -44,6 +46,10 @@ import {
   runnerSecretHex
 } from "./test-fixtures.js";
 import { InMemoryRunnerTransport } from "./transport.js";
+import {
+  harvestSourceChanges,
+  prepareSourceChangeHarvest
+} from "./source-change-harvester.js";
 
 type ObservedArtifactRecord = Parameters<
   NonNullable<RunnerServiceObservationPublisher["publishArtifactRefObserved"]>
@@ -1699,6 +1705,28 @@ describe("RunnerService", () => {
       "abababababababababababababababababababababababababababababababab";
     const sourceReviewMessageId =
       "bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc";
+    const sourceBaseline = await prepareSourceChangeHarvest(runtimeContext);
+
+    if (sourceBaseline.kind !== "ready") {
+      throw new Error("Expected source change harvest baseline to be ready.");
+    }
+
+    await mkdir(path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src"), {
+      recursive: true
+    });
+    await writeFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src", "index.ts"),
+      "export const reviewed = true;\n",
+      "utf8"
+    );
+    const sourceHarvest = await harvestSourceChanges(
+      runtimeContext,
+      sourceBaseline
+    );
+
+    if (!sourceHarvest.snapshot) {
+      throw new Error("Expected source change harvest to produce a snapshot.");
+    }
 
     await writeSessionRecord(statePaths, {
       activeConversationIds: ["conv-source-review"],
@@ -1744,21 +1772,8 @@ describe("RunnerService", () => {
       graphId: "graph-alpha",
       nodeId: "worker-it",
       sessionId: "session-source-review",
-      sourceChangeSummary: {
-        additions: 2,
-        checkedAt: "2026-04-24T10:02:00.000Z",
-        deletions: 0,
-        fileCount: 1,
-        files: [
-          {
-            additions: 2,
-            deletions: 0,
-            path: "src/index.ts",
-            status: "modified"
-          }
-        ],
-        status: "changed"
-      },
+      snapshot: sourceHarvest.snapshot,
+      sourceChangeSummary: sourceHarvest.summary,
       status: "pending_review",
       turnId: "turn-source-review",
       updatedAt: "2026-04-24T10:02:00.000Z"
@@ -1818,14 +1833,15 @@ describe("RunnerService", () => {
       receivedAt: "2026-04-24T10:06:00.000Z"
     });
 
-    const [candidateRecord, conversationRecord, sessionRecord] =
+    const [candidateRecord, conversationRecord, sessionRecord, sourceHistory] =
       await Promise.all([
         readSourceChangeCandidateRecord(
           statePaths,
           "source-change-review-alpha"
         ),
         readConversationRecord(statePaths, "conv-source-review"),
-        readSessionRecord(statePaths, "session-source-review")
+        readSessionRecord(statePaths, "session-source-review"),
+        listSourceHistoryRecords(statePaths)
       ]);
 
     expect(result.handled).toBe(true);
@@ -1838,12 +1854,28 @@ describe("RunnerService", () => {
       },
       status: "accepted"
     });
-    expect(observedSourceReviews).toEqual([
+    expect(candidateRecord?.application).toMatchObject({
+      appliedBy: "reviewer-it",
+      mode: "already_in_workspace",
+      sourceHistoryId: "source-history-source-change-review-alpha"
+    });
+    expect(sourceHistory).toEqual([
       expect.objectContaining({
+        appliedBy: "reviewer-it",
         candidateId: "source-change-review-alpha",
-        status: "accepted"
+        mode: "already_in_workspace",
+        sourceHistoryId: "source-history-source-change-review-alpha"
       })
     ]);
+    expect(observedSourceReviews).toHaveLength(1);
+    const observedSourceReview: SourceChangeCandidateRecord =
+      observedSourceReviews[0]!;
+
+    expect(observedSourceReview.candidateId).toBe("source-change-review-alpha");
+    expect(observedSourceReview.status).toBe("accepted");
+    expect(observedSourceReview.application?.sourceHistoryId).toBe(
+      "source-history-source-change-review-alpha"
+    );
     expect(conversationRecord?.lastInboundMessageId).toBe(
       sourceReviewMessageId
     );

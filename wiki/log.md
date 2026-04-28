@@ -4010,3 +4010,14 @@ and the Host transport plane state.
 CLI status detail lines and Studio Host Status now expose those relay rows, so
 operators can inspect federated transport configuration without dropping to raw
 logs.
+
+## [2026-04-28] implementation | Moved accepted source review application into the runner
+
+Added `references/330-runner-owned-source-history-application-slice.md`. When a
+signed User Node `source_change.review` accepts a source candidate, the owning
+runner now records source history in runner-owned state if the shadow git
+snapshot and source workspace are compatible.
+
+The runner republishes the candidate with `candidate.application`, and the
+process-runner smoke now requires that projected source-history application
+evidence after User Client source review.

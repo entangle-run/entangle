@@ -84,6 +84,7 @@ import {
   prepareSourceChangeHarvest
 } from "./source-change-harvester.js";
 import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js";
+import { applyAcceptedSourceChangeCandidate } from "./source-history.js";
 import { syncWikiRepository } from "./wiki-repository.js";
 import type {
   RunnerInboundEnvelope,
@@ -2317,8 +2318,31 @@ export class RunnerService {
       updatedAt: input.envelope.receivedAt
     };
 
-    await writeSourceChangeCandidateRecord(input.statePaths, reviewedCandidate);
-    await this.publishSourceChangeRefObservation(reviewedCandidate);
+    let nextCandidate = reviewedCandidate;
+
+    if (reviewedCandidate.status === "accepted") {
+      const application = await applyAcceptedSourceChangeCandidate({
+        appliedAt: input.envelope.receivedAt,
+        appliedBy: input.envelope.message.fromNodeId,
+        candidate: reviewedCandidate,
+        context: this.context,
+        reason: sourceChangeReview.reason,
+        statePaths: input.statePaths
+      });
+
+      if (application.applied) {
+        nextCandidate = application.candidate;
+      } else {
+        await writeSourceChangeCandidateRecord(
+          input.statePaths,
+          reviewedCandidate
+        );
+      }
+    } else {
+      await writeSourceChangeCandidateRecord(input.statePaths, reviewedCandidate);
+    }
+
+    await this.publishSourceChangeRefObservation(nextCandidate);
 
     return {
       conversation: input.conversation,

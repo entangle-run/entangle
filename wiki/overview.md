@@ -92,8 +92,9 @@ The most accurate current description is:
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate
-  list/detail/diff/file, signed source-candidate review, approval, and session
-  read APIs without live model credentials;
+  list/detail/diff/file, signed source-candidate review, runner-owned
+  source-history application, approval, and session read APIs without live model
+  credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -106,9 +107,10 @@ human graph participants. It can inspect projected inbox state, publish
 User Node messages, respond to approval requests, review artifact/wiki/source
 evidence, use local JSON APIs for selected conversation detail and message
 publishing, and submit signed source-candidate accept/reject messages that the
-owning runner applies to runner-owned candidate state. A first dedicated
-`apps/user-client` app now consumes that runtime JSON API, and the runtime can
-serve static User Client assets from `ENTANGLE_USER_CLIENT_STATIC_DIR`. The
+owning runner applies to runner-owned candidate and source-history state. A
+first dedicated `apps/user-client` app now consumes that runtime JSON API, and
+the runtime can serve static User Client assets from
+`ENTANGLE_USER_CLIENT_STATIC_DIR`. The
 federated dev runner image now bundles that built app, and the Docker launcher
 adapter can publish a browser-openable User Client port for User Node runtime
 contexts. The dedicated app now reaches runtime-local JSON routes for artifact

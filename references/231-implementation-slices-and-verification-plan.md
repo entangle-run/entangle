@@ -257,6 +257,7 @@ Implementation record:
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
+- [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 
 Verification:
 
@@ -316,6 +317,10 @@ Current status:
 - runtime artifact history/diff GET routes can fall back to projected artifact
   records with explicit unavailable reasons when no backend-resolved repository
   checkout is attached to Host;
+- accepted signed source-candidate reviews now make the owning runner record a
+  runner-local source-history application and emit the updated candidate through
+  `source_change.ref`, so Host projection can see `candidate.application`
+  without Host mutating runner-owned files;
 - deeper artifact history computation, wiki publication, and mutation endpoints
   still need projection-backed or backend-resolved replacement.
 
@@ -398,8 +403,9 @@ Current status:
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey, and now drives the primary user publish,
-  selected conversation inspection, and approval response through the running
-  User Client JSON API;
+  selected conversation inspection, signed source-candidate review, runner-owned
+  source-history application, and approval response through the running User
+  Client JSON API;
 - a first dedicated `apps/user-client` app exists and consumes the Human
   Interface Runtime JSON API for runtime state, conversations, message publish,
   and approval response;
@@ -439,6 +445,7 @@ Implementation record:
 - [321-signed-source-candidate-review-slice.md](321-signed-source-candidate-review-slice.md)
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 - [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
+- [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 
 Verification:
 
@@ -463,6 +470,7 @@ Implementation record:
 - [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 - [319-projected-memory-wiki-read-api-slice.md](319-projected-memory-wiki-read-api-slice.md)
 - [320-projected-artifact-history-diff-read-api-slice.md](320-projected-artifact-history-diff-read-api-slice.md)
+- [330-runner-owned-source-history-application-slice.md](330-runner-owned-source-history-application-slice.md)
 
 Verification:
 

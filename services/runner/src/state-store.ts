@@ -8,7 +8,8 @@ import type {
   RunnerTurnRecord,
   SessionCancellationRequestRecord,
   SessionRecord,
-  SourceChangeCandidateRecord
+  SourceChangeCandidateRecord,
+  SourceHistoryRecord
 } from "@entangle/types";
 import {
   artifactRecordSchema,
@@ -18,7 +19,8 @@ import {
   runnerTurnRecordSchema,
   sessionCancellationRequestRecordSchema,
   sessionRecordSchema,
-  sourceChangeCandidateRecordSchema
+  sourceChangeCandidateRecordSchema,
+  sourceHistoryRecordSchema
 } from "@entangle/types";
 
 export type RunnerStatePaths = {
@@ -29,6 +31,7 @@ export type RunnerStatePaths = {
   sessionCancellationsRoot: string;
   sessionsRoot: string;
   sourceChangeCandidatesRoot: string;
+  sourceHistoryRoot: string;
   turnsRoot: string;
 };
 
@@ -63,6 +66,7 @@ export function buildRunnerStatePaths(runtimeRoot: string): RunnerStatePaths {
     sessionCancellationsRoot: path.join(runtimeRoot, "session-cancellations"),
     sessionsRoot: path.join(runtimeRoot, "sessions"),
     sourceChangeCandidatesRoot: path.join(runtimeRoot, "source-change-candidates"),
+    sourceHistoryRoot: path.join(runtimeRoot, "source-history"),
     turnsRoot: path.join(runtimeRoot, "turns")
   };
 }
@@ -80,6 +84,7 @@ export async function ensureRunnerStatePaths(
     ensureDirectory(statePaths.sessionCancellationsRoot),
     ensureDirectory(statePaths.sessionsRoot),
     ensureDirectory(statePaths.sourceChangeCandidatesRoot),
+    ensureDirectory(statePaths.sourceHistoryRoot),
     ensureDirectory(statePaths.turnsRoot)
   ]);
 
@@ -130,6 +135,13 @@ function sourceChangeCandidateRecordPath(
   candidateId: string
 ): string {
   return path.join(statePaths.sourceChangeCandidatesRoot, `${candidateId}.json`);
+}
+
+function sourceHistoryRecordPath(
+  statePaths: RunnerStatePaths,
+  sourceHistoryId: string
+): string {
+  return path.join(statePaths.sourceHistoryRoot, `${sourceHistoryId}.json`);
 }
 
 function focusedRegisterStatePath(statePaths: RunnerStatePaths): string {
@@ -464,6 +476,51 @@ export async function listSourceChangeCandidateRecords(
       sourceChangeCandidateRecordSchema.parse(
         await readJsonFile<unknown>(
           path.join(statePaths.sourceChangeCandidatesRoot, fileName)
+        )
+      )
+    )
+  );
+}
+
+export async function readSourceHistoryRecord(
+  statePaths: RunnerStatePaths,
+  sourceHistoryId: string
+): Promise<SourceHistoryRecord | undefined> {
+  const filePath = sourceHistoryRecordPath(statePaths, sourceHistoryId);
+
+  if (!(await pathExists(filePath))) {
+    return undefined;
+  }
+
+  return sourceHistoryRecordSchema.parse(await readJsonFile(filePath));
+}
+
+export async function writeSourceHistoryRecord(
+  statePaths: RunnerStatePaths,
+  record: SourceHistoryRecord
+): Promise<void> {
+  await writeJsonFile(
+    sourceHistoryRecordPath(statePaths, record.sourceHistoryId),
+    sourceHistoryRecordSchema.parse(record)
+  );
+}
+
+export async function listSourceHistoryRecords(
+  statePaths: RunnerStatePaths
+): Promise<SourceHistoryRecord[]> {
+  if (!(await pathExists(statePaths.sourceHistoryRoot))) {
+    return [];
+  }
+
+  const fileNames = (await readdir(statePaths.sourceHistoryRoot))
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) =>
+      sourceHistoryRecordSchema.parse(
+        await readJsonFile<unknown>(
+          path.join(statePaths.sourceHistoryRoot, fileName)
         )
       )
     )

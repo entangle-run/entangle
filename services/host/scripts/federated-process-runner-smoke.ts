@@ -1894,7 +1894,8 @@ async function main(): Promise<void> {
           );
 
         return inspection.candidate.status === "accepted" &&
-          inspection.candidate.review?.decidedBy === "user"
+          inspection.candidate.review?.decidedBy === "user" &&
+          inspection.candidate.application?.sourceHistoryId
           ? inspection.candidate
           : undefined;
       },
@@ -1903,7 +1904,8 @@ async function main(): Promise<void> {
     printPass(
       "user-node-source-change-review",
       `candidate=${reviewedBuilderSourceCandidate.candidateId}; ` +
-        `status=${reviewedBuilderSourceCandidate.status}`
+        `status=${reviewedBuilderSourceCandidate.status}; ` +
+        `sourceHistory=${reviewedBuilderSourceCandidate.application?.sourceHistoryId}`
     );
 
     const projectedBuilderApproval = await waitFor(
