@@ -6460,6 +6460,134 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("preserves projected remote session activity during local runtime synchronization", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+    const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);
+
+    try {
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const authority = hostAuthorityInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/authority"
+          })
+        ).json()
+      );
+      const runnerPubkey =
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+      const { recordRunnerHello, recordSessionUpdatedObservation } =
+        await import("./state.js");
+      const sessionActivityRoot = path.join(
+        createdDirectories[0]!,
+        "host",
+        "observed",
+        "session-activity"
+      );
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["external_process"],
+          labels: ["remote"],
+          maxAssignments: 1,
+          runtimeKinds: ["agent_runner"],
+          supportsLocalWorkspace: true,
+          supportsNip59: true
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-28T08:00:00.000Z",
+        nonce: "runner-remote-nonce",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-remote",
+        runnerPubkey
+      });
+      await recordSessionUpdatedObservation({
+        eventType: "session.updated",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        nodeId: "worker-it",
+        observedAt: "2026-04-28T08:00:10.000Z",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-remote",
+        runnerPubkey,
+        session: {
+          activeConversationIds: ["conv-remote"],
+          graphId: "team-alpha",
+          intent: "Remote runner work.",
+          lastMessageType: "task.request",
+          openedAt: "2026-04-28T08:00:00.000Z",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: ["artifact-remote"],
+          sessionId: "session-remote",
+          status: "active",
+          traceId: "trace-remote",
+          updatedAt: "2026-04-28T08:00:10.000Z",
+          waitingApprovalIds: []
+        },
+        sessionId: "session-remote",
+        status: "active",
+        updatedAt: "2026-04-28T08:00:10.000Z"
+      });
+      await writeJsonFile(
+        path.join(sessionActivityRoot, "worker-it--session-stale.json"),
+        {
+          activeConversationIds: [],
+          fingerprint: "stale",
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          ownerNodeId: "worker-it",
+          rootArtifactIds: [],
+          schemaVersion: "1",
+          sessionId: "session-stale",
+          source: "runtime_filesystem",
+          status: "active",
+          traceId: "trace-stale",
+          updatedAt: "2026-04-28T07:59:00.000Z"
+        }
+      );
+
+      const listResponse = await server.inject({
+        method: "GET",
+        url: "/v1/sessions"
+      });
+
+      expect(listResponse.statusCode).toBe(200);
+      const sessionList = sessionListResponseSchema.parse(listResponse.json());
+      expect(sessionList.sessions).toContainEqual(
+        expect.objectContaining({
+          activeConversationIds: ["conv-remote"],
+          graphId: "team-alpha",
+          nodeIds: ["worker-it"],
+          rootArtifactIds: ["artifact-remote"],
+          sessionId: "session-remote",
+          traceIds: ["trace-remote"]
+        })
+      );
+      expect(
+        JSON.parse(
+          await readFile(
+            path.join(sessionActivityRoot, "worker-it--session-remote.json"),
+            "utf8"
+          )
+        )
+      ).toMatchObject({
+        sessionId: "session-remote",
+        source: "observation_event"
+      });
+      await expect(
+        stat(path.join(sessionActivityRoot, "worker-it--session-stale.json"))
+      ).rejects.toThrow();
+    } finally {
+      await server.close();
+    }
+  });
+
   it("lists and inspects persisted runtime sessions through the host surface", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(createdDirectories[0]!);

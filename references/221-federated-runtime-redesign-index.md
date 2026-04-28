@@ -105,6 +105,7 @@ same-machine slice records.
 - [302-runner-heartbeat-loop-slice.md](302-runner-heartbeat-loop-slice.md)
 - [303-runner-heartbeat-config-smoke-slice.md](303-runner-heartbeat-config-smoke-slice.md)
 - [304-deployment-index-profile-cleanup-slice.md](304-deployment-index-profile-cleanup-slice.md)
+- [305-observed-session-projection-pruning-slice.md](305-observed-session-projection-pruning-slice.md)
 
 ## Audited Scope
 
@@ -259,6 +260,11 @@ The repository is not fully federated:
 - the process-runner smoke now validates Host-projected heartbeats from the
   agent runner and both User Node runners by writing a short interval into the
   temporary join configs;
+- observed activity records now distinguish `observation_event` from
+  `runtime_filesystem`, local runtime synchronization preserves signed
+  observation-event activity records, and the high-level Host session list can
+  surface projected remote sessions that have no Host-readable runner
+  filesystem record;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;

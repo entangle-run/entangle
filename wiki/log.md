@@ -3729,3 +3729,14 @@ Host-runner federation and stable User Node signing as the largest current
 gaps. The current gap summary now reflects the live joined-runner/User Client
 smoke path and focuses remaining work on projection-backed deep detail APIs,
 Docker launcher rebasing, and the multi-machine distributed proof.
+
+## [2026-04-28] implementation | Preserved observed remote session projection
+
+Added `references/305-observed-session-projection-pruning-slice.md`. Observed
+activity records now distinguish signed `observation_event` projection records
+from same-workstation `runtime_filesystem` compatibility imports.
+
+Local runtime activity synchronization now prunes stale filesystem-imported
+activity without deleting signed remote observations, and the Host session list
+can surface projected remote sessions that do not have a Host-readable runner
+session file.

@@ -338,6 +338,7 @@ import {
   type PolicyResourceScope,
   type HostSessionConsistencyFinding,
   type HostSessionConsistencyFindingCode,
+  type HostSessionSummary,
   type SessionInspectionResponse,
   type SessionCancellationMutationRequest,
   type SessionCancellationResponse,
@@ -2503,7 +2504,9 @@ export async function recordSessionUpdatedObservation(
     ownerNodeId: sessionRecord.ownerNodeId,
     rootArtifactIds: sessionRecord.rootArtifactIds,
     schemaVersion: "1",
+    session: sessionRecord,
     sessionId: sessionRecord.sessionId,
+    source: "observation_event",
     status: sessionRecord.status,
     traceId: sessionRecord.traceId,
     updatedAt: sessionRecord.updatedAt
@@ -2573,6 +2576,7 @@ export async function recordConversationUpdatedObservation(
     peerNodeId: conversationRecord.peerNodeId,
     schemaVersion: "1",
     sessionId: conversationRecord.sessionId,
+    source: "observation_event",
     status: conversationRecord.status,
     updatedAt: conversationRecord.updatedAt
   });
@@ -2650,6 +2654,7 @@ export async function recordTurnUpdatedObservation(
     producedArtifactIds: turnRecord.producedArtifactIds,
     schemaVersion: "1",
     sessionId: turnRecord.sessionId,
+    source: "observation_event",
     sourceChangeCandidateIds: turnRecord.sourceChangeCandidateIds,
     ...(turnRecord.sourceChangeSummary
       ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
@@ -4415,6 +4420,38 @@ async function removeJsonFilesExcept(
   );
 }
 
+async function removeRuntimeFilesystemObservedActivityFilesExcept(
+  directoryPath: string,
+  allowedBaseNames: Set<string>
+): Promise<void> {
+  if (!(await pathExists(directoryPath))) {
+    return;
+  }
+
+  const entries = await readdir(directoryPath, { withFileTypes: true });
+
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .filter((entry) => !allowedBaseNames.has(entry.name.slice(0, -".json".length)))
+      .map(async (entry) => {
+        const filePath = path.join(directoryPath, entry.name);
+        const persisted = await readJsonFile<unknown>(filePath).catch(() => undefined);
+
+        if (
+          persisted &&
+          typeof persisted === "object" &&
+          !Array.isArray(persisted) &&
+          (persisted as { source?: unknown }).source === "observation_event"
+        ) {
+          return;
+        }
+
+        await rm(filePath, { force: true });
+      })
+  );
+}
+
 function buildGitRepositoryTargetRecordId(input: {
   gitServiceRef: string;
   namespace: string;
@@ -5279,6 +5316,78 @@ async function readObservedArtifactActivityRecord(
   }
 
   return observedArtifactActivityRecordSchema.parse(await readJsonFile(filePath));
+}
+
+async function listObservedSessionActivityRecords(): Promise<
+  ObservedSessionActivityRecord[]
+> {
+  if (!(await pathExists(observedSessionActivityRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedSessionActivityRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        observedSessionActivityRecordSchema.parse(
+          await readJsonFile(path.join(observedSessionActivityRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.sessionId}`.localeCompare(
+      `${right.nodeId}--${right.sessionId}`
+    )
+  );
+}
+
+async function listObservedConversationActivityRecords(): Promise<
+  ObservedConversationActivityRecord[]
+> {
+  if (!(await pathExists(observedConversationActivityRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedConversationActivityRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        observedConversationActivityRecordSchema.parse(
+          await readJsonFile(path.join(observedConversationActivityRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.conversationId}`.localeCompare(
+      `${right.nodeId}--${right.conversationId}`
+    )
+  );
+}
+
+async function listObservedApprovalActivityRecords(): Promise<
+  ObservedApprovalActivityRecord[]
+> {
+  if (!(await pathExists(observedApprovalActivityRoot))) {
+    return [];
+  }
+
+  const records = await Promise.all(
+    (await readdir(observedApprovalActivityRoot))
+      .filter((entry) => entry.endsWith(".json"))
+      .map(async (entry) =>
+        observedApprovalActivityRecordSchema.parse(
+          await readJsonFile(path.join(observedApprovalActivityRoot, entry))
+        )
+      )
+  );
+
+  return records.sort((left, right) =>
+    `${left.nodeId}--${left.approvalId}`.localeCompare(
+      `${right.nodeId}--${right.approvalId}`
+    )
+  );
 }
 
 async function listObservedRuntimeNodeIds(): Promise<string[]> {
@@ -13537,7 +13646,9 @@ async function synchronizeSessionActivityObservation(input: {
     ownerNodeId: sessionRecord.ownerNodeId,
     rootArtifactIds: sessionRecord.rootArtifactIds,
     schemaVersion: "1",
+    session: sessionRecord,
     sessionId: sessionRecord.sessionId,
+    source: "runtime_filesystem",
     status: sessionRecord.status,
     traceId: sessionRecord.traceId,
     updatedAt: sessionRecord.updatedAt
@@ -13611,6 +13722,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
     producedArtifactIds: turnRecord.producedArtifactIds,
     schemaVersion: "1",
     sessionId: turnRecord.sessionId,
+    source: "runtime_filesystem",
     sourceChangeCandidateIds: turnRecord.sourceChangeCandidateIds,
     ...(turnRecord.sourceChangeSummary
       ? { sourceChangeSummary: turnRecord.sourceChangeSummary }
@@ -13689,6 +13801,7 @@ async function synchronizeConversationActivityObservation(input: {
     peerNodeId: conversationRecord.peerNodeId,
     schemaVersion: "1",
     sessionId: conversationRecord.sessionId,
+    source: "runtime_filesystem",
     status: conversationRecord.status,
     updatedAt: conversationRecord.updatedAt
   });
@@ -13747,6 +13860,7 @@ async function synchronizeApprovalActivityObservation(input: {
     requestedByNodeId: approvalRecord.requestedByNodeId,
     schemaVersion: "1",
     sessionId: approvalRecord.sessionId,
+    source: "runtime_filesystem",
     status: approvalRecord.status,
     updatedAt: approvalRecord.updatedAt
   });
@@ -13859,6 +13973,7 @@ async function synchronizeArtifactActivityObservation(input: {
     retrievalState: artifactRecord.retrieval?.state,
     schemaVersion: "1",
     sessionId: artifactRecord.ref.sessionId ?? turnRecord?.sessionId,
+    source: "runtime_filesystem",
     turnId: artifactRecord.turnId,
     updatedAt: artifactRecord.updatedAt
   });
@@ -13998,14 +14113,26 @@ async function synchronizeRuntimeActivityEvents(input: {
     }
   }
 
-  await removeJsonFilesExcept(observedApprovalActivityRoot, activeApprovalActivityIds);
-  await removeJsonFilesExcept(observedArtifactActivityRoot, activeArtifactActivityIds);
-  await removeJsonFilesExcept(
+  await removeRuntimeFilesystemObservedActivityFilesExcept(
+    observedApprovalActivityRoot,
+    activeApprovalActivityIds
+  );
+  await removeRuntimeFilesystemObservedActivityFilesExcept(
+    observedArtifactActivityRoot,
+    activeArtifactActivityIds
+  );
+  await removeRuntimeFilesystemObservedActivityFilesExcept(
     observedConversationActivityRoot,
     activeConversationActivityIds
   );
-  await removeJsonFilesExcept(observedSessionActivityRoot, activeSessionActivityIds);
-  await removeJsonFilesExcept(observedRunnerTurnActivityRoot, activeTurnActivityIds);
+  await removeRuntimeFilesystemObservedActivityFilesExcept(
+    observedSessionActivityRoot,
+    activeSessionActivityIds
+  );
+  await removeRuntimeFilesystemObservedActivityFilesExcept(
+    observedRunnerTurnActivityRoot,
+    activeTurnActivityIds
+  );
 }
 
 async function pruneRuntimeRecoveryHistory(
@@ -14671,10 +14798,170 @@ function resolveLatestSessionMessageType(
     )[0]?.session.lastMessageType;
 }
 
+function countObservedApprovalStatuses(
+  records: ObservedApprovalActivityRecord[]
+): ApprovalStatusCounts {
+  const counts = approvalStatusCountsSchema.parse({});
+
+  for (const record of records) {
+    counts[record.status] += 1;
+  }
+
+  return counts;
+}
+
+function countObservedConversationStatuses(
+  records: ObservedConversationActivityRecord[]
+): ConversationStatusCounts {
+  const counts = conversationStatusCountsSchema.parse({});
+
+  for (const record of records) {
+    counts[record.status] += 1;
+  }
+
+  return counts;
+}
+
+function resolveLatestObservedSessionMessageType(
+  records: ObservedSessionActivityRecord[]
+): SessionRecord["lastMessageType"] {
+  return [...records]
+    .filter((record) => record.session?.lastMessageType)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0]
+    ?.session?.lastMessageType;
+}
+
+async function listProjectedSessionSummaries(): Promise<HostSessionSummary[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph) {
+    return [];
+  }
+
+  const activeNodeIds = new Set(graph.nodes.map((node) => node.nodeId));
+  const [sessionRecords, conversationRecords, approvalRecords] =
+    await Promise.all([
+      listObservedSessionActivityRecords(),
+      listObservedConversationActivityRecords(),
+      listObservedApprovalActivityRecords()
+    ]);
+  const scopedSessionRecords = sessionRecords.filter(
+    (record) =>
+      record.graphId === graph.graphId &&
+      activeNodeIds.has(record.nodeId) &&
+      record.session?.graphId === graph.graphId
+  );
+
+  if (scopedSessionRecords.length === 0) {
+    return [];
+  }
+
+  const scopedConversationRecords = conversationRecords.filter(
+    (record) =>
+      record.graphId === graph.graphId && activeNodeIds.has(record.nodeId)
+  );
+  const scopedApprovalRecords = approvalRecords.filter(
+    (record) =>
+      record.graphId === graph.graphId && activeNodeIds.has(record.nodeId)
+  );
+  const recordsBySessionId = new Map<string, ObservedSessionActivityRecord[]>();
+
+  for (const record of scopedSessionRecords) {
+    const records = recordsBySessionId.get(record.sessionId) ?? [];
+    records.push(record);
+    recordsBySessionId.set(record.sessionId, records);
+  }
+
+  return Array.from(recordsBySessionId.entries()).map(([sessionId, records]) => {
+    const sessionRecordsForSummary = records
+      .map((record) => record.session)
+      .filter((sessionRecord): sessionRecord is SessionRecord =>
+        Boolean(sessionRecord)
+      );
+    const [firstSessionRecord] = sessionRecordsForSummary;
+
+    if (!firstSessionRecord) {
+      throw new Error(
+        `Cannot build a projected host session summary for session '${sessionId}' without a session record.`
+      );
+    }
+
+    const graphIds = new Set(
+      sessionRecordsForSummary.map((sessionRecord) => sessionRecord.graphId)
+    );
+
+    if (graphIds.size !== 1) {
+      throw new Error(
+        `Session '${sessionId}' contains inconsistent graph ids across projected session records.`
+      );
+    }
+
+    const latestMessageType = resolveLatestObservedSessionMessageType(records);
+    const approvalStatusCounts = countObservedApprovalStatuses(
+      scopedApprovalRecords.filter((record) => record.sessionId === sessionId)
+    );
+    const conversationStatusCounts = countObservedConversationStatuses(
+      scopedConversationRecords.filter((record) => record.sessionId === sessionId)
+    );
+    const summaryInput = {
+      activeConversationIds: uniqueSortedIdentifiers(
+        sessionRecordsForSummary.flatMap(
+          (sessionRecord) => sessionRecord.activeConversationIds
+        )
+      ),
+      approvalStatusCounts,
+      conversationStatusCounts,
+      graphId: firstSessionRecord.graphId,
+      nodeIds: records.map((record) => record.nodeId),
+      nodeStatuses: records.map((record) => ({
+        nodeId: record.nodeId,
+        status: record.status
+      })),
+      rootArtifactIds: uniqueSortedIdentifiers(
+        sessionRecordsForSummary.flatMap(
+          (sessionRecord) => sessionRecord.rootArtifactIds
+        )
+      ),
+      sessionId,
+      traceIds: uniqueSortedIdentifiers(
+        sessionRecordsForSummary.map((sessionRecord) => sessionRecord.traceId)
+      ),
+      waitingApprovalIds: uniqueSortedIdentifiers(
+        sessionRecordsForSummary.flatMap(
+          (sessionRecord) => sessionRecord.waitingApprovalIds
+        )
+      ),
+      updatedAt: records
+        .map((record) => record.updatedAt)
+        .sort((left, right) => right.localeCompare(left))[0]
+    };
+
+    return hostSessionSummarySchema.parse(
+      latestMessageType
+        ? {
+            ...summaryInput,
+            latestMessageType
+          }
+        : summaryInput
+    );
+  });
+}
+
 export async function listSessions(): Promise<SessionListResponse> {
   const sessions = await collectSessionInspectionNodes();
-  const summaries = Array.from(sessions.entries())
-    .map(([sessionId, nodes]) => buildSessionSummary(sessionId, nodes))
+  const filesystemSummaries = Array.from(sessions.entries()).map(
+    ([sessionId, nodes]) => buildSessionSummary(sessionId, nodes)
+  );
+  const projectedSummaries = await listProjectedSessionSummaries();
+  const filesystemSessionIds = new Set(
+    filesystemSummaries.map((summary) => summary.sessionId)
+  );
+  const summaries = [
+    ...filesystemSummaries,
+    ...projectedSummaries.filter(
+      (summary) => !filesystemSessionIds.has(summary.sessionId)
+    )
+  ]
     .sort((left, right) => {
       const updatedAtOrdering = right.updatedAt.localeCompare(left.updatedAt);
 

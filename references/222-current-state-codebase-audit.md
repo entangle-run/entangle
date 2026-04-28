@@ -44,8 +44,11 @@ or stable User Node identity.
 - it resolves non-user peer pubkeys but intentionally leaves user peer pubkeys
   absent;
 - it starts/stops Docker runners through `RuntimeBackend`;
-- it observes runtime turns, sessions, approvals, artifacts, source history,
-  and wiki publications by reading `context.workspace.runtimeRoot`;
+- it still observes several deep runtime details by reading
+  `context.workspace.runtimeRoot`, but observed activity records now mark
+  whether they came from signed observation events or local filesystem
+  compatibility sync, and local pruning preserves signed observation-event
+  records;
 - it records approval decisions by directly writing approval JSON under the
   target runtime root.
 

@@ -62,6 +62,10 @@ The most accurate current description is:
 - the process-runner smoke now proves joined agent and User Node runners over a
   live relay with signed messages, signed approvals, projected heartbeats, and
   separate Host/runner state roots;
+- Host activity projection now preserves runner-signed observation-event
+  records during local compatibility synchronization, and the high-level
+  session list can surface remote projected sessions without a Host-readable
+  runner filesystem record;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, Docker launcher rebasing onto the assignment path, and the full
   multi-machine distributed proof.

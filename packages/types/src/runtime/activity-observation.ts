@@ -21,10 +21,16 @@ import {
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
   runnerTriggerKindSchema,
+  sessionRecordSchema,
   sessionLifecycleStateSchema,
   sourceChangeSummarySchema
 } from "./session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
+
+export const observedActivitySourceSchema = z.enum([
+  "observation_event",
+  "runtime_filesystem"
+]);
 
 export const observedSessionActivityRecordSchema = z.object({
   activeConversationIds: z.array(identifierSchema).default([]),
@@ -35,7 +41,9 @@ export const observedSessionActivityRecordSchema = z.object({
   ownerNodeId: identifierSchema,
   rootArtifactIds: z.array(identifierSchema).default([]),
   schemaVersion: z.literal("1"),
+  session: sessionRecordSchema.optional(),
   sessionId: identifierSchema,
+  source: observedActivitySourceSchema.default("runtime_filesystem"),
   status: sessionLifecycleStateSchema,
   traceId: identifierSchema,
   updatedAt: nonEmptyStringSchema
@@ -56,6 +64,7 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   producedArtifactIds: z.array(identifierSchema).default([]),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema.optional(),
+  source: observedActivitySourceSchema.default("runtime_filesystem"),
   sourceChangeCandidateIds: z.array(identifierSchema).default([]),
   sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
@@ -76,6 +85,7 @@ export const observedConversationActivityRecordSchema = z.object({
   peerNodeId: identifierSchema,
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema,
+  source: observedActivitySourceSchema.default("runtime_filesystem"),
   status: conversationLifecycleStateSchema,
   updatedAt: nonEmptyStringSchema
 });
@@ -93,6 +103,7 @@ export const observedApprovalActivityRecordSchema = z.object({
   resource: policyResourceScopeSchema.optional(),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema,
+  source: observedActivitySourceSchema.default("runtime_filesystem"),
   status: approvalLifecycleStateSchema,
   updatedAt: nonEmptyStringSchema
 });
@@ -110,6 +121,7 @@ export const observedArtifactActivityRecordSchema = z.object({
   retrievalState: artifactRetrievalStateSchema.optional(),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema.optional(),
+  source: observedActivitySourceSchema.default("runtime_filesystem"),
   turnId: identifierSchema.optional(),
   updatedAt: nonEmptyStringSchema
 });
@@ -117,6 +129,7 @@ export const observedArtifactActivityRecordSchema = z.object({
 export type ObservedSessionActivityRecord = z.infer<
   typeof observedSessionActivityRecordSchema
 >;
+export type ObservedActivitySource = z.infer<typeof observedActivitySourceSchema>;
 export type ObservedRunnerTurnActivityRecord = z.infer<
   typeof observedRunnerTurnActivityRecordSchema
 >;

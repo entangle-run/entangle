@@ -21,7 +21,11 @@ turn execution, so those projection records are no longer only test-fed.
 Observed `source_change.ref` records now include bounded source-change
 summaries. Observed `artifact.ref` records can now include bounded text
 previews, and Host projection exposes those previews to the User Client without
-reading runner disk. The deep runtime APIs still need to be moved off local file
+reading runner disk. Observed activity records now carry a source marker so
+local filesystem synchronization can prune stale local imports without deleting
+records sourced from signed observations. The Host session list now also has a
+projection fallback for remote sessions that have no Host-readable runner
+filesystem record. The deep runtime APIs still need to be moved off local file
 reads.
 
 ## Target Model
@@ -74,6 +78,12 @@ and refs so Host can inspect global state without reading runner disk.
   writes local lifecycle state. Session, conversation, turn phase, artifact ref,
   artifact ref with bounded preview, source-change ref with bounded summary, and
   wiki ref emissions now exist.
+- Preserve observation-event activity records during local compatibility
+  synchronization and treat runtime-file imports as the only activity records
+  eligible for local stale-record pruning.
+- Continue replacing session, approval, turn, source, and wiki detail endpoints
+  with projection-backed read models. The high-level session list now has a
+  projection fallback; deep session inspection remains local-detail backed.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 
