@@ -2,13 +2,14 @@
 
 ## Current Repo Truth
 
-The repo already follows a slice discipline: each implemented Local capability
-has a reference record, tests, wiki log entry, and usually a coherent commit.
-The root `pnpm verify` gate runs lint, typecheck, and tests. Local smokes cover
-Compose, diagnostics, reliability, disposable runtime, and preview demo.
+The repo already follows a slice discipline: each implemented runtime
+capability has a reference record, tests, wiki log entry, and usually a
+coherent commit. The root `pnpm verify` gate runs lint, typecheck, and tests.
+Same-machine deployment smokes cover Compose, diagnostics, reliability,
+disposable runtime, and preview demo.
 
-The pivot is larger than the remaining Local GA work. It must proceed in large
-but controlled slices with audit loops after each slice.
+The federated pivot is larger than the earlier same-machine delivery plan. It
+must proceed in large but controlled slices with audit loops after each slice.
 
 ## Target Model
 
@@ -214,6 +215,7 @@ Implementation record:
 - [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
 - [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 - [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
+- [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
 
 Current status:
 
@@ -234,14 +236,14 @@ Current status:
   selected thread metadata, `/api/state`, recorded inbound/outbound messages,
   approval response controls, approval resource rendering, source-change diff
   preview, scoped approval-response context, artifact-ref rendering, bounded
-  artifact preview, and message publishing that preserves selected
-  conversation/session context;
+  artifact preview, delivery labels, and message publishing that preserves
+  selected conversation/session context;
 - the process-boundary smoke now proves two User Nodes assigned to two distinct
   `human_interface` runner processes, each with its own User Client endpoint
   and stable publishing pubkey;
 - final bundled User Client application, projection-backed artifact/source
-  preview, richer source/wiki review controls, and message delivery/read state
-  remain open.
+  preview, richer source/wiki review controls, delivery retry state, and read
+  receipts remain open.
 
 Verification:
 

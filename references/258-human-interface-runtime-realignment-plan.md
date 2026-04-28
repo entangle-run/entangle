@@ -227,7 +227,9 @@ separate bundled app, but it now has a User Node inbox API, conversation list,
 selected thread metadata, recorded inbound/outbound messages, `/api/state`, and
 artifact-ref rendering plus bounded artifact preview, source-change diff
 preview, scoped approval-response context, and message/approval publication
-that keeps the selected conversation/session context.
+that keeps the selected conversation/session context. Message history now also
+shows derived delivery labels for outbound relay publish coverage and inbound
+User Client receipt.
 
 Impacted modules:
 
@@ -361,7 +363,7 @@ The fastest path to a product the user can test is:
 6. Add a second-user-node smoke to prove distributed human placement. Done for
    the same-machine process-boundary path.
 7. Expand richer source/wiki review actions, projection-backed artifact/source
-   preview, delivery/read state, and OpenCode parity.
+   preview, delivery retry state, read receipts, and OpenCode parity.
 
 This order avoids polishing admin surfaces before the product has the missing
 human-node runtime.

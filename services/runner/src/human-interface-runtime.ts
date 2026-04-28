@@ -629,6 +629,23 @@ function renderArtifactRefs(message: UserNodeMessageRecord): string {
   </div>`;
 }
 
+function renderMessageDelivery(message: UserNodeMessageRecord): string {
+  if (message.direction === "inbound") {
+    return `<div class="message-meta">delivery received by User Client</div>`;
+  }
+
+  const targetRelayCount =
+    message.relayUrls.length > 0
+      ? message.relayUrls.length
+      : message.publishedRelays.length;
+  const deliveryLabel =
+    message.publishedRelays.length > 0
+      ? `published ${message.publishedRelays.length}/${targetRelayCount} relays`
+      : "publish status unknown";
+
+  return `<div class="message-meta">delivery ${escapeHtml(deliveryLabel)}</div>`;
+}
+
 async function renderHome(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -708,6 +725,7 @@ async function renderHome(input: {
           (message) =>
             `<article class="message">
               <div class="message-meta">${escapeHtml(message.direction)} - ${escapeHtml(message.messageType)} - ${escapeHtml(message.createdAt)}</div>
+              ${renderMessageDelivery(message)}
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
               ${renderApprovalResource(message)}
               <div>${escapeHtml(message.summary)}</div>

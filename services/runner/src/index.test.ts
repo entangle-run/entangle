@@ -800,6 +800,8 @@ describe("runner runtime context", () => {
       const pageBody = await pageResponse.text();
       expect(pageBody).toContain("conversation-alpha");
       expect(pageBody).toContain("Previous user message.");
+      expect(pageBody).toContain("delivery published 1/1 relays");
+      expect(pageBody).toContain("delivery received by User Client");
       expect(pageBody).toContain("approval-alpha");
       expect(pageBody).toContain("artifact-alpha");
       expect(pageBody).toContain("reports/review.md");

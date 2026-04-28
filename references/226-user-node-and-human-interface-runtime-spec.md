@@ -45,6 +45,8 @@ User nodes are now partially runtime-capable:
   resource metadata and link to a source-change diff preview when the request
   targets a `source_change_candidate`. The signed approval response can now
   preserve the reviewed operation, resource, and reason context.
+- User Client message history now shows derived delivery labels: outbound relay
+  publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,
   including backend, kind, summary, and locator details, and now exposes a
   server-side artifact preview page that renders bounded content without
@@ -62,7 +64,8 @@ Still missing:
 
 - the current User Client is a first usable runner-served shell, not the final
   dedicated app with richer source/wiki review actions, projection-backed
-  artifact/source preview, and richer artifact/source workflow controls;
+  artifact/source preview, read receipts, and richer artifact/source workflow
+  controls;
 - Studio approval decisions still include operator-side mutation paths for
   admin/debug compatibility even though User Client approval responses now use
   signed User Node protocol behavior;
@@ -91,6 +94,7 @@ User Node capabilities:
 - artifact/source-change/wiki review;
 - bounded artifact preview;
 - bounded source-change diff preview;
+- derived delivery status;
 - per-node policy and edge constraints;
 - multiple user nodes in one graph.
 

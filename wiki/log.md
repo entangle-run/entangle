@@ -3271,6 +3271,21 @@ Host/runner tests, package lints,
 `node --check scripts/smoke-federated-process-runner.mjs`, and
 `git diff --check`.
 
+## [2026-04-26] implementation | Added User Client delivery labels
+
+Added `references/268-user-client-message-delivery-state-slice.md`. The
+runner-served User Client now renders derived delivery labels in message
+history: outbound messages show relay publish coverage and inbound messages
+show receipt by the User Client.
+
+This does not implement protocol-level read receipts or retry history, but it
+makes the running User Node client clearer without changing schemas or
+transport behavior.
+
+Runner typecheck, focused runner tests, runner lint,
+`node --check scripts/smoke-federated-process-runner.mjs`, and
+`git diff --check` passed for this slice.
+
 ## [2026-04-26] implementation | Added User Client source-change diff preview
 
 Added `references/266-user-node-source-change-diff-preview-slice.md`. The

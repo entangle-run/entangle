@@ -68,6 +68,7 @@ same-machine slice records.
 - [265-user-node-artifact-preview-slice.md](265-user-node-artifact-preview-slice.md)
 - [266-user-node-source-change-diff-preview-slice.md](266-user-node-source-change-diff-preview-slice.md)
 - [267-user-node-approval-response-context-slice.md](267-user-node-approval-response-context-slice.md)
+- [268-user-client-message-delivery-state-slice.md](268-user-client-message-delivery-state-slice.md)
 
 ## Audited Scope
 
@@ -129,8 +130,9 @@ The repository is not fully federated:
   thread selection, inbound/outbound message history, approval response
   controls, approval resource rendering, signed approval-response context,
   source-change diff preview, artifact-ref rendering, server-side artifact
-  preview, and message publishing, but source/wiki review actions and
-  projection-backed artifact/source preview are still incomplete;
+  preview, delivery labels, and message publishing, but source/wiki review
+  actions, read receipts, and projection-backed artifact/source preview are
+  still incomplete;
 - older Studio/CLI approval controls still include Host mutation paths even
   though signed User Node reply/approve/reject commands now exist;
 - runner A2A transport exists, Host startup subscribes to control/observe relay
@@ -199,8 +201,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    Client. The first assignable/minimal-client slice and inbound/outbound
    message history, approval controls, approval resource rendering, signed
    approval-response context, source-change diff preview, artifact-ref
-   rendering, and server-side artifact preview are implemented; source/wiki
-   review actions and projection-backed artifact/source preview remain open.
+   rendering, server-side artifact preview, and delivery labels are
+   implemented; source/wiki review actions, read receipts, and
+   projection-backed artifact/source preview remain open.
 10. Signed user-node task, reply, approval, and rejection messages.
 11. Artifact/source/wiki reference publication through observation and git
     refs.

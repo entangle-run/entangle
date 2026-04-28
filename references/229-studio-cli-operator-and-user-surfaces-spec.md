@@ -52,6 +52,8 @@ Recently added:
 - User Client approval responses now carry optional operation, resource, and
   reason context from the reviewed request so the signed response is
   self-describing in User Node history.
+- User Client message history now shows derived delivery labels for outbound
+  relay publish coverage and inbound User Client receipt.
 - User Client message history now renders bounded artifact refs attached to
   messages.
 - User Client artifact refs now include a server-side `Preview` action that
@@ -131,7 +133,7 @@ Node.
   reply/answer/approval publishing with scoped approval-response context plus
   source-change diff preview, artifact-ref rendering, and bounded artifact
   preview; projection-backed artifact/source preview, richer source/wiki review
-  actions, and the full bundled client app remain open.
+  actions, read receipts, and the full bundled client app remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

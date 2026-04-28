@@ -137,8 +137,8 @@ This repository currently contains:
   conversation list, selected-thread metadata, recorded inbound/outbound message
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, source-change diff preview, artifact-ref
-  rendering, bounded artifact preview, and Host-backed message publishing, plus
-  projection of the User Client endpoint
+  rendering, bounded artifact preview, delivery labels, and Host-backed message
+  publishing, plus projection of the User Client endpoint
   through Host, CLI, and Studio;
 - peer-identity-aware runtime edge routes where host-resolved non-user peer
   Nostr public keys are injected as non-secret route metadata, and runner turn
