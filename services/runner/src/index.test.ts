@@ -1482,6 +1482,20 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("Reject candidate");
       expect(pageBody).toContain("Approve");
 
+      const jsonReadResponse = await fetch(
+        new URL("/api/conversations/conversation-alpha/read", handle.clientUrl),
+        {
+          method: "POST"
+        }
+      );
+      expect(jsonReadResponse.status).toBe(200);
+      await expect(jsonReadResponse.json()).resolves.toMatchObject({
+        read: {
+          conversationId: "conversation-alpha",
+          userNodeId: "user-main"
+        }
+      });
+
       const sourceDiffResponse = await fetch(
         new URL(
           "/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha&conversationId=conversation-alpha&parentMessageId=dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd&sessionId=session-alpha&turnId=turn-approval",

@@ -172,15 +172,16 @@ This repository currently contains:
   state, projected wiki-ref rendering, projected wiki preview rendering,
   signed read receipts, parent-message links, delivery retry state, runtime
   identity/relay/Host API status, lightweight live state refresh, local JSON
-  APIs for selected conversation detail and message publishing, and Host-backed
-  message publishing,
+  APIs for selected conversation detail, conversation read state, and message
+  publishing, and Host-backed message publishing,
   plus a first dedicated `apps/user-client` app that consumes those runtime
   JSON APIs and can be served by the Human Interface Runtime from
   `ENTANGLE_USER_CLIENT_STATIC_DIR`, with the federated dev runner image now
   bundling that built app by default and the Docker launcher now able to publish
   a browser-openable User Client port for User Node runtime contexts, and with
   the dedicated app now using runtime-local JSON routes for artifact preview,
-  source diff, source-candidate review, and wiki preview cards, plus
+  source diff, source-candidate review, wiki preview cards, and automatic
+  thread read-state convergence, plus
   projection of the User Client endpoint through Host, CLI, and Studio, with
   Host runtime synchronization retaining observed User Node runtime endpoints,
   including `entangle user-nodes clients` for User Node-focused endpoint

@@ -14,6 +14,7 @@ import type {
   RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
   UserNodeConversationResponse,
+  UserNodeConversationReadResponse,
   UserConversationProjectionRecord,
   UserNodeMessageRecord,
   UserNodeMessagePublishResponse,
@@ -519,7 +520,10 @@ async function markUserNodeConversationRead(input: {
   conversationId: string;
   hostApi?: RunnerJoinHostApi | undefined;
   userNodeId: string;
-}): Promise<{ error?: string }> {
+}): Promise<{
+  detail?: UserNodeConversationReadResponse;
+  error?: string;
+}> {
   if (!input.hostApi) {
     return {
       error: "Host API is not configured for conversation read state."
@@ -544,8 +548,9 @@ async function markUserNodeConversationRead(input: {
       };
     }
 
-    userNodeConversationReadResponseSchema.parse(await response.json());
-    return {};
+    return {
+      detail: userNodeConversationReadResponseSchema.parse(await response.json())
+    };
   } catch (error) {
     return {
       error:
@@ -554,6 +559,69 @@ async function markUserNodeConversationRead(input: {
           : "Host conversation read request failed."
     };
   }
+}
+
+async function markUserClientConversationRead(input: {
+  conversationId: string;
+  context: EffectiveRuntimeContext;
+  hostApi?: RunnerJoinHostApi | undefined;
+}): Promise<{
+  detail?: UserNodeConversationReadResponse;
+  error?: string;
+  readReceiptError?: string;
+  statusCode?: number;
+}> {
+  const state = await buildUserClientState({
+    context: input.context,
+    hostApi: input.hostApi
+  });
+  const selectedConversation = state.conversations.find(
+    (conversation) => conversation.conversationId === input.conversationId
+  );
+  const conversationHistory = selectedConversation
+    ? await fetchUserNodeConversation({
+        conversationId: selectedConversation.conversationId,
+        hostApi: input.hostApi,
+        userNodeId: state.userNodeId
+      })
+    : undefined;
+  const readState = await markUserNodeConversationRead({
+    conversationId: input.conversationId,
+    hostApi: input.hostApi,
+    userNodeId: input.context.binding.node.nodeId
+  });
+
+  if (readState.error) {
+    return {
+      error: readState.error,
+      statusCode: 502
+    };
+  }
+
+  if (!readState.detail) {
+    return {
+      error: "Conversation read state is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const readReceiptState = selectedConversation
+    ? await publishConversationReadReceipt({
+        conversation: selectedConversation,
+        conversationHistory: conversationHistory?.detail,
+        hostApi: input.hostApi,
+        userNodeId: state.userNodeId
+      })
+    : undefined;
+
+  return {
+    detail: readState.detail,
+    ...(conversationHistory?.error
+      ? { readReceiptError: conversationHistory.error }
+      : readReceiptState?.error
+        ? { readReceiptError: readReceiptState.error }
+        : {})
+  };
 }
 
 async function publishConversationReadReceipt(input: {
@@ -2000,6 +2068,36 @@ export async function startHumanInterfaceRuntime(input: {
         }
 
         writeJson(response, 200, conversation.detail);
+        return;
+      }
+
+      const apiConversationReadMatch = requestUrl.pathname.match(
+        /^\/api\/conversations\/([^/]+)\/read$/u
+      );
+
+      if (request.method === "POST" && apiConversationReadMatch) {
+        const conversationId = decodeURIComponent(
+          apiConversationReadMatch[1] ?? ""
+        );
+        const readState = await markUserClientConversationRead({
+          conversationId,
+          context: input.context,
+          hostApi: input.hostApi
+        });
+
+        if (readState.error || !readState.detail) {
+          writeJson(response, readState.statusCode ?? 502, {
+            error: readState.error ?? "Conversation read state is unavailable."
+          });
+          return;
+        }
+
+        writeJson(response, 200, {
+          ...readState.detail,
+          ...(readState.readReceiptError
+            ? { readReceiptError: readState.readReceiptError }
+            : {})
+        });
         return;
       }
 

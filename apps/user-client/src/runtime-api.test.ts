@@ -5,6 +5,7 @@ import {
   fetchArtifactPreview,
   fetchSourceChangeDiff,
   formatDeliveryLabel,
+  markConversationRead,
   normalizeApiBaseUrl,
   reviewSourceChangeCandidate
 } from "./runtime-api.js";
@@ -93,6 +94,10 @@ describe("user client runtime API helpers", () => {
       candidateId: "candidate-alpha",
       nodeId: "worker-it"
     });
+    await markConversationRead({
+      baseUrl: "http://127.0.0.1:4300",
+      conversationId: "conversation-alpha"
+    });
     await reviewSourceChangeCandidate({
       baseUrl: "http://127.0.0.1:4300",
       candidateId: "candidate-alpha",
@@ -113,12 +118,18 @@ describe("user client runtime API helpers", () => {
       "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[2]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/review"
+      "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"
     );
     expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({
       method: "POST"
     });
-    expect(JSON.parse(fetchMock.mock.calls[2]?.[1]?.body as string)).toMatchObject({
+    expect(fetchMock.mock.calls[3]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-change-candidates/review"
+    );
+    expect(fetchMock.mock.calls[3]?.[1]).toMatchObject({
+      method: "POST"
+    });
+    expect(JSON.parse(fetchMock.mock.calls[3]?.[1]?.body as string)).toMatchObject({
       candidateId: "candidate-alpha",
       conversationId: "conversation-alpha",
       nodeId: "worker-it",

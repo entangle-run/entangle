@@ -123,16 +123,18 @@ The most accurate current description is:
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish
 User Node messages, respond to approval requests, review artifact/wiki/source
-evidence, use local JSON APIs for selected conversation detail and message
-publishing, and submit signed source-candidate accept/reject messages that the
-owning runner applies to runner-owned candidate and source-history state. A
+evidence, use local JSON APIs for selected conversation detail, conversation
+read state, and message publishing, and submit signed source-candidate
+accept/reject messages that the owning runner applies to runner-owned candidate
+and source-history state. A
 first dedicated `apps/user-client` app now consumes that runtime JSON API, and
 the runtime can serve static User Client assets from
 `ENTANGLE_USER_CLIENT_STATIC_DIR`. The
 federated dev runner image now bundles that built app, and the Docker launcher
 adapter can publish a browser-openable User Client port for User Node runtime
 contexts. The dedicated app now reaches runtime-local JSON routes for artifact
-preview, source diff, source-candidate review, and wiki preview cards. Studio
+preview, source diff, source-candidate review, wiki preview cards, and
+automatic thread read-state convergence. Studio
 remains the operator surface, not the primary human-node client.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets
@@ -333,7 +335,7 @@ The repository now also contains the first real implementation baseline:
   ids through the shared host/CLI/Studio boundary, and with runner-served User
   Clients now rendering runtime identity, Host API, relay status, and
   lightweight live refresh over `/api/state`, plus local JSON APIs for selected
-  conversation detail and message publishing;
+  conversation detail, conversation read state, and message publishing;
 - an explicit package tool-catalog contract through `runtime/tools.json`,
   validator enforcement, and scaffolded empty catalogs;
 - a runner bootstrap that now consumes injected runtime context, package

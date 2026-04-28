@@ -406,6 +406,7 @@ files are the active federated redesign pack.
 343. [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 344. [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 345. [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
+346. [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
 
 ## Role of this corpus
 

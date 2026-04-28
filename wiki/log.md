@@ -4179,3 +4179,15 @@ projection still reports the User Node runtime as running with the same User
 Client URL. The process-runner smoke and adjacent docs now also print
 copyable `pnpm --filter ... dev ...` commands without passing a literal `--`
 argument to the CLI.
+
+## [2026-04-28] implementation | Added JSON read state to the User Client
+
+Added `references/345-user-client-json-read-state-slice.md`. Human Interface
+Runtime now exposes `POST /api/conversations/:conversationId/read` for the
+dedicated User Client app.
+
+The route marks the User Node conversation read through Host and reuses the
+existing best-effort signed `read.receipt` behavior. The dedicated
+`apps/user-client` app now calls that runtime-local JSON route when opening a
+thread with unread messages, then refreshes state so projected unread counts
+converge without using Studio as the participant client.

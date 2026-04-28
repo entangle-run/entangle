@@ -145,6 +145,7 @@ same-machine slice records.
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 - [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
+- [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
 
 ## Audited Scope
 
@@ -219,14 +220,15 @@ The repository is not fully federated:
   rendering, projected wiki preview rendering, wiki-scoped approval context
   rendering, signed read receipts,
   parent-message links, delivery retry state, runtime status, live state
-  refresh, message publishing, local JSON APIs for conversation detail and
-  message publishing, a first dedicated `apps/user-client` app, and optional
-  runtime static serving for that app; the federated dev runner image now
+  refresh, message publishing, local JSON APIs for conversation detail,
+  conversation read state, and message publishing, a first dedicated
+  `apps/user-client` app, and optional runtime static serving for that app; the
+  federated dev runner image now
   bundles the built app and the Docker launcher adapter can publish a
   browser-openable User Client port for User Node runtime contexts; the
   dedicated app now exposes JSON-backed artifact preview, source diff,
-  source-candidate review, and wiki preview cards, but richer object-backend
-  review remains incomplete;
+  source-candidate review, wiki preview cards, and automatic thread read-state
+  convergence, but richer object-backend review remains incomplete;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior
@@ -460,9 +462,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    fallback, delivery labels, local conversation read state, projected wiki-ref
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
-   runtime status, live state refresh, local JSON conversation/message APIs,
-   a first dedicated User Client app, signed source-candidate accept/reject
-   messages handled by the owning runner, removal of Host-mediated wiki
+   runtime status, live state refresh, local JSON conversation/read/message
+   APIs, a first dedicated User Client app, signed source-candidate
+   accept/reject messages handled by the owning runner, removal of Host-mediated wiki
    publication controls, and CLI User Client endpoint discovery are
    implemented; complete projection-backed source/wiki review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI

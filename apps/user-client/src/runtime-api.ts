@@ -5,6 +5,7 @@ import type {
   SourceChangeSummary,
   UserConversationProjectionRecord,
   UserNodeConversationResponse,
+  UserNodeConversationReadResponse,
   UserNodeMessagePublishResponse,
   UserNodeMessagePublishType,
   UserNodeMessageRecord,
@@ -129,6 +130,21 @@ export function fetchConversationDetail(input: {
     `/api/conversations/${encodeURIComponent(input.conversationId)}`,
     {
       baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function markConversationRead(input: {
+  baseUrl: string;
+  conversationId: string;
+}): Promise<UserNodeConversationReadResponse> {
+  return fetchJson<UserNodeConversationReadResponse>(
+    `/api/conversations/${encodeURIComponent(input.conversationId)}/read`,
+    {
+      baseUrl: input.baseUrl,
+      init: {
+        method: "POST"
+      }
     }
   );
 }

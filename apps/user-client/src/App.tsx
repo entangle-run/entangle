@@ -16,6 +16,7 @@ import {
   fetchUserClientState,
   formatConversationTimestamp,
   formatDeliveryLabel,
+  markConversationRead,
   normalizeApiBaseUrl,
   publishApprovalResponse,
   publishUserMessage,
@@ -699,6 +700,7 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
+    const shouldMarkRead = (selectedConversation?.unreadCount ?? 0) > 0;
 
     async function loadConversation(): Promise<void> {
       if (!selectedConversationId) {
@@ -714,6 +716,24 @@ export function App() {
 
         if (!cancelled) {
           setConversation(nextConversation);
+        }
+
+        if (shouldMarkRead) {
+          await markConversationRead({
+            baseUrl: apiBaseUrl,
+            conversationId: selectedConversationId
+          });
+
+          if (!cancelled) {
+            const nextState = await fetchUserClientState(apiBaseUrl);
+            setState(nextState);
+            setSelectedConversationId((current) =>
+              chooseConversationId({
+                conversations: nextState.conversations,
+                currentConversationId: current
+              })
+            );
+          }
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -731,7 +751,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [apiBaseUrl, selectedConversationId]);
+  }, [apiBaseUrl, selectedConversation?.unreadCount, selectedConversationId]);
 
   async function refreshAll(): Promise<void> {
     await refreshState();

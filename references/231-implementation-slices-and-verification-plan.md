@@ -419,6 +419,7 @@ Implementation record:
 - [322-public-direct-mutation-surface-quarantine-slice.md](322-public-direct-mutation-surface-quarantine-slice.md)
 - [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md)
 - [338-user-node-runtime-projection-retention-slice.md](338-user-node-runtime-projection-retention-slice.md)
+- [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
 
 Current status:
 
@@ -448,9 +449,9 @@ Current status:
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
   context rendering, signed read receipts, parent-message links, message
   delivery retry state, runtime status, live state refresh, local JSON APIs for
-  selected conversation detail and message publishing, signed source-candidate
-  accept/reject messages handled by the owning runner, and message publishing
-  that preserves selected conversation/session context;
+  selected conversation detail, conversation read state, and message publishing,
+  signed source-candidate accept/reject messages handled by the owning runner,
+  and message publishing that preserves selected conversation/session context;
 - the CLI signed User Node `approve`, `reject`, and generic
   `user-nodes message` commands can now carry the same optional scoped
   approval-response operation/resource/reason metadata;
@@ -470,7 +471,8 @@ Current status:
 - the Docker launcher adapter can publish a configurable, deterministic host
   port and public User Client URL for User Node runtime contexts;
 - the dedicated User Client app now consumes local JSON APIs for artifact
-  preview, source diff, source-candidate review, and wiki preview cards;
+  preview, source diff, source-candidate review, wiki preview cards, and
+  automatic thread read-state convergence;
 - the process-runner smoke auto-serves and validates built User Client assets
   when `apps/user-client/dist` exists or an explicit static directory is passed;
 - CLI now exposes `entangle user-nodes clients` to list active User Nodes with
