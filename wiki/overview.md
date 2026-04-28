@@ -76,6 +76,11 @@ contexts. The dedicated app now reaches runtime-local JSON routes for artifact
 preview, source diff, source-candidate review, and wiki preview cards. Studio
 remains the operator surface, not the primary human-node client.
 
+The process-runner smoke now auto-serves built `apps/user-client/dist` assets
+when available, or an explicit `--user-client-static-dir`, so manual
+`--keep-running` sessions can exercise the dedicated User Client from the real
+running User Node runtime.
+
 The contract-ownership layer is now also explicit:
 
 - `packages/types` should own the primary `zod` schemas and host API DTO

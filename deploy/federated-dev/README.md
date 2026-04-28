@@ -166,14 +166,17 @@ conversations from runner-signed observations.
 For manual OpenCode/provider testing without rebuilding the setup by hand, run:
 
 ```sh
+pnpm --filter @entangle/user-client build
 pnpm ops:smoke-federated-process-runner -- --keep-running
 ```
 
 The smoke leaves Host and all joined runners alive, keeps the temporary state
 root, prints both User Client URLs, and prints CLI commands for publishing a
 signed `task.request` to the assigned builder node, inspecting the User Node
-inbox projection, and listing runner turn events. Stop it with `Ctrl-C` when
-the manual test is done.
+inbox projection, and listing runner turn events. When `apps/user-client/dist`
+exists, it is auto-served by the running User Node runtimes; pass
+`--user-client-static-dir <path>` to use another built app directory. Stop it
+with `Ctrl-C` when the manual test is done.
 
 To verify the support-bundle path against an already-running federated dev
 profile, run:

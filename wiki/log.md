@@ -3634,3 +3634,11 @@ The dedicated `apps/user-client` app now uses those routes for artifact
 preview, source diff loading, source-candidate review, and related wiki preview
 cards, reducing the capability gap between the bundled app and the
 server-rendered fallback shell.
+
+## [2026-04-28] verification | Process smoke can serve dedicated User Client assets
+
+Added `references/296-process-smoke-dedicated-user-client-assets-slice.md`. The
+process-runner smoke now accepts `--user-client-static-dir`, auto-detects
+`apps/user-client/dist` when present, passes it to joined runner processes as
+`ENTANGLE_USER_CLIENT_STATIC_DIR`, and validates that the running User Node
+runtime serves the dedicated app shell before continuing through the JSON API.

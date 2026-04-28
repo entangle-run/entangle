@@ -97,7 +97,9 @@ For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
 both User Client URLs, and prints CLI commands for publishing a signed
 `task.request` to the assigned builder node and inspecting the User Node inbox
-projection plus runner turn events.
+projection plus runner turn events. If `apps/user-client/dist` exists, or if
+`--user-client-static-dir <path>` is passed, the smoke serves and validates the
+dedicated User Client app from the running User Node runtime.
 
 ## Current Status
 

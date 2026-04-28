@@ -240,6 +240,7 @@ Implementation record:
 - [293-runtime-served-user-client-assets-slice.md](293-runtime-served-user-client-assets-slice.md)
 - [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
 - [295-user-client-review-json-actions-slice.md](295-user-client-review-json-actions-slice.md)
+- [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
 
 Current status:
 
@@ -288,6 +289,8 @@ Current status:
   port and public User Client URL for User Node runtime contexts;
 - the dedicated User Client app now consumes local JSON APIs for artifact
   preview, source diff, source-candidate review, and wiki preview cards;
+- the process-runner smoke auto-serves and validates built User Client assets
+  when `apps/user-client/dist` exists or an explicit static directory is passed;
 - richer artifact object-backend review remains open.
 
 Verification:

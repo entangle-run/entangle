@@ -96,6 +96,7 @@ same-machine slice records.
 - [293-runtime-served-user-client-assets-slice.md](293-runtime-served-user-client-assets-slice.md)
 - [294-docker-user-client-packaging-slice.md](294-docker-user-client-packaging-slice.md)
 - [295-user-client-review-json-actions-slice.md](295-user-client-review-json-actions-slice.md)
+- [296-process-smoke-dedicated-user-client-assets-slice.md](296-process-smoke-dedicated-user-client-assets-slice.md)
 
 ## Audited Scope
 

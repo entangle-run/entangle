@@ -34,6 +34,7 @@ Interface Runtime:
 - `apps/user-client/src/runtime-api.test.ts`
 - `apps/user-client/src/App.tsx`
 - `apps/user-client/src/styles.css`
+- `services/host/scripts/federated-process-runner-smoke.ts`
 - `README.md`
 - `wiki/overview.md`
 - `wiki/log.md`
@@ -76,6 +77,10 @@ the dedicated app.
 No Host API contract changed. The runtime JSON responses are local User Client
 view models built from existing Host projection and runtime inspection
 contracts.
+
+`296-process-smoke-dedicated-user-client-assets-slice.md` makes the process
+smoke auto-serve built User Client assets when available, so manual
+`--keep-running` sessions can exercise these actions from the dedicated app.
 
 ## Risks And Mitigations
 

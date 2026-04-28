@@ -5,6 +5,7 @@ import {
   spawnSync,
   type ChildProcessByStdio
 } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -43,6 +44,7 @@ const pollIntervalMs = 150;
 const operatorToken = "process-runner-smoke-token";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "..", "..", "..");
+const userClientStaticDir = resolveUserClientStaticDir();
 
 function readFlagValue(name: string): string | undefined {
   const inlinePrefix = `${name}=`;
@@ -54,6 +56,22 @@ function readFlagValue(name: string): string | undefined {
 
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;
+}
+
+function resolveUserClientStaticDir(): string | undefined {
+  const configured =
+    readFlagValue("--user-client-static-dir") ??
+    process.env.ENTANGLE_USER_CLIENT_STATIC_DIR;
+
+  if (configured?.trim()) {
+    return path.resolve(configured.trim());
+  }
+
+  const builtAppDir = path.join(repoRoot, "apps", "user-client", "dist");
+
+  return existsSync(path.join(builtAppDir, "index.html"))
+    ? builtAppDir
+    : undefined;
 }
 
 function assertCondition(condition: boolean, message: string): void {
@@ -398,6 +416,9 @@ async function stopRunnerProcess(
 async function main(): Promise<void> {
   await assertRelayReachable(relayUrl);
   printPass("relay-preflight", relayUrl);
+  if (userClientStaticDir) {
+    printPass("user-client-static-dir", userClientStaticDir);
+  }
 
   const tempRoot = await mkdtemp(
     path.join(os.tmpdir(), "entangle-process-runner-smoke-")
@@ -768,6 +789,9 @@ async function main(): Promise<void> {
           ENTANGLE_HOST_LOGGER: "false",
           ENTANGLE_HOST_TOKEN: operatorToken,
           ENTANGLE_RUNNER_STATE_ROOT: runnerStateRoot,
+          ...(userClientStaticDir
+            ? { ENTANGLE_USER_CLIENT_STATIC_DIR: userClientStaticDir }
+            : {}),
           [runnerSecretEnv]: runnerSecretHex
         },
         stdio: ["ignore", "pipe", "pipe"]
@@ -804,6 +828,9 @@ async function main(): Promise<void> {
           ENTANGLE_HOST_LOGGER: "false",
           ENTANGLE_HOST_TOKEN: operatorToken,
           ENTANGLE_RUNNER_STATE_ROOT: userRunnerStateRoot,
+          ...(userClientStaticDir
+            ? { ENTANGLE_USER_CLIENT_STATIC_DIR: userClientStaticDir }
+            : {}),
           [userRunnerSecretEnv]: userRunnerSecretHex
         },
         stdio: ["ignore", "pipe", "pipe"]
@@ -840,6 +867,9 @@ async function main(): Promise<void> {
           ENTANGLE_HOST_LOGGER: "false",
           ENTANGLE_HOST_TOKEN: operatorToken,
           ENTANGLE_RUNNER_STATE_ROOT: reviewerUserRunnerStateRoot,
+          ...(userClientStaticDir
+            ? { ENTANGLE_USER_CLIENT_STATIC_DIR: userClientStaticDir }
+            : {}),
           [reviewerUserRunnerSecretEnv]: reviewerUserRunnerSecretHex
         },
         stdio: ["ignore", "pipe", "pipe"]
@@ -1125,6 +1155,19 @@ async function main(): Promise<void> {
       `User Client health failed with HTTP ${userRuntimeHealthResponse.status}`
     );
     printPass("user-client-health", userClientUrl);
+
+    if (userClientStaticDir) {
+      const userClientIndexResponse = await fetch(new URL("/", userClientUrl));
+      assertCondition(
+        userClientIndexResponse.ok,
+        `User Client static index failed with HTTP ${userClientIndexResponse.status}`
+      );
+      assertCondition(
+        (await userClientIndexResponse.text()).includes('id="root"'),
+        "User Client static index did not look like the dedicated app shell."
+      );
+      printPass("user-client-static-assets", userClientUrl);
+    }
 
     const userClientStateResponse = await fetch(
       new URL("/api/state", userClientUrl)
