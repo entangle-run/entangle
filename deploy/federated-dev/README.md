@@ -184,6 +184,22 @@ To rediscover running User Client endpoints through Host projection, run:
 pnpm --filter @entangle/cli dev -- user-nodes clients --summary
 ```
 
+To prepare an extra generic runner against an already-running Host without
+using the smoke script, write a Host-derived join config and start the runner:
+
+```sh
+export ENTANGLE_RUNNER_NOSTR_SECRET_KEY="$(openssl rand -hex 32)"
+pnpm --filter @entangle/cli dev -- runners join-config \
+  --runner runner-extra \
+  --output runner-join.json \
+  --summary
+pnpm --filter @entangle/runner start -- join --config runner-join.json
+```
+
+If the Host is protected by `ENTANGLE_HOST_OPERATOR_TOKEN`, also make a Host
+token available to the runner and pass `--host-token-env-var ENTANGLE_HOST_TOKEN`
+when generating the join config.
+
 To verify the support-bundle path against an already-running federated dev
 profile, run:
 

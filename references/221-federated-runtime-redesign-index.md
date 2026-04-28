@@ -101,6 +101,7 @@ same-machine slice records.
 - [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
 - [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
 - [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
+- [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
 
 ## Audited Scope
 
@@ -244,6 +245,9 @@ The repository is not fully federated:
   with configured relay URLs, subscribed/degraded/stopped lifecycle state, and
   last startup failure metadata; CLI summaries and Studio Host Status render
   the same Host-owned status read model;
+- CLI can now write validated Host-derived generic runner join configs through
+  `entangle runners join-config`, and the runner package exposes an
+  `entangle-runner` bin for `join --config` startup;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;
@@ -356,10 +360,11 @@ follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The User Client now includes the first Host-mediated source-candidate review
-action, CLI can list projected User Client endpoints per User Node, and Host
-status exposes first control/observe transport health to CLI and Studio. The
-next blocking implementation areas are richer projection-backed source/wiki
-review services, replacing remaining deep filesystem-backed runtime inspection
-paths with projection-backed source/wiki services and object-backed artifact
-services, adding deeper per-relay diagnostics, and turning the process smoke
-into the full multi-machine distributed proof.
+action, CLI can list projected User Client endpoints per User Node, Host status
+exposes first control/observe transport health to CLI and Studio, and operators
+can generate generic runner join configs from Host status. The next blocking
+implementation areas are richer projection-backed source/wiki review services,
+replacing remaining deep filesystem-backed runtime inspection paths with
+projection-backed source/wiki services and object-backed artifact services,
+adding deeper per-relay diagnostics, and turning the process smoke into the
+full multi-machine distributed proof.

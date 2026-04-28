@@ -104,6 +104,16 @@ smoke, `entangle user-nodes clients --summary` lists active User Nodes with
 their projected Human Interface Runtime placement and browser-openable User
 Client URLs.
 
+To prepare a generic runner outside the smoke path, start Host, export a runner
+Nostr secret on the runner machine, then generate and use a Host-derived join
+config:
+
+```bash
+export ENTANGLE_RUNNER_NOSTR_SECRET_KEY="$(openssl rand -hex 32)"
+pnpm --filter @entangle/cli dev -- runners join-config --runner runner-a --output runner-join.json --summary
+pnpm --filter @entangle/runner start -- join --config runner-join.json
+```
+
 ## Current Status
 
 This repository currently contains:
@@ -274,6 +284,9 @@ This repository currently contains:
   health, including configured relay URLs, subscribed/degraded/stopped
   lifecycle state, and last startup failure metadata, with shared host-client,
   CLI, and Studio rendering;
+- CLI can generate schema-validated generic runner join configs from Host
+  status through `entangle runners join-config`, while the runner package now
+  exposes an `entangle-runner` bin for `join --config` startup;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

@@ -2,15 +2,19 @@
 
 ## Current Repo Truth
 
-The current Host-runner relationship is local and Host-driven.
+The current Host-runner relationship is now partially federated.
 
-Host builds runtime context, writes it to disk, injects a node secret through
-env vars, starts Docker containers through the Docker Engine API, and stores
-observed runtime records with Docker handles and `runtimeContextPath`. The
-runner starts only after it can read local `effective-runtime-context.json`.
+Generic runners can start from a JSON `runner-join.json`, publish signed
+`runner.hello`, subscribe to Host-signed assignment control events, fetch
+portable Host bootstrap bundles, materialize runner-owned assignment workspaces,
+start assigned agent or `human_interface` node runtimes, and emit signed
+observations. The process-runner smoke proves this with separate Host, agent
+runner, and User Node runner process roots over a live relay.
 
-Runner A2A messaging is real and Nostr-backed. Host-runner control and
-observation are not.
+The same-machine Docker launcher still exists as an adapter, and several deep
+runtime detail APIs still read runner-owned filesystem state through Host
+private paths. Those paths remain migration work; they are not the canonical
+federated model.
 
 ## Target Model
 
@@ -60,10 +64,14 @@ Host must not need shared filesystem access to understand runner state.
 - Add runner acceptance/rejection receipts.
 - Add assignment revoke and lease expiration handling.
 - Add runner bootstrap path that does not require prewritten effective context.
+  Done for generic JSON join configs and Host API bootstrap bundles.
 - Add local materializer that turns assignment plus fetched package/resource
-  state into local workspace context.
+  state into local workspace context. Done for the process runner path.
 - Rebase Docker local launcher to start a generic runner with join config,
   not a pre-assigned runner with a shared context path.
+- Add operator tooling to write join configs from Host status. Done through
+  `entangle runners join-config`; `entangle-runner join --config` is now an
+  advertised runner package bin.
 
 ## Tests Required
 

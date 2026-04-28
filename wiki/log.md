@@ -3682,3 +3682,14 @@ stopped, with configured relay URLs and last startup failure metadata.
 The shared host-client, CLI host-status summary, and Studio Host Status panel
 now render the same Host read model, while deeper per-relay diagnostics remain
 future work.
+
+## [2026-04-28] implementation | Added runner join-config CLI
+
+Added `references/301-runner-join-config-cli-slice.md`. The CLI now exposes
+`entangle runners join-config`, which reads Host status, derives Host Authority
+and relay defaults, and writes a validated generic `runner-join.json` without
+embedding secrets.
+
+The runner package now advertises an `entangle-runner` bin for
+`join --config`, so generic runner startup is documented as an operator path
+rather than only as smoke-script internals.

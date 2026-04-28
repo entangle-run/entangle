@@ -88,6 +88,10 @@ runners while keeping participant chat/review inside the User Client.
 Host status now also carries bounded federated control/observe transport
 health, and CLI plus Studio render that Host-owned relay subscription status
 without probing relay state directly.
+CLI can now generate a Host-derived `runner-join.json` with
+`entangle runners join-config`, and the runner package advertises
+`entangle-runner join --config` for generic runner startup outside smoke
+scripts.
 
 The contract-ownership layer is now also explicit:
 

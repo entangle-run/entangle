@@ -86,6 +86,11 @@ import {
   sortRunnerRegistryEntriesForPresentation
 } from "./runner-output.js";
 import {
+  buildRunnerJoinConfig,
+  projectRunnerJoinConfigSummary,
+  splitRepeatedCsvOptions
+} from "./runner-join-config-command.js";
+import {
   projectRuntimeAssignmentSummary,
   sortRuntimeAssignmentsForCli
 } from "./assignment-output.js";
@@ -265,6 +270,18 @@ function createCliHostClient(command: Command) {
   return createHostClient(
     authToken === undefined ? { baseUrl } : { authToken, baseUrl }
   );
+}
+
+function resolveDefaultHostTokenEnvVar(): string | undefined {
+  if (process.env.ENTANGLE_HOST_TOKEN?.trim()) {
+    return "ENTANGLE_HOST_TOKEN";
+  }
+
+  if (process.env.ENTANGLE_HOST_OPERATOR_TOKEN?.trim()) {
+    return "ENTANGLE_HOST_OPERATOR_TOKEN";
+  }
+
+  return undefined;
 }
 
 function parsePositiveIntegerOption(value: string, optionName: string): number {
@@ -877,6 +894,135 @@ const runnersCommand = program
     "Bearer token for an entangle-host started with ENTANGLE_HOST_OPERATOR_TOKEN.",
     process.env.ENTANGLE_HOST_TOKEN ?? process.env.ENTANGLE_HOST_OPERATOR_TOKEN
   );
+
+runnersCommand
+  .command("join-config")
+  .requiredOption("--runner <runnerId>", "Runner id to advertise in runner.hello.")
+  .option("--output <file>", "Write the join config JSON to a file.")
+  .option(
+    "--relay-url <url>",
+    "Relay URL to use. May be repeated or comma-separated. Defaults to Host status transport relays.",
+    collectRepeatedOptionValue
+  )
+  .option(
+    "--runtime-kind <kind>",
+    "Runtime kind capability. May be repeated or comma-separated.",
+    collectRepeatedOptionValue
+  )
+  .option(
+    "--agent-engine-kind <kind>",
+    "Agent engine kind capability. May be repeated or comma-separated.",
+    collectRepeatedOptionValue
+  )
+  .option(
+    "--label <label>",
+    "Runner capability label. May be repeated or comma-separated.",
+    collectRepeatedOptionValue
+  )
+  .option("--max-assignments <n>", "Maximum concurrent assignments.", "1")
+  .option(
+    "--secret-env-var <envVar>",
+    "Env var that will hold the runner Nostr secret key on the runner machine.",
+    "ENTANGLE_RUNNER_NOSTR_SECRET_KEY"
+  )
+  .option("--runner-public-key <pubkey>", "Expected runner Nostr public key.")
+  .option("--host-api-url <url>", "Host API URL written into the join config.")
+  .option(
+    "--host-token-env-var <envVar>",
+    "Env var that will hold the Host API bearer token on the runner machine."
+  )
+  .option("--no-host-api", "Omit Host API bootstrap settings from the config.")
+  .option(
+    "--no-runtime-identity-secret",
+    "Do not let the runner fetch assigned node identity secrets through Host API."
+  )
+  .option("--auth-required", "Use AUTH-required Nostr relay publishing/subscription.")
+  .option("--summary", "Print a compact join-config summary.")
+  .description("Generate a generic entangle-runner join config from Host status.")
+  .action(async (
+    options: {
+      agentEngineKind?: string[];
+      authRequired?: boolean;
+      hostApi?: boolean;
+      hostApiUrl?: string;
+      hostTokenEnvVar?: string;
+      label?: string[];
+      maxAssignments: string;
+      output?: string;
+      relayUrl?: string[];
+      runner: string;
+      runnerPublicKey?: string;
+      runtimeIdentitySecret?: boolean;
+      runtimeKind?: string[];
+      secretEnvVar: string;
+      summary?: boolean;
+    },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const status = await client.getHostStatus();
+    const explicitRelayUrls = splitRepeatedCsvOptions(options.relayUrl);
+    const relayUrls =
+      explicitRelayUrls.length > 0
+        ? explicitRelayUrls
+        : status.transport.controlObserve.relayUrls;
+
+    if (relayUrls.length === 0) {
+      throw new Error(
+        "No relay URLs are available. Pass --relay-url or configure Host relay profiles."
+      );
+    }
+
+    if (!status.authority?.publicKey) {
+      throw new Error(
+        "Host status does not expose an active Host Authority public key."
+      );
+    }
+
+    const hostApiAuthEnvVar =
+      options.hostTokenEnvVar?.trim() || resolveDefaultHostTokenEnvVar();
+    const config = buildRunnerJoinConfig({
+      ...(options.agentEngineKind
+        ? { agentEngineKinds: options.agentEngineKind }
+        : {}),
+      authRequired: options.authRequired ?? false,
+      ...(hostApiAuthEnvVar ? { hostApiAuthEnvVar } : {}),
+      hostApiBaseUrl: options.hostApiUrl ?? resolveHostUrl(command),
+      hostAuthorityPubkey: status.authority.publicKey,
+      includeHostApi: options.hostApi ?? true,
+      includeRuntimeIdentitySecret: options.runtimeIdentitySecret ?? true,
+      ...(options.label ? { labels: options.label } : {}),
+      maxAssignments: parsePositiveIntegerOption(
+        options.maxAssignments,
+        "--max-assignments"
+      ),
+      relayUrls,
+      runnerId: options.runner,
+      ...(options.runnerPublicKey
+        ? { runnerPublicKey: options.runnerPublicKey }
+        : {}),
+      ...(options.runtimeKind ? { runtimeKinds: options.runtimeKind } : {}),
+      secretEnvVar: options.secretEnvVar
+    });
+    const outputPath = options.output
+      ? resolveCliPath(options.output)
+      : undefined;
+
+    if (outputPath) {
+      await writeJsonDocument(outputPath, config);
+    }
+
+    printJson(
+      options.summary
+        ? {
+            joinConfig: projectRunnerJoinConfigSummary(config),
+            ...(outputPath ? { outputPath } : {})
+          }
+        : outputPath
+          ? { joinConfig: config, outputPath }
+          : config
+    );
+  });
 
 runnersCommand
   .command("list")

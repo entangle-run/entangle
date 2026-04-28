@@ -131,6 +131,7 @@ Implementation record:
 - [237-generic-runner-bootstrap-slice.md](237-generic-runner-bootstrap-slice.md)
 - [248-runner-default-assignment-materializer-slice.md](248-runner-default-assignment-materializer-slice.md)
 - [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md)
+- [301-runner-join-config-cli-slice.md](301-runner-join-config-cli-slice.md)
 
 Verification:
 
@@ -139,6 +140,8 @@ Verification:
 - authenticated bootstrap bundle tests;
 - runner materialization tests proving package/memory snapshots are written
   under runner-owned assignment state.
+- CLI join-config helper tests and runner package typecheck/build for
+  `entangle-runner join --config`.
 
 ### Slice 7: Local Adapter Rebase
 
@@ -395,6 +398,9 @@ first federated control/observe transport health and both CLI and Studio render
 that Host-owned read model. Deeper per-relay diagnostics, richer Studio
 reassignment controls, and removal of old admin/debug approval mutation paths
 remain follow-up work.
+
+CLI also now exposes `entangle runners join-config` to write Host-derived,
+schema-validated generic runner join configs without embedding secrets.
 
 ### Slice 13: Product Naming Migration
 

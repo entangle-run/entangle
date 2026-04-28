@@ -115,6 +115,7 @@ CLI has matching headless surfaces:
 - `entangle authority export`
 - `entangle authority import`
 - `entangle runners list`
+- `entangle runners join-config --runner <runnerId> --output runner-join.json`
 - `entangle runners trust <runnerId>`
 - `entangle runners revoke <runnerId>`
 - `entangle assignments list`
@@ -160,6 +161,9 @@ Node.
   recorded approval-request messages through direct message lookup; message
   history now has the first inbound/outbound projection path.
 - Add runner join executable or CLI command surface for generating join config.
+  Done: `entangle runners join-config` writes validated Host-derived JSON join
+  configs, and `entangle-runner join --config` is advertised by the runner
+  package bin.
 - Add Studio operator panels for authority, runner registry, assignments, and
   transport/projection health. Studio now has the first projection health,
   User Node summary panel, transport health row, and first-pass assignment
@@ -216,6 +220,6 @@ layout is redesigned.
 
 ## Open Questions
 
-- Should the runner join command live in `apps/cli` or as a separate
-  `entangle-runner` binary wrapper? The target UX calls for a separate runner
-  command, but implementation can start in the existing runner package.
+No operator-surface question blocks the current implementation. The separate
+runner process command now lives in the runner package as `entangle-runner`,
+while CLI owns Host-derived join-config generation.

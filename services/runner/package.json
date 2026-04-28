@@ -6,6 +6,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "entangle-runner": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "check": "pnpm run typecheck",
