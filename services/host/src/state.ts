@@ -13266,17 +13266,73 @@ async function readSourceChangeCandidateFilePreview(input: {
   });
 }
 
+function readProjectedSourceChangeCandidateFilePreview(input: {
+  candidate: SourceChangeCandidateRecord;
+  filePath: string;
+}): RuntimeSourceChangeCandidateFilePreviewResponse["preview"] {
+  const normalized = normalizeSourceCandidateFilePreviewPath(input.filePath);
+
+  if ("reason" in normalized) {
+    return {
+      available: false,
+      reason: normalized.reason
+    };
+  }
+
+  const fileSummary = input.candidate.sourceChangeSummary.files.find(
+    (file) => file.path === normalized.path
+  );
+
+  if (!fileSummary) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because the requested path is not listed in the candidate changed-file summary."
+    };
+  }
+
+  if (fileSummary.status === "deleted") {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because the file is deleted in the candidate snapshot."
+    };
+  }
+
+  const projectedPreview = input.candidate.sourceChangeSummary.filePreviews.find(
+    (preview) => preview.path === normalized.path
+  );
+
+  if (!projectedPreview) {
+    return {
+      available: false,
+      reason:
+        "Source change candidate file preview is unavailable because no bounded projected file preview was observed."
+    };
+  }
+
+  if (!projectedPreview.available) {
+    return {
+      available: false,
+      reason: projectedPreview.reason
+    };
+  }
+
+  return {
+    available: true,
+    bytesRead: projectedPreview.bytesRead,
+    content: projectedPreview.content,
+    contentEncoding: projectedPreview.contentEncoding,
+    contentType: projectedPreview.contentType,
+    truncated: projectedPreview.truncated
+  };
+}
+
 export async function getRuntimeSourceChangeCandidateFilePreview(input: {
   candidateId: string;
   nodeId: string;
   path: string;
 }): Promise<RuntimeSourceChangeCandidateFilePreviewResponse | null> {
-  const context = await getRuntimeContext(input.nodeId);
-
-  if (!context) {
-    return null;
-  }
-
   const candidates = await listRuntimeSourceChangeCandidates(input.nodeId);
 
   if (!candidates) {
@@ -13291,14 +13347,34 @@ export async function getRuntimeSourceChangeCandidateFilePreview(input: {
     return null;
   }
 
+  const context = await getRuntimeContext(input.nodeId);
+  const localPreview =
+    context && candidate.snapshot
+      ? await readSourceChangeCandidateFilePreview({
+          candidate,
+          context,
+          filePath: input.path
+        })
+      : undefined;
+
+  if (localPreview?.available) {
+    return runtimeSourceChangeCandidateFilePreviewResponseSchema.parse({
+      candidate,
+      path: input.path,
+      preview: localPreview
+    });
+  }
+
+  const projectedPreview = readProjectedSourceChangeCandidateFilePreview({
+    candidate,
+    filePath: input.path
+  });
+
   return runtimeSourceChangeCandidateFilePreviewResponseSchema.parse({
     candidate,
     path: input.path,
-    preview: await readSourceChangeCandidateFilePreview({
-      candidate,
-      context,
-      filePath: input.path
-    })
+    preview:
+      projectedPreview.available || !localPreview ? projectedPreview : localPreview
   });
 }
 

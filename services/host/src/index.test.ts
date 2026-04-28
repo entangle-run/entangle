@@ -1741,6 +1741,17 @@ describe("buildHostServer", () => {
         deletions: 1,
         diffExcerpt:
           "diff --git a/src/app.ts b/src/app.ts\n+export const ready = true;\n",
+        filePreviews: [
+          {
+            available: true,
+            bytesRead: 26,
+            content: "export const ready = true;\n",
+            contentEncoding: "utf8",
+            contentType: "text/plain",
+            path: "src/app.ts",
+            truncated: false
+          }
+        ],
         fileCount: 1,
         files: [
           {
@@ -1917,6 +1928,30 @@ describe("buildHostServer", () => {
           content: projectedSourceCandidate.sourceChangeSummary.diffExcerpt,
           contentEncoding: "utf8",
           contentType: "text/x-diff",
+          truncated: false
+        }
+      });
+
+      const projectedCandidateFileResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/source-change-candidates/candidate-alpha/file" +
+          `?path=${encodeURIComponent("src/app.ts")}`
+      });
+      expect(projectedCandidateFileResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceChangeCandidateFilePreviewResponseSchema.parse(
+          projectedCandidateFileResponse.json()
+        )
+      ).toEqual({
+        candidate: projectedSourceCandidate,
+        path: "src/app.ts",
+        preview: {
+          available: true,
+          bytesRead: 26,
+          content: "export const ready = true;\n",
+          contentEncoding: "utf8",
+          contentType: "text/plain",
           truncated: false
         }
       });
@@ -5260,7 +5295,7 @@ describe("buildHostServer", () => {
         cwd: sourceWorkspaceRoot,
         env: gitEnv
       });
-      const candidateRecord = {
+      const candidateRecord = sourceChangeCandidateRecordSchema.parse({
         candidateId: "source-change-turn-alpha",
         conversationId: "conv-alpha",
         createdAt: "2026-04-24T10:05:00.000Z",
@@ -5291,7 +5326,7 @@ describe("buildHostServer", () => {
         status: "pending_review",
         turnId: "turn-alpha",
         updatedAt: "2026-04-24T10:05:00.000Z"
-      };
+      });
       await writeJsonFile(
         path.join(
           runtimeContext.workspace.runtimeRoot,
@@ -7907,6 +7942,7 @@ describe("buildHostServer", () => {
               checkedAt: "2026-04-24T10:05:00.000Z",
               deletions: 0,
               fileCount: 1,
+              filePreviews: [],
               files: [
                 {
                   additions: 2,

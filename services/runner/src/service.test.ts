@@ -295,6 +295,12 @@ describe("RunnerService", () => {
     expect(turn?.sourceChangeSummary?.diffExcerpt).toContain(
       "export const generated = true;"
     );
+    expect(turn?.sourceChangeSummary?.filePreviews[0]).toMatchObject({
+      available: true,
+      content: "export const generated = true;\n",
+      contentType: "text/plain",
+      path: "src/generated.ts"
+    });
     const candidateId = turn ? `source-change-${turn.turnId}` : undefined;
     expect(turn?.sourceChangeCandidateIds).toEqual([candidateId]);
 

@@ -162,7 +162,7 @@ This repository currently contains:
   conversation list, selected-thread metadata, recorded inbound/outbound message
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, projected source-change summary rendering,
-  projected source-change diff excerpt rendering, source-change diff fallback,
+  projected source-change diff excerpt rendering, source-change diff/file fallback,
   Host-mediated source-candidate accept/reject controls stamped with the
   running User Node id, artifact-ref rendering, projected bounded artifact
   preview with runtime fallback, delivery labels, local conversation read
@@ -325,11 +325,13 @@ This repository currently contains:
   requiring Host-readable runner-local candidate files;
 - source-change candidate diff APIs can now fall back to bounded projected
   `diffExcerpt` evidence when runner-local shadow git state is unavailable;
+- source-change candidate file preview APIs can now fall back to bounded
+  projected text previews carried by the observed source-change summary;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
-  source-change candidate list/detail/diff, approval, and session read APIs
-  without requiring live model-provider credentials;
+  source-change candidate list/detail/diff/file, approval, and session read
+  APIs without requiring live model-provider credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions including handoffs, coordination result/close,
   approval request/response, completion, cancellation, and failure paths;

@@ -4,6 +4,8 @@ import path from "node:path";
 import {
   sourceChangeSummarySchema,
   type EffectiveRuntimeContext,
+  type SourceChangeFilePreview,
+  type SourceChangeFileSummary,
   type SourceChangeFileStatus,
   type SourceChangeSnapshotRef,
   type SourceChangeSummary
@@ -34,6 +36,8 @@ export type SourceChangeHarvestResult = {
 
 const maxSourceChangeFiles = 20;
 const maxSourceDiffExcerptCharacters = 12_000;
+const maxSourceFilePreviewBytes = 4_000;
+const maxSourceFilePreviewFiles = 5;
 const maxSourceHarvestFailureCharacters = 1_000;
 
 function nowIsoString(): string {
@@ -114,6 +118,78 @@ async function runGitCommand(
   });
 }
 
+async function runGitCommandBounded(
+  cwd: string,
+  args: string[],
+  options: GitCommandOptions,
+  maxBytes: number
+): Promise<{
+  stdout: Buffer;
+  stdoutBytes: number;
+}> {
+  const fullArgs = [
+    ...(options.gitDir ? ["--git-dir", options.gitDir] : []),
+    ...(options.workTree ? ["--work-tree", options.workTree] : []),
+    ...args
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", fullArgs, {
+      cwd,
+      env: {
+        ...process.env,
+        ...options.env
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let stdoutBytes = 0;
+    let stdoutKeptBytes = 0;
+    let stderrKeptBytes = 0;
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      stdoutBytes += buffer.length;
+
+      if (stdoutKeptBytes < maxBytes + 1) {
+        const remaining = maxBytes + 1 - stdoutKeptBytes;
+        stdoutChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stdoutKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
+      if (stderrKeptBytes < 1_000) {
+        const remaining = 1_000 - stderrKeptBytes;
+        stderrChunks.push(buffer.subarray(0, Math.max(0, remaining)));
+        stderrKeptBytes += Math.min(buffer.length, remaining);
+      }
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+
+      if (code !== 0) {
+        reject(
+          new Error(
+            `Git source preview command failed (${args.join(" ")}): ${
+              stderr || `exit ${code ?? "unknown"}`
+            }`
+          )
+        );
+        return;
+      }
+
+      resolve({
+        stdout: Buffer.concat(stdoutChunks),
+        stdoutBytes
+      });
+    });
+  });
+}
+
 function buildUnavailableSummary(
   status: SourceChangeSummary["status"],
   failureReason?: string
@@ -172,6 +248,108 @@ function mapGitStatus(code: string | undefined): SourceChangeFileStatus {
     default:
       return "unknown";
   }
+}
+
+function inferSourceFilePreviewContentType(
+  filePath: string
+): "text/markdown" | "text/plain" {
+  const extension = path.extname(filePath).toLowerCase();
+
+  return extension === ".md" || extension === ".markdown"
+    ? "text/markdown"
+    : "text/plain";
+}
+
+function sanitizeSourcePreviewReason(
+  error: unknown,
+  input: {
+    gitDir: string;
+    sourceWorkspaceRoot: string;
+  }
+): string {
+  const raw =
+    error instanceof Error && error.message.trim().length > 0
+      ? error.message
+      : "Source file preview failed.";
+
+  return truncate(
+    raw
+      .replaceAll(input.gitDir, "<source_snapshot>")
+      .replaceAll(input.sourceWorkspaceRoot, "<source_workspace>"),
+    maxSourceHarvestFailureCharacters
+  ).text;
+}
+
+async function readSourceFilePreview(input: {
+  file: SourceChangeFileSummary;
+  gitDir: string;
+  headTree: string;
+  sourceWorkspaceRoot: string;
+}): Promise<SourceChangeFilePreview> {
+  try {
+    const result = await runGitCommandBounded(
+      input.sourceWorkspaceRoot,
+      ["show", `${input.headTree}:${input.file.path}`],
+      {
+        gitDir: input.gitDir,
+        workTree: input.sourceWorkspaceRoot
+      },
+      maxSourceFilePreviewBytes
+    );
+    const previewBuffer = result.stdout.subarray(
+      0,
+      Math.min(result.stdout.length, maxSourceFilePreviewBytes)
+    );
+
+    if (previewBuffer.includes(0)) {
+      return {
+        available: false,
+        path: input.file.path,
+        reason:
+          "Source file preview is unavailable because the source file is not text."
+      };
+    }
+
+    return {
+      available: true,
+      bytesRead: previewBuffer.length,
+      content: previewBuffer.toString("utf8"),
+      contentEncoding: "utf8",
+      contentType: inferSourceFilePreviewContentType(input.file.path),
+      path: input.file.path,
+      truncated: result.stdoutBytes > maxSourceFilePreviewBytes
+    };
+  } catch (error) {
+    return {
+      available: false,
+      path: input.file.path,
+      reason: `Source file preview is unavailable: ${sanitizeSourcePreviewReason(
+        error,
+        input
+      )}`
+    };
+  }
+}
+
+async function buildSourceFilePreviews(input: {
+  files: SourceChangeFileSummary[];
+  gitDir: string;
+  headTree: string;
+  sourceWorkspaceRoot: string;
+}): Promise<SourceChangeFilePreview[]> {
+  return Promise.all(
+    input.files
+      .filter((file) => file.status !== "deleted")
+      .slice(0, maxSourceFilePreviewFiles)
+      .map((file) =>
+        readSourceFilePreview({
+          file,
+          gitDir: input.gitDir,
+          headTree: input.headTree,
+          sourceWorkspaceRoot: input.sourceWorkspaceRoot
+        })
+      )
+  );
 }
 
 function parseNameStatus(output: string): Array<{
@@ -412,8 +590,16 @@ export async function harvestSourceChanges(
     );
     const diffExcerpt = truncate(diffOutput, maxSourceDiffExcerptCharacters);
     const files = allFiles.slice(0, maxSourceChangeFiles);
+    const filePreviews = await buildSourceFilePreviews({
+      files,
+      gitDir: baseline.gitDir,
+      headTree: nextTree,
+      sourceWorkspaceRoot: baseline.sourceWorkspaceRoot
+    });
     const truncated =
-      allFiles.length > files.length || diffExcerpt.truncated;
+      allFiles.length > files.length ||
+      diffExcerpt.truncated ||
+      filePreviews.some((preview) => preview.available && preview.truncated);
 
     return {
       snapshot: {
@@ -427,6 +613,7 @@ export async function harvestSourceChanges(
         deletions: totals.deletions,
         ...(diffExcerpt.text ? { diffExcerpt: diffExcerpt.text } : {}),
         fileCount: allFiles.length,
+        filePreviews,
         files,
         status: "changed",
         truncated

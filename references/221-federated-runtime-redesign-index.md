@@ -118,6 +118,7 @@ same-machine slice records.
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
 - [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md)
+- [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 
 ## Audited Scope
 
@@ -308,9 +309,12 @@ The repository is not fully federated:
 - Host runtime source-change candidate diff GET routes now prefer local
   shadow-git diffs and fall back to projected `diffExcerpt` evidence from
   observed source-change candidate records;
+- Host runtime source-change candidate file preview GET routes now prefer local
+  shadow-git file content and fall back to bounded projected file previews from
+  observed source-change candidate records;
 - the process-runner smoke now injects a temporary fake OpenCode executable
   into the agent runner PATH, sends a signed User Node `task.request`, and
-  verifies Host runtime turn, source-change candidate list/detail/diff,
+  verifies Host runtime turn, source-change candidate list/detail/diff/file,
   approval, and session read APIs against signed observations from the real
   joined runner process without requiring live model credentials;
 - joined runners now publish session/conversation observations after outbound
@@ -361,8 +365,8 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
    Client. The first assignable/minimal-client slice and inbound/outbound
    message history, approval controls, approval resource rendering, signed
    approval-response context, source-change projection summaries,
-   projected source-change diff excerpts, source-change diff preview fallback,
-   artifact-ref rendering, projected bounded artifact preview with runtime
+   projected source-change diff excerpts, source-change diff/file preview
+   fallback, artifact-ref rendering, projected bounded artifact preview with runtime
    fallback, delivery labels, local conversation read state, projected wiki-ref
    rendering, projected wiki preview rendering, wiki-scoped approval context
    rendering, signed read receipts, parent-message links, delivery retry state,
@@ -376,8 +380,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
     operation/resource/reason context.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
-    source-change summaries and bounded artifact previews now project through
-    observed refs; complete source/wiki review remains open.
+    source-change summaries, bounded source file previews, and bounded artifact
+    previews now project through observed refs; complete source/wiki review
+    remains open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.

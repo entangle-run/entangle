@@ -223,6 +223,7 @@ Implementation record:
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
+- [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 
 Verification:
 
@@ -257,7 +258,7 @@ Current status:
   local runtime turn files are unavailable;
 - the process-runner smoke now exercises a deterministic OpenCode-adapter
   `task.request` through a real joined agent runner process and asserts the
-  projected turn, source-change candidate list/detail/diff, approval, and
+  projected turn, source-change candidate list/detail/diff/file, approval, and
   session read APIs over signed observations;
 - joined runners now emit session/conversation observations for later lifecycle
   transitions such as handoffs, coordination result/close, approval
@@ -273,8 +274,11 @@ Current status:
   those projected candidates with local compatibility files;
 - runtime source-change candidate diff GET routes can fall back to projected
   `diffExcerpt` evidence when local shadow-git state is unavailable;
-- deeper runtime source file preview, artifact history, wiki, and mutation
-  endpoints still need projection-backed or backend-resolved replacement.
+- runtime source-change candidate file preview GET routes can fall back to
+  bounded projected file preview evidence when local shadow-git state is
+  unavailable;
+- deeper artifact history, wiki, and mutation endpoints still need
+  projection-backed or backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -411,6 +415,7 @@ Implementation record:
 - [314-projected-artifact-preview-api-slice.md](314-projected-artifact-preview-api-slice.md)
 - [315-projected-source-candidate-diff-api-slice.md](315-projected-source-candidate-diff-api-slice.md)
 - [316-process-smoke-projected-source-candidate-slice.md](316-process-smoke-projected-source-candidate-slice.md)
+- [318-projected-source-candidate-file-preview-slice.md](318-projected-source-candidate-file-preview-slice.md)
 
 Verification:
 

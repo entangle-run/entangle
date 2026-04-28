@@ -150,6 +150,23 @@ export const sourceChangeFileSummarySchema = z.object({
   status: sourceChangeFileStatusSchema
 });
 
+export const sourceChangeFilePreviewSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    bytesRead: z.number().int().nonnegative(),
+    content: z.string(),
+    contentEncoding: z.literal("utf8"),
+    contentType: z.enum(["text/markdown", "text/plain"]),
+    path: nonEmptyStringSchema,
+    truncated: z.boolean()
+  }),
+  z.object({
+    available: z.literal(false),
+    path: nonEmptyStringSchema,
+    reason: nonEmptyStringSchema
+  })
+]);
+
 export const sourceChangeSummarySchema = z.object({
   additions: z.number().int().nonnegative().default(0),
   checkedAt: nonEmptyStringSchema,
@@ -157,6 +174,7 @@ export const sourceChangeSummarySchema = z.object({
   diffExcerpt: nonEmptyStringSchema.optional(),
   failureReason: nonEmptyStringSchema.optional(),
   fileCount: z.number().int().nonnegative(),
+  filePreviews: z.array(sourceChangeFilePreviewSchema).default([]),
   files: z.array(sourceChangeFileSummarySchema).default([]),
   status: z.enum(["not_configured", "unchanged", "changed", "failed"]),
   truncated: z.boolean().default(false)
@@ -494,6 +512,9 @@ export type SourceChangeFileStatus = z.infer<
 >;
 export type SourceChangeFileSummary = z.infer<
   typeof sourceChangeFileSummarySchema
+>;
+export type SourceChangeFilePreview = z.infer<
+  typeof sourceChangeFilePreviewSchema
 >;
 export type SourceChangeSummary = z.infer<typeof sourceChangeSummarySchema>;
 export type SourceChangeCandidateStatus = z.infer<

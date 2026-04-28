@@ -112,8 +112,9 @@ and refs so Host can inspect global state without reading runner disk.
   `artifact.ref` records; artifact preview can read bounded projected preview
   content; source-change candidate list/detail reads can read projected full
   candidate records; source-change diff can read projected `diffExcerpt`
-  evidence; deeper runtime source file preview, artifact history, wiki, and
-  mutation surfaces still need projected equivalents.
+  evidence; source-change file preview can read bounded projected file preview
+  evidence; deeper artifact history, wiki, and mutation surfaces still need
+  projected or backend-resolved equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
 - Treat `turn.updated` as the signed runner turn projection feed for turn

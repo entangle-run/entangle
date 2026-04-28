@@ -3873,3 +3873,13 @@ The federated dev Compose Host now selects Docker join mode with
 `ENTANGLE_DOCKER_RUNNER_HOST_API_URL=http://host:7071`, so managed Docker
 runners can fetch portable bootstrap bundles through Host API instead of
 mounting Host state just to read `runner-join.json`.
+
+## [2026-04-28] implementation | Added projected source-candidate file previews
+
+Added `references/318-projected-source-candidate-file-preview-slice.md`.
+Source-change summaries can now carry bounded changed-file text previews, and
+runner source harvesting emits previews for the first changed non-deleted files.
+
+The Host source-change candidate file preview API now prefers local shadow-git
+content when present and otherwise falls back to the projected bounded preview,
+so basic source review can work without Host-readable runner filesystem state.

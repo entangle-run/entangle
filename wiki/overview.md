@@ -81,10 +81,12 @@ The most accurate current description is:
   runner-local candidate files;
 - source-change candidate diff read APIs can now fall back to projected
   `diffExcerpt` evidence without runner-local shadow git state;
+- source-change candidate file preview read APIs can now fall back to bounded
+  projected text previews from observed source-change summaries;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate
-  list/detail/diff, approval, and session read APIs without live model
+  list/detail/diff/file, approval, and session read APIs without live model
   credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval

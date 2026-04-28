@@ -33,6 +33,7 @@ import {
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceChangeCandidateInspectionResponseSchema,
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -1670,11 +1671,22 @@ async function main(): Promise<void> {
             path: `/v1/runtimes/builder/source-change-candidates/${candidate.candidateId}/diff`
           })
         );
+        const filePreview =
+          runtimeSourceChangeCandidateFilePreviewResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path:
+                `/v1/runtimes/builder/source-change-candidates/${candidate.candidateId}/file` +
+                `?path=${encodeURIComponent("src/smoke-generated.ts")}`
+            })
+          );
 
         return inspection.candidate.candidateId === candidate.candidateId &&
           diff.diff.available &&
-          diff.diff.content.includes("smoke-generated.ts")
-          ? { candidate, diff }
+          diff.diff.content.includes("smoke-generated.ts") &&
+          filePreview.preview.available &&
+          filePreview.preview.content.includes("smokeSourceChange")
+          ? { candidate, diff, filePreview }
           : undefined;
       },
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
@@ -1684,6 +1696,10 @@ async function main(): Promise<void> {
       `candidate=${projectedBuilderSourceCandidate.candidate.candidateId}; ` +
         `diff=${
           projectedBuilderSourceCandidate.diff.diff.available
+            ? "available"
+            : "unavailable"
+        }; file=${
+          projectedBuilderSourceCandidate.filePreview.preview.available
             ? "available"
             : "unavailable"
         }`
