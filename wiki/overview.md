@@ -85,6 +85,9 @@ projected Human Interface Runtime placement and User Client URLs.
 Studio now has first Host-backed assignment offer/revoke controls in the
 Federation panel for assigning graph nodes, including User Nodes, to trusted
 runners while keeping participant chat/review inside the User Client.
+Host status now also carries bounded federated control/observe transport
+health, and CLI plus Studio render that Host-owned relay subscription status
+without probing relay state directly.
 
 The contract-ownership layer is now also explicit:
 

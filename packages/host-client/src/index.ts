@@ -1582,7 +1582,8 @@ export {
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,
-  formatHostStatusSessionDiagnosticsSummary
+  formatHostStatusSessionDiagnosticsSummary,
+  formatHostTransportControlObserveSummary
 } from "./host-status.js";
 export {
   buildGraphDiff,

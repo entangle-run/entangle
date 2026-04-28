@@ -100,6 +100,7 @@ same-machine slice records.
 - [297-cli-user-client-endpoints-slice.md](297-cli-user-client-endpoints-slice.md)
 - [298-studio-runtime-assignment-control-slice.md](298-studio-runtime-assignment-control-slice.md)
 - [299-studio-runtime-assignment-revocation-slice.md](299-studio-runtime-assignment-revocation-slice.md)
+- [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
 
 ## Audited Scope
 
@@ -239,6 +240,10 @@ The repository is not fully federated:
   API;
 - Studio now also lists projected runtime assignments and can revoke active,
   accepted, offered, or revoking assignments through the Host assignment API;
+- Host status now includes bounded federated control/observe transport health
+  with configured relay URLs, subscribed/degraded/stopped lifecycle state, and
+  last startup failure metadata; CLI summaries and Studio Host Status render
+  the same Host-owned status read model;
 - the process runner smoke now preflights the configured Nostr relay and fails
   with an actionable relay prerequisite message before starting Host or runner
   processes when the relay is unavailable;
@@ -351,9 +356,10 @@ follow-up slices, the public runtime API path boundary, portable runtime
 bootstrap bundles, the first split agent/User Node process smoke, and the first
 User Node-specific inbox/User Client surface are implemented in this branch.
 The User Client now includes the first Host-mediated source-candidate review
-action, and CLI can list projected User Client endpoints per User Node. The
-next blocking implementation areas are richer projection-backed
-source/wiki review services, replacing remaining deep filesystem-backed runtime
-inspection paths with projection-backed source/wiki services and object-backed
-artifact services, and turning the process smoke into the full multi-machine
-distributed proof.
+action, CLI can list projected User Client endpoints per User Node, and Host
+status exposes first control/observe transport health to CLI and Studio. The
+next blocking implementation areas are richer projection-backed source/wiki
+review services, replacing remaining deep filesystem-backed runtime inspection
+paths with projection-backed source/wiki services and object-backed artifact
+services, adding deeper per-relay diagnostics, and turning the process smoke
+into the full multi-machine distributed proof.

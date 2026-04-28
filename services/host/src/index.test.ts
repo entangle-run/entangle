@@ -1025,6 +1025,10 @@ describe("buildHostServer", () => {
       expect(authorizedResponse.statusCode).toBe(200);
       const status = hostStatusResponseSchema.parse(authorizedResponse.json());
       expect(status.service).toBe("entangle-host");
+      expect(status.transport.controlObserve).toMatchObject({
+        configuredRelayCount: 1,
+        status: "not_started"
+      });
       expect(status.stateLayout).toMatchObject({
         currentLayoutVersion: 1,
         recordedLayoutVersion: 1,
@@ -1086,6 +1090,9 @@ describe("buildHostServer", () => {
         secretStatus: "available",
         status: "active"
       });
+      expect(status.transport.controlObserve.relayUrls).toEqual([
+        "ws://strfry:7777"
+      ]);
 
       const exportResponse = await server.inject({
         method: "GET",
@@ -1120,6 +1127,38 @@ describe("buildHostServer", () => {
       expect(mismatchedImportResponse.statusCode).toBe(400);
       expect(hostErrorResponseSchema.parse(mismatchedImportResponse.json())).toMatchObject({
         code: "bad_request"
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("reports degraded host status when federated transport startup fails", async () => {
+    const server = await createTestServer();
+    const stateModule = await import("./state.js");
+
+    try {
+      stateModule.recordHostFederatedControlObserveTransportHealth({
+        lastFailureAt: "2026-04-28T10:00:00.000Z",
+        lastFailureMessage: "relay subscription failed",
+        relayUrls: ["ws://relay.example"],
+        status: "degraded",
+        updatedAt: "2026-04-28T10:00:01.000Z"
+      });
+
+      const statusResponse = await server.inject({
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      const status = hostStatusResponseSchema.parse(statusResponse.json());
+      expect(status.status).toBe("degraded");
+      expect(status.transport.controlObserve).toMatchObject({
+        configuredRelayCount: 1,
+        lastFailureMessage: "relay subscription failed",
+        relayUrls: ["ws://relay.example"],
+        status: "degraded"
       });
     } finally {
       await server.close();

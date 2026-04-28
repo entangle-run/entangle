@@ -139,7 +139,15 @@ function createDeps(): DeploymentDiagnosticsBundleDeps {
             status: "current"
           },
           status: "healthy",
-          timestamp: "2026-04-26T00:00:00.000Z"
+          timestamp: "2026-04-26T00:00:00.000Z",
+          transport: {
+            controlObserve: {
+              configuredRelayCount: 0,
+              relayUrls: [],
+              status: "disabled",
+              updatedAt: "2026-04-26T00:00:00.000Z"
+            }
+          }
         });
       },
       listExternalPrincipals() {

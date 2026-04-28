@@ -207,6 +207,7 @@ import {
   setRuntimeRecoveryPolicy,
   trustRunnerRegistration,
   recordHostOperatorRequestCompleted,
+  recordHostFederatedControlObserveTransportHealth,
   recordUserNodeInboundMessage,
   recordUserNodePublishedMessage,
   subscribeToHostEvents,
@@ -215,6 +216,7 @@ import {
   validateGraphCandidate
 } from "./state.js";
 import {
+  resolveHostFederatedRelayUrls,
   startHostFederatedControlPlane,
   type HostFederatedRuntime
 } from "./host-federated-runtime.js";
@@ -3542,10 +3544,33 @@ export async function startHostServer(): Promise<
   const port = Number.parseInt(process.env.ENTANGLE_HOST_PORT ?? "7071", 10);
   await initializeHostState();
   let federatedRuntime: HostFederatedRuntime | undefined;
+  const federatedControlRelayUrls = resolveHostFederatedRelayUrls(
+    await getCatalogInspection()
+  );
 
   try {
-    federatedRuntime = await startHostFederatedControlPlane();
+    recordHostFederatedControlObserveTransportHealth({
+      relayUrls: federatedControlRelayUrls,
+      status: federatedControlRelayUrls.length > 0 ? "not_started" : "disabled"
+    });
+    federatedRuntime = await startHostFederatedControlPlane({
+      relayUrls: federatedControlRelayUrls
+    });
+    recordHostFederatedControlObserveTransportHealth({
+      relayUrls: federatedRuntime?.relayUrls ?? federatedControlRelayUrls,
+      status: federatedRuntime ? "subscribed" : "disabled",
+      ...(federatedRuntime ? { subscribedAt: new Date().toISOString() } : {})
+    });
   } catch (error) {
+    recordHostFederatedControlObserveTransportHealth({
+      lastFailureAt: new Date().toISOString(),
+      lastFailureMessage:
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : "Unknown federated control plane startup failure.",
+      relayUrls: federatedControlRelayUrls,
+      status: "degraded"
+    });
     console.error("Failed to start Entangle federated control plane.", error);
   }
 
@@ -3564,6 +3589,10 @@ export async function startHostServer(): Promise<
   if (federatedRuntime) {
     server.addHook("onClose", async () => {
       await federatedRuntime?.close();
+      recordHostFederatedControlObserveTransportHealth({
+        relayUrls: federatedRuntime?.relayUrls ?? federatedControlRelayUrls,
+        status: "stopped"
+      });
     });
   }
 

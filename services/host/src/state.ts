@@ -68,6 +68,8 @@ import {
   hostAuthorityInspectionResponseSchema,
   type HostAuthorityRecord,
   hostAuthorityRecordSchema,
+  type HostTransportPlaneHealth,
+  type HostTransportPlaneStatus,
   gitRepositoryProvisioningRecordSchema,
   type AgentPackageManifest,
   agentPackageManifestSchema,
@@ -505,6 +507,9 @@ let runtimeBackendOverride:
   | undefined;
 let runtimeBackendSingleton: RuntimeBackend | undefined;
 const hostEventSubscribers = new Set<(event: HostEventRecord) => void>();
+let hostFederatedControlObserveTransportHealth:
+  | HostTransportPlaneHealth
+  | undefined;
 
 type CurrentGraphRuntimeSynchronizationResult = {
   nodes: NodeInspectionResponse[];
@@ -531,6 +536,38 @@ export function configureRuntimeBackendForProcess(
 ): void {
   runtimeBackendOverride = factory;
   runtimeBackendSingleton = undefined;
+}
+
+export function recordHostFederatedControlObserveTransportHealth(input: {
+  lastFailureAt?: string;
+  lastFailureMessage?: string;
+  relayUrls?: string[];
+  status: HostTransportPlaneStatus;
+  subscribedAt?: string;
+  updatedAt?: string;
+}): HostTransportPlaneHealth {
+  const relayUrls = [...new Set(input.relayUrls ?? [])].sort((left, right) =>
+    left.localeCompare(right)
+  );
+  const health: HostTransportPlaneHealth = {
+    configuredRelayCount: relayUrls.length,
+    ...(input.lastFailureAt ? { lastFailureAt: input.lastFailureAt } : {}),
+    ...(input.lastFailureMessage
+      ? { lastFailureMessage: input.lastFailureMessage }
+      : {}),
+    relayUrls,
+    status: input.status,
+    ...(input.subscribedAt ? { subscribedAt: input.subscribedAt } : {}),
+    updatedAt: input.updatedAt ?? nowIsoString()
+  };
+
+  hostFederatedControlObserveTransportHealth = health;
+
+  return health;
+}
+
+export function clearHostFederatedControlObserveTransportHealth(): void {
+  hostFederatedControlObserveTransportHealth = undefined;
 }
 
 type CatalogUpdatedEventInput = Omit<
@@ -15199,11 +15236,62 @@ export async function applyGraph(input: unknown): Promise<GraphMutationResponse>
   };
 }
 
+function resolveHostControlObserveRelayUrlsFromCatalog(
+  catalog: CatalogInspectionResponse["catalog"] | undefined
+): string[] {
+  if (!catalog) {
+    return [];
+  }
+
+  const defaultRelayRefs = new Set(catalog.defaults.relayProfileRefs);
+  const selectedRelays =
+    defaultRelayRefs.size > 0
+      ? catalog.relays.filter((relay) => defaultRelayRefs.has(relay.id))
+      : catalog.relays;
+
+  return [
+    ...new Set(
+      selectedRelays.flatMap((relay) => [
+        ...relay.readUrls,
+        ...relay.writeUrls
+      ])
+    )
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+function buildHostTransportHealth(input: {
+  catalog: CatalogInspectionResponse["catalog"] | undefined;
+  timestamp: string;
+}) {
+  if (hostFederatedControlObserveTransportHealth) {
+    return {
+      controlObserve: hostFederatedControlObserveTransportHealth
+    };
+  }
+
+  const relayUrls = resolveHostControlObserveRelayUrlsFromCatalog(input.catalog);
+
+  return {
+    controlObserve: {
+      configuredRelayCount: relayUrls.length,
+      relayUrls,
+      status: relayUrls.length > 0 ? ("not_started" as const) : ("disabled" as const),
+      updatedAt: input.timestamp
+    }
+  };
+}
+
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const authorityInspection = await getHostAuthorityInspection();
+  const catalogInspection = await getCatalogInspection();
   const stateLayout = await inspectStateLayout({
     materializeIfMissing: true
+  });
+  const timestamp = nowIsoString();
+  const transportHealth = buildHostTransportHealth({
+    catalog: catalogInspection.catalog,
+    timestamp
   });
   const runtimeInspections = await listRuntimeInspections();
   const sessionList = await listSessions();
@@ -15241,6 +15329,7 @@ export async function buildHostStatus() {
   const hostStatus =
     stateLayout.status !== "current" ||
     authorityInspection.secret.status !== "available" ||
+    transportHealth.controlObserve.status === "degraded" ||
     reconciliationSnapshot.degradedRuntimeCount > 0 ||
     sessionDiagnostics.consistencyFindingCount > 0
       ? "degraded"
@@ -15286,6 +15375,7 @@ export async function buildHostStatus() {
     },
     sessionDiagnostics,
     stateLayout,
-    timestamp: nowIsoString()
+    timestamp,
+    transport: transportHealth
   };
 }

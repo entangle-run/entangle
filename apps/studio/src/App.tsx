@@ -19,6 +19,7 @@ import {
   createHostClient,
   formatHostStateLayoutSummary,
   formatHostStatusSessionDiagnosticsSummary,
+  formatHostTransportControlObserveSummary,
   formatRuntimeWorkspaceHealthSummary,
   formatRuntimeMemoryPageDetail,
   formatRuntimeMemoryPageLabel,
@@ -4780,6 +4781,14 @@ export function App() {
               <dd>
                 {status
                   ? formatHostStatusSessionDiagnosticsSummary(status)
+                  : "not loaded"}
+              </dd>
+            </div>
+            <div>
+              <dt>Transport</dt>
+              <dd>
+                {status
+                  ? formatHostTransportControlObserveSummary(status)
                   : "not loaded"}
               </dd>
             </div>

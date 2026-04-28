@@ -38,7 +38,16 @@ function createStatus(): HostStatusResponse {
       status: "current"
     },
     status: "degraded",
-    timestamp: "2026-04-25T08:00:02.000Z"
+    timestamp: "2026-04-25T08:00:02.000Z",
+    transport: {
+      controlObserve: {
+        configuredRelayCount: 2,
+        relayUrls: ["ws://relay-a.entangle.test", "ws://relay-b.entangle.test"],
+        status: "subscribed",
+        subscribedAt: "2026-04-25T08:00:01.000Z",
+        updatedAt: "2026-04-25T08:00:01.000Z"
+      }
+    }
   };
 }
 
@@ -61,10 +70,18 @@ describe("host status CLI summary projection", () => {
       stateLayout: {
         summary: "v1 · current"
       },
-      status: "degraded"
+      status: "degraded",
+      transport: {
+        controlObserve: {
+          summary: "subscribed · 2 relays"
+        }
+      }
     });
     expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
       "findings runtime_failed"
+    );
+    expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
+      "transport control/observe subscribed · 2 relays"
     );
   });
 });

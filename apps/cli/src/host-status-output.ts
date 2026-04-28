@@ -3,7 +3,8 @@ import {
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,
-  formatHostStatusSessionDiagnosticsSummary
+  formatHostStatusSessionDiagnosticsSummary,
+  formatHostTransportControlObserveSummary
 } from "@entangle/host-client";
 import type { HostStatusResponse } from "@entangle/types";
 
@@ -35,6 +36,11 @@ export type HostStatusCliSummary = {
   };
   status: string;
   timestamp: string;
+  transport: HostStatusResponse["transport"] & {
+    controlObserve: HostStatusResponse["transport"]["controlObserve"] & {
+      summary: string;
+    };
+  };
 };
 
 export function projectHostStatusSummary(
@@ -75,6 +81,13 @@ export function projectHostStatusSummary(
       ...status.stateLayout,
       summary: formatHostStateLayoutSummary(status)
     },
-    timestamp: status.timestamp
+    timestamp: status.timestamp,
+    transport: {
+      ...status.transport,
+      controlObserve: {
+        ...status.transport.controlObserve,
+        summary: formatHostTransportControlObserveSummary(status)
+      }
+    }
   };
 }

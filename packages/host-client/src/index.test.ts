@@ -80,7 +80,15 @@ describe("createHostClient", () => {
                 recordedLayoutVersion: 1,
                 status: "current"
               },
-              timestamp: "2026-04-24T00:00:00.000Z"
+              timestamp: "2026-04-24T00:00:00.000Z",
+              transport: {
+                controlObserve: {
+                  configuredRelayCount: 0,
+                  relayUrls: [],
+                  status: "disabled",
+                  updatedAt: "2026-04-24T00:00:00.000Z"
+                }
+              }
             }),
             ok: true,
             status: 200

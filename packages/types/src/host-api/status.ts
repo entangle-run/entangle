@@ -36,6 +36,28 @@ export const stateLayoutInspectionSchema = z.object({
   status: stateLayoutInspectionStatusSchema
 });
 
+export const hostTransportPlaneStatusSchema = z.enum([
+  "disabled",
+  "not_started",
+  "subscribed",
+  "degraded",
+  "stopped"
+]);
+
+export const hostTransportPlaneHealthSchema = z.object({
+  configuredRelayCount: z.number().int().nonnegative(),
+  lastFailureAt: nonEmptyStringSchema.optional(),
+  lastFailureMessage: nonEmptyStringSchema.optional(),
+  relayUrls: z.array(nonEmptyStringSchema),
+  status: hostTransportPlaneStatusSchema,
+  subscribedAt: nonEmptyStringSchema.optional(),
+  updatedAt: nonEmptyStringSchema
+});
+
+export const hostTransportHealthSchema = z.object({
+  controlObserve: hostTransportPlaneHealthSchema
+});
+
 export const hostStatusResponseSchema = z.object({
   authority: hostAuthoritySummarySchema.optional(),
   service: z.literal("entangle-host"),
@@ -67,7 +89,8 @@ export const hostStatusResponseSchema = z.object({
     })
     .optional(),
   stateLayout: stateLayoutInspectionSchema,
-  timestamp: nonEmptyStringSchema
+  timestamp: nonEmptyStringSchema,
+  transport: hostTransportHealthSchema
 });
 
 export const runtimeStatusSchema = z.object({
@@ -84,6 +107,13 @@ export const traceEventSchema = z.object({
 });
 
 export type HostStatusResponse = z.infer<typeof hostStatusResponseSchema>;
+export type HostTransportHealth = z.infer<typeof hostTransportHealthSchema>;
+export type HostTransportPlaneHealth = z.infer<
+  typeof hostTransportPlaneHealthSchema
+>;
+export type HostTransportPlaneStatus = z.infer<
+  typeof hostTransportPlaneStatusSchema
+>;
 export type StateLayoutInspection = z.infer<
   typeof stateLayoutInspectionSchema
 >;

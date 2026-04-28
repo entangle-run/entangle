@@ -3671,3 +3671,14 @@ Host-backed revoke action for revocable assignment states.
 
 This gives Studio the first complete offer/revoke assignment loop while keeping
 the canonical control-plane transition inside Host.
+
+## [2026-04-28] implementation | Added Host transport health status
+
+Added `references/300-host-transport-health-slice.md`. Host status now includes
+bounded federated control/observe transport health for the Host-owned relay
+subscription lifecycle: disabled, not started, subscribed, degraded, or
+stopped, with configured relay URLs and last startup failure metadata.
+
+The shared host-client, CLI host-status summary, and Studio Host Status panel
+now render the same Host read model, while deeper per-relay diagnostics remain
+future work.

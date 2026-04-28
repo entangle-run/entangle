@@ -20,7 +20,7 @@ candidates/history, wiki publications, recovery, and event refresh.
 
 Missing surfaces:
 
-- transport health;
+- deeper per-relay transport diagnostics;
 - richer User Node runtime reassignment workflow controls in Studio;
 - rich Human Interface Runtime visibility beyond the projected runtime row;
 - durable user-node inbox/outbox projection;
@@ -91,6 +91,9 @@ Recently added:
   Host assignment API.
 - Studio now lists projected assignment rows and can revoke active, accepted,
   offered, or revoking assignments through the Host assignment API.
+- Host status now includes bounded federated control/observe transport health,
+  CLI host-status summaries include it, and Studio's Host Status panel renders
+  the same Host-owned read model.
 
 ## Target Model
 
@@ -158,8 +161,9 @@ Node.
   history now has the first inbound/outbound projection path.
 - Add runner join executable or CLI command surface for generating join config.
 - Add Studio operator panels for authority, runner registry, assignments, and
-  transport/projection health. Studio now has the first projection health and
-  User Node summary panel plus first-pass assignment offer/revoke controls.
+  transport/projection health. Studio now has the first projection health,
+  User Node summary panel, transport health row, and first-pass assignment
+  offer/revoke controls.
 - Add Studio User Node runtime visibility and User Client open action. The
   first projection-derived User Node runtime summaries and `clientUrl` open
   actions are implemented; richer reassignment and health panels remain open.
@@ -171,8 +175,8 @@ Node.
   with runtime-diff fallback, artifact-ref rendering, bounded artifact preview,
   projected wiki-ref rendering, projected wiki preview rendering,
   wiki-scoped approval context rendering, and local read-state updates plus
-  signed read receipts; richer wiki publication actions and the full bundled
-  client app remain open.
+  signed read receipts; a dedicated bundled `apps/user-client` app now exists
+  and richer participant-side source/wiki review flows remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.

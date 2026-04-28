@@ -64,6 +64,14 @@ function createPassingDeps(): DeploymentDoctorDeps {
             status: "current"
           },
           timestamp: "2026-04-25T00:00:00.000Z",
+          transport: {
+            controlObserve: {
+              configuredRelayCount: 0,
+              relayUrls: [],
+              status: "disabled",
+              updatedAt: "2026-04-25T00:00:00.000Z"
+            }
+          },
           status: "healthy"
         });
       },

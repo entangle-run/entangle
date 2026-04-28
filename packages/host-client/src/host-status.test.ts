@@ -3,7 +3,8 @@ import type { HostStatusResponse } from "@entangle/types";
 import {
   formatHostStatusDetailLines,
   formatHostStatusLabel,
-  formatHostStatusReconciliationSummary
+  formatHostStatusReconciliationSummary,
+  formatHostTransportControlObserveSummary
 } from "./host-status.js";
 
 function createStatus(): HostStatusResponse {
@@ -42,7 +43,17 @@ function createStatus(): HostStatusResponse {
       status: "current"
     },
     status: "degraded",
-    timestamp: "2026-04-25T08:00:02.000Z"
+    timestamp: "2026-04-25T08:00:02.000Z",
+    transport: {
+      controlObserve: {
+        configuredRelayCount: 1,
+        lastFailureAt: "2026-04-25T08:00:02.000Z",
+        lastFailureMessage: "subscription refused",
+        relayUrls: ["ws://relay.entangle.test"],
+        status: "degraded",
+        updatedAt: "2026-04-25T08:00:02.000Z"
+      }
+    }
   };
 }
 
@@ -53,6 +64,9 @@ describe("host status presentation helpers", () => {
     expect(formatHostStatusLabel(status)).toBe("entangle-host · degraded");
     expect(formatHostStatusReconciliationSummary(status)).toBe(
       "3 runtimes · 2 issues · 1 degraded · 1 blocked"
+    );
+    expect(formatHostTransportControlObserveSummary(status)).toBe(
+      "degraded · 1 relay"
     );
   });
 
@@ -72,5 +86,10 @@ describe("host status presentation helpers", () => {
     expect(detailLines).toContain(
       "last reconciled 2026-04-25T08:00:01.000Z"
     );
+    expect(detailLines).toContain(
+      "transport control/observe degraded · 1 relay"
+    );
+    expect(detailLines).toContain("transport failure subscription refused");
+    expect(detailLines).toContain("transport relays ws://relay.entangle.test");
   });
 });

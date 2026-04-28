@@ -367,12 +367,14 @@ Verification:
 ### Slice 12: Studio And CLI Federation Surfaces
 
 Add first-pass authority, runners, assignments, projection, User Node identity,
-projection inbox, reply, approve, and reject surfaces. Full transport health
-and Studio chat remain follow-up work.
+projection inbox, reply, approve, reject, and Host transport-health surfaces.
+Deeper per-relay diagnostics and richer User Client participant workflows
+remain follow-up work.
 
 Implementation record:
 
 - [243-studio-cli-federation-surfaces-slice.md](243-studio-cli-federation-surfaces-slice.md)
+- [300-host-transport-health-slice.md](300-host-transport-health-slice.md)
 
 Verification:
 
@@ -388,9 +390,11 @@ conversation, active, unread, and pending-approval counts. Studio also has a
 first Host-backed assignment offer control for assigning graph nodes, including
 User Nodes, to trusted runners plus projected assignment rows with Host-backed
 revoke actions. CLI approve/reject can now derive signed response context from
-directly looked-up recorded approval-request messages. Transport health, richer
-Studio reassignment controls, and removal of old admin/debug approval mutation
-paths remain follow-up work.
+directly looked-up recorded approval-request messages. Host status now exposes
+first federated control/observe transport health and both CLI and Studio render
+that Host-owned read model. Deeper per-relay diagnostics, richer Studio
+reassignment controls, and removal of old admin/debug approval mutation paths
+remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

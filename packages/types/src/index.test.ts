@@ -1088,7 +1088,16 @@ describe("federated runtime contracts", () => {
           status: "current"
         },
         status: "healthy",
-        timestamp: observedAt
+        timestamp: observedAt,
+        transport: {
+          controlObserve: {
+            configuredRelayCount: 1,
+            relayUrls: ["ws://relay.entangle.test"],
+            status: "subscribed",
+            subscribedAt: observedAt,
+            updatedAt: observedAt
+          }
+        }
       }).authority?.authorityId
     ).toBe("authority-main");
   });
@@ -3445,12 +3454,23 @@ describe("reconciliation contracts", () => {
         status: "current"
       },
       status: "degraded",
-      timestamp: "2026-04-24T00:00:00.000Z"
+      timestamp: "2026-04-24T00:00:00.000Z",
+      transport: {
+        controlObserve: {
+          configuredRelayCount: 1,
+          lastFailureAt: "2026-04-24T00:00:00.000Z",
+          lastFailureMessage: "relay refused subscription",
+          relayUrls: ["ws://relay.entangle.test"],
+          status: "degraded",
+          updatedAt: "2026-04-24T00:00:00.000Z"
+        }
+      }
     });
 
     expect(result.reconciliation.blockedRuntimeCount).toBe(1);
     expect(result.reconciliation.findingCodes).toEqual(["context_unavailable"]);
     expect(result.stateLayout.status).toBe("current");
+    expect(result.transport.controlObserve.status).toBe("degraded");
   });
 
   it("accepts only the current Entangle state layout product marker", () => {

@@ -35,13 +35,27 @@ export function formatHostStateLayoutSummary(status: HostStatusResponse): string
   return `v${recordedLayoutVersion} · ${layout.status}`;
 }
 
+export function formatHostTransportControlObserveSummary(
+  status: HostStatusResponse
+): string {
+  const transport = status.transport.controlObserve;
+  const relayLabel =
+    transport.configuredRelayCount === 1
+      ? "1 relay"
+      : `${transport.configuredRelayCount} relays`;
+
+  return `${transport.status} · ${relayLabel}`;
+}
+
 export function formatHostStatusDetailLines(
   status: HostStatusResponse
 ): string[] {
   const reconciliation = status.reconciliation;
+  const transport = status.transport.controlObserve;
   const detailLines = [
     `timestamp ${status.timestamp}`,
     `state layout ${formatHostStateLayoutSummary(status)}`,
+    `transport control/observe ${formatHostTransportControlObserveSummary(status)}`,
     `runtime counts desired ${status.runtimeCounts.desired}, observed ${status.runtimeCounts.observed}, running ${status.runtimeCounts.running}`,
     `reconciliation ${formatHostStatusReconciliationSummary(status)}`,
     `session diagnostics ${formatHostStatusSessionDiagnosticsSummary(status)}`,
@@ -59,6 +73,18 @@ export function formatHostStatusDetailLines(
 
   if (reconciliation.lastReconciledAt) {
     detailLines.push(`last reconciled ${reconciliation.lastReconciledAt}`);
+  }
+
+  if (transport.subscribedAt) {
+    detailLines.push(`transport subscribed ${transport.subscribedAt}`);
+  }
+
+  if (transport.lastFailureMessage) {
+    detailLines.push(`transport failure ${transport.lastFailureMessage}`);
+  }
+
+  if (transport.relayUrls.length > 0) {
+    detailLines.push(`transport relays ${transport.relayUrls.join(", ")}`);
   }
 
   return detailLines;
