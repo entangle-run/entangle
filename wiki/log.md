@@ -3772,3 +3772,13 @@ compatibility files.
 
 Direct Host approval mutation remains local-context backed; signed User Node
 approval responses remain the federated participant path.
+
+## [2026-04-28] implementation | Added projected turn read APIs
+
+Added `references/309-projected-turn-read-api-slice.md`. Observed runner turn
+activity now persists the bounded full turn record, and Host runtime turn
+list/detail GET routes merge projected turns with local compatibility files.
+
+This lets remote turn activity observed through signed `turn.updated` events
+show up through the same Host API surfaces without requiring Host to read a
+runner-local `turns` directory.

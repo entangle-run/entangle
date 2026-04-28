@@ -21,6 +21,7 @@ import {
   memoryRepositorySyncOutcomeSchema,
   memorySynthesisOutcomeSchema,
   runnerPhaseSchema,
+  runnerTurnRecordSchema,
   runnerTriggerKindSchema,
   sessionRecordSchema,
   sessionLifecycleStateSchema,
@@ -70,6 +71,7 @@ export const observedRunnerTurnActivityRecordSchema = z.object({
   sourceChangeSummary: sourceChangeSummarySchema.optional(),
   startedAt: nonEmptyStringSchema,
   triggerKind: runnerTriggerKindSchema,
+  turn: runnerTurnRecordSchema.optional(),
   turnId: identifierSchema,
   updatedAt: nonEmptyStringSchema
 });

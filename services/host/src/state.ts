@@ -2662,6 +2662,7 @@ export async function recordTurnUpdatedObservation(
       : {}),
     startedAt: turnRecord.startedAt,
     triggerKind: turnRecord.triggerKind,
+    turn: turnRecord,
     turnId: turnRecord.turnId,
     updatedAt: turnRecord.updatedAt
   });
@@ -13132,17 +13133,65 @@ export async function getRuntimeSourceChangeCandidateFilePreview(input: {
   });
 }
 
+async function listProjectedRuntimeTurnRecords(
+  nodeId: string
+): Promise<RunnerTurnRecord[]> {
+  const { graph } = await readActiveGraphState();
+
+  if (!graph || !graph.nodes.some((node) => node.nodeId === nodeId)) {
+    return [];
+  }
+
+  const records = (await pathExists(observedRunnerTurnActivityRoot))
+    ? await Promise.all(
+        (await readdir(observedRunnerTurnActivityRoot))
+          .filter((entry) => entry.endsWith(".json"))
+          .map(async (entry) =>
+            observedRunnerTurnActivityRecordSchema.parse(
+              await readJsonFile(path.join(observedRunnerTurnActivityRoot, entry))
+            )
+          )
+      )
+    : [];
+
+  return records
+    .filter(
+      (record) =>
+        record.graphId === graph.graphId &&
+        record.nodeId === nodeId &&
+        Boolean(record.turn)
+    )
+    .map((record) => record.turn)
+    .filter((turn): turn is RunnerTurnRecord => Boolean(turn))
+    .sort((left, right) => left.turnId.localeCompare(right.turnId));
+}
+
 export async function listRuntimeTurns(
   nodeId: string
 ): Promise<RuntimeTurnListResponse | null> {
-  const context = await getRuntimeContext(nodeId);
+  const [context, projectedTurns] = await Promise.all([
+    getRuntimeContext(nodeId),
+    listProjectedRuntimeTurnRecords(nodeId)
+  ]);
 
   if (!context) {
-    return null;
+    return runtimeTurnListResponseSchema.parse({
+      turns: projectedTurns
+    });
+  }
+
+  const turnRecordsById = new Map(
+    projectedTurns.map((turn) => [turn.turnId, turn])
+  );
+
+  for (const turn of await listRuntimeTurnRecords(context.workspace.runtimeRoot)) {
+    turnRecordsById.set(turn.turnId, turn);
   }
 
   return runtimeTurnListResponseSchema.parse({
-    turns: await listRuntimeTurnRecords(context.workspace.runtimeRoot)
+    turns: [...turnRecordsById.values()].sort((left, right) =>
+      left.turnId.localeCompare(right.turnId)
+    )
   });
 }
 
@@ -13855,6 +13904,7 @@ async function synchronizeRunnerTurnActivityObservation(input: {
       : {}),
     startedAt: turnRecord.startedAt,
     triggerKind: turnRecord.triggerKind,
+    turn: turnRecord,
     turnId: turnRecord.turnId,
     updatedAt: turnRecord.updatedAt
   });

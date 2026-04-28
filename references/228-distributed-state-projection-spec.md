@@ -29,8 +29,10 @@ filesystem record, and the session detail route can return bounded projected
 inspection for those sessions. Runner-owned approval lifecycle changes now emit
 `approval.updated` observations with bounded approval records, and Host reduces
 them into observed approval activity. Runtime approval list/detail GET routes
-now read from that projection as well as local compatibility files. The
-remaining deep runtime APIs still need to be moved off local file reads.
+now read from that projection as well as local compatibility files. Runtime
+turn list/detail GET routes now read from observed turn projection as well as
+local compatibility files. The remaining deep runtime APIs still need to be
+moved off local file reads.
 
 ## Target Model
 
@@ -87,10 +89,13 @@ and refs so Host can inspect global state without reading runner disk.
   eligible for local stale-record pruning.
 - Continue replacing session, approval, turn, source, and wiki detail endpoints
   with projection-backed read models. The high-level session list and bounded
-  session inspection now have projection fallbacks; deeper runtime source,
-  artifact, wiki, approval, and turn detail still need projected equivalents.
+  session inspection now have projection fallbacks; approval and turn read APIs
+  can read projection; deeper runtime source, artifact, wiki, and mutation
+  surfaces still need projected equivalents.
 - Treat `approval.updated` as the signed approval lifecycle projection feed for
   session counts and approval read APIs.
+- Treat `turn.updated` as the signed runner turn projection feed for turn
+  list/detail read APIs.
 - Add replay and snapshot support so Host can rebuild projection.
 - Add projection consistency diagnostics.
 

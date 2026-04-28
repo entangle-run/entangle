@@ -6484,7 +6484,8 @@ describe("buildHostServer", () => {
       const {
         recordApprovalUpdatedObservation,
         recordRunnerHello,
-        recordSessionUpdatedObservation
+        recordSessionUpdatedObservation,
+        recordTurnUpdatedObservation
       } = await import("./state.js");
       const sessionActivityRoot = path.join(
         createdDirectories[0]!,
@@ -6567,6 +6568,33 @@ describe("buildHostServer", () => {
         sessionId: "session-remote",
         status: "pending",
         updatedAt: "2026-04-28T08:00:12.000Z"
+      });
+      await recordTurnUpdatedObservation({
+        eventType: "turn.updated",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        nodeId: "worker-it",
+        observedAt: "2026-04-28T08:00:15.000Z",
+        phase: "blocked",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-remote",
+        runnerPubkey,
+        sessionId: "session-remote",
+        turn: {
+          consumedArtifactIds: [],
+          graphId: "team-alpha",
+          nodeId: "worker-it",
+          phase: "blocked",
+          producedArtifactIds: [],
+          requestedApprovalIds: ["approval-remote"],
+          sessionId: "session-remote",
+          startedAt: "2026-04-28T08:00:13.000Z",
+          triggerKind: "message",
+          turnId: "turn-remote",
+          updatedAt: "2026-04-28T08:00:15.000Z"
+        },
+        turnId: "turn-remote",
+        updatedAt: "2026-04-28T08:00:15.000Z"
       });
       await writeJsonFile(
         path.join(sessionActivityRoot, "worker-it--session-stale.json"),
@@ -6714,6 +6742,43 @@ describe("buildHostServer", () => {
           },
           sessionId: "session-remote",
           status: "pending"
+        }
+      });
+
+      const turnListResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/turns"
+      });
+
+      expect(turnListResponse.statusCode).toBe(200);
+      expect(runtimeTurnListResponseSchema.parse(turnListResponse.json()))
+        .toMatchObject({
+          turns: [
+            {
+              nodeId: "worker-it",
+              phase: "blocked",
+              requestedApprovalIds: ["approval-remote"],
+              sessionId: "session-remote",
+              turnId: "turn-remote"
+            }
+          ]
+        });
+
+      const turnInspectionResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/turns/turn-remote"
+      });
+
+      expect(turnInspectionResponse.statusCode).toBe(200);
+      expect(
+        runtimeTurnInspectionResponseSchema.parse(turnInspectionResponse.json())
+      ).toMatchObject({
+        turn: {
+          nodeId: "worker-it",
+          phase: "blocked",
+          requestedApprovalIds: ["approval-remote"],
+          sessionId: "session-remote",
+          turnId: "turn-remote"
         }
       });
     } finally {

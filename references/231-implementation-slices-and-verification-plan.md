@@ -207,6 +207,7 @@ Implementation record:
 - [306-projected-session-inspection-slice.md](306-projected-session-inspection-slice.md)
 - [307-approval-observation-projection-slice.md](307-approval-observation-projection-slice.md)
 - [308-projected-approval-read-api-slice.md](308-projected-approval-read-api-slice.md)
+- [309-projected-turn-read-api-slice.md](309-projected-turn-read-api-slice.md)
 
 Verification:
 
@@ -237,6 +238,8 @@ Current status:
   `approval.updated` observations and Host approval activity projection;
 - runtime approval list/detail GET routes now use observed approval projection
   when local runtime approval files are unavailable;
+- runtime turn list/detail GET routes now use observed turn projection when
+  local runtime turn files are unavailable;
 - deep runtime detail endpoints still need projection-backed replacement.
 
 ### Slice 9: User Node Runtime
