@@ -170,6 +170,7 @@ same-machine slice records.
 - [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 - [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 - [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
+- [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 
 ## Audited Scope
 
@@ -520,6 +521,9 @@ the model summary omits the details.
     signer preservation across User Node publish responses, Host inbox records,
     User Client conversation records, source reviews, approval responses,
     synthetic inbound agent messages, and the second User Node path.
+    Active User Node and operator-surface specs have been realigned so direct
+    Host approval/review mutation removal is treated as complete, not as an
+    open gap.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

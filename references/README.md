@@ -98,7 +98,9 @@ timeline headers now expose signer audit state when available. The
 process-runner smoke now verifies signer preservation across User Node publish
 responses, Host inbox records, User Client conversation records, source review,
 approval response, synthetic inbound agent messages, and the second User Node
-path.
+path. Active User Node/operator-surface specs now also treat direct Host
+approval/review mutation removal as complete and keep participant approval
+behavior on signed User Node messages.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -479,6 +481,7 @@ files are the active federated redesign pack.
 368. [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 369. [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 370. [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
+371. [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 
 ## Role of this corpus
 

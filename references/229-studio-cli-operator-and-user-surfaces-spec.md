@@ -201,8 +201,9 @@ Node.
   and richer participant-side source/wiki review flows beyond scoped
   source-diff and source-file preview remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
-  messages in the User Client. Existing Studio controls should remain operator
-  controls or debug/admin tools only.
+  messages in the User Client. Studio controls should remain operator
+  inspection, assignment, topology, policy, and observability controls, not
+  approval-decision controls for graph participants.
 - Keep local commands under `entangle deployment` for local adapter operations.
 
 ## Tests Required

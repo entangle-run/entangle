@@ -634,8 +634,9 @@ directly looked-up recorded approval-request messages. Host status now exposes
 first federated control/observe transport health and both CLI and Studio render
 that Host-owned read model. Host status now also includes per-relay
 control/observe diagnostic rows, and Studio renders those rows in the Host
-Status panel. Richer Studio reassignment controls and removal of old admin/debug
-approval mutation paths remain follow-up work.
+Status panel. Richer Studio reassignment controls remain follow-up work, while
+old public direct Host approval/review mutation paths have already been removed
+by the direct API removal cleanup.
 
 CLI also now exposes `entangle runners join-config` to write Host-derived,
 schema-validated generic runner join configs without embedding secrets.
@@ -699,6 +700,7 @@ Implementation records:
 - [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 - [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 - [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
+- [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 
 Current status:
 
@@ -778,6 +780,9 @@ Current status:
   responses, Host inbox records, User Client conversation records,
   source-change review, approval response, synthetic inbound agent messages,
   and the second User Node path;
+- active User Node/operator-surface specs now describe direct Host
+  approval/review mutation removal as complete and keep participant approval
+  behavior on signed User Node messages;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

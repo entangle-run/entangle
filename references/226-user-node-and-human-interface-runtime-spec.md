@@ -60,8 +60,8 @@ User nodes are now partially runtime-capable:
   resource metadata and link to a source-change diff preview when the request
   targets a `source_change_candidate`. The signed approval response can now
   preserve the reviewed operation, resource, and reason context. The same
-  source-change cards and diff page now include Host-mediated accept/reject
-  candidate review controls stamped with the running User Node id. Runtime
+  source-change cards and diff page now include signed `source_change.review`
+  publishing stamped with the running User Node id. Runtime
   approval records now preserve request event id, request signer pubkey,
   response event id, response signer pubkey, and source message id when that
   signed-message lineage is available. Runners now apply approval responses
@@ -104,10 +104,11 @@ Still missing:
 
 - richer projection-backed source/wiki review actions and object-backed
   artifact workflow controls;
-- Studio approval decisions still include operator-side mutation paths for
-  admin/debug compatibility even though User Client approval responses now use
-  signed User Node protocol behavior;
-- Host approval mutation still writes local approval records.
+- richer User Client review flows beyond the current source-change diff/file
+  preview, signed source-change review, approval response, artifact preview,
+  artifact history/diff, and wiki preview paths;
+- production-grade User Node key custody beyond the current Host-provisioned
+  development key backend.
 
 ## Target Model
 
@@ -168,8 +169,8 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   inbound/outbound message history, server-side artifact preview, and
   source-change diff preview now exist. Signed approval responses now preserve
   scoped operation/resource context when the User Client has it, and
-  source-candidate review controls now submit Host review mutations with the
-  running User Node id as `reviewedBy`. The Human Interface Runtime also
+  source-candidate review controls now publish signed `source_change.review`
+  messages as the running User Node. The Human Interface Runtime also
   exposes local JSON APIs for selected conversation detail and message
   publishing, preparing the same runtime boundary for a bundled user client.
 - Map `nodeKind: "user"` to `runtimeKind: "human_interface"` for assignment.
@@ -256,14 +257,11 @@ from canonical behavior.
 - Risk: user-node keys are stored unsafely.
   Mitigation: use key refs and profile-specific secret storage; never expose
   private keys in Host API responses.
-- Risk: approvals remain operator mutations.
-  Mitigation: make approval decisions messages first, then project them.
+- Risk: approvals are mistaken for operator decisions.
+  Mitigation: approval responses are signed User Node messages and Studio stays
+  on inspection/assignment surfaces.
 
 ## Open Questions
 
-- Should the first User Client app be named `apps/user-client` or
-  `apps/human-interface`?
-- Should the first Human Interface Runtime serve the client directly from the
-  runner process or launch a separate child process?
 - When should User Node key custody move from Host-provisioned development key
   refs to runner/local-gateway storage?

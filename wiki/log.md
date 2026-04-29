@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] docs | Realigned User Node approval surface status
+
+Updated active User Node and Studio/CLI specs so they no longer describe
+already-removed direct Host approval/review mutation paths as open work. The
+current actor boundary is signed User Node messages for participant approval
+and source review, with Studio kept on operator inspection and assignment.
+
+Added `references/370-user-node-approval-doc-realignment-slice.md`.
+
 ## [2026-04-29] verification | Covered User Node signer audit in process smoke
 
 Extended the process-runner smoke so signer pubkey preservation is verified
