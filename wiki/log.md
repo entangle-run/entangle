@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Added deterministic OpenAI-compatible provider fixture
+
+Added a package-local fake OpenAI-compatible HTTP provider for
+`@entangle/agent-engine` tests. The fixture validates bearer tokens, records
+chat-completions requests, and returns deterministic success, tool-call, and
+error responses. The agent-engine tests now exercise the real `fetch` provider
+path for plain chat completion, tool-loop continuation, and HTTP 429
+classification without requiring live model credentials.
+
+Added `references/372-openai-compatible-fake-provider-fixture-slice.md`.
+
 ## [2026-04-29] tooling | Added host smoke script lint coverage
 
 Extended `@entangle/host` lint to cover TypeScript host smoke scripts and added

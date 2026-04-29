@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
+[372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -102,7 +102,10 @@ path. Active User Node/operator-surface specs now also treat direct Host
 approval/review mutation removal as complete and keep participant approval
 behavior on signed User Node messages. The `@entangle/host` lint gate now
 covers TypeScript host smoke scripts, including the process-runner federated
-proof.
+proof. `@entangle/agent-engine` now also has a deterministic local
+OpenAI-compatible HTTP provider fixture that exercises the real `fetch` path
+for chat completions, tool-loop continuation, and provider error mapping
+without live model credentials.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -485,6 +488,7 @@ files are the active federated redesign pack.
 370. [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 371. [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 372. [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
+373. [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 
 ## Role of this corpus
 

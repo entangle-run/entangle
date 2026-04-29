@@ -231,6 +231,10 @@ Current status:
   `opencode` executable, verifies projected turn/source-change
   candidate/approval/session read APIs, and proves Host, agent runner, and
   User Node runner state roots are isolated.
+- `@entangle/agent-engine` now has deterministic OpenAI-compatible HTTP
+  provider fixture coverage for the real `fetch` provider path, including
+  plain chat completion, tool-loop continuation, and 429 classification without
+  live model-provider credentials.
 - Docker managed runners can now receive inline join config JSON and the
   federated dev Compose profile selects Docker join mode with Host API bundle
   retrieval, avoiding Host state/secret volume mounts in managed join-mode
@@ -702,6 +706,7 @@ Implementation records:
 - [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 - [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 - [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
+- [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 
 Current status:
 
@@ -786,6 +791,9 @@ Current status:
   behavior on signed User Node messages;
 - `@entangle/host` lint now covers TypeScript host smoke scripts, including
   the process-runner smoke that carries the fastest federated proof;
+- `@entangle/agent-engine` now tests the OpenAI-compatible HTTP provider
+  boundary against a deterministic local API fixture rather than only through
+  injected client factories;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

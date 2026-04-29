@@ -101,9 +101,9 @@ OpenCode executable mutates the source workspace, so the smoke also verifies
 projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
 artifact history/diff through the running User Client, without live model
-credentials. Live
-OpenCode/model-provider behavior remains intentionally manual until API-backed
-provider testing is available.
+credentials. Live OpenCode behavior and real-provider credentials remain
+manual/operator validation; the OpenAI-compatible agent-engine HTTP boundary is
+now covered by a deterministic local provider fixture.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -605,8 +605,9 @@ This repository currently contains:
   no longer exposed as a node runtime profile;
 - a second provider-backed `agent-engine` slice with an OpenAI-compatible chat
   completions adapter behind the same internal boundary, including bearer-token
-  auth, prompt rendering, normalized usage/stop metadata, and bounded tool-call
-  execution;
+  auth, prompt rendering, normalized usage/stop metadata, bounded tool-call
+  execution, and deterministic HTTP fixture coverage for the real `fetch`
+  provider path without live credentials;
 - a first bounded internal tool-execution slice where package-declared tool
   catalogs are loaded into runner turn assembly, an Entangle-owned builtin
   tool executor is wired behind the internal engine boundary, and the

@@ -172,6 +172,7 @@ same-machine slice records.
 - [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 - [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 - [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
+- [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 
 ## Audited Scope
 
@@ -263,6 +264,10 @@ The repository is not fully federated:
   including tool titles, redacted input summaries, output summaries, and
   durations, while keeping OpenCode-specific event payloads behind the engine
   adapter boundary;
+- the OpenAI-compatible internal `agent-engine` adapter now has deterministic
+  local HTTP fixture coverage for the real `fetch` provider path, including
+  bearer-token auth, plain chat completion, tool-loop continuation, and 429
+  error classification without live model-provider credentials;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to
   a configured OpenCode server, include Basic auth from runner environment
   when configured, and record combined CLI/server version evidence while still
@@ -527,6 +532,9 @@ the model summary omits the details.
     open gap.
     Host TypeScript smoke scripts are now part of the `@entangle/host` lint
     gate, and the process-runner smoke passes type-aware ESLint coverage.
+    `@entangle/agent-engine` now also exercises the OpenAI-compatible HTTP
+    provider boundary through a deterministic local API fixture; live provider
+    credentials remain manual/operator validation.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

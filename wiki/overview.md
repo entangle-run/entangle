@@ -105,6 +105,10 @@ The most accurate current description is:
   signed source-candidate review, runner-owned
   source-history application, approval, and session read APIs without live model
   credentials;
+- the package-level OpenAI-compatible agent-engine adapter now has a
+  deterministic local HTTP provider fixture covering the real `fetch` path for
+  chat completion, tool-loop continuation, and rate-limit classification
+  without live provider credentials;
 - accepted source-candidate reviews now also emit signed `source_history.ref`
   observations, so Host can project source-history records and serve
   source-history list/detail reads without a Host-readable runner filesystem;
@@ -388,7 +392,9 @@ The repository now also contains the first real implementation baseline:
 - a second provider-backed `agent-engine` slice with an OpenAI-compatible chat
   completions adapter behind the same internal engine boundary, preserving
   provider-agnostic runner contracts while supporting bearer-token auth,
-  prompt rendering, usage/stop normalization, and bounded tool-call loops;
+  prompt rendering, usage/stop normalization, bounded tool-call loops, and a
+  deterministic local HTTP provider fixture that tests the real `fetch` path
+  without live provider credentials;
 - a first bounded tool-execution slice where the runner now loads
   package-declared tool catalogs into turn assembly, the runtime owns an
   Entangle builtin tool executor boundary, and the Anthropic adapter can
@@ -900,8 +906,9 @@ The central design direction is now clear:
 - runners should consume a versioned effective runtime context resolved by the
   host, not recompute graph and deployment merges on their own.
 - model-provider integration should happen behind an internal engine-adapter
-  boundary, and the same-machine deployment profile should make the real control-plane
-  topology visible.
+  boundary with deterministic provider-boundary tests where practical, and the
+  same-machine deployment profile should make the real control-plane topology
+  visible.
 
 ## Most important current design conclusions
 
