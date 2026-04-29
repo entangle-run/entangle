@@ -72,6 +72,11 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
   wrappers and immediate back-to-back suite execution reproduced no-output
   hangs on different packages, while delayed
   `pnpm --dir <workspace> test` commands passed.
+- Follow-up correction: the root sequential runner now launches the local
+  Vitest binary directly, expands each suite's `src/**/*.test.ts` files from
+  the filesystem, and avoids nested `pnpm` plus shell glob/discovery behavior.
+  This is the root-gate path that exits cleanly after package-directory and
+  filter-based `pnpm` child execution reproduced no-output hangs.
 - Re-run package tests and root `pnpm test`.
 
 ## Tests Required
@@ -104,6 +109,8 @@ Later follow-up verification also covered:
 - `pnpm --dir services/host exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=threads`
 - `pnpm --dir services/runner exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=threads`
 - `pnpm --dir services/runner exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=forks`
+- direct local Vitest execution through `scripts/run-workspace-tests.mjs`,
+  including filesystem-expanded test file lists for every workspace suite;
 
 Already passed in the preceding verification window:
 

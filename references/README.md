@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
+[417-user-client-wiki-target-visibility-slice.md](417-user-client-wiki-target-visibility-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -170,6 +170,8 @@ with the Human Interface Runtime enforcing conversation visibility and setting
 `requestedBy` to the User Node id; the process-runner smoke now proves that
 path through a signed builder wiki approval request, the running User Client
 JSON route, and a completed projected `runtime.wiki.publish` command receipt.
+Target-specific participant wiki publication requests now require the selected
+conversation to contain a matching `wiki_repository_publication` resource.
 CLI can also inspect runtime command receipts directly from Host projection
 with assignment, node, runner, command type, status, and limit filters. Studio
 can now open assignment-scoped
@@ -623,6 +625,7 @@ files are the active federated redesign pack.
 415. [414-user-client-artifact-restore-slice.md](414-user-client-artifact-restore-slice.md)
 416. [415-user-client-source-history-publication-slice.md](415-user-client-source-history-publication-slice.md)
 417. [416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
+418. [417-user-client-wiki-target-visibility-slice.md](417-user-client-wiki-target-visibility-slice.md)
 
 ## Role of this corpus
 

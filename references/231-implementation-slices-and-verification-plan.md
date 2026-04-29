@@ -913,6 +913,9 @@ Current status:
 - the process proof now publishes a signed builder-to-User-Node wiki approval
   request, calls the running User Client wiki publication JSON route, and waits
   for the completed projected `runtime.wiki.publish` command receipt;
+- User Client wiki publication requests that include a git target now require
+  a matching visible `wiki_repository_publication` resource in the selected
+  User Node conversation;
 - the process proof now publishes a signed builder-to-User-Node source-history
   approval request, calls the running User Client source-history publication
   JSON route with the target encoded by the visible

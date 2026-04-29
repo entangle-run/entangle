@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import type {
@@ -223,12 +224,32 @@ function buildWikiPublicationArtifactId(input: {
     return base;
   }
 
-  return [
+  const raw = [
     base,
     sanitizeIdentifier(input.target.gitServiceRef),
     sanitizeIdentifier(input.target.namespace),
     sanitizeIdentifier(input.target.repositoryName)
   ].join("-");
+
+  if (raw.length <= 100) {
+    return raw;
+  }
+
+  const digest = createHash("sha256")
+    .update(
+      [
+        input.nodeId,
+        input.commit,
+        input.target.gitServiceRef,
+        input.target.namespace,
+        input.target.repositoryName
+      ].join("|")
+    )
+    .digest("hex")
+    .slice(0, 12);
+  const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
+
+  return `${prefix}-${digest}`;
 }
 
 function buildWikiPublicationBranch(nodeId: string): string {

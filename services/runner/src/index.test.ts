@@ -1242,9 +1242,9 @@ describe("runner runtime context", () => {
                     approverNodeIds: ["user-main"],
                     operation: "wiki_update",
                     resource: {
-                      id: "worker-it",
-                      kind: "wiki_repository",
-                      label: "worker-it wiki"
+                      id: "worker-it|gitea|team-alpha|wiki-public",
+                      kind: "wiki_repository_publication",
+                      label: "worker-it wiki -> gitea/team-alpha/wiki-public"
                     }
                   },
                   conversationId: "conversation-alpha",
@@ -1932,7 +1932,12 @@ describe("runner runtime context", () => {
             conversationId: "conversation-alpha",
             nodeId: "worker-it",
             reason: "Publish reviewed wiki memory.",
-            retryFailedPublication: true
+            retryFailedPublication: true,
+            target: {
+              gitServiceRef: "gitea",
+              namespace: "team-alpha",
+              repositoryName: "wiki-public"
+            }
           }),
           headers: {
             "content-type": "application/json"
@@ -1953,6 +1958,33 @@ describe("runner runtime context", () => {
             nodeId: "worker-it"
           }
         ]
+      });
+
+      const jsonMismatchedWikiPublishResponse = await fetch(
+        new URL("/api/wiki-repository/publish", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            retryFailedPublication: true,
+            target: {
+              gitServiceRef: "gitea",
+              namespace: "team-alpha",
+              repositoryName: "not-visible"
+            }
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonMismatchedWikiPublishResponse.status).toBe(403);
+      await expect(
+        jsonMismatchedWikiPublishResponse.json()
+      ).resolves.toMatchObject({
+        error:
+          "Wiki publication target is not visible in the selected User Node conversation."
       });
 
       const jsonSourceHistoryPublishResponse = await fetch(
@@ -2265,7 +2297,9 @@ describe("runner runtime context", () => {
       );
       expect(pageBody).toContain("Publish source history");
       expect(pageBody).toContain("/source-history/publish");
-      expect(pageBody).toContain("wiki_repository:worker-it");
+      expect(pageBody).toContain(
+        "wiki_repository_publication:worker-it|gitea|team-alpha|wiki-public"
+      );
       expect(pageBody.match(/Wiki repository committed at abc123\./g) ?? [])
         .toHaveLength(2);
       expect(pageBody).toContain("Ready for review.");
@@ -2569,7 +2603,12 @@ describe("runner runtime context", () => {
     expect(wikiPublishRequest?.body).toMatchObject({
       reason: "Publish reviewed wiki memory.",
       requestedBy: "user-main",
-      retryFailedPublication: true
+      retryFailedPublication: true,
+      target: {
+        gitServiceRef: "gitea",
+        namespace: "team-alpha",
+        repositoryName: "wiki-public"
+      }
     });
     const sourceHistoryPublishRequests = hostRequests.filter(
       (request) =>

@@ -177,7 +177,8 @@ The most accurate current description is:
 - the running User Client can now request runner-owned wiki publication for
   wiki resources visible in the selected User Node conversation, with the Human
   Interface Runtime enforcing visibility and tagging the request as the User
-  Node;
+  Node; target-specific requests must match a visible
+  `wiki_repository_publication` resource in that conversation;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, and a completed projected `runtime.wiki.publish` command receipt;
@@ -1073,7 +1074,7 @@ The current implementation-truth audit now lives in
   artifact restore exposed through operator surfaces plus runner-owned
   artifact source-change proposal operator and User Client requests plus User
   Client visible source-history publication requests plus target-specific
-  source-history publication visibility checks plus explicit
+  source-history/wiki publication visibility checks plus explicit
   runner-owned artifact/source/wiki command completion receipts; the
   next git gaps are richer wiki promotion policy and repository lifecycle
   behavior, source-history

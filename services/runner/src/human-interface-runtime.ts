@@ -7,6 +7,7 @@ import type {
   ArtifactRefProjectionRecord,
   EntangleA2AMessage,
   EffectiveRuntimeContext,
+  GitRepositoryTargetSelector,
   HostProjectionSnapshot,
   RunnerJoinHostApi,
   RuntimeArtifactDiffResponse,
@@ -44,6 +45,7 @@ import {
   sourceHistoryPublicationTargetSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
+  gitRepositoryTargetSelectorSchema,
   userNodeInboxResponseSchema,
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema
@@ -151,6 +153,7 @@ type UserClientWikiPublishRequest = {
   nodeId?: unknown;
   reason?: unknown;
   retryFailedPublication?: unknown;
+  target?: unknown;
 };
 
 type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
@@ -818,6 +821,7 @@ async function resolveUserClientVisibleWikiRefs(input: {
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  target?: GitRepositoryTargetSelector | undefined;
   userNodeId: string;
 }): Promise<UserClientVisibleWikiRefs> {
   if (!input.conversationId) {
@@ -845,7 +849,9 @@ async function resolveUserClientVisibleWikiRefs(input: {
 
     return message.direction === "inbound" &&
       message.fromNodeId === input.nodeId &&
-      (resource?.kind === "wiki_repository" || resource?.kind === "wiki_page")
+      (resource?.kind === "wiki_repository" ||
+        resource?.kind === "wiki_repository_publication" ||
+        resource?.kind === "wiki_page")
       ? [resource]
       : [];
   });
@@ -855,6 +861,38 @@ async function resolveUserClientVisibleWikiRefs(input: {
       error: "Wiki resource is not visible in the selected User Node conversation.",
       statusCode: 403
     };
+  }
+
+  if (input.target) {
+    const target = input.target;
+    const targetVisible = wikiResources.some((resource) => {
+      if (resource.kind !== "wiki_repository_publication") {
+        return false;
+      }
+
+      const parts = resource.id.split("|");
+      if (parts.length !== 4) {
+        return false;
+      }
+
+      const parsed = gitRepositoryTargetSelectorSchema.safeParse({
+        gitServiceRef: parts[1],
+        namespace: parts[2],
+        repositoryName: parts[3]
+      });
+
+      return parsed.success
+        ? gitRepositoryTargetSelectorsMatch(parsed.data, target)
+        : false;
+    });
+
+    if (!targetVisible) {
+      return {
+        error:
+          "Wiki publication target is not visible in the selected User Node conversation.",
+        statusCode: 403
+      };
+    }
   }
 
   const projection = await fetchHostProjection({ hostApi: input.hostApi });
@@ -869,7 +907,13 @@ async function resolveUserClientVisibleWikiRefs(input: {
   const wikiRefs = projection.detail.wikiRefs.filter(
     (ref) =>
       ref.nodeId === input.nodeId &&
-      wikiResources.some((resource) => wikiRefMatchesResource({ ref, resource }))
+      wikiResources.some((resource) =>
+        wikiResourceAllowsTarget({
+          ref,
+          resource,
+          ...(input.target ? { target: input.target } : {})
+        })
+      )
   );
 
   if (wikiRefs.length === 0) {
@@ -1602,6 +1646,7 @@ async function requestRuntimeWikiPublication(input: {
   nodeId: string;
   reason?: string | undefined;
   retryFailedPublication: boolean;
+  target?: GitRepositoryTargetSelector | undefined;
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
 }): Promise<{
@@ -1626,7 +1671,8 @@ async function requestRuntimeWikiPublication(input: {
         body: JSON.stringify({
           ...(input.reason ? { reason: input.reason } : {}),
           requestedBy: input.userNodeId,
-          retryFailedPublication: input.retryFailedPublication
+          retryFailedPublication: input.retryFailedPublication,
+          ...(input.target ? { target: input.target } : {})
         }),
         headers: {
           ...buildHostApiHeaders(input.hostApi),
@@ -2218,15 +2264,88 @@ function wikiRefMatchesResource(input: {
   ref: WikiRefProjectionRecord;
   resource: ApprovalResource;
 }): boolean {
+  const resourceId =
+    input.resource.kind === "wiki_repository_publication"
+      ? input.resource.id.split("|")[0]
+      : input.resource.id;
   const locatorPath = input.ref.artifactRef.locator.path;
   const normalizedLocatorPath = locatorPath.replace(/^\/+/u, "");
 
   return (
-    input.resource.id === input.ref.nodeId ||
-    input.resource.id === input.ref.artifactId ||
-    input.resource.id === locatorPath ||
-    input.resource.id === normalizedLocatorPath
+    resourceId === input.ref.nodeId ||
+    resourceId === input.ref.artifactId ||
+    resourceId === locatorPath ||
+    resourceId === normalizedLocatorPath
   );
+}
+
+function parseWikiPublicationTargetFromResource(input: {
+  resource: ApprovalResource;
+  wikiResourceId: string;
+}): GitRepositoryTargetSelector | undefined {
+  if (input.resource.kind !== "wiki_repository_publication") {
+    return undefined;
+  }
+
+  const parts = input.resource.id.split("|");
+  if (parts.length !== 4 || parts[0] !== input.wikiResourceId) {
+    return undefined;
+  }
+
+  const parsed = gitRepositoryTargetSelectorSchema.safeParse({
+    gitServiceRef: parts[1],
+    namespace: parts[2],
+    repositoryName: parts[3]
+  });
+
+  return parsed.success ? parsed.data : undefined;
+}
+
+function gitRepositoryTargetSelectorsMatch(
+  resourceTarget: GitRepositoryTargetSelector,
+  selector: GitRepositoryTargetSelector
+): boolean {
+  return (
+    (selector.gitServiceRef === undefined ||
+      resourceTarget.gitServiceRef === selector.gitServiceRef) &&
+    (selector.namespace === undefined ||
+      resourceTarget.namespace === selector.namespace) &&
+    (selector.repositoryName === undefined ||
+      resourceTarget.repositoryName === selector.repositoryName)
+  );
+}
+
+function wikiResourceAllowsTarget(input: {
+  ref: WikiRefProjectionRecord;
+  resource: ApprovalResource;
+  target?: GitRepositoryTargetSelector | undefined;
+}): boolean {
+  if (!wikiRefMatchesResource({ ref: input.ref, resource: input.resource })) {
+    return false;
+  }
+
+  if (!input.target) {
+    return true;
+  }
+
+  const target = input.target;
+  const wikiResourceIds = [
+    input.ref.nodeId,
+    input.ref.artifactId,
+    input.ref.artifactRef.locator.path,
+    input.ref.artifactRef.locator.path.replace(/^\/+/u, "")
+  ];
+
+  return wikiResourceIds.some((wikiResourceId) => {
+    const resourceTarget = parseWikiPublicationTargetFromResource({
+      resource: input.resource,
+      wikiResourceId
+    });
+
+    return resourceTarget
+      ? gitRepositoryTargetSelectorsMatch(resourceTarget, target)
+      : false;
+  });
 }
 
 function sourceHistoryRefMatchesResource(input: {
@@ -2329,7 +2448,9 @@ function renderApprovalResource(
         )
       : undefined;
   const relatedWikiRefs =
-    resource.kind === "wiki_repository" || resource.kind === "wiki_page"
+    resource.kind === "wiki_repository" ||
+    resource.kind === "wiki_repository_publication" ||
+    resource.kind === "wiki_page"
       ? wikiRefs.filter(
           (ref) =>
             ref.nodeId === message.fromNodeId &&
@@ -3645,6 +3766,10 @@ export async function startHumanInterfaceRuntime(input: {
             : undefined;
         const retryFailedPublication =
           publishRequest.retryFailedPublication === true;
+        const target =
+          publishRequest.target === undefined
+            ? undefined
+            : gitRepositoryTargetSelectorSchema.safeParse(publishRequest.target);
 
         if (!nodeId || !conversationId) {
           writeJson(response, 400, {
@@ -3653,10 +3778,18 @@ export async function startHumanInterfaceRuntime(input: {
           return;
         }
 
+        if (target && !target.success) {
+          writeJson(response, 400, {
+            error: "Wiki publication target is invalid."
+          });
+          return;
+        }
+
         const visibleWikiRefs = await resolveUserClientVisibleWikiRefs({
           conversationId,
           hostApi: input.hostApi,
           nodeId,
+          ...(target?.success ? { target: target.data } : {}),
           userNodeId: input.context.binding.node.nodeId
         });
 
@@ -3672,6 +3805,7 @@ export async function startHumanInterfaceRuntime(input: {
           nodeId,
           reason,
           retryFailedPublication,
+          ...(target?.success ? { target: target.data } : {}),
           userNodeId: input.context.binding.node.nodeId,
           wikiRefs: visibleWikiRefs.wikiRefs
         });

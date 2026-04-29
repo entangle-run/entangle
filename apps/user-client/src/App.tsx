@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   ArtifactRef,
+  GitRepositoryTargetSelector,
   SourceChangeRefProjectionRecord,
   SourceHistoryPublicationTarget,
   SourceHistoryRefProjectionRecord,
@@ -79,15 +80,70 @@ function wikiRefMatchesResource(input: {
     return false;
   }
 
+  const resourceId =
+    input.resource.kind === "wiki_repository_publication"
+      ? input.resource.id.split("|")[0]
+      : input.resource.id;
   const locatorPath = input.ref.artifactRef.locator.path;
   const normalizedLocatorPath = locatorPath.replace(/^\/+/u, "");
 
   return (
-    input.resource.id === input.ref.nodeId ||
-    input.resource.id === input.ref.artifactId ||
-    input.resource.id === locatorPath ||
-    input.resource.id === normalizedLocatorPath
+    resourceId === input.ref.nodeId ||
+    resourceId === input.ref.artifactId ||
+    resourceId === locatorPath ||
+    resourceId === normalizedLocatorPath
   );
+}
+
+function wikiPublicationTargetFromResource(input: {
+  resource: NonNullable<UserNodeMessageRecord["approval"]>["resource"];
+  wikiResourceId: string;
+}): GitRepositoryTargetSelector | undefined {
+  if (!input.resource || input.resource.kind !== "wiki_repository_publication") {
+    return undefined;
+  }
+
+  const parts = input.resource.id.split("|");
+  if (parts.length !== 4 || parts[0] !== input.wikiResourceId) {
+    return undefined;
+  }
+
+  return {
+    gitServiceRef: parts[1],
+    namespace: parts[2],
+    repositoryName: parts[3]
+  };
+}
+
+function wikiPublicationTargetForRef(input: {
+  ref: WikiRefProjectionRecord;
+  resource: NonNullable<UserNodeMessageRecord["approval"]>["resource"];
+}): GitRepositoryTargetSelector | undefined {
+  const wikiResourceIds = [
+    input.ref.nodeId,
+    input.ref.artifactId,
+    input.ref.artifactRef.locator.path,
+    input.ref.artifactRef.locator.path.replace(/^\/+/u, "")
+  ];
+
+  for (const wikiResourceId of wikiResourceIds) {
+    const target = wikiPublicationTargetFromResource({
+      resource: input.resource,
+      wikiResourceId
+    });
+
+    if (target) {
+      return target;
+    }
+  }
+
+  return undefined;
+}
+
+function formatGitRepositoryTargetSelector(
+  target: GitRepositoryTargetSelector
+): string {
+  return `${target.gitServiceRef ?? ""}/${target.namespace ?? ""}/${target.repositoryName ?? ""}`;
 }
 
 function sourceHistoryRefMatchesResource(input: {
@@ -135,7 +191,7 @@ function sourceHistoryPublicationTargetFromResource(input: {
 function formatSourceHistoryPublicationTarget(
   target: SourceHistoryPublicationTarget
 ): string {
-  return `${target.gitServiceRef ?? ""}/${target.namespace ?? ""}/${target.repositoryName ?? ""}`;
+  return formatGitRepositoryTargetSelector(target);
 }
 
 function SourceSummary({
@@ -687,7 +743,9 @@ function WikiResourceCards({
   const [status, setStatus] = useState<string | undefined>();
   const resource = message.approval?.resource;
   const refs =
-    resource?.kind === "wiki_repository" || resource?.kind === "wiki_page"
+    resource?.kind === "wiki_repository" ||
+    resource?.kind === "wiki_repository_publication" ||
+    resource?.kind === "wiki_page"
       ? (state?.wikiRefs ?? []).filter(
           (ref) =>
             ref.nodeId === message.fromNodeId &&
@@ -699,8 +757,13 @@ function WikiResourceCards({
     return null;
   }
 
-  async function requestPublication(): Promise<void> {
-    setStatus("requesting wiki publication");
+  async function requestPublication(
+    target?: GitRepositoryTargetSelector
+  ): Promise<void> {
+    const targetLabel = target
+      ? ` to ${formatGitRepositoryTargetSelector(target)}`
+      : "";
+    setStatus(`requesting wiki publication${targetLabel}`);
 
     try {
       const response = await publishWikiRepository({
@@ -708,10 +771,11 @@ function WikiResourceCards({
         conversationId: message.conversationId,
         nodeId: message.fromNodeId,
         ...(publishReason.trim() ? { reason: publishReason.trim() } : {}),
-        retryFailedPublication
+        retryFailedPublication,
+        ...(target ? { target } : {})
       });
 
-      setStatus(`wiki publication requested ${response.commandId}`);
+      setStatus(`wiki publication${targetLabel} requested ${response.commandId}`);
       await onRefresh();
     } catch (error) {
       setStatus(
@@ -722,16 +786,23 @@ function WikiResourceCards({
 
   return (
     <div className="artifact-list">
-      {refs.map((ref) => (
-        <div className="artifact-card" key={ref.artifactId}>
-          <strong>{ref.artifactId}</strong>
-          <span>{ref.artifactRef.contentSummary}</span>
-          <span>{renderArtifactLocator(ref.artifactRef)}</span>
-          {ref.artifactPreview?.available ? (
-            <pre className="preview-block">{ref.artifactPreview.content}</pre>
-          ) : null}
-        </div>
-      ))}
+      {refs.map((ref) => {
+        const target = wikiPublicationTargetForRef({ ref, resource });
+
+        return (
+          <div className="artifact-card" key={ref.artifactId}>
+            <strong>{ref.artifactId}</strong>
+            <span>{ref.artifactRef.contentSummary}</span>
+            {target ? (
+              <span>target {formatGitRepositoryTargetSelector(target)}</span>
+            ) : null}
+            <span>{renderArtifactLocator(ref.artifactRef)}</span>
+            {ref.artifactPreview?.available ? (
+              <pre className="preview-block">{ref.artifactPreview.content}</pre>
+            ) : null}
+          </div>
+        );
+      })}
       <div className="artifact-actions">
         <input
           aria-label="Wiki publication reason"
@@ -747,7 +818,16 @@ function WikiResourceCards({
           />
           <span>Retry failed</span>
         </label>
-        <button onClick={() => void requestPublication()} type="button">
+        <button
+          onClick={() => {
+            const target = refs
+              .map((ref) => wikiPublicationTargetForRef({ ref, resource }))
+              .find((candidate) => candidate !== undefined);
+
+            void requestPublication(target);
+          }}
+          type="button"
+        >
           Publish Wiki
         </button>
         {status ? <span className="metadata">{status}</span> : null}

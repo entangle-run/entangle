@@ -4997,3 +4997,28 @@ During root verification for this slice, User Client reproduced the root
 wrapper no-output hang under Vitest forks while the same suite passed
 immediately under threads. The User Client package test script now uses the
 threads pool, matching the stable Host/Runner configuration.
+
+## [2026-04-29] tooling | Removed nested pnpm from the root test gate
+
+During the User Client wiki target slice, root `pnpm test` again reproduced
+no-output hangs while repeatedly spawning nested `pnpm` commands, even though
+the same workspace tests passed directly. `scripts/run-workspace-tests.mjs`
+now launches the local Vitest binary directly, expands `src/**/*.test.ts`
+files itself for each suite, and keeps the explicit sequential ordering and
+timeouts. The root `pnpm test` gate now passes through all workspace suites
+without relying on shell globbing, nested `pnpm`, or implicit Vitest discovery.
+
+## [2026-04-29] implementation | Tightened User Client wiki targets
+
+Added `references/417-user-client-wiki-target-visibility-slice.md`. User
+Client wiki publication requests that include a git target now require a
+matching visible `wiki_repository_publication` resource in the selected User
+Node conversation before the Human Interface Runtime forwards
+`runtime.wiki.publish` to Host.
+
+The dedicated User Client derives and displays that target from the visible
+approval resource, and the federated process-runner smoke now sends a
+target-specific builder wiki approval request before asking the running User
+Client to request publication. Target-qualified wiki publication artifact ids
+now use bounded digest suffixes when repository names would exceed the shared
+artifact id schema limit.

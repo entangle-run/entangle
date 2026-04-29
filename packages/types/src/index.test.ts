@@ -2293,6 +2293,20 @@ describe("runtime approval host API contracts", () => {
         ?.kind
     ).toBe("source_history_publication");
     expect(
+      runtimeApprovalInspectionResponseSchema.parse({
+        approval: {
+          ...approval,
+          approvalId: "approval-wiki-publication",
+          operation: "wiki_update",
+          resource: {
+            id: "worker-it|gitea|team-alpha|wiki-public",
+            kind: "wiki_repository_publication",
+            label: "worker-it wiki -> gitea/team-alpha/wiki-public"
+          }
+        }
+      }).approval.resource?.kind
+    ).toBe("wiki_repository_publication");
+    expect(
       runtimeApprovalInspectionResponseSchema.parse({ approval }).approval
         .responseSignerPubkey
     ).toBe("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd");
@@ -3705,6 +3719,18 @@ describe("host event contracts", () => {
     const parsedApprovalEvent = approvalTraceEventSchema.parse(approvalEvent);
     expect(parsedApprovalEvent.operation).toBe("source_publication");
     expect(parsedApprovalEvent.resource?.kind).toBe("source_history_publication");
+    expect(
+      approvalTraceEventSchema.parse({
+        ...approvalEvent,
+        eventId: "approval-worker-it-wiki",
+        operation: "wiki_update",
+        resource: {
+          id: "worker-it|gitea|team-alpha|wiki-public",
+          kind: "wiki_repository_publication",
+          label: "worker-it wiki -> gitea/team-alpha/wiki-public"
+        }
+      }).resource?.kind
+    ).toBe("wiki_repository_publication");
     expect(artifactEvent.type).toBe("artifact.trace.event");
   });
 

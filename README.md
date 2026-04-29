@@ -112,14 +112,16 @@ branch head plus command receipt. The running User Client can also request
 runner-owned wiki publication for wiki resources visible in the selected User
 Node conversation; that participant path is routed through the Human Interface
 Runtime and Host control boundary with `requestedBy` set to the User Node id,
-and the smoke verifies the resulting projected command receipt. The same smoke
-now also asks the running User Client to request artifact restore for the
-visible source-history artifact, publishes a signed source-history approval
-request to the User Node, asks the running User Client to request
-source-history publication for that visible resource, and verifies both
-projected command receipts. Target-specific source-history publication requests
-from the User Client must match the `source_history_publication` resource
-visible in the selected User Node conversation.
+and the smoke verifies the resulting projected command receipt. Target-specific
+wiki publication requests from the User Client must match the
+`wiki_repository_publication` resource visible in the selected User Node
+conversation. The same smoke now also asks the running User Client to request
+artifact restore for the visible source-history artifact, publishes a signed
+source-history approval request to the User Node, asks the running User Client
+to request source-history publication for that visible resource, and verifies
+both projected command receipts. Target-specific source-history publication
+requests from the User Client must match the `source_history_publication`
+resource visible in the selected User Node conversation.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
@@ -167,15 +169,13 @@ pnpm test
 It runs each workspace test command through
 `scripts/run-workspace-tests.mjs` instead of routing tests through Turbo or a
 long shell chain, because Turbo and chained `pnpm --filter` execution left
-Vitest child processes open in this environment while package-directory test
-commands exited cleanly. The wrapper intentionally uses non-detached package
-processes and waits briefly between suites because immediate chained workspace
-execution reproduced no-output hangs on otherwise passing package test
-commands.
-CLI and Studio use fork pools so the sequential root gate exits cleanly in this
-environment; CLI is pinned to one worker. User Client, Host, and Runner use the
-threads pool for the same reason. The other Node packages stay on the default
-pool because that is their stable configuration here.
+Vitest child processes open in this environment. The wrapper launches the local
+Vitest binary directly, expands `src/**/*.test.ts` files itself, runs suites
+sequentially, and waits briefly between suites so the root gate does not depend
+on shell globbing, nested `pnpm`, or Vitest's implicit discovery. CLI and Studio
+use fork pools inside the root wrapper, CLI is pinned to one worker, and Host
+uses the threads pool; the other root suites use their stable default pool in
+this environment.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -1187,8 +1187,8 @@ The highest-value remaining gaps are:
   plus runner-owned artifact restore and source-change proposal operator
   requests plus User Client visible-artifact restore/proposal/wiki publication
   requests plus User Client visible source-history publication requests and
-  target-specific source-history publication visibility checks and explicit
-  runner-owned artifact/source/wiki command completion receipts,
+  target-specific source-history/wiki publication visibility checks and
+  explicit runner-owned artifact/source/wiki command completion receipts,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

@@ -1,5 +1,6 @@
 import type {
   ArtifactRef,
+  GitRepositoryTargetSelector,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactRestoreResponse,
@@ -391,6 +392,7 @@ export function publishWikiRepository(input: {
   nodeId: string;
   reason?: string | undefined;
   retryFailedPublication?: boolean | undefined;
+  target?: GitRepositoryTargetSelector | undefined;
 }): Promise<UserClientWikiPublishResponse> {
   return fetchJson<UserClientWikiPublishResponse>("/api/wiki-repository/publish", {
     baseUrl: input.baseUrl,
@@ -399,7 +401,8 @@ export function publishWikiRepository(input: {
         conversationId: input.conversationId,
         nodeId: input.nodeId,
         ...(input.reason ? { reason: input.reason } : {}),
-        retryFailedPublication: input.retryFailedPublication ?? false
+        retryFailedPublication: input.retryFailedPublication ?? false,
+        ...(input.target ? { target: input.target } : {})
       }),
       headers: {
         "content-type": "application/json"

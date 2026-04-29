@@ -29,6 +29,7 @@ export const policyResourceKindSchema = z.enum([
   "git_target",
   "workspace",
   "wiki_repository",
+  "wiki_repository_publication",
   "wiki_page",
   "node",
   "edge",

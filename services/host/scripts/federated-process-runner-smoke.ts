@@ -752,6 +752,13 @@ async function main(): Promise<void> {
     "team-alpha",
     `${nonPrimaryWikiRepositoryName}.git`
   );
+  const userClientWikiRepositoryName = `${graphId}-wiki-user-client`;
+  const userClientWikiRepositoryPath = path.join(
+    tempRoot,
+    "git",
+    "team-alpha",
+    `${userClientWikiRepositoryName}.git`
+  );
   const nonPrimarySourceRepositoryName = `${graphId}-source-public`;
   const nonPrimarySourceRepositoryPath = path.join(
     tempRoot,
@@ -769,6 +776,7 @@ async function main(): Promise<void> {
   await mkdir(path.dirname(primaryGitRepositoryPath), { recursive: true });
   runGit(["init", "--bare", primaryGitRepositoryPath]);
   runGit(["init", "--bare", nonPrimaryWikiRepositoryPath]);
+  runGit(["init", "--bare", userClientWikiRepositoryPath]);
   runGit(["init", "--bare", nonPrimarySourceRepositoryPath]);
   runGit(["init", "--bare", userClientSourceRepositoryPath]);
   printPass("git-backend", gitRemoteBase);
@@ -2994,9 +3002,14 @@ async function main(): Promise<void> {
                 approverNodeIds: ["user"],
                 operation: "wiki_update",
                 resource: {
-                  id: "builder",
-                  kind: "wiki_repository",
-                  label: "builder wiki"
+                  id: [
+                    "builder",
+                    "gitea",
+                    "team-alpha",
+                    userClientWikiRepositoryName
+                  ].join("|"),
+                  kind: "wiki_repository_publication",
+                  label: `builder wiki -> gitea/team-alpha/${userClientWikiRepositoryName}`
                 }
               }
             },
@@ -3021,7 +3034,7 @@ async function main(): Promise<void> {
           (message) =>
             message.messageType === "approval.request" &&
             message.approval?.approvalId === wikiApprovalId &&
-            message.approval.resource?.kind === "wiki_repository"
+            message.approval.resource?.kind === "wiki_repository_publication"
         )
           ? detail
           : undefined;
@@ -3057,7 +3070,12 @@ async function main(): Promise<void> {
           nodeId: "builder",
           reason:
             "Process runner smoke requested wiki publication from the User Client.",
-          retryFailedPublication: true
+          retryFailedPublication: true,
+          target: {
+            gitServiceRef: "gitea",
+            namespace: "team-alpha",
+            repositoryName: userClientWikiRepositoryName
+          }
         }),
         headers: {
           "content-type": "application/json"
@@ -3105,10 +3123,15 @@ async function main(): Promise<void> {
           (receipt) =>
             receipt.commandId === userClientWikiPublicationRequest.commandId &&
             receipt.commandEventType === "runtime.wiki.publish" &&
-            receipt.receiptStatus === "completed"
+            receipt.receiptStatus !== "received"
         );
       },
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    assertCondition(
+      projectedUserClientWikiPublicationReceipt.receiptStatus === "completed",
+      `User Client wiki publication command must complete; got ${projectedUserClientWikiPublicationReceipt.receiptStatus}: ` +
+        `${projectedUserClientWikiPublicationReceipt.receiptMessage ?? "no receipt message"}`
     );
     printPass(
       "projected-user-client-wiki-publication-command-receipt",

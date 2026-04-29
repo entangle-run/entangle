@@ -157,7 +157,12 @@ describe("user client runtime API helpers", () => {
       conversationId: "conversation-alpha",
       nodeId: "worker-it",
       reason: "publish memory",
-      retryFailedPublication: true
+      retryFailedPublication: true,
+      target: {
+        gitServiceRef: "gitea",
+        namespace: "team-alpha",
+        repositoryName: "wiki-public"
+      }
     });
     await publishSourceHistory({
       baseUrl: "http://127.0.0.1:4300",
@@ -246,7 +251,12 @@ describe("user client runtime API helpers", () => {
       conversationId: "conversation-alpha",
       nodeId: "worker-it",
       reason: "publish memory",
-      retryFailedPublication: true
+      retryFailedPublication: true,
+      target: {
+        gitServiceRef: "gitea",
+        namespace: "team-alpha",
+        repositoryName: "wiki-public"
+      }
     });
     expect(fetchMock.mock.calls[6]?.[0]).toBe(
       "http://127.0.0.1:4300/api/source-history/publish"

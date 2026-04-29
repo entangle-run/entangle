@@ -209,5 +209,46 @@ describe("wiki repository sync", () => {
     expect(publicRemoteHead.stdout.trim()).toBe(
       publicPublication.artifact.ref.locator.commit
     );
+
+    const longRepositoryName =
+      "graph-alpha-wiki-user-client-extra-long-publication-target";
+    const longRepositoryPath = path.join(
+      path.dirname(remoteRepositoryPath),
+      `${longRepositoryName}.git`
+    );
+    const longInit = spawnSync("git", ["init", "--bare", longRepositoryPath], {
+      encoding: "utf8"
+    });
+    expect(longInit.status).toBe(0);
+
+    const longTargetPublication = await publishWikiRepositoryToGitTarget({
+      context,
+      requestedAt: "2026-04-28T10:10:00.000Z",
+      requestedBy: "operator-main",
+      statePaths,
+      target: {
+        repositoryName: longRepositoryName
+      }
+    });
+
+    expect(longTargetPublication).toMatchObject({
+      artifact: {
+        ref: {
+          locator: {
+            repositoryName: longRepositoryName
+          },
+          status: "published"
+        }
+      },
+      published: true
+    });
+
+    if (!longTargetPublication.published) {
+      throw new Error("Expected long-target wiki publication to succeed.");
+    }
+
+    expect(longTargetPublication.artifact.ref.artifactId.length).toBeLessThanOrEqual(
+      100
+    );
   });
 });
