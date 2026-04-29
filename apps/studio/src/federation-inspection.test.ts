@@ -7,6 +7,8 @@ import type {
 } from "@entangle/types";
 import {
   buildUserNodeRuntimeSummaries,
+  canRevokeRunnerProjection,
+  canTrustRunnerProjection,
   formatRuntimeAssignmentTimelineDetail,
   formatRuntimeAssignmentTimelineLabel,
   formatRuntimeProjectionDetail,
@@ -15,6 +17,8 @@ import {
   formatAssignmentReceiptLabel,
   formatRuntimeCommandReceiptDetail,
   formatRuntimeCommandReceiptLabel,
+  formatRunnerProjectionDetail,
+  formatRunnerProjectionLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeIdentityDetail,
@@ -23,6 +27,7 @@ import {
   formatUserNodeRuntimeSummaryLabel,
   sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
+  sortRunnerProjectionsForStudio,
   sortAssignmentReceiptsForStudio,
   sortRuntimeAssignmentTimelineForStudio,
   sortUserConversationsForStudio,
@@ -134,7 +139,51 @@ const projection: HostProjectionSnapshot = {
         "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     }
   ],
-  runners: [],
+  runners: [
+    {
+      assignmentIds: ["assignment-alpha"],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:02:00.000Z",
+      operationalState: "ready",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:02:00.000Z"
+      },
+      publicKey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      runnerId: "runner-trusted",
+      trustState: "trusted"
+    },
+    {
+      assignmentIds: [],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      operationalState: "ready",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:01:00.000Z"
+      },
+      publicKey:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      runnerId: "runner-pending",
+      trustState: "pending"
+    },
+    {
+      assignmentIds: [],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      operationalState: "offline",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:00:00.000Z"
+      },
+      publicKey:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      runnerId: "runner-revoked",
+      trustState: "revoked"
+    }
+  ],
   schemaVersion: "1",
   sourceChangeRefs: [],
   sourceHistoryRefs: [],
@@ -369,6 +418,26 @@ describe("Studio federation inspection helpers", () => {
     expect(formatRuntimeProjectionDetail(projection.runtimes[0]!)).toContain(
       "client http://127.0.0.1:4173/"
     );
+  });
+
+  it("sorts and formats runner registry projection rows", () => {
+    const sorted = sortRunnerProjectionsForStudio(projection.runners);
+
+    expect(sorted.map((runner) => runner.runnerId)).toEqual([
+      "runner-pending",
+      "runner-trusted",
+      "runner-revoked"
+    ]);
+    expect(formatRunnerProjectionLabel(sorted[0]!)).toBe(
+      "runner-pending · pending"
+    );
+    expect(formatRunnerProjectionDetail(sorted[1]!)).toContain(
+      "assignments 1"
+    );
+    expect(canTrustRunnerProjection(sorted[0]!)).toBe(true);
+    expect(canTrustRunnerProjection(sorted[1]!)).toBe(false);
+    expect(canRevokeRunnerProjection(sorted[1]!)).toBe(true);
+    expect(canRevokeRunnerProjection(sorted[2]!)).toBe(false);
   });
 
   it("sorts and formats User Node conversations", () => {

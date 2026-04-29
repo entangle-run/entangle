@@ -95,6 +95,8 @@ Recently added:
   Host assignment API.
 - Studio now lists projected assignment rows and can revoke active, accepted,
   offered, or revoking assignments through the Host assignment API.
+- Studio now lists projected runner rows and can trust pending/revoked runners
+  or revoke pending/trusted runners through the Host runner registry API.
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.

@@ -219,6 +219,8 @@ import {
 } from "./session-launch.js";
 import {
   buildUserNodeRuntimeSummaries,
+  canRevokeRunnerProjection,
+  canTrustRunnerProjection,
   formatRuntimeAssignmentTimelineDetail,
   formatRuntimeAssignmentTimelineLabel,
   formatAssignmentReceiptDetail,
@@ -227,6 +229,8 @@ import {
   formatRuntimeCommandReceiptLabel,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
+  formatRunnerProjectionDetail,
+  formatRunnerProjectionLabel,
   summarizeAssignmentCommandReceiptsForStudio,
   summarizeAssignmentReceiptsForStudio,
   summarizeRuntimeAssignmentTimelineForStudio,
@@ -236,6 +240,7 @@ import {
   formatUserNodeRuntimeSummaryLabel,
   sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
+  sortRunnerProjectionsForStudio,
   sortAssignmentReceiptsForStudio,
   sortRuntimeAssignmentTimelineForStudio,
   sortUserConversationsForStudio,
@@ -469,6 +474,18 @@ export function App() {
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const [userNodes, setUserNodes] = useState<UserNodeIdentityRecord[]>([]);
   const [userNodeError, setUserNodeError] = useState<string | null>(null);
+  const [runnerMutationError, setRunnerMutationError] = useState<string | null>(
+    null
+  );
+  const [lastRunnerMutationSummary, setLastRunnerMutationSummary] = useState<
+    string | null
+  >(null);
+  const [pendingRunnerTrustId, setPendingRunnerTrustId] = useState<string | null>(
+    null
+  );
+  const [pendingRunnerRevokeId, setPendingRunnerRevokeId] = useState<
+    string | null
+  >(null);
   const [assignmentDraft, setAssignmentDraft] =
     useState<RuntimeAssignmentControlDraft>(
       createEmptyRuntimeAssignmentControlDraft
@@ -1923,6 +1940,67 @@ export function App() {
     selectedTurnId
   ]);
 
+  const trustRunnerFromStudio = useCallback(
+    async (runnerId: string) => {
+      try {
+        setPendingRunnerTrustId(runnerId);
+        const response = await client.trustRunner(runnerId, {
+          trustedBy: "studio"
+        });
+
+        await loadOverview();
+
+        startTransition(() => {
+          setRunnerMutationError(null);
+          setLastRunnerMutationSummary(
+            `${response.runner.registration.runnerId} trusted`
+          );
+        });
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setRunnerMutationError(
+            normalizeError(caught, "Unknown error while trusting the runner.")
+          );
+          setLastRunnerMutationSummary(null);
+        });
+      } finally {
+        setPendingRunnerTrustId(null);
+      }
+    },
+    [client, loadOverview]
+  );
+
+  const revokeRunnerFromStudio = useCallback(
+    async (runnerId: string) => {
+      try {
+        setPendingRunnerRevokeId(runnerId);
+        const response = await client.revokeRunner(runnerId, {
+          reason: "Revoked from Studio.",
+          revokedBy: "studio"
+        });
+
+        await loadOverview();
+
+        startTransition(() => {
+          setRunnerMutationError(null);
+          setLastRunnerMutationSummary(
+            `${response.runner.registration.runnerId} revoked`
+          );
+        });
+      } catch (caught: unknown) {
+        startTransition(() => {
+          setRunnerMutationError(
+            normalizeError(caught, "Unknown error while revoking the runner.")
+          );
+          setLastRunnerMutationSummary(null);
+        });
+      } finally {
+        setPendingRunnerRevokeId(null);
+      }
+    },
+    [client, loadOverview]
+  );
+
   const offerRuntimeAssignmentFromStudio = useCallback(async () => {
     try {
       setPendingAssignmentOffer(true);
@@ -3322,6 +3400,10 @@ export function App() {
     () => buildRuntimeAssignmentRunnerOptions(projectionSnapshot),
     [projectionSnapshot]
   );
+  const projectedRunnerRows = useMemo(
+    () => sortRunnerProjectionsForStudio(projectionSnapshot?.runners ?? []),
+    [projectionSnapshot]
+  );
   const assignmentProjectionRows = useMemo(
     () =>
       sortAssignmentProjectionsForStudio(projectionSnapshot?.assignments ?? []),
@@ -3535,6 +3617,69 @@ export function App() {
             <strong>{federationSummary.userConversationCount}</strong>
             <span>Conversations</span>
           </div>
+        </div>
+
+        <div className="artifact-detail-card">
+          <div className="section-header">
+            <h3>Runner Registry</h3>
+            <span className="panel-caption">
+              {pendingRunnerTrustId || pendingRunnerRevokeId
+                ? "updating"
+                : "trust boundary"}
+            </span>
+          </div>
+          {projectedRunnerRows.length > 0 ? (
+            <div className="compact-list">
+              {projectedRunnerRows.slice(0, 8).map((runner) => (
+                <div key={runner.runnerId} className="compact-list-item">
+                  <strong>{formatRunnerProjectionLabel(runner)}</strong>
+                  <span>{formatRunnerProjectionDetail(runner)}</span>
+                  <button
+                    className="action-button"
+                    disabled={
+                      pendingRunnerTrustId !== null ||
+                      pendingRunnerRevokeId !== null ||
+                      !canTrustRunnerProjection(runner)
+                    }
+                    onClick={() => {
+                      void trustRunnerFromStudio(runner.runnerId);
+                    }}
+                    type="button"
+                  >
+                    {pendingRunnerTrustId === runner.runnerId
+                      ? "Trusting..."
+                      : "Trust"}
+                  </button>
+                  <button
+                    className="action-button"
+                    disabled={
+                      pendingRunnerTrustId !== null ||
+                      pendingRunnerRevokeId !== null ||
+                      !canRevokeRunnerProjection(runner)
+                    }
+                    onClick={() => {
+                      void revokeRunnerFromStudio(runner.runnerId);
+                    }}
+                    type="button"
+                  >
+                    {pendingRunnerRevokeId === runner.runnerId
+                      ? "Revoking..."
+                      : "Revoke"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="inline-empty-state">
+              <p>No runners have registered yet.</p>
+            </div>
+          )}
+          {lastRunnerMutationSummary ? (
+            <p className="panel-caption">{lastRunnerMutationSummary}</p>
+          ) : null}
+          {runnerMutationError ? (
+            <p className="error-box">{runnerMutationError}</p>
+          ) : null}
         </div>
 
         <form

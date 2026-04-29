@@ -4797,3 +4797,13 @@ starts the development relay, and runs the federated process-runner smoke in
 This gives operators one no-credential command for opening the running User
 Client endpoints served by actual User Node runtimes while preserving the
 existing Host/runner/User Node filesystem isolation and Nostr control path.
+
+## [2026-04-29] implementation | Added Studio runner trust controls
+
+Added `references/403-studio-runner-trust-controls-slice.md`. Studio's
+Federation panel now includes a Runner Registry block with projected runner
+rows plus Trust/Revoke actions wired through the shared Host client.
+
+This lets the visual admin surface admit or revoke runners through the same
+Host runner registry boundary already used by the CLI, without creating a
+Studio-owned runner registry model.

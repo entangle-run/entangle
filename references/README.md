@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
+[403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -158,6 +158,8 @@ assignment timeline endpoint. `pnpm ops:demo-user-node-runtime` now wraps the
 fastest interactive User Node runtime proof by building the dedicated User
 Client app, starting the development relay, and running the federated
 process-runner smoke in `--keep-running` mode.
+Studio can now also trust or revoke projected runners from the Federation panel
+through the same Host runner registry boundary used by the CLI.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -571,6 +573,7 @@ files are the active federated redesign pack.
 401. [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 402. [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 403. [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
+404. [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 
 ## Role of this corpus
 

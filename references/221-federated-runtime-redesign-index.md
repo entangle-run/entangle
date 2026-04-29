@@ -203,6 +203,7 @@ same-machine slice records.
 - [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
+- [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 
 ## Audited Scope
 

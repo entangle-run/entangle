@@ -726,14 +726,16 @@ projection/User Node panel with runtime placement, User Client URL,
 conversation, active, unread, and pending-approval counts. Studio also has a
 first Host-backed assignment offer control for assigning graph nodes, including
 User Nodes, to trusted runners plus projected assignment rows with Host-backed
-revoke actions. CLI approve/reject can now derive signed response context from
+revoke actions. Studio can now also trust pending/revoked runners and revoke
+pending/trusted runners from the Federation panel through the same Host runner
+registry boundary as the CLI. CLI approve/reject can now derive signed response context from
 directly looked-up recorded approval-request messages. Host status now exposes
 first federated control/observe transport health and both CLI and Studio render
 that Host-owned read model. Host status now also includes per-relay
 control/observe diagnostic rows, and Studio renders those rows in the Host
-Status panel. Richer Studio reassignment controls remain follow-up work, while
-old public direct Host approval/review mutation paths have already been removed
-by the direct API removal cleanup.
+Status panel. Richer assignment detail remains follow-up work, while old
+public direct Host approval/review mutation paths have already been removed by
+the direct API removal cleanup.
 
 CLI also now exposes `entangle runners join-config` to write Host-derived,
 schema-validated generic runner join configs without embedding secrets.

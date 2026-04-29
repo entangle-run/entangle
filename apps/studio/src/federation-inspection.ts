@@ -2,6 +2,7 @@ import type {
   AssignmentReceiptProjectionRecord,
   AssignmentProjectionRecord,
   HostProjectionSnapshot,
+  RunnerProjectionRecord,
   RuntimeCommandReceiptProjectionRecord,
   RuntimeAssignmentTimelineEntry,
   RuntimeAssignmentTimelineResponse,
@@ -73,6 +74,60 @@ export function sortRuntimeProjectionsForStudio(
   return [...runtimes].sort((left, right) =>
     left.nodeId.localeCompare(right.nodeId)
   );
+}
+
+function runnerTrustPriority(runner: RunnerProjectionRecord): number {
+  switch (runner.trustState) {
+    case "pending":
+      return 0;
+    case "trusted":
+      return runner.operationalState === "offline" ? 2 : 1;
+    case "revoked":
+      return 3;
+  }
+}
+
+export function sortRunnerProjectionsForStudio(
+  runners: RunnerProjectionRecord[]
+): RunnerProjectionRecord[] {
+  return [...runners].sort((left, right) => {
+    const priorityOrder = runnerTrustPriority(left) - runnerTrustPriority(right);
+
+    if (priorityOrder !== 0) {
+      return priorityOrder;
+    }
+
+    return left.runnerId.localeCompare(right.runnerId);
+  });
+}
+
+export function canTrustRunnerProjection(
+  runner: RunnerProjectionRecord
+): boolean {
+  return runner.trustState !== "trusted";
+}
+
+export function canRevokeRunnerProjection(
+  runner: RunnerProjectionRecord
+): boolean {
+  return runner.trustState !== "revoked";
+}
+
+export function formatRunnerProjectionLabel(
+  runner: RunnerProjectionRecord
+): string {
+  return `${runner.runnerId} · ${runner.trustState}`;
+}
+
+export function formatRunnerProjectionDetail(
+  runner: RunnerProjectionRecord
+): string {
+  return [
+    `state ${runner.operationalState}`,
+    `assignments ${runner.assignmentIds.length}`,
+    runner.lastSeenAt ? `last seen ${runner.lastSeenAt}` : "not seen yet",
+    `pubkey ${runner.publicKey.slice(0, 12)}...`
+  ].join(" · ");
 }
 
 export function sortAssignmentReceiptsForStudio(
