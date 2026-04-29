@@ -476,6 +476,10 @@ The repository now also contains the first real implementation baseline:
   including candidate ids, totals, changed-file summaries, file-preview
   metadata, and diff availability, instead of depending only on model prose to
   remember code-change evidence;
+- a handoff-aware working-context refinement where optional model-guided memory
+  synthesis receives bounded emitted-handoff evidence and the durable
+  `working-context.md` page now records emitted handoff message ids without
+  copying peer conversations or logs into node memory;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace

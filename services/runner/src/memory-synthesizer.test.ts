@@ -236,6 +236,7 @@ describe("model-guided memory synthesis", () => {
       "Confirm the operator checkpoint once the next relay run finishes.";
     const previousResolution =
       "The earlier alert-routing concern is closed for the current review.";
+    const handoffEventId = "a".repeat(64);
     await Promise.all([
       writeFile(
         path.join(
@@ -526,6 +527,7 @@ describe("model-guided memory synthesis", () => {
       taskPagePath: memoryUpdate.taskPagePath,
       turnRecord: {
         consumedArtifactIds: ["artifact-input"],
+        emittedHandoffMessageIds: [handoffEventId],
         graphId: "graph-alpha",
         nodeId: "worker-it",
         phase: "completed",
@@ -638,6 +640,12 @@ describe("model-guided memory synthesis", () => {
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "- diff excerpt: available"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Current handoff evidence:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      `- emitted handoff message ids: \`${handoffEventId}\``
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "- provider stop reason: `end_turn`"
@@ -778,6 +786,10 @@ describe("model-guided memory synthesis", () => {
     );
     expect(workingContextPage).toContain("- Diff excerpt: available");
     expect(workingContextPage).not.toContain("checkpointReady");
+    expect(workingContextPage).toContain("## Handoff Context");
+    expect(workingContextPage).toContain(
+      `- Emitted handoff message ids: \`${handoffEventId}\``
+    );
     expect(workingContextPage).toContain("## Execution Signals");
     expect(workingContextPage).toContain(
       "The current turn needed both session-state and artifact inspection before finalizing the checkpoint."

@@ -708,6 +708,7 @@ Implementation records:
 - [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 - [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 - [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
+- [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 
 Current status:
 
@@ -766,6 +767,9 @@ Current status:
   source-change context section with candidate ids, totals, changed-file
   summaries, file-preview metadata, and diff availability, so future turns do
   not depend only on model prose to remember code-change evidence;
+- the durable `working-context.md` page now also includes a runner-owned
+  handoff context section with emitted handoff message ids, so nodes retain
+  bounded delegation evidence without copying peer conversations into memory;
 - runtime approval records now carry optional signed-message lineage fields for
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,

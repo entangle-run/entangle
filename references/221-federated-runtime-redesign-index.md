@@ -174,6 +174,7 @@ same-machine slice records.
 - [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 - [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 - [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
+- [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 
 ## Audited Scope
 
@@ -672,6 +673,9 @@ prompt explicitly forbids copying raw diffs or full file previews into durable
 memory. The durable `working-context.md` summary now also carries a
 runner-owned `Source Change Context` section with the same bounded metadata,
 without raw diff excerpts or full file-preview contents.
+It now also carries a runner-owned `Handoff Context` section with emitted
+handoff message ids from the completed turn, preserving bounded delegation
+evidence without copying peer conversations or logs into memory.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

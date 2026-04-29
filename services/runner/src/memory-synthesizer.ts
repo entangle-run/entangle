@@ -201,6 +201,19 @@ function renderCurrentSourceChangeForPrompt(
   ].join("\n");
 }
 
+function renderCurrentHandoffContextForPrompt(
+  turnRecord: RunnerTurnRecord | undefined
+): string {
+  const handoffIds = turnRecord?.emittedHandoffMessageIds ?? [];
+
+  return [
+    "Current handoff evidence:",
+    handoffIds.length > 0
+      ? `- emitted handoff message ids: ${renderInlineCodeList(handoffIds)}`
+      : "- none emitted for this turn"
+  ].join("\n");
+}
+
 function coerceNonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -1978,6 +1991,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       ),
       renderCurrentTurnOutcomeForPrompt(input.result),
       renderCurrentSourceChangeForPrompt(input.turnRecord),
+      renderCurrentHandoffContextForPrompt(input.turnRecord),
       `Current assistant outcome:\n${assistantSummary}`,
       ...(input.sessionSnapshot
         ? [
@@ -2114,6 +2128,20 @@ function renderSourceChangeContextLines(
   ];
 }
 
+function renderHandoffContextLines(
+  turnRecord: RunnerTurnRecord | undefined
+): string[] {
+  const handoffIds = turnRecord?.emittedHandoffMessageIds ?? [];
+
+  if (handoffIds.length === 0) {
+    return ["- No autonomous handoff messages were emitted in this turn."];
+  }
+
+  return [
+    `- Emitted handoff message ids: ${renderInlineCodeList(handoffIds)}`
+  ];
+}
+
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
@@ -2222,6 +2250,10 @@ function buildWorkingContextSummaryContent(input: {
     "## Source Change Context",
     "",
     ...renderSourceChangeContextLines(input.turnRecord),
+    "",
+    "## Handoff Context",
+    "",
+    ...renderHandoffContextLines(input.turnRecord),
     "",
     "## Execution Signals",
     "",

@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added handoff-aware working-context memory
+
+Model-guided runner memory synthesis now receives bounded current-turn handoff
+evidence from `RunnerTurnRecord.emittedHandoffMessageIds`. The durable
+`working-context.md` page now carries a deterministic `Handoff Context`
+section with emitted handoff message ids, preserving delegation evidence
+without copying peer conversations or logs into node memory.
+
+Added `references/374-handoff-aware-working-context-memory-slice.md`.
+
 ## [2026-04-29] implementation | Added mounted-file runtime identity support
 
 Runtime-context runner startup now uses the shared runner secret-delivery
