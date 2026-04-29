@@ -692,6 +692,7 @@ Implementation records:
 - [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
 - [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 - [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
+- [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
 
 Current status:
 
@@ -750,6 +751,10 @@ Current status:
   source-change context section with candidate ids, totals, changed-file
   summaries, file-preview metadata, and diff availability, so future turns do
   not depend only on model prose to remember code-change evidence;
+- runtime approval records now carry optional signed-message lineage fields for
+  request event id, request signer, response event id, response signer, and
+  source message id, and the runner stamps those fields for engine gates,
+  inbound approval requests, and applied approval responses where available;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

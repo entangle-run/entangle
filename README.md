@@ -168,10 +168,11 @@ This repository currently contains:
   Interface Runtime/User Client with `/health`, `/api/state`, projected
   conversation list, selected-thread metadata, recorded inbound/outbound message
   history, User Client approval controls, approval resource rendering,
-  signed approval-response context, projected source-change summary rendering,
-  projected source-change diff excerpt rendering, source-change diff/file
-  fallback scoped to visible approval conversations, signed source-candidate
-  accept/reject messages handled by the owning runner,
+  signed approval-response context, approval record request/response lineage
+  metadata, projected source-change summary rendering, projected source-change
+  diff excerpt rendering, source-change diff/file fallback scoped to visible
+  approval conversations, signed source-candidate accept/reject messages
+  handled by the owning runner,
   artifact-ref rendering, projected bounded artifact preview with runtime
   fallback, delivery labels, local conversation read
   state, projected wiki-ref rendering, projected wiki preview rendering,

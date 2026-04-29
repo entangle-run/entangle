@@ -61,7 +61,10 @@ User nodes are now partially runtime-capable:
   targets a `source_change_candidate`. The signed approval response can now
   preserve the reviewed operation, resource, and reason context. The same
   source-change cards and diff page now include Host-mediated accept/reject
-  candidate review controls stamped with the running User Node id.
+  candidate review controls stamped with the running User Node id. Runtime
+  approval records now preserve request event id, request signer pubkey,
+  response event id, response signer pubkey, and source message id when that
+  signed-message lineage is available.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,
@@ -198,6 +201,7 @@ Host Authority is not the User Node. Operator identity is not the User Node.
 - Persist inbound User Node message records. Done through the Human Interface
   Runtime relay subscriber and Host inbound intake endpoint.
 - Make approval records include signer pubkey, event id, and source message id.
+  Done for optional request/response lineage fields on `ApprovalRecord`.
 - Add edge-route pubkeys for user-node peers.
 - Add multi-user selection in Studio and CLI.
 

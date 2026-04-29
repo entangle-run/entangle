@@ -2041,6 +2041,10 @@ describe("runtime approval host API contracts", () => {
       graphId: "team-alpha",
       operation: "source_publication",
       reason: "Supervisor approval is required before publication.",
+      requestEventId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      requestSignerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       requestedAt: "2026-04-24T00:00:00.000Z",
       requestedByNodeId: "worker-it",
       resource: {
@@ -2048,8 +2052,14 @@ describe("runtime approval host API contracts", () => {
         kind: "source_history_publication",
         label: "source-history-alpha -> gitea/team-alpha/team-alpha"
       },
+      responseEventId:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      responseSignerPubkey:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       sessionId: "session-alpha",
-      status: "pending",
+      sourceMessageId:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      status: "approved",
       updatedAt: "2026-04-24T00:01:00.000Z"
     };
 
@@ -2058,7 +2068,7 @@ describe("runtime approval host API contracts", () => {
     ).toHaveLength(1);
     expect(
       runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.status
-    ).toBe("pending");
+    ).toBe("approved");
     expect(
       runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.operation
     ).toBe("source_publication");
@@ -2066,6 +2076,10 @@ describe("runtime approval host API contracts", () => {
       runtimeApprovalInspectionResponseSchema.parse({ approval }).approval.resource
         ?.kind
     ).toBe("source_history_publication");
+    expect(
+      runtimeApprovalInspectionResponseSchema.parse({ approval }).approval
+        .responseSignerPubkey
+    ).toBe("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd");
   });
 
 });

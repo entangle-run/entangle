@@ -921,6 +921,7 @@ async function materializeEngineApprovalRequests(input: {
       requestedByNodeId: input.context.binding.node.nodeId,
       ...(directive.resource ? { resource: directive.resource } : {}),
       sessionId: input.envelope.message.sessionId,
+      sourceMessageId: existingApproval?.sourceMessageId ?? input.envelope.eventId,
       status: "pending",
       updatedAt: nowIsoString()
     };
@@ -1076,6 +1077,9 @@ async function transitionApprovalStatus(
   nextStatus: ApprovalRecord["status"],
   input: {
     approverNodeId?: string;
+    responseEventId?: string;
+    responseSignerPubkey?: string;
+    sourceMessageId?: string;
     updatedAt: string;
   }
 ): Promise<ApprovalRecord> {
@@ -1092,6 +1096,13 @@ async function transitionApprovalStatus(
   const nextRecord: ApprovalRecord = {
     ...record,
     approverNodeIds: nextApproverNodeIds,
+    ...(input.responseEventId
+      ? { responseEventId: input.responseEventId }
+      : {}),
+    ...(input.responseSignerPubkey
+      ? { responseSignerPubkey: input.responseSignerPubkey }
+      : {}),
+    ...(input.sourceMessageId ? { sourceMessageId: input.sourceMessageId } : {}),
     status: nextStatus,
     updatedAt: input.updatedAt
   };
@@ -2433,10 +2444,19 @@ export class RunnerService {
         graphId: input.envelope.message.graphId,
         ...(approval.operation ? { operation: approval.operation } : {}),
         reason: approval.reason ?? input.envelope.message.work.summary,
+        requestEventId:
+          existingApproval?.requestEventId ?? input.envelope.eventId,
+        requestSignerPubkey:
+          existingApproval?.requestSignerPubkey ??
+          input.envelope.message.fromPubkey,
         requestedAt: existingApproval?.requestedAt ?? input.envelope.receivedAt,
         requestedByNodeId: input.envelope.message.fromNodeId,
         ...(approval.resource ? { resource: approval.resource } : {}),
         sessionId: input.envelope.message.sessionId,
+        sourceMessageId:
+          existingApproval?.sourceMessageId ??
+          input.envelope.message.parentMessageId ??
+          input.envelope.eventId,
         status: "pending",
         updatedAt: input.envelope.receivedAt
       };
@@ -2515,6 +2535,8 @@ export class RunnerService {
       nextApprovalStatus,
       {
         approverNodeId: input.envelope.message.fromNodeId,
+        responseEventId: input.envelope.eventId,
+        responseSignerPubkey: input.envelope.message.fromPubkey,
         updatedAt: input.envelope.receivedAt
       }
     );

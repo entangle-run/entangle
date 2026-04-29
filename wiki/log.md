@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added approval message lineage
+
+Extended `ApprovalRecord` with optional request/response event ids, signer
+pubkeys, and source message id metadata. The runner now stamps engine-created
+approval gates, inbound approval requests, and applied approval responses with
+that bounded signed-message lineage where available, and shared approval detail
+formatting exposes the fields.
+
+Added `references/363-approval-message-lineage-slice.md`.
+
 ## [2026-04-29] implementation | Added source-change memory carry-forward
 
 Added a runner-owned `Source Change Context` section to the generated

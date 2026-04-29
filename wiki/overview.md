@@ -149,7 +149,10 @@ contexts. The dedicated app now reaches runtime-local JSON routes for artifact
 preview, source diff, source file preview, source-candidate review, wiki
 preview cards, and automatic thread read-state convergence, with source and
 artifact evidence scoped to selected User Node conversations. Studio
-remains the operator surface, not the primary human-node client.
+remains the operator surface, not the primary human-node client. Approval
+records now preserve optional signed-message lineage for request/response
+event ids, signer pubkeys, and source message id, making User Node approval
+behavior auditable through the shared runtime approval record.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets
 when available, or an explicit `--user-client-static-dir`, so manual

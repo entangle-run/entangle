@@ -395,20 +395,59 @@ export const conversationRecordSchema = z.object({
   updatedAt: nonEmptyStringSchema
 });
 
-export const approvalRecordSchema = z.object({
-  approvalId: identifierSchema,
-  approverNodeIds: z.array(identifierSchema).default([]),
-  conversationId: identifierSchema.optional(),
-  graphId: identifierSchema,
-  operation: policyOperationSchema.optional(),
-  reason: nonEmptyStringSchema.optional(),
-  requestedAt: nonEmptyStringSchema,
-  requestedByNodeId: identifierSchema,
-  resource: policyResourceScopeSchema.optional(),
-  sessionId: identifierSchema,
-  status: approvalLifecycleStateSchema,
-  updatedAt: nonEmptyStringSchema
-});
+export const approvalRecordSchema = z
+  .object({
+    approvalId: identifierSchema,
+    approverNodeIds: z.array(identifierSchema).default([]),
+    conversationId: identifierSchema.optional(),
+    graphId: identifierSchema,
+    operation: policyOperationSchema.optional(),
+    reason: nonEmptyStringSchema.optional(),
+    requestEventId: nostrEventIdSchema.optional(),
+    requestSignerPubkey: nostrPublicKeySchema.optional(),
+    requestedAt: nonEmptyStringSchema,
+    requestedByNodeId: identifierSchema,
+    resource: policyResourceScopeSchema.optional(),
+    responseEventId: nostrEventIdSchema.optional(),
+    responseSignerPubkey: nostrPublicKeySchema.optional(),
+    sessionId: identifierSchema,
+    sourceMessageId: nostrEventIdSchema.optional(),
+    status: approvalLifecycleStateSchema,
+    updatedAt: nonEmptyStringSchema
+  })
+  .superRefine((value, context) => {
+    if (value.requestEventId && !value.requestSignerPubkey) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Approval records with requestEventId must include requestSignerPubkey.",
+        path: ["requestSignerPubkey"]
+      });
+    }
+
+    if (value.requestSignerPubkey && !value.requestEventId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Approval records with requestSignerPubkey must include requestEventId.",
+        path: ["requestEventId"]
+      });
+    }
+
+    if (value.responseEventId && !value.responseSignerPubkey) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Approval records with responseEventId must include responseSignerPubkey.",
+        path: ["responseSignerPubkey"]
+      });
+    }
+
+    if (value.responseSignerPubkey && !value.responseEventId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Approval records with responseSignerPubkey must include responseEventId.",
+        path: ["responseEventId"]
+      });
+    }
+  });
 
 export const sessionCancellationRequestStatusSchema = z.enum([
   "requested",

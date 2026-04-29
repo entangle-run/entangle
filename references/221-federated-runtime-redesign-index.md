@@ -163,6 +163,7 @@ same-machine slice records.
 - [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
 - [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 - [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
+- [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
 
 ## Audited Scope
 
@@ -498,7 +499,9 @@ the model summary omits the details.
    implemented; complete projection-backed source/wiki review remains open.
 10. Signed user-node task, reply, approval, and rejection messages. CLI
     approval and rejection commands now preserve optional signed approval
-    operation/resource/reason context.
+    operation/resource/reason context, and runtime approval records now carry
+    request/response event ids, signer pubkeys, and source message ids when
+    available.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

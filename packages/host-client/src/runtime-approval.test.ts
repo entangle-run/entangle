@@ -16,6 +16,10 @@ const approvals: ApprovalRecord[] = [
     graphId: "team-alpha",
     operation: "source_publication",
     reason: "Review publication.",
+    requestEventId:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    requestSignerPubkey:
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     requestedAt: "2026-04-24T11:00:00.000Z",
     requestedByNodeId: "worker-it",
     resource: {
@@ -23,6 +27,8 @@ const approvals: ApprovalRecord[] = [
       kind: "source_history_publication",
       label: "source-history-alpha -> gitea/team-alpha/team-alpha"
     },
+    sourceMessageId:
+      "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     sessionId: "session-alpha",
     status: "pending",
     updatedAt: "2026-04-24T11:05:00.000Z"
@@ -85,6 +91,9 @@ describe("runtime approval presentation helpers", () => {
         "operation source_publication",
         "resource source_history_publication:source-history-alpha|gitea|team-alpha|team-alpha (source-history-alpha -> gitea/team-alpha/team-alpha)",
         "conversation conv-alpha",
+        "source message cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "request event aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request signer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "reason Review publication."
       ])
     );

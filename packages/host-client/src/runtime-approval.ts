@@ -101,6 +101,26 @@ export function formatRuntimeApprovalDetailLines(
     lines.push(`conversation ${approval.conversationId}`);
   }
 
+  if (approval.sourceMessageId) {
+    lines.push(`source message ${approval.sourceMessageId}`);
+  }
+
+  if (approval.requestEventId) {
+    lines.push(`request event ${approval.requestEventId}`);
+  }
+
+  if (approval.requestSignerPubkey) {
+    lines.push(`request signer ${approval.requestSignerPubkey}`);
+  }
+
+  if (approval.responseEventId) {
+    lines.push(`response event ${approval.responseEventId}`);
+  }
+
+  if (approval.responseSignerPubkey) {
+    lines.push(`response signer ${approval.responseSignerPubkey}`);
+  }
+
   if (approval.reason) {
     lines.push(`reason ${approval.reason}`);
   }

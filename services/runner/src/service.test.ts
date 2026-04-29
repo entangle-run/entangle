@@ -1106,6 +1106,8 @@ describe("RunnerService", () => {
           kind: "source_change_candidate"
         },
         sessionId: "engine-approval-session",
+        sourceMessageId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         status: "pending"
       });
       expect(observedApprovals).toEqual([
@@ -1586,12 +1588,15 @@ describe("RunnerService", () => {
       conversationId: "conv-approval-request",
       operation: "artifact_publication",
       reason: "Approve the proposed publication.",
+      requestEventId: approvalRequestMessageId,
+      requestSignerPubkey: remotePublicKey,
       requestedByNodeId: "reviewer-it",
       resource: {
         id: "artifact-alpha",
         kind: "artifact"
       },
       sessionId: "session-approval-request",
+      sourceMessageId: parentMessageId,
       status: "pending"
     });
     expect(conversationRecord?.status).toBe("awaiting_approval");
@@ -2379,10 +2384,16 @@ describe("RunnerService", () => {
 
     expect(result.handled).toBe(true);
     expect(approvalRecord?.status).toBe("approved");
+    expect(approvalRecord).toMatchObject({
+      responseEventId: approvalResponseMessageId,
+      responseSignerPubkey: remotePublicKey
+    });
     expect(observedApprovals).toEqual([
       expect.objectContaining({
         approvalId: "approval-response-alpha",
         approverNodeIds: ["reviewer-it"],
+        responseEventId: approvalResponseMessageId,
+        responseSignerPubkey: remotePublicKey,
         status: "approved"
       })
     ]);
@@ -2506,6 +2517,10 @@ describe("RunnerService", () => {
 
     expect(result.handled).toBe(true);
     expect(approvalRecord?.status).toBe("rejected");
+    expect(approvalRecord).toMatchObject({
+      responseEventId: approvalResponseMessageId,
+      responseSignerPubkey: remotePublicKey
+    });
     expect(conversationRecord?.status).toBe("closed");
     expect(sessionRecord?.status).toBe("failed");
     expect(sessionRecord?.activeConversationIds).toEqual([]);
