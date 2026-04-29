@@ -164,6 +164,7 @@ same-machine slice records.
 - [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 - [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
 - [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
+- [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 
 ## Audited Scope
 
@@ -501,7 +502,8 @@ the model summary omits the details.
     approval and rejection commands now preserve optional signed approval
     operation/resource/reason context, and runtime approval records now carry
     request/response event ids, signer pubkeys, and source message ids when
-    available.
+    available. Runners now enforce the approval record's approver node set
+    before applying inbound approval responses.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

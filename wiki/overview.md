@@ -152,7 +152,9 @@ artifact evidence scoped to selected User Node conversations. Studio
 remains the operator surface, not the primary human-node client. Approval
 records now preserve optional signed-message lineage for request/response
 event ids, signer pubkeys, and source message id, making User Node approval
-behavior auditable through the shared runtime approval record.
+behavior auditable through the shared runtime approval record. Runners now
+enforce the approval record's approver node set before applying inbound
+approval responses.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets
 when available, or an explicit `--user-client-static-dir`, so manual

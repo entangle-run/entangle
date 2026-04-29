@@ -2528,6 +2528,13 @@ export class RunnerService {
       };
     }
 
+    if (!approvalRecord.approverNodeIds.includes(input.envelope.message.fromNodeId)) {
+      return {
+        conversation: input.conversation,
+        session: input.session
+      };
+    }
+
     const nextApprovalStatus = approval.decision;
     const nextApprovalRecord = await transitionApprovalStatus(
       input.statePaths,

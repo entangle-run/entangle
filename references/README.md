@@ -84,7 +84,9 @@ turns deterministic code-change memory even when the model summary is sparse.
 Runtime approval records now preserve optional signed-message lineage for
 request event id, request signer, response event id, response signer, and
 source message id, closing the first audit gap between signed User Node
-approval messages and the durable approval read model.
+approval messages and the durable approval read model. Runners now enforce the
+approval record's approver node set before applying inbound approval responses,
+so matching responses from non-approver nodes do not transition the gate.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -459,6 +461,7 @@ files are the active federated redesign pack.
 362. [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 363. [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
 364. [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
+365. [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 
 ## Role of this corpus
 

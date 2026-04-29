@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Enforced approval approver sets
+
+Updated the runner approval-response path so a matching `approval.response`
+only transitions an approval gate when the sender node is listed in the
+approval record's approver set. Unauthorized matching responses can remain
+conversation traffic but no longer approve, reject, close, or fail the gated
+session.
+
+Added `references/364-approval-approver-enforcement-slice.md`.
+
 ## [2026-04-29] implementation | Added approval message lineage
 
 Extended `ApprovalRecord` with optional request/response event ids, signer

@@ -2405,6 +2405,142 @@ describe("RunnerService", () => {
     expect(sessionRecord?.lastMessageType).toBe("approval.response");
   });
 
+  it("ignores approval responses from nodes outside the approver set", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const approvalRequestMessageId =
+      "5656565656565656565656565656565656565656565656565656565656565656";
+    const unauthorizedResponseMessageId =
+      "7878787878787878787878787878787878787878787878787878787878787878";
+
+    await writeSessionRecord(statePaths, {
+      activeConversationIds: ["conv-approval-unauthorized"],
+      graphId: "graph-alpha",
+      intent: "Ignore unauthorized approval.",
+      lastMessageId: approvalRequestMessageId,
+      lastMessageType: "approval.request",
+      openedAt: "2026-04-24T10:00:00.000Z",
+      ownerNodeId: "worker-it",
+      rootArtifactIds: [],
+      sessionId: "session-approval-unauthorized",
+      status: "waiting_approval",
+      traceId: "session-approval-unauthorized",
+      updatedAt: "2026-04-24T10:05:00.000Z",
+      waitingApprovalIds: ["approval-unauthorized-alpha"]
+    });
+    await writeConversationRecord(statePaths, {
+      artifactIds: [],
+      conversationId: "conv-approval-unauthorized",
+      followupCount: 0,
+      graphId: "graph-alpha",
+      initiator: "self",
+      lastOutboundMessageId: approvalRequestMessageId,
+      lastMessageType: "approval.request",
+      localNodeId: "worker-it",
+      localPubkey: runtimeContext.identityContext.publicKey,
+      openedAt: "2026-04-24T10:01:00.000Z",
+      peerNodeId: "reviewer-it",
+      peerPubkey: remotePublicKey,
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: "session-approval-unauthorized",
+      status: "awaiting_approval",
+      updatedAt: "2026-04-24T10:04:00.000Z"
+    });
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-unauthorized-alpha",
+      approverNodeIds: ["reviewer-it"],
+      conversationId: "conv-approval-unauthorized",
+      graphId: "graph-alpha",
+      reason: "Only reviewer-it may approve this gate.",
+      requestedAt: "2026-04-24T10:03:00.000Z",
+      requestedByNodeId: "worker-it",
+      sessionId: "session-approval-unauthorized",
+      status: "pending",
+      updatedAt: "2026-04-24T10:03:00.000Z"
+    });
+
+    const observedApprovals: ApprovalRecord[] = [];
+    const service = new RunnerService({
+      context: runtimeContext,
+      observationPublisher: {
+        publishApprovalUpdated: (record) => {
+          observedApprovals.push(record);
+          return Promise.resolve();
+        },
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: () => Promise.resolve()
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+    const approvalResponseMessage = entangleA2AMessageSchema.parse({
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: "conv-approval-unauthorized",
+      fromNodeId: "intruder-it",
+      fromPubkey: remotePublicKey,
+      graphId: "graph-alpha",
+      intent: "Ignore unauthorized approval.",
+      messageType: "approval.response",
+      parentMessageId: approvalRequestMessageId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: true,
+        maxFollowups: 0,
+        responseRequired: false
+      },
+      sessionId: "session-approval-unauthorized",
+      toNodeId: "worker-it",
+      toPubkey: runtimeContext.identityContext.publicKey,
+      turnId: "approval-unauthorized-turn",
+      work: {
+        artifactRefs: [],
+        metadata: {
+          approval: {
+            approvalId: "approval-unauthorized-alpha",
+            decision: "approved"
+          }
+        },
+        summary: "Approval is granted by the wrong node."
+      }
+    });
+
+    const result = await service.handleInboundEnvelope({
+      eventId: unauthorizedResponseMessageId,
+      message: approvalResponseMessage,
+      receivedAt: "2026-04-24T10:06:00.000Z"
+    });
+
+    const [approvalRecord, conversationRecord, sessionRecord] = await Promise.all([
+      readApprovalRecord(statePaths, "approval-unauthorized-alpha"),
+      readConversationRecord(statePaths, "conv-approval-unauthorized"),
+      readSessionRecord(statePaths, "session-approval-unauthorized")
+    ]);
+
+    expect(result.handled).toBe(true);
+    expect(approvalRecord).toMatchObject({
+      approvalId: "approval-unauthorized-alpha",
+      approverNodeIds: ["reviewer-it"],
+      status: "pending"
+    });
+    expect(approvalRecord?.responseEventId).toBeUndefined();
+    expect(approvalRecord?.responseSignerPubkey).toBeUndefined();
+    expect(observedApprovals).toEqual([]);
+    expect(conversationRecord?.status).toBe("awaiting_approval");
+    expect(sessionRecord?.status).toBe("waiting_approval");
+    expect(sessionRecord?.waitingApprovalIds).toEqual([
+      "approval-unauthorized-alpha"
+    ]);
+  });
+
   it("applies rejected approval responses and fails the blocked session", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;

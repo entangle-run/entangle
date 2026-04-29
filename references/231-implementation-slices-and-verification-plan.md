@@ -693,6 +693,7 @@ Implementation records:
 - [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 - [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
 - [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
+- [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 
 Current status:
 
@@ -755,6 +756,9 @@ Current status:
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,
   inbound approval requests, and applied approval responses where available;
+- runners now enforce the approval record's configured approver node set before
+  applying inbound approval responses, leaving unauthorized matching responses
+  from other nodes unable to approve, reject, close, or fail the gated session;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

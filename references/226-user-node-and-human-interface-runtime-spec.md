@@ -64,7 +64,9 @@ User nodes are now partially runtime-capable:
   candidate review controls stamped with the running User Node id. Runtime
   approval records now preserve request event id, request signer pubkey,
   response event id, response signer pubkey, and source message id when that
-  signed-message lineage is available.
+  signed-message lineage is available. Runners now apply approval responses
+  only when the response sender node is listed in the approval record's
+  approver set.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,
