@@ -201,6 +201,7 @@ same-machine slice records.
 - [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 - [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 - [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
+- [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 
 ## Audited Scope
 

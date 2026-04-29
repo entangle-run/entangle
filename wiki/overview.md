@@ -941,10 +941,12 @@ The repository now also contains the first real implementation baseline:
 - targeted tests over validator semantics, host-client error handling, package
   scaffolding, host API input failure modes, runtime context conflict
   semantics, and runner bootstrap behavior;
-- a verified `pnpm verify` path for the current workspace.
+- a verified `pnpm verify` path for the current workspace, with root
+  `pnpm test` running explicit sequential package tests instead of Turbo test
+  execution after Turbo left Vitest child processes open in this environment;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
-  root.
+  root;
 - a historical three-product roadmap plus a released R1/L1 local-operator
   baseline. The federated-runtime pivot supersedes the roadmap's product
   identity framing: the product is Entangle, and local is one deployment

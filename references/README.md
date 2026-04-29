@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
+[401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -566,6 +566,7 @@ files are the active federated redesign pack.
 399. [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 400. [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 401. [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
+402. [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 
 ## Role of this corpus
 

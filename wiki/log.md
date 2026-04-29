@@ -4775,3 +4775,14 @@ CLI exposes the same policy through
 `entangle host artifact-backend-cache-clear --older-than-seconds <n>`, and
 shared summaries report selected and retained repository counts without
 exposing Host filesystem paths.
+
+## [2026-04-29] implementation | Made the root test gate reliable
+
+Added `references/401-root-test-gate-reliability-slice.md`. Root `pnpm test`
+now runs package test commands directly in a fixed sequence instead of routing
+through Turbo, because Turbo left Vitest child processes open in this
+environment while the same package tests exited cleanly when run directly.
+
+CLI, Studio, and User Client package test scripts now use Vitest fork pools.
+The root `pnpm test` gate, targeted package tests, product naming check, and
+diff/local-assumption audits passed for this slice.

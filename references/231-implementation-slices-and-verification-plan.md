@@ -5,6 +5,8 @@
 The repo already follows a slice discipline: each implemented runtime
 capability has a reference record, tests, wiki log entry, and usually a
 coherent commit. The root `pnpm verify` gate runs lint, typecheck, and tests.
+Root `pnpm test` now uses an explicit sequential workspace test chain because
+Turbo test execution left Vitest child processes open in this environment.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 
@@ -316,6 +318,7 @@ Implementation record:
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 - [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 - [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
+- [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 
 Verification:
 

@@ -146,6 +146,16 @@ pnpm ops:check-product-naming
 That check scans active code, deployment, example, script, package, and README
 surfaces so obsolete local product/profile labels do not return.
 
+The root test gate is intentionally sequential:
+
+```bash
+pnpm test
+```
+
+It runs each workspace test command directly instead of routing tests through
+Turbo, because Turbo test execution left Vitest child processes open in this
+environment while the same package tests exited cleanly when run directly.
+
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
 both User Client URLs, and prints CLI commands for publishing a signed
