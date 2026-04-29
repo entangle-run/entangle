@@ -474,7 +474,8 @@ Current status:
   preview, projected source-change summary rendering, projected source diff
   excerpts with runtime-diff fallback, scoped approval-response context,
   artifact-ref rendering, projection-backed bounded artifact preview with
-  runtime fallback, delivery labels, local conversation read state, projected
+  runtime fallback, source file preview actions for source-change candidates,
+  delivery labels, local conversation read state, projected
   wiki-ref rendering, projected wiki preview rendering, wiki-scoped approval
   context rendering, signed read receipts, parent-message links, message
   delivery retry state, runtime status, live state refresh, local JSON APIs for
@@ -500,8 +501,8 @@ Current status:
 - the Docker launcher adapter can publish a configurable, deterministic host
   port and public User Client URL for User Node runtime contexts;
 - the dedicated User Client app now consumes local JSON APIs for artifact
-  preview, source diff, source-candidate review, wiki preview cards, and
-  automatic thread read-state convergence;
+  preview, source diff, source file preview, source-candidate review, wiki
+  preview cards, and automatic thread read-state convergence;
 - the process-runner smoke auto-serves and validates built User Client assets
   when `apps/user-client/dist` exists or an explicit static directory is passed;
 - CLI now exposes `entangle user-nodes clients` to list active User Nodes with
@@ -688,6 +689,7 @@ Implementation records:
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
 - [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 - [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
+- [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
 
 Current status:
 
@@ -734,6 +736,10 @@ Current status:
   before returning diff evidence or publishing review messages;
 - the process proof now verifies the running User Client source-change diff
   route before submitting signed source-candidate review;
+- the running User Client can load source-change file preview evidence through
+  the same selected-conversation source-change visibility gate;
+- the process proof now verifies the running User Client source-change file
+  preview route before submitting signed source-candidate review;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

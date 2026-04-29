@@ -101,8 +101,8 @@ The most accurate current description is:
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate
-  list/detail/diff/file, running User Client source-change diff, signed
-  source-candidate review, runner-owned
+  list/detail/diff/file, running User Client source-change diff/file preview,
+  signed source-candidate review, runner-owned
   source-history application, approval, and session read APIs without live model
   credentials;
 - accepted source-candidate reviews now also emit signed `source_history.ref`
@@ -146,9 +146,9 @@ the runtime can serve static User Client assets from
 federated dev runner image now bundles that built app, and the Docker launcher
 adapter can publish a browser-openable User Client port for User Node runtime
 contexts. The dedicated app now reaches runtime-local JSON routes for artifact
-preview, source diff, source-candidate review, wiki preview cards, and
-automatic thread read-state convergence, with source and artifact evidence
-scoped to selected User Node conversations. Studio
+preview, source diff, source file preview, source-candidate review, wiki
+preview cards, and automatic thread read-state convergence, with source and
+artifact evidence scoped to selected User Node conversations. Studio
 remains the operator surface, not the primary human-node client.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets

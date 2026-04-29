@@ -15,6 +15,7 @@ import {
   fetchArtifactPreview,
   fetchConversationDetail,
   fetchSourceChangeDiff,
+  fetchSourceChangeFilePreview,
   fetchUserClientState,
   formatConversationTimestamp,
   formatDeliveryLabel,
@@ -246,6 +247,7 @@ function SourceChangeReview({
 }) {
   const resource = message.approval?.resource;
   const [diff, setDiff] = useState<string | undefined>();
+  const [filePreview, setFilePreview] = useState<string | undefined>();
   const [reason, setReason] = useState("");
   const [status, setStatus] = useState<string | undefined>();
 
@@ -264,6 +266,7 @@ function SourceChangeReview({
 
   async function loadDiff(): Promise<void> {
     setStatus("loading diff");
+    setFilePreview(undefined);
 
     try {
       const response = await fetchSourceChangeDiff({
@@ -283,6 +286,34 @@ function SourceChangeReview({
     } catch (error) {
       setDiff(undefined);
       setStatus(error instanceof Error ? error.message : "Diff load failed.");
+    }
+  }
+
+  async function loadFilePreview(filePath: string): Promise<void> {
+    setStatus(`loading ${filePath}`);
+    setDiff(undefined);
+
+    try {
+      const response = await fetchSourceChangeFilePreview({
+        baseUrl,
+        candidateId,
+        conversationId: message.conversationId,
+        nodeId: message.fromNodeId,
+        path: filePath
+      });
+
+      if (response.preview.available) {
+        setFilePreview(response.preview.content);
+        setStatus(`${response.source} file ${response.path}`);
+      } else {
+        setFilePreview(undefined);
+        setStatus(response.preview.reason);
+      }
+    } catch (error) {
+      setFilePreview(undefined);
+      setStatus(
+        error instanceof Error ? error.message : "File preview load failed."
+      );
     }
   }
 
@@ -319,6 +350,19 @@ function SourceChangeReview({
     <div className="review-panel">
       <strong>source change {candidateId}</strong>
       <SourceSummary sourceRef={sourceRef} />
+      {sourceRef?.sourceChangeSummary?.files.length ? (
+        <div className="review-actions">
+          {sourceRef.sourceChangeSummary.files.map((file) => (
+            <button
+              key={file.path}
+              onClick={() => void loadFilePreview(file.path)}
+              type="button"
+            >
+              Preview {file.path}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="review-actions">
         <button onClick={() => void loadDiff()} type="button">
           Load diff
@@ -348,6 +392,7 @@ function SourceChangeReview({
       </div>
       {status ? <div className="metadata">{status}</div> : null}
       {diff ? <pre className="preview-block">{diff}</pre> : null}
+      {filePreview ? <pre className="preview-block">{filePreview}</pre> : null}
     </div>
   );
 }

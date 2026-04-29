@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added User Client source file preview
+
+Added a conversation-scoped runtime-local source-change file preview route to
+the Human Interface Runtime and wired the dedicated User Client review panel to
+load changed-file previews before source-candidate review. The process-runner
+smoke now verifies the running User Client can load the modified smoke source
+file through the same selected-conversation visibility gate.
+
+Added `references/360-user-client-source-file-preview-slice.md`.
+
 ## [2026-04-29] verification | Proved User Client source diff in process smoke
 
 Extended the process-runner smoke so the running User Client loads the visible

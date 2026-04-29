@@ -737,6 +737,17 @@ describe("runner runtime context", () => {
         checkedAt: "2026-04-26T12:02:00.000Z",
         deletions: 1,
         fileCount: 1,
+        filePreviews: [
+          {
+            available: true,
+            bytesRead: 37,
+            content: "export const projectedBehavior = true;\n",
+            contentEncoding: "utf8",
+            contentType: "text/plain",
+            path: "src/index.ts",
+            truncated: false
+          }
+        ],
         files: [
           {
             additions: 3,
@@ -842,6 +853,17 @@ describe("runner runtime context", () => {
                     diffExcerpt:
                       "diff --git a/src/index.ts b/src/index.ts\n+projected behavior\n-old behavior\n",
                     fileCount: 1,
+                    filePreviews: [
+                      {
+                        available: true,
+                        bytesRead: 37,
+                        content: "export const projectedBehavior = true;\n",
+                        contentEncoding: "utf8",
+                        contentType: "text/plain",
+                        path: "src/index.ts",
+                        truncated: false
+                      }
+                    ],
                     files: [
                       {
                         additions: 3,
@@ -1572,6 +1594,33 @@ describe("runner runtime context", () => {
       });
       expect(jsonSourceDiffBody.diff.content).toContain("+projected behavior");
 
+      const jsonSourceFilePreviewResponse = await fetch(
+        new URL(
+          "/api/source-change-candidates/file?nodeId=worker-it&candidateId=source-change-turn-alpha&path=src%2Findex.ts&conversationId=conversation-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonSourceFilePreviewResponse.status).toBe(200);
+      const jsonSourceFilePreviewBody =
+        (await jsonSourceFilePreviewResponse.json()) as {
+          preview: {
+            content?: string;
+          };
+        };
+      expect(jsonSourceFilePreviewBody).toMatchObject({
+        candidateId: "source-change-turn-alpha",
+        nodeId: "worker-it",
+        path: "src/index.ts",
+        preview: {
+          available: true
+        },
+        source: "projection",
+        status: "pending_review"
+      });
+      expect(jsonSourceFilePreviewBody.preview.content).toContain(
+        "projectedBehavior"
+      );
+
       const jsonUnscopedSourceDiffResponse = await fetch(
         new URL(
           "/api/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha",
@@ -1581,6 +1630,19 @@ describe("runner runtime context", () => {
       expect(jsonUnscopedSourceDiffResponse.status).toBe(400);
       await expect(
         jsonUnscopedSourceDiffResponse.json()
+      ).resolves.toMatchObject({
+        error: "Conversation id is required for source-change inspection."
+      });
+
+      const jsonUnscopedSourceFilePreviewResponse = await fetch(
+        new URL(
+          "/api/source-change-candidates/file?nodeId=worker-it&candidateId=source-change-turn-alpha&path=src%2Findex.ts",
+          handle.clientUrl
+        )
+      );
+      expect(jsonUnscopedSourceFilePreviewResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedSourceFilePreviewResponse.json()
       ).resolves.toMatchObject({
         error: "Conversation id is required for source-change inspection."
       });

@@ -72,7 +72,9 @@ builder-published source-history git artifact. User Client source-change diff
 and review routes are now scoped to conversations containing matching
 approval-resource or projected session evidence, and the process-runner smoke
 verifies that running User Client source-diff route before submitting
-source-candidate review.
+source-candidate review. The running User Client can now also load changed-file
+preview evidence through the same selected-conversation source-change boundary,
+and the process-runner smoke proves that route against the smoke source file.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -431,6 +433,19 @@ files are the active federated redesign pack.
 346. [345-user-client-json-read-state-slice.md](345-user-client-json-read-state-slice.md)
 347. [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 348. [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
+349. [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
+350. [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
+351. [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
+352. [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
+353. [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
+354. [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
+355. [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
+356. [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
+357. [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
+358. [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
+359. [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
+360. [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
+361. [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
 
 ## Role of this corpus
 

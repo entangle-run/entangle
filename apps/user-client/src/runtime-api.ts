@@ -2,6 +2,7 @@ import type {
   ArtifactRef,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
+  RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
   SourceChangeSummary,
@@ -91,6 +92,16 @@ export type UserClientSourceChangeDiffResponse = {
   diff: UserClientPreviewResult;
   nodeId: string;
   review?: RuntimeSourceChangeCandidateInspectionResponse["candidate"]["review"];
+  source: "projection" | "runtime" | "unavailable";
+  sourceChangeSummary?: SourceChangeSummary | undefined;
+  status?: SourceChangeRefProjectionRecord["status"] | undefined;
+};
+
+export type UserClientSourceChangeFilePreviewResponse = {
+  candidateId: string;
+  nodeId: string;
+  path: string;
+  preview: RuntimeSourceChangeCandidateFilePreviewResponse["preview"];
   source: "projection" | "runtime" | "unavailable";
   sourceChangeSummary?: SourceChangeSummary | undefined;
   status?: SourceChangeRefProjectionRecord["status"] | undefined;
@@ -298,6 +309,28 @@ export function fetchSourceChangeDiff(input: {
 
   return fetchJson<UserClientSourceChangeDiffResponse>(
     `/api/source-change-candidates/diff?${params.toString()}`,
+    {
+      baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function fetchSourceChangeFilePreview(input: {
+  baseUrl: string;
+  candidateId: string;
+  conversationId: string;
+  nodeId: string;
+  path: string;
+}): Promise<UserClientSourceChangeFilePreviewResponse> {
+  const params = new URLSearchParams({
+    candidateId: input.candidateId,
+    conversationId: input.conversationId,
+    nodeId: input.nodeId,
+    path: input.path
+  });
+
+  return fetchJson<UserClientSourceChangeFilePreviewResponse>(
+    `/api/source-change-candidates/file?${params.toString()}`,
     {
       baseUrl: input.baseUrl
     }

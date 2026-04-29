@@ -13,6 +13,7 @@ import type {
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeSourceChangeCandidateDiffResponse,
+  RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
   UserNodeConversationResponse,
@@ -29,6 +30,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
+  runtimeSourceChangeCandidateFilePreviewResponseSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
@@ -128,6 +130,16 @@ type UserClientSourceChangeDiffResponse = {
         RuntimeSourceChangeCandidateInspectionResponse["candidate"]["review"]
       >
     | undefined;
+  source: "projection" | "runtime" | "unavailable";
+  sourceChangeSummary?: SourceChangeRefProjectionRecord["sourceChangeSummary"];
+  status?: SourceChangeRefProjectionRecord["status"] | undefined;
+};
+
+type UserClientSourceChangeFilePreviewResponse = {
+  candidateId: string;
+  nodeId: string;
+  path: string;
+  preview: RuntimeSourceChangeCandidateFilePreviewResponse["preview"];
   source: "projection" | "runtime" | "unavailable";
   sourceChangeSummary?: SourceChangeRefProjectionRecord["sourceChangeSummary"];
   status?: SourceChangeRefProjectionRecord["status"] | undefined;
@@ -1027,6 +1039,52 @@ async function fetchRuntimeSourceChangeCandidateDiff(input: {
   }
 }
 
+async function fetchRuntimeSourceChangeCandidateFilePreview(input: {
+  candidateId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  path: string;
+}): Promise<{
+  detail?: RuntimeSourceChangeCandidateFilePreviewResponse;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for source-change file preview."
+    };
+  }
+
+  try {
+    const url = new URL(
+      `/v1/runtimes/${encodeURIComponent(input.nodeId)}/source-change-candidates/${encodeURIComponent(input.candidateId)}/file`,
+      input.hostApi.baseUrl
+    );
+    url.searchParams.set("path", input.path);
+    const response = await fetch(url, {
+      headers: buildHostApiHeaders(input.hostApi)
+    });
+
+    if (!response.ok) {
+      return {
+        error: `Host source-change file preview request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: runtimeSourceChangeCandidateFilePreviewResponseSchema.parse(
+        await response.json()
+      )
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host source-change file preview request failed."
+    };
+  }
+}
+
 async function buildUserClientArtifactPreview(input: {
   artifactId: string;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -1214,6 +1272,91 @@ async function buildUserClientSourceChangeDiff(input: {
         "Source-change diff is unavailable."
     },
     nodeId: input.nodeId,
+    source: "unavailable",
+    ...(projectedSummary ? { sourceChangeSummary: projectedSummary } : {}),
+    ...(projectedRef?.status ? { status: projectedRef.status } : {})
+  };
+}
+
+function projectSourceChangeFilePreview(
+  preview: NonNullable<
+    SourceChangeRefProjectionRecord["sourceChangeSummary"]
+  >["filePreviews"][number]
+): RuntimeSourceChangeCandidateFilePreviewResponse["preview"] {
+  return preview.available
+    ? {
+        available: true,
+        bytesRead: preview.bytesRead,
+        content: preview.content,
+        contentEncoding: preview.contentEncoding,
+        contentType: preview.contentType,
+        truncated: preview.truncated
+      }
+    : {
+        available: false,
+        reason: preview.reason
+      };
+}
+
+async function buildUserClientSourceChangeFilePreview(input: {
+  candidateId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  path: string;
+}): Promise<UserClientSourceChangeFilePreviewResponse> {
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+  const projectedRef = findProjectedSourceChangeRef({
+    candidateId: input.candidateId,
+    nodeId: input.nodeId,
+    projection: projection.detail
+  });
+  const projectedSummary = projectedRef?.sourceChangeSummary;
+  const projectedPreview = projectedSummary?.filePreviews.find(
+    (preview) => preview.path === input.path
+  );
+
+  if (projectedPreview) {
+    return {
+      candidateId: input.candidateId,
+      nodeId: input.nodeId,
+      path: input.path,
+      preview: projectSourceChangeFilePreview(projectedPreview),
+      source: "projection",
+      sourceChangeSummary: projectedSummary,
+      status: projectedRef?.status
+    };
+  }
+
+  const runtimePreview = await fetchRuntimeSourceChangeCandidateFilePreview({
+    candidateId: input.candidateId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId,
+    path: input.path
+  });
+
+  if (runtimePreview.detail) {
+    return {
+      candidateId: input.candidateId,
+      nodeId: input.nodeId,
+      path: input.path,
+      preview: runtimePreview.detail.preview,
+      source: "runtime",
+      sourceChangeSummary: runtimePreview.detail.candidate.sourceChangeSummary,
+      status: runtimePreview.detail.candidate.status
+    };
+  }
+
+  return {
+    candidateId: input.candidateId,
+    nodeId: input.nodeId,
+    path: input.path,
+    preview: {
+      available: false,
+      reason:
+        runtimePreview.error ??
+        projection.error ??
+        "Source-change file preview is unavailable."
+    },
     source: "unavailable",
     ...(projectedSummary ? { sourceChangeSummary: projectedSummary } : {}),
     ...(projectedRef?.status ? { status: projectedRef.status } : {})
@@ -2635,6 +2778,53 @@ export async function startHumanInterfaceRuntime(input: {
             candidateId,
             hostApi: input.hostApi,
             nodeId
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/api/source-change-candidates/file"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const candidateId =
+          requestUrl.searchParams.get("candidateId")?.trim() ?? "";
+        const filePath = requestUrl.searchParams.get("path")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
+
+        if (!nodeId || !candidateId || !filePath) {
+          writeJson(response, 400, {
+            error:
+              "Runtime node, source-change candidate, and source file path are required."
+          });
+          return;
+        }
+
+        const visibleSourceChange = await resolveUserClientVisibleSourceChange({
+          candidateId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleSourceChange) {
+          writeJson(response, visibleSourceChange.statusCode, {
+            error: visibleSourceChange.error
+          });
+          return;
+        }
+
+        writeJson(
+          response,
+          200,
+          await buildUserClientSourceChangeFilePreview({
+            candidateId,
+            hostApi: input.hostApi,
+            nodeId,
+            path: filePath
           })
         );
         return;

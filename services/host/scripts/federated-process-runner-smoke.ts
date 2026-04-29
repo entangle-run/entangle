@@ -1939,6 +1939,45 @@ async function main(): Promise<void> {
       `candidate=${projectedBuilderSourceCandidate.candidate.candidateId}; diff=available`
     );
 
+    const userClientSourceFileParams = new URLSearchParams({
+      candidateId: projectedBuilderSourceCandidate.candidate.candidateId,
+      conversationId: userMessage.conversationId,
+      nodeId: "builder",
+      path: "src/smoke-generated.ts"
+    });
+    const userClientSourceFileResponse = await fetch(
+      new URL(
+        `/api/source-change-candidates/file?${userClientSourceFileParams.toString()}`,
+        userClientUrl
+      )
+    );
+    await assertResponseOk(
+      userClientSourceFileResponse,
+      "User Client JSON source-change file preview"
+    );
+    const userClientSourceFile =
+      (await userClientSourceFileResponse.json()) as {
+        path?: string;
+        preview?: {
+          available?: boolean;
+          content?: string;
+        };
+        source?: string;
+      };
+    assertCondition(
+      userClientSourceFile.source === "projection" &&
+        userClientSourceFile.path === "src/smoke-generated.ts" &&
+        userClientSourceFile.preview?.available === true &&
+        (userClientSourceFile.preview.content ?? "").includes(
+          "smokeSourceChange"
+        ),
+      "User Client source-change file preview must resolve the visible source file."
+    );
+    printPass(
+      "user-client-source-change-file-preview",
+      `candidate=${projectedBuilderSourceCandidate.candidate.candidateId}; file=available`
+    );
+
     const sourceReviewResponse = await fetch(
       new URL("/api/source-change-candidates/review", userClientUrl),
       {

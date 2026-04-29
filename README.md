@@ -93,7 +93,8 @@ message through the relay and verifies that the running User Node records it as
 inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits signed source-candidate review and
 approval response messages through the same JSON User Client API. It also loads
-the source-change diff through the running User Client before review. The fake
+the source-change diff and changed-file preview through the running User Client
+before review. The fake
 OpenCode executable mutates the source workspace, so the smoke also verifies
 projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
@@ -184,9 +185,9 @@ This repository currently contains:
   bundling that built app by default and the Docker launcher now able to publish
   a browser-openable User Client port for User Node runtime contexts, and with
   the dedicated app now using runtime-local JSON routes for artifact preview,
-  source diff, source-candidate review, wiki preview cards, and automatic
-  thread read-state convergence, with source and artifact evidence scoped to
-  selected User Node conversations, plus
+  source diff, source file preview, source-candidate review, wiki preview
+  cards, and automatic thread read-state convergence, with source and artifact
+  evidence scoped to selected User Node conversations, plus
   projection of the User Client endpoint through Host, CLI, and Studio, with
   Host runtime synchronization retaining observed User Node runtime endpoints,
   including `entangle user-nodes clients` for User Node-focused endpoint
@@ -381,8 +382,8 @@ This repository currently contains:
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
   source-change candidate list/detail/diff/file, running User Client
-  source-change diff, signed source-candidate review, approval, and session
-  read APIs without requiring live
+  source-change diff/file preview, signed source-candidate review, approval,
+  and session read APIs without requiring live
   model-provider credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions including handoffs, coordination result/close,

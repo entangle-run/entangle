@@ -198,7 +198,8 @@ Node.
   projected wiki-ref rendering, projected wiki preview rendering,
   wiki-scoped approval context rendering, and local read-state updates plus
   signed read receipts; a dedicated bundled `apps/user-client` app now exists
-  and richer participant-side source/wiki review flows remain open.
+  and richer participant-side source/wiki review flows beyond scoped
+  source-diff and source-file preview remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Existing Studio controls should remain operator
   controls or debug/admin tools only.
