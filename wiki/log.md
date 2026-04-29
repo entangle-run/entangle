@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] tooling | Added host smoke script lint coverage
+
+Extended `@entangle/host` lint to cover TypeScript host smoke scripts and added
+`services/host/scripts/*.ts` to typed ESLint project coverage. Fixed the
+process-runner smoke lint issues found by that gate: dynamic import type
+annotations, relay preflight frame narrowing, and projected git artifact
+locator access.
+
+Added `references/371-host-smoke-script-lint-coverage-slice.md`.
+
 ## [2026-04-29] docs | Realigned User Node approval surface status
 
 Updated active User Node and Studio/CLI specs so they no longer describe

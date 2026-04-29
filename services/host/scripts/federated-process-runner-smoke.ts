@@ -57,6 +57,8 @@ import {
   type RunnerJoinConfig
 } from "@entangle/types";
 import { generateSecretKey, getPublicKey, nip59, SimplePool } from "nostr-tools";
+import type { HostFederatedControlPlane } from "../src/federated-control-plane.js";
+import type { buildHostServer } from "../src/index.js";
 
 const keepRunning = process.argv.includes("--keep-running");
 const keepTemp = keepRunning || process.argv.includes("--keep-temp");
@@ -210,7 +212,10 @@ async function assertRelayReachable(relayUrl: string): Promise<void> {
 
       try {
         const parsed = JSON.parse(event.data) as unknown;
-        const messageType = Array.isArray(parsed) ? parsed[0] : undefined;
+        const messageType =
+          Array.isArray(parsed) && typeof parsed[0] === "string"
+            ? parsed[0]
+            : undefined;
 
         if (messageType === "EOSE" || messageType === "EVENT") {
           socket.send(JSON.stringify(["CLOSE", subscriptionId]));
@@ -595,6 +600,44 @@ function assertSignerMatchesFromPubkey(
   );
 }
 
+function readGitArtifactIdentity(
+  ref: unknown,
+  label: string
+): { artifactId: string; commit: string } {
+  if (typeof ref !== "object" || ref === null) {
+    throw new Error(`${label} must be an artifact object.`);
+  }
+
+  const artifact = ref as {
+    artifactId?: unknown;
+    backend?: unknown;
+    locator?: unknown;
+  };
+
+  if (artifact.backend !== "git") {
+    throw new Error(`${label} must use a git locator.`);
+  }
+
+  if (typeof artifact.artifactId !== "string") {
+    throw new Error(`${label} must include an artifact id.`);
+  }
+
+  if (typeof artifact.locator !== "object" || artifact.locator === null) {
+    throw new Error(`${label} must include a git locator object.`);
+  }
+
+  const locator = artifact.locator as { commit?: unknown };
+
+  if (typeof locator.commit !== "string") {
+    throw new Error(`${label} must include a git commit.`);
+  }
+
+  return {
+    artifactId: artifact.artifactId,
+    commit: locator.commit
+  };
+}
+
 async function stopRunnerProcess(
   child: ChildProcessByStdio<null, Readable, Readable> | undefined
 ): Promise<void> {
@@ -695,14 +738,8 @@ async function main(): Promise<void> {
   runGit(["init", "--bare", primaryGitRepositoryPath]);
   printPass("git-backend", gitRemoteBase);
 
-  let server:
-    | Awaited<ReturnType<typeof import("../src/index.js").buildHostServer>>
-    | undefined;
-  let controlPlane:
-    | InstanceType<
-        typeof import("../src/federated-control-plane.js").HostFederatedControlPlane
-      >
-    | undefined;
+  let server: Awaited<ReturnType<typeof buildHostServer>> | undefined;
+  let controlPlane: HostFederatedControlPlane | undefined;
   let runnerProcess:
     | ChildProcessByStdio<null, Readable, Readable>
     | undefined;
@@ -1387,15 +1424,16 @@ async function main(): Promise<void> {
             path: "/v1/events?limit=100"
           })
         );
-        const receiptKinds = new Set(
-          events.events
-            .filter(
-              (event) =>
-                event.type === "runtime.assignment.receipt" &&
-                event.assignmentId === assignment.assignmentId
-            )
-            .map((event) => event.receiptKind)
-        );
+        const receiptKinds = new Set<string>();
+
+        for (const event of events.events) {
+          if (
+            event.type === "runtime.assignment.receipt" &&
+            event.assignmentId === assignment.assignmentId
+          ) {
+            receiptKinds.add(event.receiptKind);
+          }
+        }
 
         return receiptKinds.has("received") &&
           receiptKinds.has("stopped") &&
@@ -2222,6 +2260,11 @@ async function main(): Promise<void> {
       },
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
+    const projectedWikiArtifact = readGitArtifactIdentity(
+      projectedWikiPublicationArtifact.ref,
+      "Published wiki artifact"
+    );
+    const projectedWikiCommit = projectedWikiArtifact.commit;
     const wikiRemoteHead = runGit([
       "--git-dir",
       primaryGitRepositoryPath,
@@ -2229,13 +2272,13 @@ async function main(): Promise<void> {
       "refs/heads/builder/wiki-repository"
     ]);
     assertCondition(
-      wikiRemoteHead === projectedWikiPublicationArtifact.ref.locator.commit,
+      wikiRemoteHead === projectedWikiCommit,
       "Published wiki artifact commit must match the remote wiki branch head."
     );
     printPass(
       "projected-runtime-wiki-publication",
-      `artifact=${projectedWikiPublicationArtifact.ref.artifactId}; ` +
-        `commit=${projectedWikiPublicationArtifact.ref.locator.commit.slice(0, 12)}`
+      `artifact=${projectedWikiArtifact.artifactId}; ` +
+        `commit=${projectedWikiCommit.slice(0, 12)}`
     );
 
     const projectedBuilderApproval = await waitFor(

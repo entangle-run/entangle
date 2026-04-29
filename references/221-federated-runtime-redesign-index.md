@@ -171,6 +171,7 @@ same-machine slice records.
 - [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 - [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 - [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
+- [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 
 ## Audited Scope
 
@@ -524,6 +525,8 @@ the model summary omits the details.
     Active User Node and operator-surface specs have been realigned so direct
     Host approval/review mutation removal is treated as complete, not as an
     open gap.
+    Host TypeScript smoke scripts are now part of the `@entangle/host` lint
+    gate, and the process-runner smoke passes type-aware ESLint coverage.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

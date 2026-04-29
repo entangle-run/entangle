@@ -30,6 +30,7 @@ export default tseslint.config(
             "packages/package-scaffold/src/*.test.ts",
             "packages/types/src/*.test.ts",
             "packages/validator/src/*.test.ts",
+            "services/host/scripts/*.ts",
             "services/host/src/*.test.ts",
             "services/runner/src/*.test.ts",
             "services/runner/src/test-fixtures.ts"

@@ -701,6 +701,7 @@ Implementation records:
 - [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 - [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 - [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
+- [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 
 Current status:
 
@@ -783,6 +784,8 @@ Current status:
 - active User Node/operator-surface specs now describe direct Host
   approval/review mutation removal as complete and keep participant approval
   behavior on signed User Node messages;
+- `@entangle/host` lint now covers TypeScript host smoke scripts, including
+  the process-runner smoke that carries the fastest federated proof;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

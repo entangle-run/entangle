@@ -100,7 +100,9 @@ responses, Host inbox records, User Client conversation records, source review,
 approval response, synthetic inbound agent messages, and the second User Node
 path. Active User Node/operator-surface specs now also treat direct Host
 approval/review mutation removal as complete and keep participant approval
-behavior on signed User Node messages.
+behavior on signed User Node messages. The `@entangle/host` lint gate now
+covers TypeScript host smoke scripts, including the process-runner federated
+proof.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -482,6 +484,7 @@ files are the active federated redesign pack.
 369. [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 370. [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 371. [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
+372. [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 
 ## Role of this corpus
 

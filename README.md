@@ -551,6 +551,8 @@ This repository currently contains:
   the same JSON API, verifies Host projection, and now protects public deep
   runtime reads from stale Host-local runtime files for accepted federated
   assignments;
+- host package lint now covers TypeScript host smoke scripts, including the
+  process-runner smoke that exercises the fastest federated runtime proof;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
   and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
   package, bootstraps local Gitea with a disposable user and HTTPS token,
