@@ -20,8 +20,11 @@ const pollIntervalMs = parsePositiveInteger(
   readFlagValue("--poll-interval-ms") ?? "1000"
 );
 const allowStaleRunners = hasFlag("--allow-stale-runners");
+const allowNonRunningRuntimes = hasFlag("--allow-non-running-runtimes");
 const checkUserClientHealth = hasFlag("--check-user-client-health");
 const requireConversation = hasFlag("--require-conversation");
+const selfTestRuntimeState =
+  (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -68,6 +71,7 @@ Options:
   --timeout-ms <ms>               Maximum wait time. Default: 30000
   --poll-interval-ms <ms>         Poll interval while waiting. Default: 1000
   --allow-stale-runners           Accept stale runner liveness instead of requiring online runners.
+  --allow-non-running-runtimes    Accept runtime projections that are not observed as running.
   --check-user-client-health      Fetch /health for projected User Client URLs.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node.
   --agent-runner <id>             Agent runner id. Default: distributed-agent-runner
@@ -78,6 +82,7 @@ Options:
   --reviewer-user-node <nodeId>   Reviewer User Node id. Default: reviewer
   --json                          Print machine-readable result.
   --self-test                     Verify the verifier against an embedded passing fixture.
+  --self-test-runtime-state <s>    Runtime observedState to use in the self-test fixture. Default: running
   -h, --help                      Show this help.
 
 Examples:
@@ -196,7 +201,7 @@ function buildSelfTestSnapshot() {
             ? `http://127.0.0.1/${profile.nodeId}`
             : undefined,
         nodeId: profile.nodeId,
-        observedState: "running",
+        observedState: selfTestRuntimeState,
         runnerId: profile.runnerId
       })),
       runnerProjections: expectedProfiles.map((profile) => ({
@@ -367,6 +372,18 @@ async function evaluateSnapshot(snapshot) {
         : "missing runtime projection"
     );
 
+    if (runtimeProjection) {
+      const observedState = runtimeProjection.observedState ?? "unknown";
+      addCheck(
+        checks,
+        `runtime ${profile.nodeId} running`,
+        allowNonRunningRuntimes || observedState === "running",
+        allowNonRunningRuntimes
+          ? `observed=${observedState}; non-running runtimes allowed`
+          : `observed=${observedState}`
+      );
+    }
+
     if (profile.runtimeKind === "human_interface") {
       const clientUrl = runtimeProjection?.clientUrl;
       addCheck(
@@ -427,6 +444,10 @@ function printResult(result) {
 }
 
 async function verifyUntilReady() {
+  if (selfTest) {
+    return evaluateSnapshot(await fetchSnapshot());
+  }
+
   const startedAt = Date.now();
   let lastResult;
   let lastError;

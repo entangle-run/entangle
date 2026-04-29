@@ -19,6 +19,7 @@ running distributed proof through network APIs only:
 - runner heartbeats include expected assignment ids;
 - expected assignments are accepted or active;
 - Host projection contains matching assignment and runtime records;
+- runtime projections report `observedState: "running"` by default;
 - User Node Human Interface Runtime projections expose User Client URLs;
 - optional User Client `/health` checks pass;
 - optional primary User Node to agent conversation projection exists.
@@ -50,6 +51,10 @@ The verifier must not read Host, runner, or shared workstation files.
 - Add JSON output for automation.
 - Add an embedded self-test fixture so verifier logic can run without external
   machines or model credentials.
+- Tightened by
+  `419-distributed-proof-runtime-state-verifier-slice.md`: runtime projection
+  records must now report `running` unless the operator explicitly passes
+  `--allow-non-running-runtimes` for diagnostics.
 
 ## Tests Required
 
@@ -58,6 +63,9 @@ Implemented and passed:
 - `node --check scripts/federated-distributed-proof-verify.mjs`
 - `pnpm ops:distributed-proof-verify --help`
 - `pnpm ops:distributed-proof-verify --self-test --json --require-conversation --check-user-client-health`
+- `pnpm ops:smoke-distributed-proof-tools` now also proves that stopped runtime
+  observations fail by default and only pass with the explicit diagnostic
+  override.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.

@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[418-user-client-wiki-target-process-proof-slice.md](418-user-client-wiki-target-process-proof-slice.md)
+[419-distributed-proof-runtime-state-verifier-slice.md](419-distributed-proof-runtime-state-verifier-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -189,10 +189,12 @@ Node message commands for machines that do not share Host filesystem state.
 `pnpm ops:distributed-proof-verify` now checks that running topology through
 Host HTTP APIs and optional User Client health endpoints, covering Host
 Authority, runner trust/liveness, assignments, projection, User Client URLs,
-and optional conversation evidence without reading Host or runner files.
+optional conversation evidence, and default `running` runtime observations
+without reading Host or runner files.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure smoke over proof-kit help/dry-run paths and verifier
-self-test JSON before an operator attempts the real distributed proof.
+self-test JSON, including non-running runtime rejection, before an operator
+attempts the real distributed proof.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,

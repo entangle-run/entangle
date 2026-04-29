@@ -20,7 +20,11 @@ multi-machine proof.
 - token-protected proof kit dry-run command generation;
 - no-token proof kit dry-run command generation;
 - verifier JSON self-test with required conversation and User Client health
-  checks enabled.
+  checks enabled;
+- verifier JSON self-test failure when runtime observations are non-running by
+  default;
+- verifier JSON self-test pass for the same non-running fixture only when
+  `--allow-non-running-runtimes` is explicit.
 
 ## Current Repo Truth
 
@@ -66,6 +70,9 @@ tools.
 - The script runs verifier self-test with JSON output, User Client health
   checks, and required conversation checks, then parses the JSON and fails if
   any embedded check fails.
+- The script runs a stopped-runtime verifier self-test and requires failure.
+- The script runs the same stopped-runtime self-test with the diagnostic
+  override and requires success.
 
 ## Tests Required
 

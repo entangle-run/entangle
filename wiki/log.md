@@ -5031,3 +5031,14 @@ target-specific wiki publication path produces a projected git
 `knowledge_summary` artifact for the requested repository and that the target
 bare repository's `builder/wiki-repository` branch head matches the projected
 commit.
+
+## [2026-04-29] test | Tightened distributed proof runtime-state checks
+
+Added `references/419-distributed-proof-runtime-state-verifier-slice.md`.
+`pnpm ops:distributed-proof-verify` now requires each expected runtime
+projection to report `observedState: "running"` by default, while keeping
+`--allow-non-running-runtimes` as an explicit diagnostic relaxation.
+
+`pnpm ops:smoke-distributed-proof-tools` now proves the stricter behavior with
+a stopped-runtime self-test that must fail, then proves the diagnostic override
+against the same fixture.

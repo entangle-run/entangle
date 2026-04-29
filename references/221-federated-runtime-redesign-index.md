@@ -219,6 +219,7 @@ same-machine slice records.
 - [416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
 - [417-user-client-wiki-target-visibility-slice.md](417-user-client-wiki-target-visibility-slice.md)
 - [418-user-client-wiki-target-process-proof-slice.md](418-user-client-wiki-target-process-proof-slice.md)
+- [419-distributed-proof-runtime-state-verifier-slice.md](419-distributed-proof-runtime-state-verifier-slice.md)
 
 ## Audited Scope
 
@@ -795,6 +796,7 @@ token-protected deployments report normalized bootstrap operator attribution
 and role. This remains operator-visible bootstrap posture, not final
 production RBAC. `pnpm ops:smoke-distributed-proof-tools` now gives CI a
 deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
-self-test JSON. The remaining blocking implementation areas are richer
+self-test JSON, including default rejection of non-running runtime
+observations. The remaining blocking implementation areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.
