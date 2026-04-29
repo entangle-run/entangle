@@ -204,6 +204,7 @@ same-machine slice records.
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 - [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
+- [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
 
 ## Audited Scope
 

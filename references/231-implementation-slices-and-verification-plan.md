@@ -712,6 +712,8 @@ Implementation record:
 - [328-assignment-receipt-operator-surfaces-slice.md](328-assignment-receipt-operator-surfaces-slice.md)
 - [329-per-relay-transport-diagnostics-slice.md](329-per-relay-transport-diagnostics-slice.md)
 - [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
+- [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
+- [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
 
 Verification:
 
@@ -728,8 +730,11 @@ first Host-backed assignment offer control for assigning graph nodes, including
 User Nodes, to trusted runners plus projected assignment rows with Host-backed
 revoke actions. Studio can now also trust pending/revoked runners and revoke
 pending/trusted runners from the Federation panel through the same Host runner
-registry boundary as the CLI. CLI approve/reject can now derive signed response context from
-directly looked-up recorded approval-request messages. Host status now exposes
+registry boundary as the CLI, and it enriches projected runner rows with full
+Host runner registry liveness, heartbeat, runtime-kind, engine-kind, and
+capacity summaries when available. CLI approve/reject can now derive signed
+response context from directly looked-up recorded approval-request messages.
+Host status now exposes
 first federated control/observe transport health and both CLI and Studio render
 that Host-owned read model. Host status now also includes per-relay
 control/observe diagnostic rows, and Studio renders those rows in the Host

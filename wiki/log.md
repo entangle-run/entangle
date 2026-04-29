@@ -4807,3 +4807,13 @@ rows plus Trust/Revoke actions wired through the shared Host client.
 This lets the visual admin surface admit or revoke runners through the same
 Host runner registry boundary already used by the CLI, without creating a
 Studio-owned runner registry model.
+
+## [2026-04-29] implementation | Added Studio runner registry detail
+
+Added `references/404-studio-runner-registry-detail-slice.md`. Studio now joins
+projected runner rows with the full Host runner registry read model when
+available, adding liveness, heartbeat last-seen, runtime kind, engine kind, and
+capacity summaries to the Federation panel.
+
+The projection remains the control summary, while registry detail stays a
+Host-owned read surface used for operator decision support.

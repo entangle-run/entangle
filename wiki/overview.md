@@ -239,7 +239,8 @@ does not hide live User Client endpoints for active User Nodes.
 Studio now has first Host-backed assignment offer/revoke controls in the
 Federation panel for assigning graph nodes, including User Nodes, to trusted
 runners, plus runner trust/revoke controls through the Host runner registry
-boundary, while keeping participant chat/review inside the User Client.
+boundary and runner liveness/capability detail from the full Host runner
+registry, while keeping participant chat/review inside the User Client.
 Host status now also carries bounded federated control/observe transport
 health, and CLI plus Studio render that Host-owned relay subscription status
 without probing relay state directly. Host status also reports bounded

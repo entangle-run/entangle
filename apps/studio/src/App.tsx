@@ -58,6 +58,7 @@ import type {
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryInspectionResponse,
   RuntimeTurnInspectionResponse,
+  RunnerRegistryEntry,
   RunnerTurnRecord,
   SessionCancellationResponse,
   SessionLaunchResponse,
@@ -474,6 +475,12 @@ export function App() {
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const [userNodes, setUserNodes] = useState<UserNodeIdentityRecord[]>([]);
   const [userNodeError, setUserNodeError] = useState<string | null>(null);
+  const [runnerRegistryEntries, setRunnerRegistryEntries] = useState<
+    RunnerRegistryEntry[]
+  >([]);
+  const [runnerRegistryError, setRunnerRegistryError] = useState<string | null>(
+    null
+  );
   const [runnerMutationError, setRunnerMutationError] = useState<string | null>(
     null
   );
@@ -745,6 +752,7 @@ export function App() {
       catalogResult,
       packageSourceResult,
       externalPrincipalResult,
+      runnerRegistryResult,
       projectionResult,
       userNodeResult
     ] =
@@ -756,6 +764,7 @@ export function App() {
         client.getCatalog(),
         client.listPackageSources(),
         client.listExternalPrincipals(),
+        client.listRunners(),
         client.getProjection(),
         client.listUserNodes()
       ]);
@@ -858,6 +867,19 @@ export function App() {
           normalizeError(
             externalPrincipalResult.reason,
             "Unknown error while loading external principals."
+          )
+        );
+      }
+
+      if (runnerRegistryResult.status === "fulfilled") {
+        setRunnerRegistryEntries(runnerRegistryResult.value.runners);
+        setRunnerRegistryError(null);
+      } else {
+        setRunnerRegistryEntries([]);
+        setRunnerRegistryError(
+          normalizeError(
+            runnerRegistryResult.reason,
+            "Unknown error while loading runner registry."
           )
         );
       }
@@ -3404,6 +3426,16 @@ export function App() {
     () => sortRunnerProjectionsForStudio(projectionSnapshot?.runners ?? []),
     [projectionSnapshot]
   );
+  const runnerRegistryByRunnerId = useMemo(
+    () =>
+      new Map(
+        runnerRegistryEntries.map((entry) => [
+          entry.registration.runnerId,
+          entry
+        ])
+      ),
+    [runnerRegistryEntries]
+  );
   const assignmentProjectionRows = useMemo(
     () =>
       sortAssignmentProjectionsForStudio(projectionSnapshot?.assignments ?? []),
@@ -3633,7 +3665,12 @@ export function App() {
               {projectedRunnerRows.slice(0, 8).map((runner) => (
                 <div key={runner.runnerId} className="compact-list-item">
                   <strong>{formatRunnerProjectionLabel(runner)}</strong>
-                  <span>{formatRunnerProjectionDetail(runner)}</span>
+                  <span>
+                    {formatRunnerProjectionDetail(
+                      runner,
+                      runnerRegistryByRunnerId.get(runner.runnerId)
+                    )}
+                  </span>
                   <button
                     className="action-button"
                     disabled={
@@ -3676,6 +3713,9 @@ export function App() {
           )}
           {lastRunnerMutationSummary ? (
             <p className="panel-caption">{lastRunnerMutationSummary}</p>
+          ) : null}
+          {runnerRegistryError ? (
+            <p className="error-box">{runnerRegistryError}</p>
           ) : null}
           {runnerMutationError ? (
             <p className="error-box">{runnerMutationError}</p>

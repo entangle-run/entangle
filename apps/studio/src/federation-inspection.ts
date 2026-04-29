@@ -3,6 +3,7 @@ import type {
   AssignmentProjectionRecord,
   HostProjectionSnapshot,
   RunnerProjectionRecord,
+  RunnerRegistryEntry,
   RuntimeCommandReceiptProjectionRecord,
   RuntimeAssignmentTimelineEntry,
   RuntimeAssignmentTimelineResponse,
@@ -120,14 +121,27 @@ export function formatRunnerProjectionLabel(
 }
 
 export function formatRunnerProjectionDetail(
-  runner: RunnerProjectionRecord
+  runner: RunnerProjectionRecord,
+  registryEntry?: RunnerRegistryEntry
 ): string {
+  const heartbeat = registryEntry?.heartbeat;
+  const registration = registryEntry?.registration;
+  const capabilities = registration?.capabilities;
+  const runtimeKinds = capabilities?.runtimeKinds.join("/") ?? undefined;
+  const engineKinds = capabilities?.agentEngineKinds.join("/") ?? undefined;
+  const lastSeenAt =
+    heartbeat?.lastHeartbeatAt ?? runner.lastSeenAt ?? registration?.lastSeenAt;
+
   return [
+    registryEntry ? `liveness ${registryEntry.liveness}` : undefined,
     `state ${runner.operationalState}`,
     `assignments ${runner.assignmentIds.length}`,
-    runner.lastSeenAt ? `last seen ${runner.lastSeenAt}` : "not seen yet",
+    runtimeKinds ? `runtimes ${runtimeKinds}` : undefined,
+    engineKinds ? `engines ${engineKinds}` : undefined,
+    capabilities ? `capacity ${capabilities.maxAssignments}` : undefined,
+    lastSeenAt ? `last seen ${lastSeenAt}` : "not seen yet",
     `pubkey ${runner.publicKey.slice(0, 12)}...`
-  ].join(" · ");
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
 export function sortAssignmentReceiptsForStudio(

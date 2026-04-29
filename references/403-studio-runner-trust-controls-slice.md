@@ -70,6 +70,6 @@ behavior. CLI remains the headless path for the same trust/revoke mutations.
 
 ## Open Questions
 
-- Should a later runner detail surface show heartbeat age, capabilities, and
-  current assignments from the full runner registry endpoint instead of only
-  the projection row?
+- Closed by `404-studio-runner-registry-detail-slice.md`: Studio now joins
+  projected runner rows with full Host runner registry detail for liveness,
+  heartbeat, runtime kind, engine kind, and capacity summaries.

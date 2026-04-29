@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   HostProjectionSnapshot,
   RuntimeAssignmentTimelineResponse,
+  RunnerRegistryEntry,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord
 } from "@entangle/types";
@@ -256,6 +257,45 @@ const conversations: UserConversationProjectionRecord[] = [
   }
 ];
 
+const runnerRegistryEntry: RunnerRegistryEntry = {
+  heartbeat: {
+    assignmentIds: ["assignment-alpha"],
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    lastHeartbeatAt: "2026-04-26T12:03:00.000Z",
+    operationalState: "ready",
+    runnerId: "runner-trusted",
+    runnerPubkey:
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    schemaVersion: "1",
+    updatedAt: "2026-04-26T12:03:00.000Z"
+  },
+  liveness: "online",
+  offlineAfterSeconds: 300,
+  projectedAt: "2026-04-26T12:03:00.000Z",
+  registration: {
+    capabilities: {
+      agentEngineKinds: ["opencode_server"],
+      labels: ["macbook"],
+      maxAssignments: 2,
+      runtimeKinds: ["agent_runner", "human_interface"],
+      supportsLocalWorkspace: true,
+      supportsNip59: true
+    },
+    firstSeenAt: "2026-04-26T12:00:00.000Z",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    lastSeenAt: "2026-04-26T12:02:00.000Z",
+    publicKey:
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    runnerId: "runner-trusted",
+    schemaVersion: "1",
+    trustState: "trusted",
+    updatedAt: "2026-04-26T12:02:00.000Z"
+  },
+  staleAfterSeconds: 60
+};
+
 const assignmentTimeline: RuntimeAssignmentTimelineResponse = {
   assignment: {
     acceptedAt: "2026-04-26T12:00:30.000Z",
@@ -431,8 +471,14 @@ describe("Studio federation inspection helpers", () => {
     expect(formatRunnerProjectionLabel(sorted[0]!)).toBe(
       "runner-pending · pending"
     );
-    expect(formatRunnerProjectionDetail(sorted[1]!)).toContain(
+    expect(formatRunnerProjectionDetail(sorted[1]!, runnerRegistryEntry)).toContain(
+      "liveness online"
+    );
+    expect(formatRunnerProjectionDetail(sorted[1]!, runnerRegistryEntry)).toContain(
       "assignments 1"
+    );
+    expect(formatRunnerProjectionDetail(sorted[1]!, runnerRegistryEntry)).toContain(
+      "runtimes agent_runner/human_interface"
     );
     expect(canTrustRunnerProjection(sorted[0]!)).toBe(true);
     expect(canTrustRunnerProjection(sorted[1]!)).toBe(false);
