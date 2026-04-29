@@ -691,6 +691,7 @@ Implementation records:
 - [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
 - [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
 - [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
+- [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
 
 Current status:
 
@@ -745,6 +746,10 @@ Current status:
   evidence from the completed runner turn record, giving each agent node's wiki
   durable code-change context without copying raw diffs or full file previews
   into memory;
+- the durable `working-context.md` page now includes a runner-owned
+  source-change context section with candidate ids, totals, changed-file
+  summaries, file-preview metadata, and diff availability, so future turns do
+  not depend only on model prose to remember code-change evidence;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

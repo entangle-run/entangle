@@ -767,6 +767,17 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain(
       "The inbound recovery notes remain the canonical reference for relay-failure checkpoints."
     );
+    expect(workingContextPage).toContain("## Source Change Context");
+    expect(workingContextPage).toContain("- Status: `changed`");
+    expect(workingContextPage).toContain(
+      "- Candidate ids: `source-change-turn-memory-005`"
+    );
+    expect(workingContextPage).toContain("- modified `src/recovery.ts` +4 -1");
+    expect(workingContextPage).toContain(
+      "- `src/recovery.ts` text/plain 128 bytes"
+    );
+    expect(workingContextPage).toContain("- Diff excerpt: available");
+    expect(workingContextPage).not.toContain("checkpointReady");
     expect(workingContextPage).toContain("## Execution Signals");
     expect(workingContextPage).toContain(
       "The current turn needed both session-state and artifact inspection before finalizing the checkpoint."

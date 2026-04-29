@@ -2069,6 +2069,51 @@ function renderApprovalGateLines(
   ];
 }
 
+function renderSourceChangeContextLines(
+  turnRecord: RunnerTurnRecord | undefined
+): string[] {
+  const summary = turnRecord?.sourceChangeSummary;
+
+  if (!summary) {
+    return ["- No source-change evidence was recorded for this turn."];
+  }
+
+  const changedFiles =
+    summary.files.length > 0
+      ? summary.files.slice(0, maxSynthesisSourceChangeFiles).map(
+          (file) =>
+            `- ${file.status} \`${file.path}\` +${file.additions} -${file.deletions}`
+        )
+      : ["- No changed files were recorded in the bounded summary."];
+  const filePreviews =
+    summary.filePreviews.length > 0
+      ? summary.filePreviews
+          .slice(0, maxSynthesisSourceFilePreviews)
+          .map((preview) =>
+            preview.available
+              ? `- \`${preview.path}\` ${preview.contentType} ${preview.bytesRead} bytes${preview.truncated ? " truncated" : ""}`
+              : `- \`${preview.path}\` unavailable: ${preview.reason}`
+          )
+      : ["- No bounded file preview metadata was recorded."];
+
+  return [
+    `- Status: \`${summary.status}\``,
+    `- Totals: files=${summary.fileCount} additions=${summary.additions} deletions=${summary.deletions}${summary.truncated ? " truncated" : ""}`,
+    `- Candidate ids: ${renderInlineCodeList(
+      turnRecord.sourceChangeCandidateIds
+    )}`,
+    `- Diff excerpt: ${summary.diffExcerpt ? "available" : "unavailable"}`,
+    "",
+    "### Changed Files",
+    "",
+    ...changedFiles,
+    "",
+    "### Bounded File Previews",
+    "",
+    ...filePreviews
+  ];
+}
+
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
@@ -2081,6 +2126,7 @@ function buildWorkingContextSummaryContent(input: {
   stableFacts: string[];
   summary: string;
   taskPagePath: string;
+  turnRecord: RunnerTurnRecord | undefined;
   turnId: string;
   wikiRoot: string;
   nextActions: string[];
@@ -2172,6 +2218,10 @@ function buildWorkingContextSummaryContent(input: {
       input.artifactInsights,
       "- No durable artifact-backed observations were synthesized."
     ),
+    "",
+    "## Source Change Context",
+    "",
+    ...renderSourceChangeContextLines(input.turnRecord),
     "",
     "## Execution Signals",
     "",
@@ -2635,6 +2685,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         stableFacts: normalizedInput.stableFacts,
         summary: normalizedInput.summary,
         taskPagePath: input.synthesis.taskPagePath,
+        turnRecord: input.synthesis.turnRecord,
         turnId: input.synthesis.turnId,
         wikiRoot
       });

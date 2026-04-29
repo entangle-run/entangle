@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added source-change memory carry-forward
+
+Added a runner-owned `Source Change Context` section to the generated
+`working-context.md` memory summary. The section carries bounded source-change
+candidate ids, totals, changed-file summaries, preview metadata, and diff
+availability while keeping raw diffs and full preview contents out of durable
+memory.
+
+Added `references/362-source-change-memory-carry-forward-slice.md`.
+
 ## [2026-04-29] implementation | Added source-change-aware memory synthesis
 
 Passed the completed runner turn record into optional model-guided memory

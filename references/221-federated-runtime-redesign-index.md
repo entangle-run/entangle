@@ -162,6 +162,7 @@ same-machine slice records.
 - [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
 - [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
 - [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
+- [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
 
 ## Audited Scope
 
@@ -466,7 +467,9 @@ identity, policy, assignment, artifact, memory, projection, and user surfaces.
 Runner-owned memory synthesis now also has bounded current-turn source-change
 evidence from the completed `RunnerTurnRecord`, so a node can remember durable
 code-change context without storing raw diffs or full file previews in its
-wiki.
+wiki. The generated `working-context.md` page now preserves that same bounded
+source-change context deterministically, so future turns can consume it even if
+the model summary omits the details.
 
 ## Planned Implementation Slices
 
@@ -625,7 +628,9 @@ Optional model-guided memory synthesis now receives bounded source-change
 evidence from the completed turn record, including candidate ids, totals,
 changed-file summaries, preview metadata, and diff availability, while the
 prompt explicitly forbids copying raw diffs or full file previews into durable
-memory.
+memory. The durable `working-context.md` summary now also carries a
+runner-owned `Source Change Context` section with the same bounded metadata,
+without raw diff excerpts or full file-preview contents.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

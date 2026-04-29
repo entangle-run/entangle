@@ -669,6 +669,11 @@ This repository currently contains:
   source-change evidence from `RunnerTurnRecord`, including candidate ids,
   totals, changed-file summaries, preview metadata, and diff availability
   without copying raw diffs or full file previews into durable memory;
+- a source-change carry-forward refinement where the durable
+  `working-context.md` page now preserves runner-owned source-change context,
+  including candidate ids, totals, changed-file summaries, file-preview
+  metadata, and diff availability, instead of depending only on model prose to
+  remember code-change evidence;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
