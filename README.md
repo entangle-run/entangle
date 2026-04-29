@@ -94,7 +94,9 @@ inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits signed source-candidate review and
 approval response messages through the same JSON User Client API. It also loads
 the source-change diff and changed-file preview through the running User Client
-before review. The fake
+before review. It now requires signer pubkey audit metadata to survive those
+User Node publish, Host inbox, User Client conversation, source review,
+approval response, synthetic agent-to-user, and second-User-Node paths. The fake
 OpenCode executable mutates the source workspace, so the smoke also verifies
 projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
@@ -172,6 +174,9 @@ This repository currently contains:
   signed approval-response context, approval record request/response lineage
   metadata, signer/fromPubkey enforcement for runner A2A envelopes,
   signer audit labels in compact CLI/User Client message surfaces,
+  process-smoke signer audit coverage for the User Node publish, conversation,
+  source-review, approval-response, inbound agent-message, and second-User-Node
+  paths,
   approver-set enforcement before approval state transitions,
   projected source-change summary rendering, projected source-change diff
   excerpt rendering, source-change diff/file fallback scoped to visible

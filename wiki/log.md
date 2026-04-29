@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Covered User Node signer audit in process smoke
+
+Extended the process-runner smoke so signer pubkey preservation is verified
+for User Node publish responses, Host inbox records, User Client conversation
+records, source-change review, approval response, synthetic inbound
+agent-to-user messages, and the second User Node publish path.
+
+Added `references/369-process-smoke-user-node-signer-audit-slice.md`.
+
 ## [2026-04-29] implementation | Surfaced User Node signer audit state
 
 Added compact CLI projection for recorded User Node messages with signer

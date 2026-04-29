@@ -698,6 +698,7 @@ Implementation records:
 - [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 - [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 - [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
+- [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 
 Current status:
 
@@ -773,6 +774,10 @@ Current status:
   records whose signer differs from the payload `fromPubkey`;
 - CLI compact User Node publish/message summaries and User Client timeline
   headers now expose signer audit state when available;
+- the process proof now verifies signer preservation across User Node publish
+  responses, Host inbox records, User Client conversation records,
+  source-change review, approval response, synthetic inbound agent messages,
+  and the second User Node path;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

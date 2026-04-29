@@ -582,6 +582,19 @@ function appendBounded(current: string, chunk: Buffer | string): string {
   return truncateLog(current + chunk.toString(), 12000);
 }
 
+function assertSignerMatchesFromPubkey(
+  value: {
+    fromPubkey: string;
+    signerPubkey?: string | undefined;
+  },
+  label: string
+): void {
+  assertCondition(
+    value.signerPubkey === value.fromPubkey,
+    `${label} signerPubkey must match fromPubkey.`
+  );
+}
+
 async function stopRunnerProcess(
   child: ChildProcessByStdio<null, Readable, Readable> | undefined
 ): Promise<void> {
@@ -1738,6 +1751,12 @@ async function main(): Promise<void> {
     const userMessage = userNodeMessagePublishResponseSchema.parse(
       await userMessageResponse.json()
     );
+    assertSignerMatchesFromPubkey(userMessage, "User Client JSON publish");
+    assertCondition(
+      userMessage.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "User Client JSON publish must be signed by the assigned User Node identity."
+    );
     printPass(
       "user-client-json-publish",
       `message=${userMessage.eventId}; relays=${userMessage.publishedRelays.length}`
@@ -2000,6 +2019,18 @@ async function main(): Promise<void> {
     await assertResponseOk(
       sourceReviewResponse,
       "User Client JSON source-change review"
+    );
+    const sourceReviewMessage = userNodeMessagePublishResponseSchema.parse(
+      await sourceReviewResponse.json()
+    );
+    assertSignerMatchesFromPubkey(
+      sourceReviewMessage,
+      "User Client JSON source-change review"
+    );
+    assertCondition(
+      sourceReviewMessage.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "User Client JSON source-change review must be signed by the assigned User Node identity."
     );
     const reviewedBuilderSourceCandidate = await waitFor(
       "Host projected builder source-change review",
@@ -2317,11 +2348,22 @@ async function main(): Promise<void> {
         path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
       })
     );
+    const publishedUserMessageRecord = userConversationDetail.messages.find(
+      (message) => message.eventId === userMessage.eventId
+    );
+    if (!publishedUserMessageRecord) {
+      throw new Error(
+        "User Node conversation detail must include the published User Node message."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      publishedUserMessageRecord,
+      "Host User Node published message record"
+    );
     assertCondition(
-      userConversationDetail.messages.some(
-        (message) => message.eventId === userMessage.eventId
-      ),
-      "User Node conversation detail must include the published User Node message."
+      publishedUserMessageRecord.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "Host User Node published message record must preserve the User Node signer."
     );
     printPass("user-node-message-history", userMessage.conversationId);
 
@@ -2338,13 +2380,26 @@ async function main(): Promise<void> {
     const userClientConversation = userNodeConversationResponseSchema.parse(
       await userClientConversationResponse.json()
     );
-    assertCondition(
-      userClientConversation.messages.some(
+    const userClientPublishedMessageRecord =
+      userClientConversation.messages.find(
         (message) => message.eventId === userMessage.eventId
-      ),
-      "User Client conversation API must include the JSON-published User Node message."
+      );
+    if (!userClientPublishedMessageRecord) {
+      throw new Error(
+        "User Client conversation API must include the JSON-published User Node message."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      userClientPublishedMessageRecord,
+      "User Client conversation API published message record"
+    );
+    assertCondition(
+      userClientPublishedMessageRecord.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "User Client conversation API must expose the User Node signer."
     );
     printPass("user-client-conversation-api", userMessage.conversationId);
+    printPass("user-node-signer-audit", userMessage.signerPubkey ?? "missing");
 
     const builderIdentitySecret = runtimeIdentitySecretResponseSchema.parse(
       await hostRequest({
@@ -2430,6 +2485,26 @@ async function main(): Promise<void> {
           )
       ),
       "User Node conversation detail must include the inbound synthetic agent message."
+    );
+    const syntheticAgentMessageRecord =
+      userInboundConversationDetail.messages.find(
+        (message) =>
+          message.direction === "inbound" &&
+          message.eventId === syntheticAgentMessageId
+      );
+    if (!syntheticAgentMessageRecord) {
+      throw new Error(
+        "User Node conversation detail must include the inbound synthetic agent signer record."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      syntheticAgentMessageRecord,
+      "Host User Node inbound synthetic agent message record"
+    );
+    assertCondition(
+      syntheticAgentMessageRecord.signerPubkey ===
+        materializedContext.identityContext.publicKey,
+      "Host User Node inbound synthetic agent message must preserve the builder signer."
     );
     printPass("user-node-inbound-message-history", userMessage.conversationId);
 
@@ -2538,7 +2613,7 @@ async function main(): Promise<void> {
       relayUrls,
       senderSecretKeyHex: builderIdentitySecret.secretKey
     });
-    await waitFor(
+    const approvalRequestConversationDetail = await waitFor(
       "Host User Node inbound approval request",
       async () => {
         const detail = userNodeConversationResponseSchema.parse(
@@ -2557,6 +2632,26 @@ async function main(): Promise<void> {
           : undefined;
       },
       () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const approvalRequestRecord =
+      approvalRequestConversationDetail.messages.find(
+        (message) =>
+          message.messageType === "approval.request" &&
+          message.approval?.approvalId === approvalId
+      );
+    if (!approvalRequestRecord) {
+      throw new Error(
+        "User Node conversation detail must preserve the approval request signer record."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      approvalRequestRecord,
+      "Host User Node approval request record"
+    );
+    assertCondition(
+      approvalRequestRecord.signerPubkey ===
+        materializedContext.identityContext.publicKey,
+      "Host User Node approval request record must preserve the builder signer."
     );
     printPass("user-node-approval-request", approvalId);
 
@@ -2579,7 +2674,19 @@ async function main(): Promise<void> {
       method: "POST"
     });
     await assertResponseOk(approvalResponse, "User Client JSON approval response");
-    await waitFor(
+    const approvalResponseMessage = userNodeMessagePublishResponseSchema.parse(
+      await approvalResponse.json()
+    );
+    assertSignerMatchesFromPubkey(
+      approvalResponseMessage,
+      "User Client JSON approval response"
+    );
+    assertCondition(
+      approvalResponseMessage.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "User Client JSON approval response must be signed by the assigned User Node identity."
+    );
+    const approvalResponseConversationDetail = await waitFor(
       "Host User Node approval response history",
       async () => {
         const detail = userNodeConversationResponseSchema.parse(
@@ -2600,6 +2707,19 @@ async function main(): Promise<void> {
           : undefined;
       },
       () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const approvalResponseRecord =
+      approvalResponseConversationDetail.messages.find(
+        (message) => message.eventId === approvalResponseMessage.eventId
+      );
+    if (!approvalResponseRecord) {
+      throw new Error(
+        "User Node conversation detail must preserve the approval response signer record."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      approvalResponseRecord,
+      "Host User Node approval response record"
     );
     printPass("user-node-approval-response", approvalId);
 
@@ -2624,9 +2744,18 @@ async function main(): Promise<void> {
         path: "/v1/user-nodes/reviewer-user/messages"
       })
     );
+    assertSignerMatchesFromPubkey(
+      reviewerUserMessage,
+      "Reviewer User Node publish response"
+    );
     assertCondition(
       reviewerUserMessage.fromNodeId === "reviewer-user",
       "Reviewer User Node message must be signed as reviewer-user."
+    );
+    assertCondition(
+      reviewerUserMessage.signerPubkey ===
+        materializedReviewerUserContext.identityContext.publicKey,
+      "Reviewer User Node message must be signed by the reviewer User Node identity."
     );
     assertCondition(
       reviewerUserMessage.fromPubkey !== userMessage.fromPubkey,
@@ -2719,11 +2848,23 @@ async function main(): Promise<void> {
           path: `/v1/user-nodes/reviewer-user/inbox/${reviewerUserMessage.conversationId}`
         })
       );
-    assertCondition(
-      reviewerUserConversationDetail.messages.some(
+    const reviewerUserMessageRecord =
+      reviewerUserConversationDetail.messages.find(
         (message) => message.eventId === reviewerUserMessage.eventId
-      ),
-      "Reviewer User Node conversation detail must include the published User Node message."
+      );
+    if (!reviewerUserMessageRecord) {
+      throw new Error(
+        "Reviewer User Node conversation detail must include the published User Node message."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      reviewerUserMessageRecord,
+      "Host reviewer User Node message record"
+    );
+    assertCondition(
+      reviewerUserMessageRecord.signerPubkey ===
+        materializedReviewerUserContext.identityContext.publicKey,
+      "Host reviewer User Node message record must preserve the reviewer signer."
     );
     printPass(
       "reviewer-user-node-message-history",

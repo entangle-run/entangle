@@ -169,6 +169,7 @@ same-machine slice records.
 - [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 - [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 - [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
+- [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 
 ## Audited Scope
 
@@ -515,7 +516,10 @@ the model summary omits the details.
     signer pubkeys when available, and Host rejects inbound User Node message
     records whose signer differs from the payload `fromPubkey`. CLI compact
     User Node message summaries and User Client timeline headers now surface
-    signer audit state when available.
+    signer audit state when available. The process-runner smoke now verifies
+    signer preservation across User Node publish responses, Host inbox records,
+    User Client conversation records, source reviews, approval responses,
+    synthetic inbound agent messages, and the second User Node path.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

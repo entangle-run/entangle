@@ -94,7 +94,11 @@ state mutation. User Node inbox records now
 preserve signer pubkeys for inbound and outbound messages when available, and
 Host rejects inbound User Node message records whose signer differs from the
 payload `fromPubkey`. CLI compact User Node message summaries and User Client
-timeline headers now expose signer audit state when available.
+timeline headers now expose signer audit state when available. The
+process-runner smoke now verifies signer preservation across User Node publish
+responses, Host inbox records, User Client conversation records, source review,
+approval response, synthetic inbound agent messages, and the second User Node
+path.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -474,6 +478,7 @@ files are the active federated redesign pack.
 367. [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 368. [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 369. [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
+370. [369-process-smoke-user-node-signer-audit-slice.md](369-process-smoke-user-node-signer-audit-slice.md)
 
 ## Role of this corpus
 
