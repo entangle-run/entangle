@@ -393,8 +393,10 @@ Current status:
   history/diff path against the runner-published source-history git artifact;
 - Host status now reports bounded artifact backend cache availability, count,
   and size as derived operational metadata;
-- richer source/wiki mutation endpoints, non-primary publication, cache policy,
-  and artifact restore/promotion still need projection-backed or
+- Host API, host-client, and CLI can now dry-run or clear the derived artifact
+  backend cache without deleting authoritative artifact/projection state;
+- richer source/wiki mutation endpoints, non-primary publication, richer cache
+  policy, and artifact restore/promotion still need projection-backed or
   backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
@@ -675,6 +677,7 @@ Implementation records:
 - [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
 - [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
+- [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 
 Current status:
 
@@ -704,6 +707,9 @@ Current status:
   runner;
 - Host status exposes derived artifact backend cache availability, repository
   count, and size for operator diagnostics;
+- Host API and CLI can dry-run or clear the derived artifact backend cache
+  without touching authoritative artifact, projection, runner, or git backend
+  state;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

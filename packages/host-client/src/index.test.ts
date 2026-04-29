@@ -110,6 +110,60 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("clears the Host artifact backend cache through the host boundary", async () => {
+    const requests: Array<{
+      body?: string;
+      headers?: Record<string, string>;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          headers: init?.headers,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              completedAt: "2026-04-29T00:00:00.000Z",
+              dryRun: true,
+              repositoryCount: 2,
+              status: "dry_run",
+              totalSizeBytes: 4096
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.clearArtifactBackendCache({ dryRun: true })
+    ).resolves.toMatchObject({
+      dryRun: true,
+      repositoryCount: 2,
+      status: "dry_run"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({ dryRun: true }),
+        headers: {
+          authorization: "Bearer host-secret",
+          "content-type": "application/json"
+        },
+        method: "POST",
+        url: "http://entangle-host.test/v1/host/artifact-backend-cache/clear"
+      }
+    ]);
+  });
+
   it("fetches the Host projection snapshot", async () => {
     const requests: string[] = [];
     const client = createHostClient({

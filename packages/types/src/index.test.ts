@@ -35,6 +35,7 @@ import {
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
   hostSessionSummarySchema,
+  hostArtifactBackendCacheClearResponseSchema,
   hostStatusResponseSchema,
   stateLayoutRecordSchema,
   isAllowedApprovalLifecycleTransition,
@@ -3628,6 +3629,19 @@ describe("reconciliation contracts", () => {
     expect(result.artifactBackendCache?.repositoryCount).toBe(1);
     expect(result.stateLayout.status).toBe("current");
     expect(result.transport.controlObserve.status).toBe("degraded");
+  });
+
+  it("accepts artifact backend cache clear responses", () => {
+    const result = hostArtifactBackendCacheClearResponseSchema.parse({
+      completedAt: "2026-04-24T00:00:01.000Z",
+      dryRun: true,
+      repositoryCount: 2,
+      status: "dry_run",
+      totalSizeBytes: 4096
+    });
+
+    expect(result.repositoryCount).toBe(2);
+    expect(result.status).toBe("dry_run");
   });
 
   it("accepts only the current Entangle state layout product marker", () => {

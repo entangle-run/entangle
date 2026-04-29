@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added artifact backend cache clear control
+
+Added an operator Host API and CLI command to dry-run or clear the derived
+artifact backend cache used for projected git artifact history/diff. The
+operation reports repository count and byte size while deleting only cache
+repository directories, not authoritative artifact, projection, runner, or git
+backend state.
+
+Added `references/353-artifact-backend-cache-clear-slice.md`.
+
 ## [2026-04-29] implementation | Exposed artifact backend cache status
 
 Added bounded Host status metadata for the derived artifact backend cache used

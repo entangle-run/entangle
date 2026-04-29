@@ -41,6 +41,8 @@ import {
   hostEventStreamQuerySchema,
   hostErrorResponseSchema,
   hostProjectionSnapshotSchema,
+  hostArtifactBackendCacheClearRequestSchema,
+  hostArtifactBackendCacheClearResponseSchema,
   nodeCreateRequestSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
@@ -119,6 +121,7 @@ import {
   applyCatalog,
   applyGraph,
   buildHostStatus,
+  clearArtifactBackendCache,
   createEdge,
   createManagedNode,
   deleteEdge,
@@ -964,6 +967,16 @@ export async function buildHostServer(options: HostServerOptions = {}) {
   server.get("/v1/host/status", async () =>
     hostStatusResponseSchema.parse(await buildHostStatus())
   );
+
+  server.post("/v1/host/artifact-backend-cache/clear", async (request) => {
+    const body = hostArtifactBackendCacheClearRequestSchema.parse(
+      request.body ?? {}
+    );
+
+    return hostArtifactBackendCacheClearResponseSchema.parse(
+      await clearArtifactBackendCache(body)
+    );
+  });
 
   server.get("/v1/projection", async () =>
     hostProjectionSnapshotSchema.parse(await getHostProjectionSnapshot())

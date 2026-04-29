@@ -5,6 +5,7 @@ import { Command } from "commander";
 import {
   createHostClient,
   filterHostEvents,
+  formatHostArtifactBackendCacheClearSummary,
   hostEventMatchesFilter,
   sortExternalPrincipalInspections,
   sortGraphRevisions,
@@ -783,6 +784,33 @@ hostCommand
       options.summary ? { status: projectHostStatusSummary(response) } : response
     );
   });
+
+hostCommand
+  .command("artifact-backend-cache-clear")
+  .option("--dry-run", "Inspect what would be cleared without deleting cache entries.")
+  .option("--summary", "Print a compact operator-oriented cache clear summary.")
+  .description("Clear Host's derived artifact backend cache.")
+  .action(
+    async (
+      options: { dryRun?: boolean; summary?: boolean },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.clearArtifactBackendCache({
+        dryRun: options.dryRun
+      });
+      printJson(
+        options.summary
+          ? {
+              artifactBackendCache: {
+                ...response,
+                summary: formatHostArtifactBackendCacheClearSummary(response)
+              }
+            }
+          : response
+      );
+    }
+  );
 
 hostCommand
   .command("projection")

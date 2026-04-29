@@ -1,4 +1,5 @@
 import type {
+  HostArtifactBackendCacheClearResponse,
   HostStatusResponse,
   HostTransportRelayHealth
 } from "@entangle/types";
@@ -48,6 +49,18 @@ export function formatHostArtifactBackendCacheSummary(
   return cache.available
     ? `${repositoryLabel} · ${cache.totalSizeBytes} bytes`
     : `unavailable · ${cache.reason ?? "unknown error"}`;
+}
+
+export function formatHostArtifactBackendCacheClearSummary(
+  response: HostArtifactBackendCacheClearResponse
+): string {
+  const repositoryLabel =
+    response.repositoryCount === 1
+      ? "1 repository"
+      : `${response.repositoryCount} repositories`;
+  const actionLabel = response.dryRun ? "dry run" : "cleared";
+
+  return `${actionLabel} · ${repositoryLabel} · ${response.totalSizeBytes} bytes`;
 }
 
 export function formatHostStateLayoutSummary(status: HostStatusResponse): string {

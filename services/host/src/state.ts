@@ -13358,6 +13358,58 @@ async function buildArtifactBackendCacheStatus(timestamp: string) {
   }
 }
 
+export async function clearArtifactBackendCache(
+  input: { dryRun?: boolean | undefined } = {}
+) {
+  const completedAt = new Date().toISOString();
+  const dryRun = input.dryRun === true;
+
+  try {
+    const entries = await readdir(artifactGitResolverCacheRoot, {
+      withFileTypes: true
+    });
+    const repositoryEntries = entries.filter((entry) => entry.isDirectory());
+    const repositoryPaths = repositoryEntries.map((entry) =>
+      path.join(artifactGitResolverCacheRoot, entry.name)
+    );
+    const totalSizeBytes = (
+      await Promise.all(
+        repositoryPaths.map((repositoryPath) =>
+          calculateDirectorySizeBytes(repositoryPath)
+        )
+      )
+    ).reduce((total, sizeBytes) => total + sizeBytes, 0);
+
+    if (!dryRun) {
+      await Promise.all(
+        repositoryPaths.map((repositoryPath) =>
+          rm(repositoryPath, { force: true, recursive: true })
+        )
+      );
+    }
+
+    return {
+      completedAt,
+      dryRun,
+      repositoryCount: repositoryEntries.length,
+      status: dryRun ? "dry_run" : "cleared",
+      totalSizeBytes
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {
+        completedAt,
+        dryRun,
+        repositoryCount: 0,
+        status: dryRun ? "dry_run" : "cleared",
+        totalSizeBytes: 0
+      };
+    }
+
+    throw error;
+  }
+}
+
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const authorityInspection = await getHostAuthorityInspection();

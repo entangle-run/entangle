@@ -84,6 +84,18 @@ export const hostArtifactBackendCacheStatusSchema = z.object({
   updatedAt: nonEmptyStringSchema
 });
 
+export const hostArtifactBackendCacheClearRequestSchema = z.object({
+  dryRun: z.boolean().optional()
+});
+
+export const hostArtifactBackendCacheClearResponseSchema = z.object({
+  completedAt: nonEmptyStringSchema,
+  dryRun: z.boolean(),
+  repositoryCount: z.number().int().nonnegative(),
+  status: z.enum(["cleared", "dry_run"]),
+  totalSizeBytes: z.number().int().nonnegative()
+});
+
 export const hostStatusResponseSchema = z.object({
   artifactBackendCache: hostArtifactBackendCacheStatusSchema.optional(),
   authority: hostAuthoritySummarySchema.optional(),
@@ -135,6 +147,12 @@ export const traceEventSchema = z.object({
 
 export type HostArtifactBackendCacheStatus = z.infer<
   typeof hostArtifactBackendCacheStatusSchema
+>;
+export type HostArtifactBackendCacheClearRequest = z.infer<
+  typeof hostArtifactBackendCacheClearRequestSchema
+>;
+export type HostArtifactBackendCacheClearResponse = z.infer<
+  typeof hostArtifactBackendCacheClearResponseSchema
 >;
 export type HostStatusResponse = z.infer<typeof hostStatusResponseSchema>;
 export type HostTransportHealth = z.infer<typeof hostTransportHealthSchema>;

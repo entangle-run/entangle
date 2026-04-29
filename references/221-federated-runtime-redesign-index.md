@@ -153,6 +153,7 @@ same-machine slice records.
 - [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
 - [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
+- [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 
 ## Audited Scope
 
@@ -591,7 +592,9 @@ locator is resolvable through the semantic artifact context, and the
 process-runner smoke now proves that path against a runner-published
 source-history artifact. Host status now exposes bounded operational metadata
 for that derived artifact backend cache without exposing paths or treating it
-as protocol truth. Non-primary target publication remains future work. The next
-blocking implementation areas are richer projection-backed source/wiki review
-services, backend-resolved artifact restore/promotion, cache policy controls,
-and turning the process smoke into the full multi-machine distributed proof.
+as protocol truth, and operators can dry-run or clear that derived cache through
+the Host API/CLI without mutating authoritative artifact or projection state.
+Non-primary target publication remains future work. The next blocking
+implementation areas are richer projection-backed source/wiki review services,
+backend-resolved artifact restore/promotion, richer cache policy controls, and
+turning the process smoke into the full multi-machine distributed proof.

@@ -24,6 +24,8 @@ import {
   hostAuthorityImportRequestSchema,
   hostAuthorityImportResponseSchema,
   hostAuthorityInspectionResponseSchema,
+  hostArtifactBackendCacheClearRequestSchema,
+  hostArtifactBackendCacheClearResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostProjectionSnapshotSchema,
@@ -118,6 +120,8 @@ import {
   type HostAuthorityImportRequest,
   type HostAuthorityImportResponse,
   type HostAuthorityInspectionResponse,
+  type HostArtifactBackendCacheClearRequest,
+  type HostArtifactBackendCacheClearResponse,
   type HostEventListResponse,
   type HostEventRecord,
   type HostProjectionSnapshot,
@@ -401,6 +405,23 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/host/status`),
         hostStatusResponseSchema
+      );
+    },
+
+    async clearArtifactBackendCache(
+      request: HostArtifactBackendCacheClearRequest = {}
+    ): Promise<HostArtifactBackendCacheClearResponse> {
+      const body = hostArtifactBackendCacheClearRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/host/artifact-backend-cache/clear`, {
+          body: JSON.stringify(body),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }),
+        hostArtifactBackendCacheClearResponseSchema
       );
     },
 
@@ -1416,6 +1437,8 @@ export {
   type HostEventFilter
 } from "./event-inspection.js";
 export {
+  formatHostArtifactBackendCacheClearSummary,
+  formatHostArtifactBackendCacheSummary,
   formatHostStateLayoutSummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,

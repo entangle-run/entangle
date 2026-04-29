@@ -31,6 +31,7 @@ import {
   hostAuthorityExportResponseSchema,
   hostAuthorityImportResponseSchema,
   hostAuthorityInspectionResponseSchema,
+  hostArtifactBackendCacheClearResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -985,6 +986,58 @@ describe("buildHostServer", () => {
         layoutVersion: 1,
         product: "entangle"
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("dry-runs and clears the derived artifact backend cache", async () => {
+    const server = await createTestServer();
+    const cacheRoot = path.join(
+      createdDirectories[0]!,
+      "host",
+      "cache",
+      "artifact-git-repositories"
+    );
+    const cachedRepositoryPath = path.join(cacheRoot, "git-repo-alpha");
+    await mkdir(cachedRepositoryPath, { recursive: true });
+    await writeFile(path.join(cachedRepositoryPath, "HEAD"), "ref: main\n", "utf8");
+
+    try {
+      const dryRunResponse = await server.inject({
+        body: {
+          dryRun: true
+        },
+        method: "POST",
+        url: "/v1/host/artifact-backend-cache/clear"
+      });
+
+      expect(dryRunResponse.statusCode).toBe(200);
+      const dryRun = hostArtifactBackendCacheClearResponseSchema.parse(
+        dryRunResponse.json()
+      );
+      expect(dryRun).toMatchObject({
+        dryRun: true,
+        repositoryCount: 1,
+        status: "dry_run"
+      });
+      expect((await readdir(cacheRoot)).sort()).toEqual(["git-repo-alpha"]);
+
+      const clearResponse = await server.inject({
+        method: "POST",
+        url: "/v1/host/artifact-backend-cache/clear"
+      });
+
+      expect(clearResponse.statusCode).toBe(200);
+      const cleared = hostArtifactBackendCacheClearResponseSchema.parse(
+        clearResponse.json()
+      );
+      expect(cleared).toMatchObject({
+        dryRun: false,
+        repositoryCount: 1,
+        status: "cleared"
+      });
+      expect(await readdir(cacheRoot)).toEqual([]);
     } finally {
       await server.close();
     }

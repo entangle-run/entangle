@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HostStatusResponse } from "@entangle/types";
 import {
+  formatHostArtifactBackendCacheClearSummary,
   formatHostArtifactBackendCacheSummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,
@@ -87,6 +88,15 @@ describe("host status presentation helpers", () => {
     expect(formatHostArtifactBackendCacheSummary(status)).toBe(
       "2 repositories · 4096 bytes"
     );
+    expect(
+      formatHostArtifactBackendCacheClearSummary({
+        completedAt: "2026-04-25T08:00:03.000Z",
+        dryRun: false,
+        repositoryCount: 2,
+        status: "cleared",
+        totalSizeBytes: 4096
+      })
+    ).toBe("cleared · 2 repositories · 4096 bytes");
   });
 
   it("formats bounded host status detail lines", () => {

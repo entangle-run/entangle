@@ -317,7 +317,8 @@ This repository currently contains:
   lifecycle state, and last startup failure metadata, with shared host-client,
   CLI, and Studio rendering, and now also reports bounded derived artifact
   backend cache availability, repository count, and size without exposing Host
-  filesystem paths;
+  filesystem paths; operators can dry-run or clear that derived cache through
+  the Host API and CLI without deleting authoritative artifact/projection state;
 - CLI can generate schema-validated generic runner join configs from Host
   status through `entangle runners join-config`, while the runner package now
   exposes an `entangle-runner` bin for `join --config` startup, including an
@@ -364,7 +365,9 @@ This repository currently contains:
   runner-published source-history git artifact;
 - Host status now surfaces the derived artifact backend cache's availability,
   repository count, and byte size for operator diagnostics while keeping that
-  cache rebuildable implementation state;
+  cache rebuildable implementation state; the Host API and CLI can dry-run or
+  clear the cache when operators need to reclaim space or refresh backend
+  clones;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,

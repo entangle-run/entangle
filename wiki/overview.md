@@ -161,7 +161,9 @@ Host status now also carries bounded federated control/observe transport
 health, and CLI plus Studio render that Host-owned relay subscription status
 without probing relay state directly. Host status also reports bounded
 artifact backend cache availability, repository count, and size as derived
-operator diagnostics without exposing Host filesystem paths.
+operator diagnostics without exposing Host filesystem paths, and Host API/CLI
+operators can dry-run or clear that derived cache without mutating
+authoritative artifact or projection state.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
