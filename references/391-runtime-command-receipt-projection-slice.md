@@ -107,10 +107,10 @@ remain lifecycle evidence; command receipts are command execution evidence.
 - Risk: command receipts are mistaken for source-change evidence.
   Mitigation: receipts only report command handling state. Source content still
   appears through `source_change.ref`.
-- Risk: only artifact proposal currently emits completed command receipts.
-  Mitigation: the schema is generic, while this slice implements the
-  highest-value missing path first. Other runtime commands can adopt the same
-  receipt helper incrementally.
+- Risk: only artifact proposal initially emitted completed command receipts.
+  Mitigation: `392-runner-owned-command-receipt-adoption-slice.md` extended
+  receipt emission to artifact restore, source-history publish/replay, and
+  wiki publication.
 - Risk: projection grows unbounded.
   Mitigation: the current projection reads the same bounded recent Host event
   window already used by assignment receipts.
@@ -120,6 +120,6 @@ remain lifecycle evidence; command receipts are command execution evidence.
 - Should CLI and Studio gain first-class command receipt tables, or is compact
   count plus event stream/projection sufficient until more commands emit
   completed receipts?
-- Should all runtime command handlers emit `completed` receipts in the next
-  slice, or should completion remain limited to commands with a concrete
-  result reference?
+- Should lifecycle start/stop/restart and session cancellation use command
+  receipts, or should their existing lifecycle/session observations remain the
+  canonical completion model?

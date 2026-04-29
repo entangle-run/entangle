@@ -301,6 +301,7 @@ Implementation record:
 - [389-user-client-artifact-source-proposal-slice.md](389-user-client-artifact-source-proposal-slice.md)
 - [390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
 - [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
+- [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
 
 Verification:
 
@@ -457,9 +458,13 @@ Current status:
   `runtime.command.receipt` audit events, and projection exposes
   `runtimeCommandReceipts` correlated by `commandId`, `proposalId`, and
   `candidateId`;
+- artifact restore, source-history publish, source-history replay, and wiki
+  publication commands now use the same command receipt model, so operators can
+  close the Host command loop through `runtimeCommandReceipts` while still
+  relying on artifact/source/wiki domain observations for content evidence;
 - richer source/wiki mutation endpoints, richer cache policy, and broader
-  completed command receipts for the other runtime command families still need
-  protocol-backed replacement.
+  lifecycle/session command receipt semantics still need protocol-backed
+  replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -833,6 +838,11 @@ Current status:
   `runtime.command.receipt` correlated to the Host command id, effective
   proposal id, and resulting source-change candidate id, and the process proof
   waits for that receipt after candidate projection;
+- artifact restore, targeted source-history publication, source-history replay
+  unit coverage, and wiki publication now emit the same signed command receipt
+  model; the process proof waits for completed restore, targeted
+  source-history publication, and wiki publication receipts in addition to
+  domain artifact/source/wiki evidence;
 - semantic artifact validation now allows file-backed git proof targets
   without git transport principals while retaining principal requirements for
   SSH and HTTPS targets;

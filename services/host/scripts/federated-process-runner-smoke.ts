@@ -2289,6 +2289,34 @@ async function main(): Promise<void> {
         `retrieval=${restoredSourceHistoryArtifact.retrieval?.state}`
     );
 
+    const projectedArtifactRestoreReceipt = await waitFor(
+      "Host projected artifact restore command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === artifactRestoreRequest.commandId &&
+            receipt.commandEventType === "runtime.artifact.restore" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.artifactId === sourceHistoryArtifactId &&
+            receipt.restoreId === "restore-source-history-artifact"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-artifact-restore-command-receipt",
+      `command=${projectedArtifactRestoreReceipt.commandId}; ` +
+        `status=${projectedArtifactRestoreReceipt.receiptStatus}; ` +
+        `artifact=${projectedArtifactRestoreReceipt.artifactId}`
+    );
+
     const projectedReportArtifact = await waitFor(
       "Host projected runner report artifact",
       async () => {
@@ -2485,6 +2513,35 @@ async function main(): Promise<void> {
         `commit=${projectedTargetedSourceHistoryArtifact.commit.slice(0, 12)}`
     );
 
+    const projectedSourceHistoryPublicationReceipt = await waitFor(
+      "Host projected source-history publication command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId ===
+              targetedSourceHistoryPublicationRequest.commandId &&
+            receipt.commandEventType === "runtime.source_history.publish" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.sourceHistoryId ===
+              projectedBuilderSourceHistory.sourceHistoryId
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-source-history-publication-command-receipt",
+      `command=${projectedSourceHistoryPublicationReceipt.commandId}; ` +
+        `status=${projectedSourceHistoryPublicationReceipt.receiptStatus}; ` +
+        `sourceHistory=${projectedSourceHistoryPublicationReceipt.sourceHistoryId}`
+    );
+
     const wikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(
       await hostRequest({
         baseUrl: hostBaseUrl,
@@ -2562,6 +2619,33 @@ async function main(): Promise<void> {
       "projected-runtime-wiki-publication",
       `artifact=${projectedWikiArtifact.artifactId}; ` +
         `commit=${projectedWikiCommit.slice(0, 12)}`
+    );
+
+    const projectedWikiPublicationReceipt = await waitFor(
+      "Host projected wiki publication command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === wikiPublicationRequest.commandId &&
+            receipt.commandEventType === "runtime.wiki.publish" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.wikiArtifactId === projectedWikiArtifact.artifactId
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-wiki-publication-command-receipt",
+      `command=${projectedWikiPublicationReceipt.commandId}; ` +
+        `status=${projectedWikiPublicationReceipt.receiptStatus}; ` +
+        `artifact=${projectedWikiPublicationReceipt.wikiArtifactId}`
     );
 
     const targetedWikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(

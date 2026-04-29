@@ -784,10 +784,26 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
         message:
-          "Runtime artifact restore command did not match an accepted assignment."
+          "Runtime artifact restore command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          artifactId: payload.artifactId,
+          ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+        }
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        artifactId: payload.artifactId,
+        ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+      },
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -802,7 +818,12 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
-          "Runtime artifact restore command cannot be applied because the assigned runtime is not running."
+          "Runtime artifact restore command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          artifactId: payload.artifactId,
+          ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+        }
       });
       return;
     }
@@ -821,16 +842,39 @@ export class RunnerJoinService {
           assignmentId: assignment.assignmentId,
           message:
             result.message ??
-            `Artifact '${result.artifactId}' restore failed.`
+            `Artifact '${result.artifactId}' restore failed.`,
+          payload,
+          receipt: {
+            artifactId: result.artifactId,
+            ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+          }
         });
+        return;
       }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ?? `Artifact '${result.artifactId}' restore completed.`,
+        payload,
+        receipt: {
+          artifactId: result.artifactId,
+          ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+        },
+        status: "completed"
+      });
     } catch (error) {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
           error instanceof Error
             ? error.message
-            : "Runtime artifact restore command failed."
+            : "Runtime artifact restore command failed.",
+        payload,
+        receipt: {
+          artifactId: payload.artifactId,
+          ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+        }
       });
     }
   }
@@ -965,10 +1009,24 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
         message:
-          "Runtime source-history publication command did not match an accepted assignment."
+          "Runtime source-history publication command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          sourceHistoryId: payload.sourceHistoryId
+        }
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        sourceHistoryId: payload.sourceHistoryId
+      },
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -983,7 +1041,11 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
-          "Runtime source-history publication command cannot be applied because the assigned runtime is not running."
+          "Runtime source-history publication command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          sourceHistoryId: payload.sourceHistoryId
+        }
       });
       return;
     }
@@ -1004,16 +1066,37 @@ export class RunnerJoinService {
           assignmentId: assignment.assignmentId,
           message:
             result.message ??
-            `Source history '${result.sourceHistoryId}' publication failed.`
+            `Source history '${result.sourceHistoryId}' publication failed.`,
+          payload,
+          receipt: {
+            sourceHistoryId: result.sourceHistoryId
+          }
         });
+        return;
       }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Source history '${result.sourceHistoryId}' publication completed.`,
+        payload,
+        receipt: {
+          sourceHistoryId: result.sourceHistoryId
+        },
+        status: "completed"
+      });
     } catch (error) {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
           error instanceof Error
             ? error.message
-            : "Runtime source-history publication command failed."
+            : "Runtime source-history publication command failed.",
+        payload,
+        receipt: {
+          sourceHistoryId: payload.sourceHistoryId
+        }
       });
     }
   }
@@ -1030,10 +1113,26 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
         message:
-          "Runtime source-history replay command did not match an accepted assignment."
+          "Runtime source-history replay command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          ...(payload.replayId ? { replayId: payload.replayId } : {}),
+          sourceHistoryId: payload.sourceHistoryId
+        }
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        ...(payload.replayId ? { replayId: payload.replayId } : {}),
+        sourceHistoryId: payload.sourceHistoryId
+      },
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -1048,7 +1147,12 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
-          "Runtime source-history replay command cannot be applied because the assigned runtime is not running."
+          "Runtime source-history replay command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          ...(payload.replayId ? { replayId: payload.replayId } : {}),
+          sourceHistoryId: payload.sourceHistoryId
+        }
       });
       return;
     }
@@ -1068,16 +1172,40 @@ export class RunnerJoinService {
           assignmentId: assignment.assignmentId,
           message:
             result.message ??
-            `Source history '${result.sourceHistoryId}' replay '${result.replayId}' is unavailable.`
+            `Source history '${result.sourceHistoryId}' replay '${result.replayId}' is unavailable.`,
+          payload,
+          receipt: {
+            replayId: result.replayId,
+            sourceHistoryId: result.sourceHistoryId
+          }
         });
+        return;
       }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Source history '${result.sourceHistoryId}' replay '${result.replayId}' completed.`,
+        payload,
+        receipt: {
+          replayId: result.replayId,
+          sourceHistoryId: result.sourceHistoryId
+        },
+        status: "completed"
+      });
     } catch (error) {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
           error instanceof Error
             ? error.message
-            : "Runtime source-history replay command failed."
+            : "Runtime source-history replay command failed.",
+        payload,
+        receipt: {
+          ...(payload.replayId ? { replayId: payload.replayId } : {}),
+          sourceHistoryId: payload.sourceHistoryId
+        }
       });
     }
   }
@@ -1094,10 +1222,18 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
         message:
-          "Runtime wiki publication command did not match an accepted assignment."
+          "Runtime wiki publication command did not match an accepted assignment.",
+        payload
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -1112,7 +1248,8 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
-          "Runtime wiki publication command cannot be applied because the assigned runtime is not running."
+          "Runtime wiki publication command cannot be applied because the assigned runtime is not running.",
+        payload
       });
       return;
     }
@@ -1131,16 +1268,34 @@ export class RunnerJoinService {
           assignmentId: assignment.assignmentId,
           message:
             result.message ??
-            `Wiki publication '${result.artifactId ?? "unknown"}' failed.`
+            `Wiki publication '${result.artifactId ?? "unknown"}' failed.`,
+          payload,
+          receipt: {
+            ...(result.artifactId ? { wikiArtifactId: result.artifactId } : {})
+          }
         });
+        return;
       }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Wiki publication '${result.artifactId ?? "unknown"}' completed.`,
+        payload,
+        receipt: {
+          ...(result.artifactId ? { wikiArtifactId: result.artifactId } : {})
+        },
+        status: "completed"
+      });
     } catch (error) {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
           error instanceof Error
             ? error.message
-            : "Runtime wiki publication command failed."
+            : "Runtime wiki publication command failed.",
+        payload
       });
     }
   }

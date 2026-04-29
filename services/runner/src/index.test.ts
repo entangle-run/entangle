@@ -2769,6 +2769,40 @@ describe("runner runtime context", () => {
         targetPath: "proposals/report.md"
       })
     ]);
+    expect(
+      transport.observations.filter(
+        (payload) => payload.eventType === "runtime.command.receipt"
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactId: "artifact-alpha",
+          commandEventType: "runtime.artifact.restore",
+          commandId: "cmd-artifact-restore-alpha",
+          restoreId: "restore-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.source_history.publish",
+          commandId: "cmd-source-history-publish-alpha",
+          sourceHistoryId: "source-history-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.source_history.replay",
+          commandId: "cmd-source-history-replay-alpha",
+          replayId: "replay-source-history-alpha",
+          sourceHistoryId: "source-history-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.wiki.publish",
+          commandId: "cmd-wiki-publish-alpha",
+          status: "completed",
+          wikiArtifactId: "wiki-worker-it-abc123"
+        })
+      ])
+    );
 
     await configured.service.stop();
   });

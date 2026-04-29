@@ -174,6 +174,9 @@ The most accurate current description is:
 - Host projection now exposes `runtimeCommandReceipts` for runner-signed
   `runtime.command.receipt` observations, and artifact proposal completion is
   correlated by command id, effective proposal id, and candidate id;
+- artifact restore, source-history publication/replay, and wiki publication
+  now emit the same signed command receipt model, correlated with restore,
+  source-history, replay, or wiki artifact result ids where available;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, object-backed source/wiki mutation services, and the full
   multi-machine distributed proof.
@@ -1012,9 +1015,9 @@ The current implementation-truth audit now lives in
   multi-target source-history publication presentation plus runner-owned
   artifact restore exposed through operator surfaces plus runner-owned
   artifact source-change proposal operator and User Client requests plus
-  explicit artifact proposal command completion receipts; the next git gaps
-  are broader command receipt adoption, richer wiki promotion policy and
-  repository lifecycle behavior, source-history
+  explicit runner-owned artifact/source/wiki command completion receipts; the
+  next git gaps are lifecycle/session command receipt semantics, richer wiki
+  promotion policy and repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is

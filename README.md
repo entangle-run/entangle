@@ -102,11 +102,12 @@ projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
 artifact history/diff through the running User Client. It requests
 runner-owned artifact restore for that source-history artifact and verifies
-projected retrieval evidence, requests a runner-owned artifact source-change
-proposal from the published report artifact and verifies the pending candidate
-projection plus the correlated signed command receipt, then requests explicit
-non-primary source-history target publication and verifies the sibling source
-repository branch head, without live model credentials. Live OpenCode
+projected retrieval evidence plus the correlated signed command receipt,
+requests a runner-owned artifact source-change proposal from the published
+report artifact and verifies the pending candidate projection plus the
+correlated signed command receipt, then requests explicit non-primary
+source-history target publication and verifies the sibling source repository
+branch head plus command receipt, without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
 local provider fixture.
@@ -310,16 +311,19 @@ This repository currently contains:
   presentation. Artifact restore requests now travel as Host-signed
   `runtime.artifact.restore` commands to the accepted runner assignment; the
   runner retrieves the projected artifact ref into runner-owned state and emits
-  signed `artifact.ref` retrieval evidence rather than Host reading runner
-  files, with CLI and Studio exposing that request path from artifact
-  inspection surfaces. Artifact-to-source proposal requests now travel as
+  signed `artifact.ref` retrieval evidence plus `runtime.command.receipt`
+  completion rather than Host reading runner files, with CLI and Studio
+  exposing that request path from artifact inspection surfaces.
+  Artifact-to-source proposal requests now travel as
   Host-signed `runtime.artifact.propose_source_change` commands; the runner
   retrieves the artifact, copies bounded safe content into its source
   workspace, and emits a pending source-change candidate for normal review.
   The joined runner also emits explicit signed `runtime.command.receipt`
-  observations for artifact proposal received/completed/failed states, and
-  Host projection correlates the command id, effective proposal id, and
-  resulting candidate id.
+  observations for artifact restore, artifact proposal, source-history
+  publish/replay, and wiki publication received/completed/failed states, and
+  Host projection correlates the command id with result ids such as effective
+  proposal id, source-change candidate id, source-history id, restore id, or
+  wiki artifact id.
   Explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
@@ -526,7 +530,8 @@ This repository currently contains:
   controls rather than Host writes into runner-local workspaces, and Host
   returns an effective proposal id in every acknowledgement so clients can
   follow the resulting candidate id; Host projection also exposes explicit
-  artifact proposal command receipts correlated to the resulting candidate;
+  runner-owned artifact/source/wiki command receipts correlated to resulting
+  artifact, source-history, proposal, and candidate ids;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -1086,7 +1091,7 @@ The highest-value remaining gaps are:
   git refs plus shared multi-target source-history publication presentation
   plus runner-owned artifact restore and source-change proposal operator
   requests plus User Client visible-artifact proposal requests and explicit
-  artifact proposal command completion receipts,
+  runner-owned artifact/source/wiki command completion receipts,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

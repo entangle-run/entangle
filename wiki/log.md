@@ -4678,3 +4678,14 @@ Joined runners now emit received/completed/failed command receipts for
 effective proposal id, and resulting source-change candidate id. The
 process-runner smoke now waits for that completed receipt after verifying the
 projected candidate.
+
+## [2026-04-29] implementation | Extended command receipts to runner-owned work commands
+
+Added `references/392-runner-owned-command-receipt-adoption-slice.md`.
+Joined runners now emit received/completed/failed `runtime.command.receipt`
+observations for artifact restore, source-history publication,
+source-history replay, and wiki publication commands.
+
+The process-runner smoke now verifies completed command receipts for artifact
+restore, targeted source-history publication, and wiki publication in addition
+to the existing artifact/source/wiki domain evidence.

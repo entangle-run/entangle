@@ -553,6 +553,7 @@ files are the active federated redesign pack.
 390. [389-user-client-artifact-source-proposal-slice.md](389-user-client-artifact-source-proposal-slice.md)
 391. [390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
 392. [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
+393. [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
 
 ## Role of this corpus
 
