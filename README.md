@@ -331,10 +331,11 @@ This repository currently contains:
   wiki publication now returns through a Host-signed `runtime.wiki.publish`
   control command that the accepted runner executes from runner-owned wiki
   state, with CLI and Studio requesting that same Host control path, publishing
-  a primary-git artifact and emitting `artifact.ref` projection evidence, now
-  covered in the process-boundary smoke by checking the projected artifact ref
-  and matching primary git branch head. Public deep runtime reads for accepted
-  federated assignments now ignore Host-local runtime files and use projected
+  to the primary git target by default or to an explicit resolved git target
+  selector and emitting `artifact.ref` projection evidence, now covered in the
+  process-boundary smoke by checking the projected artifact ref and matching
+  primary git branch head. Public deep runtime reads for accepted federated
+  assignments now ignore Host-local runtime files and use projected
   runner evidence instead, while non-federated adapter reads remain available.
   Bounded engine-request
   summaries on executable turns so
@@ -580,7 +581,8 @@ This repository currently contains:
   Client JSON API, exercises a deterministic OpenCode-adapter task turn,
   verifies projected turn/approval/session read APIs, requests runner-owned
   wiki publication through Host-signed control and verifies the projected git
-  artifact plus primary git branch head, publishes from a second distinct User
+  artifact plus primary git branch head, with non-primary wiki target selection
+  covered by focused runner/contract tests, publishes from a second distinct User
   Node identity, records a synthetic inbound agent message
   through the running User Node, inspects the selected conversation through the
   User Client JSON API, submits a signed User Node approval response through
@@ -1055,8 +1057,9 @@ The highest-value remaining gaps are:
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs, especially protocol-owned artifact restore or source-change
-  proposal flows, richer wiki promotion beyond primary-git publication,
-  source-history merge/reconcile workflows, and replicated fallback paths;
+  proposal flows, richer wiki promotion policy and repository lifecycle
+  behavior beyond explicit target publication, source-history merge/reconcile
+  workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

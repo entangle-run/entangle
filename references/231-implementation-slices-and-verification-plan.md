@@ -288,6 +288,8 @@ Implementation record:
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
+- [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
+- [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 
 Verification:
 
@@ -393,9 +395,10 @@ Current status:
 - explicit wiki repository publication now uses a Host-signed
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the
-  primary git target, persists artifact publication metadata, and emits
-  `artifact.ref` evidence; Host API, host-client, CLI, and Studio can request
-  that command without reading runner-local files;
+  primary git target by default or to an explicit resolved git target selector,
+  persists artifact publication metadata, and emits `artifact.ref` evidence;
+  Host API, host-client, CLI, and Studio can request that command without
+  reading runner-local files;
 - `ops:smoke-federated-process-runner` now verifies that same wiki publication
   command with a real Host process, joined runner process, relay, and primary
   git backend by checking projected `artifact.ref` evidence and the remote git
@@ -418,6 +421,8 @@ Current status:
   Interface Runtime through Host artifact read APIs;
 - explicit source-history publication can now target policy-gated non-primary
   git repositories through the same runner-owned control boundary;
+- explicit wiki publication can now target resolved non-primary git
+  repositories through the same runner-owned control boundary;
 - richer source/wiki mutation endpoints, richer cache policy, and artifact
   restore/promotion still need projection-backed or backend-resolved
   replacement.
@@ -589,6 +594,8 @@ Implementation record:
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
+- [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
+- [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 
 Verification:
 

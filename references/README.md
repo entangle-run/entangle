@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
+[380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -119,7 +119,10 @@ catalog/auth/adapter wiring tests without live model credentials, and
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
 policy-gated publication to non-primary repositories while keeping the git push
-inside the assigned runner boundary.
+inside the assigned runner boundary. Runner-owned wiki publication commands can
+now carry the same generic git target selector, allowing operator-requested
+publication to resolved non-primary repositories without giving Host runner
+filesystem access.
 Runtime-context runner startup and the Human Interface Runtime now also support
 mounted-file identity secret delivery, matching the shared secret-delivery
 contract and generic runner join path.
@@ -512,6 +515,8 @@ files are the active federated redesign pack.
 377. [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 378. [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 379. [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
+380. [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
+381. [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 
 ## Role of this corpus
 

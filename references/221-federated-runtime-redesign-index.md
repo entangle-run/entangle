@@ -179,6 +179,8 @@ same-machine slice records.
 - [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 - [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 - [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
+- [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
+- [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 
 ## Audited Scope
 
@@ -448,9 +450,10 @@ The repository is not fully federated:
   request path without restoring direct Host workspace mutation. Operators can
   also request explicit wiki repository publication through the Host-signed
   `runtime.wiki.publish` control command; the assigned runner syncs and
-  publishes its runner-owned wiki repository to the primary git target,
-  persists the artifact record, and emits `artifact.ref` projection evidence
-  without Host filesystem access;
+  publishes its runner-owned wiki repository to the primary git target by
+  default or to an explicit resolved git target selector, persists the artifact
+  record, and emits `artifact.ref` projection evidence without Host filesystem
+  access;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -561,11 +564,12 @@ for delegated sessions without copying transcripts.
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact
     previews, and projected memory/wiki read previews now project through
-    observed refs; source-history publish/replay and primary wiki publication
-    requests now use Host-signed runner-executed control commands; explicit
-    source-history publication can also target policy-gated non-primary git
-    repositories. Complete source/wiki mutation services and richer memory
-    promotion remain open.
+    observed refs; source-history publish/replay and wiki publication requests
+    now use Host-signed runner-executed control commands; explicit
+    source-history publication can target policy-gated non-primary git
+    repositories, and explicit wiki publication can target a resolved git
+    repository selector from the runner's artifact context. Complete
+    source/wiki mutation services and richer memory promotion remain open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.
@@ -644,8 +648,9 @@ artifact inspection currently remains through runner-owned refs plus signed
 projection, and artifact mutation must return as runner-owned protocol
 behavior. Explicit wiki repository publication has returned as the Host-signed
 `runtime.wiki.publish` control command: the owning runner syncs and publishes
-its wiki repository to the primary git target, persists the artifact record,
-and emits `artifact.ref` evidence. Session cancellation now uses signed
+its wiki repository to the primary git target by default or to an explicit
+resolved git target selector, persists the artifact record, and emits
+`artifact.ref` evidence. Session cancellation now uses signed
 `runtime.session.cancel` control commands for accepted federated assignments,
 with local cancellation files retained only as fallback compatibility.
 Source-history publication retry now has a Host-signed
@@ -659,7 +664,8 @@ assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed
 `sourceHistoryReplays` with Host API, host-client, CLI, and Studio summary
 surfaces. Explicit wiki publication now has Host API, host-client, CLI, and
-Studio request surfaces over the same control boundary. Per-assignment
+Studio request surfaces over the same control boundary, including optional git
+target selectors for non-primary repositories. Per-assignment
 timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection. Public deep
 runtime reads now avoid Host-local runtime files for accepted federated

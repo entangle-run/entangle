@@ -82,6 +82,7 @@ import {
   runtimeSourceHistoryPublishRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
+  runtimeWikiPublishRequestSchema,
   sessionCancellationRequestRecordSchema,
   sessionCancellationResponseSchema,
   resolveEffectiveAgentRuntime,
@@ -770,7 +771,10 @@ describe("federated runtime contracts", () => {
         requestedBy: "operator-main",
         retryFailedPublication: true,
         runnerId: "runner-alpha",
-        runnerPubkey
+        runnerPubkey,
+        target: {
+          repositoryName: "wiki-public"
+        }
       }
     });
 
@@ -791,6 +795,11 @@ describe("federated runtime contracts", () => {
       "runtime.source_history.replay"
     );
     expect(wikiPublish.payload.eventType).toBe("runtime.wiki.publish");
+    expect(wikiPublish.payload).toMatchObject({
+      target: {
+        repositoryName: "wiki-public"
+      }
+    });
   });
 
   it("rejects control and observation events signed by the wrong entity", () => {
@@ -2237,6 +2246,16 @@ describe("source change candidate host API contracts", () => {
         }
       }).target?.repositoryName
     ).toBe("graph-alpha-public");
+    expect(
+      runtimeWikiPublishRequestSchema.parse({
+        reason: "Publish wiki to a shared repository.",
+        requestedBy: "operator-alpha",
+        retryFailedPublication: true,
+        target: {
+          repositoryName: "wiki-public"
+        }
+      }).target?.repositoryName
+    ).toBe("wiki-public");
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {

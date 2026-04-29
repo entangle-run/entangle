@@ -11,7 +11,25 @@ export const gitRepositoryTargetSchema = z.object({
   transportKind: z.enum(["ssh", "https", "file"])
 });
 
+export const gitRepositoryTargetSelectorSchema = z
+  .object({
+    gitServiceRef: identifierSchema.optional(),
+    namespace: identifierSchema.optional(),
+    repositoryName: identifierSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (!value.gitServiceRef && !value.namespace && !value.repositoryName) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Git repository target selector must include at least one selector."
+      });
+    }
+  });
+
 export type GitRepositoryTarget = z.infer<typeof gitRepositoryTargetSchema>;
+export type GitRepositoryTargetSelector = z.infer<
+  typeof gitRepositoryTargetSelectorSchema
+>;
 
 export function buildGitRemoteUrl(input: {
   namespace: string;

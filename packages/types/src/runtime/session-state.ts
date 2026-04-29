@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { artifactPublicationSchema } from "../artifacts/artifact-ref.js";
+import { gitRepositoryTargetSelectorSchema } from "../artifacts/git-repository-target.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import {
   policyOperationSchema,
@@ -259,21 +260,8 @@ export const sourceHistoryPublicationRecordSchema = z.object({
   targetRepositoryName: identifierSchema.optional()
 });
 
-export const sourceHistoryPublicationTargetSchema = z
-  .object({
-    gitServiceRef: identifierSchema.optional(),
-    namespace: identifierSchema.optional(),
-    repositoryName: identifierSchema.optional()
-  })
-  .superRefine((value, context) => {
-    if (!value.gitServiceRef && !value.namespace && !value.repositoryName) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Source-history publication target must include at least one selector."
-      });
-    }
-  });
+export const sourceHistoryPublicationTargetSchema =
+  gitRepositoryTargetSelectorSchema;
 
 export const sourceChangeCandidateRecordSchema = z.object({
   application: sourceChangeCandidateApplicationRecordSchema.optional(),

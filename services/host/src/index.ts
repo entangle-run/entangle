@@ -19,6 +19,7 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  type GitRepositoryTargetSelector,
   type RuntimeAssignmentRecord,
   type SourceHistoryPublicationTarget,
   type SessionCancellationMutationRequest,
@@ -329,6 +330,7 @@ type HostFederatedAssignmentPublisher = {
     relayUrls: string[];
     requestedBy?: string;
     retryFailedPublication?: boolean;
+    target?: GitRepositoryTargetSelector;
   }): Promise<unknown>;
 };
 
@@ -789,6 +791,7 @@ async function publishRuntimeWikiPublishCommandFromHost(
     reason?: string;
     requestedBy?: string;
     retryFailedPublication?: boolean;
+    target?: GitRepositoryTargetSelector;
   }
 ): Promise<string | undefined> {
   if (
@@ -809,7 +812,8 @@ async function publishRuntimeWikiPublishCommandFromHost(
     ...(input.reason ? { reason: input.reason } : {}),
     relayUrls: options.federatedControlRelayUrls,
     ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
-    retryFailedPublication: input.retryFailedPublication ?? false
+    retryFailedPublication: input.retryFailedPublication ?? false,
+    ...(input.target ? { target: input.target } : {})
   });
 
   return commandId;
@@ -2319,7 +2323,8 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         assignment,
         ...(body.reason ? { reason: body.reason } : {}),
         ...(body.requestedBy ? { requestedBy: body.requestedBy } : {}),
-        retryFailedPublication: body.retryFailedPublication
+        retryFailedPublication: body.retryFailedPublication,
+        ...(body.target ? { target: body.target } : {})
       });
 
       if (!commandId) {

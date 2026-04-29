@@ -4532,3 +4532,19 @@ non-primary publication when policy requires it, performs the push from
 runner-owned state, and emits the normal projected artifact/source-history
 evidence. Focused schema, Host, host-client, runner, Studio, typecheck, and
 lint gates passed for the touched scope.
+
+## [2026-04-29] implementation | Added target-aware wiki publication
+
+Added `references/380-runner-owned-wiki-target-publication-slice.md`.
+Host-signed `runtime.wiki.publish` commands can now carry the same generic git
+target selector used by explicit source-history publication.
+
+Host, CLI, Studio, the federated control plane, joined runner command routing,
+and `RunnerService` preserve the selector. The assigned runner resolves the
+target from its effective artifact context, publishes the wiki repository from
+runner-owned state, preserves the existing primary artifact id shape, and adds
+resolved target identity to non-primary wiki publication artifact ids. Focused
+schema, Host, host-client, runner, Studio, global typecheck, and global lint
+gates passed for the touched scope. The federated process-runner smoke also
+passed over the live local relay, including Host-signed wiki publication on the
+primary target, two User Node runners, and filesystem isolation.

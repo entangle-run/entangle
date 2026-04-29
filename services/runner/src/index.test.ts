@@ -409,7 +409,10 @@ function buildRuntimeWikiPublishEvent(
       requestedBy: "operator-main",
       retryFailedPublication: true,
       runnerId: assignment.runnerId,
-      runnerPubkey: runnerPublicKey
+      runnerPubkey: runnerPublicKey,
+      target: {
+        repositoryName: "wiki-public"
+      }
     }
   };
 }
@@ -2404,7 +2407,7 @@ describe("runner runtime context", () => {
             },
             publishWikiRepository: (request) => {
               runtimeWikiPublications.push(
-                `${request.retryFailedPublication ? "retry" : "publish"}:${request.requestedBy ?? "unknown"}`
+                `${request.retryFailedPublication ? "retry" : "publish"}:${request.requestedBy ?? "unknown"}:${request.target?.repositoryName ?? "primary"}`
               );
               return Promise.resolve({
                 artifactId: "wiki-worker-it-abc123",
@@ -2459,7 +2462,9 @@ describe("runner runtime context", () => {
     expect(runtimeSourceHistoryReplays).toEqual([
       "source-history-alpha:replay-source-history-alpha:approval-source-history-replay-alpha"
     ]);
-    expect(runtimeWikiPublications).toEqual(["retry:operator-main"]);
+    expect(runtimeWikiPublications).toEqual([
+      "retry:operator-main:wiki-public"
+    ]);
     expect(
       transport.observations.filter(
         (payload) =>

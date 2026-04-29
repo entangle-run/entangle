@@ -5,9 +5,13 @@ import type {
   ArtifactRecord,
   EffectiveRuntimeContext,
   GitRepositoryTarget,
+  GitRepositoryTargetSelector,
   MemoryRepositorySyncOutcome
 } from "@entangle/types";
-import { artifactRecordSchema } from "@entangle/types";
+import {
+  artifactRecordSchema,
+  resolveGitRepositoryTargetForArtifactLocator
+} from "@entangle/types";
 import { buildGitCommandEnvForRemoteOperation } from "./artifact-backend.js";
 import type { RunnerStatePaths } from "./state-store.js";
 import {
@@ -209,9 +213,22 @@ function sanitizeIdentifier(input: string): string {
 
 function buildWikiPublicationArtifactId(input: {
   commit: string;
+  isPrimaryTarget: boolean;
   nodeId: string;
+  target: GitRepositoryTarget;
 }): string {
-  return `wiki-${sanitizeIdentifier(input.nodeId)}-${input.commit.slice(0, 12)}`;
+  const base = `wiki-${sanitizeIdentifier(input.nodeId)}-${input.commit.slice(0, 12)}`;
+
+  if (input.isPrimaryTarget) {
+    return base;
+  }
+
+  return [
+    base,
+    sanitizeIdentifier(input.target.gitServiceRef),
+    sanitizeIdentifier(input.target.namespace),
+    sanitizeIdentifier(input.target.repositoryName)
+  ].join("-");
 }
 
 function buildWikiPublicationBranch(nodeId: string): string {
@@ -259,13 +276,16 @@ function buildWikiPublicationArtifactRecord(input: {
   branchName: string;
   commit: string;
   context: EffectiveRuntimeContext;
+  isPrimaryTarget: boolean;
   repositoryRoot: string;
   target: GitRepositoryTarget;
   timestamp: string;
 }): ArtifactRecord {
   const artifactId = buildWikiPublicationArtifactId({
     commit: input.commit,
-    nodeId: input.context.binding.node.nodeId
+    isPrimaryTarget: input.isPrimaryTarget,
+    nodeId: input.context.binding.node.nodeId,
+    target: input.target
   });
 
   return artifactRecordSchema.parse({
@@ -296,6 +316,91 @@ function buildWikiPublicationArtifactRecord(input: {
     },
     updatedAt: input.timestamp
   });
+}
+
+function publicationTargetsEqual(
+  left: GitRepositoryTarget | undefined,
+  right: GitRepositoryTarget | undefined
+): boolean {
+  return (
+    !!left &&
+    !!right &&
+    left.gitServiceRef === right.gitServiceRef &&
+    left.namespace === right.namespace &&
+    left.repositoryName === right.repositoryName
+  );
+}
+
+function resolveWikiPublicationTarget(input: {
+  context: EffectiveRuntimeContext;
+  target?: GitRepositoryTargetSelector | undefined;
+}):
+  | {
+      isPrimaryTarget: boolean;
+      target: GitRepositoryTarget;
+    }
+  | {
+      reason: string;
+    } {
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  if (!input.target) {
+    if (!primaryTarget) {
+      return {
+        reason:
+          `Runtime '${input.context.binding.node.nodeId}' has no primary git repository target.`
+      };
+    }
+
+    return {
+      isPrimaryTarget: true,
+      target: primaryTarget
+    };
+  }
+
+  const gitServiceRef =
+    input.target.gitServiceRef ??
+    primaryTarget?.gitServiceRef ??
+    input.context.artifactContext.primaryGitServiceRef;
+  const namespace =
+    input.target.namespace ??
+    primaryTarget?.namespace ??
+    input.context.artifactContext.defaultNamespace;
+  const repositoryName =
+    input.target.repositoryName ?? primaryTarget?.repositoryName;
+
+  if (!gitServiceRef || !namespace || !repositoryName) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' could not resolve wiki publication target ` +
+        "because gitServiceRef, namespace, and repositoryName are required after defaults are applied."
+    };
+  }
+
+  const target = resolveGitRepositoryTargetForArtifactLocator({
+    artifactContext: input.context.artifactContext,
+    locator: {
+      branch: "target-resolution",
+      commit: "target-resolution",
+      gitServiceRef,
+      namespace,
+      path: ".",
+      repositoryName
+    }
+  });
+
+  if (!target) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' could not resolve wiki git publication target ` +
+        `'${gitServiceRef}/${namespace}/${repositoryName}' from its artifact context.`
+    };
+  }
+
+  return {
+    isPrimaryTarget: publicationTargetsEqual(target, primaryTarget),
+    target
+  };
 }
 
 async function publishWikiArtifactRecord(input: {
@@ -454,13 +559,14 @@ export type WikiRepositoryPublicationResult =
       sync?: MemoryRepositorySyncOutcome;
     };
 
-export async function publishWikiRepositoryToPrimaryGitTarget(input: {
+export async function publishWikiRepositoryToGitTarget(input: {
   context: EffectiveRuntimeContext;
   reason?: string;
   requestedAt: string;
   requestedBy?: string;
   retryFailedPublication?: boolean;
   statePaths: RunnerStatePaths;
+  target?: GitRepositoryTargetSelector | undefined;
 }): Promise<WikiRepositoryPublicationResult> {
   const repositoryRoot = input.context.workspace.wikiRepositoryRoot;
 
@@ -493,22 +599,26 @@ export async function publishWikiRepositoryToPrimaryGitTarget(input: {
     };
   }
 
-  const target = input.context.artifactContext.primaryGitRepositoryTarget;
+  const resolvedTarget = resolveWikiPublicationTarget({
+    context: input.context,
+    ...(input.target ? { target: input.target } : {})
+  });
 
-  if (!target) {
+  if ("reason" in resolvedTarget) {
     return {
       published: false,
-      reason:
-        `Runtime '${input.context.binding.node.nodeId}' has no primary git repository target.`,
+      reason: resolvedTarget.reason,
       sync
     };
   }
 
+  const target = resolvedTarget.target;
   const branchName = buildWikiPublicationBranch(input.context.binding.node.nodeId);
   const localArtifact = buildWikiPublicationArtifactRecord({
     branchName,
     commit,
     context: input.context,
+    isPrimaryTarget: resolvedTarget.isPrimaryTarget,
     repositoryRoot,
     target,
     timestamp: input.requestedAt

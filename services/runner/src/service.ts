@@ -18,6 +18,7 @@ import type {
   EngineTurnOutcome,
   EffectiveRuntimeContext,
   EntangleA2AMessage,
+  GitRepositoryTargetSelector,
   MemorySynthesisOutcome,
   RunnerPhase,
   SourceChangeCandidateRecord,
@@ -94,7 +95,7 @@ import {
   replaySourceHistoryToWorkspace
 } from "./source-history.js";
 import {
-  publishWikiRepositoryToPrimaryGitTarget,
+  publishWikiRepositoryToGitTarget,
   syncWikiRepository
 } from "./wiki-repository.js";
 import type {
@@ -1945,18 +1946,20 @@ export class RunnerService {
     requestedAt?: string;
     requestedBy?: string;
     retryFailedPublication?: boolean;
+    target?: GitRepositoryTargetSelector;
   }): Promise<RunnerWikiPublicationCommandResult> {
     const statePaths =
       this.statePaths ??
       (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
     this.statePaths = statePaths;
-    const publication = await publishWikiRepositoryToPrimaryGitTarget({
+    const publication = await publishWikiRepositoryToGitTarget({
       context: this.context,
       ...(input.reason ? { reason: input.reason } : {}),
       requestedAt: input.requestedAt ?? new Date().toISOString(),
       ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
       retryFailedPublication: input.retryFailedPublication ?? false,
-      statePaths
+      statePaths,
+      ...(input.target ? { target: input.target } : {})
     });
 
     if (!publication.published) {

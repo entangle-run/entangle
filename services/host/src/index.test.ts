@@ -95,7 +95,8 @@ import {
   sourceHistoryRecordSchema,
   type RuntimeAssignmentRecord,
   type SessionCancellationRequestRecord,
-  type SourceHistoryPublicationTarget
+  type SourceHistoryPublicationTarget,
+  type GitRepositoryTargetSelector
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -190,6 +191,7 @@ type TestFederatedAssignmentPublisher = {
     relayUrls: string[];
     requestedBy?: string;
     retryFailedPublication: boolean;
+    target?: GitRepositoryTargetSelector;
   }): Promise<unknown>;
 };
 
@@ -7197,6 +7199,7 @@ describe("buildHostServer", () => {
       relayUrls: string[];
       requestedBy?: string;
       retryFailedPublication: boolean;
+      target?: GitRepositoryTargetSelector;
     }> = [];
     const server = await createTestServer({
       federatedControlPlane: {
@@ -7233,7 +7236,8 @@ describe("buildHostServer", () => {
             ...(input.reason ? { reason: input.reason } : {}),
             relayUrls: input.relayUrls,
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
-            retryFailedPublication: input.retryFailedPublication
+            retryFailedPublication: input.retryFailedPublication,
+            ...(input.target ? { target: input.target } : {})
           });
           return Promise.resolve();
         }
@@ -7443,7 +7447,10 @@ describe("buildHostServer", () => {
         payload: {
           reason: "Operator requested wiki publication retry.",
           requestedBy: "operator-main",
-          retryFailedPublication: true
+          retryFailedPublication: true,
+          target: {
+            repositoryName: "wiki-public"
+          }
         },
         url: "/v1/runtimes/worker-it/wiki-repository/publish"
       });
@@ -7466,7 +7473,10 @@ describe("buildHostServer", () => {
         reason: "Operator requested wiki publication retry.",
         relayUrls: ["ws://relay.example"],
         requestedBy: "operator-main",
-        retryFailedPublication: true
+        retryFailedPublication: true,
+        target: {
+          repositoryName: "wiki-public"
+        }
       });
     } finally {
       await server.close();

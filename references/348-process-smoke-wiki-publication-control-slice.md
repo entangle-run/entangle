@@ -8,8 +8,9 @@ Explicit wiki repository publication is now a federated control command:
 - Host signs and publishes `runtime.wiki.publish` to the accepted runner
   assignment;
 - the owning runner syncs its runner-local `wiki-repository`, pushes the
-  snapshot to the primary git target, persists the publication artifact in
-  runner-owned state, and emits signed `artifact.ref` evidence;
+  snapshot to the primary git target by default or to an explicit resolved git
+  target selector, persists the publication artifact in runner-owned state, and
+  emits signed `artifact.ref` evidence;
 - Host projection exposes the published artifact ref without reading or
   pushing runner-local files.
 
@@ -22,7 +23,10 @@ with a real Host process, joined runner process, relay, and git backend.
 The process smoke must prove that explicit wiki publication works the same way
 when Host and runner are separate OS processes with separate state roots. The
 smoke should verify request acceptance, runner-produced projection evidence,
-and the remote git branch head.
+and the remote git branch head. This smoke currently proves the default
+primary-target path; non-primary target selection is covered by focused runner,
+contract, Host, and Studio tests in
+`380-runner-owned-wiki-target-publication-slice.md`.
 
 ## Impacted Modules/Files
 

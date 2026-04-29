@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { gitRepositoryTargetSelectorSchema } from "../artifacts/git-repository-target.js";
 import { nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
@@ -206,7 +207,8 @@ export const runtimeWikiPublishPayloadSchema = controlPayloadBaseSchema.extend({
   nodeId: identifierSchema,
   reason: nonEmptyStringSchema.optional(),
   requestedBy: identifierSchema.optional(),
-  retryFailedPublication: z.boolean().default(false)
+  retryFailedPublication: z.boolean().default(false),
+  target: gitRepositoryTargetSelectorSchema.optional()
 });
 
 export const entangleControlEventPayloadSchema = z.discriminatedUnion(

@@ -29,7 +29,7 @@ The runner:
 - receives `runtime.wiki.publish`;
 - syncs its local wiki repository snapshot;
 - publishes the snapshot to the node's primary git repository target when one
-  is configured;
+  is configured, or to an explicit git target selector in the command payload;
 - records the publication artifact in runner-owned state;
 - emits signed `artifact.ref` observation evidence for Host projection.
 
@@ -66,6 +66,7 @@ repository.
 
 - Add `runtime.wiki.publish` to `entangle.control.v1`.
 - Add Host API request/response schemas for wiki publication command requests.
+- Allow wiki publication requests to carry optional git target selectors.
 - Add a Host route:
   `POST /v1/runtimes/:nodeId/wiki-repository/publish`.
 - Make that route require an accepted federated runner assignment and an active
@@ -74,7 +75,7 @@ repository.
 - Add host-client and CLI request surfaces for the command.
 - Extend the joined runner control handler to accept `runtime.wiki.publish`.
 - Add runner service behavior that syncs the wiki repository, publishes it to
-  the primary git target, persists the resulting artifact record, and emits
+  the resolved git target, persists the resulting artifact record, and emits
   `artifact.ref` evidence.
 - Keep publication state in runner-owned artifact records. Host projection
   receives only signed observation evidence.
@@ -88,8 +89,8 @@ repository.
 - host-client test for the request URL, method, body, and response validation.
 - runner join-service test proving accepted assignments dispatch the command to
   the active runtime handle.
-- runner wiki repository test proving a snapshot can be pushed to a primary git
-  target and persisted as a published artifact record.
+- runner wiki repository test proving a snapshot can be pushed to primary and
+  non-primary git targets and persisted as published artifact records.
 - Typecheck and lint for `@entangle/types`, `@entangle/host-client`,
   `@entangle/host`, `@entangle/runner`, and `@entangle/cli`.
 
@@ -111,8 +112,10 @@ The route is intentionally command-oriented. It returns a request status and
 command id, not a publication artifact. The artifact arrives later through
 runner-signed `artifact.ref` projection.
 
-The command publishes only to the runtime context's primary git repository
-target. Non-primary wiki promotion and richer repo-per-node memory topology
+By default, the command publishes to the runtime context's primary git
+repository target. `380-runner-owned-wiki-target-publication-slice.md` adds
+optional target selectors for operator-requested non-primary publication.
+Richer repo-per-node memory topology and participant-triggered wiki promotion
 remain future work.
 
 Follow-up process-boundary smoke coverage is recorded in
@@ -130,16 +133,18 @@ Follow-up process-boundary smoke coverage is recorded in
 - Risk: Host route naming resembles the removed direct route.
   Mitigation: implementation and docs define it as a signed control command;
   Host does not read or push runner-local wiki state.
-- Risk: only primary git target is supported.
-  Mitigation: scope matches source-history control parity and keeps
-  non-primary publication for a later bounded slice.
+- Risk: non-primary publication can expose node memory to the wrong git
+  repository.
+  Mitigation: non-primary selection is available only through the
+  Host-authority command path, and the runner resolves selectors through the
+  effective artifact context rather than accepting raw remotes.
 
 ## Open Questions
 
 - Should wiki publication also be requestable by signed User Node A2A messages
   when graph policy allows participant-triggered memory publication?
 - Should each node wiki become a first-class long-lived remote repository, or
-  remain a runner-local repository with published refs into the graph primary
-  artifact backend?
+  remain a runner-local repository with published refs into selected graph
+  artifact backends?
 - Should successful wiki publication emit a dedicated `wiki_repository.published`
   observation in addition to the generic `artifact.ref` evidence?

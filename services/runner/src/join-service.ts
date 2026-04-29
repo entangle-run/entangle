@@ -3,6 +3,7 @@ import type {
   AssignmentLease,
   EntangleControlEvent,
   EntangleObservationEventPayload,
+  GitRepositoryTargetSelector,
   RuntimeAssignmentRecord,
   RunnerJoinConfig,
   RunnerJoinStatus,
@@ -99,6 +100,7 @@ export type RunnerAssignmentRuntimeHandle = {
     requestedAt?: string;
     requestedBy?: string;
     retryFailedPublication?: boolean;
+    target?: GitRepositoryTargetSelector;
   }): Promise<{
     artifactId?: string;
     message?: string;
@@ -818,7 +820,8 @@ export class RunnerJoinService {
         ...(payload.reason ? { reason: payload.reason } : {}),
         requestedAt: payload.issuedAt,
         ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {}),
-        retryFailedPublication: payload.retryFailedPublication
+        retryFailedPublication: payload.retryFailedPublication,
+        ...(payload.target ? { target: payload.target } : {})
       });
 
       if (result.publicationState === "failed") {

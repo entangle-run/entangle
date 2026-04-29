@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanupRuntimeFixtures, createRuntimeFixture } from "./test-fixtures.js";
 import {
-  publishWikiRepositoryToPrimaryGitTarget,
+  publishWikiRepositoryToGitTarget,
   syncWikiRepository
 } from "./wiki-repository.js";
 import {
@@ -90,7 +90,7 @@ describe("wiki repository sync", () => {
     });
   });
 
-  it("publishes a runner-owned wiki snapshot to the primary git target", async () => {
+  it("publishes a runner-owned wiki snapshot to git targets", async () => {
     const { context, remoteRepositoryPath } = await createRuntimeFixture({
       remotePublication: "bare_repo"
     });
@@ -101,6 +101,15 @@ describe("wiki repository sync", () => {
       throw new Error("Expected a remote repository path.");
     }
 
+    const publicRepositoryPath = path.join(
+      path.dirname(remoteRepositoryPath),
+      "wiki-public.git"
+    );
+    const publicInit = spawnSync("git", ["init", "--bare", publicRepositoryPath], {
+      encoding: "utf8"
+    });
+    expect(publicInit.status).toBe(0);
+
     await mkdir(path.join(wikiRoot, "summaries"), { recursive: true });
     await writeFile(
       path.join(wikiRoot, "summaries", "working-context.md"),
@@ -108,7 +117,7 @@ describe("wiki repository sync", () => {
       "utf8"
     );
 
-    const publication = await publishWikiRepositoryToPrimaryGitTarget({
+    const publication = await publishWikiRepositoryToGitTarget({
       context,
       requestedAt: "2026-04-28T10:00:00.000Z",
       requestedBy: "operator-main",
@@ -155,5 +164,50 @@ describe("wiki repository sync", () => {
     );
     expect(remoteHead.status).toBe(0);
     expect(remoteHead.stdout.trim()).toBe(publication.artifact.ref.locator.commit);
+
+    const publicPublication = await publishWikiRepositoryToGitTarget({
+      context,
+      requestedAt: "2026-04-28T10:05:00.000Z",
+      requestedBy: "operator-main",
+      statePaths,
+      target: {
+        repositoryName: "wiki-public"
+      }
+    });
+
+    expect(publicPublication).toMatchObject({
+      artifact: {
+        ref: {
+          locator: {
+            repositoryName: "wiki-public"
+          },
+          status: "published"
+        }
+      },
+      published: true
+    });
+
+    if (!publicPublication.published) {
+      throw new Error("Expected public wiki publication to succeed.");
+    }
+
+    expect(publicPublication.artifact.ref.artifactId).not.toBe(
+      publication.artifact.ref.artifactId
+    );
+
+    const publicRemoteHead = spawnSync(
+      "git",
+      [
+        "--git-dir",
+        publicRepositoryPath,
+        "rev-parse",
+        "refs/heads/worker-it/wiki-repository"
+      ],
+      { encoding: "utf8" }
+    );
+    expect(publicRemoteHead.status).toBe(0);
+    expect(publicRemoteHead.stdout.trim()).toBe(
+      publicPublication.artifact.ref.locator.commit
+    );
   });
 });

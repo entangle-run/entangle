@@ -651,7 +651,10 @@ describe("Host federated control plane", () => {
       reason: "Publish wiki.",
       relayUrls,
       requestedBy: "operator-main",
-      retryFailedPublication: true
+      retryFailedPublication: true,
+      target: {
+        repositoryName: "wiki-public"
+      }
     });
 
     expect(transport.publishedControlEvents.map((event) => event.payload)).toEqual([
@@ -744,7 +747,10 @@ describe("Host federated control plane", () => {
         requestedBy: "operator-main",
         retryFailedPublication: true,
         runnerId: "runner-alpha",
-        runnerPubkey
+        runnerPubkey,
+        target: {
+          repositoryName: "wiki-public"
+        }
       })
     ]);
     expect(transport.publishedControlEvents[3]?.payload).toMatchObject({

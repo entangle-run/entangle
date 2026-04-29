@@ -17,12 +17,20 @@ describe("runtime wiki publication Studio helpers", () => {
       buildRuntimeWikiPublicationRequest({
         reason: " publish current wiki snapshot ",
         requestedBy: " operator-main ",
-        retryFailedPublication: true
+        retryFailedPublication: true,
+        targetGitServiceRef: " gitea ",
+        targetNamespace: " team-alpha ",
+        targetRepositoryName: " wiki-public "
       })
     ).toEqual({
       reason: "publish current wiki snapshot",
       requestedBy: "operator-main",
-      retryFailedPublication: true
+      retryFailedPublication: true,
+      target: {
+        gitServiceRef: "gitea",
+        namespace: "team-alpha",
+        repositoryName: "wiki-public"
+      }
     });
   });
 

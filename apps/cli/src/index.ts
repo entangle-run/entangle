@@ -3562,6 +3562,9 @@ hostRuntimesCommand
     "--retry-failed-publication",
     "Retry wiki publication when the previous artifact publication failed."
   )
+  .option("--target-git-service <serviceRef>", "Git service ref for the publication target.")
+  .option("--target-namespace <namespace>", "Git namespace for the publication target.")
+  .option("--target-repository <repositoryName>", "Git repository for the publication target.")
   .description(
     "Ask the assigned runner to publish its wiki repository through federated control."
   )
@@ -3572,14 +3575,34 @@ hostRuntimesCommand
         reason?: string;
         requestedBy?: string;
         retryFailedPublication?: boolean;
+        targetGitService?: string;
+        targetNamespace?: string;
+        targetRepository?: string;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      const target =
+        options.targetGitService ||
+        options.targetNamespace ||
+        options.targetRepository
+          ? {
+              ...(options.targetGitService
+                ? { gitServiceRef: options.targetGitService }
+                : {}),
+              ...(options.targetNamespace
+                ? { namespace: options.targetNamespace }
+                : {}),
+              ...(options.targetRepository
+                ? { repositoryName: options.targetRepository }
+                : {})
+            }
+          : undefined;
       const request = runtimeWikiPublishRequestSchema.parse({
         ...(options.reason ? { reason: options.reason } : {}),
         ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
-        retryFailedPublication: options.retryFailedPublication ?? false
+        retryFailedPublication: options.retryFailedPublication ?? false,
+        ...(target ? { target } : {})
       });
       printJson(await client.publishRuntimeWikiRepository(nodeId, request));
     }

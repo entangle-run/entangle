@@ -3073,7 +3073,10 @@ describe("createHostClient", () => {
       client.publishRuntimeWikiRepository("worker-it", {
         reason: "Publish current wiki repository snapshot.",
         requestedBy: "operator-main",
-        retryFailedPublication: true
+        retryFailedPublication: true,
+        target: {
+          repositoryName: "wiki-public"
+        }
       })
     ).resolves.toMatchObject({
       assignmentId: "assignment-alpha",
@@ -3086,7 +3089,10 @@ describe("createHostClient", () => {
         body: JSON.stringify({
           reason: "Publish current wiki repository snapshot.",
           requestedBy: "operator-main",
-          retryFailedPublication: true
+          retryFailedPublication: true,
+          target: {
+            repositoryName: "wiki-public"
+          }
         }),
         method: "POST",
         url: "http://entangle-host.test/v1/runtimes/worker-it/wiki-repository/publish"

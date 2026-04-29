@@ -137,8 +137,9 @@ the control command; the runner performs git work from runner-owned state.
   Mitigation: the action only requests Host-signed control; runner policy and
   approval validation still gate execution.
 
-## Open Questions
+## Follow-Up Notes
 
-- Whether wiki publication should receive the same explicit target selector.
+- `380-runner-owned-wiki-target-publication-slice.md` applies the same generic
+  git target selector model to runner-owned wiki publication.
 - Whether source-history publication should support non-git artifact backends
   once the artifact backend abstraction grows beyond git.

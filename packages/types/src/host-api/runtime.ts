@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { artifactRecordSchema } from "../artifacts/artifact-ref.js";
 import { gitRepositoryProvisioningRecordSchema } from "../artifacts/git-repository-provisioning.js";
+import { gitRepositoryTargetSelectorSchema } from "../artifacts/git-repository-target.js";
 import {
   nostrPublicKeySchema,
   nostrSecretKeySchema,
@@ -387,7 +388,8 @@ export const runtimeSourceHistoryPublishResponseSchema = z.object({
 export const runtimeWikiPublishRequestSchema = z.object({
   reason: nonEmptyStringSchema.optional(),
   requestedBy: identifierSchema.optional(),
-  retryFailedPublication: z.boolean().default(false)
+  retryFailedPublication: z.boolean().default(false),
+  target: gitRepositoryTargetSelectorSchema.optional()
 });
 
 export const runtimeWikiPublishResponseSchema = z.object({

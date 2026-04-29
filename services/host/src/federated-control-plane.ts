@@ -1,6 +1,7 @@
 import type {
   EntangleControlEvent,
   EntangleObservationEvent,
+  GitRepositoryTargetSelector,
   RuntimeAssignmentRecord,
   SessionCancellationRequestRecord,
   RunnerTrustState,
@@ -533,6 +534,7 @@ export class HostFederatedControlPlane {
     relayUrls: string[];
     requestedBy?: string;
     retryFailedPublication?: boolean;
+    target?: GitRepositoryTargetSelector;
   }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
     return this.input.transport.publishControlEvent({
       ...(input.authRequired !== undefined
@@ -554,7 +556,8 @@ export class HostFederatedControlPlane {
         ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
         retryFailedPublication: input.retryFailedPublication ?? false,
         runnerId: input.assignment.runnerId,
-        runnerPubkey: input.assignment.runnerPubkey
+        runnerPubkey: input.assignment.runnerPubkey,
+        ...(input.target ? { target: input.target } : {})
       },
       relayUrls: input.relayUrls
     });

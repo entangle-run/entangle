@@ -7,7 +7,8 @@ control command:
 
 - Host publishes `runtime.wiki.publish` to the accepted runner assignment;
 - the assigned runner syncs and publishes its runner-owned wiki repository to
-  the primary git target;
+  the primary git target by default or to an explicit resolved git target
+  selector;
 - the runner persists the artifact record and emits signed `artifact.ref`
   projection evidence.
 
@@ -22,9 +23,10 @@ Host, but it must not publish a runner repository itself, infer local runner
 paths, or treat request acceptance as publication completion.
 
 The selected-runtime Runtime Memory panel should let an operator submit an
-optional reason, requester id, and failed-publication retry flag. The response
-is shown as a requested command. Completion evidence remains runner receipts,
-Host events, and projected `artifact.ref` records.
+optional reason, requester id, failed-publication retry flag, and partial git
+target selector. The response is shown as a requested command. Completion
+evidence remains runner receipts, Host events, and projected `artifact.ref`
+records.
 
 ## Impacted Modules/Files
 
@@ -44,8 +46,8 @@ Host events, and projected `artifact.ref` records.
 
 - Add Studio helper functions for wiki publication request drafts and
   requested-response summaries.
-- Add selected-runtime Runtime Memory form fields for reason, requester id, and
-  failed-publication retry.
+- Add selected-runtime Runtime Memory form fields for reason, requester id,
+  failed-publication retry, and optional git target selector values.
 - Call `host-client.publishRuntimeWikiRepository` from Studio.
 - Keep command request feedback separate from actual publication evidence.
 
@@ -90,5 +92,5 @@ explicitly submits the federated publication request.
 
 - Add projected artifact-ref filtering that highlights wiki publication
   artifacts directly beside the request form.
-- Decide whether Studio should later support non-primary wiki publication
-  targets once the protocol supports them.
+- Decide whether Studio should surface resolved target previews or policy
+  warnings before submitting non-primary wiki publication requests.

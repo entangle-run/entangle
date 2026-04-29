@@ -5983,6 +5983,48 @@ export function App() {
                             value={wikiPublicationDraft.requestedBy}
                           />
                         </label>
+                        <label className="field">
+                          <span>Target Service</span>
+                          <input
+                            disabled={pendingWikiPublication}
+                            onChange={(event) => {
+                              setWikiPublicationDraft((current) => ({
+                                ...current,
+                                targetGitServiceRef: event.target.value
+                              }));
+                            }}
+                            placeholder="default primary git service"
+                            value={wikiPublicationDraft.targetGitServiceRef}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Target Namespace</span>
+                          <input
+                            disabled={pendingWikiPublication}
+                            onChange={(event) => {
+                              setWikiPublicationDraft((current) => ({
+                                ...current,
+                                targetNamespace: event.target.value
+                              }));
+                            }}
+                            placeholder="default namespace"
+                            value={wikiPublicationDraft.targetNamespace}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Target Repository</span>
+                          <input
+                            disabled={pendingWikiPublication}
+                            onChange={(event) => {
+                              setWikiPublicationDraft((current) => ({
+                                ...current,
+                                targetRepositoryName: event.target.value
+                              }));
+                            }}
+                            placeholder="default primary repository"
+                            value={wikiPublicationDraft.targetRepositoryName}
+                          />
+                        </label>
                         <label className="toggle-field">
                           <input
                             checked={wikiPublicationDraft.retryFailedPublication}

@@ -135,8 +135,9 @@ The most accurate current description is:
 - explicit wiki repository publication is now a Host-signed
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the
-  primary git target and emits `artifact.ref` evidence, while CLI and Studio
-  request the same Host control path;
+  primary git target by default or to an explicit resolved git target selector
+  and emits `artifact.ref` evidence, while CLI and Studio request the same Host
+  control path;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -362,9 +363,10 @@ The repository now also contains the first real implementation baseline:
   required Host-readable runner filesystem state; explicit wiki publication
   now returns as a Host-signed `runtime.wiki.publish` command that the accepted
   runner executes from runner-owned wiki state, with CLI and Studio requesting
-  that same Host control path, publishing a primary-git artifact and emitting
-  signed `artifact.ref` evidence, and the process-boundary smoke now verifies
-  that request with a real joined runner by checking Host projection plus the
+  that same Host control path, publishing to the primary git target by default
+  or to an explicit resolved git target selector and emitting signed
+  `artifact.ref` evidence, and the process-boundary smoke now verifies that
+  request with a real joined runner by checking Host projection plus the
   primary git branch head. Public deep runtime reads for accepted federated
   assignments now ignore Host-local runtime files and use projected runner
   evidence instead, while non-federated adapter reads remain available. With
@@ -965,11 +967,11 @@ The current implementation-truth audit now lives in
   listed-file preview plus review, local source-history state, and first
   runner-owned source-history commit artifact publication with explicit
   non-primary target selection, bounded
-  artifact history/diff/preview inspection, and backend-cache history/diff for
-  projected git refs; the next git gaps are
-  protocol-owned artifact restore or source-change proposal flows, richer wiki
-  promotion beyond primary-git publication, source-history merge/reconcile
-  workflows, and explicit fallback or
+  artifact history/diff/preview inspection, backend-cache history/diff for
+  projected git refs, and explicit wiki target publication; the next git gaps
+  are protocol-owned artifact restore or source-change proposal flows, richer
+  wiki promotion policy and repository lifecycle behavior, source-history
+  merge/reconcile workflows, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea
