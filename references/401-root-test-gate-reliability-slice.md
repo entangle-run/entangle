@@ -39,9 +39,10 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Replace root `pnpm test` Turbo invocation with an explicit sequential
   workspace test runner script.
 - Keep Turbo for build/lint where it is not the observed hang point.
-- Run each package through `pnpm --dir <workspace> test` with inherited stdio
-  and package-specific timeouts instead of relying on a long shell `&&` chain
-  of `pnpm --filter` commands.
+- Run each workspace suite through `scripts/run-workspace-tests.mjs` with
+  inherited stdio, package-specific timeouts, direct local Vitest execution,
+  and filesystem-expanded `src/**/*.test.ts` file lists instead of relying on
+  Turbo, nested `pnpm`, shell globbing, or implicit Vitest discovery.
 - Add explicit Vitest fork pools for CLI and Studio package test scripts, and
   later move User Client to the threads pool after it reproduced the same
   no-output hang under forks in the root wrapper.
