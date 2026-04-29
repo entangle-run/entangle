@@ -133,9 +133,13 @@ describe("createHostClient", () => {
             body: JSON.stringify({
               completedAt: "2026-04-29T00:00:00.000Z",
               dryRun: true,
+              gitServiceRef: "gitea",
+              matchedRepositoryCount: 2,
               maxSizeBytes: 8192,
+              namespace: "team-alpha",
               olderThanSeconds: 3600,
               repositoryCount: 2,
+              repositoryName: "graph-alpha",
               retainedRepositoryCount: 1,
               retainedSizeBytes: 2048,
               status: "dry_run",
@@ -151,14 +155,21 @@ describe("createHostClient", () => {
     await expect(
       client.clearArtifactBackendCache({
         dryRun: true,
+        gitServiceRef: "gitea",
         maxSizeBytes: 8192,
+        namespace: "team-alpha",
+        repositoryName: "graph-alpha",
         olderThanSeconds: 3600
       })
     ).resolves.toMatchObject({
       dryRun: true,
+      gitServiceRef: "gitea",
+      matchedRepositoryCount: 2,
       maxSizeBytes: 8192,
+      namespace: "team-alpha",
       olderThanSeconds: 3600,
       repositoryCount: 2,
+      repositoryName: "graph-alpha",
       retainedRepositoryCount: 1,
       retainedSizeBytes: 2048,
       status: "dry_run"
@@ -166,6 +177,9 @@ describe("createHostClient", () => {
     expect(requests).toEqual([
       {
         body: JSON.stringify({
+          gitServiceRef: "gitea",
+          namespace: "team-alpha",
+          repositoryName: "graph-alpha",
           dryRun: true,
           maxSizeBytes: 8192,
           olderThanSeconds: 3600

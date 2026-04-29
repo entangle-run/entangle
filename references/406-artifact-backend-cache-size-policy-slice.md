@@ -106,3 +106,7 @@ Existing clients can ignore the new response fields.
 
 - Should future cache policy add per-backend selectors, automatic rebuild
   diagnostics, or access-time metadata for better eviction ordering?
+
+Per-backend target selectors are resolved by
+`409-artifact-backend-cache-target-policy-slice.md`; automatic rebuild
+diagnostics and access-time metadata remain future options.

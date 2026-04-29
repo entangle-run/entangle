@@ -13490,11 +13490,43 @@ async function buildArtifactBackendCacheStatus(timestamp: string) {
   }
 }
 
+function buildArtifactBackendCacheTargetPrefix(input: {
+  gitServiceRef?: string | undefined;
+  namespace?: string | undefined;
+  repositoryName?: string | undefined;
+}) {
+  if (!input.gitServiceRef) {
+    return undefined;
+  }
+
+  return sanitizeIdentifier(
+    [
+      input.gitServiceRef,
+      ...(input.namespace ? [input.namespace] : []),
+      ...(input.repositoryName ? [input.repositoryName] : [])
+    ].join("-")
+  );
+}
+
+function artifactBackendCacheEntryMatchesTarget(input: {
+  entryName: string;
+  targetPrefix?: string | undefined;
+}) {
+  return (
+    input.targetPrefix === undefined ||
+    input.entryName === input.targetPrefix ||
+    input.entryName.startsWith(`${input.targetPrefix}-`)
+  );
+}
+
 export async function clearArtifactBackendCache(
   input: {
     dryRun?: boolean | undefined;
+    gitServiceRef?: string | undefined;
     maxSizeBytes?: number | undefined;
+    namespace?: string | undefined;
     olderThanSeconds?: number | undefined;
+    repositoryName?: string | undefined;
   } = {}
 ) {
   const completedAt = new Date().toISOString();
@@ -13509,7 +13541,15 @@ export async function clearArtifactBackendCache(
     const entries = await readdir(artifactGitResolverCacheRoot, {
       withFileTypes: true
     });
-    const repositoryEntries = entries.filter((entry) => entry.isDirectory());
+    const cacheTargetPrefix = buildArtifactBackendCacheTargetPrefix(input);
+    const repositoryEntries = entries.filter(
+      (entry) =>
+        entry.isDirectory() &&
+        artifactBackendCacheEntryMatchesTarget({
+          entryName: entry.name,
+          targetPrefix: cacheTargetPrefix
+        })
+    );
     const repositoryCandidates = await Promise.all(
       repositoryEntries.map(async (entry) => {
         const repositoryPath = path.join(artifactGitResolverCacheRoot, entry.name);
@@ -13568,6 +13608,7 @@ export async function clearArtifactBackendCache(
     const repositoryPaths = repositoryCandidates
       .filter((candidate) => selectedRepositoryPaths.has(candidate.path))
       .map((candidate) => candidate.path);
+    const matchedRepositoryCount = repositoryCandidates.length;
     const retainedRepositoryCount =
       repositoryCandidates.length - repositoryPaths.length;
     const totalSizeBytes = repositoryCandidates
@@ -13585,11 +13626,19 @@ export async function clearArtifactBackendCache(
     return {
       completedAt,
       dryRun,
+      ...(input.gitServiceRef !== undefined
+        ? { gitServiceRef: input.gitServiceRef }
+        : {}),
+      matchedRepositoryCount,
       ...(input.maxSizeBytes !== undefined
         ? { maxSizeBytes: input.maxSizeBytes }
         : {}),
+      ...(input.namespace !== undefined ? { namespace: input.namespace } : {}),
       ...(input.olderThanSeconds !== undefined
         ? { olderThanSeconds: input.olderThanSeconds }
+        : {}),
+      ...(input.repositoryName !== undefined
+        ? { repositoryName: input.repositoryName }
         : {}),
       repositoryCount: repositoryPaths.length,
       retainedRepositoryCount,
@@ -13602,11 +13651,19 @@ export async function clearArtifactBackendCache(
       return {
         completedAt,
         dryRun,
+        ...(input.gitServiceRef !== undefined
+          ? { gitServiceRef: input.gitServiceRef }
+          : {}),
+        matchedRepositoryCount: 0,
         ...(input.maxSizeBytes !== undefined
           ? { maxSizeBytes: input.maxSizeBytes }
           : {}),
+        ...(input.namespace !== undefined ? { namespace: input.namespace } : {}),
         ...(input.olderThanSeconds !== undefined
           ? { olderThanSeconds: input.olderThanSeconds }
+          : {}),
+        ...(input.repositoryName !== undefined
+          ? { repositoryName: input.repositoryName }
           : {}),
         repositoryCount: 0,
         retainedRepositoryCount: 0,

@@ -4764,6 +4764,16 @@ command receipt entries together.
 This brings Studio's operator drilldown closer to CLI parity while keeping the
 surface Host-boundary-only and runner-filesystem-free.
 
+## [2026-04-29] implementation | Added artifact backend cache target pruning
+
+Added `references/409-artifact-backend-cache-target-policy-slice.md`. Host
+artifact backend cache clear requests now accept git service, namespace, and
+repository selectors, with namespace/repository validation tied to the service
+selector. Host applies clear, age, and max-size policies only to matched
+derived cache repositories, responses report `matchedRepositoryCount`, shared
+summaries include target scope, and CLI exposes `--git-service`, `--namespace`,
+and `--repository`.
+
 ## [2026-04-29] implementation | Added distributed proof verifier
 
 Added `references/408-distributed-proof-verifier-slice.md` and

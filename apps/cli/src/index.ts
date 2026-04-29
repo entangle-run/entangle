@@ -799,9 +799,18 @@ hostCommand
 hostCommand
   .command("artifact-backend-cache-clear")
   .option("--dry-run", "Inspect what would be cleared without deleting cache entries.")
+  .option("--git-service <gitServiceRef>", "Clear only cache entries for one git service.")
   .option(
     "--older-than-seconds <n>",
     "Clear only derived cache repositories older than this age."
+  )
+  .option(
+    "--namespace <namespace>",
+    "Clear only cache entries for one git namespace. Requires --git-service."
+  )
+  .option(
+    "--repository <repositoryName>",
+    "Clear only cache entries for one git repository. Requires --git-service and --namespace."
   )
   .option(
     "--max-size-bytes <n>",
@@ -813,8 +822,11 @@ hostCommand
     async (
       options: {
         dryRun?: boolean;
+        gitService?: string;
         maxSizeBytes?: string;
+        namespace?: string;
         olderThanSeconds?: string;
+        repository?: string;
         summary?: boolean;
       },
       command: Command
@@ -822,6 +834,7 @@ hostCommand
       const client = createCliHostClient(command);
       const response = await client.clearArtifactBackendCache({
         dryRun: options.dryRun,
+        ...(options.gitService ? { gitServiceRef: options.gitService } : {}),
         ...(options.maxSizeBytes
           ? {
               maxSizeBytes: parsePositiveIntegerOption(
@@ -830,6 +843,7 @@ hostCommand
               )
             }
           : {}),
+        ...(options.namespace ? { namespace: options.namespace } : {}),
         ...(options.olderThanSeconds
           ? {
               olderThanSeconds: parsePositiveIntegerOption(
@@ -837,7 +851,8 @@ hostCommand
                 "--older-than-seconds"
               )
             }
-          : {})
+          : {}),
+        ...(options.repository ? { repositoryName: options.repository } : {})
       });
       printJson(
         options.summary

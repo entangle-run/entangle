@@ -94,4 +94,6 @@ clients can ignore the new response fields.
 
 Max-size pruning is resolved by
 `406-artifact-backend-cache-size-policy-slice.md`. Future policy may still add
-per-backend selectors or automatic rebuild diagnostics.
+Per-backend target selectors are resolved by
+`409-artifact-backend-cache-target-policy-slice.md`. Future policy may still
+add automatic rebuild diagnostics.

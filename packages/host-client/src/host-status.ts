@@ -59,6 +59,20 @@ export function formatHostArtifactBackendCacheClearSummary(
       ? "1 repository"
       : `${response.repositoryCount} repositories`;
   const actionLabel = response.dryRun ? "dry run" : "cleared";
+  const targetLabel =
+    response.gitServiceRef === undefined
+      ? undefined
+      : `target ${[
+          response.gitServiceRef,
+          response.namespace,
+          response.repositoryName
+        ].filter((part): part is string => Boolean(part)).join("/")}`;
+  const matchedLabel =
+    response.matchedRepositoryCount === undefined
+      ? undefined
+      : response.matchedRepositoryCount === 1
+        ? "1 matched"
+        : `${response.matchedRepositoryCount} matched`;
   const retainedLabel =
     response.retainedRepositoryCount === undefined
       ? undefined
@@ -80,8 +94,10 @@ export function formatHostArtifactBackendCacheClearSummary(
 
   return [
     actionLabel,
+    targetLabel,
     policyLabel,
     sizePolicyLabel,
+    matchedLabel,
     repositoryLabel,
     retainedLabel,
     retainedSizeLabel,

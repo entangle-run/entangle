@@ -64,8 +64,9 @@ path against a real runner-published source-history artifact. Host status now
 exposes bounded availability, repository count, and size metadata for that
 derived artifact backend cache without exposing Host filesystem paths, and Host
 API/CLI operators can dry-run, clear, age-prune, or max-size-prune that derived
-cache without deleting authoritative artifact or projection state. Studio's Host
-Status panel renders the same path-free cache summary for admin visibility, and
+cache, optionally scoped to a git service/namespace/repository target, without
+deleting authoritative artifact or projection state. Studio's Host Status panel
+renders the same path-free cache summary for admin visibility, and
 the running User
 Client can load bounded artifact history/diff evidence through its Human
 Interface Runtime while scoped to artifact refs visible in the selected User
@@ -592,6 +593,7 @@ files are the active federated redesign pack.
 407. [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 408. [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
 409. [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
+410. [409-artifact-backend-cache-target-policy-slice.md](409-artifact-backend-cache-target-policy-slice.md)
 
 ## Role of this corpus
 

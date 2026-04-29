@@ -499,8 +499,9 @@ This repository currently contains:
 - Host status now surfaces the derived artifact backend cache's availability,
   repository count, and byte size for operator diagnostics while keeping that
   cache rebuildable implementation state; the Host API and CLI can dry-run,
-  clear, age-prune, or max-size-prune the cache when operators need to reclaim
-  space or refresh stale backend clones;
+  clear, age-prune, max-size-prune, or target-prune by git
+  service/namespace/repository when operators need to reclaim space or refresh
+  stale backend clones;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,

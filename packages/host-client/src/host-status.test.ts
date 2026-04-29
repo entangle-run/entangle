@@ -92,16 +92,20 @@ describe("host status presentation helpers", () => {
       formatHostArtifactBackendCacheClearSummary({
         completedAt: "2026-04-25T08:00:03.000Z",
         dryRun: false,
+        gitServiceRef: "gitea",
+        matchedRepositoryCount: 2,
         maxSizeBytes: 8192,
+        namespace: "team-alpha",
         olderThanSeconds: 3600,
         repositoryCount: 2,
+        repositoryName: "graph-alpha",
         retainedRepositoryCount: 1,
         retainedSizeBytes: 2048,
         status: "cleared",
         totalSizeBytes: 4096
       })
     ).toBe(
-      "cleared · older than 3600s · max 8192 bytes · 2 repositories · 1 retained · 2048 retained bytes · 4096 bytes"
+      "cleared · target gitea/team-alpha/graph-alpha · older than 3600s · max 8192 bytes · 2 matched · 2 repositories · 1 retained · 2048 retained bytes · 4096 bytes"
     );
   });
 

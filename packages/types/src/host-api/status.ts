@@ -84,17 +84,48 @@ export const hostArtifactBackendCacheStatusSchema = z.object({
   updatedAt: nonEmptyStringSchema
 });
 
-export const hostArtifactBackendCacheClearRequestSchema = z.object({
-  dryRun: z.boolean().optional(),
-  maxSizeBytes: z.number().int().positive().optional(),
-  olderThanSeconds: z.number().int().positive().optional()
-});
+export const hostArtifactBackendCacheSelectorSchema = z
+  .object({
+    gitServiceRef: identifierSchema.optional(),
+    namespace: identifierSchema.optional(),
+    repositoryName: identifierSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if ((value.namespace || value.repositoryName) && !value.gitServiceRef) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Artifact backend cache namespace/repository selectors require gitServiceRef.",
+        path: ["gitServiceRef"]
+      });
+    }
+
+    if (value.repositoryName && !value.namespace) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Artifact backend cache repository selectors require namespace.",
+        path: ["namespace"]
+      });
+    }
+  });
+
+export const hostArtifactBackendCacheClearRequestSchema =
+  hostArtifactBackendCacheSelectorSchema.extend({
+    dryRun: z.boolean().optional(),
+    maxSizeBytes: z.number().int().positive().optional(),
+    olderThanSeconds: z.number().int().positive().optional()
+  });
 
 export const hostArtifactBackendCacheClearResponseSchema = z.object({
   completedAt: nonEmptyStringSchema,
   dryRun: z.boolean(),
+  gitServiceRef: identifierSchema.optional(),
+  matchedRepositoryCount: z.number().int().nonnegative().optional(),
   maxSizeBytes: z.number().int().positive().optional(),
+  namespace: identifierSchema.optional(),
   olderThanSeconds: z.number().int().positive().optional(),
+  repositoryName: identifierSchema.optional(),
   repositoryCount: z.number().int().nonnegative(),
   retainedRepositoryCount: z.number().int().nonnegative().optional(),
   retainedSizeBytes: z.number().int().nonnegative().optional(),

@@ -74,5 +74,7 @@ from resolvable artifact locators.
 Partially resolved by `400-artifact-backend-cache-prune-policy-slice.md` and
 `406-artifact-backend-cache-size-policy-slice.md`: cache clear now supports
 max-age pruning through `olderThanSeconds` and max-size pruning through
-`maxSizeBytes` while preserving dry-run behavior. Per-backend pruning and
-automatic cache rebuild diagnostics remain open.
+`maxSizeBytes` while preserving dry-run behavior. Further resolved by
+`409-artifact-backend-cache-target-policy-slice.md`: cache clear can now scope
+to git service, namespace, and repository selectors. Automatic cache rebuild
+diagnostics remain open.
