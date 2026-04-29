@@ -155,8 +155,9 @@ event ids, signer pubkeys, and source message id, making User Node approval
 behavior auditable through the shared runtime approval record. Runners now
 enforce the approval record's approver node set before applying inbound
 approval responses. Runner A2A envelopes now carry signer pubkeys when
-available, Nostr delivery drops signer/fromPubkey mismatches, and service
-handling rejects mismatched signer envelopes before state mutation. User Node
+available, Nostr delivery verifies the NIP-59 seal signer and drops
+seal/rumor/fromPubkey mismatches, and service handling rejects mismatched
+signer envelopes before state mutation. User Node
 inbox records now preserve signer pubkeys for inbound and outbound messages
 when available, and Host rejects inbound User Node message records whose signer
 differs from the payload `fromPubkey`.

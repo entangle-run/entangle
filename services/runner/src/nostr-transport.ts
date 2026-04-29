@@ -7,7 +7,10 @@ import {
 } from "@entangle/types";
 import {
   finalizeEvent,
+  getEventHash,
+  nip44,
   SimplePool,
+  verifyEvent,
   type EventTemplate,
   type Filter,
   type NostrEvent,
@@ -24,6 +27,10 @@ import type {
 type PoolCloser = {
   close(reason?: string): void | Promise<void>;
 };
+
+const nostrSealKind = 13;
+
+type NostrRumor = Omit<NostrEvent, "sig">;
 
 export interface RunnerNostrPool {
   ensureRelay?(
@@ -69,6 +76,59 @@ function buildRumorTemplate(message: EntangleA2AMessage): Partial<NostrEvent> {
 
 function buildAuthSigner(secretKey: Uint8Array): (event: EventTemplate) => Promise<VerifiedEvent> {
   return (event) => Promise.resolve(finalizeEvent(event, secretKey));
+}
+
+function isNostrEvent(input: unknown): input is NostrEvent {
+  if (!input || typeof input !== "object") {
+    return false;
+  }
+
+  const candidate = input as Partial<NostrEvent>;
+
+  return (
+    typeof candidate.content === "string" &&
+    typeof candidate.created_at === "number" &&
+    typeof candidate.id === "string" &&
+    typeof candidate.kind === "number" &&
+    typeof candidate.pubkey === "string" &&
+    typeof candidate.sig === "string" &&
+    Array.isArray(candidate.tags) &&
+    candidate.tags.every((tag) =>
+      Array.isArray(tag) && tag.every((value) => typeof value === "string")
+    )
+  );
+}
+
+function isNostrRumor(input: unknown): input is NostrRumor {
+  if (!input || typeof input !== "object") {
+    return false;
+  }
+
+  const candidate = input as Partial<NostrRumor>;
+
+  return (
+    typeof candidate.content === "string" &&
+    typeof candidate.created_at === "number" &&
+    typeof candidate.id === "string" &&
+    typeof candidate.kind === "number" &&
+    typeof candidate.pubkey === "string" &&
+    Array.isArray(candidate.tags) &&
+    candidate.tags.every((tag) =>
+      Array.isArray(tag) && tag.every((value) => typeof value === "string")
+    )
+  );
+}
+
+function decryptNip44Json(input: {
+  encryptedEvent: NostrEvent;
+  secretKey: Uint8Array;
+}): unknown {
+  const conversationKey = nip44.getConversationKey(
+    input.secretKey,
+    input.encryptedEvent.pubkey
+  );
+
+  return JSON.parse(nip44.decrypt(input.encryptedEvent.content, conversationKey));
 }
 
 function resolveRelayProfilesById(
@@ -158,10 +218,39 @@ function unwrapMessageEvent(input: {
     return undefined;
   }
 
-  let rumor: ReturnType<typeof nip59.unwrapEvent>;
+  let seal: NostrEvent;
+  let rumor: NostrRumor;
 
   try {
-    rumor = nip59.unwrapEvent(input.wrappedEvent, input.secretKey);
+    const decryptedSeal = decryptNip44Json({
+      encryptedEvent: input.wrappedEvent,
+      secretKey: input.secretKey
+    });
+
+    if (
+      !isNostrEvent(decryptedSeal) ||
+      decryptedSeal.kind !== nostrSealKind ||
+      !verifyEvent(decryptedSeal)
+    ) {
+      return undefined;
+    }
+
+    seal = decryptedSeal;
+
+    const decryptedRumor = decryptNip44Json({
+      encryptedEvent: seal,
+      secretKey: input.secretKey
+    });
+
+    if (
+      !isNostrRumor(decryptedRumor) ||
+      decryptedRumor.pubkey !== seal.pubkey ||
+      getEventHash(decryptedRumor) !== decryptedRumor.id
+    ) {
+      return undefined;
+    }
+
+    rumor = decryptedRumor;
   } catch {
     return undefined;
   }

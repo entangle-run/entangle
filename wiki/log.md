@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Verified NIP-59 seal signer for runner A2A
+
+Replaced direct runner A2A `nip59.unwrapEvent` receive handling with an
+explicit verified unwrap path that decrypts the gift wrap, verifies the NIP-59
+seal event signature, decrypts the rumor through that seal signer, validates
+the rumor hash, and requires seal signer, rumor pubkey, and payload
+`fromPubkey` to match.
+
+Added `references/367-nip59-seal-signer-verification-slice.md`.
+
 ## [2026-04-29] implementation | Added User Node inbox signer audit
 
 Added optional signer pubkey metadata to User Node inbound requests, publish

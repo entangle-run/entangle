@@ -67,8 +67,9 @@ User nodes are now partially runtime-capable:
   signed-message lineage is available. Runners now apply approval responses
   only when the response sender node is listed in the approval record's
   approver set. Runner A2A envelopes now carry signer pubkeys where the
-  transport can know them; Nostr delivery drops signer/fromPubkey mismatches,
-  and service handling rejects mismatched signer envelopes before state
+  transport can know them; Nostr delivery verifies the NIP-59 seal signer,
+  drops seal/rumor/fromPubkey mismatches, and service handling rejects
+  mismatched signer envelopes before state
   mutation. User Node inbound/outbound inbox message records now preserve
   signer pubkeys when available, and Host rejects inbound User Node message
   records whose signer differs from the payload `fromPubkey`.

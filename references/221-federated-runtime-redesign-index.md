@@ -167,6 +167,7 @@ same-machine slice records.
 - [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 - [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 - [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
+- [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 
 ## Audited Scope
 
@@ -506,9 +507,10 @@ the model summary omits the details.
     request/response event ids, signer pubkeys, and source message ids when
     available. Runners now enforce the approval record's approver node set
     before applying inbound approval responses. Runner A2A envelopes now carry
-    signer pubkeys when available, Nostr A2A delivery drops signer/fromPubkey
-    mismatches, and service handling rejects mismatched signer envelopes before
-    state mutation. User Node inbound/outbound inbox records now preserve
+    signer pubkeys when available, Nostr A2A delivery verifies the NIP-59 seal
+    signer and drops seal/rumor/fromPubkey mismatches, and service handling
+    rejects mismatched signer envelopes before state mutation. User Node
+    inbound/outbound inbox records now preserve
     signer pubkeys when available, and Host rejects inbound User Node message
     records whose signer differs from the payload `fromPubkey`.
 11. Artifact/source/wiki reference publication through observation and git

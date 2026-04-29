@@ -7,10 +7,12 @@ message payload. Runtime approval records could preserve request/response
 signer fields, but the runner used the message-declared `fromPubkey` as the
 signer because the transport did not expose the unwrapped Nostr rumor signer.
 
-The Nostr transport already unwraps NIP-59 gift wraps and has access to the
-rumor public key. In-memory tests and local service calls do not have a
-cryptographic envelope, but they can still carry an explicit signer field for
-service-level validation.
+The Nostr transport already unwraps NIP-59 gift wraps. Follow-up inspection of
+`nostr-tools` showed that direct `nip59.unwrapEvent` exposes the decrypted
+rumor but not the verified seal signer, so the runner receive path now uses a
+manual verified unwrap flow before setting envelope signer metadata. In-memory
+tests and local service calls do not have a cryptographic envelope, but they
+can still carry an explicit signer field for service-level validation.
 
 ## Target Model
 
@@ -39,10 +41,10 @@ in-process/test envelopes that did not carry signer metadata.
 ## Concrete Changes Required
 
 - Add optional `signerPubkey` metadata to runner inbound/published envelopes.
-- Populate `signerPubkey` from Nostr unwrapped rumor pubkeys and local
+- Populate `signerPubkey` from the verified NIP-59 seal signer and local
   in-memory transport publishes.
-- Drop Nostr A2A events whose unwrapped rumor signer does not match the
-  message-declared `fromPubkey`.
+- Drop Nostr A2A events whose verified seal signer, rumor pubkey, and
+  message-declared `fromPubkey` do not all match.
 - Reject direct service envelopes with mismatched `signerPubkey` before runtime
   state mutation.
 - Stamp approval request/response signer lineage from the envelope signer when

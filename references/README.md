@@ -88,8 +88,9 @@ approval messages and the durable approval read model. Runners now enforce the
 approval record's approver node set before applying inbound approval responses,
 so matching responses from non-approver nodes do not transition the gate.
 Runner A2A envelopes now carry signer pubkeys when available, the Nostr A2A
-transport drops signer/fromPubkey mismatches, and service handling rejects
-mismatched signer envelopes before state mutation. User Node inbox records now
+transport verifies the NIP-59 seal signer and drops seal/rumor/fromPubkey
+mismatches, and service handling rejects mismatched signer envelopes before
+state mutation. User Node inbox records now
 preserve signer pubkeys for inbound and outbound messages when available, and
 Host rejects inbound User Node message records whose signer differs from the
 payload `fromPubkey`.
@@ -470,6 +471,7 @@ files are the active federated redesign pack.
 365. [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 366. [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 367. [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
+368. [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 
 ## Role of this corpus
 

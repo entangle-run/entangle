@@ -696,6 +696,7 @@ Implementation records:
 - [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 - [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 - [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
+- [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
 
 Current status:
 
@@ -762,9 +763,10 @@ Current status:
   applying inbound approval responses, leaving unauthorized matching responses
   from other nodes unable to approve, reject, close, or fail the gated session;
 - runner A2A envelopes now carry signer pubkeys when available, Nostr A2A
-  delivery rejects signer/fromPubkey mismatches, service handling rejects
-  mismatched signer envelopes before runtime state mutation, and approval
-  request/response lineage uses the envelope signer when available;
+  delivery verifies the NIP-59 seal signer and rejects seal/rumor/fromPubkey
+  mismatches, service handling rejects mismatched signer envelopes before
+  runtime state mutation, and approval request/response lineage uses the
+  envelope signer when available;
 - User Node inbox message records now preserve signer pubkeys for inbound and
   outbound messages when available, and Host rejects inbound User Node message
   records whose signer differs from the payload `fromPubkey`;

@@ -4,7 +4,7 @@ import {
   entangleNostrRumorKind,
   type EffectiveRuntimeContext
 } from "@entangle/types";
-import { nip59 } from "nostr-tools";
+import { getEventHash, nip59 } from "nostr-tools";
 import type { EventTemplate, NostrEvent } from "nostr-tools";
 import { loadRuntimeContext } from "./runtime-context.js";
 import { NostrRunnerTransport, type RunnerNostrPool } from "./nostr-transport.js";
@@ -341,6 +341,52 @@ describe("NostrRunnerTransport", () => {
       senderSecretHex: remoteSecretHex
     });
     pool.dispatch(wrapped.wrappedEvent);
+
+    expect(received).toHaveLength(0);
+  });
+
+  it("ignores wrapped Entangle messages when the seal signer does not match the rumor pubkey", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const pool = new FakeNostrPool();
+    const transport = new NostrRunnerTransport({
+      context,
+      pool,
+      secretKey: parseHexSecret(runnerSecretHex)
+    });
+    const received: RunnerInboundEnvelope[] = [];
+
+    await transport.subscribe({
+      onMessage: (envelope) => {
+        received.push(envelope);
+      },
+      recipientPubkey: runnerPublicKey
+    });
+
+    const senderSecretKey = parseHexSecret(remoteSecretHex);
+    const message = buildInboundTaskRequest({
+      fromPubkey: mismatchedSenderPublicKey
+    }).message;
+    const forgedRumor = {
+      ...nip59.createRumor(
+        {
+          content: JSON.stringify(message),
+          kind: entangleNostrRumorKind,
+          tags: []
+        },
+        senderSecretKey
+      ),
+      pubkey: mismatchedSenderPublicKey
+    };
+    forgedRumor.id = getEventHash(forgedRumor);
+    const forgedSeal = nip59.createSeal(
+      forgedRumor,
+      senderSecretKey,
+      runnerPublicKey
+    );
+    const forgedWrap = nip59.createWrap(forgedSeal, runnerPublicKey);
+
+    pool.dispatch(forgedWrap);
 
     expect(received).toHaveLength(0);
   });
