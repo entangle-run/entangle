@@ -1,5 +1,6 @@
 import type {
   HostProjectionSnapshot,
+  RuntimeCommandReceiptProjectionRecord,
   RuntimeProjectionRecord
 } from "@entangle/types";
 
@@ -24,12 +25,23 @@ export type HostProjectionCliSummary = {
   generatedAt: string;
   runtimeCount: number;
   runtimeCommandReceiptCount: number;
+  runtimeCommandReceipts: RuntimeCommandReceiptCliSummary[];
   runtimes: RuntimeProjectionCliSummary[];
   runnerCount: number;
   runningRuntimeCount: number;
   sourceHistoryRefCount: number;
   sourceHistoryReplayCount: number;
   userConversationCount: number;
+};
+
+export type RuntimeCommandReceiptCliSummary = {
+  assignmentId?: string;
+  commandEventType: string;
+  commandId: string;
+  nodeId: string;
+  observedAt: string;
+  receiptStatus: string;
+  runnerId: string;
 };
 
 export function sortRuntimeProjectionsForCli(
@@ -57,6 +69,31 @@ export function projectRuntimeProjectionSummary(
   };
 }
 
+export function sortRuntimeCommandReceiptsForCli(
+  receipts: RuntimeCommandReceiptProjectionRecord[]
+): RuntimeCommandReceiptProjectionRecord[] {
+  return [...receipts].sort((left, right) => {
+    const timeOrder = right.observedAt.localeCompare(left.observedAt);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.commandId.localeCompare(right.commandId);
+  });
+}
+
+export function projectRuntimeCommandReceiptSummary(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): RuntimeCommandReceiptCliSummary {
+  return {
+    ...(receipt.assignmentId ? { assignmentId: receipt.assignmentId } : {}),
+    commandEventType: receipt.commandEventType,
+    commandId: receipt.commandId,
+    nodeId: receipt.nodeId,
+    observedAt: receipt.observedAt,
+    receiptStatus: receipt.receiptStatus,
+    runnerId: receipt.runnerId
+  };
+}
+
 export function projectHostProjectionSummary(
   projection: HostProjectionSnapshot
 ): HostProjectionCliSummary {
@@ -70,6 +107,11 @@ export function projectHostProjectionSummary(
     generatedAt: projection.generatedAt,
     runtimeCount: projection.runtimes.length,
     runtimeCommandReceiptCount: projection.runtimeCommandReceipts.length,
+    runtimeCommandReceipts: sortRuntimeCommandReceiptsForCli(
+      projection.runtimeCommandReceipts
+    )
+      .slice(0, 6)
+      .map(projectRuntimeCommandReceiptSummary),
     runtimes: sortRuntimeProjectionsForCli(projection.runtimes).map(
       projectRuntimeProjectionSummary
     ),

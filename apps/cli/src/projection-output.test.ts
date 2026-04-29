@@ -66,7 +66,26 @@ const projection: HostProjectionSnapshot = {
       restartGeneration: 0
     }
   ],
-  runtimeCommandReceipts: [],
+  runtimeCommandReceipts: [
+    {
+      assignmentId: "assignment-alpha",
+      commandEventType: "runtime.start",
+      commandId: "cmd-start-alpha",
+      graphId: "team-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nodeId: "worker-b",
+      observedAt: "2026-04-26T12:02:00.000Z",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:02:00.000Z"
+      },
+      receiptStatus: "completed",
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],
@@ -115,6 +134,14 @@ describe("projection CLI output", () => {
       assignmentReceiptCount: 1,
       failedRuntimeCount: 0,
       runtimeCount: 2,
+      runtimeCommandReceiptCount: 1,
+      runtimeCommandReceipts: [
+        {
+          commandEventType: "runtime.start",
+          commandId: "cmd-start-alpha",
+          receiptStatus: "completed"
+        }
+      ],
       runningRuntimeCount: 1,
       sourceHistoryReplayCount: 0,
       userConversationCount: 1,

@@ -4733,3 +4733,12 @@ projected wiki refs yet.
 This keeps `/v1/runtimes/:nodeId/memory` federated-friendly while leaving
 `/v1/runtimes/:nodeId/context` and runtime inspection responsible for reporting
 context materialization failures.
+
+## [2026-04-29] implementation | Added CLI projection command receipt summaries
+
+Added `references/397-cli-projection-command-receipt-summary-slice.md`.
+`entangle host projection --summary` now includes up to six recent runtime
+command receipts in addition to the total command receipt count.
+
+This gives headless operators the same immediate command-closure visibility
+that Studio now shows from Host projection.

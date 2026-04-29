@@ -197,6 +197,7 @@ same-machine slice records.
 - [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 - [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
 - [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
+- [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 
 ## Audited Scope
 
@@ -443,8 +444,9 @@ The repository is not fully federated:
   exposes a per-assignment timeline read model that joins assignment lifecycle
   state with runner receipt projection and assignment-scoped runtime command
   receipt projection, CLI can inspect it, and Studio groups lifecycle and
-  command receipt summaries under projected assignment rows while listing
-  recent command receipts from Host projection;
+  command receipt summaries under projected assignment rows while Studio and
+  CLI compact projection summaries list recent command receipts from Host
+  projection;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`

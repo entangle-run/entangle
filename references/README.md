@@ -558,6 +558,7 @@ files are the active federated redesign pack.
 395. [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 396. [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
 397. [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
+398. [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 
 ## Role of this corpus
 
