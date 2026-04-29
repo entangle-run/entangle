@@ -75,6 +75,7 @@ export const userNodeMessageRecordSchema = z.object({
   relayUrls: z.array(nonEmptyStringSchema).default([]),
   schemaVersion: z.literal("1"),
   sessionId: identifierSchema,
+  signerPubkey: nostrPublicKeySchema.optional(),
   sourceChangeReview: z
     .object({
       candidateId: identifierSchema,
@@ -92,7 +93,8 @@ export const userNodeMessageRecordSchema = z.object({
 export const userNodeInboundMessageRecordRequestSchema = z.object({
   eventId: nostrEventIdSchema,
   message: entangleA2AMessageSchema,
-  receivedAt: nonEmptyStringSchema
+  receivedAt: nonEmptyStringSchema,
+  signerPubkey: nostrPublicKeySchema.optional()
 });
 
 export const userNodeConversationResponseSchema = z.object({
@@ -200,6 +202,7 @@ export const userNodeMessagePublishResponseSchema = z.object({
   publishedRelays: z.array(nonEmptyStringSchema),
   relayUrls: z.array(nonEmptyStringSchema),
   sessionId: identifierSchema,
+  signerPubkey: nostrPublicKeySchema.optional(),
   targetNodeId: identifierSchema,
   toPubkey: nostrPublicKeySchema,
   turnId: identifierSchema

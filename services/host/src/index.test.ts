@@ -4311,7 +4311,8 @@ describe("buildHostServer", () => {
               summary: "The worker completed the task."
             }
           },
-          receivedAt: new Date().toISOString()
+          receivedAt: new Date().toISOString(),
+          signerPubkey: workerPubkey
         },
         url: "/v1/user-nodes/user-main/messages/inbound"
       });
@@ -4325,9 +4326,53 @@ describe("buildHostServer", () => {
           parentMessageId:
             "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
           peerNodeId: "worker-it",
+          signerPubkey: workerPubkey,
           summary: "The worker completed the task.",
           userNodeId: "user-main"
         });
+
+      const mismatchedSignerResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "POST",
+        payload: {
+          eventId:
+            "bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc",
+          message: {
+            constraints: {
+              approvalRequiredBeforeAction: false
+            },
+            conversationId: "conversation-alpha",
+            fromNodeId: "worker-it",
+            fromPubkey: workerPubkey,
+            graphId: "team-alpha",
+            intent: "Report back to the User Node.",
+            messageType: "task.result",
+            parentMessageId:
+              "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            protocol: "entangle.a2a.v1",
+            responsePolicy: {
+              closeOnResult: true,
+              maxFollowups: 0,
+              responseRequired: false
+            },
+            sessionId: "session-alpha",
+            toNodeId: "user-main",
+            toPubkey: bootstrapBundle.runtimeContext.identityContext.publicKey,
+            turnId: "turn-result-mismatch",
+            work: {
+              artifactRefs: [],
+              metadata: {},
+              summary: "This message has a mismatched signer."
+            }
+          },
+          receivedAt: new Date().toISOString(),
+          signerPubkey: bootstrapBundle.runtimeContext.identityContext.publicKey
+        },
+        url: "/v1/user-nodes/user-main/messages/inbound"
+      });
+      expect(mismatchedSignerResponse.statusCode).toBe(400);
 
       const inboxWithInboundResponse = await server.inject({
         headers: {
@@ -4447,7 +4492,8 @@ describe("buildHostServer", () => {
               summary: "Approve source application."
             }
           },
-          receivedAt: new Date().toISOString()
+          receivedAt: new Date().toISOString(),
+          signerPubkey: workerPubkey
         },
         url: "/v1/user-nodes/user-main/messages/inbound"
       });
@@ -4461,7 +4507,8 @@ describe("buildHostServer", () => {
           deliveryStatus: "received",
           messageType: "approval.request",
           parentMessageId:
-            "abababababababababababababababababababababababababababababababab"
+            "abababababababababababababababababababababababababababababababab",
+          signerPubkey: workerPubkey
         });
 
       const messageInspectionResponse = await server.inject({

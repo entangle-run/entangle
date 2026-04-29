@@ -225,6 +225,7 @@ describe("User Node A2A publishing", () => {
       fromPubkey: getPublicKey(userSecretKey),
       messageType: "task.request",
       publishedRelays: ["ws://localhost:7777"],
+      signerPubkey: getPublicKey(userSecretKey),
       targetNodeId: "worker-it",
       toPubkey: getPublicKey(workerSecretKey)
     });
@@ -235,6 +236,7 @@ describe("User Node A2A publishing", () => {
 
     const rumor = nip59.unwrapEvent(wrappedEvents[0]!, workerSecretKey);
     const message = JSON.parse(rumor.content) as { fromPubkey?: string };
+    expect(rumor.pubkey).toBe(getPublicKey(userSecretKey));
     expect(message.fromPubkey).toBe(getPublicKey(userSecretKey));
   });
 

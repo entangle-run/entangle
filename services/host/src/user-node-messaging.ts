@@ -200,6 +200,7 @@ export async function publishUserNodeA2AMessage(input: {
       publishedRelays,
       relayUrls: relaySelection.relayUrls,
       sessionId: message.sessionId,
+      signerPubkey: rumor.pubkey,
       targetNodeId: message.toNodeId,
       toPubkey: message.toPubkey,
       turnId: message.turnId

@@ -1136,6 +1136,19 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         });
       }
 
+      if (
+        recordRequest.signerPubkey &&
+        recordRequest.signerPubkey !== recordRequest.message.fromPubkey
+      ) {
+        throw new HostHttpError({
+          code: "bad_request",
+          message:
+            `Inbound message '${recordRequest.eventId}' signer does not ` +
+            "match its fromPubkey.",
+          statusCode: 400
+        });
+      }
+
       return userNodeMessageRecordSchema.parse(
         await recordUserNodeInboundMessage({
           request: recordRequest,

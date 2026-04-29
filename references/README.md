@@ -89,7 +89,10 @@ approval record's approver node set before applying inbound approval responses,
 so matching responses from non-approver nodes do not transition the gate.
 Runner A2A envelopes now carry signer pubkeys when available, the Nostr A2A
 transport drops signer/fromPubkey mismatches, and service handling rejects
-mismatched signer envelopes before state mutation.
+mismatched signer envelopes before state mutation. User Node inbox records now
+preserve signer pubkeys for inbound and outbound messages when available, and
+Host rejects inbound User Node message records whose signer differs from the
+payload `fromPubkey`.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -466,6 +469,7 @@ files are the active federated redesign pack.
 364. [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
 365. [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 366. [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
+367. [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 
 ## Role of this corpus
 

@@ -1461,7 +1461,10 @@ async function recordInboundUserNodeMessage(input: {
       body: JSON.stringify({
         eventId: input.envelope.eventId,
         message: input.envelope.message,
-        receivedAt: input.envelope.receivedAt
+        receivedAt: input.envelope.receivedAt,
+        ...(input.envelope.signerPubkey
+          ? { signerPubkey: input.envelope.signerPubkey }
+          : {})
       }),
       headers: {
         ...buildHostApiHeaders(input.hostApi),

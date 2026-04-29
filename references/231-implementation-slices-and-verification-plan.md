@@ -695,6 +695,7 @@ Implementation records:
 - [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
 - [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
 - [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
+- [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 
 Current status:
 
@@ -764,6 +765,9 @@ Current status:
   delivery rejects signer/fromPubkey mismatches, service handling rejects
   mismatched signer envelopes before runtime state mutation, and approval
   request/response lineage uses the envelope signer when available;
+- User Node inbox message records now preserve signer pubkeys for inbound and
+  outbound messages when available, and Host rejects inbound User Node message
+  records whose signer differs from the payload `fromPubkey`;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

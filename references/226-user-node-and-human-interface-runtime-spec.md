@@ -69,7 +69,9 @@ User nodes are now partially runtime-capable:
   approver set. Runner A2A envelopes now carry signer pubkeys where the
   transport can know them; Nostr delivery drops signer/fromPubkey mismatches,
   and service handling rejects mismatched signer envelopes before state
-  mutation.
+  mutation. User Node inbound/outbound inbox message records now preserve
+  signer pubkeys when available, and Host rejects inbound User Node message
+  records whose signer differs from the payload `fromPubkey`.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,

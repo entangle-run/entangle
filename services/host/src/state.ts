@@ -4113,6 +4113,7 @@ export async function recordUserNodePublishedMessage(input: {
     relayUrls: input.response.relayUrls,
     schemaVersion: "1",
     sessionId: input.response.sessionId,
+    signerPubkey: input.response.signerPubkey ?? input.response.fromPubkey,
     ...(input.request.sourceChangeReview
       ? { sourceChangeReview: input.request.sourceChangeReview }
       : {}),
@@ -4163,6 +4164,7 @@ export async function recordUserNodeInboundMessage(input: {
     relayUrls: [],
     schemaVersion: "1",
     sessionId: message.sessionId,
+    signerPubkey: input.request.signerPubkey ?? message.fromPubkey,
     ...(sourceChangeReview ? { sourceChangeReview } : {}),
     summary: message.work.summary,
     toNodeId: message.toNodeId,

@@ -167,7 +167,8 @@ This repository currently contains:
   runners, portable User Node bootstrap bundles, a runner-served Human
   Interface Runtime/User Client with `/health`, `/api/state`, projected
   conversation list, selected-thread metadata, recorded inbound/outbound message
-  history, User Client approval controls, approval resource rendering,
+  history with signer pubkey audit metadata when available, User Client
+  approval controls, approval resource rendering,
   signed approval-response context, approval record request/response lineage
   metadata, signer/fromPubkey enforcement for runner A2A envelopes,
   approver-set enforcement before approval state transitions,

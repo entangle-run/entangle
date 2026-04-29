@@ -156,7 +156,10 @@ behavior auditable through the shared runtime approval record. Runners now
 enforce the approval record's approver node set before applying inbound
 approval responses. Runner A2A envelopes now carry signer pubkeys when
 available, Nostr delivery drops signer/fromPubkey mismatches, and service
-handling rejects mismatched signer envelopes before state mutation.
+handling rejects mismatched signer envelopes before state mutation. User Node
+inbox records now preserve signer pubkeys for inbound and outbound messages
+when available, and Host rejects inbound User Node message records whose signer
+differs from the payload `fromPubkey`.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets
 when available, or an explicit `--user-client-static-dir`, so manual

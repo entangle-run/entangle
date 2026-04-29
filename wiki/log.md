@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added User Node inbox signer audit
+
+Added optional signer pubkey metadata to User Node inbound requests, publish
+responses, and durable message records. The Human Interface Runtime now
+forwards inbound envelope signer metadata to Host, and Host rejects inbound
+User Node message records when the signer does not match the payload
+`fromPubkey`.
+
+Added `references/366-user-node-inbox-signer-audit-slice.md`.
+
 ## [2026-04-29] implementation | Hardened runner A2A signer handling
 
 Added signer pubkey metadata to runner A2A envelopes. The Nostr runner

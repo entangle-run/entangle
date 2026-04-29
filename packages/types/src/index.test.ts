@@ -328,6 +328,7 @@ describe("federated runtime contracts", () => {
       relayUrls: ["ws://localhost:7777"],
       schemaVersion: "1",
       sessionId: "session-alpha",
+      signerPubkey: userNodePubkey,
       summary: "Check the build.",
       toNodeId: "worker-it",
       toPubkey: runnerPubkey,
@@ -385,7 +386,8 @@ describe("federated runtime contracts", () => {
             summary: "The requested work is complete."
           }
         },
-        receivedAt: observedAt
+        receivedAt: observedAt,
+        signerPubkey: runnerPubkey
       }).message.toNodeId
     ).toBe("user-main");
   });
@@ -437,6 +439,7 @@ describe("federated runtime contracts", () => {
         publishedRelays: ["ws://localhost:7777"],
         relayUrls: ["ws://localhost:7777"],
         sessionId: "session-alpha",
+        signerPubkey: userNodePubkey,
         targetNodeId: "worker-it",
         toPubkey: runnerPubkey,
         turnId: "turn-alpha"
