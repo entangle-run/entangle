@@ -708,6 +708,11 @@ This repository currently contains:
   synthesis sees bounded handoff evidence from the completed turn, and the
   durable `working-context.md` page now carries emitted handoff message ids
   without copying peer conversations or logs into memory;
+- a conversation-aware working-context refinement where the durable
+  `working-context.md` page now carries active conversation ids plus bounded
+  peer, lifecycle, response-policy, follow-up, artifact-count, and last-message
+  metadata, so delegated sessions can resume from typed coordination context
+  instead of model prose alone;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace

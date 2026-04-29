@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added conversation-aware working-context memory
+
+The durable runner-owned `working-context.md` summary now includes a
+`Conversation Routes` section derived from the current session snapshot. It
+records active conversation ids and bounded peer/status/response-policy,
+follow-up, artifact-count, and last-message metadata so delegated sessions can
+resume from typed coordination context without copying peer transcripts into
+node memory.
+
+Added `references/376-conversation-aware-working-context-memory-slice.md`.
+
 ## [2026-04-29] tooling | Added deterministic OpenAI-compatible dev provider
 
 Added `pnpm ops:fake-openai-provider`, an operator-started deterministic

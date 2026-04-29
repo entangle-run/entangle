@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
+[376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -83,7 +83,10 @@ runner-owned source-change context section with bounded metadata, giving future
 turns deterministic code-change memory even when the model summary is sparse.
 The generated working context also carries bounded emitted handoff message ids,
 so nodes retain deterministic delegation evidence without copying peer
-conversations into memory.
+conversations into memory. The same working context now carries active
+conversation ids and bounded peer/status/response-policy/follow-up/artifact
+metadata from the runner-owned session snapshot, so delegated sessions can
+resume from deterministic coordination context.
 Runtime approval records now preserve optional signed-message lineage for
 request event id, request signer, response event id, response signer, and
 source message id, closing the first audit gap between signed User Node
@@ -500,6 +503,7 @@ files are the active federated redesign pack.
 374. [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 375. [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 376. [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
+377. [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 
 ## Role of this corpus
 

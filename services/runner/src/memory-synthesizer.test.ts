@@ -763,6 +763,13 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain(
       "`approval-memory` status=`pending` requestedBy=`worker-it` approvers=1 conversation=`conv-alpha`"
     );
+    expect(workingContextPage).toContain("### Conversation Routes");
+    expect(workingContextPage).toContain(
+      "- Active conversation ids: `conv-alpha`"
+    );
+    expect(workingContextPage).toContain(
+      "`conv-alpha` peer=`reviewer-it` status=`working` initiator=`self` followups=1 responseRequired=true closeOnResult=true maxFollowups=1 artifacts=1"
+    );
     expect(workingContextPage).toContain("### Durable Session Insights");
     expect(workingContextPage).toContain(
       "The live conversation with the reviewer remains the coordination path for the next checkpoint."

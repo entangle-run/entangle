@@ -46,6 +46,7 @@ import type { RunnerInboundEnvelope } from "./transport.js";
 const maxWorkingContextListEntries = 6;
 const maxSynthesisArtifacts = 6;
 const maxSynthesisApprovals = 8;
+const maxSynthesisConversations = 8;
 const maxSynthesisRecentTurns = 4;
 const maxSynthesisSourceChangeFiles = 6;
 const maxSynthesisSourceFilePreviews = 4;
@@ -2083,6 +2084,43 @@ function renderApprovalGateLines(
   ];
 }
 
+function renderConversationContextLines(
+  sessionSnapshot: RunnerSessionStateSnapshot | undefined
+): string[] {
+  if (!sessionSnapshot) {
+    return ["- No conversation context was available during synthesis."];
+  }
+
+  const conversationLines =
+    sessionSnapshot.conversations.length > 0
+      ? sessionSnapshot.conversations
+          .slice(0, maxSynthesisConversations)
+          .map((conversation) => {
+            const lastMessageType = conversation.lastMessageType
+              ? ` lastType=\`${conversation.lastMessageType}\``
+              : "";
+
+            return (
+              `- \`${conversation.conversationId}\` peer=\`${conversation.peerNodeId}\` ` +
+              `status=\`${conversation.status}\` initiator=\`${conversation.initiator}\` ` +
+              `followups=${conversation.followupCount} ` +
+              `responseRequired=${conversation.responsePolicy.responseRequired} ` +
+              `closeOnResult=${conversation.responsePolicy.closeOnResult} ` +
+              `maxFollowups=${conversation.responsePolicy.maxFollowups} ` +
+              `artifacts=${conversation.artifactIds.length}${lastMessageType}`
+            );
+          })
+      : ["- No conversation records were included in the bounded snapshot."];
+
+  return [
+    `- Active conversation ids: ${renderInlineCodeList(
+      sessionSnapshot.session.activeConversationIds
+    )}`,
+    `- Conversations in snapshot: ${sessionSnapshot.conversations.length} of ${sessionSnapshot.counts.conversationCount}`,
+    ...conversationLines
+  ];
+}
+
 function renderSourceChangeContextLines(
   turnRecord: RunnerTurnRecord | undefined
 ): string[] {
@@ -2193,6 +2231,10 @@ function buildWorkingContextSummaryContent(input: {
     "### Approval Gates",
     "",
     ...renderApprovalGateLines(input.sessionSnapshot),
+    "",
+    "### Conversation Routes",
+    "",
+    ...renderConversationContextLines(input.sessionSnapshot),
     "",
     "### Durable Session Insights",
     "",

@@ -713,6 +713,7 @@ Implementation records:
 - [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 - [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 - [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
+- [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 
 Current status:
 
@@ -774,6 +775,10 @@ Current status:
 - the durable `working-context.md` page now also includes a runner-owned
   handoff context section with emitted handoff message ids, so nodes retain
   bounded delegation evidence without copying peer conversations into memory;
+- the durable `working-context.md` page now includes a runner-owned
+  conversation routes section with active conversation ids and bounded
+  peer/status/response-policy/follow-up/artifact metadata, so delegated
+  sessions resume from deterministic coordination context;
 - runtime approval records now carry optional signed-message lineage fields for
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,

@@ -176,6 +176,7 @@ same-machine slice records.
 - [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 - [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 - [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
+- [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 
 ## Audited Scope
 
@@ -494,7 +495,10 @@ evidence from the completed `RunnerTurnRecord`, so a node can remember durable
 code-change context without storing raw diffs or full file previews in its
 wiki. The generated `working-context.md` page now preserves that same bounded
 source-change context deterministically, so future turns can consume it even if
-the model summary omits the details.
+the model summary omits the details. It also carries active conversation ids
+and bounded peer/status/response-policy/follow-up/artifact metadata from the
+runner-owned session snapshot, preserving deterministic coordination context
+for delegated sessions without copying transcripts.
 
 ## Planned Implementation Slices
 
@@ -681,6 +685,10 @@ without raw diff excerpts or full file-preview contents.
 It now also carries a runner-owned `Handoff Context` section with emitted
 handoff message ids from the completed turn, preserving bounded delegation
 evidence without copying peer conversations or logs into memory.
+It now carries a runner-owned `Conversation Routes` section with active
+conversation ids and bounded peer/status/response-policy/follow-up/artifact
+metadata, preserving deterministic delegated-session coordination context
+without copying peer transcripts.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and
