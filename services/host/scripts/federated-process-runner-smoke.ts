@@ -3139,6 +3139,63 @@ async function main(): Promise<void> {
         `status=${projectedUserClientWikiPublicationReceipt.receiptStatus}`
     );
 
+    const projectedUserClientWikiPublicationArtifact = await waitFor(
+      "Host projected User Client targeted wiki publication artifact",
+      async () => {
+        const artifactList = runtimeArtifactListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/artifacts"
+          })
+        );
+        const artifact = artifactList.artifacts.find(
+          (entry) =>
+            entry.ref.backend === "git" &&
+            entry.ref.artifactKind === "knowledge_summary" &&
+            entry.ref.createdByNodeId === "builder" &&
+            entry.ref.locator.branch === "builder/wiki-repository" &&
+            entry.ref.locator.repositoryName === userClientWikiRepositoryName &&
+            entry.ref.status === "published"
+        );
+
+        if (!artifact) {
+          return undefined;
+        }
+
+        const inspection = runtimeArtifactInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${artifact.ref.artifactId}`
+          })
+        );
+
+        return inspection.artifact.ref.status === "published"
+          ? inspection.artifact
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    const projectedUserClientWikiArtifact = readGitArtifactIdentity(
+      projectedUserClientWikiPublicationArtifact.ref,
+      "User Client targeted published wiki artifact"
+    );
+    const userClientWikiRemoteHead = runGit([
+      "--git-dir",
+      userClientWikiRepositoryPath,
+      "rev-parse",
+      "refs/heads/builder/wiki-repository"
+    ]);
+    assertCondition(
+      userClientWikiRemoteHead === projectedUserClientWikiArtifact.commit,
+      "User Client targeted wiki artifact commit must match the requested remote wiki branch head."
+    );
+    printPass(
+      "projected-user-client-wiki-publication-artifact",
+      `artifact=${projectedUserClientWikiArtifact.artifactId}; ` +
+        `repository=${projectedUserClientWikiArtifact.repositoryName}; ` +
+        `commit=${projectedUserClientWikiArtifact.commit.slice(0, 12)}`
+    );
+
     const syntheticAgentMessageId = await publishSyntheticA2AMessage({
       message: {
         constraints: {

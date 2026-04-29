@@ -218,6 +218,7 @@ same-machine slice records.
 - [415-user-client-source-history-publication-slice.md](415-user-client-source-history-publication-slice.md)
 - [416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
 - [417-user-client-wiki-target-visibility-slice.md](417-user-client-wiki-target-visibility-slice.md)
+- [418-user-client-wiki-target-process-proof-slice.md](418-user-client-wiki-target-process-proof-slice.md)
 
 ## Audited Scope
 
@@ -765,7 +766,9 @@ must match the requested target. The process proof waits for the completed
 projected `runtime.source_history.publish` command receipt from that
 participant path. The running User Client can now also require target-specific
 wiki publication requests to match visible `wiki_repository_publication`
-resources before forwarding `runtime.wiki.publish` through Host. User Client
+resources before forwarding `runtime.wiki.publish` through Host, and the
+process proof verifies the projected target-specific artifact plus the target
+git branch head for that participant path. User Client
 source-change diff and review routes now require conversation context and verify
 that the selected conversation contains matching approval-resource or projected
 session evidence before returning diff evidence, returning file preview

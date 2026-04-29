@@ -115,8 +115,10 @@ Runtime and Host control boundary with `requestedBy` set to the User Node id,
 and the smoke verifies the resulting projected command receipt. Target-specific
 wiki publication requests from the User Client must match the
 `wiki_repository_publication` resource visible in the selected User Node
-conversation. The same smoke now also asks the running User Client to request
-artifact restore for the visible source-history artifact, publishes a signed
+conversation; the smoke also verifies the projected target-specific wiki
+artifact and the requested git repository branch head for that participant
+path. The same smoke now also asks the running User Client to request artifact
+restore for the visible source-history artifact, publishes a signed
 source-history approval request to the User Node, asks the running User Client
 to request source-history publication for that visible resource, and verifies
 both projected command receipts. Target-specific source-history publication

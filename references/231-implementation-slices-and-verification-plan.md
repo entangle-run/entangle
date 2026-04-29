@@ -916,6 +916,9 @@ Current status:
 - User Client wiki publication requests that include a git target now require
   a matching visible `wiki_repository_publication` resource in the selected
   User Node conversation;
+- the process proof now also verifies the projected target-specific git
+  artifact and requested git repository branch head for User Client wiki
+  publication;
 - the process proof now publishes a signed builder-to-User-Node source-history
   approval request, calls the running User Client source-history publication
   JSON route with the target encoded by the visible

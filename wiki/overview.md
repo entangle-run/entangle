@@ -181,7 +181,9 @@ The most accurate current description is:
   `wiki_repository_publication` resource in that conversation;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
-  route, and a completed projected `runtime.wiki.publish` command receipt;
+  route, a completed projected `runtime.wiki.publish` command receipt, a
+  target-specific projected git artifact, and the requested git repository
+  branch head;
 - the running User Client can now request runner-owned source-history
   publication for visible source-history resources in the selected User Node
   conversation, and the process-runner smoke proves that participant path

@@ -5022,3 +5022,12 @@ target-specific builder wiki approval request before asking the running User
 Client to request publication. Target-qualified wiki publication artifact ids
 now use bounded digest suffixes when repository names would exceed the shared
 artifact id schema limit.
+
+## [2026-04-29] test | Proved User Client wiki target git handoff
+
+Added `references/418-user-client-wiki-target-process-proof-slice.md`. The
+federated process-runner smoke now verifies that the User Client
+target-specific wiki publication path produces a projected git
+`knowledge_summary` artifact for the requested repository and that the target
+bare repository's `builder/wiki-repository` branch head matches the projected
+commit.
