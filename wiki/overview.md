@@ -96,7 +96,8 @@ The most accurate current description is:
   evidence through its Human Interface Runtime and Host artifact read APIs when
   the artifact ref is visible in the selected User Node conversation;
 - the process-runner smoke now verifies backend-cache history/diff for a
-  runner-published source-history git artifact;
+  runner-published source-history git artifact and verifies the same
+  visible-artifact history/diff path through the running User Client;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate

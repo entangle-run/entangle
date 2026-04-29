@@ -160,8 +160,9 @@ OS processes for an agent runner and two User Node `human_interface` runners,
 assigns all three nodes through signed control events, and verifies
 runner-owned materialized contexts, User Client health/state, Host projection,
 signed User Node message publication from two distinct User Node identities,
-runner-owned session/conversation intake, and Host projection of both User Node
-conversations from runner-signed observations.
+runner-owned session/conversation intake, Host projection of both User Node
+conversations from runner-signed observations, and visible artifact
+history/diff reads through the running User Client.
 
 For manual OpenCode/provider testing without rebuilding the setup by hand, run:
 

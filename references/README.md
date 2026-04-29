@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
+[357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -66,7 +66,9 @@ authoritative artifact or projection state. Studio's Host Status panel renders
 the same path-free cache summary for admin visibility, and the running User
 Client can load bounded artifact history/diff evidence through its Human
 Interface Runtime while scoped to artifact refs visible in the selected User
-Node conversation.
+Node conversation. The process-runner smoke now verifies that visible-artifact
+history/diff path through the running User Client using a real
+builder-published source-history git artifact.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

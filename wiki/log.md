@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Proved User Client artifact history/diff in process smoke
+
+Extended the process-runner smoke so the real builder-published source-history
+git artifact is delivered to the User Node conversation, then inspected through
+the running User Client artifact history/diff JSON routes with conversation
+context.
+
+Added
+`references/357-process-smoke-user-client-artifact-history-diff-slice.md`.
+
 ## [2026-04-29] implementation | Scoped User Client artifact reads to conversations
 
 Tightened runtime-local User Client artifact preview/history/diff routes so

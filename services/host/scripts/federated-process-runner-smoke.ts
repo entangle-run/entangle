@@ -2052,6 +2052,11 @@ async function main(): Promise<void> {
             : "unavailable"
         }`
     );
+    const sourceHistoryArtifactRef =
+      projectedSourceHistoryArtifactGitInspection.artifact.artifact.ref;
+    if (sourceHistoryArtifactRef.backend !== "git") {
+      throw new Error("Source-history artifact must use the git backend.");
+    }
 
     const wikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(
       await hostRequest({
@@ -2297,21 +2302,16 @@ async function main(): Promise<void> {
         work: {
           artifactRefs: [
             {
-              artifactId: `artifact-${runId}`,
-              artifactKind: "report_file",
-              backend: "git",
-              contentSummary: "Synthetic report artifact for User Node review.",
+              ...sourceHistoryArtifactRef,
+              contentSummary:
+                sourceHistoryArtifactRef.contentSummary ??
+                "Published source history artifact for User Node review.",
               conversationId: userMessage.conversationId,
-              createdByNodeId: "builder",
-              locator: {
-                branch: "main",
-                commit: "synthetic-commit",
-                path: "reports/synthetic-review.md",
-                repositoryName: "smoke-artifacts"
-              },
+              createdByNodeId:
+                sourceHistoryArtifactRef.createdByNodeId ?? "builder",
               preferred: true,
               sessionId: userMessage.sessionId,
-              status: "published"
+              status: sourceHistoryArtifactRef.status ?? "published"
             }
           ],
           metadata: {
@@ -2351,12 +2351,78 @@ async function main(): Promise<void> {
           message.eventId === syntheticAgentMessageId &&
           message.peerNodeId === "builder" &&
           message.artifactRefs.some(
-            (artifactRef) => artifactRef.artifactId === `artifact-${runId}`
+            (artifactRef) => artifactRef.artifactId === sourceHistoryArtifactId
           )
       ),
       "User Node conversation detail must include the inbound synthetic agent message."
     );
     printPass("user-node-inbound-message-history", userMessage.conversationId);
+
+    const userClientArtifactParams = new URLSearchParams({
+      artifactId: sourceHistoryArtifactId,
+      conversationId: userMessage.conversationId,
+      nodeId: "builder"
+    });
+    const userClientArtifactHistoryResponse = await fetch(
+      new URL(
+        `/api/artifacts/history?${userClientArtifactParams.toString()}`,
+        userClientUrl
+      )
+    );
+    await assertResponseOk(
+      userClientArtifactHistoryResponse,
+      "User Client JSON artifact history"
+    );
+    const userClientArtifactHistory =
+      (await userClientArtifactHistoryResponse.json()) as {
+        artifact?: { artifactId?: string; backend?: string };
+        history?: {
+          available?: boolean;
+          commits?: Array<{ commit?: string }>;
+        };
+        source?: string;
+      };
+    assertCondition(
+      userClientArtifactHistory.source === "runtime" &&
+        userClientArtifactHistory.artifact?.artifactId === sourceHistoryArtifactId &&
+        userClientArtifactHistory.artifact.backend === "git" &&
+        userClientArtifactHistory.history?.available === true &&
+        (userClientArtifactHistory.history.commits ?? []).some(
+          (commit) => commit.commit === sourceHistoryArtifactRef.locator.commit
+        ),
+      "User Client artifact history must resolve the visible source-history artifact."
+    );
+
+    const userClientArtifactDiffResponse = await fetch(
+      new URL(
+        `/api/artifacts/diff?${userClientArtifactParams.toString()}`,
+        userClientUrl
+      )
+    );
+    await assertResponseOk(
+      userClientArtifactDiffResponse,
+      "User Client JSON artifact diff"
+    );
+    const userClientArtifactDiff =
+      (await userClientArtifactDiffResponse.json()) as {
+        diff?: {
+          available?: boolean;
+          content?: string;
+        };
+        source?: string;
+      };
+    assertCondition(
+      userClientArtifactDiff.source === "runtime" &&
+        userClientArtifactDiff.diff?.available === true &&
+        (userClientArtifactDiff.diff.content ?? "").includes(
+          "smoke-generated.ts"
+        ),
+      "User Client artifact diff must resolve the visible source-history artifact."
+    );
+    printPass(
+      "user-client-artifact-history-diff",
+      `artifact=${sourceHistoryArtifactId}; history=available; diff=available`
+    );
 
     const approvalId = `approval-${runId}`;
     const syntheticApprovalRequestMessageId = await publishSyntheticA2AMessage({

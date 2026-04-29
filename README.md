@@ -94,8 +94,10 @@ inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits signed source-candidate review and
 approval response messages through the same JSON User Client API. The fake
 OpenCode executable mutates the source workspace, so the smoke also verifies
-projected source-change candidate list/detail/diff/file reads without live
-model credentials. Live
+projected source-change candidate list/detail/diff/file reads and delivers the
+published source-history git artifact to the User Node before verifying
+artifact history/diff through the running User Client, without live model
+credentials. Live
 OpenCode/model-provider behavior remains intentionally manual until API-backed
 provider testing is available.
 
@@ -365,7 +367,8 @@ This repository currently contains:
   bounded artifact history/diff evidence through its Human Interface Runtime
   when the artifact ref is visible in the selected User Node conversation;
 - the process-runner smoke now verifies backend-cache history/diff for a
-  runner-published source-history git artifact;
+  runner-published source-history git artifact and verifies the same
+  visible-artifact history/diff path through the running User Client;
 - Host status now surfaces the derived artifact backend cache's availability,
   repository count, and byte size for operator diagnostics while keeping that
   cache rebuildable implementation state; the Host API and CLI can dry-run or

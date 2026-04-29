@@ -157,6 +157,7 @@ same-machine slice records.
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
+- [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
 
 ## Audited Scope
 
@@ -603,7 +604,9 @@ artifact history and diff evidence through its Human Interface Runtime, using
 the Host read boundary without turning the user surface into an operator
 control plane. Those User Client artifact routes now require conversation
 context and verify that the artifact ref is visible in that User Node
-conversation before proxying to Host.
+conversation before proxying to Host. The process-runner smoke now delivers
+the real builder-published source-history artifact to the User Node and verifies
+history/diff through the running User Client JSON routes.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

@@ -685,6 +685,7 @@ Implementation records:
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
+- [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
 
 Current status:
 
@@ -723,6 +724,9 @@ Current status:
 - those User Client artifact routes require conversation context and verify the
   artifact ref is visible in that User Node conversation before proxying to
   Host;
+- the process proof now delivers the real builder-published source-history git
+  artifact to the User Node and verifies User Client artifact history/diff
+  through the running Human Interface Runtime;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 
