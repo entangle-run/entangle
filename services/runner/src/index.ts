@@ -11,7 +11,7 @@ import type {
 import { getPublicKey } from "nostr-tools";
 import {
   loadRunnerJoinConfig,
-  parseNostrSecretKey,
+  readRunnerSecretKey,
   resolveRunnerJoinConfigPath,
   resolveRunnerJoinIdentity,
   runnerJoinConfigJsonEnvVar
@@ -41,29 +41,16 @@ import { createOpenCodeAgentEngine } from "./opencode-engine.js";
 import { createFileSystemAssignmentMaterializer } from "./assignment-materializer.js";
 import { startHumanInterfaceRuntime } from "./human-interface-runtime.js";
 
-function resolveRunnerIdentity(
+async function resolveRunnerIdentity(
   runtimeContext: EffectiveRuntimeContext
-): {
+): Promise<{
   publicKey: string;
   secretKey: Uint8Array;
-} {
-  const secretEnvVar =
-    runtimeContext.identityContext.secretDelivery.mode === "env_var"
-      ? runtimeContext.identityContext.secretDelivery.envVar
-      : undefined;
-  const configuredSecretKey = secretEnvVar
-    ? parseNostrSecretKey(process.env[secretEnvVar])
-    : undefined;
-
-  if (!configuredSecretKey) {
-    throw new Error(
-      secretEnvVar
-        ? `Runner identity secret is missing from env var '${secretEnvVar}'.`
-        : "Runner identity secret delivery mode is not yet supported."
-    );
-  }
-
-  const publicKey = getPublicKey(configuredSecretKey);
+}> {
+  const secretKey = await readRunnerSecretKey(
+    runtimeContext.identityContext.secretDelivery
+  );
+  const publicKey = getPublicKey(secretKey);
 
   if (publicKey !== runtimeContext.identityContext.publicKey) {
     throw new Error(
@@ -73,7 +60,7 @@ function resolveRunnerIdentity(
 
   return {
     publicKey,
-    secretKey: configuredSecretKey
+    secretKey
   };
 }
 
@@ -209,7 +196,7 @@ export async function createConfiguredRunnerService(
   const packageToolCatalog = await loadPackageToolCatalog(runtimeContext);
   const toolDefinitions =
     mapPackageToolCatalogToEngineToolDefinitions(packageToolCatalog);
-  const { publicKey, secretKey } = resolveRunnerIdentity(runtimeContext);
+  const { publicKey, secretKey } = await resolveRunnerIdentity(runtimeContext);
   const transport =
     input.transport ??
     new NostrRunnerTransport({
@@ -512,7 +499,7 @@ export async function runRunnerOnce(input: {
     injectedEngine: input.engine,
     runtimeContext
   });
-  const { publicKey } = resolveRunnerIdentity(runtimeContext);
+  const { publicKey } = await resolveRunnerIdentity(runtimeContext);
 
   const result = await engine.executeTurn(turnRequest);
 

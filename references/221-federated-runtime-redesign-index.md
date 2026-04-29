@@ -173,6 +173,7 @@ same-machine slice records.
 - [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 - [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 - [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
+- [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 
 ## Audited Scope
 
@@ -303,6 +304,10 @@ The repository is not fully federated:
 - joined runners now fetch authenticated portable bootstrap bundles with
   sanitized workspace paths and package/memory file snapshots instead of
   materializing directly from Host-local context paths;
+- runtime-context runner startup and the Human Interface Runtime now support
+  mounted-file Nostr identity secret delivery in addition to environment
+  variables, matching the shared secret-delivery contract and generic join
+  path;
 - `ops:smoke-federated-live-relay` now proves the federated control/observe path
   against a real relay and projects a git-backed artifact ref;
 - `ops:smoke-federated-process-runner` now starts a real joined runner process,

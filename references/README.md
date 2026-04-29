@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
+[373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -105,7 +105,9 @@ covers TypeScript host smoke scripts, including the process-runner federated
 proof. `@entangle/agent-engine` now also has a deterministic local
 OpenAI-compatible HTTP provider fixture that exercises the real `fetch` path
 for chat completions, tool-loop continuation, and provider error mapping
-without live model credentials.
+without live model credentials. Runtime-context runner startup and the Human
+Interface Runtime now also support mounted-file identity secret delivery,
+matching the shared secret-delivery contract and generic runner join path.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -489,6 +491,7 @@ files are the active federated redesign pack.
 371. [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 372. [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 373. [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
+374. [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 
 ## Role of this corpus
 

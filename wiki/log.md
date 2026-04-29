@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added mounted-file runtime identity support
+
+Runtime-context runner startup now uses the shared runner secret-delivery
+helper, so node identity secrets can be delivered through mounted files as well
+as environment variables. The Human Interface Runtime uses the same helper when
+creating its own Nostr transport, preserving best-effort startup when identity
+material is unavailable. Added runner coverage for a mounted-file runtime
+identity secret.
+
+Added `references/373-mounted-file-runtime-identity-slice.md`.
+
 ## [2026-04-29] verification | Added deterministic OpenAI-compatible provider fixture
 
 Added a package-local fake OpenAI-compatible HTTP provider for

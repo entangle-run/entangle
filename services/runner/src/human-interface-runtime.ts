@@ -38,7 +38,7 @@ import {
   userNodeMessagePublishResponseSchema
 } from "@entangle/types";
 import { getPublicKey } from "nostr-tools";
-import { parseNostrSecretKey } from "./join-config.js";
+import { readRunnerSecretKey } from "./join-config.js";
 import { NostrRunnerTransport } from "./nostr-transport.js";
 import type {
   RunnerInboundEnvelope,
@@ -264,18 +264,14 @@ function buildHostApiHeaders(input: RunnerJoinHostApi | undefined): Record<strin
   return headers;
 }
 
-function resolveHumanInterfaceSecretKey(
+async function resolveHumanInterfaceSecretKey(
   context: EffectiveRuntimeContext
-): Uint8Array | undefined {
-  const secretEnvVar =
-    context.identityContext.secretDelivery.mode === "env_var"
-      ? context.identityContext.secretDelivery.envVar
-      : undefined;
-  const secretKey = secretEnvVar
-    ? parseNostrSecretKey(process.env[secretEnvVar])
-    : undefined;
+): Promise<Uint8Array | undefined> {
+  let secretKey: Uint8Array;
 
-  if (!secretKey) {
+  try {
+    secretKey = await readRunnerSecretKey(context.identityContext.secretDelivery);
+  } catch {
     return undefined;
   }
 
@@ -290,10 +286,10 @@ function resolveHumanInterfaceSecretKey(
   return secretKey;
 }
 
-function createHumanInterfaceTransport(
+async function createHumanInterfaceTransport(
   context: EffectiveRuntimeContext
-): RunnerTransport | undefined {
-  const secretKey = resolveHumanInterfaceSecretKey(context);
+): Promise<RunnerTransport | undefined> {
+  const secretKey = await resolveHumanInterfaceSecretKey(context);
 
   return secretKey
     ? new NostrRunnerTransport({
@@ -2462,7 +2458,8 @@ export async function startHumanInterfaceRuntime(input: {
     process.env.ENTANGLE_HUMAN_INTERFACE_HOST?.trim() || "127.0.0.1";
   const listenPort = normalizeListenPort();
   const userClientStaticRoot = normalizeUserClientStaticDir();
-  const inboundTransport = input.transport ?? createHumanInterfaceTransport(input.context);
+  const inboundTransport =
+    input.transport ?? (await createHumanInterfaceTransport(input.context));
   const ownsInboundTransport = !input.transport && inboundTransport !== undefined;
   let inboundSubscription: RunnerTransportSubscription | undefined;
   const server = createServer((request, response) => {

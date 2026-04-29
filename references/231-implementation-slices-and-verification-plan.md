@@ -707,6 +707,7 @@ Implementation records:
 - [370-user-node-approval-doc-realignment-slice.md](370-user-node-approval-doc-realignment-slice.md)
 - [371-host-smoke-script-lint-coverage-slice.md](371-host-smoke-script-lint-coverage-slice.md)
 - [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
+- [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 
 Current status:
 
@@ -794,6 +795,9 @@ Current status:
 - `@entangle/agent-engine` now tests the OpenAI-compatible HTTP provider
   boundary against a deterministic local API fixture rather than only through
   injected client factories;
+- runtime-context runner startup and the Human Interface Runtime now support
+  mounted-file identity secret delivery as well as env-var delivery, matching
+  generic runner join behavior;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

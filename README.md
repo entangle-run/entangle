@@ -618,6 +618,9 @@ This repository currently contains:
   a further bounded runtime-local inspection slice where the runner can now
   inspect current session state through `inspect_session_state`, both without
   widening host surfaces or granting arbitrary filesystem access;
+- runtime-context runner startup and the Human Interface Runtime now consume
+  both environment-variable and mounted-file Nostr identity secret delivery,
+  matching the shared secret-delivery contract and generic join path;
 - a first deterministic post-turn memory-maintenance slice where the runner
   now writes task-specific wiki pages, appends structured entries to
   `memory/wiki/log.md`, keeps `memory/wiki/index.md` aligned, and feeds recent

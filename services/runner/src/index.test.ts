@@ -591,6 +591,31 @@ describe("runner runtime context", () => {
     expect(result.result.assistantMessages[0]).toContain("worker-it");
   });
 
+  it("executes one stub-engine turn with a mounted-file runtime identity secret", async () => {
+    const fixture = await createRuntimeFixture();
+    const secretPath = path.join(path.dirname(fixture.contextPath), "runner-secret");
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      identityContext: {
+        ...fixture.context.identityContext,
+        secretDelivery: {
+          filePath: secretPath,
+          mode: "mounted_file"
+        }
+      }
+    };
+    await writeFile(secretPath, `${runnerSecretHex}\n`, "utf8");
+    await writeFile(fixture.contextPath, JSON.stringify(context, null, 2), "utf8");
+
+    const result = await runRunnerOnce({
+      runtimeContextPath: fixture.contextPath,
+      engine: stubEngine
+    });
+
+    expect(result.publicKey).toBe(runnerPublicKey);
+    expect(result.result.assistantMessages[0]).toContain("worker-it");
+  });
+
   it("can start and stop the long-lived runner service with an injected transport", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
