@@ -167,17 +167,18 @@ and visible artifact history/diff reads through the running User Client.
 For manual OpenCode/provider testing without rebuilding the setup by hand, run:
 
 ```sh
-pnpm --filter @entangle/user-client build
-pnpm ops:smoke-federated-process-runner -- --keep-running
+pnpm ops:demo-user-node-runtime
 ```
 
-The smoke leaves Host and all joined runners alive, keeps the temporary state
-root, prints both User Client URLs, and prints CLI commands for publishing a
-signed `task.request` to the assigned builder node, inspecting the User Node
-inbox projection, and listing runner turn events. When `apps/user-client/dist`
-exists, it is auto-served by the running User Node runtimes; pass
-`--user-client-static-dir <path>` to use another built app directory. Stop it
-with `Ctrl-C` when the manual test is done.
+The demo builds the dedicated User Client app, starts the development relay,
+then runs the process-runner smoke in `--keep-running` mode. The smoke leaves
+Host and all joined runners alive, keeps the temporary state root, prints both
+User Client URLs, and prints CLI commands for publishing a signed
+`task.request` to the assigned builder node, inspecting the User Node inbox
+projection, and listing runner turn events. Pass `--skip-build` when
+`apps/user-client/dist` is already current, or `--user-client-static-dir <path>`
+to use another built app directory. Stop it with `Ctrl-C` when the manual test
+is done.
 
 To validate provider plumbing without live API credentials, run the
 deterministic OpenAI-compatible development provider in another terminal:

@@ -4786,3 +4786,14 @@ environment while the same package tests exited cleanly when run directly.
 CLI, Studio, and User Client package test scripts now use Vitest fork pools.
 The root `pnpm test` gate, targeted package tests, product naming check, and
 diff/local-assumption audits passed for this slice.
+
+## [2026-04-29] implementation | Added the interactive User Node runtime demo
+
+Added `references/402-user-node-runtime-demo-command-slice.md`.
+`pnpm ops:demo-user-node-runtime` now builds the dedicated User Client app,
+starts the development relay, and runs the federated process-runner smoke in
+`--keep-running` mode.
+
+This gives operators one no-credential command for opening the running User
+Client endpoints served by actual User Node runtimes while preserving the
+existing Host/runner/User Node filesystem isolation and Nostr control path.

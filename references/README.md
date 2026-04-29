@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
+[402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -154,7 +154,10 @@ runner control payload so acknowledgements can be followed to the projected
 candidate. CLI can also inspect runtime command receipts directly from Host
 projection with assignment, node, runner, command type, status, and limit
 filters. Studio can now open assignment-scoped timelines through the same Host
-assignment timeline endpoint.
+assignment timeline endpoint. `pnpm ops:demo-user-node-runtime` now wraps the
+fastest interactive User Node runtime proof by building the dedicated User
+Client app, starting the development relay, and running the federated
+process-runner smoke in `--keep-running` mode.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -567,6 +570,7 @@ files are the active federated redesign pack.
 400. [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 401. [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 402. [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
+403. [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 
 ## Role of this corpus
 

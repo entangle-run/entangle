@@ -230,6 +230,9 @@ when available, or an explicit `--user-client-static-dir`, so manual
 running User Node runtime. CLI now also exposes
 `entangle user-nodes clients --summary` to list active User Nodes with their
 projected Human Interface Runtime placement and User Client URLs.
+`pnpm ops:demo-user-node-runtime` now wraps that shortest interactive path by
+building the dedicated User Client, starting the development relay, and running
+the process-runner proof in `--keep-running` mode.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

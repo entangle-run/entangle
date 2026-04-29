@@ -810,6 +810,7 @@ Implementation records:
 - [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 - [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 - [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
+- [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 
 Current status:
 
@@ -962,6 +963,10 @@ Current status:
   harness without live credentials;
 - `pnpm ops:check-product-naming` verifies active product surfaces do not
   reintroduce obsolete local product/profile labels;
+- `pnpm ops:demo-user-node-runtime` now wraps the fastest interactive User
+  Node runtime proof by building the dedicated User Client app, starting the
+  development relay, and running the process-runner smoke in `--keep-running`
+  mode so operators can open both projected User Client URLs;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

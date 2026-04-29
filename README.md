@@ -167,6 +167,17 @@ smoke, `entangle user-nodes clients --summary` lists active User Nodes with
 their projected Human Interface Runtime placement and browser-openable User
 Client URLs.
 
+The shortest interactive no-credential User Node runtime demo wraps that path:
+
+```bash
+pnpm ops:demo-user-node-runtime
+```
+
+It builds the dedicated User Client app, starts the development relay, runs the
+process-runner smoke in `--keep-running` mode, and prints the Host URL,
+operator token, and both User Client URLs. Stop it with `Ctrl-C` in the demo
+terminal.
+
 To prepare a generic runner outside the smoke path, start Host, export a runner
 Nostr secret on the runner machine, then generate and use a Host-derived join
 config:

@@ -202,6 +202,7 @@ same-machine slice records.
 - [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 - [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
+- [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 
 ## Audited Scope
 
