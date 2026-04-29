@@ -286,6 +286,21 @@ textarea {
   gap: 8px;
 }
 
+.artifact-actions input {
+  flex: 1 1 160px;
+  width: auto;
+}
+
+.inline-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inline-checkbox input {
+  flex: 0 0 auto;
+}
+
 .review-actions input {
   flex: 1 1 220px;
   width: auto;

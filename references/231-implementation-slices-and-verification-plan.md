@@ -440,9 +440,13 @@ Current status:
 - artifact source-change proposals now use runner-owned control behavior, and
   CLI/Studio operator surfaces can request the same path from artifact
   inspection without reintroducing Host source workspace mutation;
-- richer source/wiki mutation endpoints, richer cache policy, and possible
-  User Client artifact proposal controls still need protocol-backed
-  replacement.
+- the running User Client can request the same artifact source-change proposal
+  path for artifacts visible in the selected User Node conversation, with the
+  Human Interface Runtime forwarding through Host control and tagging the
+  request with the User Node id;
+- richer source/wiki mutation endpoints, richer cache policy, and stronger
+  request/candidate correlation for artifact proposal acknowledgements still
+  need protocol-backed replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -806,6 +810,9 @@ Current status:
   `host runtimes artifact-source-proposal`, and Studio exposes it from
   selected artifact detail while keeping proposal completion as projected
   source-change candidate evidence;
+- the running User Client exposes the same request from visible artifact cards
+  through a conversation-scoped Human Interface Runtime JSON route and fallback
+  HTML form, forwarding to Host with `requestedBy` set to the User Node id;
 - semantic artifact validation now allows file-backed git proof targets
   without git transport principals while retaining principal requirements for
   SSH and HTTPS targets;

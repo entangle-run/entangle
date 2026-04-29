@@ -4642,3 +4642,15 @@ detail.
 Both surfaces request the existing Host-signed runner control path and show a
 request acknowledgement while the resulting pending source-change candidate
 remains runner observation evidence.
+
+## [2026-04-29] implementation | Added User Client artifact source proposals
+
+Added `references/389-user-client-artifact-source-proposal-slice.md`.
+The Human Interface Runtime now exposes a conversation-scoped
+`POST /api/artifacts/source-change-proposal` route and matching fallback HTML
+form for artifacts visible to the selected User Node conversation.
+
+The dedicated User Client can request source-change proposals from visible
+artifact cards with target path, reason, and overwrite controls. The runtime
+forwards the request through the existing Host-signed runner control path and
+sets `requestedBy` to the User Node id.

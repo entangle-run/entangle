@@ -518,8 +518,8 @@ This repository currently contains:
   now returns as a Host-signed command executed in runner-owned state and
   exposed through CLI/Studio operator surfaces. Artifact-to-source work now
   returns as a runner-owned source-change proposal command exposed through
-  CLI/Studio operator surfaces rather than Host writes into runner-local
-  workspaces;
+  CLI/Studio operator surfaces and conversation-scoped User Client artifact
+  controls rather than Host writes into runner-local workspaces;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -1078,8 +1078,8 @@ The highest-value remaining gaps are:
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs plus shared multi-target source-history publication presentation
   plus runner-owned artifact restore and source-change proposal operator
-  requests,
-  especially richer artifact proposal user controls,
+  requests plus User Client visible-artifact proposal requests,
+  especially stronger proposal request/candidate correlation,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

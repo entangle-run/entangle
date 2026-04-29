@@ -2,6 +2,7 @@ import type {
   ArtifactRef,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
+  RuntimeArtifactSourceChangeProposalResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
@@ -86,6 +87,13 @@ export type UserClientArtifactDiffResponse = {
   nodeId: string;
   source: "runtime" | "unavailable";
 };
+
+export type UserClientArtifactSourceProposalResponse =
+  RuntimeArtifactSourceChangeProposalResponse & {
+    artifact?: ArtifactRef | undefined;
+    source: "runtime";
+    userNodeId: string;
+  };
 
 export type UserClientSourceChangeDiffResponse = {
   candidateId: string;
@@ -291,6 +299,37 @@ export function fetchArtifactDiff(input: {
     `/api/artifacts/diff?${params.toString()}`,
     {
       baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function proposeArtifactSourceChange(input: {
+  artifactId: string;
+  baseUrl: string;
+  conversationId: string;
+  nodeId: string;
+  overwrite?: boolean | undefined;
+  reason?: string | undefined;
+  targetPath?: string | undefined;
+}): Promise<UserClientArtifactSourceProposalResponse> {
+  return fetchJson<UserClientArtifactSourceProposalResponse>(
+    "/api/artifacts/source-change-proposal",
+    {
+      baseUrl: input.baseUrl,
+      init: {
+        body: JSON.stringify({
+          artifactId: input.artifactId,
+          conversationId: input.conversationId,
+          nodeId: input.nodeId,
+          overwrite: input.overwrite ?? false,
+          ...(input.reason ? { reason: input.reason } : {}),
+          ...(input.targetPath ? { targetPath: input.targetPath } : {})
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
     }
   );
 }

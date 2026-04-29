@@ -96,7 +96,8 @@ API that publishes the runner-owned control command.
 
 ## Open Questions
 
-- Should User Client later expose artifact proposal requests for artifacts
-  visible in a selected User Node conversation?
+- Answered by `389-user-client-artifact-source-proposal-slice.md`: User Client
+  now exposes conversation-scoped artifact proposal requests for visible
+  artifacts.
 - Should proposal request acknowledgements later correlate directly to the
   resulting source-change candidate id in Host projection?

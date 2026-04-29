@@ -12,6 +12,7 @@ import type {
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactPreviewResponse,
+  RuntimeArtifactSourceChangeProposalResponse,
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
@@ -29,6 +30,7 @@ import {
   runtimeArtifactDiffResponseSchema,
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   userNodeConversationResponseSchema,
@@ -102,6 +104,23 @@ type UserClientArtifactDiffResponse = {
   nodeId: string;
   source: "runtime" | "unavailable";
 };
+
+type UserClientArtifactSourceProposalRequest = {
+  artifactId?: unknown;
+  conversationId?: unknown;
+  nodeId?: unknown;
+  overwrite?: unknown;
+  proposalId?: unknown;
+  reason?: unknown;
+  targetPath?: unknown;
+};
+
+type UserClientArtifactSourceProposalResponse =
+  RuntimeArtifactSourceChangeProposalResponse & {
+    artifact?: ArtifactRef | undefined;
+    source: "runtime";
+    userNodeId: string;
+  };
 
 type UserClientVisibleArtifactRef =
   | {
@@ -1207,6 +1226,78 @@ async function buildUserClientArtifactDiff(input: {
   };
 }
 
+async function requestRuntimeArtifactSourceProposal(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  overwrite: boolean;
+  proposalId?: string | undefined;
+  reason?: string | undefined;
+  targetPath?: string | undefined;
+  userNodeId: string;
+  visibleArtifact?: ArtifactRef | undefined;
+}): Promise<{
+  detail?: UserClientArtifactSourceProposalResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for artifact source-change proposals.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/artifacts/${encodeURIComponent(input.artifactId)}/source-change-proposal`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          overwrite: input.overwrite,
+          ...(input.proposalId ? { proposalId: input.proposalId } : {}),
+          ...(input.reason ? { reason: input.reason } : {}),
+          requestedBy: input.userNodeId,
+          ...(input.targetPath ? { targetPath: input.targetPath } : {})
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host artifact source-change proposal request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeArtifactSourceChangeProposalResponseSchema.parse(
+          await response.json()
+        ),
+        ...(input.visibleArtifact ? { artifact: input.visibleArtifact } : {}),
+        source: "runtime",
+        userNodeId: input.userNodeId
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host artifact source-change proposal request failed.",
+      statusCode: 500
+    };
+  }
+}
+
 async function buildUserClientSourceChangeDiff(input: {
   candidateId: string;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -1814,6 +1905,22 @@ function renderArtifactRefs(message: UserNodeMessageRecord): string {
             ${ref.contentSummary ? `<div>${escapeHtml(ref.contentSummary)}</div>` : ""}
             <div class="message-meta">${escapeHtml(renderArtifactLocator(ref))}</div>
             <a class="artifact-action" href="${escapeHtml(previewUrl)}">Preview</a>
+            <form class="artifact-proposal-actions" method="post" action="/artifacts/source-change-proposal">
+              <input type="hidden" name="nodeId" value="${escapeHtml(previewNodeId)}" />
+              <input type="hidden" name="artifactId" value="${escapeHtml(ref.artifactId)}" />
+              <input type="hidden" name="conversationId" value="${escapeHtml(message.conversationId)}" />
+              <label>Target path
+                <input name="targetPath" placeholder="default source root" />
+              </label>
+              <label>Reason
+                <input name="reason" placeholder="why this should become source work" />
+              </label>
+              <label class="inline-checkbox">
+                <input name="overwrite" type="checkbox" value="true" />
+                <span>Overwrite existing files</span>
+              </label>
+              <button type="submit">Propose source change</button>
+            </form>
           </div>`
         );
       })
@@ -2155,6 +2262,10 @@ async function renderHome(input: {
       .approval-actions, .retry-action, .source-review-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
       .source-review-actions { display: grid; gap: 8px; margin-top: 8px; }
       .source-review-actions label { margin: 0; }
+      .artifact-proposal-actions { border-top: 1px solid var(--line); display: grid; gap: 8px; margin-top: 8px; padding-top: 8px; }
+      .artifact-proposal-actions label { margin: 0; }
+      .inline-checkbox { align-items: center; display: flex; flex-direction: row; gap: 8px; }
+      .inline-checkbox input { width: auto; }
       .delivery-errors { color: var(--danger); font-size: 12px; margin: 4px 0 0; padding-left: 18px; }
       .artifact-list { display: grid; gap: 6px; }
       .artifact-ref { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
@@ -2740,6 +2851,99 @@ export async function startHumanInterfaceRuntime(input: {
       }
 
       if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/artifacts/source-change-proposal"
+      ) {
+        let proposalRequest: UserClientArtifactSourceProposalRequest;
+
+        try {
+          proposalRequest =
+            (await readRequestJson(request)) as UserClientArtifactSourceProposalRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Artifact source-change proposal request is invalid."
+          });
+          return;
+        }
+
+        const artifactId =
+          typeof proposalRequest.artifactId === "string"
+            ? proposalRequest.artifactId.trim()
+            : "";
+        const conversationId =
+          typeof proposalRequest.conversationId === "string"
+            ? proposalRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof proposalRequest.nodeId === "string"
+            ? proposalRequest.nodeId.trim()
+            : "";
+        const overwrite = proposalRequest.overwrite === true;
+        const proposalId =
+          typeof proposalRequest.proposalId === "string" &&
+          proposalRequest.proposalId.trim().length > 0
+            ? proposalRequest.proposalId.trim()
+            : undefined;
+        const reason =
+          typeof proposalRequest.reason === "string" &&
+          proposalRequest.reason.trim().length > 0
+            ? proposalRequest.reason.trim()
+            : undefined;
+        const targetPath =
+          typeof proposalRequest.targetPath === "string" &&
+          proposalRequest.targetPath.trim().length > 0
+            ? proposalRequest.targetPath.trim()
+            : undefined;
+
+        if (!nodeId || !artifactId || !conversationId) {
+          writeJson(response, 400, {
+            error: "Runtime node, artifact id, and conversation are required."
+          });
+          return;
+        }
+
+        const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+          artifactId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleArtifact) {
+          writeJson(response, visibleArtifact.statusCode, {
+            error: visibleArtifact.error
+          });
+          return;
+        }
+
+        const proposal = await requestRuntimeArtifactSourceProposal({
+          artifactId,
+          hostApi: input.hostApi,
+          nodeId,
+          overwrite,
+          proposalId,
+          reason,
+          targetPath,
+          userNodeId: input.context.binding.node.nodeId,
+          visibleArtifact: visibleArtifact.artifact
+        });
+
+        if (proposal.error || !proposal.detail) {
+          writeJson(response, proposal.statusCode ?? 502, {
+            error: proposal.error ?? "Artifact source-change proposal failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, proposal.detail);
+        return;
+      }
+
+      if (
         request.method === "GET" &&
         requestUrl.pathname === "/api/source-change-candidates/diff"
       ) {
@@ -3189,6 +3393,113 @@ export async function startHumanInterfaceRuntime(input: {
                 error instanceof Error
                   ? error.message
                   : "Source-change review failed.",
+              selectedConversationId: selectedConversationIdForError
+            })
+          );
+        }
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/artifacts/source-change-proposal"
+      ) {
+        let selectedConversationIdForError: string | undefined;
+
+        try {
+          const form = new URLSearchParams(await readRequestBody(request));
+          const artifactId = form.get("artifactId")?.trim() ?? "";
+          const conversationId = form.get("conversationId")?.trim() ?? "";
+          const nodeId = form.get("nodeId")?.trim() ?? "";
+          const overwrite = form.get("overwrite") === "true";
+          const reason = form.get("reason")?.trim() || undefined;
+          const targetPath = form.get("targetPath")?.trim() || undefined;
+          selectedConversationIdForError = conversationId;
+
+          if (!nodeId || !artifactId || !conversationId) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  "Runtime node, artifact id, and conversation are required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+            artifactId,
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+          if ("error" in visibleArtifact) {
+            writeHtml(
+              response,
+              visibleArtifact.statusCode,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: visibleArtifact.error,
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const proposal = await requestRuntimeArtifactSourceProposal({
+            artifactId,
+            hostApi: input.hostApi,
+            nodeId,
+            overwrite,
+            reason,
+            targetPath,
+            userNodeId: input.context.binding.node.nodeId,
+            visibleArtifact: visibleArtifact.artifact
+          });
+
+          if (proposal.error || !proposal.detail) {
+            writeHtml(
+              response,
+              proposal.statusCode ?? 502,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  proposal.error ?? "Artifact source-change proposal failed.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          writeHtml(
+            response,
+            200,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: `Requested source-change proposal ${proposal.detail.commandId} for ${proposal.detail.artifactId}.`,
+              selectedConversationId: conversationId
+            })
+          );
+        } catch (error) {
+          writeHtml(
+            response,
+            500,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice:
+                error instanceof Error
+                  ? error.message
+                  : "Artifact source-change proposal failed.",
               selectedConversationId: selectedConversationIdForError
             })
           );

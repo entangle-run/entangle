@@ -22,6 +22,7 @@ import {
   formatSignerLabel,
   markConversationRead,
   normalizeApiBaseUrl,
+  proposeArtifactSourceChange,
   publishApprovalResponse,
   publishUserMessage,
   renderArtifactLocator,
@@ -116,14 +117,19 @@ function SourceSummary({
 function ArtifactPreviewAction({
   artifact,
   baseUrl,
-  message
+  message,
+  onRefresh
 }: {
   artifact: ArtifactRef;
   baseUrl: string;
   message: UserNodeMessageRecord;
+  onRefresh: () => Promise<void>;
 }) {
   const [diff, setDiff] = useState<string | undefined>();
   const [historyLines, setHistoryLines] = useState<string[]>([]);
+  const [proposalOverwrite, setProposalOverwrite] = useState(false);
+  const [proposalReason, setProposalReason] = useState("");
+  const [proposalTargetPath, setProposalTargetPath] = useState("");
   const [preview, setPreview] = useState<string | undefined>();
   const [status, setStatus] = useState<string | undefined>();
   const nodeId = resolveArtifactPreviewNodeId(message, artifact);
@@ -210,6 +216,34 @@ function ArtifactPreviewAction({
     }
   }
 
+  async function proposeSourceChange(): Promise<void> {
+    setStatus("requesting proposal");
+
+    try {
+      const response = await proposeArtifactSourceChange({
+        artifactId: artifact.artifactId,
+        baseUrl,
+        conversationId: message.conversationId,
+        nodeId,
+        overwrite: proposalOverwrite,
+        ...(proposalReason.trim() ? { reason: proposalReason.trim() } : {}),
+        ...(proposalTargetPath.trim()
+          ? { targetPath: proposalTargetPath.trim() }
+          : {})
+      });
+
+      setStatus(`proposal requested ${response.commandId}`);
+      setProposalOverwrite(false);
+      setProposalReason("");
+      setProposalTargetPath("");
+      await onRefresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Proposal request failed."
+      );
+    }
+  }
+
   return (
     <div className="artifact-actions">
       <button onClick={() => void loadPreview()} type="button">
@@ -220,6 +254,29 @@ function ArtifactPreviewAction({
       </button>
       <button onClick={() => void loadDiff()} type="button">
         Diff
+      </button>
+      <input
+        aria-label="Proposal target path"
+        onChange={(event) => setProposalTargetPath(event.target.value)}
+        placeholder="Target path"
+        value={proposalTargetPath}
+      />
+      <input
+        aria-label="Proposal reason"
+        onChange={(event) => setProposalReason(event.target.value)}
+        placeholder="Reason"
+        value={proposalReason}
+      />
+      <label className="inline-checkbox">
+        <input
+          checked={proposalOverwrite}
+          onChange={(event) => setProposalOverwrite(event.target.checked)}
+          type="checkbox"
+        />
+        <span>Overwrite</span>
+      </label>
+      <button onClick={() => void proposeSourceChange()} type="button">
+        Propose Source Change
       </button>
       {status ? <span className="metadata">{status}</span> : null}
       {preview ? <pre className="preview-block">{preview}</pre> : null}
@@ -587,6 +644,7 @@ function MessageTimeline({
                     artifact={artifact}
                     baseUrl={baseUrl}
                     message={message}
+                    onRefresh={onRefresh}
                   />
                 </li>
               ))}

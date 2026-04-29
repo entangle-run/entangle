@@ -189,6 +189,7 @@ same-machine slice records.
 - [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 - [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
 - [388-artifact-source-proposal-operator-surfaces-slice.md](388-artifact-source-proposal-operator-surfaces-slice.md)
+- [389-user-client-artifact-source-proposal-slice.md](389-user-client-artifact-source-proposal-slice.md)
 
 ## Audited Scope
 
@@ -739,6 +740,6 @@ conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
 The next blocking implementation areas are richer projection-backed source/wiki
-review services, richer artifact proposal controls in user/operator surfaces,
-richer cache policy controls, and turning the process smoke into the full
-multi-machine distributed proof.
+review services, richer cache policy controls, stronger request/candidate
+correlation for artifact proposal acknowledgements, and turning the process
+smoke into the full multi-machine distributed proof.

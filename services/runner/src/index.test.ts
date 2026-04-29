@@ -1396,6 +1396,31 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "POST" &&
+          request.url ===
+            "/v1/runtimes/worker-it/artifacts/artifact-alpha/source-change-proposal"
+        ) {
+          response.end(
+            JSON.stringify({
+              artifactId: "artifact-alpha",
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-artifact-proposal-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-26T12:06:00.000Z",
+              status: "requested",
+              targetPath:
+                typeof requestRecord.body === "object" &&
+                requestRecord.body !== null &&
+                "targetPath" in requestRecord.body &&
+                typeof requestRecord.body.targetPath === "string"
+                  ? requestRecord.body.targetPath
+                  : undefined
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
           const body = requestRecord.body as
@@ -1694,6 +1719,37 @@ describe("runner runtime context", () => {
       });
       expect(jsonArtifactDiffBody.diff.content).toContain("+report");
 
+      const jsonArtifactProposalResponse = await fetch(
+        new URL("/api/artifacts/source-change-proposal", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            artifactId: "artifact-alpha",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            overwrite: true,
+            reason: "Prepare visible artifact as source work.",
+            targetPath: "proposals/report.md"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonArtifactProposalResponse.status).toBe(200);
+      await expect(jsonArtifactProposalResponse.json()).resolves.toMatchObject({
+        artifact: {
+          artifactId: "artifact-alpha",
+          backend: "git"
+        },
+        artifactId: "artifact-alpha",
+        commandId: "cmd-artifact-proposal-alpha",
+        nodeId: "worker-it",
+        source: "runtime",
+        targetPath: "proposals/report.md",
+        userNodeId: "user-main"
+      });
+
       const jsonUnscopedArtifactResponse = await fetch(
         new URL(
           "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha",
@@ -1703,6 +1759,26 @@ describe("runner runtime context", () => {
       expect(jsonUnscopedArtifactResponse.status).toBe(400);
       await expect(jsonUnscopedArtifactResponse.json()).resolves.toMatchObject({
         error: "Conversation id is required for artifact inspection."
+      });
+
+      const jsonUnscopedArtifactProposalResponse = await fetch(
+        new URL("/api/artifacts/source-change-proposal", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            artifactId: "artifact-alpha",
+            nodeId: "worker-it"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonUnscopedArtifactProposalResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedArtifactProposalResponse.json()
+      ).resolves.toMatchObject({
+        error: "Runtime node, artifact id, and conversation are required."
       });
 
       const jsonSourceDiffResponse = await fetch(
@@ -1859,6 +1935,7 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain(
         "/artifacts/preview?nodeId=worker-it&amp;artifactId=artifact-alpha&amp;conversationId=conversation-alpha"
       );
+      expect(pageBody).toContain("/artifacts/source-change-proposal");
       expect(pageBody).toContain("source_change_candidate:source-change-turn-alpha");
       expect(pageBody).toContain("3</strong> additions");
       expect(pageBody).toContain("modified src/index.ts +3 -1");
@@ -1940,6 +2017,29 @@ describe("runner runtime context", () => {
       expect(artifactPreviewBody).toContain("projection excerpt");
       expect(artifactPreviewBody).not.toContain(
         "/runtime/worker-it/artifacts/reports/review.md"
+      );
+
+      const artifactProposalResponse = await fetch(
+        new URL("/artifacts/source-change-proposal", handle.clientUrl),
+        {
+          body: new URLSearchParams({
+            artifactId: "artifact-alpha",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            overwrite: "true",
+            reason: "Prepare visible artifact as source work.",
+            targetPath: "proposals/report.md"
+          }),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded"
+          },
+          method: "POST"
+        }
+      );
+      const artifactProposalBody = await artifactProposalResponse.text();
+      expect(artifactProposalResponse.status).toBe(200);
+      expect(artifactProposalBody).toContain(
+        "Requested source-change proposal cmd-artifact-proposal-alpha"
       );
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
@@ -2061,6 +2161,24 @@ describe("runner runtime context", () => {
       },
       targetNodeId: "worker-it"
     });
+    const artifactProposalRequests = hostRequests.filter(
+      (request) =>
+        request.method === "POST" &&
+        request.url ===
+          "/v1/runtimes/worker-it/artifacts/artifact-alpha/source-change-proposal"
+    );
+    expect(artifactProposalRequests).toHaveLength(2);
+    for (const request of artifactProposalRequests) {
+      expect(request).toMatchObject({
+        authorization: "Bearer host-secret"
+      });
+      expect(request.body).toMatchObject({
+        overwrite: true,
+        reason: "Prepare visible artifact as source work.",
+        requestedBy: "user-main",
+        targetPath: "proposals/report.md"
+      });
+    }
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&
