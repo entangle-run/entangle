@@ -5052,3 +5052,13 @@ while the direct runner package test passed under `--pool=threads`.
 `scripts/run-workspace-tests.mjs` now launches the runner suite with the same
 threads pool used by the runner package script and already documented by the
 root test reliability record.
+
+## [2026-04-29] test | Required distinct User Client URLs in distributed proof
+
+Added `references/421-distributed-proof-user-client-distinctness-slice.md`.
+The distributed proof verifier now requires expected Human Interface Runtime
+projections to expose distinct User Client URLs, so a multi-user proof cannot
+pass with two User Nodes pointing at the same exact client endpoint.
+
+The distributed proof tool smoke now includes a negative self-test fixture for
+duplicated User Client URLs and requires that fixture to fail.

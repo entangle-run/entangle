@@ -206,6 +206,16 @@ try {
   ]);
   verifySelfTestJson(stoppedRuntimeAllowedJson);
 
+  const sharedUserClientJson = runFailureStep("proof verifier shared-user-client self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--self-test-shared-user-client-url"
+  ], {
+    mustContain: '"ok": false'
+  });
+  verifySelfTestFailureJson(sharedUserClientJson, "user client urls distinct");
+
   console.log("\nDistributed proof tool smoke passed.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

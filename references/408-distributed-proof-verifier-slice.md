@@ -21,6 +21,7 @@ running distributed proof through network APIs only:
 - Host projection contains matching assignment and runtime records;
 - runtime projections report `observedState: "running"` by default;
 - User Node Human Interface Runtime projections expose User Client URLs;
+- expected User Node User Client URLs are distinct;
 - optional User Client `/health` checks pass;
 - optional primary User Node to agent conversation projection exists.
 
@@ -55,6 +56,10 @@ The verifier must not read Host, runner, or shared workstation files.
   `419-distributed-proof-runtime-state-verifier-slice.md`: runtime projection
   records must now report `running` unless the operator explicitly passes
   `--allow-non-running-runtimes` for diagnostics.
+- Tightened by
+  `421-distributed-proof-user-client-distinctness-slice.md`: multiple expected
+  Human Interface Runtime projections must not report the same exact User
+  Client URL.
 
 ## Tests Required
 
@@ -65,7 +70,7 @@ Implemented and passed:
 - `pnpm ops:distributed-proof-verify --self-test --json --require-conversation --check-user-client-health`
 - `pnpm ops:smoke-distributed-proof-tools` now also proves that stopped runtime
   observations fail by default and only pass with the explicit diagnostic
-  override.
+  override, and that duplicated User Client URLs fail the multi-user proof.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.

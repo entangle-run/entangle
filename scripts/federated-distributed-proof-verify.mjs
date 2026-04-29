@@ -25,6 +25,7 @@ const checkUserClientHealth = hasFlag("--check-user-client-health");
 const requireConversation = hasFlag("--require-conversation");
 const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
+const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -83,6 +84,8 @@ Options:
   --json                          Print machine-readable result.
   --self-test                     Verify the verifier against an embedded passing fixture.
   --self-test-runtime-state <s>    Runtime observedState to use in the self-test fixture. Default: running
+  --self-test-shared-user-client-url
+                                  Use one User Client URL for both Human Interface Runtime fixtures.
   -h, --help                      Show this help.
 
 Examples:
@@ -198,7 +201,9 @@ function buildSelfTestSnapshot() {
         assignmentId: profile.assignmentId,
         clientUrl:
           profile.runtimeKind === "human_interface"
-            ? `http://127.0.0.1/${profile.nodeId}`
+            ? selfTestSharedUserClientUrl
+              ? "http://127.0.0.1/shared-user-client"
+              : `http://127.0.0.1/${profile.nodeId}`
             : undefined,
         nodeId: profile.nodeId,
         observedState: selfTestRuntimeState,
@@ -284,6 +289,22 @@ function isAcceptedLiveness(liveness) {
     : liveness === "online";
 }
 
+function findDuplicateValues(values) {
+  const seen = new Set();
+  const duplicates = new Set();
+
+  for (const value of values) {
+    if (seen.has(value)) {
+      duplicates.add(value);
+      continue;
+    }
+
+    seen.add(value);
+  }
+
+  return [...duplicates].sort();
+}
+
 async function checkHealth(url) {
   if (selfTest) {
     return {
@@ -302,6 +323,7 @@ async function checkHealth(url) {
 
 async function evaluateSnapshot(snapshot) {
   const checks = [];
+  const userClientUrls = [];
   const authorityPubkey = snapshot.status?.authority?.publicKey;
   addCheck(
     checks,
@@ -393,6 +415,10 @@ async function evaluateSnapshot(snapshot) {
         clientUrl ?? "missing clientUrl"
       );
 
+      if (typeof clientUrl === "string" && clientUrl.length > 0) {
+        userClientUrls.push(clientUrl);
+      }
+
       if (checkUserClientHealth && typeof clientUrl === "string") {
         const health = await checkHealth(clientUrl);
         addCheck(
@@ -403,6 +429,22 @@ async function evaluateSnapshot(snapshot) {
         );
       }
     }
+  }
+
+  const expectedUserClientCount = expectedProfiles.filter(
+    (profile) => profile.runtimeKind === "human_interface"
+  ).length;
+
+  if (expectedUserClientCount > 1) {
+    const duplicateUserClientUrls = findDuplicateValues(userClientUrls);
+    addCheck(
+      checks,
+      "user client urls distinct",
+      duplicateUserClientUrls.length === 0,
+      duplicateUserClientUrls.length > 0
+        ? `duplicate urls=${duplicateUserClientUrls.join(",")}`
+        : `urls=${userClientUrls.join(",") || "none"}`
+    );
   }
 
   if (requireConversation) {
