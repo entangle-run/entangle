@@ -4559,3 +4559,17 @@ sibling bare git branch head.
 
 This turns non-primary wiki publication from focused unit/contract coverage
 into a process-boundary proof over the live relay and real joined runner path.
+
+## [2026-04-29] implementation | Added multi-target source-history publication
+
+Added `references/382-source-history-multi-target-publication-slice.md`.
+Source-history records now retain a `publications` array while preserving
+`publication` as the latest compatibility summary.
+
+The runner now checks existing publication metadata per resolved git target,
+so automatic primary source-history publication no longer blocks a later
+Host-signed non-primary publication command for the same source-history entry.
+Non-primary source-history artifacts receive target-qualified ids, and the
+process-runner smoke now requests and verifies targeted source-history
+publication against a sibling git repository over the live relay and joined
+runner path.

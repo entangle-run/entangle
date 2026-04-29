@@ -124,14 +124,18 @@ The most accurate current description is:
   source-history records as git commit artifacts and emits projected
   artifact/source-history observations for that publication, defaulting to the
   primary git target for automatic publication while explicit publish commands
-  can select a policy-gated non-primary git target;
+  can select a policy-gated non-primary git target; a source-history entry now
+  retains per-target publication records while preserving the latest
+  publication summary for existing read paths;
 - explicit source-history publication/retry and source-history replay are now
   Host-signed control commands to the accepted runner assignment, with the
   runner owning git publication or replay execution and emitting observation
   evidence; source-history publication commands can carry an approval id and
-  explicit git target selectors for non-primary repositories, while Host now
-  projects `source_history.replayed` outcomes into typed replay records for
-  API, CLI, and Studio inspection without runner-local file access;
+  explicit git target selectors for non-primary repositories, and the
+  process-runner smoke now verifies targeted source-history publication over
+  the same live relay and joined runner path; Host now projects
+  `source_history.replayed` outcomes into typed replay records for API, CLI,
+  and Studio inspection without runner-local file access;
 - explicit wiki repository publication is now a Host-signed
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the
@@ -968,7 +972,7 @@ The current implementation-truth audit now lives in
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
   runner-owned source-history commit artifact publication with explicit
-  non-primary target selection, bounded
+  non-primary target selection plus multi-target publication retention, bounded
   artifact history/diff/preview inspection, backend-cache history/diff for
   projected git refs, and explicit wiki target publication; the next git gaps
   are protocol-owned artifact restore or source-change proposal flows, richer

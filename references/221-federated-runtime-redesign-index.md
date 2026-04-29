@@ -658,8 +658,12 @@ Source-history publication retry now has a Host-signed
 `runtime.source_history.publish` control command for accepted federated
 assignments. That command can now carry an approval id and explicit git target
 selectors, letting the assigned runner publish to policy-gated non-primary
-repositories while Host remains outside the git push. Source-history replay now
-has a Host-signed
+repositories while Host remains outside the git push. A single source-history
+entry can now retain multiple per-target publication records while preserving
+the latest publication field for existing read paths, and the process-runner
+smoke verifies explicit non-primary source-history target publication over the
+same live relay and joined runner path. Source-history replay now has a
+Host-signed
 `runtime.source_history.replay` control command for accepted federated
 assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed

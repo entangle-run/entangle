@@ -24,6 +24,7 @@ const entries: SourceHistoryRecord[] = [
     headTree: "head-tree-old",
     mode: "applied_to_workspace",
     nodeId: "worker-it",
+    publications: [],
     sourceChangeSummary: {
       additions: 1,
       checkedAt: "2026-04-24T00:00:00.000Z",
@@ -65,6 +66,23 @@ const entries: SourceHistoryRecord[] = [
       targetNamespace: "team-alpha",
       targetRepositoryName: "graph-alpha"
     },
+    publications: [
+      {
+        approvalId: "approval-source-publish-new",
+        artifactId: "source-source-history-source-change-turn-new",
+        branch: "worker-it/source-history/source-history-source-change-turn-new",
+        publication: {
+          publishedAt: "2026-04-24T00:04:00.000Z",
+          remoteName: "entangle-gitea",
+          remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
+          state: "published"
+        },
+        requestedAt: "2026-04-24T00:04:00.000Z",
+        targetGitServiceRef: "gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha"
+      }
+    ],
     sourceChangeSummary: {
       additions: 2,
       checkedAt: "2026-04-24T00:02:00.000Z",

@@ -294,6 +294,7 @@ export const sourceHistoryRecordSchema = z.object({
   mode: sourceHistoryApplicationModeSchema,
   nodeId: identifierSchema,
   publication: sourceHistoryPublicationRecordSchema.optional(),
+  publications: z.array(sourceHistoryPublicationRecordSchema).default([]),
   reason: nonEmptyStringSchema.optional(),
   sessionId: identifierSchema.optional(),
   sourceChangeSummary: sourceChangeSummarySchema,

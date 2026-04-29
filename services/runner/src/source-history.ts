@@ -13,6 +13,7 @@ import {
   type GitRepositoryTarget,
   type SourceChangeCandidateRecord,
   type SourceHistoryRecord,
+  type SourceHistoryPublicationRecord,
   type SourceHistoryPublicationTarget,
   type SourceHistoryReplayRecord
 } from "@entangle/types";
@@ -183,15 +184,36 @@ async function runGitCommand(
   });
 }
 
-function buildSourceHistoryArtifactId(sourceHistoryId: string): string {
-  const raw = `source-${sourceHistoryId}`;
+function buildSourceHistoryArtifactId(input: {
+  isPrimaryTarget: boolean;
+  sourceHistoryId: string;
+  target: GitRepositoryTarget;
+}): string {
+  const raw = input.isPrimaryTarget
+    ? `source-${input.sourceHistoryId}`
+    : sanitizeIdentifier(
+        [
+          "source",
+          input.sourceHistoryId,
+          input.target.gitServiceRef,
+          input.target.namespace,
+          input.target.repositoryName
+        ].join("-")
+      );
 
   if (raw.length <= 100) {
     return raw;
   }
 
   const digest = createHash("sha256")
-    .update(sourceHistoryId)
+    .update(
+      [
+        input.sourceHistoryId,
+        input.target.gitServiceRef,
+        input.target.namespace,
+        input.target.repositoryName
+      ].join("|")
+    )
     .digest("hex")
     .slice(0, 12);
   const prefix = raw.slice(0, 87).replace(/[._-]+$/g, "");
@@ -253,6 +275,95 @@ function publicationTargetsEqual(
 
 function describePublicationTarget(target: GitRepositoryTarget): string {
   return `${target.gitServiceRef}/${target.namespace}/${target.repositoryName}`;
+}
+
+function publicationTargetFromRecord(input: {
+  context: EffectiveRuntimeContext;
+  publication: SourceHistoryPublicationRecord;
+}): GitRepositoryTarget | undefined {
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+  const gitServiceRef =
+    input.publication.targetGitServiceRef ?? primaryTarget?.gitServiceRef;
+  const namespace =
+    input.publication.targetNamespace ?? primaryTarget?.namespace;
+  const repositoryName =
+    input.publication.targetRepositoryName ?? primaryTarget?.repositoryName;
+
+  if (!gitServiceRef || !namespace || !repositoryName) {
+    return undefined;
+  }
+
+  return resolveGitRepositoryTargetForArtifactLocator({
+    artifactContext: input.context.artifactContext,
+    locator: {
+      branch: input.publication.branch,
+      commit: input.publication.artifactId,
+      gitServiceRef,
+      namespace,
+      path: ".",
+      repositoryName
+    }
+  });
+}
+
+function publicationRecordMatchesTarget(input: {
+  context: EffectiveRuntimeContext;
+  publication: SourceHistoryPublicationRecord;
+  target: GitRepositoryTarget;
+}): boolean {
+  return publicationTargetsEqual(
+    publicationTargetFromRecord({
+      context: input.context,
+      publication: input.publication
+    }),
+    input.target
+  );
+}
+
+function sourceHistoryPublicationRecords(
+  history: SourceHistoryRecord
+): SourceHistoryPublicationRecord[] {
+  const records = [
+    ...(history.publications ?? []),
+    ...(history.publication ? [history.publication] : [])
+  ];
+  const seen = new Set<string>();
+
+  return records.filter((record) => {
+    const key = [
+      record.targetGitServiceRef ?? "",
+      record.targetNamespace ?? "",
+      record.targetRepositoryName ?? "",
+      record.artifactId
+    ].join("|");
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+function upsertSourceHistoryPublication(input: {
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  publication: SourceHistoryPublicationRecord;
+  target: GitRepositoryTarget;
+}): SourceHistoryPublicationRecord[] {
+  const records = sourceHistoryPublicationRecords(input.history);
+  const nextRecords = records.filter(
+    (record) =>
+      !publicationRecordMatchesTarget({
+        context: input.context,
+        publication: record,
+        target: input.target
+      })
+  );
+
+  nextRecords.push(input.publication);
+  return nextRecords;
 }
 
 function buildPublicationApprovalResource(input: {
@@ -609,11 +720,16 @@ function buildSourceHistoryArtifactRecord(input: {
   branchName: string;
   context: EffectiveRuntimeContext;
   history: SourceHistoryRecord;
+  isPrimaryTarget: boolean;
   repoPath: string;
   target: GitRepositoryTarget;
   timestamp: string;
 }): ArtifactRecord {
-  const artifactId = buildSourceHistoryArtifactId(input.history.sourceHistoryId);
+  const artifactId = buildSourceHistoryArtifactId({
+    isPrimaryTarget: input.isPrimaryTarget,
+    sourceHistoryId: input.history.sourceHistoryId,
+    target: input.target
+  });
 
   return artifactRecordSchema.parse({
     createdAt: input.timestamp,
@@ -1274,23 +1390,6 @@ export async function publishSourceHistoryToGitTarget(input: {
   statePaths: RunnerStatePaths;
   target?: SourceHistoryPublicationTarget | undefined;
 }): Promise<SourceHistoryPublicationResult> {
-  if (input.history.publication) {
-    const publicationState = input.history.publication.publication.state;
-    if (publicationState === "failed" && input.retryFailedPublication) {
-      // Retry below against the current primary target. The new publication
-      // metadata replaces the prior failed attempt if the command completes.
-    } else {
-      return {
-        history: input.history,
-        published: false,
-        reason:
-          publicationState === "failed"
-            ? `Source history '${input.history.sourceHistoryId}' already has failed publication metadata; retry is required.`
-            : `Source history '${input.history.sourceHistoryId}' already has publication metadata.`
-      };
-    }
-  }
-
   const resolvedTarget = resolveSourceHistoryPublicationTarget({
     context: input.context,
     ...(input.target ? { target: input.target } : {})
@@ -1305,6 +1404,33 @@ export async function publishSourceHistoryToGitTarget(input: {
   }
 
   const target = resolvedTarget.target;
+  const existingTargetPublication = sourceHistoryPublicationRecords(
+    input.history
+  ).find((publication) =>
+    publicationRecordMatchesTarget({
+      context: input.context,
+      publication,
+      target
+    })
+  );
+
+  if (existingTargetPublication) {
+    const publicationState = existingTargetPublication.publication.state;
+    if (publicationState === "failed" && input.retryFailedPublication) {
+      // Retry below against the same resolved target. The new publication
+      // metadata replaces the prior failed attempt if the command completes.
+    } else {
+      return {
+        history: input.history,
+        published: false,
+        reason:
+          publicationState === "failed"
+            ? `Source history '${input.history.sourceHistoryId}' already has failed publication metadata for target '${describePublicationTarget(target)}'; retry is required.`
+            : `Source history '${input.history.sourceHistoryId}' already has publication metadata for target '${describePublicationTarget(target)}'.`
+      };
+    }
+  }
+
   const approvalError = await validateSourceHistoryPublicationApproval({
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     context: input.context,
@@ -1351,6 +1477,7 @@ export async function publishSourceHistoryToGitTarget(input: {
       branchName,
       context: input.context,
       history: input.history,
+      isPrimaryTarget: resolvedTarget.isPrimaryTarget,
       repoPath,
       target,
       timestamp: input.requestedAt
@@ -1362,24 +1489,31 @@ export async function publishSourceHistoryToGitTarget(input: {
       repoPath,
       target
     });
+    const nextPublication = {
+      ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+      artifactId: artifact.ref.artifactId,
+      branch: branchName,
+      publication: artifact.publication ?? {
+        state: "not_requested"
+      },
+      requestedAt: input.requestedAt,
+      ...(input.reason ? { reason: input.reason } : {}),
+      ...(input.requestedBy ?? input.history.appliedBy
+        ? { requestedBy: input.requestedBy ?? input.history.appliedBy }
+        : {}),
+      targetGitServiceRef: target.gitServiceRef,
+      targetNamespace: target.namespace,
+      targetRepositoryName: target.repositoryName
+    } satisfies SourceHistoryPublicationRecord;
     const nextHistory = sourceHistoryRecordSchema.parse({
       ...input.history,
-      publication: {
-        ...(input.approvalId ? { approvalId: input.approvalId } : {}),
-        artifactId: artifact.ref.artifactId,
-        branch: branchName,
-        publication: artifact.publication ?? {
-          state: "not_requested"
-        },
-        requestedAt: input.requestedAt,
-        ...(input.reason ? { reason: input.reason } : {}),
-        ...(input.requestedBy ?? input.history.appliedBy
-          ? { requestedBy: input.requestedBy ?? input.history.appliedBy }
-          : {}),
-        targetGitServiceRef: target.gitServiceRef,
-        targetNamespace: target.namespace,
-        targetRepositoryName: target.repositoryName
-      },
+      publication: nextPublication,
+      publications: upsertSourceHistoryPublication({
+        context: input.context,
+        history: input.history,
+        publication: nextPublication,
+        target
+      }),
       updatedAt: artifact.updatedAt
     });
 

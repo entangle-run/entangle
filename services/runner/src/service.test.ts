@@ -1921,6 +1921,14 @@ describe("RunnerService", () => {
       "source-source-history-source-change-review-alpha"
     );
     expect(historyRecord.publication?.publication.state).toBe("published");
+    expect(historyRecord.publications).toHaveLength(1);
+    expect(historyRecord.publications[0]).toMatchObject({
+      artifactId: "source-source-history-source-change-review-alpha",
+      publication: {
+        state: "published"
+      },
+      targetRepositoryName: "graph-alpha"
+    });
     expect(historyRecord.sourceHistoryId).toBe(
       "source-history-source-change-review-alpha"
     );
@@ -2098,6 +2106,8 @@ describe("RunnerService", () => {
         state: "published"
       }
     });
+    expect(historyRecord?.publications).toHaveLength(1);
+    expect(historyRecord?.publications[0]?.publication.state).toBe("published");
     expect(observedArtifacts[0]?.artifactRecord.ref).toMatchObject({
       artifactKind: "commit",
       backend: "git",
@@ -2232,6 +2242,17 @@ describe("RunnerService", () => {
       })
     ).rejects.toThrow("requires an approved approvalId");
 
+    const primaryResult = await service.requestSourceHistoryPublication({
+      reason: "Publish to primary source history.",
+      requestedAt: "2026-04-24T10:09:30.000Z",
+      requestedBy: "operator-main",
+      sourceHistoryId: "source-history-non-primary"
+    });
+    expect(primaryResult).toMatchObject({
+      publicationState: "published",
+      sourceHistoryId: "source-history-non-primary"
+    });
+
     const result = await service.requestSourceHistoryPublication({
       approvalId: "approval-source-history-publication-alpha",
       reason: "Publish to public source history.",
@@ -2267,15 +2288,30 @@ describe("RunnerService", () => {
         state: "published"
       }
     });
-    expect(observedArtifacts[0]?.artifactRecord.ref.locator).toMatchObject({
+    expect(historyRecord?.publications).toHaveLength(2);
+    expect(historyRecord?.publications.map((publication) => publication.targetRepositoryName)).toEqual([
+      "graph-alpha",
+      "graph-alpha-public"
+    ]);
+    expect(historyRecord?.publications[0]?.artifactId).toBe(
+      "source-source-history-non-primary"
+    );
+    expect(historyRecord?.publications[1]?.artifactId).not.toBe(
+      historyRecord?.publications[0]?.artifactId
+    );
+    const targetedArtifact = observedArtifacts.find(
+      (record) =>
+        record.artifactRecord.ref.backend === "git" &&
+        record.artifactRecord.ref.locator.repositoryName === "graph-alpha-public"
+    );
+
+    expect(targetedArtifact?.artifactRecord.ref.locator).toMatchObject({
       repositoryName: "graph-alpha-public"
     });
-    expect(observedSourceHistories[0]?.publication?.targetRepositoryName).toBe(
+    expect(observedSourceHistories.at(-1)?.publication?.targetRepositoryName).toBe(
       "graph-alpha-public"
     );
-    expect(remoteHead).toBe(
-      observedArtifacts[0]?.artifactRecord.ref.locator.commit
-    );
+    expect(remoteHead).toBe(targetedArtifact?.artifactRecord.ref.locator.commit);
   });
 
   it("replays source history on runner-owned control requests with scoped approval", async () => {

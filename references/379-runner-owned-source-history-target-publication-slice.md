@@ -14,6 +14,11 @@ already supported `source_history_publication`, but the control payload, Host
 API, CLI, Studio helper, runner join handle, and runner publication service did
 not carry an explicit publication target or publication approval id.
 
+Follow-up `382-source-history-multi-target-publication-slice.md` removes the
+single-publication record limitation: a source-history entry can now retain
+multiple per-target publication records while keeping `publication` as the
+latest compatibility field.
+
 ## Target Model
 
 Source-history publication remains runner-owned and federated:

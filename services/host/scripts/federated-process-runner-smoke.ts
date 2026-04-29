@@ -45,6 +45,7 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublishResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeWikiPublishResponseSchema,
@@ -749,9 +750,17 @@ async function main(): Promise<void> {
     "team-alpha",
     `${nonPrimaryWikiRepositoryName}.git`
   );
+  const nonPrimarySourceRepositoryName = `${graphId}-source-public`;
+  const nonPrimarySourceRepositoryPath = path.join(
+    tempRoot,
+    "git",
+    "team-alpha",
+    `${nonPrimarySourceRepositoryName}.git`
+  );
   await mkdir(path.dirname(primaryGitRepositoryPath), { recursive: true });
   runGit(["init", "--bare", primaryGitRepositoryPath]);
   runGit(["init", "--bare", nonPrimaryWikiRepositoryPath]);
+  runGit(["init", "--bare", nonPrimarySourceRepositoryPath]);
   printPass("git-backend", gitRemoteBase);
 
   let server: Awaited<ReturnType<typeof buildHostServer>> | undefined;
@@ -902,6 +911,13 @@ async function main(): Promise<void> {
               nodeId: "builder",
               nodeKind: "worker",
               packageSourceRef: packageSource.packageSourceId,
+              policy: {
+                sourceMutation: {
+                  applyRequiresApproval: false,
+                  nonPrimaryPublishRequiresApproval: false,
+                  publishRequiresApproval: false
+                }
+              },
               resourceBindings: {
                 relayProfileRefs: ["preview-relay"]
               }
@@ -2217,6 +2233,98 @@ async function main(): Promise<void> {
     if (sourceHistoryArtifactRef.backend !== "git") {
       throw new Error("Source-history artifact must use the git backend.");
     }
+
+    const targetedSourceHistoryPublicationRequest =
+      runtimeSourceHistoryPublishResponseSchema.parse(
+        await hostRequest({
+          baseUrl: hostBaseUrl,
+          body: {
+            reason:
+              "Process runner smoke requested source-history publication to a non-primary target.",
+            requestedBy: "process-runner-smoke",
+            retryFailedPublication: false,
+            target: {
+              repositoryName: nonPrimarySourceRepositoryName
+            }
+          },
+          method: "POST",
+          path:
+            `/v1/runtimes/builder/source-history/` +
+            `${projectedBuilderSourceHistory.sourceHistoryId}/publish`
+        })
+      );
+    assertCondition(
+      targetedSourceHistoryPublicationRequest.status === "requested" &&
+        targetedSourceHistoryPublicationRequest.assignmentId ===
+          assignment.assignmentId,
+      "Targeted source-history publication request must be accepted as a federated runner command."
+    );
+    printPass(
+      "targeted-source-history-publication-request",
+      `command=${targetedSourceHistoryPublicationRequest.commandId}; ` +
+        `repository=${nonPrimarySourceRepositoryName}`
+    );
+
+    const projectedTargetedSourceHistoryPublicationArtifact = await waitFor(
+      "Host projected runner-owned targeted source-history publication artifact",
+      async () => {
+        const artifactList = runtimeArtifactListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/artifacts"
+          })
+        );
+        const artifact = artifactList.artifacts.find(
+          (entry) =>
+            entry.ref.backend === "git" &&
+            entry.ref.artifactKind === "commit" &&
+            entry.ref.createdByNodeId === "builder" &&
+            entry.ref.locator.repositoryName === nonPrimarySourceRepositoryName &&
+            entry.ref.status === "published"
+        );
+
+        if (!artifact) {
+          return undefined;
+        }
+
+        const inspection = runtimeArtifactInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${artifact.ref.artifactId}`
+          })
+        );
+
+        return inspection.artifact.ref.status === "published"
+          ? inspection.artifact
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    const projectedTargetedSourceHistoryArtifact = readGitArtifactIdentity(
+      projectedTargetedSourceHistoryPublicationArtifact.ref,
+      "Targeted published source-history artifact"
+    );
+    const targetedSourceRemoteHead = runGit([
+      "--git-dir",
+      nonPrimarySourceRepositoryPath,
+      "rev-parse",
+      `refs/heads/${sourceHistoryArtifactRef.locator.branch}`
+    ]);
+    assertCondition(
+      targetedSourceRemoteHead === projectedTargetedSourceHistoryArtifact.commit,
+      "Targeted published source-history artifact commit must match the non-primary remote source branch head."
+    );
+    assertCondition(
+      projectedTargetedSourceHistoryArtifact.repositoryName ===
+        nonPrimarySourceRepositoryName,
+      "Targeted source-history artifact must identify the requested non-primary repository."
+    );
+    printPass(
+      "targeted-runtime-source-history-publication",
+      `artifact=${projectedTargetedSourceHistoryArtifact.artifactId}; ` +
+        `repository=${projectedTargetedSourceHistoryArtifact.repositoryName}; ` +
+        `commit=${projectedTargetedSourceHistoryArtifact.commit.slice(0, 12)}`
+    );
 
     const wikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(
       await hostRequest({

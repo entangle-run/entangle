@@ -291,6 +291,7 @@ Implementation record:
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 - [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
+- [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 
 Verification:
 
@@ -759,6 +760,10 @@ Current status:
   `artifact.ref`, verifies the primary git backend branch head, then requests
   explicit non-primary wiki target publication and verifies the sibling git
   backend branch head;
+- the same process proof now also requests explicit non-primary
+  source-history target publication after automatic primary publication,
+  observes the projected target-qualified git artifact, and verifies the
+  sibling source repository branch head;
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;

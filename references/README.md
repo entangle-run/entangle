@@ -520,6 +520,7 @@ files are the active federated redesign pack.
 380. [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 381. [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 382. [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
+383. [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 
 ## Role of this corpus
 

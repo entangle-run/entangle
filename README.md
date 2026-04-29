@@ -100,10 +100,12 @@ approval response, synthetic agent-to-user, and second-User-Node paths. The fake
 OpenCode executable mutates the source workspace, so the smoke also verifies
 projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
-artifact history/diff through the running User Client, without live model
-credentials. Live OpenCode behavior and real-provider credentials remain
-manual/operator validation; the OpenAI-compatible agent-engine HTTP boundary is
-now covered by a deterministic local provider fixture.
+artifact history/diff through the running User Client. It then requests
+explicit non-primary source-history target publication and verifies the sibling
+source repository branch head, without live model credentials. Live OpenCode
+behavior and real-provider credentials remain manual/operator validation; the
+OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
+local provider fixture.
 
 For manual no-credential provider plumbing tests, start the deterministic
 OpenAI-compatible development server:
@@ -582,13 +584,14 @@ This repository currently contains:
   verifies projected turn/approval/session read APIs, requests runner-owned
   wiki publication through Host-signed control and verifies the projected git
   artifact plus primary git branch head, then requests explicit non-primary
-  wiki target publication and verifies the sibling git branch head, publishes
-  from a second distinct User Node identity, records a synthetic inbound agent
-  message through the running User Node, inspects the selected conversation
-  through the User Client JSON API, submits a signed User Node approval
-  response through the same JSON API, verifies Host projection, and now
-  protects public deep runtime reads from stale Host-local runtime files for
-  accepted federated assignments;
+  wiki target publication and verifies the sibling git branch head, requests
+  explicit non-primary source-history target publication and verifies the
+  sibling source branch head, publishes from a second distinct User Node
+  identity, records a synthetic inbound agent message through the running User
+  Node, inspects the selected conversation through the User Client JSON API,
+  submits a signed User Node approval response through the same JSON API,
+  verifies Host projection, and now protects public deep runtime reads from
+  stale Host-local runtime files for accepted federated assignments;
 - host package lint now covers TypeScript host smoke scripts, including the
   process-runner smoke that exercises the fastest federated runtime proof;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
