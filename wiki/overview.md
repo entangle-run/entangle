@@ -267,6 +267,8 @@ contract, so malformed schema versions or assignment/runtime-kind mismatches
 fail before Host inspection.
 The proof kit can also generate relay-health verifier profile settings when
 explicit relay URLs are supplied.
+Generated kits now also include repeatable `operator/verify-topology.sh` and
+post-work `operator/verify-artifacts.sh` verifier scripts.
 `pnpm ops:distributed-proof-verify` now checks an already-running distributed
 proof through Host HTTP APIs and optional User Client health endpoints, covering
 Host Authority, runner trust/liveness/runtime-kind and agent-engine
@@ -287,8 +289,8 @@ self-test JSON, including non-running runtime rejection and duplicated User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
 paths, invalid proof-profile failure paths, proof-kit relay-health generation
-paths, required-artifact-evidence success/failure paths, and relay-health
-success/failure paths plus
+paths, generated post-work artifact-verifier paths, required-artifact-evidence
+success/failure paths, and relay-health success/failure paths plus
 git-backend-health success/failure paths before a real distributed proof is
 attempted.
 Host runtime synchronization now also preserves observed User Node

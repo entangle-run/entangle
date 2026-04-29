@@ -258,6 +258,8 @@ intentionally configured for another engine adapter.
 After the agent has produced projected work evidence, rerun the verifier with
 `--require-artifact-evidence` to require at least one projected artifact,
 source-change, source-history, or wiki ref from the agent node.
+Generated kits also include `operator/verify-artifacts.sh` for that post-work
+check and `operator/verify-topology.sh` for repeatable topology verification.
 For real multi-machine network checks, add `--check-relay-health`; the verifier
 uses relay URLs from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or
@@ -276,7 +278,8 @@ It also checks that duplicated User Client URLs and wrong runner runtime-kind
 or agent-engine capabilities fail the multi-user proof, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
-when explicitly required. It does not replace the real distributed proof above.
+when explicitly required. It also checks the generated post-work artifact
+verifier command. It does not replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

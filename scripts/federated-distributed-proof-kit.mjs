@@ -305,7 +305,6 @@ function buildOperatorEnvContent() {
 }
 
 function buildOperatorCommandsScript() {
-  const verifierCommand = buildVerifierCommand();
   const lines = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
@@ -353,14 +352,14 @@ function buildOperatorCommandsScript() {
     "run_cli user-nodes clients --summary",
     `run_cli user-nodes message ${shellQuote(userNodeId)} ${shellQuote(agentNodeId)} ${shellQuote("Implement a small change and report what you changed.")} --message-type task.request --compact`,
     "run_cli host projection --summary",
-    verifierCommand,
+    '"$SCRIPT_DIR/verify-topology.sh"',
     ""
   );
 
   return `${lines.join("\n")}\n`;
 }
 
-function buildVerifierCommand() {
+function buildVerifierCommand(options = {}) {
   const args = [
     'pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/proof-profile.json"',
     '--host-url "$ENTANGLE_HOST_URL"',
@@ -376,7 +375,42 @@ function buildVerifierCommand() {
     args.push("--check-relay-health");
   }
 
+  if (options.requireArtifactEvidence) {
+    args.push("--require-artifact-evidence");
+  }
+
   return args.join(" ");
+}
+
+function buildOperatorVerifierScript(options = {}) {
+  const lines = [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    "",
+    'SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"',
+    'ENTANGLE_REPO_ROOT="${ENTANGLE_REPO_ROOT:-$(pwd)}"',
+    "",
+    "set -a",
+    "# shellcheck disable=SC1091",
+    '. "$SCRIPT_DIR/operator.env"',
+    "set +a",
+    "",
+    hostToken ? 'if [ "${ENTANGLE_HOST_TOKEN:-}" = "REPLACE_WITH_HOST_TOKEN" ]; then' : "# No Host token was available when this kit was generated.",
+    ...(hostToken
+      ? [
+    '  echo "Set ENTANGLE_HOST_TOKEN in $SCRIPT_DIR/operator.env or the environment before running verifier commands." >&2',
+    "  exit 1",
+    "fi"
+        ]
+      : []),
+    "",
+    'cd "$ENTANGLE_REPO_ROOT"',
+    "",
+    buildVerifierCommand(options),
+    ""
+  ];
+
+  return `${lines.join("\n")}\n`;
 }
 
 function buildProofProfile() {
@@ -445,6 +479,10 @@ ${runnerRows}
    \`operator/commands.sh\` from the Host/operator machine to trust runners,
    offer assignments, list User Client URLs, send a signed User Node task, and
    inspect Host projection and run the distributed proof verifier.
+5. After the agent has produced projected work evidence, run
+   \`operator/verify-artifacts.sh\` from the Host/operator machine to require
+   projected artifact, source-change, source-history, or wiki evidence from
+   the agent node.
 
 ## Files
 
@@ -456,6 +494,8 @@ ${runnerRows}
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
 - \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, and optional git-service profile for the verifier.
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
+- \`operator/verify-topology.sh\`: repeatable topology, runtime, conversation, and optional relay/git verification.
+- \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence from the agent node.
 
 The generated runner join configs use the same generic \`entangle-runner join\`
 path as local process and Docker proofs. If this kit only works when copied to
@@ -470,8 +510,15 @@ async function writeKit() {
       run(`Generate ${profile.id} join config`, "pnpm", buildRunnerJoinConfigArgs(profile));
     }
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
+    console.log(
+      `[dry-run] operator artifact verifier command: ${buildVerifierCommand({
+        requireArtifactEvidence: true
+      })}`
+    );
     console.log(`[dry-run] operator proof profile: ${JSON.stringify(buildProofProfile())}`);
-    console.log("[dry-run] would write runner env/start scripts, operator commands, and README.");
+    console.log(
+      "[dry-run] would write runner env/start scripts, operator commands, verifier scripts, and README."
+    );
     return;
   }
 
@@ -498,6 +545,16 @@ async function writeKit() {
     "utf8"
   );
   await writeExecutable(path.join(operatorDir, "commands.sh"), buildOperatorCommandsScript());
+  await writeExecutable(
+    path.join(operatorDir, "verify-topology.sh"),
+    buildOperatorVerifierScript()
+  );
+  await writeExecutable(
+    path.join(operatorDir, "verify-artifacts.sh"),
+    buildOperatorVerifierScript({
+      requireArtifactEvidence: true
+    })
+  );
   await writeFile(path.join(outputDir, "README.md"), buildReadme(), "utf8");
   console.log(`[kit] Wrote distributed proof kit to ${outputDir}`);
 }

@@ -42,6 +42,9 @@ URL is available for the verifier profile.
   operator machine without depending on implicit Host-local discovery.
 - The distributed proof tool smoke now proves both the generated profile path
   and the missing-relay validation failure.
+- Follow-up `435-distributed-proof-kit-post-work-verifier-slice.md` adds
+  separate generated topology and post-work verifier scripts that preserve the
+  same optional relay/git health settings.
 
 ## Tests Required
 

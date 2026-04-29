@@ -235,6 +235,7 @@ same-machine slice records.
 - [432-operator-audit-event-presentation-slice.md](432-operator-audit-event-presentation-slice.md)
 - [433-distributed-proof-profile-contract-slice.md](433-distributed-proof-profile-contract-slice.md)
 - [434-distributed-proof-kit-relay-health-profile-slice.md](434-distributed-proof-kit-relay-health-profile-slice.md)
+- [435-distributed-proof-kit-post-work-verifier-slice.md](435-distributed-proof-kit-post-work-verifier-slice.md)
 
 ## Audited Scope
 

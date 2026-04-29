@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-29] tooling | Added generated post-work proof verifier
+
+Added `references/435-distributed-proof-kit-post-work-verifier-slice.md`.
+Generated distributed proof kits now include `operator/verify-topology.sh` for
+repeatable topology/runtime/conversation verification and
+`operator/verify-artifacts.sh` for the post-work
+`--require-artifact-evidence` check. `operator/commands.sh` delegates its final
+verification step to the topology script.
+
+The distributed proof tool smoke now checks that custom-profile dry-run output
+includes the generated artifact-evidence verifier command.
+
 ## [2026-04-29] tooling | Added proof-kit relay-health profile generation
 
 Added `references/434-distributed-proof-kit-relay-health-profile-slice.md`.

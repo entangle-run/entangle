@@ -238,6 +238,7 @@ try {
     mustContain: [
       '--profile "$SCRIPT_DIR/proof-profile.json"',
       "--check-relay-health",
+      "--require-artifact-evidence",
       '"agentRunnerId":"proof-agent-runner"',
       '"userRunnerId":"proof-user-runner"',
       '"reviewerUserRunnerId":"proof-reviewer-runner"',

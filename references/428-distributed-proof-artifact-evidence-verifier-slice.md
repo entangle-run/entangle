@@ -70,6 +70,10 @@ still perform the topology and conversation proof immediately after task
 publication. Operators can rerun the verifier with `--require-artifact-evidence`
 after the agent has produced projected work evidence.
 
+Follow-up `435-distributed-proof-kit-post-work-verifier-slice.md` makes this
+post-work verifier path explicit in generated proof kits through
+`operator/verify-artifacts.sh`.
+
 ## Risks And Mitigations
 
 - Risk: operators enable the evidence requirement too early and see a false
