@@ -22,6 +22,9 @@ multi-machine proof.
 - custom-agent-engine proof kit dry-run command generation;
 - custom runner/node proof kit dry-run verifier command generation;
 - verifier self-test from a generated-style proof profile manifest;
+- verifier JSON self-test pass when artifact evidence is required and present;
+- verifier JSON self-test failure when artifact evidence is required but
+  missing;
 - verifier JSON self-test with required conversation and User Client health
   checks enabled;
 - verifier JSON self-test failure when runtime observations are non-running by
@@ -83,6 +86,8 @@ tools.
   verifier command to include matching runner ids, node ids, and engine kind.
 - The script writes a temporary proof profile manifest and runs verifier
   self-test through `--profile`.
+- The script runs an artifact-evidence verifier self-test and requires success,
+  then runs a missing-artifact-evidence fixture and requires failure.
 - The script runs verifier self-test with JSON output, User Client health
   checks, and required conversation checks, then parses the JSON and fails if
   any embedded check fails.

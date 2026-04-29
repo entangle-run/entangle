@@ -269,12 +269,15 @@ capabilities, assignments, projection, default `running` runtime observations,
 distinct multi-user User Client URLs, and optional conversation evidence
 without reading Host or runner files; custom proof profiles can override the
 expected agent engine kind while OpenCode remains the default.
+The verifier can also require projected artifact/source/wiki evidence from the
+agent node after work is produced with `--require-artifact-evidence`.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
-paths, before a real distributed proof is attempted.
+paths and required-artifact-evidence success/failure paths, before a real
+distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

@@ -27,9 +27,15 @@ const allowStaleRunners = hasFlag("--allow-stale-runners");
 const allowNonRunningRuntimes = hasFlag("--allow-non-running-runtimes");
 const checkUserClientHealth = hasFlag("--check-user-client-health");
 const requireConversation = hasFlag("--require-conversation");
+const requireArtifactEvidence =
+  hasFlag("--require-artifact-evidence") ||
+  readProofProfileBoolean("requireArtifactEvidence");
 const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
+const selfTestWithoutArtifactEvidence = hasFlag(
+  "--self-test-without-artifact-evidence"
+);
 const selfTestWrongRuntimeKind = hasFlag("--self-test-wrong-runtime-kind");
 const selfTestWrongAgentEngineKind = hasFlag("--self-test-wrong-agent-engine-kind");
 const agentRunnerId =
@@ -100,6 +106,7 @@ Options:
   --allow-non-running-runtimes    Accept runtime projections that are not observed as running.
   --check-user-client-health      Fetch /health for projected User Client URLs.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node.
+  --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --agent-runner <id>             Agent runner id. Default: distributed-agent-runner
   --user-runner <id>              Primary User Node runner id. Default: distributed-user-runner
   --reviewer-user-runner <id>     Reviewer User Node runner id. Default: distributed-reviewer-user-runner
@@ -112,6 +119,8 @@ Options:
   --self-test-runtime-state <s>    Runtime observedState to use in the self-test fixture. Default: running
   --self-test-shared-user-client-url
                                   Use one User Client URL for both Human Interface Runtime fixtures.
+  --self-test-without-artifact-evidence
+                                  Omit projected artifact/source/wiki evidence from the self-test fixture.
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
   --self-test-wrong-agent-engine-kind
                                   Make the agent runner advertise the wrong agent engine kind.
@@ -161,6 +170,10 @@ function readProofProfileString(key) {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
     : undefined;
+}
+
+function readProofProfileBoolean(key) {
+  return proofProfile?.[key] === true;
 }
 
 function parsePositiveInteger(value) {
@@ -229,6 +242,39 @@ async function fetchSnapshot() {
 
 function buildSelfTestSnapshot() {
   const now = new Date().toISOString();
+  const artifactEvidence = selfTestWithoutArtifactEvidence
+    ? {}
+    : {
+        artifactRefs: [
+          {
+            artifactId: "artifact-self-test",
+            nodeId: agentNodeId,
+            runnerId: agentRunnerId
+          }
+        ],
+        sourceChangeRefs: [
+          {
+            candidateId: "candidate-self-test",
+            nodeId: agentNodeId,
+            runnerId: agentRunnerId,
+            status: "proposed"
+          }
+        ],
+        sourceHistoryRefs: [
+          {
+            nodeId: agentNodeId,
+            runnerId: agentRunnerId,
+            sourceHistoryId: "source-history-self-test"
+          }
+        ],
+        wikiRefs: [
+          {
+            artifactId: "wiki-artifact-self-test",
+            nodeId: agentNodeId,
+            runnerId: agentRunnerId
+          }
+        ]
+      };
 
   return {
     assignments: {
@@ -274,7 +320,8 @@ function buildSelfTestSnapshot() {
           status: "opened",
           userNodeId
         }
-      ]
+      ],
+      ...artifactEvidence
     },
     runners: {
       runners: expectedProfiles.map((profile) => ({
@@ -368,6 +415,12 @@ function findDuplicateValues(values) {
   }
 
   return [...duplicates].sort();
+}
+
+function countNodeProjectionRecords(snapshot, key, nodeId) {
+  return getArray(snapshot.projection, key).filter(
+    (record) => record?.nodeId === nodeId
+  ).length;
 }
 
 async function checkHealth(url) {
@@ -549,6 +602,38 @@ async function evaluateSnapshot(snapshot) {
       conversation
         ? `conversation=${conversation.conversationId}`
         : "missing projected conversation"
+    );
+  }
+
+  if (requireArtifactEvidence) {
+    const artifactRefCount = countNodeProjectionRecords(
+      snapshot,
+      "artifactRefs",
+      agentNodeId
+    );
+    const sourceChangeRefCount = countNodeProjectionRecords(
+      snapshot,
+      "sourceChangeRefs",
+      agentNodeId
+    );
+    const sourceHistoryRefCount = countNodeProjectionRecords(
+      snapshot,
+      "sourceHistoryRefs",
+      agentNodeId
+    );
+    const wikiRefCount = countNodeProjectionRecords(snapshot, "wikiRefs", agentNodeId);
+    const totalEvidenceCount =
+      artifactRefCount +
+      sourceChangeRefCount +
+      sourceHistoryRefCount +
+      wikiRefCount;
+
+    addCheck(
+      checks,
+      `artifact evidence ${agentNodeId}`,
+      totalEvidenceCount > 0,
+      `artifactRefs=${artifactRefCount}; sourceChangeRefs=${sourceChangeRefCount}; ` +
+        `sourceHistoryRefs=${sourceHistoryRefCount}; wikiRefs=${wikiRefCount}`
     );
   }
 

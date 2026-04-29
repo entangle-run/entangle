@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
+[428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -194,13 +194,15 @@ default `running` runtime observations, and distinct multi-user User Client
 URLs without reading Host or runner files; custom proof profiles can override
 runner ids, graph node ids, and the expected agent engine kind in both the
 verifier and generated proof kit through a proof profile manifest while
-OpenCode remains the default.
+OpenCode remains the default, and operators can optionally require projected
+artifact/source/wiki evidence from the agent node after work is produced.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure smoke over proof-kit help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicate User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
-plus custom proof-kit and verifier agent-engine/profile manifest paths, before
-an operator attempts the real distributed proof.
+plus custom proof-kit and verifier agent-engine/profile manifest paths and
+required-artifact-evidence success/failure paths, before an operator attempts
+the real distributed proof.
 The root sequential `pnpm test` wrapper now also launches the runner suite with
 the same `--pool=threads` setting used by the runner package script, removing a
 documented root-gate drift that reproduced a runner no-output hang.
@@ -649,6 +651,7 @@ files are the active federated redesign pack.
 426. [425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 427. [426-distributed-proof-kit-verifier-profile-slice.md](426-distributed-proof-kit-verifier-profile-slice.md)
 428. [427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
+429. [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 
 ## Role of this corpus
 

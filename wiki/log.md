@@ -5128,3 +5128,16 @@ manifest as its default proof configuration while letting explicit CLI flags
 override profile values. The distributed proof tool smoke now checks the
 generated-style profile path and runs verifier self-test through a temporary
 profile manifest.
+
+## [2026-04-29] test | Added distributed proof artifact-evidence requirement
+
+Added `references/428-distributed-proof-artifact-evidence-verifier-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts
+`--require-artifact-evidence`, which requires at least one projected
+artifact/source-change/source-history/wiki ref from the expected agent node.
+
+The requirement is opt-in so the generated proof kit can still verify topology
+immediately after task publication. Operators can rerun the verifier with the
+flag after the agent has produced work. The distributed proof tool smoke now
+proves both the passing evidence fixture and the missing-evidence failure
+fixture.

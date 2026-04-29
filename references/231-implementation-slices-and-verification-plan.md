@@ -852,6 +852,7 @@ Implementation records:
 - [425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 - [426-distributed-proof-kit-verifier-profile-slice.md](426-distributed-proof-kit-verifier-profile-slice.md)
 - [427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
+- [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 
 Current status:
 
@@ -1052,7 +1053,9 @@ Current status:
   projection, `running` runtime observations, User Client URLs, distinct
   multi-user User Client URLs, and optional conversation evidence without
   reading Host or runner files; custom proof profiles can override the expected
-  agent engine kind while OpenCode remains the default;
+  agent engine kind while OpenCode remains the default, and operators can
+  optionally require projected artifact/source/wiki evidence from the agent
+  node after work is produced;
 - `pnpm ops:smoke-distributed-proof-tools` now runs a deterministic
   no-infrastructure smoke for proof-kit syntax/help/dry-run paths and verifier
   self-test JSON, including stopped-runtime rejection and the explicit
@@ -1062,7 +1065,8 @@ Current status:
   a non-default expected agent engine can pass when the registry fixture
   advertises it and that the proof kit can generate a matching custom-engine
   runner profile plus a matching custom verifier profile, and that the verifier
-  can consume a generated-style proof profile manifest;
+  can consume a generated-style proof profile manifest; it also proves that
+  missing artifact evidence fails when explicitly required;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

@@ -249,6 +249,9 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
 The verifier defaults the expected agent engine to `opencode_server`; custom
 proof profiles can pass `--agent-engine-kind <kind>` when the agent runner is
 intentionally configured for another engine adapter.
+After the agent has produced projected work evidence, rerun the verifier with
+`--require-artifact-evidence` to require at least one projected artifact,
+source-change, source-history, or wiki ref from the agent node.
 
 CI can verify the proof tooling itself without provisioning external machines:
 
@@ -259,8 +262,9 @@ pnpm ops:smoke-distributed-proof-tools
 That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
 JSON, including the default failure path for non-running runtime observations.
 It also checks that duplicated User Client URLs and wrong runner runtime-kind
-or agent-engine capabilities fail the multi-user proof. It does not replace the
-real distributed proof above.
+or agent-engine capabilities fail the multi-user proof, and that missing
+artifact evidence fails when explicitly required. It does not replace the real
+distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

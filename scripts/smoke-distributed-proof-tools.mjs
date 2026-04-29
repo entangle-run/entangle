@@ -250,6 +250,7 @@ try {
         agentNodeId: "architect",
         agentRunnerId: "proof-agent-runner",
         hostUrl: "http://host.example:7071",
+        requireArtifactEvidence: true,
         reviewerUserNodeId: "bob",
         reviewerUserRunnerId: "proof-reviewer-runner",
         schemaVersion: 1,
@@ -270,6 +271,29 @@ try {
   } finally {
     rmSync(proofProfileTempDir, { force: true, recursive: true });
   }
+
+  const artifactEvidenceJson = runStep("proof verifier artifact-evidence self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--require-artifact-evidence"
+  ]);
+  verifySelfTestJson(artifactEvidenceJson);
+
+  const missingArtifactEvidenceJson = runFailureStep(
+    "proof verifier missing-artifact-evidence self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-artifact-evidence",
+      "--self-test-without-artifact-evidence"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(missingArtifactEvidenceJson, "artifact evidence");
 
   const selfTestJson = runStep("proof verifier self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

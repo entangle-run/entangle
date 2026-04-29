@@ -26,6 +26,7 @@ running distributed proof through network APIs only:
 - expected User Node User Client URLs are distinct;
 - optional User Client `/health` checks pass;
 - optional primary User Node to agent conversation projection exists.
+- optional projected artifact/source/wiki evidence exists for the agent node.
 
 The verifier must not read Host, runner, or shared workstation files.
 
@@ -77,6 +78,11 @@ The verifier must not read Host, runner, or shared workstation files.
   pass `--profile <file>` to load Host URL, runner ids, graph node ids, and
   agent engine kind from a generated proof manifest, with explicit CLI flags
   still taking precedence.
+- Widened by
+  `428-distributed-proof-artifact-evidence-verifier-slice.md`: operators can
+  pass `--require-artifact-evidence` to require projected artifact,
+  source-change, source-history, or wiki refs from the agent node after work is
+  produced.
 
 ## Tests Required
 
@@ -91,7 +97,8 @@ Implemented and passed:
   that wrong runner runtime-kind or agent-engine capabilities fail the topology
   proof. The tool smoke also proves a non-default expected agent engine can
   pass when the self-test fixture advertises it, and that verifier self-test can
-  load its expected proof profile from a generated-style manifest.
+  load its expected proof profile from a generated-style manifest. It now also
+  proves passing and failing artifact-evidence requirements.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
@@ -116,6 +123,9 @@ unchanged.
   Mitigation: runner ids and graph node ids are all configurable and default to
   the proof kit values; generated proof kits now also write a profile manifest
   the verifier can read directly.
+- Risk: artifact evidence is required before the agent has produced work.
+  Mitigation: the evidence check is opt-in and intended for a post-work
+  verifier rerun.
 
 ## Open Questions
 

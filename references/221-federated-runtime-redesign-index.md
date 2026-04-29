@@ -228,6 +228,7 @@ same-machine slice records.
 - [425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 - [426-distributed-proof-kit-verifier-profile-slice.md](426-distributed-proof-kit-verifier-profile-slice.md)
 - [427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
+- [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 
 ## Audited Scope
 
@@ -809,6 +810,8 @@ observations, duplicate User Client URLs, and wrong runner runtime-kind
 or agent-engine capabilities. The proof kit and verifier can now be
 parameterized with the same runner ids, graph node ids, and expected agent
 engine kind through a generated proof profile manifest, while keeping OpenCode
-as the default. The remaining blocking implementation areas are richer
+as the default, and can optionally require projected artifact/source/wiki
+evidence from the agent node after work is produced. The remaining blocking
+implementation areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.
