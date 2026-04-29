@@ -5062,3 +5062,13 @@ pass with two User Nodes pointing at the same exact client endpoint.
 
 The distributed proof tool smoke now includes a negative self-test fixture for
 duplicated User Client URLs and requires that fixture to fail.
+
+## [2026-04-29] test | Checked runner runtime-kind capabilities in proof
+
+Added `references/422-distributed-proof-runtime-kind-capability-slice.md`.
+`pnpm ops:distributed-proof-verify` now checks that each expected runner
+registration advertises the runtime kind required by its proof assignment.
+
+The distributed proof tool smoke now includes a wrong-runtime-kind self-test
+fixture and requires that fixture to fail, proving the verifier catches a
+misplaced or stale runner capability projection.

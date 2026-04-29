@@ -222,6 +222,7 @@ same-machine slice records.
 - [419-distributed-proof-runtime-state-verifier-slice.md](419-distributed-proof-runtime-state-verifier-slice.md)
 - [420-root-runner-test-pool-alignment-slice.md](420-root-runner-test-pool-alignment-slice.md)
 - [421-distributed-proof-user-client-distinctness-slice.md](421-distributed-proof-user-client-distinctness-slice.md)
+- [422-distributed-proof-runtime-kind-capability-slice.md](422-distributed-proof-runtime-kind-capability-slice.md)
 
 ## Audited Scope
 
@@ -799,7 +800,7 @@ and role. This remains operator-visible bootstrap posture, not final
 production RBAC. `pnpm ops:smoke-distributed-proof-tools` now gives CI a
 deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
 self-test JSON, including default rejection of non-running runtime
-observations and duplicate User Client URLs. The remaining blocking
-implementation areas are richer
+observations, duplicate User Client URLs, and wrong runner runtime-kind
+capabilities. The remaining blocking implementation areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.

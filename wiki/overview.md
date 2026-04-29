@@ -259,13 +259,15 @@ configs, runner-local env/start scripts, and operator trust/assignment/User
 Node message commands for machines that do not share Host filesystem state.
 `pnpm ops:distributed-proof-verify` now checks an already-running distributed
 proof through Host HTTP APIs and optional User Client health endpoints, covering
-Host Authority, runner trust/liveness, assignments, projection, default
-`running` runtime observations, distinct multi-user User Client URLs, and
-optional conversation evidence without reading Host or runner files.
+Host Authority, runner trust/liveness/runtime-kind capabilities, assignments,
+projection, default `running` runtime observations, distinct multi-user User
+Client URLs, and optional conversation evidence without reading Host or runner
+files.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
-Client URL rejection, before a real distributed proof is attempted.
+Client URL rejection plus wrong-runtime-kind rejection, before a real
+distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

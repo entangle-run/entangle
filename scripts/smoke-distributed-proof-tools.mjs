@@ -216,6 +216,16 @@ try {
   });
   verifySelfTestFailureJson(sharedUserClientJson, "user client urls distinct");
 
+  const wrongRuntimeKindJson = runFailureStep("proof verifier wrong-runtime-kind self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--self-test-wrong-runtime-kind"
+  ], {
+    mustContain: '"ok": false'
+  });
+  verifySelfTestFailureJson(wrongRuntimeKindJson, "supports agent_runner");
+
   console.log("\nDistributed proof tool smoke passed.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

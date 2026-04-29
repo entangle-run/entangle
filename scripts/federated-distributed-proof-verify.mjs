@@ -26,6 +26,7 @@ const requireConversation = hasFlag("--require-conversation");
 const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
+const selfTestWrongRuntimeKind = hasFlag("--self-test-wrong-runtime-kind");
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -86,6 +87,7 @@ Options:
   --self-test-runtime-state <s>    Runtime observedState to use in the self-test fixture. Default: running
   --self-test-shared-user-client-url
                                   Use one User Client URL for both Human Interface Runtime fixtures.
+  --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
   -h, --help                      Show this help.
 
 Examples:
@@ -234,7 +236,10 @@ function buildSelfTestSnapshot() {
         liveness: "online",
         registration: {
           capabilities: {
-            runtimeKinds: [profile.runtimeKind]
+            runtimeKinds:
+              selfTestWrongRuntimeKind && profile.nodeId === agentNodeId
+                ? ["human_interface"]
+                : [profile.runtimeKind]
           },
           runnerId: profile.runnerId,
           trustState: "trusted"
@@ -353,6 +358,16 @@ async function evaluateSnapshot(snapshot) {
         `runner ${profile.runnerId} live`,
         isAcceptedLiveness(runner.liveness),
         `liveness=${runner.liveness ?? "unknown"}`
+      );
+      addCheck(
+        checks,
+        `runner ${profile.runnerId} supports ${profile.runtimeKind}`,
+        Array.isArray(runner.registration?.capabilities?.runtimeKinds) &&
+          runner.registration.capabilities.runtimeKinds.includes(profile.runtimeKind),
+        `runtimeKinds=${
+          (runner.registration?.capabilities?.runtimeKinds ?? []).join(",") ||
+          "none"
+        }`
       );
       addCheck(
         checks,

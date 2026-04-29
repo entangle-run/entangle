@@ -26,7 +26,9 @@ multi-machine proof.
 - verifier JSON self-test pass for the same non-running fixture only when
   `--allow-non-running-runtimes` is explicit;
 - verifier JSON self-test failure when multiple User Node runtime projections
-  report the same User Client URL.
+  report the same User Client URL;
+- verifier JSON self-test failure when a runner advertises the wrong runtime
+  kind for the expected assignment.
 
 ## Current Repo Truth
 
@@ -76,6 +78,7 @@ tools.
 - The script runs the same stopped-runtime self-test with the diagnostic
   override and requires success.
 - The script runs a shared-User-Client verifier self-test and requires failure.
+- The script runs a wrong-runtime-kind verifier self-test and requires failure.
 
 ## Tests Required
 

@@ -16,6 +16,7 @@ running distributed proof through network APIs only:
 - Host status exposes an active Host Authority;
 - expected runner registrations exist and are trusted;
 - runners are online by default, with an explicit stale-tolerant option;
+- runners advertise the runtime kind expected by their assigned graph node;
 - runner heartbeats include expected assignment ids;
 - expected assignments are accepted or active;
 - Host projection contains matching assignment and runtime records;
@@ -60,6 +61,10 @@ The verifier must not read Host, runner, or shared workstation files.
   `421-distributed-proof-user-client-distinctness-slice.md`: multiple expected
   Human Interface Runtime projections must not report the same exact User
   Client URL.
+- Tightened by
+  `422-distributed-proof-runtime-kind-capability-slice.md`: runner
+  registrations must advertise the runtime kind expected by each proof
+  assignment.
 
 ## Tests Required
 
@@ -70,7 +75,8 @@ Implemented and passed:
 - `pnpm ops:distributed-proof-verify --self-test --json --require-conversation --check-user-client-health`
 - `pnpm ops:smoke-distributed-proof-tools` now also proves that stopped runtime
   observations fail by default and only pass with the explicit diagnostic
-  override, and that duplicated User Client URLs fail the multi-user proof.
+  override, that duplicated User Client URLs fail the multi-user proof, and
+  that wrong runner runtime-kind capabilities fail the topology proof.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
