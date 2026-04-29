@@ -226,9 +226,10 @@ and operator commands for trust, assignment, User Client discovery, signed User
 Node task publication, projection inspection, and distributed proof
 verification. The agent runner defaults to `opencode_server`; pass
 `--agent-engine-kind <kind>` to generate a custom agent-engine capability and a
-matching verifier command. Copy runner directories to machines with Entangle
-checkouts; the proof is valid only when the runners do not rely on Host
-filesystem access and report running runtime observations, expected
+matching verifier command. Custom runner and graph node ids are also carried
+into that generated verifier command. Copy runner directories to machines with
+Entangle checkouts; the proof is valid only when the runners do not rely on
+Host filesystem access and report running runtime observations, expected
 runtime-kind capabilities, expected agent-engine capabilities, and distinct
 User Client URLs back to Host projection.
 

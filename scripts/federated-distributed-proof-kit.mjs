@@ -298,6 +298,7 @@ function buildOperatorEnvContent() {
 }
 
 function buildOperatorCommandsScript() {
+  const verifierCommand = buildVerifierCommand();
   const lines = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
@@ -345,11 +346,26 @@ function buildOperatorCommandsScript() {
     "run_cli user-nodes clients --summary",
     `run_cli user-nodes message ${shellQuote(userNodeId)} ${shellQuote(agentNodeId)} ${shellQuote("Implement a small change and report what you changed.")} --message-type task.request --compact`,
     "run_cli host projection --summary",
-    `pnpm ops:distributed-proof-verify --host-url "$ENTANGLE_HOST_URL" --check-user-client-health --require-conversation --agent-engine-kind ${shellQuote(proofAgentEngineKinds[0])}`,
+    verifierCommand,
     ""
   );
 
   return `${lines.join("\n")}\n`;
+}
+
+function buildVerifierCommand() {
+  return [
+    'pnpm ops:distributed-proof-verify --host-url "$ENTANGLE_HOST_URL"',
+    "--check-user-client-health",
+    "--require-conversation",
+    `--agent-runner ${shellQuote(agentRunnerId)}`,
+    `--user-runner ${shellQuote(userRunnerId)}`,
+    `--reviewer-user-runner ${shellQuote(reviewerUserRunnerId)}`,
+    `--agent-node ${shellQuote(agentNodeId)}`,
+    `--user-node ${shellQuote(userNodeId)}`,
+    `--reviewer-user-node ${shellQuote(reviewerUserNodeId)}`,
+    `--agent-engine-kind ${shellQuote(proofAgentEngineKinds[0])}`
+  ].join(" ");
 }
 
 function buildReadme() {
@@ -413,6 +429,7 @@ async function writeKit() {
     for (const profile of runnerProfiles) {
       run(`Generate ${profile.id} join config`, "pnpm", buildRunnerJoinConfigArgs(profile));
     }
+    console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log("[dry-run] would write runner env/start scripts, operator commands, and README.");
     return;
   }

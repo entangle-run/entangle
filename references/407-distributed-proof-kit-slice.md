@@ -51,6 +51,8 @@ managed-runner proofs.
   heartbeat interval, and controlled Host token writing.
 - Support explicit agent engine kind selection for the generated agent runner,
   while defaulting to `opencode_server`.
+- Carry selected runner ids, graph node ids, and agent engine kind into the
+  generated verifier command.
 - Add dry-run and help modes for safe operator review.
 - Document that the proof succeeds only if runner directories can be copied to
   separate machines with Entangle checkouts and no Host filesystem access.
@@ -105,3 +107,7 @@ Further supported by `425-distributed-proof-kit-agent-engine-selection-slice.md`
 the proof kit can now generate a non-default agent-engine runner capability and
 the generated operator script runs the distributed proof verifier with the same
 expected engine kind.
+
+Further supported by `426-distributed-proof-kit-verifier-profile-slice.md`: the
+generated verifier command now carries the complete selected proof profile,
+including custom runner ids and graph node ids.

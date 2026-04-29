@@ -25,8 +25,18 @@ function runStep(label, args, options = {}) {
     throw new Error(`${label} failed with exit code ${result.status ?? "unknown"}.`);
   }
 
-  if (options.mustContain && !result.stdout.includes(options.mustContain)) {
-    throw new Error(`${label} output did not include '${options.mustContain}'.`);
+  const requiredFragments = Array.isArray(options.mustContain)
+    ? options.mustContain
+    : [];
+
+  if (!Array.isArray(options.mustContain) && options.mustContain) {
+    requiredFragments.push(options.mustContain);
+  }
+
+  for (const fragment of requiredFragments) {
+    if (!result.stdout.includes(fragment)) {
+      throw new Error(`${label} output did not include '${fragment}'.`);
+    }
   }
 
   return result.stdout;
@@ -189,6 +199,41 @@ try {
     "external_process"
   ], {
     mustContain: "'external_process'"
+  });
+
+  runStep("proof kit custom-profile verifier dry-run", [
+    "scripts/federated-distributed-proof-kit.mjs",
+    "--dry-run",
+    "--output",
+    "/tmp/entangle-distributed-proof-ci-custom-profile",
+    "--host-url",
+    "http://host.example:7071",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--agent-runner",
+    "proof-agent-runner",
+    "--user-runner",
+    "proof-user-runner",
+    "--reviewer-user-runner",
+    "proof-reviewer-runner",
+    "--agent-node",
+    "architect",
+    "--user-node",
+    "alice",
+    "--reviewer-user-node",
+    "bob",
+    "--agent-engine-kind",
+    "external_process"
+  ], {
+    mustContain: [
+      "--agent-runner 'proof-agent-runner'",
+      "--user-runner 'proof-user-runner'",
+      "--reviewer-user-runner 'proof-reviewer-runner'",
+      "--agent-node 'architect'",
+      "--user-node 'alice'",
+      "--reviewer-user-node 'bob'",
+      "--agent-engine-kind 'external_process'"
+    ]
   });
 
   const selfTestJson = runStep("proof verifier self-test", [

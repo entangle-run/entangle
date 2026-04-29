@@ -5104,3 +5104,14 @@ Generated proof-kit operator commands now also run
 `pnpm ops:distributed-proof-verify` with the same expected agent engine kind,
 and the distributed proof tool smoke includes a custom-engine proof-kit
 dry-run.
+
+## [2026-04-29] tooling | Aligned proof kit verifier profile
+
+Added `references/426-distributed-proof-kit-verifier-profile-slice.md`.
+Generated distributed proof kit operator commands now pass the selected agent
+runner id, User Node runner ids, graph node ids, and agent engine kind into
+`pnpm ops:distributed-proof-verify`.
+
+Proof-kit dry-run output now prints that verifier command, and
+`pnpm ops:smoke-distributed-proof-tools` verifies a custom proof profile so
+custom runner and node names cannot silently fall back to verifier defaults.

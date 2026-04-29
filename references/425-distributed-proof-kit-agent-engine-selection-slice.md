@@ -40,6 +40,9 @@ should validate that same expected engine kind.
 - Added the distributed proof verifier command to generated
   `operator/commands.sh`, using the first configured agent engine kind as the
   expected verifier engine.
+- Follow-up `426-distributed-proof-kit-verifier-profile-slice.md` makes that
+  verifier command carry the complete selected proof profile, including custom
+  runner and graph node ids.
 - Updated generated kit README topology rows to show agent engine kinds.
 - Extended `pnpm ops:smoke-distributed-proof-tools` with a custom-engine
   proof-kit dry-run.
@@ -66,7 +69,8 @@ pnpm ops:distributed-proof-kit --agent-engine-kind external_process
 ```
 
 and the generated operator commands will run the verifier with the same expected
-engine kind.
+engine kind. Follow-up profile propagation also keeps custom runner and graph
+node ids aligned with the generated verifier command.
 
 ## Risks And Mitigations
 
