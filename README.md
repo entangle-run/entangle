@@ -354,9 +354,10 @@ This repository currently contains:
 - runtime memory list/page APIs can now fall back to observed `wiki.ref`
   projection records and bounded wiki previews when Host cannot read the
   runner's memory root;
-- artifact history/diff APIs can now return projected artifact records with
-  explicit unavailable reasons when Host has no backend-resolved repository
-  checkout, rather than failing on local context availability;
+- artifact history/diff APIs can now resolve projected git artifact locators
+  through a Host-owned backend cache when semantic artifact context identifies
+  a reachable git backend, and otherwise return projected artifact records with
+  explicit unavailable reasons;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
@@ -958,9 +959,10 @@ The highest-value remaining gaps are:
   especially cross-runtime owner-level synthesis and automated repair
   workflows;
 - advanced git widening beyond the current locator-specific handoff,
-  runner-owned source-history publication, and bounded artifact
-  history/diff/preview inspection, especially protocol-owned artifact restore
-  or source-change proposal flows, non-primary publication targets, richer wiki
+  runner-owned source-history publication, bounded artifact
+  history/diff/preview inspection, and backend-cache history/diff for projected
+  git refs, especially protocol-owned artifact restore or source-change
+  proposal flows, non-primary publication targets, richer wiki
   promotion beyond primary-git publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

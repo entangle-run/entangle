@@ -12,6 +12,7 @@ import {
 import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { gzip } from "node:zlib";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -2456,6 +2457,248 @@ describe("buildHostServer", () => {
           content: "# Report\n\nReady."
         }
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("resolves projected federated git artifact history and diff from the configured backend", async () => {
+    const server = await createTestServer();
+
+    try {
+      const [
+        {
+          recordArtifactRefObservation,
+          recordRunnerHello,
+          recordRuntimeAssignmentAccepted
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const tempRoot = createdDirectories[0]!;
+      const remoteRoot = path.join(tempRoot, "git-remotes");
+      const namespaceRoot = path.join(remoteRoot, "team-alpha");
+      const remoteRepositoryPath = path.join(namespaceRoot, "artifact-repo.git");
+      const workingRepositoryPath = path.join(tempRoot, "artifact-repo-work");
+      const artifactPath = path.join(workingRepositoryPath, "reports", "report.md");
+
+      await mkdir(namespaceRoot, { recursive: true });
+      await runGitCommand({
+        args: ["init", "--bare", remoteRepositoryPath],
+        cwd: tempRoot
+      });
+      await runGitCommand({
+        args: ["clone", remoteRepositoryPath, workingRepositoryPath],
+        cwd: tempRoot
+      });
+      await runGitCommand({
+        args: ["config", "user.name", "Runner Worker"],
+        cwd: workingRepositoryPath
+      });
+      await runGitCommand({
+        args: ["config", "user.email", "runner-worker@entangle.example"],
+        cwd: workingRepositoryPath
+      });
+      await runGitCommand({
+        args: ["checkout", "-B", "artifact-branch"],
+        cwd: workingRepositoryPath
+      });
+      await mkdir(path.dirname(artifactPath), { recursive: true });
+      await writeFile(artifactPath, "# Report\n\nFirst version.\n", "utf8");
+      await runGitCommand({
+        args: ["add", "--", "reports/report.md"],
+        cwd: workingRepositoryPath
+      });
+      await runGitCommand({
+        args: ["commit", "-m", "Add report"],
+        cwd: workingRepositoryPath
+      });
+      const baseCommit = await runGitCommand({
+        args: ["rev-parse", "HEAD"],
+        cwd: workingRepositoryPath
+      });
+      await writeFile(artifactPath, "# Report\n\nSecond version.\n", "utf8");
+      await runGitCommand({
+        args: ["add", "--", "reports/report.md"],
+        cwd: workingRepositoryPath
+      });
+      await runGitCommand({
+        args: ["commit", "-m", "Update report"],
+        cwd: workingRepositoryPath
+      });
+      const headCommit = await runGitCommand({
+        args: ["rev-parse", "HEAD"],
+        cwd: workingRepositoryPath
+      });
+      await runGitCommand({
+        args: ["push", "--set-upstream", "origin", "artifact-branch"],
+        cwd: workingRepositoryPath
+      });
+
+      const catalogResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          schemaVersion: "1",
+          catalogId: "default-catalog",
+          relays: [
+            {
+              id: "preview-relay",
+              displayName: "Preview Relay",
+              readUrls: ["ws://relay.example"],
+              writeUrls: ["ws://relay.example"],
+              authMode: "none"
+            }
+          ],
+          gitServices: [
+            {
+              id: "gitea",
+              displayName: "File Git",
+              baseUrl: "http://gitea.example",
+              remoteBase: pathToFileURL(remoteRoot).toString(),
+              transportKind: "file",
+              authMode: "ssh_key",
+              defaultNamespace: "team-alpha",
+              provisioning: {
+                mode: "preexisting"
+              }
+            }
+          ],
+          modelEndpoints: [],
+          agentEngineProfiles: [
+            {
+              id: "opencode-default",
+              displayName: "OpenCode",
+              kind: "opencode_server",
+              executable: "opencode"
+            }
+          ],
+          defaults: {
+            relayProfileRefs: ["preview-relay"],
+            gitServiceRef: "gitea",
+            agentEngineProfileRef: "opencode-default"
+          }
+        },
+        url: "/v1/catalog"
+      });
+      expect(catalogResponse.statusCode).toBe(200);
+
+      const packageDirectory = await createAdmittedPackageDirectory(tempRoot);
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+      const authorityResponse = await server.inject({
+        method: "GET",
+        url: "/v1/authority"
+      });
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        authorityResponse.json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+      const runnerId = "runner-alpha";
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+      const trustResponse = await server.inject({
+        method: "POST",
+        url: `/v1/runners/${runnerId}/trust`
+      });
+      expect(trustResponse.statusCode).toBe(200);
+      const offerResponse = await server.inject({
+        method: "POST",
+        payload: {
+          assignmentId: "assignment-alpha",
+          leaseDurationSeconds: 600,
+          nodeId: "worker-it",
+          runnerId
+        },
+        url: "/v1/assignments"
+      });
+      expect(offerResponse.statusCode).toBe(200);
+      const offered = runtimeAssignmentOfferResponseSchema.parse(
+        offerResponse.json()
+      ).assignment;
+      await recordRuntimeAssignmentAccepted({
+        acceptedAt: new Date().toISOString(),
+        assignmentId: "assignment-alpha",
+        eventType: "assignment.accepted",
+        hostAuthorityPubkey,
+        lease: offered.lease,
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      await recordArtifactRefObservation({
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "artifact-branch",
+            commit: headCommit,
+            gitServiceRef: "gitea",
+            namespace: "team-alpha",
+            path: "reports/report.md",
+            repositoryName: "artifact-repo"
+          },
+          status: "published"
+        },
+        eventType: "artifact.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt: new Date().toISOString(),
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey
+      });
+
+      const historyResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/history?limit=5"
+      });
+      expect(historyResponse.statusCode).toBe(200);
+      const history = runtimeArtifactHistoryResponseSchema.parse(
+        historyResponse.json()
+      );
+      expect(history.history).toMatchObject({
+        available: true,
+        inspectedPath: "reports/report.md",
+        truncated: false
+      });
+      expect(history.history.available ? history.history.commits : []).toHaveLength(2);
+      expect(history.history.available ? history.history.commits[0]?.commit : "")
+        .toBe(headCommit);
+
+      const diffResponse = await server.inject({
+        method: "GET",
+        url:
+          "/v1/runtimes/worker-it/artifacts/artifact-alpha/diff" +
+          `?fromCommit=${encodeURIComponent(baseCommit)}`
+      });
+      expect(diffResponse.statusCode).toBe(200);
+      const diff = runtimeArtifactDiffResponseSchema.parse(diffResponse.json());
+      expect(diff.diff).toMatchObject({
+        available: true,
+        fromCommit: baseCommit,
+        toCommit: headCommit,
+        truncated: false
+      });
+      expect(diff.diff.available ? diff.diff.content : "").toContain(
+        "+Second version."
+      );
     } finally {
       await server.close();
     }

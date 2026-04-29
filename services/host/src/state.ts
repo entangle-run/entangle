@@ -1,5 +1,6 @@
 import {
   access,
+  chmod,
   cp,
   lstat,
   mkdir,
@@ -128,11 +129,14 @@ import {
   resolveEffectiveModelEndpointProfile,
   resolveEffectiveModelEndpointProfileRef,
   resolveEffectivePrimaryGitServiceRef,
+  resolveGitPrincipalBindingForService,
+  resolveGitRepositoryTargetForArtifactLocator,
   resolvePrimaryGitRepositoryTarget,
   resolveEffectivePrimaryRelayProfileRef,
   resolveEffectiveRelayProfiles,
   resolveEffectiveRelayProfileRefs,
   type GitRepositoryProvisioningRecord,
+  type GitRepositoryTarget,
   type RuntimeDesiredState,
   nostrSecretKeySchema,
   assignmentAcceptedObservationPayloadSchema,
@@ -449,6 +453,11 @@ const runtimeContextFileName = "effective-runtime-context.json";
 const runnerJoinConfigFileName = "runner-join.json";
 const artifactPreviewMaxBytes = 16 * 1024;
 const artifactDiffMaxBytes = 64 * 1024;
+const artifactGitResolverCacheRoot = path.join(
+  cacheRoot,
+  "artifact-git-repositories"
+);
+const hostGitAskPassRoot = path.join(cacheRoot, "git-askpass");
 const runnerStaleAfterMs = 60_000;
 const runnerOfflineAfterMs = 300_000;
 const memoryPreviewMaxBytes = 16 * 1024;
@@ -6419,6 +6428,8 @@ export async function initializeHostState(): Promise<void> {
     ensureDirectory(workspacesRoot),
     ensureDirectory(path.join(cacheRoot, "validator")),
     ensureDirectory(path.join(cacheRoot, "projections")),
+    ensureDirectory(artifactGitResolverCacheRoot),
+    ensureDirectory(hostGitAskPassRoot),
     ensureDirectory(path.join(cacheRoot, "temp"))
   ]);
 
@@ -9380,20 +9391,17 @@ function sanitizeArtifactGitInspectionReason(input: {
   return reason;
 }
 
-async function readArtifactGitHistory(input: {
+type ArtifactGitInspectionTarget = {
+  artifactPath: string;
+  repoPath: string;
+  sanitizeReason: (reason: string) => string;
+};
+
+async function readArtifactGitHistoryFromTarget(input: {
   artifact: ArtifactRecord;
-  context: EffectiveRuntimeContext;
   limit: number;
+  target: ArtifactGitInspectionTarget;
 }): Promise<RuntimeArtifactHistoryResponse["history"]> {
-  const target = await resolveArtifactGitInspectionTarget(input);
-
-  if ("reason" in target) {
-    return {
-      available: false,
-      reason: target.reason
-    };
-  }
-
   const artifactRef = input.artifact.ref;
 
   if (artifactRef.backend !== "git") {
@@ -9404,26 +9412,19 @@ async function readArtifactGitHistory(input: {
     };
   }
 
-  const sanitizeReason = (reason: string): string =>
-    sanitizeArtifactGitInspectionReason({
-      context: input.context,
-      reason,
-      repoPath: target.repoPath
-    });
-
   try {
-    await runSourceHistoryGitCommand(target.repoPath, [
+    await runSourceHistoryGitCommand(input.target.repoPath, [
       "cat-file",
       "-e",
       `${artifactRef.locator.commit}^{commit}`
     ]);
-    const output = await runSourceHistoryGitCommand(target.repoPath, [
+    const output = await runSourceHistoryGitCommand(input.target.repoPath, [
       "log",
       `--max-count=${input.limit + 1}`,
       "--format=%H%x1f%h%x1f%cI%x1f%an%x1f%ae%x1f%s",
       artifactRef.locator.commit,
       "--",
-      target.artifactPath
+      input.target.artifactPath
     ]);
     const lines = output.split("\n").filter((line) => line.trim().length > 0);
     const commits = lines.slice(0, input.limit).map((line) => {
@@ -9443,17 +9444,47 @@ async function readArtifactGitHistory(input: {
     return {
       available: true,
       commits,
-      inspectedPath: target.artifactPath,
+      inspectedPath: input.target.artifactPath,
       truncated: lines.length > input.limit
     };
   } catch (error) {
     return {
       available: false,
-      reason: `Artifact git history is unavailable: ${sanitizeReason(
+      reason: `Artifact git history is unavailable: ${input.target.sanitizeReason(
         formatUnknownError(error)
       )}`
     };
   }
+}
+
+async function readArtifactGitHistory(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  limit: number;
+}): Promise<RuntimeArtifactHistoryResponse["history"]> {
+  const target = await resolveArtifactGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      available: false,
+      reason: target.reason
+    };
+  }
+
+  return readArtifactGitHistoryFromTarget({
+    artifact: input.artifact,
+    limit: input.limit,
+    target: {
+      artifactPath: target.artifactPath,
+      repoPath: target.repoPath,
+      sanitizeReason: (reason) =>
+        sanitizeArtifactGitInspectionReason({
+          context: input.context,
+          reason,
+          repoPath: target.repoPath
+        })
+    }
+  });
 }
 
 async function resolveArtifactDiffBaseCommit(input: {
@@ -9482,20 +9513,11 @@ async function resolveArtifactDiffBaseCommit(input: {
   return firstParent ?? gitEmptyTreeHash;
 }
 
-async function readArtifactGitDiff(input: {
+async function readArtifactGitDiffFromTarget(input: {
   artifact: ArtifactRecord;
-  context: EffectiveRuntimeContext;
   fromCommit?: string | undefined;
+  target: ArtifactGitInspectionTarget;
 }): Promise<RuntimeArtifactDiffResponse["diff"]> {
-  const target = await resolveArtifactGitInspectionTarget(input);
-
-  if ("reason" in target) {
-    return {
-      available: false,
-      reason: target.reason.replace("history", "diff")
-    };
-  }
-
   const artifactRef = input.artifact.ref;
 
   if (artifactRef.backend !== "git") {
@@ -9506,30 +9528,23 @@ async function readArtifactGitDiff(input: {
     };
   }
 
-  const sanitizeReason = (reason: string): string =>
-    sanitizeArtifactGitInspectionReason({
-      context: input.context,
-      reason,
-      repoPath: target.repoPath
-    });
-
   let fromCommit: string;
 
   try {
-    await runSourceHistoryGitCommand(target.repoPath, [
+    await runSourceHistoryGitCommand(input.target.repoPath, [
       "cat-file",
       "-e",
       `${artifactRef.locator.commit}^{commit}`
     ]);
     fromCommit = await resolveArtifactDiffBaseCommit({
       fromCommit: input.fromCommit,
-      repoPath: target.repoPath,
+      repoPath: input.target.repoPath,
       toCommit: artifactRef.locator.commit
     });
   } catch (error) {
     return {
       available: false,
-      reason: `Artifact git diff is unavailable: ${sanitizeReason(
+      reason: `Artifact git diff is unavailable: ${input.target.sanitizeReason(
         formatUnknownError(error)
       )}`
     };
@@ -9545,10 +9560,10 @@ async function readArtifactGitDiff(input: {
         fromCommit,
         artifactRef.locator.commit,
         "--",
-        target.artifactPath
+        input.target.artifactPath
       ],
       {
-        cwd: target.repoPath,
+        cwd: input.target.repoPath,
         stdio: ["ignore", "pipe", "pipe"]
       }
     );
@@ -9580,7 +9595,7 @@ async function readArtifactGitDiff(input: {
     child.on("error", (error) => {
       resolve({
         available: false,
-        reason: `Artifact git diff is unavailable: ${sanitizeReason(
+        reason: `Artifact git diff is unavailable: ${input.target.sanitizeReason(
           formatUnknownError(error)
         )}`
       });
@@ -9592,7 +9607,7 @@ async function readArtifactGitDiff(input: {
 
         resolve({
           available: false,
-          reason: `Artifact git diff is unavailable: ${sanitizeReason(reason)}`
+          reason: `Artifact git diff is unavailable: ${input.target.sanitizeReason(reason)}`
         });
         return;
       }
@@ -9610,6 +9625,334 @@ async function readArtifactGitDiff(input: {
         truncated: stdoutBytes > artifactDiffMaxBytes
       });
     });
+  });
+}
+
+async function readArtifactGitDiff(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  fromCommit?: string | undefined;
+}): Promise<RuntimeArtifactDiffResponse["diff"]> {
+  const target = await resolveArtifactGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      available: false,
+      reason: target.reason.replace("history", "diff")
+    };
+  }
+
+  return readArtifactGitDiffFromTarget({
+    artifact: input.artifact,
+    fromCommit: input.fromCommit,
+    target: {
+      artifactPath: target.artifactPath,
+      repoPath: target.repoPath,
+      sanitizeReason: (reason) =>
+        sanitizeArtifactGitInspectionReason({
+          context: input.context,
+          reason,
+          repoPath: target.repoPath
+        })
+    }
+  });
+}
+
+function buildArtifactGitCachePath(target: GitRepositoryTarget): string {
+  const digest = createHash("sha256")
+    .update(
+      JSON.stringify({
+        gitServiceRef: target.gitServiceRef,
+        namespace: target.namespace,
+        remoteUrl: target.remoteUrl,
+        repositoryName: target.repositoryName
+      })
+    )
+    .digest("hex")
+    .slice(0, 16);
+
+  return path.join(
+    artifactGitResolverCacheRoot,
+    sanitizeIdentifier(
+      `${target.gitServiceRef}-${target.namespace}-${target.repositoryName}-${digest}`
+    )
+  );
+}
+
+async function ensureHostGitHttpsAskPassScript(): Promise<string> {
+  const askPassScriptPath = path.join(hostGitAskPassRoot, "https-askpass.sh");
+  const askPassScript = [
+    "#!/bin/sh",
+    "case \"$1\" in",
+    "  *Username*) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_USERNAME\" ;;",
+    "  *Password*) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_TOKEN\" ;;",
+    "  *) printf '%s\\n' \"$ENTANGLE_GIT_ASKPASS_TOKEN\" ;;",
+    "esac",
+    ""
+  ].join("\n");
+
+  await mkdir(path.dirname(askPassScriptPath), { recursive: true });
+  await writeFile(askPassScriptPath, askPassScript, {
+    encoding: "utf8",
+    mode: 0o700
+  });
+  await chmod(askPassScriptPath, 0o700);
+
+  return askPassScriptPath;
+}
+
+async function buildHostGitCommandEnvForRemoteOperation(input: {
+  context: EffectiveRuntimeContext;
+  target: GitRepositoryTarget;
+}): Promise<NodeJS.ProcessEnv | undefined> {
+  if (!input.target.remoteUrl.includes("://")) {
+    return undefined;
+  }
+
+  if (input.target.transportKind === "file") {
+    return undefined;
+  }
+
+  const principalResolution = resolveGitPrincipalBindingForService({
+    artifactContext: input.context.artifactContext,
+    gitServiceRef: input.target.gitServiceRef
+  });
+
+  if (principalResolution.status === "missing") {
+    throw new Error(
+      `Remote git artifact inspection requires a git principal binding for service '${input.target.gitServiceRef}', but none was resolved.`
+    );
+  }
+
+  if (principalResolution.status === "ambiguous") {
+    throw new Error(
+      `Remote git artifact inspection requires a deterministic git principal for service '${input.target.gitServiceRef}', but multiple candidates were resolved: ${principalResolution.candidatePrincipalIds.join(", ")}.`
+    );
+  }
+
+  const principalBinding = principalResolution.binding;
+
+  if (input.target.transportKind === "ssh") {
+    if (principalBinding.principal.transportAuthMode !== "ssh_key") {
+      throw new Error(
+        `Remote git artifact inspection requires an SSH-key git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
+      );
+    }
+
+    if (
+      principalBinding.transport.status !== "available" ||
+      principalBinding.transport.delivery?.mode !== "mounted_file"
+    ) {
+      throw new Error(
+        `Remote git artifact inspection requires an available mounted SSH key for git principal '${principalBinding.principal.principalId}'.`
+      );
+    }
+
+    return {
+      GIT_SSH_COMMAND: [
+        "ssh",
+        "-F",
+        "/dev/null",
+        "-i",
+        principalBinding.transport.delivery.filePath,
+        "-o",
+        "IdentitiesOnly=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new"
+      ].join(" ")
+    };
+  }
+
+  if (principalBinding.principal.transportAuthMode !== "https_token") {
+    throw new Error(
+      `Remote git artifact inspection requires an HTTPS-token git principal, but '${principalBinding.principal.principalId}' uses '${principalBinding.principal.transportAuthMode}'.`
+    );
+  }
+
+  const token = await readSecretRefValue(principalBinding.principal.secretRef);
+
+  if (!token) {
+    throw new Error(
+      `Remote git artifact inspection requires an available HTTPS token for git principal '${principalBinding.principal.principalId}'.`
+    );
+  }
+
+  return {
+    ENTANGLE_GIT_ASKPASS_TOKEN: token,
+    ENTANGLE_GIT_ASKPASS_USERNAME: principalBinding.principal.subject,
+    GIT_ASKPASS: await ensureHostGitHttpsAskPassScript(),
+    GIT_TERMINAL_PROMPT: "0"
+  };
+}
+
+async function ensureArtifactBackendGitRepository(input: {
+  context: EffectiveRuntimeContext;
+  target: GitRepositoryTarget;
+}): Promise<{ env?: NodeJS.ProcessEnv | undefined; repoPath: string }> {
+  const repoPath = buildArtifactGitCachePath(input.target);
+  const env = await buildHostGitCommandEnvForRemoteOperation(input);
+
+  await ensureDirectory(artifactGitResolverCacheRoot);
+
+  if (!(await pathExists(path.join(repoPath, ".git")))) {
+    await rm(repoPath, { force: true, recursive: true });
+    await runSourceHistoryGitCommand(
+      artifactGitResolverCacheRoot,
+      ["clone", "--no-checkout", input.target.remoteUrl, path.basename(repoPath)],
+      { env }
+    );
+  } else {
+    const remotes = await runSourceHistoryGitCommand(repoPath, ["remote"], {
+      env
+    }).catch(() => "");
+
+    if (remotes.split("\n").includes("origin")) {
+      await runSourceHistoryGitCommand(
+        repoPath,
+        ["remote", "set-url", "origin", input.target.remoteUrl],
+        { env }
+      );
+    } else {
+      await runSourceHistoryGitCommand(
+        repoPath,
+        ["remote", "add", "origin", input.target.remoteUrl],
+        { env }
+      );
+    }
+  }
+
+  await runSourceHistoryGitCommand(
+    repoPath,
+    [
+      "fetch",
+      "--prune",
+      "origin",
+      "+refs/heads/*:refs/remotes/origin/*",
+      "+refs/tags/*:refs/tags/*"
+    ],
+    { env }
+  );
+
+  return { env, repoPath };
+}
+
+function sanitizeArtifactBackendGitInspectionReason(input: {
+  reason: string;
+  repoPath?: string | undefined;
+  target?: GitRepositoryTarget | undefined;
+}): string {
+  let reason = input.reason;
+
+  for (const [targetValue, placeholder] of [
+    [input.repoPath, "<artifact_backend_cache>"],
+    [input.target?.remoteUrl, "<git_remote>"],
+    [artifactGitResolverCacheRoot, "<artifact_git_cache>"],
+    [cacheRoot, "<host_cache>"]
+  ] as Array<[string | undefined, string]>) {
+    if (targetValue) {
+      reason = reason.replaceAll(targetValue, placeholder);
+    }
+  }
+
+  return reason;
+}
+
+async function resolveArtifactBackendGitInspectionTarget(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+}): Promise<ArtifactGitInspectionTarget | { reason: string }> {
+  if (input.artifact.ref.backend !== "git") {
+    return {
+      reason:
+        "Artifact git history is unavailable because the artifact is not git-backed."
+    };
+  }
+
+  const target = resolveGitRepositoryTargetForArtifactLocator({
+    artifactContext: input.context.artifactContext,
+    locator: input.artifact.ref.locator
+  });
+
+  if (!target) {
+    return {
+      reason:
+        "Artifact git history is unavailable because the projected git locator does not include a resolvable git service, namespace, and repository."
+    };
+  }
+
+  const normalizedPath = normalizeGitArtifactPath(input.artifact.ref);
+
+  if ("reason" in normalizedPath) {
+    return normalizedPath;
+  }
+
+  try {
+    const repository = await ensureArtifactBackendGitRepository({
+      context: input.context,
+      target
+    });
+
+    return {
+      artifactPath: normalizedPath.path,
+      repoPath: repository.repoPath,
+      sanitizeReason: (reason) =>
+        sanitizeArtifactBackendGitInspectionReason({
+          reason,
+          repoPath: repository.repoPath,
+          target
+        })
+    };
+  } catch (error) {
+    return {
+      reason: `Artifact git history is unavailable: ${sanitizeArtifactBackendGitInspectionReason(
+        {
+          reason: formatUnknownError(error),
+          target
+        }
+      )}`
+    };
+  }
+}
+
+async function readArtifactBackendGitHistory(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  limit: number;
+}): Promise<RuntimeArtifactHistoryResponse["history"]> {
+  const target = await resolveArtifactBackendGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      available: false,
+      reason: target.reason
+    };
+  }
+
+  return readArtifactGitHistoryFromTarget({
+    artifact: input.artifact,
+    limit: input.limit,
+    target
+  });
+}
+
+async function readArtifactBackendGitDiff(input: {
+  artifact: ArtifactRecord;
+  context: EffectiveRuntimeContext;
+  fromCommit?: string | undefined;
+}): Promise<RuntimeArtifactDiffResponse["diff"]> {
+  const target = await resolveArtifactBackendGitInspectionTarget(input);
+
+  if ("reason" in target) {
+    return {
+      available: false,
+      reason: target.reason.replace("history", "diff")
+    };
+  }
+
+  return readArtifactGitDiffFromTarget({
+    artifact: input.artifact,
+    fromCommit: input.fromCommit,
+    target
   });
 }
 
@@ -9647,12 +9990,25 @@ export async function getRuntimeArtifactHistory(input: {
     return null;
   }
 
+  const semanticContext = await getRuntimeContext(input.nodeId);
+
+  if (semanticContext) {
+    return runtimeArtifactHistoryResponseSchema.parse({
+      artifact: artifactInspection.artifact,
+      history: await readArtifactBackendGitHistory({
+        artifact: artifactInspection.artifact,
+        context: semanticContext,
+        limit: input.limit
+      })
+    });
+  }
+
   return runtimeArtifactHistoryResponseSchema.parse({
     artifact: artifactInspection.artifact,
     history: {
       available: false,
       reason:
-        "Artifact git history is unavailable because only a projected artifact ref is available; no backend-resolved repository checkout is attached to Host."
+        "Artifact git history is unavailable because only a projected artifact ref is available and no semantic artifact backend context is attached to Host."
     }
   });
 }
@@ -9691,12 +10047,25 @@ export async function getRuntimeArtifactDiff(input: {
     return null;
   }
 
+  const semanticContext = await getRuntimeContext(input.nodeId);
+
+  if (semanticContext) {
+    return runtimeArtifactDiffResponseSchema.parse({
+      artifact: artifactInspection.artifact,
+      diff: await readArtifactBackendGitDiff({
+        artifact: artifactInspection.artifact,
+        context: semanticContext,
+        fromCommit: input.fromCommit
+      })
+    });
+  }
+
   return runtimeArtifactDiffResponseSchema.parse({
     artifact: artifactInspection.artifact,
     diff: {
       available: false,
       reason:
-        "Artifact git diff is unavailable because only a projected artifact ref is available; no backend-resolved repository checkout is attached to Host."
+        "Artifact git diff is unavailable because only a projected artifact ref is available and no semantic artifact backend context is attached to Host."
     }
   });
 }

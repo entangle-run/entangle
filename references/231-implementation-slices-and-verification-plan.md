@@ -332,9 +332,10 @@ Current status:
 - runtime memory list/page GET routes can fall back to observed `wiki.ref`
   projection records with bounded preview content when local memory files are
   unavailable;
-- runtime artifact history/diff GET routes can fall back to projected artifact
-  records with explicit unavailable reasons when no backend-resolved repository
-  checkout is attached to Host;
+- runtime artifact history/diff GET routes can resolve projected git artifact
+  locators through a Host-owned backend cache when the locator and semantic
+  artifact context identify a reachable git backend, and otherwise fall back to
+  projected artifact records with explicit unavailable reasons;
 - accepted signed source-candidate reviews now make the owning runner record a
   runner-local source-history application and emit the updated candidate through
   `source_change.ref`, so Host projection can see `candidate.application`
@@ -386,9 +387,11 @@ Current status:
   accepted federated assignments, so artifacts, memory, approvals,
   source-change candidates, source history, and turns are served from
   projection/backend evidence instead of stale Host-local runtime files;
-- deeper artifact history computation, richer source/wiki mutation endpoints,
-  non-primary publication, and artifact restore/promotion still need
-  projection-backed or backend-resolved replacement.
+- projected git artifact history/diff can now be computed from a Host-owned
+  backend cache without reading runner-local runtime files;
+- richer source/wiki mutation endpoints, non-primary publication, cache policy,
+  and artifact restore/promotion still need projection-backed or
+  backend-resolved replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -665,6 +668,7 @@ Implementation records:
 - [344-process-smoke-assignment-timeline-slice.md](344-process-smoke-assignment-timeline-slice.md)
 - [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
 - [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
+- [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
 
 Current status:
 
@@ -686,6 +690,9 @@ Current status:
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;
+- Host can resolve projected git artifact history/diff through a backend cache
+  when artifact locators include git service, namespace, repository, commit,
+  and path metadata;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

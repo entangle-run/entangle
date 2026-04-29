@@ -88,9 +88,10 @@ The most accurate current description is:
 - runtime memory list/page read APIs can now fall back to observed `wiki.ref`
   projection records and bounded wiki previews when Host cannot read the
   runner's memory root;
-- artifact history/diff read APIs can now return projected artifact records
-  with explicit unavailable reasons when Host has no backend-resolved
-  repository checkout;
+- artifact history/diff read APIs can now resolve projected git artifact
+  locators through a Host-owned backend cache when semantic artifact context
+  identifies a reachable git backend, and otherwise return projected artifact
+  records with explicit unavailable reasons;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate
@@ -894,8 +895,9 @@ The current implementation-truth audit now lives in
   provisioning record model, the publication/retrieval-state record model, and
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
-  runner-owned primary source-history commit artifact publication plus bounded
-  artifact history/diff/preview inspection; the next git gaps are
+  runner-owned primary source-history commit artifact publication, bounded
+  artifact history/diff/preview inspection, and backend-cache history/diff for
+  projected git refs; the next git gaps are
   protocol-owned artifact restore or source-change proposal flows, non-primary
   publication targets, richer wiki promotion beyond primary-git publication,
   source-history merge/reconcile workflows, and explicit fallback or

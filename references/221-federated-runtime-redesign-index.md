@@ -150,6 +150,7 @@ same-machine slice records.
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 - [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
 - [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
+- [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
 
 ## Audited Scope
 
@@ -357,9 +358,10 @@ The repository is not fully federated:
   content, so remote node wiki memory remains inspectable without Host-readable
   runner memory roots;
 - Host runtime artifact history/diff GET routes now prefer local git
-  materialization and fall back to projected artifact records with explicit
-  unavailable reasons when no backend-resolved repository checkout is attached
-  to Host;
+  materialization for non-federated adapters, can resolve projected git
+  artifact locators through a Host-owned backend cache, and fall back to
+  explicit unavailable reasons when no backend-resolved repository is
+  reachable;
 - Host runtime synchronization no longer reconciles nodes with active/offered
   federated assignments through the local backend; assigned runtime inspection
   reports `backendKind: "federated"` and waits for signed runner observation;
@@ -581,9 +583,10 @@ Studio request surfaces over the same control boundary. Per-assignment
 timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection. Public deep
 runtime reads now avoid Host-local runtime files for accepted federated
-assignments and rely on projection evidence instead, while
-non-primary target publication remains future work. The next blocking
-implementation areas are richer projection-backed source/wiki review services,
-backend-resolved object/artifact services for history, diff, restore, and
-promotion, and turning the process smoke into the full multi-machine
-distributed proof.
+assignments and rely on projection evidence instead. Projected git artifact
+history/diff can now be computed through a Host-owned backend cache when the
+locator is resolvable through the semantic artifact context, while non-primary
+target publication remains future work. The next blocking implementation areas
+are richer projection-backed source/wiki review services, backend-resolved
+artifact restore/promotion, cache policy, and turning the process smoke into
+the full multi-machine distributed proof.

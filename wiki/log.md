@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-28] implementation | Resolved federated artifact history and diff from git backends
+
+Added Host-owned backend-cache resolution for projected git artifact
+history/diff reads. When an accepted federated runtime emits an `artifact.ref`
+with service, namespace, repository, commit, and path metadata, Host can now
+clone/fetch the configured git backend under `host/cache` and compute bounded
+history/diff without reading runner-local runtime files.
+
+Added `references/350-federated-artifact-backend-history-diff-slice.md`.
+
 ## [2026-04-28] implementation | Quarantined federated runtime filesystem reads
 
 Added a Host filesystem-context boundary so public deep runtime read paths no
