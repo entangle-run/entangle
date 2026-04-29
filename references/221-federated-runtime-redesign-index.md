@@ -193,6 +193,7 @@ same-machine slice records.
 - [390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
 - [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
 - [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
+- [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
 
 ## Audited Scope
 

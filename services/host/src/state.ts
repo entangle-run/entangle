@@ -2570,6 +2570,9 @@ export async function recordRuntimeCommandReceiptObservation(
   return appendHostEvent({
     ...(receipt.artifactId ? { artifactId: receipt.artifactId } : {}),
     ...(receipt.assignmentId ? { assignmentId: receipt.assignmentId } : {}),
+    ...(receipt.cancellationId
+      ? { cancellationId: receipt.cancellationId }
+      : {}),
     ...(receipt.candidateId ? { candidateId: receipt.candidateId } : {}),
     category: "runtime",
     commandEventType: receipt.commandEventType,
@@ -2588,6 +2591,7 @@ export async function recordRuntimeCommandReceiptObservation(
     ...(receipt.restoreId ? { restoreId: receipt.restoreId } : {}),
     runnerId: receipt.runnerId,
     runnerPubkey: receipt.runnerPubkey,
+    ...(receipt.sessionId ? { sessionId: receipt.sessionId } : {}),
     ...(receipt.sourceHistoryId
       ? { sourceHistoryId: receipt.sourceHistoryId }
       : {}),
@@ -3527,6 +3531,9 @@ async function listRuntimeCommandReceiptProjectionRecords() {
       runtimeCommandReceiptProjectionRecordSchema.parse({
         ...(event.artifactId ? { artifactId: event.artifactId } : {}),
         ...(event.assignmentId ? { assignmentId: event.assignmentId } : {}),
+        ...(event.cancellationId
+          ? { cancellationId: event.cancellationId }
+          : {}),
         ...(event.candidateId ? { candidateId: event.candidateId } : {}),
         commandEventType: event.commandEventType,
         commandId: event.commandId,
@@ -3547,6 +3554,7 @@ async function listRuntimeCommandReceiptProjectionRecords() {
         ...(event.restoreId ? { restoreId: event.restoreId } : {}),
         runnerId: event.runnerId,
         runnerPubkey: event.runnerPubkey,
+        ...(event.sessionId ? { sessionId: event.sessionId } : {}),
         ...(event.sourceHistoryId
           ? { sourceHistoryId: event.sourceHistoryId }
           : {}),

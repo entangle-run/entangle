@@ -302,6 +302,7 @@ Implementation record:
 - [390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
 - [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
 - [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
+- [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
 
 Verification:
 
@@ -462,9 +463,11 @@ Current status:
   publication commands now use the same command receipt model, so operators can
   close the Host command loop through `runtimeCommandReceipts` while still
   relying on artifact/source/wiki domain observations for content evidence;
-- richer source/wiki mutation endpoints, richer cache policy, and broader
-  lifecycle/session command receipt semantics still need protocol-backed
-  replacement.
+- lifecycle start/stop/restart and session cancellation commands now also emit
+  signed `runtime.command.receipt` observations, with session cancellation
+  receipts carrying cancellation/session correlation ids;
+- richer source/wiki mutation endpoints and richer cache policy still need
+  protocol-backed replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -843,6 +846,9 @@ Current status:
   model; the process proof waits for completed restore, targeted
   source-history publication, and wiki publication receipts in addition to
   domain artifact/source/wiki evidence;
+- lifecycle stop/start/restart and session cancellation now emit command
+  receipts; the process proof waits for completed stop/start/restart command
+  receipt projection in addition to assignment lifecycle receipts;
 - semantic artifact validation now allows file-backed git proof targets
   without git transport principals while retaining principal requirements for
   SSH and HTTPS targets;

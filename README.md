@@ -83,7 +83,8 @@ joined User Node runner processes with separate state roots. It assigns the
 agent node and both User Nodes through signed control events, verifies that
 each User Node `human_interface` runtime exposes a User Client endpoint, checks
 User Client health and state routes, observes runtime state through signed
-  runner observations, publishes signed User Node messages through the relay, and
+  runner observations, verifies completed lifecycle command receipt projection,
+  publishes signed User Node messages through the relay, and
   verifies that the assigned agent runner persisted both received conversations
   and that Host projection contains both User Node conversations from
   runner-signed observations. It also verifies the per-assignment timeline read
@@ -319,9 +320,10 @@ This repository currently contains:
   retrieves the artifact, copies bounded safe content into its source
   workspace, and emits a pending source-change candidate for normal review.
   The joined runner also emits explicit signed `runtime.command.receipt`
-  observations for artifact restore, artifact proposal, source-history
-  publish/replay, and wiki publication received/completed/failed states, and
-  Host projection correlates the command id with result ids such as effective
+  observations for lifecycle start/stop/restart, session cancellation,
+  artifact restore, artifact proposal, source-history publish/replay, and wiki
+  publication received/completed/failed states, and Host projection correlates
+  the command id with result ids such as cancellation/session id, effective
   proposal id, source-change candidate id, source-history id, restore id, or
   wiki artifact id.
   Explicit operator replay requests now travel as Host-signed

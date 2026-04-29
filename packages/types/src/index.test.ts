@@ -602,6 +602,7 @@ describe("federated runtime contracts", () => {
     const receipt = runtimeCommandReceiptPayloadSchema.parse({
       artifactId: "artifact-alpha",
       assignmentId: "assignment-alpha",
+      cancellationId: "cancel-alpha",
       candidateId: "artifact-proposal-alpha",
       commandEventType: "runtime.artifact.propose_source_change",
       commandId: "cmd-artifact-proposal-alpha",
@@ -615,6 +616,7 @@ describe("federated runtime contracts", () => {
       protocol: "entangle.observe.v1",
       runnerId: "runner-alpha",
       runnerPubkey,
+      sessionId: "session-alpha",
       status: "completed",
       targetPath: "proposals/report.md"
     });
@@ -625,6 +627,7 @@ describe("federated runtime contracts", () => {
       runtimeCommandReceiptProjectionRecordSchema.parse({
         artifactId: receipt.artifactId,
         assignmentId: receipt.assignmentId,
+        cancellationId: receipt.cancellationId,
         candidateId: receipt.candidateId,
         commandEventType: receipt.commandEventType,
         commandId: receipt.commandId,
@@ -641,6 +644,7 @@ describe("federated runtime contracts", () => {
         receiptStatus: receipt.status,
         runnerId: receipt.runnerId,
         runnerPubkey: receipt.runnerPubkey,
+        sessionId: receipt.sessionId,
         targetPath: receipt.targetPath
       }).candidateId
     ).toBe("artifact-proposal-alpha");
@@ -3074,6 +3078,7 @@ describe("host event contracts", () => {
     const result = hostEventRecordSchema.parse({
       artifactId: "artifact-alpha",
       assignmentId: "assignment-alpha",
+      cancellationId: "cancel-alpha",
       candidateId: "artifact-proposal-alpha",
       category: "runtime",
       commandEventType: "runtime.artifact.propose_source_change",
@@ -3091,6 +3096,7 @@ describe("host event contracts", () => {
       runnerId: "runner-alpha",
       runnerPubkey,
       schemaVersion: "1",
+      sessionId: "session-alpha",
       targetPath: "proposals/report.md",
       timestamp: observedAt,
       type: "runtime.command.receipt"
@@ -3098,6 +3104,7 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("runtime.command.receipt");
     expect(result.receiptStatus).toBe("completed");
+    expect(result.sessionId).toBe("session-alpha");
     expect(result.candidateId).toBe("artifact-proposal-alpha");
   });
 

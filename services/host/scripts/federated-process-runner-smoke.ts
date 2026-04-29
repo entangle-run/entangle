@@ -1482,6 +1482,38 @@ async function main(): Promise<void> {
       `receipts=${[...lifecycleReceipts].sort().join(",")}`
     );
 
+    const lifecycleCommandReceipts = await waitFor(
+      "federated runtime lifecycle command receipts",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+        const completedCommandTypes = new Set(
+          projection.runtimeCommandReceipts
+            .filter(
+              (receipt) =>
+                receipt.assignmentId === assignment.assignmentId &&
+                receipt.receiptStatus === "completed"
+            )
+            .map((receipt) => receipt.commandEventType)
+        );
+
+        return completedCommandTypes.has("runtime.stop") &&
+          completedCommandTypes.has("runtime.start") &&
+          completedCommandTypes.has("runtime.restart")
+          ? completedCommandTypes
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "runtime-lifecycle-command-receipts",
+      `commands=${[...lifecycleCommandReceipts].sort().join(",")}`
+    );
+
     const assignmentTimeline = runtimeAssignmentTimelineResponseSchema.parse(
       await hostRequest({
         baseUrl: hostBaseUrl,

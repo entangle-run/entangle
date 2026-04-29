@@ -506,10 +506,12 @@ export class RunnerJoinService {
     payload?: RuntimeCommandControlPayload;
     receipt?: Partial<{
       artifactId: string;
+      cancellationId: string;
       candidateId: string;
       proposalId: string;
       replayId: string;
       restoreId: string;
+      sessionId: string;
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
@@ -544,10 +546,12 @@ export class RunnerJoinService {
     payload: RuntimeCommandControlPayload;
     receipt?: Partial<{
       artifactId: string;
+      cancellationId: string;
       candidateId: string;
       proposalId: string;
       replayId: string;
       restoreId: string;
+      sessionId: string;
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
@@ -565,6 +569,9 @@ export class RunnerJoinService {
         ? { artifactId: input.receipt.artifactId }
         : {}),
       ...(input.assignmentId ? { assignmentId: input.assignmentId } : {}),
+      ...(input.receipt?.cancellationId
+        ? { cancellationId: input.receipt.cancellationId }
+        : {}),
       ...(input.receipt?.candidateId
         ? { candidateId: input.receipt.candidateId }
         : {}),
@@ -581,6 +588,9 @@ export class RunnerJoinService {
       ...(input.receipt?.replayId ? { replayId: input.receipt.replayId } : {}),
       ...(input.receipt?.restoreId
         ? { restoreId: input.receipt.restoreId }
+        : {}),
+      ...(input.receipt?.sessionId
+        ? { sessionId: input.receipt.sessionId }
         : {}),
       ...(input.receipt?.sourceHistoryId
         ? { sourceHistoryId: input.receipt.sourceHistoryId }
@@ -607,10 +617,18 @@ export class RunnerJoinService {
     if (!assignment) {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
-        message: "Runtime start command did not match an accepted assignment."
+        message: "Runtime start command did not match an accepted assignment.",
+        payload
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -630,13 +648,20 @@ export class RunnerJoinService {
         "Assignment runtime is already running.",
         existingHandle.clientUrl
       );
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message: "Assignment runtime is already running.",
+        payload,
+        status: "completed"
+      });
       return;
     }
 
     await this.startAssignmentRuntime(
       assignment,
       event,
-      payload.reason ?? "Runtime start requested by Host."
+      payload.reason ?? "Runtime start requested by Host.",
+      payload
     );
   }
 
@@ -648,10 +673,18 @@ export class RunnerJoinService {
     if (!assignment) {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
-        message: "Runtime stop command did not match an accepted assignment."
+        message: "Runtime stop command did not match an accepted assignment.",
+        payload
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -681,6 +714,12 @@ export class RunnerJoinService {
       observedAt: this.now(),
       receiptKind: "stopped"
     });
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      message: payload.reason ?? "Assignment runtime stopped.",
+      payload,
+      status: "completed"
+    });
   }
 
   private async handleRuntimeRestartCommand(
@@ -695,10 +734,18 @@ export class RunnerJoinService {
     if (!assignment) {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
-        message: "Runtime restart command did not match an accepted assignment."
+        message: "Runtime restart command did not match an accepted assignment.",
+        payload
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -718,7 +765,8 @@ export class RunnerJoinService {
     await this.startAssignmentRuntime(
       assignment,
       event,
-      payload.reason ?? "Runtime restart requested by Host."
+      payload.reason ?? "Runtime restart requested by Host.",
+      payload
     );
   }
 
@@ -734,10 +782,26 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
         message:
-          "Runtime session cancellation command did not match an accepted assignment."
+          "Runtime session cancellation command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          cancellationId: payload.cancellation.cancellationId,
+          sessionId: payload.sessionId
+        }
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        cancellationId: payload.cancellation.cancellationId,
+        sessionId: payload.sessionId
+      },
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -752,7 +816,12 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
-          "Runtime session cancellation command cannot be applied because the assigned runtime is not running."
+          "Runtime session cancellation command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          cancellationId: payload.cancellation.cancellationId,
+          sessionId: payload.sessionId
+        }
       });
       return;
     }
@@ -761,13 +830,28 @@ export class RunnerJoinService {
       await handle.cancelSession(
         sessionCancellationRequestRecordSchema.parse(payload.cancellation)
       );
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message: payload.reason ?? "Runtime session cancellation completed.",
+        payload,
+        receipt: {
+          cancellationId: payload.cancellation.cancellationId,
+          sessionId: payload.sessionId
+        },
+        status: "completed"
+      });
     } catch (error) {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
           error instanceof Error
             ? error.message
-            : "Runtime session cancellation command failed."
+            : "Runtime session cancellation command failed.",
+        payload,
+        receipt: {
+          cancellationId: payload.cancellation.cancellationId,
+          sessionId: payload.sessionId
+        }
       });
     }
   }
@@ -1351,7 +1435,8 @@ export class RunnerJoinService {
   private async startAssignmentRuntime(
     assignment: RuntimeAssignmentRecord,
     event: EntangleControlEvent,
-    reason: string
+    reason: string,
+    commandPayload?: RuntimeCommandControlPayload
   ): Promise<void> {
     const runtimeContextPath = this.assignmentRuntimeContextPaths.get(
       assignment.assignmentId
@@ -1363,14 +1448,23 @@ export class RunnerJoinService {
         "failed",
         "Assignment runtime cannot start without a materialized runtime context."
       );
-      await this.publishObservation({
-        assignmentId: assignment.assignmentId,
-        eventType: "assignment.receipt",
-        message:
-          "Assignment runtime cannot start without a materialized runtime context.",
-        observedAt: this.now(),
-        receiptKind: "failed"
-      });
+      if (commandPayload) {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            "Assignment runtime cannot start without a materialized runtime context.",
+          payload: commandPayload
+        });
+      } else {
+        await this.publishObservation({
+          assignmentId: assignment.assignmentId,
+          eventType: "assignment.receipt",
+          message:
+            "Assignment runtime cannot start without a materialized runtime context.",
+          observedAt: this.now(),
+          receiptKind: "failed"
+        });
+      }
       return;
     }
 
@@ -1380,13 +1474,21 @@ export class RunnerJoinService {
         "failed",
         "No assignment runtime starter is configured for this runner."
       );
-      await this.publishObservation({
-        assignmentId: assignment.assignmentId,
-        eventType: "assignment.receipt",
-        message: "No assignment runtime starter is configured for this runner.",
-        observedAt: this.now(),
-        receiptKind: "failed"
-      });
+      if (commandPayload) {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message: "No assignment runtime starter is configured for this runner.",
+          payload: commandPayload
+        });
+      } else {
+        await this.publishObservation({
+          assignmentId: assignment.assignmentId,
+          eventType: "assignment.receipt",
+          message: "No assignment runtime starter is configured for this runner.",
+          observedAt: this.now(),
+          receiptKind: "failed"
+        });
+      }
       return;
     }
 
@@ -1415,16 +1517,32 @@ export class RunnerJoinService {
         "Assignment runtime is running.",
         runtimeHandle.clientUrl
       );
+      if (commandPayload) {
+        await this.publishRuntimeCommandReceipt({
+          assignmentId: assignment.assignmentId,
+          message: "Assignment runtime is running.",
+          payload: commandPayload,
+          status: "completed"
+        });
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Assignment runtime start failed.";
-      await this.publishObservation({
-        assignmentId: assignment.assignmentId,
-        eventType: "assignment.receipt",
-        message,
-        observedAt: this.now(),
-        receiptKind: "failed"
-      });
+      if (commandPayload) {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message,
+          payload: commandPayload
+        });
+      } else {
+        await this.publishObservation({
+          assignmentId: assignment.assignmentId,
+          eventType: "assignment.receipt",
+          message,
+          observedAt: this.now(),
+          receiptKind: "failed"
+        });
+      }
       await this.publishRuntimeStatus(assignment, "failed", message);
     }
   }

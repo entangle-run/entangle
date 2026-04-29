@@ -177,6 +177,9 @@ The most accurate current description is:
 - artifact restore, source-history publication/replay, and wiki publication
   now emit the same signed command receipt model, correlated with restore,
   source-history, replay, or wiki artifact result ids where available;
+- lifecycle start/stop/restart and session cancellation now emit
+  `runtime.command.receipt` observations as command-id closure while keeping
+  assignment receipts and session observations as the domain lifecycle model;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, object-backed source/wiki mutation services, and the full
   multi-machine distributed proof.
@@ -1016,8 +1019,8 @@ The current implementation-truth audit now lives in
   artifact restore exposed through operator surfaces plus runner-owned
   artifact source-change proposal operator and User Client requests plus
   explicit runner-owned artifact/source/wiki command completion receipts; the
-  next git gaps are lifecycle/session command receipt semantics, richer wiki
-  promotion policy and repository lifecycle behavior, source-history
+  next git gaps are richer wiki promotion policy and repository lifecycle
+  behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is

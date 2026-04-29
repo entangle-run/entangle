@@ -2776,6 +2776,28 @@ describe("runner runtime context", () => {
     ).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          commandEventType: "runtime.stop",
+          commandId: "cmd-stop-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.start",
+          commandId: "cmd-start-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.restart",
+          commandId: "cmd-restart-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          cancellationId: "cancel-alpha",
+          commandEventType: "runtime.session.cancel",
+          commandId: "cmd-cancel-alpha",
+          sessionId: "session-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
           artifactId: "artifact-alpha",
           commandEventType: "runtime.artifact.restore",
           commandId: "cmd-artifact-restore-alpha",

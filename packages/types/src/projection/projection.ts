@@ -170,6 +170,7 @@ export const runtimeCommandReceiptProjectionRecordSchema =
   runnerObservationProjectionBaseSchema.extend({
     artifactId: identifierSchema.optional(),
     assignmentId: identifierSchema.optional(),
+    cancellationId: identifierSchema.optional(),
     candidateId: identifierSchema.optional(),
     commandEventType: entangleRuntimeCommandEventTypeSchema,
     commandId: identifierSchema,
@@ -179,6 +180,7 @@ export const runtimeCommandReceiptProjectionRecordSchema =
     receiptStatus: z.enum(["received", "completed", "failed"]),
     replayId: identifierSchema.optional(),
     restoreId: identifierSchema.optional(),
+    sessionId: identifierSchema.optional(),
     sourceHistoryId: identifierSchema.optional(),
     targetPath: nonEmptyStringSchema.optional(),
     wikiArtifactId: identifierSchema.optional()

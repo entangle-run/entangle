@@ -4689,3 +4689,14 @@ source-history replay, and wiki publication commands.
 The process-runner smoke now verifies completed command receipts for artifact
 restore, targeted source-history publication, and wiki publication in addition
 to the existing artifact/source/wiki domain evidence.
+
+## [2026-04-29] implementation | Added lifecycle and session command receipts
+
+Added `references/393-lifecycle-session-command-receipts-slice.md`.
+Lifecycle start/stop/restart and session cancellation now emit
+received/completed/failed `runtime.command.receipt` observations while keeping
+assignment receipts, runtime status, and session observations as the domain
+evidence.
+
+The process-runner smoke now verifies completed lifecycle command receipts for
+stop/start/restart through Host projection.

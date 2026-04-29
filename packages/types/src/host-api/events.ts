@@ -256,6 +256,7 @@ export const hostRuntimeCommandReceiptStatusSchema = z.enum([
 export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
   artifactId: identifierSchema.optional(),
   assignmentId: identifierSchema.optional(),
+  cancellationId: identifierSchema.optional(),
   candidateId: identifierSchema.optional(),
   category: z.literal("runtime"),
   commandEventType: entangleRuntimeCommandEventTypeSchema,
@@ -271,6 +272,7 @@ export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
   restoreId: identifierSchema.optional(),
   runnerId: identifierSchema,
   runnerPubkey: nostrPublicKeySchema,
+  sessionId: identifierSchema.optional(),
   sourceHistoryId: identifierSchema.optional(),
   targetPath: nonEmptyStringSchema.optional(),
   type: z.literal("runtime.command.receipt"),

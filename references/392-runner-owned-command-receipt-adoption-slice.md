@@ -55,7 +55,8 @@ status, not large payloads or replacement source/artifact data.
 - Extend the process-runner smoke to wait for completed restore,
   source-history publication, and wiki publication command receipts.
 - Keep lifecycle start/stop/restart and session cancellation out of this slice;
-  those commands need a separate lifecycle-command completion semantics pass.
+  `393-lifecycle-session-command-receipts-slice.md` covers that separate
+  lifecycle-command completion semantics pass.
 
 ## Tests Required
 
@@ -90,15 +91,11 @@ ids already carried by domain evidence.
   evidence and completed command receipts.
 - Risk: lifecycle commands become visually less complete than artifact/source
   commands.
-  Mitigation: lifecycle commands already have assignment/runtime receipts; a
-  later slice should decide whether they need command receipts or whether the
-  assignment timeline remains the canonical lifecycle command model.
+  Mitigation: `393-lifecycle-session-command-receipts-slice.md` adds lifecycle
+  command receipts while preserving assignment/runtime receipts as domain
+  evidence.
 
 ## Open Questions
 
-- Should `runtime.session.cancel` emit a completed command receipt once the
-  cancellation record is applied, or should cancellation completion remain a
-  session lifecycle observation?
-- Should lifecycle start/stop/restart command ids appear in the assignment
-  timeline as command receipts, or should lifecycle receipts be extended with
-  command correlation fields?
+- Should Host lifecycle API responses include command ids directly, or should
+  clients discover lifecycle command ids only through event/projection streams?
