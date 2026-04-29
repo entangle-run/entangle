@@ -175,9 +175,9 @@ Vitest child processes open in this environment. The wrapper launches the local
 Vitest binary directly, expands `src/**/*.test.ts` files itself, runs suites
 sequentially, and waits briefly between suites so the root gate does not depend
 on shell globbing, nested `pnpm`, or Vitest's implicit discovery. CLI and Studio
-use fork pools inside the root wrapper, CLI is pinned to one worker, and Host
-uses the threads pool; the other root suites use their stable default pool in
-this environment.
+use fork pools inside the root wrapper, CLI is pinned to one worker, Host and
+Runner use the threads pool, and the other root suites use their stable default
+pool in this environment.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints

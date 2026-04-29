@@ -65,6 +65,9 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Follow-up correction: Runner tests now also use `--pool=threads` after the
   root gate reproduced a no-output hang under the default pool and the same
   suite passed immediately under threads and forks.
+- Follow-up correction: `scripts/run-workspace-tests.mjs` now also launches
+  the runner suite with `--pool=threads`, matching the runner package test
+  script and the documented stable root-gate behavior.
 - Follow-up correction: User Client tests now use `--pool=threads` after the
   root gate reproduced a no-output hang under forks while the same suite passed
   immediately under threads.
@@ -112,6 +115,7 @@ Later follow-up verification also covered:
 - `pnpm --dir services/runner exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=forks`
 - direct local Vitest execution through `scripts/run-workspace-tests.mjs`,
   including filesystem-expanded test file lists for every workspace suite;
+- `pnpm test` after aligning the root runner suite to `--pool=threads`;
 
 Already passed in the preceding verification window:
 

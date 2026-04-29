@@ -11,7 +11,8 @@ long shell `pnpm --filter ... && ...` chain left Vitest child processes open in
 this environment. The wrapper now launches the local Vitest binary directly,
 expands `src/**/*.test.ts` itself, and keeps suites sequential. Inside that
 root wrapper, CLI and Studio use fork pools, CLI is pinned to one worker, Host
-uses the threads pool, and the other suites use their stable default pool.
+and Runner use the threads pool, and the other suites use their stable default
+pool.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 

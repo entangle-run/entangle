@@ -992,7 +992,9 @@ The repository now also contains the first real implementation baseline:
   `scripts/run-workspace-tests.mjs`, which launches local Vitest directly,
   expands `src/**/*.test.ts` itself, and avoids Turbo, long shell chains,
   nested `pnpm`, shell globbing, and implicit Vitest discovery after those
-  paths reproduced no-output hangs in this environment;
+  paths reproduced no-output hangs in this environment; Host and Runner use
+  Vitest's threads pool inside that wrapper, matching their stable package
+  test commands;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root;

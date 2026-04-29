@@ -63,7 +63,7 @@ const suites = [
     timeoutMs: 120_000
   },
   {
-    args: nodeTestArgs,
+    args: [...nodeTestArgs, "--pool=threads"],
     name: "@entangle/runner",
     directory: "services/runner",
     timeoutMs: 180_000

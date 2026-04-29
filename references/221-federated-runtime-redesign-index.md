@@ -220,6 +220,7 @@ same-machine slice records.
 - [417-user-client-wiki-target-visibility-slice.md](417-user-client-wiki-target-visibility-slice.md)
 - [418-user-client-wiki-target-process-proof-slice.md](418-user-client-wiki-target-process-proof-slice.md)
 - [419-distributed-proof-runtime-state-verifier-slice.md](419-distributed-proof-runtime-state-verifier-slice.md)
+- [420-root-runner-test-pool-alignment-slice.md](420-root-runner-test-pool-alignment-slice.md)
 
 ## Audited Scope
 

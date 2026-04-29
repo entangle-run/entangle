@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[419-distributed-proof-runtime-state-verifier-slice.md](419-distributed-proof-runtime-state-verifier-slice.md)
+[420-root-runner-test-pool-alignment-slice.md](420-root-runner-test-pool-alignment-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -195,6 +195,9 @@ without reading Host or runner files.
 no-infrastructure smoke over proof-kit help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection, before an operator
 attempts the real distributed proof.
+The root sequential `pnpm test` wrapper now also launches the runner suite with
+the same `--pool=threads` setting used by the runner package script, removing a
+documented root-gate drift that reproduced a runner no-output hang.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,

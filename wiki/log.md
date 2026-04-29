@@ -5042,3 +5042,13 @@ projection to report `observedState: "running"` by default, while keeping
 `pnpm ops:smoke-distributed-proof-tools` now proves the stricter behavior with
 a stopped-runtime self-test that must fail, then proves the diagnostic override
 against the same fixture.
+
+## [2026-04-29] tooling | Aligned root runner test pool
+
+Added `references/420-root-runner-test-pool-alignment-slice.md`. After the
+distributed proof verifier slice, root `pnpm test` stalled in the runner suite
+while the direct runner package test passed under `--pool=threads`.
+
+`scripts/run-workspace-tests.mjs` now launches the runner suite with the same
+threads pool used by the runner package script and already documented by the
+root test reliability record.
