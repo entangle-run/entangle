@@ -159,7 +159,9 @@ Federation panel for assigning graph nodes, including User Nodes, to trusted
 runners while keeping participant chat/review inside the User Client.
 Host status now also carries bounded federated control/observe transport
 health, and CLI plus Studio render that Host-owned relay subscription status
-without probing relay state directly.
+without probing relay state directly. Host status also reports bounded
+artifact backend cache availability, repository count, and size as derived
+operator diagnostics without exposing Host filesystem paths.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke

@@ -315,7 +315,9 @@ This repository currently contains:
 - Host status now carries Host-owned federated control/observe transport
   health, including configured relay URLs, subscribed/degraded/stopped
   lifecycle state, and last startup failure metadata, with shared host-client,
-  CLI, and Studio rendering;
+  CLI, and Studio rendering, and now also reports bounded derived artifact
+  backend cache availability, repository count, and size without exposing Host
+  filesystem paths;
 - CLI can generate schema-validated generic runner join configs from Host
   status through `entangle runners join-config`, while the runner package now
   exposes an `entangle-runner` bin for `join --config` startup, including an
@@ -360,6 +362,9 @@ This repository currently contains:
   explicit unavailable reasons;
 - the process-runner smoke now verifies backend-cache history/diff for a
   runner-published source-history git artifact;
+- Host status now surfaces the derived artifact backend cache's availability,
+  repository count, and byte size for operator diagnostics while keeping that
+  cache rebuildable implementation state;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,

@@ -152,6 +152,7 @@ same-machine slice records.
 - [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
 - [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
 - [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
+- [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 
 ## Audited Scope
 
@@ -588,7 +589,9 @@ assignments and rely on projection evidence instead. Projected git artifact
 history/diff can now be computed through a Host-owned backend cache when the
 locator is resolvable through the semantic artifact context, and the
 process-runner smoke now proves that path against a runner-published
-source-history artifact. Non-primary target publication remains future work.
-The next blocking implementation areas are richer projection-backed source/wiki
-review services, backend-resolved artifact restore/promotion, cache policy, and
-turning the process smoke into the full multi-machine distributed proof.
+source-history artifact. Host status now exposes bounded operational metadata
+for that derived artifact backend cache without exposing paths or treating it
+as protocol truth. Non-primary target publication remains future work. The next
+blocking implementation areas are richer projection-backed source/wiki review
+services, backend-resolved artifact restore/promotion, cache policy controls,
+and turning the process smoke into the full multi-machine distributed proof.

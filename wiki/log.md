@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Exposed artifact backend cache status
+
+Added bounded Host status metadata for the derived artifact backend cache used
+to resolve projected git artifact history/diff. Host, shared host-client, CLI
+presentation tests, and type contracts now cover cache availability,
+repository count, and byte size without exposing Host filesystem paths.
+
+Added `references/352-artifact-backend-cache-status-slice.md`.
+
 ## [2026-04-29] verification | Proved backend artifact history and diff in process smoke
 
 Extended the federated process-runner smoke so the real Host plus joined runner

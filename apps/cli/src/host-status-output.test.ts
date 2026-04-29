@@ -4,6 +4,12 @@ import { projectHostStatusSummary } from "./host-status-output.js";
 
 function createStatus(): HostStatusResponse {
   return {
+    artifactBackendCache: {
+      available: true,
+      repositoryCount: 1,
+      totalSizeBytes: 2048,
+      updatedAt: "2026-04-25T08:00:02.000Z"
+    },
     graphRevisionId: "team-alpha-20260425-080000",
     reconciliation: {
       backendKind: "docker",
@@ -106,6 +112,9 @@ describe("host status CLI summary projection", () => {
     );
     expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
       "transport control/observe subscribed · 2 relays"
+    );
+    expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
+      "artifact backend cache 1 repository · 2048 bytes"
     );
     expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
       "transport relay ws://relay-a.entangle.test subscribed · subscribed 2026-04-25T08:00:01.000Z"

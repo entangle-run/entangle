@@ -76,7 +76,16 @@ export const hostTransportHealthSchema = z.object({
   controlObserve: hostTransportPlaneHealthSchema
 });
 
+export const hostArtifactBackendCacheStatusSchema = z.object({
+  available: z.boolean(),
+  reason: nonEmptyStringSchema.optional(),
+  repositoryCount: z.number().int().nonnegative(),
+  totalSizeBytes: z.number().int().nonnegative(),
+  updatedAt: nonEmptyStringSchema
+});
+
 export const hostStatusResponseSchema = z.object({
+  artifactBackendCache: hostArtifactBackendCacheStatusSchema.optional(),
   authority: hostAuthoritySummarySchema.optional(),
   service: z.literal("entangle-host"),
   status: z.enum(["starting", "healthy", "degraded"]),
@@ -124,6 +133,9 @@ export const traceEventSchema = z.object({
   timestamp: nonEmptyStringSchema
 });
 
+export type HostArtifactBackendCacheStatus = z.infer<
+  typeof hostArtifactBackendCacheStatusSchema
+>;
 export type HostStatusResponse = z.infer<typeof hostStatusResponseSchema>;
 export type HostTransportHealth = z.infer<typeof hostTransportHealthSchema>;
 export type HostTransportPlaneHealth = z.infer<

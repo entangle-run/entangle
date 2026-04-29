@@ -31,6 +31,25 @@ export function formatHostStatusSessionDiagnosticsSummary(
   );
 }
 
+export function formatHostArtifactBackendCacheSummary(
+  status: HostStatusResponse
+): string {
+  const cache = status.artifactBackendCache;
+
+  if (!cache) {
+    return "artifact backend cache not inspected";
+  }
+
+  const repositoryLabel =
+    cache.repositoryCount === 1
+      ? "1 repository"
+      : `${cache.repositoryCount} repositories`;
+
+  return cache.available
+    ? `${repositoryLabel} · ${cache.totalSizeBytes} bytes`
+    : `unavailable · ${cache.reason ?? "unknown error"}`;
+}
+
 export function formatHostStateLayoutSummary(status: HostStatusResponse): string {
   const layout = status.stateLayout;
   const recordedLayoutVersion = layout.recordedLayoutVersion ?? "unknown";
@@ -72,6 +91,7 @@ export function formatHostStatusDetailLines(
     `runtime counts desired ${status.runtimeCounts.desired}, observed ${status.runtimeCounts.observed}, running ${status.runtimeCounts.running}`,
     `reconciliation ${formatHostStatusReconciliationSummary(status)}`,
     `session diagnostics ${formatHostStatusSessionDiagnosticsSummary(status)}`,
+    `artifact backend cache ${formatHostArtifactBackendCacheSummary(status)}`,
     `backend ${reconciliation.backendKind}`,
     `running ${reconciliation.runningRuntimeCount}, stopped ${reconciliation.stoppedRuntimeCount}, failed ${reconciliation.failedRuntimeCount}, transitioning ${reconciliation.transitioningRuntimeCount}`
   ];

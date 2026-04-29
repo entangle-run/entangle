@@ -3566,6 +3566,12 @@ describe("reconciliation contracts", () => {
 
   it("accepts host status summaries with richer reconciliation counts", () => {
     const result = hostStatusResponseSchema.parse({
+      artifactBackendCache: {
+        available: true,
+        repositoryCount: 1,
+        totalSizeBytes: 1024,
+        updatedAt: "2026-04-24T00:00:00.000Z"
+      },
       graphRevisionId: "graph-alpha-rev-001",
       reconciliation: {
         backendKind: "docker",
@@ -3619,6 +3625,7 @@ describe("reconciliation contracts", () => {
 
     expect(result.reconciliation.blockedRuntimeCount).toBe(1);
     expect(result.reconciliation.findingCodes).toEqual(["context_unavailable"]);
+    expect(result.artifactBackendCache?.repositoryCount).toBe(1);
     expect(result.stateLayout.status).toBe("current");
     expect(result.transport.controlObserve.status).toBe("degraded");
   });

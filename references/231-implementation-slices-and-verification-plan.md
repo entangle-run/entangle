@@ -391,6 +391,8 @@ Current status:
   backend cache without reading runner-local runtime files;
 - `ops:smoke-federated-process-runner` now verifies that backend-cache
   history/diff path against the runner-published source-history git artifact;
+- Host status now reports bounded artifact backend cache availability, count,
+  and size as derived operational metadata;
 - richer source/wiki mutation endpoints, non-primary publication, cache policy,
   and artifact restore/promotion still need projection-backed or
   backend-resolved replacement.
@@ -672,6 +674,7 @@ Implementation records:
 - [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
 - [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
 - [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
+- [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 
 Current status:
 
@@ -699,6 +702,8 @@ Current status:
 - the process proof now checks that the same backend-resolved history/diff path
   is available for the source-history artifact published by the real joined
   runner;
+- Host status exposes derived artifact backend cache availability, repository
+  count, and size for operator diagnostics;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

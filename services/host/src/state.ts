@@ -13296,6 +13296,68 @@ function buildHostTransportHealth(input: {
   };
 }
 
+async function calculateDirectorySizeBytes(directoryPath: string): Promise<number> {
+  let totalSizeBytes = 0;
+  const entries = await readdir(directoryPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const entryPath = path.join(directoryPath, entry.name);
+
+    if (entry.isDirectory()) {
+      totalSizeBytes += await calculateDirectorySizeBytes(entryPath);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      totalSizeBytes += (await lstat(entryPath)).size;
+    }
+  }
+
+  return totalSizeBytes;
+}
+
+async function buildArtifactBackendCacheStatus(timestamp: string) {
+  try {
+    const entries = await readdir(artifactGitResolverCacheRoot, {
+      withFileTypes: true
+    });
+    const repositoryEntries = entries.filter((entry) => entry.isDirectory());
+    const totalSizeBytes = (
+      await Promise.all(
+        repositoryEntries.map((entry) =>
+          calculateDirectorySizeBytes(
+            path.join(artifactGitResolverCacheRoot, entry.name)
+          )
+        )
+      )
+    ).reduce((total, sizeBytes) => total + sizeBytes, 0);
+
+    return {
+      available: true,
+      repositoryCount: repositoryEntries.length,
+      totalSizeBytes,
+      updatedAt: timestamp
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {
+        available: true,
+        repositoryCount: 0,
+        totalSizeBytes: 0,
+        updatedAt: timestamp
+      };
+    }
+
+    return {
+      available: false,
+      reason: formatUnknownError(error),
+      repositoryCount: 0,
+      totalSizeBytes: 0,
+      updatedAt: timestamp
+    };
+  }
+}
+
 export async function buildHostStatus() {
   const graphInspection = await getGraphInspection();
   const authorityInspection = await getHostAuthorityInspection();
@@ -13308,6 +13370,7 @@ export async function buildHostStatus() {
     catalog: catalogInspection.catalog,
     timestamp
   });
+  const artifactBackendCache = await buildArtifactBackendCacheStatus(timestamp);
   const runtimeInspections = await listRuntimeInspections();
   const sessionList = await listSessions();
   const sessionDiagnostics = {
@@ -13360,6 +13423,7 @@ export async function buildHostStatus() {
       status: authorityInspection.authority.status,
       updatedAt: authorityInspection.authority.updatedAt
     },
+    artifactBackendCache,
     service: "entangle-host" as const,
     status: hostStatus,
     graphRevisionId: graphInspection.activeRevisionId,

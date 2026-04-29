@@ -961,6 +961,11 @@ describe("buildHostServer", () => {
       expect(authorizedResponse.statusCode).toBe(200);
       const status = hostStatusResponseSchema.parse(authorizedResponse.json());
       expect(status.service).toBe("entangle-host");
+      expect(status.artifactBackendCache).toMatchObject({
+        available: true,
+        repositoryCount: 0,
+        totalSizeBytes: 0
+      });
       expect(status.transport.controlObserve).toMatchObject({
         configuredRelayCount: 1,
         status: "not_started"

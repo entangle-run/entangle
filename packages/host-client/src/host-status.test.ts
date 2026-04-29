@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HostStatusResponse } from "@entangle/types";
 import {
+  formatHostArtifactBackendCacheSummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,
@@ -9,6 +10,12 @@ import {
 
 function createStatus(): HostStatusResponse {
   return {
+    artifactBackendCache: {
+      available: true,
+      repositoryCount: 2,
+      totalSizeBytes: 4096,
+      updatedAt: "2026-04-25T08:00:02.000Z"
+    },
     graphRevisionId: "team-alpha-20260425-080000",
     reconciliation: {
       backendKind: "docker",
@@ -77,6 +84,9 @@ describe("host status presentation helpers", () => {
     expect(formatHostTransportControlObserveSummary(status)).toBe(
       "degraded · 1 relay"
     );
+    expect(formatHostArtifactBackendCacheSummary(status)).toBe(
+      "2 repositories · 4096 bytes"
+    );
   });
 
   it("formats bounded host status detail lines", () => {
@@ -87,6 +97,9 @@ describe("host status presentation helpers", () => {
     );
     expect(detailLines).toContain(
       "session diagnostics 4 sessions · 2 consistency findings · 1 affected"
+    );
+    expect(detailLines).toContain(
+      "artifact backend cache 2 repositories · 4096 bytes"
     );
     expect(detailLines).toContain("state layout v1 · current");
     expect(detailLines).toContain(
