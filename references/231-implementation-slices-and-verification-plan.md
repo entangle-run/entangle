@@ -684,6 +684,7 @@ Implementation records:
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
+- [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 
 Current status:
 
@@ -719,6 +720,9 @@ Current status:
 - Studio displays the artifact backend cache summary in the Host Status panel;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;
+- those User Client artifact routes require conversation context and verify the
+  artifact ref is visible in that User Node conversation before proxying to
+  Host;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

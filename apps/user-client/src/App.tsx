@@ -135,6 +135,7 @@ function ArtifactPreviewAction({
       const response = await fetchArtifactPreview({
         artifactId: artifact.artifactId,
         baseUrl,
+        conversationId: message.conversationId,
         nodeId
       });
 
@@ -160,6 +161,7 @@ function ArtifactPreviewAction({
       const response = await fetchArtifactHistory({
         artifactId: artifact.artifactId,
         baseUrl,
+        conversationId: message.conversationId,
         nodeId
       });
 
@@ -189,6 +191,7 @@ function ArtifactPreviewAction({
       const response = await fetchArtifactDiff({
         artifactId: artifact.artifactId,
         baseUrl,
+        conversationId: message.conversationId,
         nodeId
       });
 

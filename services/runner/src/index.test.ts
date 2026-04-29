@@ -1467,7 +1467,7 @@ describe("runner runtime context", () => {
 
       const jsonArtifactPreviewResponse = await fetch(
         new URL(
-          "/api/artifacts/preview?nodeId=worker-it&artifactId=artifact-alpha",
+          "/api/artifacts/preview?nodeId=worker-it&artifactId=artifact-alpha&conversationId=conversation-alpha",
           handle.clientUrl
         )
       );
@@ -1487,7 +1487,7 @@ describe("runner runtime context", () => {
 
       const jsonArtifactHistoryResponse = await fetch(
         new URL(
-          "/api/artifacts/history?nodeId=worker-it&artifactId=artifact-alpha",
+          "/api/artifacts/history?nodeId=worker-it&artifactId=artifact-alpha&conversationId=conversation-alpha",
           handle.clientUrl
         )
       );
@@ -1512,7 +1512,7 @@ describe("runner runtime context", () => {
 
       const jsonArtifactDiffResponse = await fetch(
         new URL(
-          "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha",
+          "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha&conversationId=conversation-alpha",
           handle.clientUrl
         )
       );
@@ -1535,6 +1535,17 @@ describe("runner runtime context", () => {
         source: "runtime"
       });
       expect(jsonArtifactDiffBody.diff.content).toContain("+report");
+
+      const jsonUnscopedArtifactResponse = await fetch(
+        new URL(
+          "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonUnscopedArtifactResponse.status).toBe(400);
+      await expect(jsonUnscopedArtifactResponse.json()).resolves.toMatchObject({
+        error: "Conversation id is required for artifact inspection."
+      });
 
       const jsonSourceDiffResponse = await fetch(
         new URL(

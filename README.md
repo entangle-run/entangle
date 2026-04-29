@@ -362,7 +362,8 @@ This repository currently contains:
   through a Host-owned backend cache when semantic artifact context identifies
   a reachable git backend, and otherwise return projected artifact records with
   explicit unavailable reasons; the running User Client can request the same
-  bounded artifact history/diff evidence through its Human Interface Runtime;
+  bounded artifact history/diff evidence through its Human Interface Runtime
+  when the artifact ref is visible in the selected User Node conversation;
 - the process-runner smoke now verifies backend-cache history/diff for a
   runner-published source-history git artifact;
 - Host status now surfaces the derived artifact backend cache's availability,

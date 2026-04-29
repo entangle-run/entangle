@@ -227,10 +227,12 @@ export function publishApprovalResponse(input: {
 export function fetchArtifactPreview(input: {
   artifactId: string;
   baseUrl: string;
+  conversationId: string;
   nodeId: string;
 }): Promise<UserClientArtifactPreviewResponse> {
   const params = new URLSearchParams({
     artifactId: input.artifactId,
+    conversationId: input.conversationId,
     nodeId: input.nodeId
   });
 
@@ -245,10 +247,12 @@ export function fetchArtifactPreview(input: {
 export function fetchArtifactHistory(input: {
   artifactId: string;
   baseUrl: string;
+  conversationId: string;
   nodeId: string;
 }): Promise<UserClientArtifactHistoryResponse> {
   const params = new URLSearchParams({
     artifactId: input.artifactId,
+    conversationId: input.conversationId,
     nodeId: input.nodeId
   });
 
@@ -263,10 +267,12 @@ export function fetchArtifactHistory(input: {
 export function fetchArtifactDiff(input: {
   artifactId: string;
   baseUrl: string;
+  conversationId: string;
   nodeId: string;
 }): Promise<UserClientArtifactDiffResponse> {
   const params = new URLSearchParams({
     artifactId: input.artifactId,
+    conversationId: input.conversationId,
     nodeId: input.nodeId
   });
 

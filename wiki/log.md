@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Scoped User Client artifact reads to conversations
+
+Tightened runtime-local User Client artifact preview/history/diff routes so
+they require a conversation id and verify the artifact ref is visible in that
+User Node conversation before proxying to Host artifact read APIs. The
+dedicated User Client now passes conversation context for artifact actions.
+
+Added `references/356-user-client-artifact-visibility-boundary-slice.md`.
+
 ## [2026-04-29] implementation | Added User Client artifact history and diff
 
 Added runtime-local User Client JSON routes for artifact history and artifact

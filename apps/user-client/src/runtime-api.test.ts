@@ -89,16 +89,19 @@ describe("user client runtime API helpers", () => {
     await fetchArtifactPreview({
       artifactId: "artifact-alpha",
       baseUrl: "http://127.0.0.1:4300",
+      conversationId: "conversation-alpha",
       nodeId: "worker-it"
     });
     await fetchArtifactHistory({
       artifactId: "artifact-alpha",
       baseUrl: "http://127.0.0.1:4300",
+      conversationId: "conversation-alpha",
       nodeId: "worker-it"
     });
     await fetchArtifactDiff({
       artifactId: "artifact-alpha",
       baseUrl: "http://127.0.0.1:4300",
+      conversationId: "conversation-alpha",
       nodeId: "worker-it"
     });
     await fetchSourceChangeDiff({
@@ -124,13 +127,13 @@ describe("user client runtime API helpers", () => {
     });
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/artifacts/preview?artifactId=artifact-alpha&nodeId=worker-it"
+      "http://127.0.0.1:4300/api/artifacts/preview?artifactId=artifact-alpha&conversationId=conversation-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/artifacts/history?artifactId=artifact-alpha&nodeId=worker-it"
+      "http://127.0.0.1:4300/api/artifacts/history?artifactId=artifact-alpha&conversationId=conversation-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[2]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/artifacts/diff?artifactId=artifact-alpha&nodeId=worker-it"
+      "http://127.0.0.1:4300/api/artifacts/diff?artifactId=artifact-alpha&conversationId=conversation-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[3]?.[0]).toBe(
       "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&nodeId=worker-it"

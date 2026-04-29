@@ -101,6 +101,15 @@ type UserClientArtifactDiffResponse = {
   source: "runtime" | "unavailable";
 };
 
+type UserClientVisibleArtifactRef =
+  | {
+      artifact: ArtifactRef;
+    }
+  | {
+      error: string;
+      statusCode: number;
+    };
+
 type UserClientSourceChangeDiffResponse = {
   candidateId: string;
   diff: RuntimeSourceChangeCandidateDiffResponse["diff"];
@@ -581,6 +590,50 @@ async function markUserNodeConversationRead(input: {
   }
 }
 
+async function resolveUserClientVisibleArtifactRef(input: {
+  artifactId: string;
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  userNodeId: string;
+}): Promise<UserClientVisibleArtifactRef> {
+  if (!input.conversationId) {
+    return {
+      error: "Conversation id is required for artifact inspection.",
+      statusCode: 400
+    };
+  }
+
+  const conversation = await fetchUserNodeConversation({
+    conversationId: input.conversationId,
+    hostApi: input.hostApi,
+    userNodeId: input.userNodeId
+  });
+
+  if (conversation.error || !conversation.detail) {
+    return {
+      error: conversation.error ?? "Conversation detail is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  for (const message of conversation.detail.messages) {
+    for (const artifact of message.artifactRefs) {
+      if (
+        artifact.artifactId === input.artifactId &&
+        resolveArtifactPreviewNodeId({ message, ref: artifact }) === input.nodeId
+      ) {
+        return { artifact };
+      }
+    }
+  }
+
+  return {
+    error: "Artifact is not visible in the selected User Node conversation.",
+    statusCode: 403
+  };
+}
+
 async function markUserClientConversationRead(input: {
   conversationId: string;
   context: EffectiveRuntimeContext;
@@ -902,6 +955,7 @@ async function buildUserClientArtifactPreview(input: {
   artifactId: string;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  visibleArtifact?: ArtifactRef | undefined;
 }): Promise<UserClientArtifactPreviewResponse> {
   const projection = await fetchHostProjection({ hostApi: input.hostApi });
   const projectedRef = findProjectedArtifactRef({
@@ -937,7 +991,11 @@ async function buildUserClientArtifactPreview(input: {
   }
 
   return {
-    ...(projectedRef?.artifactRef ? { artifact: projectedRef.artifactRef } : {}),
+    ...(projectedRef?.artifactRef
+      ? { artifact: projectedRef.artifactRef }
+      : input.visibleArtifact
+        ? { artifact: input.visibleArtifact }
+        : {}),
     artifactId: input.artifactId,
     nodeId: input.nodeId,
     preview: {
@@ -955,6 +1013,7 @@ async function buildUserClientArtifactHistory(input: {
   artifactId: string;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  visibleArtifact?: ArtifactRef | undefined;
 }): Promise<UserClientArtifactHistoryResponse> {
   const runtimeHistory = await fetchRuntimeArtifactHistory({
     artifactId: input.artifactId,
@@ -973,6 +1032,7 @@ async function buildUserClientArtifactHistory(input: {
   }
 
   return {
+    ...(input.visibleArtifact ? { artifact: input.visibleArtifact } : {}),
     artifactId: input.artifactId,
     history: {
       available: false,
@@ -987,6 +1047,7 @@ async function buildUserClientArtifactDiff(input: {
   artifactId: string;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  visibleArtifact?: ArtifactRef | undefined;
 }): Promise<UserClientArtifactDiffResponse> {
   const runtimeDiff = await fetchRuntimeArtifactDiff({
     artifactId: input.artifactId,
@@ -1005,6 +1066,7 @@ async function buildUserClientArtifactDiff(input: {
   }
 
   return {
+    ...(input.visibleArtifact ? { artifact: input.visibleArtifact } : {}),
     artifactId: input.artifactId,
     diff: {
       available: false,
@@ -2093,6 +2155,7 @@ async function renderArtifactPreviewPage(input: {
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
+  visibleArtifact?: ArtifactRef | undefined;
 }): Promise<string> {
   const projection = await fetchHostProjection({ hostApi: input.hostApi });
   const projectedRef = findProjectedArtifactRef({
@@ -2111,7 +2174,8 @@ async function renderArtifactPreviewPage(input: {
   const backHref = input.conversationId
     ? `/?conversationId=${encodeURIComponent(input.conversationId)}`
     : "/";
-  const artifact = projectedRef?.artifactRef ?? previewDetail?.artifact.ref;
+  const artifact =
+    projectedRef?.artifactRef ?? previewDetail?.artifact.ref ?? input.visibleArtifact;
   const previewResult = projectedRef?.artifactPreview ?? previewDetail?.preview;
   const previewBody = preview?.error
     ? `<section class="error">${escapeHtml(preview.error)}</section>`
@@ -2328,10 +2392,27 @@ export async function startHumanInterfaceRuntime(input: {
         const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
         const artifactId =
           requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
 
         if (!nodeId || !artifactId) {
           writeJson(response, 400, {
             error: "Runtime node and artifact id are required."
+          });
+          return;
+        }
+
+        const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+          artifactId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleArtifact) {
+          writeJson(response, visibleArtifact.statusCode, {
+            error: visibleArtifact.error
           });
           return;
         }
@@ -2342,7 +2423,8 @@ export async function startHumanInterfaceRuntime(input: {
           await buildUserClientArtifactPreview({
             artifactId,
             hostApi: input.hostApi,
-            nodeId
+            nodeId,
+            visibleArtifact: visibleArtifact.artifact
           })
         );
         return;
@@ -2355,10 +2437,27 @@ export async function startHumanInterfaceRuntime(input: {
         const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
         const artifactId =
           requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
 
         if (!nodeId || !artifactId) {
           writeJson(response, 400, {
             error: "Runtime node and artifact id are required."
+          });
+          return;
+        }
+
+        const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+          artifactId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleArtifact) {
+          writeJson(response, visibleArtifact.statusCode, {
+            error: visibleArtifact.error
           });
           return;
         }
@@ -2369,7 +2468,8 @@ export async function startHumanInterfaceRuntime(input: {
           await buildUserClientArtifactHistory({
             artifactId,
             hostApi: input.hostApi,
-            nodeId
+            nodeId,
+            visibleArtifact: visibleArtifact.artifact
           })
         );
         return;
@@ -2382,10 +2482,27 @@ export async function startHumanInterfaceRuntime(input: {
         const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
         const artifactId =
           requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
 
         if (!nodeId || !artifactId) {
           writeJson(response, 400, {
             error: "Runtime node and artifact id are required."
+          });
+          return;
+        }
+
+        const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+          artifactId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleArtifact) {
+          writeJson(response, visibleArtifact.statusCode, {
+            error: visibleArtifact.error
           });
           return;
         }
@@ -2396,7 +2513,8 @@ export async function startHumanInterfaceRuntime(input: {
           await buildUserClientArtifactDiff({
             artifactId,
             hostApi: input.hostApi,
-            nodeId
+            nodeId,
+            visibleArtifact: visibleArtifact.artifact
           })
         );
         return;
@@ -2542,6 +2660,28 @@ export async function startHumanInterfaceRuntime(input: {
           return;
         }
 
+        const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+          artifactId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleArtifact) {
+          writeHtml(
+            response,
+            visibleArtifact.statusCode,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: visibleArtifact.error,
+              selectedConversationId: conversationId
+            })
+          );
+          return;
+        }
+
         writeHtml(
           response,
           200,
@@ -2549,7 +2689,8 @@ export async function startHumanInterfaceRuntime(input: {
             artifactId,
             conversationId,
             hostApi: input.hostApi,
-            nodeId
+            nodeId,
+            visibleArtifact: visibleArtifact.artifact
           })
         );
         return;
