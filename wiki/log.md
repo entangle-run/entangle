@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added User Client artifact history and diff
+
+Added runtime-local User Client JSON routes for artifact history and artifact
+diff, backed by the Host artifact read APIs. The dedicated User Client now
+shows Preview, History, and Diff actions for artifact refs so human graph
+participants can inspect git-backed artifact evidence from their running User
+Node client.
+
+Added `references/355-user-client-artifact-history-diff-slice.md`.
+
 ## [2026-04-29] implementation | Surfaced artifact cache status in Studio
 
 Added the path-free artifact backend cache summary to Studio's Host Status

@@ -155,6 +155,7 @@ same-machine slice records.
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
+- [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 
 ## Audited Scope
 
@@ -596,7 +597,10 @@ for that derived artifact backend cache without exposing paths or treating it
 as protocol truth, and operators can dry-run or clear that derived cache through
 the Host API/CLI without mutating authoritative artifact or projection state.
 Studio's Host Status panel now renders the same path-free artifact cache
-summary for admin visibility.
+summary for admin visibility. The running User Client can now request bounded
+artifact history and diff evidence through its Human Interface Runtime, using
+the Host read boundary without turning the user surface into an operator
+control plane.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

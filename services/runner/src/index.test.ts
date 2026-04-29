@@ -1157,6 +1157,86 @@ describe("runner runtime context", () => {
         }
 
         if (
+          request.method === "GET" &&
+          request.url ===
+            "/v1/runtimes/worker-it/artifacts/artifact-alpha/history"
+        ) {
+          response.end(
+            JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-26T12:02:00.000Z",
+                ref: {
+                  artifactId: "artifact-alpha",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  contentSummary: "Review report.",
+                  locator: {
+                    branch: "main",
+                    commit: "abc123",
+                    path: "reports/review.md",
+                    repositoryName: "worker-artifacts"
+                  },
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-26T12:02:00.000Z"
+              },
+              history: {
+                available: true,
+                commits: [
+                  {
+                    abbreviatedCommit: "abc123",
+                    commit: "abc123",
+                    committedAt: "2026-04-26T12:02:00.000Z",
+                    subject: "Materialize review report"
+                  }
+                ],
+                inspectedPath: "reports/review.md",
+                truncated: false
+              }
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "GET" &&
+          request.url === "/v1/runtimes/worker-it/artifacts/artifact-alpha/diff"
+        ) {
+          response.end(
+            JSON.stringify({
+              artifact: {
+                createdAt: "2026-04-26T12:02:00.000Z",
+                ref: {
+                  artifactId: "artifact-alpha",
+                  artifactKind: "report_file",
+                  backend: "git",
+                  contentSummary: "Review report.",
+                  locator: {
+                    branch: "main",
+                    commit: "abc123",
+                    path: "reports/review.md",
+                    repositoryName: "worker-artifacts"
+                  },
+                  status: "materialized"
+                },
+                updatedAt: "2026-04-26T12:02:00.000Z"
+              },
+              diff: {
+                available: true,
+                bytesRead: 32,
+                content: "diff --git a/reports/review.md\n+report\n",
+                contentEncoding: "utf8",
+                contentType: "text/x-diff",
+                fromCommit: "abc122",
+                toCommit: "abc123",
+                truncated: false
+              }
+            })
+          );
+          return;
+        }
+
+        if (
           request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
@@ -1404,6 +1484,57 @@ describe("runner runtime context", () => {
         },
         source: "projection"
       });
+
+      const jsonArtifactHistoryResponse = await fetch(
+        new URL(
+          "/api/artifacts/history?nodeId=worker-it&artifactId=artifact-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonArtifactHistoryResponse.status).toBe(200);
+      await expect(jsonArtifactHistoryResponse.json()).resolves.toMatchObject({
+        artifact: {
+          artifactId: "artifact-alpha",
+          backend: "git"
+        },
+        history: {
+          available: true,
+          commits: [
+            {
+              abbreviatedCommit: "abc123",
+              subject: "Materialize review report"
+            }
+          ]
+        },
+        nodeId: "worker-it",
+        source: "runtime"
+      });
+
+      const jsonArtifactDiffResponse = await fetch(
+        new URL(
+          "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonArtifactDiffResponse.status).toBe(200);
+      const jsonArtifactDiffBody = (await jsonArtifactDiffResponse.json()) as {
+        diff: {
+          content?: string;
+        };
+        source: string;
+      };
+      expect(jsonArtifactDiffBody).toMatchObject({
+        artifact: {
+          artifactId: "artifact-alpha",
+          backend: "git"
+        },
+        diff: {
+          available: true
+        },
+        nodeId: "worker-it",
+        source: "runtime"
+      });
+      expect(jsonArtifactDiffBody.diff.content).toContain("+report");
 
       const jsonSourceDiffResponse = await fetch(
         new URL(

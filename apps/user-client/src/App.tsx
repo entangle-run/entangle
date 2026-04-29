@@ -10,6 +10,8 @@ import type {
 } from "@entangle/types";
 import {
   chooseConversationId,
+  fetchArtifactDiff,
+  fetchArtifactHistory,
   fetchArtifactPreview,
   fetchConversationDetail,
   fetchSourceChangeDiff,
@@ -118,12 +120,16 @@ function ArtifactPreviewAction({
   baseUrl: string;
   message: UserNodeMessageRecord;
 }) {
+  const [diff, setDiff] = useState<string | undefined>();
+  const [historyLines, setHistoryLines] = useState<string[]>([]);
   const [preview, setPreview] = useState<string | undefined>();
   const [status, setStatus] = useState<string | undefined>();
   const nodeId = resolveArtifactPreviewNodeId(message, artifact);
 
   async function loadPreview(): Promise<void> {
-    setStatus("loading");
+    setStatus("loading preview");
+    setDiff(undefined);
+    setHistoryLines([]);
 
     try {
       const response = await fetchArtifactPreview({
@@ -145,13 +151,81 @@ function ArtifactPreviewAction({
     }
   }
 
+  async function loadHistory(): Promise<void> {
+    setStatus("loading history");
+    setDiff(undefined);
+    setPreview(undefined);
+
+    try {
+      const response = await fetchArtifactHistory({
+        artifactId: artifact.artifactId,
+        baseUrl,
+        nodeId
+      });
+
+      if (response.history.available) {
+        setHistoryLines(
+          response.history.commits.map(
+            (commit) => `${commit.abbreviatedCommit} ${commit.subject}`
+          )
+        );
+        setStatus(`${response.source} history`);
+      } else {
+        setHistoryLines([]);
+        setStatus(response.history.reason);
+      }
+    } catch (error) {
+      setHistoryLines([]);
+      setStatus(error instanceof Error ? error.message : "History failed.");
+    }
+  }
+
+  async function loadDiff(): Promise<void> {
+    setStatus("loading diff");
+    setHistoryLines([]);
+    setPreview(undefined);
+
+    try {
+      const response = await fetchArtifactDiff({
+        artifactId: artifact.artifactId,
+        baseUrl,
+        nodeId
+      });
+
+      if (response.diff.available) {
+        setDiff(response.diff.content);
+        setStatus(`${response.source} diff`);
+      } else {
+        setDiff(undefined);
+        setStatus(response.diff.reason);
+      }
+    } catch (error) {
+      setDiff(undefined);
+      setStatus(error instanceof Error ? error.message : "Diff failed.");
+    }
+  }
+
   return (
     <div className="artifact-actions">
       <button onClick={() => void loadPreview()} type="button">
         Preview
       </button>
+      <button onClick={() => void loadHistory()} type="button">
+        History
+      </button>
+      <button onClick={() => void loadDiff()} type="button">
+        Diff
+      </button>
       {status ? <span className="metadata">{status}</span> : null}
       {preview ? <pre className="preview-block">{preview}</pre> : null}
+      {historyLines.length > 0 ? (
+        <ul className="compact-list">
+          {historyLines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
+      {diff ? <pre className="preview-block">{diff}</pre> : null}
     </div>
   );
 }

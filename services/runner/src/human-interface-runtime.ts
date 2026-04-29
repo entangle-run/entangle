@@ -9,6 +9,8 @@ import type {
   EffectiveRuntimeContext,
   HostProjectionSnapshot,
   RunnerJoinHostApi,
+  RuntimeArtifactDiffResponse,
+  RuntimeArtifactHistoryResponse,
   RuntimeArtifactPreviewResponse,
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
@@ -23,6 +25,8 @@ import type {
 } from "@entangle/types";
 import {
   hostProjectionSnapshotSchema,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   userNodeConversationResponseSchema,
@@ -79,6 +83,22 @@ type UserClientArtifactPreviewResponse = {
     | NonNullable<ArtifactRefProjectionRecord["artifactPreview"]>
     | RuntimeArtifactPreviewResponse["preview"];
   source: "projection" | "runtime" | "unavailable";
+};
+
+type UserClientArtifactHistoryResponse = {
+  artifact?: ArtifactRef | undefined;
+  artifactId: string;
+  history: RuntimeArtifactHistoryResponse["history"];
+  nodeId: string;
+  source: "runtime" | "unavailable";
+};
+
+type UserClientArtifactDiffResponse = {
+  artifact?: ArtifactRef | undefined;
+  artifactId: string;
+  diff: RuntimeArtifactDiffResponse["diff"];
+  nodeId: string;
+  source: "runtime" | "unavailable";
 };
 
 type UserClientSourceChangeDiffResponse = {
@@ -744,6 +764,94 @@ async function fetchRuntimeArtifactPreview(input: {
   }
 }
 
+async function fetchRuntimeArtifactHistory(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<{
+  detail?: RuntimeArtifactHistoryResponse;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for artifact history."
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/artifacts/${encodeURIComponent(input.artifactId)}/history`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host artifact history request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: runtimeArtifactHistoryResponseSchema.parse(await response.json())
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host artifact history request failed."
+    };
+  }
+}
+
+async function fetchRuntimeArtifactDiff(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<{
+  detail?: RuntimeArtifactDiffResponse;
+  error?: string;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for artifact diff."
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/artifacts/${encodeURIComponent(input.artifactId)}/diff`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host artifact diff request failed with HTTP ${response.status}.`
+      };
+    }
+
+    return {
+      detail: runtimeArtifactDiffResponseSchema.parse(await response.json())
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host artifact diff request failed."
+    };
+  }
+}
+
 async function fetchRuntimeSourceChangeCandidateDiff(input: {
   candidateId: string;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -839,6 +947,70 @@ async function buildUserClientArtifactPreview(input: {
         projection.error ??
         "Artifact preview is unavailable."
     },
+    source: "unavailable"
+  };
+}
+
+async function buildUserClientArtifactHistory(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<UserClientArtifactHistoryResponse> {
+  const runtimeHistory = await fetchRuntimeArtifactHistory({
+    artifactId: input.artifactId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId
+  });
+
+  if (runtimeHistory.detail) {
+    return {
+      artifact: runtimeHistory.detail.artifact.ref,
+      artifactId: input.artifactId,
+      history: runtimeHistory.detail.history,
+      nodeId: input.nodeId,
+      source: "runtime"
+    };
+  }
+
+  return {
+    artifactId: input.artifactId,
+    history: {
+      available: false,
+      reason: runtimeHistory.error ?? "Artifact history is unavailable."
+    },
+    nodeId: input.nodeId,
+    source: "unavailable"
+  };
+}
+
+async function buildUserClientArtifactDiff(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+}): Promise<UserClientArtifactDiffResponse> {
+  const runtimeDiff = await fetchRuntimeArtifactDiff({
+    artifactId: input.artifactId,
+    hostApi: input.hostApi,
+    nodeId: input.nodeId
+  });
+
+  if (runtimeDiff.detail) {
+    return {
+      artifact: runtimeDiff.detail.artifact.ref,
+      artifactId: input.artifactId,
+      diff: runtimeDiff.detail.diff,
+      nodeId: input.nodeId,
+      source: "runtime"
+    };
+  }
+
+  return {
+    artifactId: input.artifactId,
+    diff: {
+      available: false,
+      reason: runtimeDiff.error ?? "Artifact diff is unavailable."
+    },
+    nodeId: input.nodeId,
     source: "unavailable"
   };
 }
@@ -2168,6 +2340,60 @@ export async function startHumanInterfaceRuntime(input: {
           response,
           200,
           await buildUserClientArtifactPreview({
+            artifactId,
+            hostApi: input.hostApi,
+            nodeId
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/api/artifacts/history"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const artifactId =
+          requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+
+        if (!nodeId || !artifactId) {
+          writeJson(response, 400, {
+            error: "Runtime node and artifact id are required."
+          });
+          return;
+        }
+
+        writeJson(
+          response,
+          200,
+          await buildUserClientArtifactHistory({
+            artifactId,
+            hostApi: input.hostApi,
+            nodeId
+          })
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        requestUrl.pathname === "/api/artifacts/diff"
+      ) {
+        const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
+        const artifactId =
+          requestUrl.searchParams.get("artifactId")?.trim() ?? "";
+
+        if (!nodeId || !artifactId) {
+          writeJson(response, 400, {
+            error: "Runtime node and artifact id are required."
+          });
+          return;
+        }
+
+        writeJson(
+          response,
+          200,
+          await buildUserClientArtifactDiff({
             artifactId,
             hostApi: input.hostApi,
             nodeId

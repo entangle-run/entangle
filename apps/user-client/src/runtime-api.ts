@@ -1,5 +1,7 @@
 import type {
   ArtifactRef,
+  RuntimeArtifactDiffResponse,
+  RuntimeArtifactHistoryResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   SourceChangeRefProjectionRecord,
   SourceChangeSummary,
@@ -66,6 +68,22 @@ export type UserClientArtifactPreviewResponse = {
   nodeId: string;
   preview: UserClientPreviewResult;
   source: "projection" | "runtime" | "unavailable";
+};
+
+export type UserClientArtifactHistoryResponse = {
+  artifact?: ArtifactRef | undefined;
+  artifactId: string;
+  history: RuntimeArtifactHistoryResponse["history"];
+  nodeId: string;
+  source: "runtime" | "unavailable";
+};
+
+export type UserClientArtifactDiffResponse = {
+  artifact?: ArtifactRef | undefined;
+  artifactId: string;
+  diff: RuntimeArtifactDiffResponse["diff"];
+  nodeId: string;
+  source: "runtime" | "unavailable";
 };
 
 export type UserClientSourceChangeDiffResponse = {
@@ -218,6 +236,42 @@ export function fetchArtifactPreview(input: {
 
   return fetchJson<UserClientArtifactPreviewResponse>(
     `/api/artifacts/preview?${params.toString()}`,
+    {
+      baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function fetchArtifactHistory(input: {
+  artifactId: string;
+  baseUrl: string;
+  nodeId: string;
+}): Promise<UserClientArtifactHistoryResponse> {
+  const params = new URLSearchParams({
+    artifactId: input.artifactId,
+    nodeId: input.nodeId
+  });
+
+  return fetchJson<UserClientArtifactHistoryResponse>(
+    `/api/artifacts/history?${params.toString()}`,
+    {
+      baseUrl: input.baseUrl
+    }
+  );
+}
+
+export function fetchArtifactDiff(input: {
+  artifactId: string;
+  baseUrl: string;
+  nodeId: string;
+}): Promise<UserClientArtifactDiffResponse> {
+  const params = new URLSearchParams({
+    artifactId: input.artifactId,
+    nodeId: input.nodeId
+  });
+
+  return fetchJson<UserClientArtifactDiffResponse>(
+    `/api/artifacts/diff?${params.toString()}`,
     {
       baseUrl: input.baseUrl
     }

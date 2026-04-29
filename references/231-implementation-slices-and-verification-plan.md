@@ -397,6 +397,8 @@ Current status:
   backend cache without deleting authoritative artifact/projection state;
 - Studio's Host Status panel renders the same path-free artifact backend cache
   summary for admin visibility;
+- the User Client can request bounded artifact history/diff from its Human
+  Interface Runtime through Host artifact read APIs;
 - richer source/wiki mutation endpoints, non-primary publication, richer cache
   policy, and artifact restore/promotion still need projection-backed or
   backend-resolved replacement.
@@ -681,6 +683,7 @@ Implementation records:
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
+- [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 
 Current status:
 
@@ -714,6 +717,8 @@ Current status:
   without touching authoritative artifact, projection, runner, or git backend
   state;
 - Studio displays the artifact backend cache summary in the Host Status panel;
+- the running User Client can load artifact history/diff evidence through
+  runtime-local JSON routes backed by Host artifact read APIs;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

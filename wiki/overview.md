@@ -92,6 +92,8 @@ The most accurate current description is:
   locators through a Host-owned backend cache when semantic artifact context
   identifies a reachable git backend, and otherwise return projected artifact
   records with explicit unavailable reasons;
+- the running User Client can now request bounded artifact history/diff
+  evidence through its Human Interface Runtime and Host artifact read APIs;
 - the process-runner smoke now verifies backend-cache history/diff for a
   runner-published source-history git artifact;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary

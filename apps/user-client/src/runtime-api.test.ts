@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildRuntimeApiUrl,
   chooseConversationId,
+  fetchArtifactDiff,
+  fetchArtifactHistory,
   fetchArtifactPreview,
   fetchSourceChangeDiff,
   formatDeliveryLabel,
@@ -89,6 +91,16 @@ describe("user client runtime API helpers", () => {
       baseUrl: "http://127.0.0.1:4300",
       nodeId: "worker-it"
     });
+    await fetchArtifactHistory({
+      artifactId: "artifact-alpha",
+      baseUrl: "http://127.0.0.1:4300",
+      nodeId: "worker-it"
+    });
+    await fetchArtifactDiff({
+      artifactId: "artifact-alpha",
+      baseUrl: "http://127.0.0.1:4300",
+      nodeId: "worker-it"
+    });
     await fetchSourceChangeDiff({
       baseUrl: "http://127.0.0.1:4300",
       candidateId: "candidate-alpha",
@@ -115,21 +127,27 @@ describe("user client runtime API helpers", () => {
       "http://127.0.0.1:4300/api/artifacts/preview?artifactId=artifact-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&nodeId=worker-it"
+      "http://127.0.0.1:4300/api/artifacts/history?artifactId=artifact-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[2]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/artifacts/diff?artifactId=artifact-alpha&nodeId=worker-it"
+    );
+    expect(fetchMock.mock.calls[3]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&nodeId=worker-it"
+    );
+    expect(fetchMock.mock.calls[4]?.[0]).toBe(
       "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"
     );
-    expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({
+    expect(fetchMock.mock.calls[4]?.[1]).toMatchObject({
       method: "POST"
     });
-    expect(fetchMock.mock.calls[3]?.[0]).toBe(
+    expect(fetchMock.mock.calls[5]?.[0]).toBe(
       "http://127.0.0.1:4300/api/source-change-candidates/review"
     );
-    expect(fetchMock.mock.calls[3]?.[1]).toMatchObject({
+    expect(fetchMock.mock.calls[5]?.[1]).toMatchObject({
       method: "POST"
     });
-    expect(JSON.parse(fetchMock.mock.calls[3]?.[1]?.body as string)).toMatchObject({
+    expect(JSON.parse(fetchMock.mock.calls[5]?.[1]?.body as string)).toMatchObject({
       candidateId: "candidate-alpha",
       conversationId: "conversation-alpha",
       nodeId: "worker-it",

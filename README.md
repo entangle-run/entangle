@@ -361,7 +361,8 @@ This repository currently contains:
 - artifact history/diff APIs can now resolve projected git artifact locators
   through a Host-owned backend cache when semantic artifact context identifies
   a reachable git backend, and otherwise return projected artifact records with
-  explicit unavailable reasons;
+  explicit unavailable reasons; the running User Client can request the same
+  bounded artifact history/diff evidence through its Human Interface Runtime;
 - the process-runner smoke now verifies backend-cache history/diff for a
   runner-published source-history git artifact;
 - Host status now surfaces the derived artifact backend cache's availability,
