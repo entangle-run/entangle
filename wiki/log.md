@@ -4607,3 +4607,14 @@ Studio exposes the same Host request from selected artifact detail.
 Both surfaces request the existing Host-signed runner control path and show a
 request acknowledgement while restore completion remains runner observation
 evidence.
+
+## [2026-04-29] verification | Added process smoke coverage for artifact restore
+
+Added `references/386-process-smoke-artifact-restore-slice.md`. The
+process-runner smoke now requests runner-owned artifact restore for the real
+source-history artifact published by the joined agent runner, then waits for
+Host projection to report runner-observed `retrieved` state.
+
+The smoke exposed and closed a validator mismatch for file-backed git proof
+profiles: file git targets no longer require git transport principals, while
+SSH and HTTPS git targets still keep the existing principal requirements.

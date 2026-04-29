@@ -98,6 +98,10 @@ The most accurate current description is:
 - the process-runner smoke now verifies backend-cache history/diff for a
   runner-published source-history git artifact and verifies the same
   visible-artifact history/diff path through the running User Client;
+- the process-runner smoke now requests runner-owned artifact restore for that
+  source-history artifact and verifies projected `retrieved` evidence from the
+  real joined runner path, while file-backed git proof targets no longer
+  require transport principals;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate

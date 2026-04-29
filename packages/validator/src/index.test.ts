@@ -1053,6 +1053,56 @@ describe("validateRuntimeArtifactRefs", () => {
     expect(report.ok).toBe(true);
   });
 
+  it("accepts file-backed git artifact refs without transport principals", () => {
+    const context = buildRuntimeContext();
+    context.artifactContext.gitPrincipalBindings = [];
+    delete context.artifactContext.primaryGitPrincipalRef;
+    context.artifactContext.gitServices = [
+      {
+        id: "gitea",
+        displayName: "Gitea",
+        baseUrl: "https://gitea.example",
+        remoteBase: "file:///tmp/entangle-git",
+        transportKind: "file",
+        authMode: "ssh_key",
+        defaultNamespace: "team-alpha",
+        provisioning: {
+          mode: "preexisting"
+        }
+      }
+    ];
+    context.artifactContext.primaryGitRepositoryTarget = {
+      gitServiceRef: "gitea",
+      namespace: "team-alpha",
+      provisioningMode: "preexisting",
+      remoteUrl: "file:///tmp/entangle-git/team-alpha/graph-alpha.git",
+      repositoryName: "graph-alpha",
+      transportKind: "file"
+    };
+
+    const report = validateRuntimeArtifactRefs({
+      context,
+      artifactRefs: [
+        {
+          artifactId: "report-1",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/review",
+            commit: "abc123",
+            gitServiceRef: "gitea",
+            namespace: "team-alpha",
+            repositoryName: "graph-alpha",
+            path: "reports/session-alpha/turn-001.md"
+          },
+          preferred: true,
+          status: "published"
+        }
+      ]
+    });
+
+    expect(report.ok).toBe(true);
+  });
+
   it("rejects git handoff refs that cannot be resolved by the receiving runtime", () => {
     const report = validateRuntimeArtifactRefs({
       context: buildRuntimeContext(),

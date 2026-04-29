@@ -295,6 +295,7 @@ Implementation record:
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
+- [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 
 Verification:
 
@@ -613,6 +614,7 @@ Implementation record:
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
+- [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 
 Verification:
 
@@ -786,6 +788,12 @@ Current status:
 - CLI exposes the same request as `host runtimes artifact-restore`, and Studio
   exposes it from selected artifact detail while showing request
   acknowledgement separate from later observation evidence;
+- the process proof now requests runner-owned artifact restore for the
+  runner-published source-history artifact and verifies projected `retrieved`
+  evidence from the real joined runner path;
+- semantic artifact validation now allows file-backed git proof targets
+  without git transport principals while retaining principal requirements for
+  SSH and HTTPS targets;
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;

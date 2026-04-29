@@ -100,9 +100,11 @@ approval response, synthetic agent-to-user, and second-User-Node paths. The fake
 OpenCode executable mutates the source workspace, so the smoke also verifies
 projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
-artifact history/diff through the running User Client. It then requests
-explicit non-primary source-history target publication and verifies the sibling
-source repository branch head, without live model credentials. Live OpenCode
+artifact history/diff through the running User Client. It requests
+runner-owned artifact restore for that source-history artifact and verifies
+projected retrieval evidence, then requests explicit non-primary
+source-history target publication and verifies the sibling source repository
+branch head, without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
 local provider fixture.

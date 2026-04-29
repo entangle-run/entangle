@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
+[386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -54,7 +54,9 @@ coverage for assignment timelines, User Client JSON read-state convergence,
 runner-owned wiki publication control, and Studio wiki publication request
 controls over the federated Host boundary, plus process-boundary proof that
 wiki publication produces projected artifact evidence and a matching primary git
-branch, and Host public deep runtime reads now ignore Host-local runtime files
+branch, and process-boundary proof that runner-owned artifact restore produces
+projected retrieval evidence through the real joined runner path. Host public
+deep runtime reads now ignore Host-local runtime files
 for accepted federated assignments. Projected git artifact history/diff can now
 be computed through a Host-owned backend cache when the locator is resolvable
 through semantic artifact context, and the process-runner smoke verifies that
@@ -128,6 +130,12 @@ repository.
 Runtime-context runner startup and the Human Interface Runtime now also support
 mounted-file identity secret delivery, matching the shared secret-delivery
 contract and generic runner join path.
+The process-runner smoke now also requests runner-owned artifact restore for
+the real source-history artifact published by the joined agent runner and
+verifies projected `retrieved` evidence through Host runtime artifact
+inspection. The artifact-ref validator now treats file-backed git targets as
+credentialless local proof backends while preserving git principal requirements
+for SSH and HTTPS targets.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -524,6 +532,7 @@ files are the active federated redesign pack.
 384. [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 385. [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 386. [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
+387. [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 
 ## Role of this corpus
 

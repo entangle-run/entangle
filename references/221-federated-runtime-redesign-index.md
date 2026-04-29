@@ -186,6 +186,7 @@ same-machine slice records.
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
+- [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 
 ## Audited Scope
 
@@ -655,7 +656,11 @@ ref, the accepted runner retrieves it through runner-owned artifact backend
 state, and the runner emits `artifact.ref` observation evidence with retrieval
 state. CLI can request that command with
 `host runtimes artifact-restore`, and Studio exposes the same request from
-selected artifact detail. Artifact promotion remains unresolved and must
+selected artifact detail. The process-runner smoke now requests that command
+for the runner-published source-history artifact and verifies projected
+`retrieved` evidence from the real joined runner path. File-backed git proof
+profiles are valid without git transport principals, while non-file git
+targets still require deterministic principal bindings. Artifact promotion remains unresolved and must
 return either as a runner-owned protocol command with explicit policy or as
 source-change proposal behavior. Explicit wiki repository publication has
 returned as the Host-signed

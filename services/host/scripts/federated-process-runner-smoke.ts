@@ -36,6 +36,7 @@ import {
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
@@ -2233,6 +2234,59 @@ async function main(): Promise<void> {
     if (sourceHistoryArtifactRef.backend !== "git") {
       throw new Error("Source-history artifact must use the git backend.");
     }
+
+    const artifactRestoreRequest = runtimeArtifactRestoreResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          reason:
+            "Process runner smoke requested runner-owned artifact restore.",
+          requestedBy: "process-runner-smoke",
+          restoreId: "restore-source-history-artifact"
+        },
+        method: "POST",
+        path: `/v1/runtimes/builder/artifacts/${sourceHistoryArtifactId}/restore`
+      })
+    );
+    assertCondition(
+      artifactRestoreRequest.status === "requested" &&
+        artifactRestoreRequest.assignmentId === assignment.assignmentId,
+      "Artifact restore request must be accepted as a federated runner command."
+    );
+    printPass(
+      "artifact-restore-request",
+      `command=${artifactRestoreRequest.commandId}; artifact=${sourceHistoryArtifactId}`
+    );
+
+    const restoredSourceHistoryArtifact = await waitFor(
+      "Host projected runner-owned artifact restore",
+      async () => {
+        const inspection = runtimeArtifactInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${sourceHistoryArtifactId}`
+          })
+        );
+
+        return inspection.artifact.retrieval?.state
+          ? inspection.artifact
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    assertCondition(
+      restoredSourceHistoryArtifact.retrieval?.state === "retrieved",
+      `Artifact restore must complete successfully; observed ${
+        restoredSourceHistoryArtifact.retrieval?.state ?? "missing"
+      } retrieval state: ${
+        restoredSourceHistoryArtifact.retrieval?.lastError ?? "no error detail"
+      }`
+    );
+    printPass(
+      "projected-runtime-artifact-restore",
+      `artifact=${restoredSourceHistoryArtifact.ref.artifactId}; ` +
+        `retrieval=${restoredSourceHistoryArtifact.retrieval?.state}`
+    );
 
     const targetedSourceHistoryPublicationRequest =
       runtimeSourceHistoryPublishResponseSchema.parse(

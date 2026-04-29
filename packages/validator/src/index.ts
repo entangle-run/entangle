@@ -1103,53 +1103,59 @@ export function validateRuntimeArtifactRefs(input: {
       );
     }
 
-    if (!artifactRef.locator.gitServiceRef) {
-      return;
-    }
+    const target =
+      artifactRef.locator.namespace && artifactRef.locator.repositoryName
+        ? resolveGitRepositoryTargetForArtifactLocator({
+            artifactContext: input.context.artifactContext,
+            locator: artifactRef.locator
+          })
+        : undefined;
 
-    const principalResolution = resolveGitPrincipalBindingForService({
-      artifactContext: input.context.artifactContext,
-      gitServiceRef: artifactRef.locator.gitServiceRef
-    });
+    if (
+      artifactRef.locator.gitServiceRef &&
+      target?.transportKind !== "file"
+    ) {
+      const principalResolution = resolveGitPrincipalBindingForService({
+        artifactContext: input.context.artifactContext,
+        gitServiceRef: artifactRef.locator.gitServiceRef
+      });
 
-    if (principalResolution.status === "missing") {
-      findings.push(
-        createFinding({
-          code: "git_handoff_missing_transport_principal",
-          severity: "error",
-          message:
-            `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the receiving runtime has no git transport principal bound for that service.`,
-          path: ["artifactContext", "gitPrincipalBindings"],
-          details: {
-            artifactId: artifactRef.artifactId,
-            gitServiceRef: artifactRef.locator.gitServiceRef
-          }
-        })
-      );
-    } else if (principalResolution.status === "ambiguous") {
-      findings.push(
-        createFinding({
-          code: "git_handoff_ambiguous_transport_principal",
-          severity: "error",
-          message:
-            `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the receiving runtime resolves multiple candidate git transport principals for that service.`,
-          path: ["artifactContext", "gitPrincipalBindings"],
-          details: {
-            artifactId: artifactRef.artifactId,
-            gitServiceRef: artifactRef.locator.gitServiceRef,
-            principalIds: principalResolution.candidatePrincipalIds
-          }
-        })
-      );
+      if (principalResolution.status === "missing") {
+        findings.push(
+          createFinding({
+            code: "git_handoff_missing_transport_principal",
+            severity: "error",
+            message:
+              `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the receiving runtime has no git transport principal bound for that service.`,
+            path: ["artifactContext", "gitPrincipalBindings"],
+            details: {
+              artifactId: artifactRef.artifactId,
+              gitServiceRef: artifactRef.locator.gitServiceRef
+            }
+          })
+        );
+      } else if (principalResolution.status === "ambiguous") {
+        findings.push(
+          createFinding({
+            code: "git_handoff_ambiguous_transport_principal",
+            severity: "error",
+            message:
+              `Git artifact '${artifactRef.artifactId}' targets service '${artifactRef.locator.gitServiceRef}', but the receiving runtime resolves multiple candidate git transport principals for that service.`,
+            path: ["artifactContext", "gitPrincipalBindings"],
+            details: {
+              artifactId: artifactRef.artifactId,
+              gitServiceRef: artifactRef.locator.gitServiceRef,
+              principalIds: principalResolution.candidatePrincipalIds
+            }
+          })
+        );
+      }
     }
 
     if (
       artifactRef.locator.namespace &&
       artifactRef.locator.repositoryName &&
-      !resolveGitRepositoryTargetForArtifactLocator({
-        artifactContext: input.context.artifactContext,
-        locator: artifactRef.locator
-      })
+      !target
     ) {
       findings.push(
         createFinding({
