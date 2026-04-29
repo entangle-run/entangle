@@ -4,17 +4,21 @@ import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   artifactRecordSchema,
+  resolveGitRepositoryTargetForArtifactLocator,
   sourceHistoryRecordSchema,
   sourceHistoryReplayRecordSchema,
   type ArtifactRecord,
+  type ApprovalRecord,
   type EffectiveRuntimeContext,
   type GitRepositoryTarget,
   type SourceChangeCandidateRecord,
   type SourceHistoryRecord,
+  type SourceHistoryPublicationTarget,
   type SourceHistoryReplayRecord
 } from "@entangle/types";
 import type { RunnerStatePaths } from "./state-store.js";
 import {
+  readApprovalRecord,
   readSourceHistoryRecord,
   writeArtifactRecord,
   writeSourceChangeCandidateRecord,
@@ -232,6 +236,210 @@ function sourceHistoryPublicationRepoRoot(
   context: EffectiveRuntimeContext
 ): string {
   return path.join(context.workspace.artifactWorkspaceRoot, "source-history");
+}
+
+function publicationTargetsEqual(
+  left: GitRepositoryTarget | undefined,
+  right: GitRepositoryTarget | undefined
+): boolean {
+  return (
+    !!left &&
+    !!right &&
+    left.gitServiceRef === right.gitServiceRef &&
+    left.namespace === right.namespace &&
+    left.repositoryName === right.repositoryName
+  );
+}
+
+function describePublicationTarget(target: GitRepositoryTarget): string {
+  return `${target.gitServiceRef}/${target.namespace}/${target.repositoryName}`;
+}
+
+function buildPublicationApprovalResource(input: {
+  history: SourceHistoryRecord;
+  target: GitRepositoryTarget;
+}): { id: string; kind: "source_history_publication"; label: string } {
+  const targetLabel = describePublicationTarget(input.target);
+
+  return {
+    id: [
+      input.history.sourceHistoryId,
+      input.target.gitServiceRef,
+      input.target.namespace,
+      input.target.repositoryName
+    ].join("|"),
+    kind: "source_history_publication",
+    label: `${input.history.sourceHistoryId} -> ${targetLabel}`
+  };
+}
+
+function policyResourcesMatch(
+  left: ApprovalRecord["resource"],
+  right: ApprovalRecord["resource"]
+): boolean {
+  if (!left && !right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.id === right.id && left.kind === right.kind;
+}
+
+function sourceHistoryApprovalResource(
+  history: SourceHistoryRecord
+): { id: string; kind: "source_history"; label: string } {
+  return {
+    id: history.sourceHistoryId,
+    kind: "source_history",
+    label: history.sourceHistoryId
+  };
+}
+
+async function validateSourceHistoryPublicationApproval(input: {
+  approvalId?: string | undefined;
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  isPrimaryTarget: boolean;
+  statePaths: RunnerStatePaths;
+  target: GitRepositoryTarget;
+}): Promise<string | undefined> {
+  const requiresApproval =
+    input.context.policyContext.sourceMutation.publishRequiresApproval ||
+    (!input.isPrimaryTarget &&
+      input.context.policyContext.sourceMutation
+        .nonPrimaryPublishRequiresApproval);
+
+  if (!input.approvalId) {
+    if (!requiresApproval) {
+      return undefined;
+    }
+
+    return (
+      `Runtime '${input.context.binding.node.nodeId}' requires an approved approvalId before ` +
+      `publishing source history '${input.history.sourceHistoryId}' to target '${describePublicationTarget(input.target)}'.`
+    );
+  }
+
+  const approval = await readApprovalRecord(input.statePaths, input.approvalId);
+  const expectedPublicationResource = buildPublicationApprovalResource({
+    history: input.history,
+    target: input.target
+  });
+  const expectedHistoryResource = sourceHistoryApprovalResource(input.history);
+
+  if (!approval) {
+    return `Approval '${input.approvalId}' was not found for runtime '${input.context.binding.node.nodeId}'.`;
+  }
+
+  if (approval.graphId !== input.context.binding.graphId) {
+    return `Approval '${input.approvalId}' belongs to graph '${approval.graphId}', not graph '${input.context.binding.graphId}'.`;
+  }
+
+  if (approval.requestedByNodeId !== input.context.binding.node.nodeId) {
+    return `Approval '${input.approvalId}' was requested by node '${approval.requestedByNodeId}', not runtime '${input.context.binding.node.nodeId}'.`;
+  }
+
+  if (input.history.sessionId && approval.sessionId !== input.history.sessionId) {
+    return `Approval '${input.approvalId}' belongs to session '${approval.sessionId}', not session '${input.history.sessionId}'.`;
+  }
+
+  if (approval.operation !== "source_publication") {
+    return `Approval '${input.approvalId}' is scoped to operation '${approval.operation ?? "unspecified"}', but source history publication requires 'source_publication'.`;
+  }
+
+  const resourceMatches =
+    policyResourcesMatch(approval.resource, expectedPublicationResource) ||
+    (input.isPrimaryTarget &&
+      policyResourcesMatch(approval.resource, expectedHistoryResource));
+
+  if (!resourceMatches) {
+    return (
+      `Approval '${input.approvalId}' is scoped to resource ` +
+      `'${approval.resource?.kind ?? "unspecified"}:${approval.resource?.id ?? "unspecified"}', ` +
+      `but source history publication requires '${expectedPublicationResource.kind}:${expectedPublicationResource.id}'.`
+    );
+  }
+
+  if (approval.status !== "approved") {
+    return `Approval '${input.approvalId}' is '${approval.status}', but source history publication requires an approved approval.`;
+  }
+
+  return undefined;
+}
+
+function resolveSourceHistoryPublicationTarget(input: {
+  context: EffectiveRuntimeContext;
+  target?: SourceHistoryPublicationTarget | undefined;
+}):
+  | {
+      isPrimaryTarget: boolean;
+      target: GitRepositoryTarget;
+    }
+  | {
+      reason: string;
+    } {
+  const primaryTarget = input.context.artifactContext.primaryGitRepositoryTarget;
+
+  if (!input.target) {
+    if (!primaryTarget) {
+      return {
+        reason:
+          `Runtime '${input.context.binding.node.nodeId}' has no primary git repository target.`
+      };
+    }
+
+    return {
+      isPrimaryTarget: true,
+      target: primaryTarget
+    };
+  }
+
+  const gitServiceRef =
+    input.target.gitServiceRef ??
+    primaryTarget?.gitServiceRef ??
+    input.context.artifactContext.primaryGitServiceRef;
+  const namespace =
+    input.target.namespace ??
+    primaryTarget?.namespace ??
+    input.context.artifactContext.defaultNamespace;
+  const repositoryName =
+    input.target.repositoryName ?? primaryTarget?.repositoryName;
+
+  if (!gitServiceRef || !namespace || !repositoryName) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' could not resolve source-history publication target ` +
+        "because gitServiceRef, namespace, and repositoryName are required after defaults are applied."
+    };
+  }
+
+  const target = resolveGitRepositoryTargetForArtifactLocator({
+    artifactContext: input.context.artifactContext,
+    locator: {
+      branch: "target-resolution",
+      commit: "target-resolution",
+      gitServiceRef,
+      namespace,
+      path: ".",
+      repositoryName
+    }
+  });
+
+  if (!target) {
+    return {
+      reason:
+        `Runtime '${input.context.binding.node.nodeId}' could not resolve git publication target ` +
+        `'${gitServiceRef}/${namespace}/${repositoryName}' from its artifact context.`
+    };
+  }
+
+  return {
+    isPrimaryTarget: publicationTargetsEqual(target, primaryTarget),
+    target
+  };
 }
 
 function resolvePrimaryGitAttribution(context: EffectiveRuntimeContext): {
@@ -1055,7 +1263,8 @@ export async function replaySourceHistoryToWorkspace(input: {
   }
 }
 
-export async function publishSourceHistoryToPrimaryGitTarget(input: {
+export async function publishSourceHistoryToGitTarget(input: {
+  approvalId?: string;
   context: EffectiveRuntimeContext;
   history: SourceHistoryRecord;
   reason?: string;
@@ -1063,6 +1272,7 @@ export async function publishSourceHistoryToPrimaryGitTarget(input: {
   requestedBy?: string;
   retryFailedPublication?: boolean;
   statePaths: RunnerStatePaths;
+  target?: SourceHistoryPublicationTarget | undefined;
 }): Promise<SourceHistoryPublicationResult> {
   if (input.history.publication) {
     const publicationState = input.history.publication.publication.state;
@@ -1081,24 +1291,34 @@ export async function publishSourceHistoryToPrimaryGitTarget(input: {
     }
   }
 
-  if (input.context.policyContext.sourceMutation.publishRequiresApproval) {
+  const resolvedTarget = resolveSourceHistoryPublicationTarget({
+    context: input.context,
+    ...(input.target ? { target: input.target } : {})
+  });
+
+  if ("reason" in resolvedTarget) {
     return {
       history: input.history,
       published: false,
-      reason:
-        `Runtime '${input.context.binding.node.nodeId}' requires approval before ` +
-        `publishing source history '${input.history.sourceHistoryId}'.`
+      reason: resolvedTarget.reason
     };
   }
 
-  const target = input.context.artifactContext.primaryGitRepositoryTarget;
+  const target = resolvedTarget.target;
+  const approvalError = await validateSourceHistoryPublicationApproval({
+    ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+    context: input.context,
+    history: input.history,
+    isPrimaryTarget: resolvedTarget.isPrimaryTarget,
+    statePaths: input.statePaths,
+    target
+  });
 
-  if (!target) {
+  if (approvalError) {
     return {
       history: input.history,
       published: false,
-      reason:
-        `Runtime '${input.context.binding.node.nodeId}' has no primary git repository target.`
+      reason: approvalError
     };
   }
 
@@ -1145,6 +1365,7 @@ export async function publishSourceHistoryToPrimaryGitTarget(input: {
     const nextHistory = sourceHistoryRecordSchema.parse({
       ...input.history,
       publication: {
+        ...(input.approvalId ? { approvalId: input.approvalId } : {}),
         artifactId: artifact.ref.artifactId,
         branch: branchName,
         publication: artifact.publication ?? {

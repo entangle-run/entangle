@@ -64,9 +64,11 @@ Studio, CLI, and host-client do not provide a direct Host publication path.
 This is an intentional breaking change before public release. Existing callers
 must stop posting to Host for source-history publication. The supported path is
 to let the assigned runner publish after accepted source review when policy
-permits it. Explicit retry/non-primary target publication needs a future
-runner-owned command or signed User Node message path rather than a Host file
-mutation.
+permits it. Explicit retry returned in
+`339-federated-source-history-publication-control-slice.md`, and explicit
+non-primary target publication returned in
+`379-runner-owned-source-history-target-publication-slice.md`; both are
+runner-owned control paths rather than Host file mutations.
 
 ## Risks And Mitigations
 
@@ -82,7 +84,5 @@ mutation.
 
 ## Open Questions
 
-- Define the exact protocol for explicit runner-owned source-history publication
-  retry.
-- Decide whether non-primary source-history publication should be a signed User
-  Node request, Host control command, or a runner-local operator action.
+- Decide whether participant-initiated source-history publication should be a
+  signed User Node request in addition to the current Host control command.

@@ -20,6 +20,7 @@ import {
   type HostEventRecord,
   type HostOperatorRequestMethod,
   type RuntimeAssignmentRecord,
+  type SourceHistoryPublicationTarget,
   type SessionCancellationMutationRequest,
   type SessionCancellationRequestRecord,
   type SessionCancellationResponse,
@@ -295,6 +296,7 @@ type HostFederatedAssignmentPublisher = {
     relayUrls: string[];
   }): Promise<unknown>;
   publishRuntimeSourceHistoryPublish?(input: {
+    approvalId?: string;
     assignment: RuntimeAssignmentRecord;
     authRequired?: boolean;
     commandId: string;
@@ -304,6 +306,7 @@ type HostFederatedAssignmentPublisher = {
     requestedBy?: string;
     retryFailedPublication?: boolean;
     sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget;
   }): Promise<unknown>;
   publishRuntimeSourceHistoryReplay?(input: {
     approvalId?: string;
@@ -706,11 +709,13 @@ async function publishRuntimeSessionCancelCommandFromHost(
 async function publishRuntimeSourceHistoryPublishCommandFromHost(
   options: HostServerOptions,
   input: {
+    approvalId?: string;
     assignment: RuntimeAssignmentRecord;
     reason?: string;
     requestedBy?: string;
     retryFailedPublication?: boolean;
     sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget;
   }
 ): Promise<string | undefined> {
   if (
@@ -723,6 +728,7 @@ async function publishRuntimeSourceHistoryPublishCommandFromHost(
 
   const commandId = `cmd-source-history-publish-${randomUUID()}`;
   await options.federatedControlPlane.publishRuntimeSourceHistoryPublish({
+    ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     assignment: input.assignment,
     ...(options.federatedControlAuthRequired !== undefined
       ? { authRequired: options.federatedControlAuthRequired }
@@ -732,7 +738,8 @@ async function publishRuntimeSourceHistoryPublishCommandFromHost(
     relayUrls: options.federatedControlRelayUrls,
     ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
     retryFailedPublication: input.retryFailedPublication ?? false,
-    sourceHistoryId: input.sourceHistoryId
+    sourceHistoryId: input.sourceHistoryId,
+    ...(input.target ? { target: input.target } : {})
   });
 
   return commandId;
@@ -2737,11 +2744,13 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
       const commandId =
         await publishRuntimeSourceHistoryPublishCommandFromHost(options, {
+          ...(body.approvalId ? { approvalId: body.approvalId } : {}),
           assignment,
           ...(body.reason ? { reason: body.reason } : {}),
           ...(body.requestedBy ? { requestedBy: body.requestedBy } : {}),
           retryFailedPublication: body.retryFailedPublication,
-          sourceHistoryId: params.sourceHistoryId
+          sourceHistoryId: params.sourceHistoryId,
+          ...(body.target ? { target: body.target } : {})
         });
 
       if (!commandId) {

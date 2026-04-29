@@ -259,6 +259,22 @@ export const sourceHistoryPublicationRecordSchema = z.object({
   targetRepositoryName: identifierSchema.optional()
 });
 
+export const sourceHistoryPublicationTargetSchema = z
+  .object({
+    gitServiceRef: identifierSchema.optional(),
+    namespace: identifierSchema.optional(),
+    repositoryName: identifierSchema.optional()
+  })
+  .superRefine((value, context) => {
+    if (!value.gitServiceRef && !value.namespace && !value.repositoryName) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Source-history publication target must include at least one selector."
+      });
+    }
+  });
+
 export const sourceChangeCandidateRecordSchema = z.object({
   application: sourceChangeCandidateApplicationRecordSchema.optional(),
   candidateId: identifierSchema,
@@ -636,6 +652,9 @@ export type SourceChangeCandidateApplicationRecord = z.infer<
 >;
 export type SourceChangeSnapshotRef = z.infer<
   typeof sourceChangeSnapshotRefSchema
+>;
+export type SourceHistoryPublicationTarget = z.infer<
+  typeof sourceHistoryPublicationTargetSchema
 >;
 export type SourceHistoryPublicationRecord = z.infer<
   typeof sourceHistoryPublicationRecordSchema

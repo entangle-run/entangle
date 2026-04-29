@@ -73,15 +73,22 @@ The existing Host publication mutation remains as a local compatibility/admin
 path for now. The canonical default path for newly accepted source reviews is
 runner-owned publication to the primary target when policy permits it.
 
-If no primary git target exists, or publication approval is required, the runner
-records source history without attempting publication.
+Updated by
+`379-runner-owned-source-history-target-publication-slice.md`: explicit
+Host-signed publication commands can now carry an approval id and a git target
+selector, so non-primary publication is also runner-owned. Automatic
+publication from accepted source review still defaults to the primary target.
+
+If no primary git target exists, or automatic publication approval is required,
+the runner records source history without attempting automatic publication.
 
 ## Risks And Mitigations
 
 - Risk: automatic publication bypasses policy. Mitigation: the runner skips
   auto-publication when `publishRequiresApproval` is true.
 - Risk: non-primary target publication needs explicit user choice. Mitigation:
-  this slice publishes only to the primary target.
+  later explicit publication commands carry target selectors and policy-scoped
+  approvals rather than changing automatic publication.
 - Risk: repository provisioning may require Host-owned service credentials.
   Mitigation: the runner treats push failure as failed publication metadata
   instead of corrupting source-history state. Dedicated federated provisioning
@@ -89,8 +96,6 @@ records source history without attempting publication.
 
 ## Open Questions
 
-- Replace or remove the old Host source-history publication mutation after a
-  runner command/user-message path exists for explicit retry and non-primary
-  publication.
 - Define how runner-owned publication requests should be approved when policy
-  requires approval before source publication.
+  requires approval before source publication in participant-initiated, signed
+  User Node workflows.

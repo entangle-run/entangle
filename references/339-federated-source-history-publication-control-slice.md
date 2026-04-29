@@ -8,6 +8,12 @@ git target, the owning runner can materialize an accepted source-history commit
 as a git artifact, persist publication metadata, and emit `artifact.ref` plus
 updated `source_history.ref` observations.
 
+Updated by
+`379-runner-owned-source-history-target-publication-slice.md`: the same
+Host-signed publication command can now carry an approval id plus explicit git
+target selectors. The assigned runner resolves the target and validates
+non-primary publication approval policy before pushing.
+
 After direct Host source-history publication routes were removed, there was no
 operator command path for explicitly asking a remote assigned runner to publish
 or retry one existing source-history record. That left failed publication retry
@@ -61,13 +67,16 @@ publication evidence.
 - Let Host publish the command only when an accepted federated assignment owns
   the runtime and federated control relay configuration is active.
 - Add a host-client method and CLI command for the operator request surface.
+- Let the request optionally carry `approvalId` plus git service, namespace,
+  and repository selectors for non-primary publication.
 - Let joined runners route the command to the active assignment runtime handle
   and emit assignment receipts for received and failed handling. Successful
   outcome is evidenced by the subsequent `artifact.ref` and `source_history.ref`
   observations.
 - Add `RunnerService.requestSourceHistoryPublication` so the node runtime owns
-  state lookup, policy checks, git publication, observation emission, and
-  explicit failed-publication retry semantics.
+  state lookup, policy checks, git target resolution, approval validation, git
+  publication, observation emission, and explicit failed-publication retry
+  semantics.
 
 ## Tests Required
 
@@ -80,6 +89,8 @@ publication evidence.
   handle.
 - Runner service test proving failed publication metadata requires explicit
   retry and that explicit retry publishes through the runner-owned git path.
+- Runner service test proving approved non-primary target publication pushes to
+  the requested repository and records target metadata.
 - Typecheck for touched packages.
 
 ## Verification Run
@@ -134,7 +145,7 @@ surface that still requires an accepted federated assignment.
 
 ## Open Questions
 
-- Add Studio controls for this federated request path once the operator source
-  history panel is redesigned around receipts and runner-owned outcomes.
-- Add non-primary target selection as a separate command instead of overloading
-  the primary-target publication request.
+- Should Studio show receipt/outcome correlation for source-history publication
+  commands instead of only the requested command summary?
+- Should source-history publication target selection later move to a signed
+  User Node request for participant-initiated publication workflows?

@@ -294,10 +294,13 @@ This repository currently contains:
   validates the current source tree before recording a local history commit,
   with runner-owned source-history publication that materializes an accepted
   source-history commit as a git commit artifact, records publication metadata,
-  and pushes to the node's primary git target when policy allows it, while
+  and pushes through a runner-resolved git target when policy allows it,
+  defaulting to the node's primary git target for automatic publication, while
   explicit operator publish/retry requests now travel as Host-signed
   `runtime.source_history.publish` commands to the accepted runner assignment
-  and explicit operator replay requests now travel as Host-signed
+  and can carry an approval id plus explicit git target selectors for
+  policy-gated non-primary repository publication. Explicit operator replay
+  requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
   history detail using that Host request path and with observed
@@ -1052,9 +1055,8 @@ The highest-value remaining gaps are:
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs, especially protocol-owned artifact restore or source-change
-  proposal flows, non-primary publication targets, richer wiki
-  promotion beyond primary-git publication, source-history merge/reconcile
-  workflows, and replicated fallback paths;
+  proposal flows, richer wiki promotion beyond primary-git publication,
+  source-history merge/reconcile workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, including real principals, roles, policy-backed permissions, and
   stronger audit retention than the current bootstrap request trace;

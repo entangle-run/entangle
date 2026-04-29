@@ -356,17 +356,22 @@ Current status:
   `SourceHistoryRecord`, Host projection exposes `sourceHistoryRefs`, and
   runtime source-history list/detail GET routes can return projected entries
   without Host-readable runner filesystem context;
-- when source publication policy allows it and a primary git target is
-  configured, the owning runner now publishes accepted source-history records as
-  git commit artifacts, persists publication metadata locally, and emits both
-  `artifact.ref` and updated `source_history.ref` observations;
+- when source publication policy allows it, the owning runner now publishes
+  accepted source-history records as git commit artifacts, persists publication
+  metadata locally, and emits both `artifact.ref` and updated
+  `source_history.ref` observations. Automatic publication defaults to the
+  primary git target; explicit `runtime.source_history.publish` commands can
+  carry an approval id and explicit git target selectors for policy-gated
+  non-primary repository publication;
 - the direct Host source-history publication mutation, host-client method, CLI
   `--publish` path, and Studio publish/retry action have been removed so Host
   observes source-history publication instead of owning the push;
 - explicit source-history publication and failed-publication retry now use a
   Host-signed `runtime.source_history.publish` control command to the accepted
   runner assignment; the runner performs the git publication from runner-owned
-  state and emits projection evidence;
+  state, resolves optional target selectors from effective artifact context,
+  validates `source_publication` approval scope when required, and emits
+  projection evidence;
 - explicit source-history replay now uses a Host-signed
   `runtime.source_history.replay` control command to the accepted runner
   assignment; the runner validates source-application approval policy, refuses
@@ -411,9 +416,11 @@ Current status:
   summary for admin visibility;
 - the User Client can request bounded artifact history/diff from its Human
   Interface Runtime through Host artifact read APIs;
-- richer source/wiki mutation endpoints, non-primary publication, richer cache
-  policy, and artifact restore/promotion still need projection-backed or
-  backend-resolved replacement.
+- explicit source-history publication can now target policy-gated non-primary
+  git repositories through the same runner-owned control boundary;
+- richer source/wiki mutation endpoints, richer cache policy, and artifact
+  restore/promotion still need projection-backed or backend-resolved
+  replacement.
 
 ### Slice 9: User Node Runtime
 

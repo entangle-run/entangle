@@ -2108,6 +2108,176 @@ describe("RunnerService", () => {
     );
   });
 
+  it("publishes source history to an approved non-primary git target", async () => {
+    const fixture = await createRuntimeFixture({ remotePublication: "bare_repo" });
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    runtimeContext.policyContext.sourceMutation = {
+      applyRequiresApproval: false,
+      nonPrimaryPublishRequiresApproval: true,
+      publishRequiresApproval: false
+    };
+    const backupRepositoryPath = path.join(
+      path.dirname(fixture.remoteRepositoryPath!),
+      "graph-alpha-public.git"
+    );
+    runGitFixtureCommand({
+      args: ["init", "--bare", backupRepositoryPath],
+      cwd: path.dirname(fixture.remoteRepositoryPath!)
+    });
+    const statePaths = buildRunnerStatePaths(
+      runtimeContext.workspace.runtimeRoot
+    );
+    const sourceBaseline = await prepareSourceChangeHarvest(runtimeContext);
+
+    if (sourceBaseline.kind !== "ready") {
+      throw new Error("Expected source change harvest baseline to be ready.");
+    }
+
+    await mkdir(path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src"), {
+      recursive: true
+    });
+    await writeFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src", "index.ts"),
+      "export const publishedToPublic = true;\n",
+      "utf8"
+    );
+    const sourceHarvest = await harvestSourceChanges(
+      runtimeContext,
+      sourceBaseline
+    );
+
+    if (!sourceHarvest.snapshot) {
+      throw new Error("Expected source change harvest to produce a snapshot.");
+    }
+
+    const sourceCommit = runGitFixtureCommand({
+      args: [
+        "--git-dir",
+        path.join(runtimeContext.workspace.runtimeRoot, "source-snapshot.git"),
+        "commit-tree",
+        sourceHarvest.snapshot.headTree,
+        "-m",
+        "Apply source-history-non-primary"
+      ],
+      cwd: runtimeContext.workspace.sourceWorkspaceRoot!,
+      env: {
+        GIT_AUTHOR_EMAIL: "worker-it@entangle.invalid",
+        GIT_AUTHOR_NAME: "Worker IT",
+        GIT_COMMITTER_EMAIL: "worker-it@entangle.invalid",
+        GIT_COMMITTER_NAME: "Worker IT"
+      }
+    });
+    const history = sourceHistoryRecordSchema.parse({
+      appliedAt: "2026-04-24T10:07:00.000Z",
+      appliedBy: "reviewer-it",
+      baseTree: sourceHarvest.snapshot.baseTree,
+      branch: "entangle-source-history",
+      candidateId: "source-history-non-primary",
+      commit: sourceCommit,
+      graphId: runtimeContext.binding.graphId,
+      graphRevisionId: runtimeContext.binding.graphRevisionId,
+      headTree: sourceHarvest.snapshot.headTree,
+      mode: "already_in_workspace",
+      nodeId: "worker-it",
+      sessionId: "session-source-history-publication",
+      sourceChangeSummary: sourceHarvest.summary,
+      sourceHistoryId: "source-history-non-primary",
+      turnId: "turn-source-history-non-primary",
+      updatedAt: "2026-04-24T10:08:00.000Z"
+    });
+    await writeSourceHistoryRecord(statePaths, history);
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-source-history-publication-alpha",
+      approverNodeIds: ["user-main"],
+      graphId: runtimeContext.binding.graphId,
+      operation: "source_publication",
+      reason: "Approve source history publication to the public repository.",
+      requestedAt: "2026-04-24T10:08:30.000Z",
+      requestedByNodeId: "worker-it",
+      resource: {
+        id: "source-history-non-primary|gitea|team-alpha|graph-alpha-public",
+        kind: "source_history_publication",
+        label: "source-history-non-primary -> gitea/team-alpha/graph-alpha-public"
+      },
+      sessionId: "session-source-history-publication",
+      status: "approved",
+      updatedAt: "2026-04-24T10:08:45.000Z"
+    });
+
+    const observedArtifacts: ObservedArtifactRecord[] = [];
+    const observedSourceHistories: SourceHistoryRecord[] = [];
+    const service = new RunnerService({
+      context: runtimeContext,
+      observationPublisher: {
+        publishArtifactRefObserved: (input) => {
+          observedArtifacts.push(input);
+          return Promise.resolve();
+        },
+        publishSourceHistoryRefObserved: (input) => {
+          observedSourceHistories.push(input.history);
+          return Promise.resolve();
+        }
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    await expect(
+      service.requestSourceHistoryPublication({
+        requestedAt: "2026-04-24T10:09:00.000Z",
+        requestedBy: "operator-main",
+        sourceHistoryId: "source-history-non-primary",
+        target: {
+          repositoryName: "graph-alpha-public"
+        }
+      })
+    ).rejects.toThrow("requires an approved approvalId");
+
+    const result = await service.requestSourceHistoryPublication({
+      approvalId: "approval-source-history-publication-alpha",
+      reason: "Publish to public source history.",
+      requestedAt: "2026-04-24T10:10:00.000Z",
+      requestedBy: "operator-main",
+      sourceHistoryId: "source-history-non-primary",
+      target: {
+        repositoryName: "graph-alpha-public"
+      }
+    });
+    const [historyRecord] = await listSourceHistoryRecords(statePaths);
+    const publishedBranch = historyRecord?.publication?.branch;
+
+    if (!publishedBranch) {
+      throw new Error("Expected source history publication branch.");
+    }
+
+    const remoteHead = runGitFixtureCommand({
+      args: ["--git-dir", backupRepositoryPath, "rev-parse", publishedBranch],
+      cwd: path.dirname(backupRepositoryPath)
+    });
+
+    expect(result).toMatchObject({
+      publicationState: "published",
+      sourceHistoryId: "source-history-non-primary"
+    });
+    expect(historyRecord?.publication).toMatchObject({
+      approvalId: "approval-source-history-publication-alpha",
+      targetGitServiceRef: "gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha-public",
+      publication: {
+        state: "published"
+      }
+    });
+    expect(observedArtifacts[0]?.artifactRecord.ref.locator).toMatchObject({
+      repositoryName: "graph-alpha-public"
+    });
+    expect(observedSourceHistories[0]?.publication?.targetRepositoryName).toBe(
+      "graph-alpha-public"
+    );
+    expect(remoteHead).toBe(
+      observedArtifacts[0]?.artifactRecord.ref.locator.commit
+    );
+  });
+
   it("replays source history on runner-owned control requests with scoped approval", async () => {
     const fixture = await createRuntimeFixture({
       remotePublication: "bare_repo"

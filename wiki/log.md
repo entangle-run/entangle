@@ -4516,3 +4516,19 @@ the same Host-signed `runtime.wiki.publish` command path as CLI.
 The UI collects optional reason, requester id, and failed-publication retry
 state, then shows the requested command summary while publication completion
 remains separate runner observation evidence.
+
+## [2026-04-29] implementation | Added target-aware source-history publication
+
+Added
+`references/379-runner-owned-source-history-target-publication-slice.md`.
+Host-signed `runtime.source_history.publish` commands can now carry an
+approval id and explicit git target selectors. Host, CLI, Studio helpers, the
+federated control plane, joined runner command routing, and `RunnerService`
+all preserve those fields.
+
+The assigned runner resolves the selected git target from its effective
+artifact context, requires scoped `source_publication` approval for
+non-primary publication when policy requires it, performs the push from
+runner-owned state, and emits the normal projected artifact/source-history
+evidence. Focused schema, Host, host-client, runner, Studio, typecheck, and
+lint gates passed for the touched scope.

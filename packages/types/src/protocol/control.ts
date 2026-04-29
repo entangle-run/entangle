@@ -6,7 +6,10 @@ import {
   runtimeAssignmentRecordSchema
 } from "../federation/assignment.js";
 import { runnerTrustStateSchema } from "../federation/runner.js";
-import { sessionCancellationRequestRecordSchema } from "../runtime/session-state.js";
+import {
+  sessionCancellationRequestRecordSchema,
+  sourceHistoryPublicationTargetSchema
+} from "../runtime/session-state.js";
 import { entangleSignedEnvelopeSchema } from "./signed-envelope.js";
 
 export const entangleControlProtocolSchema = z.literal("entangle.control.v1");
@@ -168,6 +171,7 @@ export const runtimeSessionCancelPayloadSchema = controlPayloadBaseSchema
 
 export const runtimeSourceHistoryPublishPayloadSchema =
   controlPayloadBaseSchema.extend({
+    approvalId: identifierSchema.optional(),
     assignmentId: identifierSchema.optional(),
     commandId: identifierSchema,
     eventType: z.literal("runtime.source_history.publish"),
@@ -176,7 +180,8 @@ export const runtimeSourceHistoryPublishPayloadSchema =
     reason: nonEmptyStringSchema.optional(),
     requestedBy: identifierSchema.optional(),
     retryFailedPublication: z.boolean().default(false),
-    sourceHistoryId: identifierSchema
+    sourceHistoryId: identifierSchema,
+    target: sourceHistoryPublicationTargetSchema.optional()
   });
 
 export const runtimeSourceHistoryReplayPayloadSchema =

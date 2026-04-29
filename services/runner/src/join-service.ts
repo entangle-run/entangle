@@ -6,7 +6,8 @@ import type {
   RuntimeAssignmentRecord,
   RunnerJoinConfig,
   RunnerJoinStatus,
-  SessionCancellationRequestRecord
+  SessionCancellationRequestRecord,
+  SourceHistoryPublicationTarget
 } from "@entangle/types";
 import {
   runnerJoinStatusSchema,
@@ -68,11 +69,13 @@ export type RunnerAssignmentRuntimeHandle = {
   cancelSession?(request: SessionCancellationRequestRecord): Promise<void>;
   clientUrl?: string;
   publishSourceHistory?(request: {
+    approvalId?: string;
     reason?: string;
     requestedAt?: string;
     requestedBy?: string;
     retryFailedPublication?: boolean;
     sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget;
   }): Promise<{
     message?: string;
     publicationState?: "failed" | "not_requested" | "published";
@@ -683,11 +686,13 @@ export class RunnerJoinService {
 
     try {
       const result = await handle.publishSourceHistory({
+        ...(payload.approvalId ? { approvalId: payload.approvalId } : {}),
         ...(payload.reason ? { reason: payload.reason } : {}),
         requestedAt: payload.issuedAt,
         ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {}),
         retryFailedPublication: payload.retryFailedPublication,
-        sourceHistoryId: payload.sourceHistoryId
+        sourceHistoryId: payload.sourceHistoryId,
+        ...(payload.target ? { target: payload.target } : {})
       });
 
       if (result.publicationState === "failed") {

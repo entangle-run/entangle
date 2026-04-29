@@ -94,7 +94,8 @@ import {
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
   type RuntimeAssignmentRecord,
-  type SessionCancellationRequestRecord
+  type SessionCancellationRequestRecord,
+  type SourceHistoryPublicationTarget
 } from "@entangle/types";
 
 const createdDirectories: string[] = [];
@@ -162,6 +163,7 @@ type TestFederatedAssignmentPublisher = {
     relayUrls: string[];
   }): Promise<unknown>;
   publishRuntimeSourceHistoryPublish?(input: {
+    approvalId?: string;
     assignment: RuntimeAssignmentRecord;
     commandId: string;
     reason?: string;
@@ -169,6 +171,7 @@ type TestFederatedAssignmentPublisher = {
     requestedBy?: string;
     retryFailedPublication: boolean;
     sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget;
   }): Promise<unknown>;
   publishRuntimeSourceHistoryReplay?(input: {
     approvalId?: string;
@@ -7170,12 +7173,14 @@ describe("buildHostServer", () => {
 
   it("publishes runner-owned source history and wiki commands for accepted assignments", async () => {
     const publishedRequests: Array<{
+      approvalId?: string;
       assignment: RuntimeAssignmentRecord;
       reason?: string;
       relayUrls: string[];
       requestedBy?: string;
       retryFailedPublication: boolean;
       sourceHistoryId: string;
+      target?: SourceHistoryPublicationTarget;
     }> = [];
     const replayRequests: Array<{
       approvalId?: string;
@@ -7199,12 +7204,14 @@ describe("buildHostServer", () => {
         publishRuntimeAssignmentRevoke: () => Promise.resolve(),
         publishRuntimeSourceHistoryPublish: (input) => {
           publishedRequests.push({
+            ...(input.approvalId ? { approvalId: input.approvalId } : {}),
             assignment: input.assignment,
             ...(input.reason ? { reason: input.reason } : {}),
             relayUrls: input.relayUrls,
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
             retryFailedPublication: input.retryFailedPublication,
-            sourceHistoryId: input.sourceHistoryId
+            sourceHistoryId: input.sourceHistoryId,
+            ...(input.target ? { target: input.target } : {})
           });
           return Promise.resolve();
         },
@@ -7354,9 +7361,13 @@ describe("buildHostServer", () => {
       const publishResponse = await server.inject({
         method: "POST",
         payload: {
+          approvalId: "approval-source-history-publication-alpha",
           reason: "Operator requested publication retry.",
           requestedBy: "operator-main",
-          retryFailedPublication: true
+          retryFailedPublication: true,
+          target: {
+            repositoryName: "graph-alpha-public"
+          }
         },
         url:
           "/v1/runtimes/worker-it/source-history/" +
@@ -7379,11 +7390,15 @@ describe("buildHostServer", () => {
         runnerId: "runner-alpha"
       });
       expect(publishedRequests[0]).toMatchObject({
+        approvalId: "approval-source-history-publication-alpha",
         reason: "Operator requested publication retry.",
         relayUrls: ["ws://relay.example"],
         requestedBy: "operator-main",
         retryFailedPublication: true,
-        sourceHistoryId: "source-history-candidate-alpha"
+        sourceHistoryId: "source-history-candidate-alpha",
+        target: {
+          repositoryName: "graph-alpha-public"
+        }
       });
 
       const replayResponse = await server.inject({

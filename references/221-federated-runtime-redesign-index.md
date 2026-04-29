@@ -562,8 +562,9 @@ for delegated sessions without copying transcripts.
     source-change summaries, bounded source file previews, bounded artifact
     previews, and projected memory/wiki read previews now project through
     observed refs; source-history publish/replay and primary wiki publication
-    requests now use Host-signed runner-executed control commands; complete
-    source/wiki mutation services, non-primary publication, and richer memory
+    requests now use Host-signed runner-executed control commands; explicit
+    source-history publication can also target policy-gated non-primary git
+    repositories. Complete source/wiki mutation services and richer memory
     promotion remain open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
@@ -649,7 +650,10 @@ and emits `artifact.ref` evidence. Session cancellation now uses signed
 with local cancellation files retained only as fallback compatibility.
 Source-history publication retry now has a Host-signed
 `runtime.source_history.publish` control command for accepted federated
-assignments. Source-history replay now has a Host-signed
+assignments. That command can now carry an approval id and explicit git target
+selectors, letting the assigned runner publish to policy-gated non-primary
+repositories while Host remains outside the git push. Source-history replay now
+has a Host-signed
 `runtime.source_history.replay` control command for accepted federated
 assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed
@@ -696,7 +700,7 @@ It now carries a runner-owned `Conversation Routes` section with active
 conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
-Non-primary target publication remains future work. The next blocking
-implementation areas are richer projection-backed source/wiki review services,
-backend-resolved artifact restore/promotion, richer cache policy controls, and
-turning the process smoke into the full multi-machine distributed proof.
+The next blocking implementation areas are richer projection-backed source/wiki
+review services, backend-resolved artifact restore/promotion, richer cache
+policy controls, and turning the process smoke into the full multi-machine
+distributed proof.

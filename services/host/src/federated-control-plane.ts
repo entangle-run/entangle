@@ -3,7 +3,8 @@ import type {
   EntangleObservationEvent,
   RuntimeAssignmentRecord,
   SessionCancellationRequestRecord,
-  RunnerTrustState
+  RunnerTrustState,
+  SourceHistoryPublicationTarget
 } from "@entangle/types";
 import { entangleObservationEventSchema } from "@entangle/types";
 import type {
@@ -442,6 +443,7 @@ export class HostFederatedControlPlane {
   }
 
   publishRuntimeSourceHistoryPublish(input: {
+    approvalId?: string;
     assignment: RuntimeAssignmentRecord;
     authRequired?: boolean;
     commandId: string;
@@ -451,6 +453,7 @@ export class HostFederatedControlPlane {
     requestedBy?: string;
     retryFailedPublication?: boolean;
     sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget;
   }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
     return this.input.transport.publishControlEvent({
       ...(input.authRequired !== undefined
@@ -460,6 +463,7 @@ export class HostFederatedControlPlane {
         ? { correlationId: input.correlationId }
         : {}),
       payload: {
+        ...(input.approvalId ? { approvalId: input.approvalId } : {}),
         assignmentId: input.assignment.assignmentId,
         commandId: input.commandId,
         eventType: "runtime.source_history.publish",
@@ -473,7 +477,8 @@ export class HostFederatedControlPlane {
         retryFailedPublication: input.retryFailedPublication ?? false,
         runnerId: input.assignment.runnerId,
         runnerPubkey: input.assignment.runnerPubkey,
-        sourceHistoryId: input.sourceHistoryId
+        sourceHistoryId: input.sourceHistoryId,
+        ...(input.target ? { target: input.target } : {})
       },
       relayUrls: input.relayUrls
     });

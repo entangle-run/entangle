@@ -2947,9 +2947,13 @@ describe("createHostClient", () => {
         "worker-it",
         "source-history-source-change-turn-alpha",
         {
+          approvalId: "approval-source-history-publication-alpha",
           reason: "Retry failed source publication.",
           requestedBy: "operator-main",
-          retryFailedPublication: true
+          retryFailedPublication: true,
+          target: {
+            repositoryName: "graph-alpha-public"
+          }
         }
       )
     ).resolves.toMatchObject({
@@ -2961,9 +2965,13 @@ describe("createHostClient", () => {
     expect(requests).toEqual([
       {
         body: JSON.stringify({
+          approvalId: "approval-source-history-publication-alpha",
           reason: "Retry failed source publication.",
           requestedBy: "operator-main",
-          retryFailedPublication: true
+          retryFailedPublication: true,
+          target: {
+            repositoryName: "graph-alpha-public"
+          }
         }),
         method: "POST",
         url:

@@ -26,6 +26,7 @@ import type {
   SessionLifecycleState,
   SessionRecord,
   SourceHistoryRecord,
+  SourceHistoryPublicationTarget,
   SourceHistoryReplayRecord
 } from "@entangle/types";
 import {
@@ -89,7 +90,7 @@ import {
 import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js";
 import {
   applyAcceptedSourceChangeCandidate,
-  publishSourceHistoryToPrimaryGitTarget,
+  publishSourceHistoryToGitTarget,
   replaySourceHistoryToWorkspace
 } from "./source-history.js";
 import {
@@ -1880,11 +1881,13 @@ export class RunnerService {
   }
 
   async requestSourceHistoryPublication(input: {
+    approvalId?: string;
     reason?: string;
     requestedAt?: string;
     requestedBy?: string;
     retryFailedPublication?: boolean;
     sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget;
   }): Promise<RunnerSourceHistoryPublicationCommandResult> {
     const statePaths =
       this.statePaths ??
@@ -1907,14 +1910,16 @@ export class RunnerService {
       );
     }
 
-    const publication = await publishSourceHistoryToPrimaryGitTarget({
+    const publication = await publishSourceHistoryToGitTarget({
+      ...(input.approvalId ? { approvalId: input.approvalId } : {}),
       context: this.context,
       history,
       ...(input.reason ? { reason: input.reason } : {}),
       requestedAt: input.requestedAt ?? new Date().toISOString(),
       ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
       retryFailedPublication: input.retryFailedPublication ?? false,
-      statePaths
+      statePaths,
+      ...(input.target ? { target: input.target } : {})
     });
 
     if (!publication.published) {
@@ -2681,7 +2686,7 @@ export class RunnerService {
       if (application.applied) {
         nextCandidate = application.candidate;
         let sourceHistory = application.history;
-        const publication = await publishSourceHistoryToPrimaryGitTarget({
+        const publication = await publishSourceHistoryToGitTarget({
           context: this.context,
           history: sourceHistory,
           requestedAt: input.envelope.receivedAt,

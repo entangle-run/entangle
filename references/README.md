@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
+[379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -116,7 +116,10 @@ now starts a deterministic OpenAI-compatible HTTP development server for manual
 catalog/auth/adapter wiring tests without live model credentials, and
 `pnpm ops:smoke-fake-openai-provider` verifies that harness end to end.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
-local product/profile labels.
+local product/profile labels. Runner-owned source-history publication commands
+can now carry an approval id plus explicit git target selectors, allowing
+policy-gated publication to non-primary repositories while keeping the git push
+inside the assigned runner boundary.
 Runtime-context runner startup and the Human Interface Runtime now also support
 mounted-file identity secret delivery, matching the shared secret-delivery
 contract and generic runner join path.

@@ -1,4 +1,6 @@
 import type {
+  RuntimeSourceHistoryPublishRequest,
+  RuntimeSourceHistoryPublishResponse,
   RuntimeSourceHistoryReplayRequest,
   RuntimeSourceHistoryReplayResponse
 } from "@entangle/types";
@@ -16,6 +18,28 @@ export type RuntimeSourceHistoryReplayDraft = {
   replayedBy: string;
 };
 
+export type RuntimeSourceHistoryPublicationDraft = {
+  approvalId: string;
+  reason: string;
+  requestedBy: string;
+  retryFailedPublication: boolean;
+  targetGitServiceRef: string;
+  targetNamespace: string;
+  targetRepositoryName: string;
+};
+
+export function createEmptyRuntimeSourceHistoryPublicationDraft(): RuntimeSourceHistoryPublicationDraft {
+  return {
+    approvalId: "",
+    reason: "",
+    requestedBy: "",
+    retryFailedPublication: false,
+    targetGitServiceRef: "",
+    targetNamespace: "",
+    targetRepositoryName: ""
+  };
+}
+
 export function createEmptyRuntimeSourceHistoryReplayDraft(): RuntimeSourceHistoryReplayDraft {
   return {
     approvalId: "",
@@ -28,6 +52,39 @@ export function createEmptyRuntimeSourceHistoryReplayDraft(): RuntimeSourceHisto
 function optionalTrimmed(value: string): string | undefined {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+export function buildRuntimeSourceHistoryPublicationRequest(
+  draft: RuntimeSourceHistoryPublicationDraft
+): RuntimeSourceHistoryPublishRequest {
+  const target =
+    optionalTrimmed(draft.targetGitServiceRef) ||
+    optionalTrimmed(draft.targetNamespace) ||
+    optionalTrimmed(draft.targetRepositoryName)
+      ? {
+          ...(optionalTrimmed(draft.targetGitServiceRef)
+            ? { gitServiceRef: optionalTrimmed(draft.targetGitServiceRef) }
+            : {}),
+          ...(optionalTrimmed(draft.targetNamespace)
+            ? { namespace: optionalTrimmed(draft.targetNamespace) }
+            : {}),
+          ...(optionalTrimmed(draft.targetRepositoryName)
+            ? { repositoryName: optionalTrimmed(draft.targetRepositoryName) }
+            : {})
+        }
+      : undefined;
+
+  return {
+    ...(optionalTrimmed(draft.approvalId)
+      ? { approvalId: optionalTrimmed(draft.approvalId) }
+      : {}),
+    ...(optionalTrimmed(draft.reason) ? { reason: optionalTrimmed(draft.reason) } : {}),
+    ...(optionalTrimmed(draft.requestedBy)
+      ? { requestedBy: optionalTrimmed(draft.requestedBy) }
+      : {}),
+    retryFailedPublication: draft.retryFailedPublication,
+    ...(target ? { target } : {})
+  };
 }
 
 export function buildRuntimeSourceHistoryReplayRequest(
@@ -51,4 +108,10 @@ export function formatRuntimeSourceHistoryReplayRequestSummary(
   response: RuntimeSourceHistoryReplayResponse
 ): string {
   return `${response.sourceHistoryId} requested on ${response.assignmentId} (${response.commandId})`;
+}
+
+export function formatRuntimeSourceHistoryPublicationRequestSummary(
+  response: RuntimeSourceHistoryPublishResponse
+): string {
+  return `${response.sourceHistoryId} publication requested on ${response.assignmentId} (${response.commandId})`;
 }

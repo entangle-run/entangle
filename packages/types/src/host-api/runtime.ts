@@ -32,6 +32,7 @@ import {
   runnerTurnRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
+  sourceHistoryPublicationTargetSchema,
   sourceHistoryReplayRecordSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
@@ -367,9 +368,11 @@ export const runtimeSourceHistoryReplayInspectionResponseSchema = z.object({
 });
 
 export const runtimeSourceHistoryPublishRequestSchema = z.object({
+  approvalId: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
   requestedBy: identifierSchema.optional(),
-  retryFailedPublication: z.boolean().default(false)
+  retryFailedPublication: z.boolean().default(false),
+  target: sourceHistoryPublicationTargetSchema.optional()
 });
 
 export const runtimeSourceHistoryPublishResponseSchema = z.object({

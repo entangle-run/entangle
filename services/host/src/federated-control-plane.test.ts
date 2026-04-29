@@ -623,13 +623,17 @@ describe("Host federated control plane", () => {
       relayUrls
     });
     await controlPlane.publishRuntimeSourceHistoryPublish({
+      approvalId: "approval-source-history-publication-alpha",
       assignment,
       commandId: "cmd-source-history-publish-alpha",
       reason: "Retry publication.",
       relayUrls,
       requestedBy: "operator-main",
       retryFailedPublication: true,
-      sourceHistoryId: "source-history-alpha"
+      sourceHistoryId: "source-history-alpha",
+      target: {
+        repositoryName: "graph-alpha-public"
+      }
     });
     await controlPlane.publishRuntimeSourceHistoryReplay({
       approvalId: "approval-source-history-replay-alpha",
@@ -697,6 +701,7 @@ describe("Host federated control plane", () => {
         sessionId: "session-alpha"
       }),
       expect.objectContaining({
+        approvalId: "approval-source-history-publication-alpha",
         assignmentId: "assignment-alpha",
         commandId: "cmd-source-history-publish-alpha",
         eventType: "runtime.source_history.publish",
@@ -708,7 +713,10 @@ describe("Host federated control plane", () => {
         retryFailedPublication: true,
         runnerId: "runner-alpha",
         runnerPubkey,
-        sourceHistoryId: "source-history-alpha"
+        sourceHistoryId: "source-history-alpha",
+        target: {
+          repositoryName: "graph-alpha-public"
+        }
       }),
       expect.objectContaining({
         approvalId: "approval-source-history-replay-alpha",

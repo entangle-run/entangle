@@ -322,6 +322,7 @@ function buildRuntimeSourceHistoryPublishEvent(
       signerPubkey: hostPublicKey
     },
     payload: {
+      approvalId: "approval-source-history-publication-alpha",
       assignmentId: assignment.assignmentId,
       commandId: "cmd-source-history-publish-alpha",
       eventType: "runtime.source_history.publish",
@@ -335,7 +336,10 @@ function buildRuntimeSourceHistoryPublishEvent(
       retryFailedPublication: true,
       runnerId: assignment.runnerId,
       runnerPubkey: runnerPublicKey,
-      sourceHistoryId: "source-history-alpha"
+      sourceHistoryId: "source-history-alpha",
+      target: {
+        repositoryName: "graph-alpha-public"
+      }
     }
   };
 }
@@ -2391,7 +2395,7 @@ describe("runner runtime context", () => {
             },
             publishSourceHistory: (request) => {
               runtimeSourceHistoryPublications.push(
-                `${request.sourceHistoryId}:${request.retryFailedPublication ? "retry" : "publish"}:${request.requestedBy ?? "unknown"}`
+                `${request.sourceHistoryId}:${request.retryFailedPublication ? "retry" : "publish"}:${request.requestedBy ?? "unknown"}:${request.approvalId ?? "none"}:${request.target?.repositoryName ?? "primary"}`
               );
               return Promise.resolve({
                 publicationState: "published",
@@ -2450,7 +2454,7 @@ describe("runner runtime context", () => {
     ]);
     expect(runtimeCancellations).toEqual(["session-alpha"]);
     expect(runtimeSourceHistoryPublications).toEqual([
-      "source-history-alpha:retry:operator-main"
+      "source-history-alpha:retry:operator-main:approval-source-history-publication-alpha:graph-alpha-public"
     ]);
     expect(runtimeSourceHistoryReplays).toEqual([
       "source-history-alpha:replay-source-history-alpha:approval-source-history-replay-alpha"

@@ -8,6 +8,10 @@ Date: 2026-04-25.
 > publication retry and target selection must be reintroduced as runner-owned
 > protocol behavior, not as Host filesystem mutation through
 > `source-history-entry --publish`.
+> Retry was reintroduced in
+> `339-federated-source-history-publication-control-slice.md`; explicit
+> non-primary target selection was reintroduced in
+> `379-runner-owned-source-history-target-publication-slice.md`.
 
 ## Purpose
 

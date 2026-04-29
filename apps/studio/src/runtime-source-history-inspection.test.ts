@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { SourceHistoryRecord } from "@entangle/types";
 import {
+  buildRuntimeSourceHistoryPublicationRequest,
   buildRuntimeSourceHistoryReplayRequest,
+  createEmptyRuntimeSourceHistoryPublicationDraft,
   createEmptyRuntimeSourceHistoryReplayDraft,
+  formatRuntimeSourceHistoryPublicationRequestSummary,
   formatRuntimeSourceHistoryReplayRequestSummary,
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
@@ -97,6 +100,51 @@ describe("runtime source history Studio helpers", () => {
     );
     expect(formatRuntimeSourceHistoryDetailLines(entries[1]!)).toContain(
       "publication approval approval-source-publish-new"
+    );
+  });
+
+  it("builds publication requests from optional target and approval fields", () => {
+    expect(
+      buildRuntimeSourceHistoryPublicationRequest(
+        createEmptyRuntimeSourceHistoryPublicationDraft()
+      )
+    ).toEqual({
+      retryFailedPublication: false
+    });
+
+    expect(
+      buildRuntimeSourceHistoryPublicationRequest({
+        approvalId: " approval-source-publication ",
+        reason: " publish source history ",
+        requestedBy: " operator-it ",
+        retryFailedPublication: true,
+        targetGitServiceRef: " gitea ",
+        targetNamespace: " team-alpha ",
+        targetRepositoryName: " graph-alpha-public "
+      })
+    ).toEqual({
+      approvalId: "approval-source-publication",
+      reason: "publish source history",
+      requestedBy: "operator-it",
+      retryFailedPublication: true,
+      target: {
+        gitServiceRef: "gitea",
+        namespace: "team-alpha",
+        repositoryName: "graph-alpha-public"
+      }
+    });
+
+    expect(
+      formatRuntimeSourceHistoryPublicationRequestSummary({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-publish-alpha",
+        nodeId: "worker-it",
+        requestedAt: "2026-04-28T00:00:00.000Z",
+        sourceHistoryId: "source-history-alpha",
+        status: "requested"
+      })
+    ).toBe(
+      "source-history-alpha publication requested on assignment-alpha (cmd-source-history-publish-alpha)"
     );
   });
 

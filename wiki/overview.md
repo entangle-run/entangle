@@ -120,16 +120,18 @@ The most accurate current description is:
 - accepted source-candidate reviews now also emit signed `source_history.ref`
   observations, so Host can project source-history records and serve
   source-history list/detail reads without a Host-readable runner filesystem;
-- when source publication policy allows it and a primary git target is
-  configured, the runner publishes accepted source-history records as git commit
-  artifacts and emits projected artifact/source-history observations for that
-  publication;
+- when source publication policy allows it, the runner publishes accepted
+  source-history records as git commit artifacts and emits projected
+  artifact/source-history observations for that publication, defaulting to the
+  primary git target for automatic publication while explicit publish commands
+  can select a policy-gated non-primary git target;
 - explicit source-history publication/retry and source-history replay are now
   Host-signed control commands to the accepted runner assignment, with the
   runner owning git publication or replay execution and emitting observation
-  evidence; Host now projects `source_history.replayed` outcomes into typed
-  replay records for API, CLI, and Studio inspection without runner-local file
-  access;
+  evidence; source-history publication commands can carry an approval id and
+  explicit git target selectors for non-primary repositories, while Host now
+  projects `source_history.replayed` outcomes into typed replay records for
+  API, CLI, and Studio inspection without runner-local file access;
 - explicit wiki repository publication is now a Host-signed
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the
@@ -961,12 +963,13 @@ The current implementation-truth audit now lives in
   provisioning record model, the publication/retrieval-state record model, and
   the new pending source-change candidate records with bounded diff and
   listed-file preview plus review, local source-history state, and first
-  runner-owned primary source-history commit artifact publication, bounded
+  runner-owned source-history commit artifact publication with explicit
+  non-primary target selection, bounded
   artifact history/diff/preview inspection, and backend-cache history/diff for
   projected git refs; the next git gaps are
-  protocol-owned artifact restore or source-change proposal flows, non-primary
-  publication targets, richer wiki promotion beyond primary-git publication,
-  source-history merge/reconcile workflows, and explicit fallback or
+  protocol-owned artifact restore or source-change proposal flows, richer wiki
+  promotion beyond primary-git publication, source-history merge/reconcile
+  workflows, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea

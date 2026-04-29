@@ -3451,12 +3451,16 @@ hostRuntimesCommand
   .command("source-history-publish")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<sourceHistoryId>", "Source history entry identifier to publish.")
+  .option("--approval-id <approvalId>", "Approved source_publication approval id.")
   .option("--reason <reason>", "Operator-visible publication reason.")
   .option("--requested-by <operatorId>", "Operator id requesting publication.")
   .option(
     "--retry-failed-publication",
     "Retry source-history entries whose previous publication state is failed."
   )
+  .option("--target-git-service <serviceRef>", "Git service ref for the publication target.")
+  .option("--target-namespace <namespace>", "Git namespace for the publication target.")
+  .option("--target-repository <repositoryName>", "Git repository for the publication target.")
   .description(
     "Ask the assigned runner to publish one source history entry through federated control."
   )
@@ -3465,17 +3469,39 @@ hostRuntimesCommand
       nodeId: string,
       sourceHistoryId: string,
       options: {
+        approvalId?: string;
         reason?: string;
         requestedBy?: string;
         retryFailedPublication?: boolean;
+        targetGitService?: string;
+        targetNamespace?: string;
+        targetRepository?: string;
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
+      const target =
+        options.targetGitService ||
+        options.targetNamespace ||
+        options.targetRepository
+          ? {
+              ...(options.targetGitService
+                ? { gitServiceRef: options.targetGitService }
+                : {}),
+              ...(options.targetNamespace
+                ? { namespace: options.targetNamespace }
+                : {}),
+              ...(options.targetRepository
+                ? { repositoryName: options.targetRepository }
+                : {})
+            }
+          : undefined;
       const request = runtimeSourceHistoryPublishRequestSchema.parse({
+        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
         ...(options.reason ? { reason: options.reason } : {}),
         ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
-        retryFailedPublication: options.retryFailedPublication ?? false
+        retryFailedPublication: options.retryFailedPublication ?? false,
+        ...(target ? { target } : {})
       });
       printJson(
         await client.publishRuntimeSourceHistory(

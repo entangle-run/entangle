@@ -182,12 +182,16 @@ import {
   sortRuntimeSourceChangeCandidates
 } from "./runtime-source-change-candidate-inspection.js";
 import {
+  buildRuntimeSourceHistoryPublicationRequest,
   buildRuntimeSourceHistoryReplayRequest,
+  createEmptyRuntimeSourceHistoryPublicationDraft,
   createEmptyRuntimeSourceHistoryReplayDraft,
+  formatRuntimeSourceHistoryPublicationRequestSummary,
   formatRuntimeSourceHistoryReplayRequestSummary,
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
   sortRuntimeSourceHistory,
+  type RuntimeSourceHistoryPublicationDraft,
   type RuntimeSourceHistoryReplayDraft
 } from "./runtime-source-history-inspection.js";
 import {
@@ -593,6 +597,18 @@ export function App() {
     useState<RuntimeSourceHistoryInspectionResponse | null>(null);
   const [sourceHistoryDetailError, setSourceHistoryDetailError] =
     useState<string | null>(null);
+  const [sourceHistoryPublicationDraft, setSourceHistoryPublicationDraft] =
+    useState<RuntimeSourceHistoryPublicationDraft>(
+      createEmptyRuntimeSourceHistoryPublicationDraft
+    );
+  const [sourceHistoryPublicationError, setSourceHistoryPublicationError] =
+    useState<string | null>(null);
+  const [
+    lastSourceHistoryPublicationSummary,
+    setLastSourceHistoryPublicationSummary
+  ] = useState<string | null>(null);
+  const [pendingSourceHistoryPublication, setPendingSourceHistoryPublication] =
+    useState(false);
   const [sourceHistoryReplayDraft, setSourceHistoryReplayDraft] =
     useState<RuntimeSourceHistoryReplayDraft>(
       createEmptyRuntimeSourceHistoryReplayDraft
@@ -1675,6 +1691,9 @@ export function App() {
         if (!selectedSourceHistoryId) {
           setSelectedSourceHistoryInspection(null);
           setSourceHistoryDetailError(null);
+          setSourceHistoryPublicationError(null);
+          setLastSourceHistoryPublicationSummary(null);
+          setPendingSourceHistoryPublication(false);
           setSourceHistoryReplayError(null);
           setLastSourceHistoryReplaySummary(null);
           setPendingSourceHistoryReplay(false);
@@ -1682,6 +1701,12 @@ export function App() {
           setSelectedSourceHistoryId(null);
           setSelectedSourceHistoryInspection(null);
           setSourceHistoryDetailError(null);
+          setSourceHistoryPublicationDraft(
+            createEmptyRuntimeSourceHistoryPublicationDraft()
+          );
+          setSourceHistoryPublicationError(null);
+          setLastSourceHistoryPublicationSummary(null);
+          setPendingSourceHistoryPublication(false);
           setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
           setSourceHistoryReplayError(null);
           setLastSourceHistoryReplaySummary(null);
@@ -1697,6 +1722,9 @@ export function App() {
               "Unknown error while loading source history detail."
             )
           );
+          setSourceHistoryPublicationError(null);
+          setLastSourceHistoryPublicationSummary(null);
+          setPendingSourceHistoryPublication(false);
           setSourceHistoryReplayError(null);
           setLastSourceHistoryReplaySummary(null);
           setPendingSourceHistoryReplay(false);
@@ -1712,6 +1740,12 @@ export function App() {
         setSelectedSourceHistoryId(null);
         setSelectedSourceHistoryInspection(null);
         setSourceHistoryDetailError(null);
+        setSourceHistoryPublicationDraft(
+          createEmptyRuntimeSourceHistoryPublicationDraft()
+        );
+        setSourceHistoryPublicationError(null);
+        setLastSourceHistoryPublicationSummary(null);
+        setPendingSourceHistoryPublication(false);
         setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
         setSourceHistoryReplayError(null);
         setLastSourceHistoryReplaySummary(null);
@@ -2119,6 +2153,12 @@ export function App() {
       setSelectedSourceHistoryId(sourceHistoryId);
       setSelectedSourceHistoryInspection(null);
       setSourceHistoryDetailError(null);
+      setSourceHistoryPublicationDraft(
+        createEmptyRuntimeSourceHistoryPublicationDraft()
+      );
+      setSourceHistoryPublicationError(null);
+      setLastSourceHistoryPublicationSummary(null);
+      setPendingSourceHistoryPublication(false);
       setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
       setSourceHistoryReplayError(null);
       setLastSourceHistoryReplaySummary(null);
@@ -2195,6 +2235,58 @@ export function App() {
     selectedRuntimeId,
     selectedSourceHistoryInspection,
     sourceHistoryReplayDraft
+  ]);
+
+  const requestRuntimeSourceHistoryPublication = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedSourceHistoryInspection) {
+      return;
+    }
+
+    const sourceHistoryId =
+      selectedSourceHistoryInspection.entry.sourceHistoryId;
+
+    setPendingSourceHistoryPublication(true);
+    setSourceHistoryPublicationError(null);
+    setLastSourceHistoryPublicationSummary(null);
+
+    try {
+      const response = await client.publishRuntimeSourceHistory(
+        selectedRuntimeId,
+        sourceHistoryId,
+        buildRuntimeSourceHistoryPublicationRequest(
+          sourceHistoryPublicationDraft
+        )
+      );
+
+      startTransition(() => {
+        setLastSourceHistoryPublicationSummary(
+          formatRuntimeSourceHistoryPublicationRequestSummary(response)
+        );
+        setSourceHistoryPublicationDraft(
+          createEmptyRuntimeSourceHistoryPublicationDraft()
+        );
+        setSourceHistoryPublicationError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setSourceHistoryPublicationError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting source history publication."
+          )
+        );
+      });
+    } finally {
+      setPendingSourceHistoryPublication(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedSourceHistoryInspection,
+    sourceHistoryPublicationDraft
   ]);
 
   const requestRuntimeWikiPublication = useCallback(async () => {
@@ -2655,6 +2747,12 @@ export function App() {
       setSelectedSourceHistoryId(null);
       setSelectedSourceHistoryInspection(null);
       setSourceHistoryDetailError(null);
+      setSourceHistoryPublicationDraft(
+        createEmptyRuntimeSourceHistoryPublicationDraft()
+      );
+      setSourceHistoryPublicationError(null);
+      setLastSourceHistoryPublicationSummary(null);
+      setPendingSourceHistoryPublication(false);
       setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
       setSourceHistoryReplayError(null);
       setLastSourceHistoryReplaySummary(null);
@@ -2718,6 +2816,12 @@ export function App() {
     setSelectedSourceHistoryId(null);
     setSelectedSourceHistoryInspection(null);
     setSourceHistoryDetailError(null);
+    setSourceHistoryPublicationDraft(
+      createEmptyRuntimeSourceHistoryPublicationDraft()
+    );
+    setSourceHistoryPublicationError(null);
+    setLastSourceHistoryPublicationSummary(null);
+    setPendingSourceHistoryPublication(false);
     setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
     setSourceHistoryReplayError(null);
     setLastSourceHistoryReplaySummary(null);
@@ -5597,6 +5701,144 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        <form
+                          className="stacked-form"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void requestRuntimeSourceHistoryPublication();
+                          }}
+                        >
+                          <div className="field-grid">
+                            <label className="field">
+                              <span>Approval ID</span>
+                              <input
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    approvalId: event.target.value
+                                  }));
+                                }}
+                                placeholder="optional approved source_publication id"
+                                value={sourceHistoryPublicationDraft.approvalId}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Reason</span>
+                              <input
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    reason: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator publication reason"
+                                value={sourceHistoryPublicationDraft.reason}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Requested By</span>
+                              <input
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    requestedBy: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator id"
+                                value={sourceHistoryPublicationDraft.requestedBy}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Target Service</span>
+                              <input
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    targetGitServiceRef: event.target.value
+                                  }));
+                                }}
+                                placeholder="default primary git service"
+                                value={
+                                  sourceHistoryPublicationDraft.targetGitServiceRef
+                                }
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Target Namespace</span>
+                              <input
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    targetNamespace: event.target.value
+                                  }));
+                                }}
+                                placeholder="default namespace"
+                                value={
+                                  sourceHistoryPublicationDraft.targetNamespace
+                                }
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Target Repository</span>
+                              <input
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    targetRepositoryName: event.target.value
+                                  }));
+                                }}
+                                placeholder="default primary repository"
+                                value={
+                                  sourceHistoryPublicationDraft.targetRepositoryName
+                                }
+                              />
+                            </label>
+                            <label className="field checkbox-field">
+                              <input
+                                checked={
+                                  sourceHistoryPublicationDraft.retryFailedPublication
+                                }
+                                disabled={pendingSourceHistoryPublication}
+                                onChange={(event) => {
+                                  setSourceHistoryPublicationDraft((current) => ({
+                                    ...current,
+                                    retryFailedPublication: event.target.checked
+                                  }));
+                                }}
+                                type="checkbox"
+                              />
+                              <span>Retry failed publication</span>
+                            </label>
+                          </div>
+                          <div className="action-row">
+                            <button
+                              className="action-button"
+                              disabled={pendingSourceHistoryPublication}
+                              type="submit"
+                            >
+                              {pendingSourceHistoryPublication
+                                ? "Requesting..."
+                                : "Request Publication"}
+                            </button>
+                            {lastSourceHistoryPublicationSummary ? (
+                              <span className="panel-caption">
+                                {lastSourceHistoryPublicationSummary}
+                              </span>
+                            ) : null}
+                          </div>
+                          {sourceHistoryPublicationError ? (
+                            <p className="error-box">
+                              {sourceHistoryPublicationError}
+                            </p>
+                          ) : null}
+                        </form>
 
                         <form
                           className="stacked-form"

@@ -79,6 +79,7 @@ import {
   runtimeSourceChangeCandidateListResponseSchema,
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
+  runtimeSourceHistoryPublishRequestSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   sessionCancellationRequestRecordSchema,
@@ -708,6 +709,7 @@ describe("federated runtime contracts", () => {
         signerPubkey: authorityPubkey
       }),
       payload: {
+        approvalId: "approval-source-history-publication-alpha",
         assignmentId: "assignment-alpha",
         commandId: "cmd-source-history-publish-alpha",
         eventType: "runtime.source_history.publish",
@@ -720,7 +722,10 @@ describe("federated runtime contracts", () => {
         retryFailedPublication: true,
         runnerId: "runner-alpha",
         runnerPubkey,
-        sourceHistoryId: "source-history-alpha"
+        sourceHistoryId: "source-history-alpha",
+        target: {
+          repositoryName: "graph-alpha-public"
+        }
       }
     });
     const sourceHistoryReplay = entangleControlEventSchema.parse({
@@ -776,6 +781,12 @@ describe("federated runtime contracts", () => {
     expect(sourceHistoryPublish.payload.eventType).toBe(
       "runtime.source_history.publish"
     );
+    expect(sourceHistoryPublish.payload).toMatchObject({
+      approvalId: "approval-source-history-publication-alpha",
+      target: {
+        repositoryName: "graph-alpha-public"
+      }
+    });
     expect(sourceHistoryReplay.payload.eventType).toBe(
       "runtime.source_history.replay"
     );
@@ -2213,6 +2224,19 @@ describe("source change candidate host API contracts", () => {
         entry: historyEntry
       }).entry.mode
     ).toBe("already_in_workspace");
+    expect(
+      runtimeSourceHistoryPublishRequestSchema.parse({
+        approvalId: "approval-source-publish-alpha",
+        reason: "Publish to the public source-history repository.",
+        requestedBy: "operator-alpha",
+        retryFailedPublication: true,
+        target: {
+          gitServiceRef: "gitea",
+          namespace: "team-alpha",
+          repositoryName: "graph-alpha-public"
+        }
+      }).target?.repositoryName
+    ).toBe("graph-alpha-public");
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {
