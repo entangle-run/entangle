@@ -166,8 +166,9 @@ Current status:
   recent receipt rows for operator inspection.
 - Host now exposes a per-assignment timeline read model built from assignment
   lifecycle state plus projected runner receipts and assignment-scoped runtime
-  command receipts; CLI can inspect it directly, and Studio groups receipt
-  summaries under assignment rows.
+  command receipts; CLI can inspect it directly, and Studio groups lifecycle
+  and command receipt summaries under assignment rows while listing recent
+  command receipts from Host projection.
 - The process-runner smoke now validates that the real joined runner path
   produces assignment acceptance, `started` receipt evidence, and completed
   runtime command receipt entries visible through the assignment timeline read
@@ -306,6 +307,7 @@ Implementation record:
 - [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
 - [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
 - [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
+- [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
 
 Verification:
 

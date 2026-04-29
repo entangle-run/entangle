@@ -86,5 +86,7 @@ timeline endpoint.
 
 ## Open Questions
 
-- Should Studio add a dedicated assignment timeline detail panel, or is the
-  projection-level command receipt count enough for the next operator slice?
+- `395-studio-command-receipt-operator-visibility-slice.md` added
+  projection-level Studio command receipt visibility. A later slice can still
+  add a full assignment timeline drilldown if operators need the exact
+  `/v1/assignments/:assignmentId/timeline` grouping inside Studio.

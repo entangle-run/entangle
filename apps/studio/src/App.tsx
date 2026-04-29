@@ -220,13 +220,17 @@ import {
   buildUserNodeRuntimeSummaries,
   formatAssignmentReceiptDetail,
   formatAssignmentReceiptLabel,
+  formatRuntimeCommandReceiptDetail,
+  formatRuntimeCommandReceiptLabel,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
+  summarizeAssignmentCommandReceiptsForStudio,
   summarizeAssignmentReceiptsForStudio,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeRuntimeSummaryDetail,
   formatUserNodeRuntimeSummaryLabel,
+  sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
   sortAssignmentReceiptsForStudio,
   sortUserConversationsForStudio,
@@ -3255,6 +3259,13 @@ export function App() {
       ),
     [projectionSnapshot]
   );
+  const assignmentCommandReceiptRows = useMemo(
+    () =>
+      sortRuntimeCommandReceiptsForStudio(
+        projectionSnapshot?.runtimeCommandReceipts ?? []
+      ),
+    [projectionSnapshot]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3397,6 +3408,10 @@ export function App() {
           <div>
             <strong>{federationSummary.assignmentReceiptCount}</strong>
             <span>Receipts</span>
+          </div>
+          <div>
+            <strong>{federationSummary.runtimeCommandReceiptCount}</strong>
+            <span>Command receipts</span>
           </div>
           <div>
             <strong>{federationSummary.runtimeCount}</strong>
@@ -3547,6 +3562,12 @@ export function App() {
                     receipts: assignmentReceiptRows
                   })}
                 </span>
+                <span>
+                  {summarizeAssignmentCommandReceiptsForStudio({
+                    assignment,
+                    receipts: assignmentCommandReceiptRows
+                  })}
+                </span>
                 <button
                   className="action-button"
                   disabled={
@@ -3588,6 +3609,24 @@ export function App() {
         ) : (
           <div className="inline-empty-state">
             <p>No assignment receipts are projected yet.</p>
+          </div>
+        )}
+
+        {assignmentCommandReceiptRows.length > 0 ? (
+          <div className="compact-list">
+            {assignmentCommandReceiptRows.slice(0, 6).map((receipt) => (
+              <div
+                key={`${receipt.commandId}-${receipt.observedAt}-${receipt.receiptStatus}`}
+                className="compact-list-item"
+              >
+                <strong>{formatRuntimeCommandReceiptLabel(receipt)}</strong>
+                <span>{formatRuntimeCommandReceiptDetail(receipt)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="inline-empty-state">
+            <p>No runtime command receipts are projected yet.</p>
           </div>
         )}
 

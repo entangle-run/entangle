@@ -10,16 +10,20 @@ import {
   formatRuntimeProjectionLabel,
   formatAssignmentReceiptDetail,
   formatAssignmentReceiptLabel,
+  formatRuntimeCommandReceiptDetail,
+  formatRuntimeCommandReceiptLabel,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeIdentityDetail,
   formatUserNodeIdentityLabel,
   formatUserNodeRuntimeSummaryDetail,
   formatUserNodeRuntimeSummaryLabel,
+  sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
   sortAssignmentReceiptsForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
+  summarizeAssignmentCommandReceiptsForStudio,
   summarizeAssignmentReceiptsForStudio,
   summarizeFederationProjection
 } from "./federation-inspection.js";
@@ -105,7 +109,26 @@ const projection: HostProjectionSnapshot = {
       runtimeHandle: "federated:runner-user-a:assignment-user-a"
     }
   ],
-  runtimeCommandReceipts: [],
+  runtimeCommandReceipts: [
+    {
+      assignmentId: "assignment-alpha",
+      commandEventType: "runtime.start",
+      commandId: "cmd-start-alpha",
+      graphId: "team-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nodeId: "worker-it",
+      observedAt: "2026-04-26T12:02:00.000Z",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-04-26T12:02:00.000Z"
+      },
+      receiptStatus: "completed",
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],
@@ -185,6 +208,7 @@ describe("Studio federation inspection helpers", () => {
       assignmentCount: 1,
       assignmentReceiptCount: 1,
       freshness: "current",
+      runtimeCommandReceiptCount: 1,
       runtimeCount: 2,
       runningRuntimeCount: 2,
       sourceHistoryReplayCount: 0
@@ -220,6 +244,34 @@ describe("Studio federation inspection helpers", () => {
         receipts: projection.assignmentReceipts
       })
     ).toContain("1 receipt");
+  });
+
+  it("sorts and formats runtime command receipts", () => {
+    const receipts = sortRuntimeCommandReceiptsForStudio([
+      {
+        ...projection.runtimeCommandReceipts[0]!,
+        commandId: "cmd-old",
+        observedAt: "2026-04-26T12:00:00.000Z"
+      },
+      projection.runtimeCommandReceipts[0]!
+    ]);
+
+    expect(receipts.map((receipt) => receipt.commandId)).toEqual([
+      "cmd-start-alpha",
+      "cmd-old"
+    ]);
+    expect(formatRuntimeCommandReceiptLabel(receipts[0]!)).toBe(
+      "assignment-alpha · runtime.start · completed"
+    );
+    expect(formatRuntimeCommandReceiptDetail(receipts[0]!)).toContain(
+      "command cmd-start-alpha"
+    );
+    expect(
+      summarizeAssignmentCommandReceiptsForStudio({
+        assignment: projection.assignments[0]!,
+        receipts: projection.runtimeCommandReceipts
+      })
+    ).toContain("1 command receipt");
   });
 
   it("sorts and formats runtime projections", () => {

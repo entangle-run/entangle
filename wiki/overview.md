@@ -160,8 +160,9 @@ The most accurate current description is:
   request/response, completion, cancellation, and failure paths;
 - assignment timelines now join Host assignment lifecycle state with projected
   runner receipts and assignment-scoped runtime command receipts, so Host API,
-  CLI, and Studio can inspect grouped assignment progress without scanning
-  generic events or reading runner-local state;
+  CLI, and Studio can inspect grouped assignment progress, including recent
+  command receipt rows in Studio, without scanning generic events or reading
+  runner-local state;
 - artifact source-change proposal requests are now exposed through CLI and
   Studio artifact inspection surfaces, using the same Host-signed runner
   control path while completion returns as both projected source-change

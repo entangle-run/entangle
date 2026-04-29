@@ -4711,3 +4711,14 @@ assignment lifecycle entries and runner assignment receipts.
 CLI compact assignment timeline output now reports command receipt counts and
 command receipt metadata. The process-runner smoke now verifies completed
 runtime command receipt evidence through the assignment timeline read model.
+
+## [2026-04-29] implementation | Added Studio command receipt visibility
+
+Added `references/395-studio-command-receipt-operator-visibility-slice.md`.
+Studio Federation now renders runtime command receipt counts, per-assignment
+command receipt summaries, and recent command receipt rows directly from Host
+projection.
+
+This keeps operator visibility aligned with the assignment timeline and CLI
+work without adding direct runner calls or a separate Studio-owned command
+receipt model.

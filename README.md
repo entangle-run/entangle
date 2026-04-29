@@ -464,7 +464,8 @@ This repository currently contains:
 - assignment timelines now join Host assignment lifecycle state with
   runner-signed receipt projection and assignment-scoped runtime command
   receipt projection, with Host API, host-client, CLI, and Studio grouped
-  receipt summaries sharing the same read model;
+  lifecycle plus command receipt summaries sharing the same read model and
+  Studio listing recent command receipts from Host projection;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

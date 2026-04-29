@@ -2,6 +2,7 @@ import type {
   AssignmentReceiptProjectionRecord,
   AssignmentProjectionRecord,
   HostProjectionSnapshot,
+  RuntimeCommandReceiptProjectionRecord,
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord
@@ -118,6 +119,65 @@ export function summarizeAssignmentReceiptsForStudio(input: {
   return [
     `${receipts.length} receipt${receipts.length === 1 ? "" : "s"}`,
     `latest ${latest.receiptKind}`,
+    `at ${latest.observedAt}`
+  ].join(" · ");
+}
+
+export function sortRuntimeCommandReceiptsForStudio(
+  receipts: RuntimeCommandReceiptProjectionRecord[]
+): RuntimeCommandReceiptProjectionRecord[] {
+  return [...receipts].sort((left, right) => {
+    const timeOrder = right.observedAt.localeCompare(left.observedAt);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.commandId.localeCompare(right.commandId);
+  });
+}
+
+export function formatRuntimeCommandReceiptLabel(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): string {
+  return [
+    receipt.assignmentId ?? "unassigned",
+    receipt.commandEventType,
+    receipt.receiptStatus
+  ].join(" · ");
+}
+
+export function formatRuntimeCommandReceiptDetail(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): string {
+  return [
+    `command ${receipt.commandId}`,
+    `runner ${receipt.runnerId}`,
+    `observed ${receipt.observedAt}`,
+    receipt.candidateId ? `candidate ${receipt.candidateId}` : undefined,
+    receipt.sourceHistoryId ? `source ${receipt.sourceHistoryId}` : undefined,
+    receipt.wikiArtifactId ? `wiki ${receipt.wikiArtifactId}` : undefined,
+    receipt.artifactId ? `artifact ${receipt.artifactId}` : undefined
+  ].filter((part): part is string => Boolean(part)).join(" · ");
+}
+
+export function summarizeAssignmentCommandReceiptsForStudio(input: {
+  assignment: AssignmentProjectionRecord;
+  receipts: RuntimeCommandReceiptProjectionRecord[];
+}): string {
+  const receipts = sortRuntimeCommandReceiptsForStudio(
+    input.receipts.filter(
+      (receipt) => receipt.assignmentId === input.assignment.assignmentId
+    )
+  );
+
+  if (receipts.length === 0) {
+    return "no command receipts yet";
+  }
+
+  const latest = receipts[0]!;
+
+  return [
+    `${receipts.length} command receipt${receipts.length === 1 ? "" : "s"}`,
+    `latest ${latest.commandEventType}`,
+    latest.receiptStatus,
     `at ${latest.observedAt}`
   ].join(" · ");
 }
