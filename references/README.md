@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
+[388-artifact-source-proposal-operator-surfaces-slice.md](388-artifact-source-proposal-operator-surfaces-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -142,7 +142,9 @@ of Host-side promotion: Host publishes
 artifact, copies bounded safe content into its source workspace, harvests a
 pending source-change candidate, and emits signed `source_change.ref`
 evidence. The process-runner smoke proves that path against the real
-runner-published report artifact.
+runner-published report artifact. CLI and Studio can now request that same
+runner-owned proposal path from artifact inspection surfaces without adding a
+Host-side source mutation shortcut.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

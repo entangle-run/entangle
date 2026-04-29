@@ -28,6 +28,7 @@ import {
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
   runtimeArtifactRestoreRequestSchema,
+  runtimeArtifactSourceChangeProposalRequestSchema,
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
@@ -131,6 +132,7 @@ import {
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
   projectRuntimeArtifactRestoreSummary,
+  projectRuntimeArtifactSourceChangeProposalSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -3122,6 +3124,61 @@ hostRuntimesCommand
       printJson(
         options.summary
           ? { restore: projectRuntimeArtifactRestoreSummary(response) }
+          : response
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("artifact-source-proposal")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<artifactId>", "Artifact identifier to propose as source work.")
+  .option("--overwrite", "Allow the runner to overwrite existing target files.")
+  .option("--proposal-id <proposalId>", "Stable source-change proposal id.")
+  .option("--reason <reason>", "Operator-visible proposal reason.")
+  .option("--requested-by <operatorId>", "Operator id requesting the proposal.")
+  .option(
+    "--target-path <targetPath>",
+    "Relative source workspace path where artifact content should be copied."
+  )
+  .option("--summary", "Print a compact operator-oriented proposal summary.")
+  .description(
+    "Ask the assigned runner to propose one runtime artifact as a source change."
+  )
+  .action(
+    async (
+      nodeId: string,
+      artifactId: string,
+      options: {
+        overwrite?: boolean;
+        proposalId?: string;
+        reason?: string;
+        requestedBy?: string;
+        summary?: boolean;
+        targetPath?: string;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const request = runtimeArtifactSourceChangeProposalRequestSchema.parse({
+        ...(options.overwrite ? { overwrite: true } : {}),
+        ...(options.proposalId ? { proposalId: options.proposalId } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
+        ...(options.targetPath ? { targetPath: options.targetPath } : {})
+      });
+      const response = await client.proposeRuntimeArtifactSourceChange(
+        nodeId,
+        artifactId,
+        request
+      );
+
+      printJson(
+        options.summary
+          ? {
+              sourceChangeProposal:
+                projectRuntimeArtifactSourceChangeProposalSummary(response)
+            }
           : response
       );
     }

@@ -161,6 +161,10 @@ The most accurate current description is:
 - assignment timelines now join Host assignment lifecycle state with projected
   runner receipts, so Host API, CLI, and Studio can inspect grouped assignment
   progress without scanning generic events or reading runner-local state;
+- artifact source-change proposal requests are now exposed through CLI and
+  Studio artifact inspection surfaces, using the same Host-signed runner
+  control path while leaving completion as projected source-change candidate
+  evidence;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, object-backed source/wiki mutation services, and the full
   multi-machine distributed proof.
@@ -376,7 +380,8 @@ The repository now also contains the first real implementation baseline:
   materialized git artifacts, with direct Host artifact restore/promotion
   mutations removed and artifact restore now returned as runner-owned protocol
   behavior through CLI/Studio operator requests while artifact-to-source work
-  now returns as runner-owned source-change proposal behavior, and with
+  now returns as runner-owned source-change proposal behavior exposed through
+  CLI/Studio operator requests, and with
   runner-owned local git
   snapshots of `memory/wiki` into
   each node's `wiki-repository` workspace after completed turns, including
@@ -996,8 +1001,8 @@ The current implementation-truth audit now lives in
   projected git refs, explicit wiki target publication, and shared
   multi-target source-history publication presentation plus runner-owned
   artifact restore exposed through operator surfaces plus runner-owned
-  artifact source-change proposals; the next git gaps are richer artifact
-  proposal user/operator controls, richer
+  artifact source-change proposal operator requests; the next git gaps are
+  richer artifact proposal user controls, richer
   wiki promotion policy and repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,

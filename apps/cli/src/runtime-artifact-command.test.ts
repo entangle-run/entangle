@@ -8,6 +8,7 @@ import {
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
   projectRuntimeArtifactRestoreSummary,
+  projectRuntimeArtifactSourceChangeProposalSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -268,6 +269,30 @@ describe("runtime-artifact-command", () => {
       nodeId: "worker-it",
       requestedAt: "2026-04-29T10:00:00.000Z",
       status: "requested"
+    });
+  });
+
+  it("projects artifact source-change proposals into compact command summaries", () => {
+    expect(
+      projectRuntimeArtifactSourceChangeProposalSummary({
+        artifactId: "artifact-report",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-artifact-proposal-alpha",
+        nodeId: "worker-it",
+        proposalId: "proposal-report",
+        requestedAt: "2026-04-29T10:05:00.000Z",
+        status: "requested",
+        targetPath: "reports"
+      })
+    ).toEqual({
+      artifactId: "artifact-report",
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-artifact-proposal-alpha",
+      nodeId: "worker-it",
+      proposalId: "proposal-report",
+      requestedAt: "2026-04-29T10:05:00.000Z",
+      status: "requested",
+      targetPath: "reports"
     });
   });
 

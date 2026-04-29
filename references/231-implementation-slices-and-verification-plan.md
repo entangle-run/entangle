@@ -437,8 +437,11 @@ Current status:
   emitting `artifact.ref` retrieval evidence;
 - CLI and Studio can now request that runner-owned artifact restore path from
   artifact inspection surfaces without reintroducing Host filesystem mutation;
-- richer source/wiki mutation endpoints, richer cache policy, and richer
-  artifact proposal operator/user controls still need protocol-backed
+- artifact source-change proposals now use runner-owned control behavior, and
+  CLI/Studio operator surfaces can request the same path from artifact
+  inspection without reintroducing Host source workspace mutation;
+- richer source/wiki mutation endpoints, richer cache policy, and possible
+  User Client artifact proposal controls still need protocol-backed
   replacement.
 
 ### Slice 9: User Node Runtime
@@ -799,6 +802,10 @@ Current status:
   promotion;
 - the process proof now requests a source-change proposal from the real
   runner-published report artifact and verifies projected candidate evidence;
+- CLI exposes the same source-change proposal request as
+  `host runtimes artifact-source-proposal`, and Studio exposes it from
+  selected artifact detail while keeping proposal completion as projected
+  source-change candidate evidence;
 - semantic artifact validation now allows file-backed git proof targets
   without git transport principals while retaining principal requirements for
   SSH and HTTPS targets;

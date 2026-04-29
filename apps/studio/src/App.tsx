@@ -167,9 +167,13 @@ import {
 } from "./runtime-artifact-inspection.js";
 import {
   buildRuntimeArtifactRestoreRequest,
+  buildRuntimeArtifactSourceChangeProposalRequest,
   createEmptyRuntimeArtifactRestoreDraft,
+  createEmptyRuntimeArtifactSourceChangeProposalDraft,
   formatRuntimeArtifactRestoreRequestSummary,
-  type RuntimeArtifactRestoreDraft
+  formatRuntimeArtifactSourceChangeProposalRequestSummary,
+  type RuntimeArtifactRestoreDraft,
+  type RuntimeArtifactSourceChangeProposalDraft
 } from "./runtime-artifact-restore.js";
 import {
   formatSourceChangeSummary,
@@ -559,6 +563,18 @@ export function App() {
   const [lastArtifactRestoreSummary, setLastArtifactRestoreSummary] =
     useState<string | null>(null);
   const [pendingArtifactRestore, setPendingArtifactRestore] = useState(false);
+  const [artifactSourceProposalDraft, setArtifactSourceProposalDraft] =
+    useState<RuntimeArtifactSourceChangeProposalDraft>(
+      createEmptyRuntimeArtifactSourceChangeProposalDraft
+    );
+  const [artifactSourceProposalError, setArtifactSourceProposalError] =
+    useState<string | null>(null);
+  const [
+    lastArtifactSourceProposalSummary,
+    setLastArtifactSourceProposalSummary
+  ] = useState<string | null>(null);
+  const [pendingArtifactSourceProposal, setPendingArtifactSourceProposal] =
+    useState(false);
   const [selectedMemory, setSelectedMemory] =
     useState<RuntimeMemoryInspectionResponse | null>(null);
   const [selectedMemoryPagePath, setSelectedMemoryPagePath] =
@@ -2084,6 +2100,12 @@ export function App() {
       setSelectedArtifactHistory(null);
       setSelectedArtifactDiff(null);
       setArtifactDetailError(null);
+      setArtifactSourceProposalDraft(
+        createEmptyRuntimeArtifactSourceChangeProposalDraft()
+      );
+      setArtifactSourceProposalError(null);
+      setLastArtifactSourceProposalSummary(null);
+      setPendingArtifactSourceProposal(false);
       await loadSelectedArtifactInspection(selectedRuntimeId, artifactId);
     },
     [loadSelectedArtifactInspection, selectedRuntimeId]
@@ -2386,6 +2408,55 @@ export function App() {
     }
   }, [
     artifactRestoreDraft,
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedArtifactInspection,
+    selectedRuntimeId
+  ]);
+
+  const requestRuntimeArtifactSourceProposal = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedArtifactInspection) {
+      return;
+    }
+
+    setPendingArtifactSourceProposal(true);
+    setArtifactSourceProposalError(null);
+    setLastArtifactSourceProposalSummary(null);
+
+    try {
+      const response = await client.proposeRuntimeArtifactSourceChange(
+        selectedRuntimeId,
+        selectedArtifactInspection.artifact.ref.artifactId,
+        buildRuntimeArtifactSourceChangeProposalRequest(
+          artifactSourceProposalDraft
+        )
+      );
+
+      startTransition(() => {
+        setLastArtifactSourceProposalSummary(
+          formatRuntimeArtifactSourceChangeProposalRequestSummary(response)
+        );
+        setArtifactSourceProposalDraft(
+          createEmptyRuntimeArtifactSourceChangeProposalDraft()
+        );
+        setArtifactSourceProposalError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setArtifactSourceProposalError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting artifact source-change proposal."
+          )
+        );
+      });
+    } finally {
+      setPendingArtifactSourceProposal(false);
+    }
+  }, [
+    artifactSourceProposalDraft,
     client,
     refreshSelectedRuntimeDetails,
     selectedArtifactInspection,
@@ -2784,6 +2855,12 @@ export function App() {
       setArtifactRestoreError(null);
       setLastArtifactRestoreSummary(null);
       setPendingArtifactRestore(false);
+      setArtifactSourceProposalDraft(
+        createEmptyRuntimeArtifactSourceChangeProposalDraft()
+      );
+      setArtifactSourceProposalError(null);
+      setLastArtifactSourceProposalSummary(null);
+      setPendingArtifactSourceProposal(false);
       setSelectedMemory(null);
       setSelectedMemoryPagePath(null);
       setSelectedMemoryPageInspection(null);
@@ -2857,6 +2934,12 @@ export function App() {
     setArtifactRestoreError(null);
     setLastArtifactRestoreSummary(null);
     setPendingArtifactRestore(false);
+    setArtifactSourceProposalDraft(
+      createEmptyRuntimeArtifactSourceChangeProposalDraft()
+    );
+    setArtifactSourceProposalError(null);
+    setLastArtifactSourceProposalSummary(null);
+    setPendingArtifactSourceProposal(false);
     setSelectedMemory(null);
     setSelectedMemoryPagePath(null);
     setSelectedMemoryPageInspection(null);
@@ -6458,6 +6541,111 @@ export function App() {
                           </div>
                           {artifactRestoreError ? (
                             <p className="error-box">{artifactRestoreError}</p>
+                          ) : null}
+                        </form>
+
+                        <form
+                          className="stacked-form"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void requestRuntimeArtifactSourceProposal();
+                          }}
+                        >
+                          <div className="field-grid">
+                            <label className="field">
+                              <span>Reason</span>
+                              <input
+                                disabled={pendingArtifactSourceProposal}
+                                onChange={(event) => {
+                                  setArtifactSourceProposalDraft((current) => ({
+                                    ...current,
+                                    reason: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator proposal reason"
+                                value={artifactSourceProposalDraft.reason}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Requested By</span>
+                              <input
+                                disabled={pendingArtifactSourceProposal}
+                                onChange={(event) => {
+                                  setArtifactSourceProposalDraft((current) => ({
+                                    ...current,
+                                    requestedBy: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator id"
+                                value={artifactSourceProposalDraft.requestedBy}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Proposal Id</span>
+                              <input
+                                disabled={pendingArtifactSourceProposal}
+                                onChange={(event) => {
+                                  setArtifactSourceProposalDraft((current) => ({
+                                    ...current,
+                                    proposalId: event.target.value
+                                  }));
+                                }}
+                                placeholder="generated if empty"
+                                value={artifactSourceProposalDraft.proposalId}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Target Path</span>
+                              <input
+                                disabled={pendingArtifactSourceProposal}
+                                onChange={(event) => {
+                                  setArtifactSourceProposalDraft((current) => ({
+                                    ...current,
+                                    targetPath: event.target.value
+                                  }));
+                                }}
+                                placeholder="default source root"
+                                value={artifactSourceProposalDraft.targetPath}
+                              />
+                            </label>
+                            <label className="field checkbox-field">
+                              <input
+                                checked={artifactSourceProposalDraft.overwrite}
+                                disabled={pendingArtifactSourceProposal}
+                                onChange={(event) => {
+                                  setArtifactSourceProposalDraft((current) => ({
+                                    ...current,
+                                    overwrite: event.target.checked
+                                  }));
+                                }}
+                                type="checkbox"
+                              />
+                              <span>Overwrite existing files</span>
+                            </label>
+                          </div>
+                          <div className="action-row">
+                            <button
+                              className="action-button"
+                              disabled={
+                                !selectedRuntimeId ||
+                                pendingArtifactSourceProposal
+                              }
+                              type="submit"
+                            >
+                              {pendingArtifactSourceProposal
+                                ? "Requesting..."
+                                : "Propose Source Change"}
+                            </button>
+                            {lastArtifactSourceProposalSummary ? (
+                              <span className="panel-caption">
+                                {lastArtifactSourceProposalSummary}
+                              </span>
+                            ) : null}
+                          </div>
+                          {artifactSourceProposalError ? (
+                            <p className="error-box">
+                              {artifactSourceProposalError}
+                            </p>
                           ) : null}
                         </form>
 

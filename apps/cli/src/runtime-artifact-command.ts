@@ -15,7 +15,8 @@ import type {
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactPreviewResponse,
-  RuntimeArtifactRestoreResponse
+  RuntimeArtifactRestoreResponse,
+  RuntimeArtifactSourceChangeProposalResponse
 } from "@entangle/types";
 
 export type RuntimeArtifactCliFilterOptions =
@@ -216,5 +217,31 @@ export function projectRuntimeArtifactRestoreSummary(
     nodeId: response.nodeId,
     requestedAt: response.requestedAt,
     status: response.status
+  };
+}
+
+export interface RuntimeArtifactCliSourceChangeProposalSummaryRecord {
+  artifactId: string;
+  assignmentId: string;
+  commandId: string;
+  nodeId: string;
+  proposalId?: string;
+  requestedAt: string;
+  status: RuntimeArtifactSourceChangeProposalResponse["status"];
+  targetPath?: string;
+}
+
+export function projectRuntimeArtifactSourceChangeProposalSummary(
+  response: RuntimeArtifactSourceChangeProposalResponse
+): RuntimeArtifactCliSourceChangeProposalSummaryRecord {
+  return {
+    artifactId: response.artifactId,
+    assignmentId: response.assignmentId,
+    commandId: response.commandId,
+    nodeId: response.nodeId,
+    ...(response.proposalId ? { proposalId: response.proposalId } : {}),
+    requestedAt: response.requestedAt,
+    status: response.status,
+    ...(response.targetPath ? { targetPath: response.targetPath } : {})
   };
 }

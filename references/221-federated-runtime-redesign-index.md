@@ -188,6 +188,7 @@ same-machine slice records.
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 - [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 - [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
+- [388-artifact-source-proposal-operator-surfaces-slice.md](388-artifact-source-proposal-operator-surfaces-slice.md)
 
 ## Audited Scope
 

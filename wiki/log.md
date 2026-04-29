@@ -4631,3 +4631,14 @@ its source workspace, harvests a `pending_review` source-change candidate, and
 emits signed `source_change.ref` evidence. The process-runner smoke now proves
 that path against the real report artifact published by the joined agent
 runner.
+
+## [2026-04-29] implementation | Surfaced artifact source proposals for operators
+
+Added `references/388-artifact-source-proposal-operator-surfaces-slice.md`.
+CLI now exposes `host runtimes artifact-source-proposal` with compact summary
+output, and Studio exposes the same Host request from selected artifact
+detail.
+
+Both surfaces request the existing Host-signed runner control path and show a
+request acknowledgement while the resulting pending source-change candidate
+remains runner observation evidence.

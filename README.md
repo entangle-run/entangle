@@ -517,8 +517,9 @@ This repository currently contains:
   Direct Host restore/promotion mutations have been removed; artifact restore
   now returns as a Host-signed command executed in runner-owned state and
   exposed through CLI/Studio operator surfaces. Artifact-to-source work now
-  returns as a runner-owned source-change proposal command rather than Host
-  writes into runner-local workspaces;
+  returns as a runner-owned source-change proposal command exposed through
+  CLI/Studio operator surfaces rather than Host writes into runner-local
+  workspaces;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -1076,8 +1077,9 @@ The highest-value remaining gaps are:
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs plus shared multi-target source-history publication presentation
-  and runner-owned artifact restore,
-  especially richer artifact proposal user/operator controls,
+  plus runner-owned artifact restore and source-change proposal operator
+  requests,
+  especially richer artifact proposal user controls,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
