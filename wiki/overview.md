@@ -162,8 +162,10 @@ The most accurate current description is:
 - assignment timelines now join Host assignment lifecycle state with projected
   runner receipts and assignment-scoped runtime command receipts, so Host API,
   CLI, and Studio can inspect grouped assignment progress, including recent
-  command receipt rows in Studio and compact CLI projection output, without
-  scanning generic events or reading runner-local state;
+  command receipt rows in Studio, compact CLI projection output, and a
+  dedicated CLI command receipt list with assignment, node, runner, command
+  type, status, and limit filters, without scanning generic events or reading
+  runner-local state;
 - artifact source-change proposal requests are now exposed through CLI and
   Studio artifact inspection surfaces, using the same Host-signed runner
   control path while completion returns as both projected source-change

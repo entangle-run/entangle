@@ -95,7 +95,13 @@ import {
   projectRuntimeAssignmentTimelineSummary,
   sortRuntimeAssignmentsForCli
 } from "./assignment-output.js";
-import { projectHostProjectionSummary } from "./projection-output.js";
+import {
+  filterRuntimeCommandReceiptsForCli,
+  parseRuntimeCommandReceiptStatusForCli,
+  projectHostProjectionSummary,
+  projectRuntimeCommandReceiptSummary,
+  sortRuntimeCommandReceiptsForCli
+} from "./projection-output.js";
 import {
   buildUserNodeClientSummariesForCli,
   projectUserConversationSummary,
@@ -830,6 +836,65 @@ hostCommand
         : response
     );
   });
+
+hostCommand
+  .command("command-receipts")
+  .option("--assignment-id <assignmentId>", "Filter to one runtime assignment.")
+  .option("--node-id <nodeId>", "Filter to one graph node.")
+  .option("--runner-id <runnerId>", "Filter to one joined runner.")
+  .option("--type <commandEventType>", "Filter to one runtime command event type.")
+  .option(
+    "--status <status>",
+    "Filter by command receipt status: received, completed, or failed."
+  )
+  .option("--limit <n>", "Maximum number of receipts to return.", "20")
+  .option("--summary", "Print compact runtime command receipt summaries.")
+  .description("List projected runtime command receipts from entangle-host.")
+  .action(
+    async (
+      options: {
+        assignmentId?: string;
+        limit: string;
+        nodeId?: string;
+        runnerId?: string;
+        status?: string;
+        summary?: boolean;
+        type?: string;
+      },
+      command: Command
+    ) => {
+      const limit = parsePositiveIntegerOption(options.limit, "--limit");
+      const receiptStatus = parseRuntimeCommandReceiptStatusForCli(
+        options.status
+      );
+      const client = createCliHostClient(command);
+      const projection = await client.getProjection();
+      const filteredReceipts = filterRuntimeCommandReceiptsForCli(
+        projection.runtimeCommandReceipts,
+        {
+          ...(options.assignmentId
+            ? { assignmentId: options.assignmentId }
+            : {}),
+          ...(options.nodeId ? { nodeId: options.nodeId } : {}),
+          ...(options.runnerId ? { runnerId: options.runnerId } : {}),
+          ...(receiptStatus ? { receiptStatus } : {}),
+          ...(options.type ? { commandEventType: options.type } : {})
+        }
+      );
+      const receipts = sortRuntimeCommandReceiptsForCli(filteredReceipts).slice(
+        0,
+        limit
+      );
+
+      printJson({
+        returned: receipts.length,
+        runtimeCommandReceipts: options.summary
+          ? receipts.map(projectRuntimeCommandReceiptSummary)
+          : receipts,
+        totalMatched: filteredReceipts.length
+      });
+    }
+  );
 
 const authorityCommand = program
   .command("authority")

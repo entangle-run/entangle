@@ -61,5 +61,6 @@ This is an additive CLI summary field. Full projection JSON is unchanged.
 
 ## Open Questions
 
-- Should CLI add a dedicated `host command-receipts list` command with filters
-  by assignment id, command type, and receipt status?
+Resolved by `398-cli-command-receipt-list-slice.md`: the CLI now exposes a
+dedicated `entangle host command-receipts` command with assignment, node,
+runner, command type, and receipt status filters.

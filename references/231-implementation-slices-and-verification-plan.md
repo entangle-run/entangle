@@ -169,7 +169,8 @@ Current status:
   command receipts; CLI can inspect it directly, and Studio groups lifecycle
   and command receipt summaries under assignment rows while Studio and CLI
   compact projection summaries list recent command receipts from Host
-  projection.
+  projection. CLI can also list runtime command receipts directly with
+  assignment, node, runner, command type, status, and limit filters.
 - The process-runner smoke now validates that the real joined runner path
   produces assignment acceptance, `started` receipt evidence, and completed
   runtime command receipt entries visible through the assignment timeline read
@@ -311,6 +312,7 @@ Implementation record:
 - [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
 - [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
+- [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 
 Verification:
 
@@ -475,6 +477,8 @@ Current status:
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
+- CLI can list runtime command receipts directly from Host projection using
+  assignment, node, runner, command type, status, and limit filters;
 - richer source/wiki mutation endpoints and richer cache policy still need
   protocol-backed replacement.
 
@@ -733,7 +737,9 @@ federated replay request path through Host, matching the CLI
 replay outcomes through source-history replay list/detail commands, and Studio
 summarizes projected replay outcome counts in the Federation panel. CLI can now
 inspect per-assignment timelines, and Studio shows grouped receipt summaries
-under projected assignment rows. A richer assignment detail page that joins
+under projected assignment rows. CLI can now list command receipts directly
+from Host projection when operators need filtered command closure without
+reading the full projection JSON. A richer assignment detail page that joins
 control command ids, transport diagnostics, runtime status, and source-history
 outcomes remains follow-up work.
 

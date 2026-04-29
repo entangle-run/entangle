@@ -467,7 +467,8 @@ This repository currently contains:
   receipt projection, with Host API, host-client, CLI, and Studio grouped
   lifecycle plus command receipt summaries sharing the same read model and
   Studio plus CLI compact projection output listing recent command receipts
-  from Host projection;
+  from Host projection, plus a dedicated CLI command receipt list with
+  assignment, node, runner, command type, status, and limit filters;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

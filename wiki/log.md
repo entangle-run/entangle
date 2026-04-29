@@ -4742,3 +4742,13 @@ command receipts in addition to the total command receipt count.
 
 This gives headless operators the same immediate command-closure visibility
 that Studio now shows from Host projection.
+
+## [2026-04-29] implementation | Added CLI command receipt inspection
+
+Added `references/398-cli-command-receipt-list-slice.md`.
+`entangle host command-receipts` now lists projected runtime command receipts
+directly from Host projection, with filters for assignment id, node id, runner
+id, runtime command event type, receipt status, and result limit.
+
+This keeps command-closure inspection headless-friendly without adding a direct
+runner call or a new Host API surface.

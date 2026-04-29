@@ -44,6 +44,18 @@ export type RuntimeCommandReceiptCliSummary = {
   runnerId: string;
 };
 
+export type RuntimeCommandReceiptCliFilters = {
+  assignmentId?: string;
+  commandEventType?: string;
+  nodeId?: string;
+  receiptStatus?: RuntimeCommandReceiptProjectionRecord["receiptStatus"];
+  runnerId?: string;
+};
+
+const runtimeCommandReceiptStatuses = new Set<
+  RuntimeCommandReceiptProjectionRecord["receiptStatus"]
+>(["received", "completed", "failed"]);
+
 export function sortRuntimeProjectionsForCli(
   runtimes: RuntimeProjectionRecord[]
 ): RuntimeProjectionRecord[] {
@@ -77,6 +89,64 @@ export function sortRuntimeCommandReceiptsForCli(
     return timeOrder !== 0
       ? timeOrder
       : left.commandId.localeCompare(right.commandId);
+  });
+}
+
+export function parseRuntimeCommandReceiptStatusForCli(
+  status: string | undefined
+): RuntimeCommandReceiptProjectionRecord["receiptStatus"] | undefined {
+  if (status === undefined) {
+    return undefined;
+  }
+
+  if (
+    runtimeCommandReceiptStatuses.has(
+      status as RuntimeCommandReceiptProjectionRecord["receiptStatus"]
+    )
+  ) {
+    return status as RuntimeCommandReceiptProjectionRecord["receiptStatus"];
+  }
+
+  throw new Error(
+    "--status must be one of received, completed, or failed."
+  );
+}
+
+export function filterRuntimeCommandReceiptsForCli(
+  receipts: RuntimeCommandReceiptProjectionRecord[],
+  filters: RuntimeCommandReceiptCliFilters
+): RuntimeCommandReceiptProjectionRecord[] {
+  return receipts.filter((receipt) => {
+    if (
+      filters.assignmentId !== undefined &&
+      receipt.assignmentId !== filters.assignmentId
+    ) {
+      return false;
+    }
+
+    if (
+      filters.commandEventType !== undefined &&
+      receipt.commandEventType !== filters.commandEventType
+    ) {
+      return false;
+    }
+
+    if (filters.nodeId !== undefined && receipt.nodeId !== filters.nodeId) {
+      return false;
+    }
+
+    if (
+      filters.receiptStatus !== undefined &&
+      receipt.receiptStatus !== filters.receiptStatus
+    ) {
+      return false;
+    }
+
+    if (filters.runnerId !== undefined && receipt.runnerId !== filters.runnerId) {
+      return false;
+    }
+
+    return true;
   });
 }
 

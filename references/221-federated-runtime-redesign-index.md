@@ -198,6 +198,7 @@ same-machine slice records.
 - [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
 - [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
+- [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 
 ## Audited Scope
 
@@ -446,7 +447,9 @@ The repository is not fully federated:
   receipt projection, CLI can inspect it, and Studio groups lifecycle and
   command receipt summaries under projected assignment rows while Studio and
   CLI compact projection summaries list recent command receipts from Host
-  projection;
+  projection. CLI also exposes a dedicated `entangle host command-receipts`
+  command with assignment, node, runner, command type, status, and limit filters
+  over the same Host projection;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`
@@ -754,6 +757,5 @@ conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
 The next blocking implementation areas are richer projection-backed source/wiki
-review services, richer cache policy controls, explicit command receipt
-projection for artifact proposal completion, and turning the process smoke into
-the full multi-machine distributed proof.
+review services, richer cache policy controls, and turning the process smoke
+into the full multi-machine distributed proof.
