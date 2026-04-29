@@ -4764,6 +4764,16 @@ command receipt entries together.
 This brings Studio's operator drilldown closer to CLI parity while keeping the
 surface Host-boundary-only and runner-filesystem-free.
 
+## [2026-04-29] implementation | Added distributed proof kit generator
+
+Added `references/407-distributed-proof-kit-slice.md` and
+`pnpm ops:distributed-proof-kit`. The command prepares a copyable
+three-runner proof kit for a reachable Host/relay/git topology by generating
+Host-derived runner join configs, runner-local env/start scripts, and operator
+trust/assignment/User Node message commands. Host tokens are written only when
+`--write-host-token` is explicit, and the generated runner path continues to
+use generic `entangle-runner join` without Host filesystem access.
+
 ## [2026-04-29] implementation | Added artifact backend cache size pruning
 
 Added `references/406-artifact-backend-cache-size-policy-slice.md`. Host

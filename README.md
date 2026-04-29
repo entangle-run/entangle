@@ -188,6 +188,22 @@ pnpm --filter @entangle/cli dev runners join-config --runner runner-a --output r
 pnpm --filter @entangle/runner start join --config runner-join.json
 ```
 
+For a three-runner proof across separate machines, start a reachable Host,
+relay, and git backend, then generate a copyable proof kit:
+
+```bash
+ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-kit \
+  --host-url http://host.example:7071 \
+  --relay-url ws://relay.example:7777 \
+  --output .entangle/distributed-proof-kit
+```
+
+The kit writes one OpenCode-capable agent runner directory, two User Node
+runner directories, and operator commands for trust, assignment, User Client
+discovery, signed User Node task publication, and projection inspection. Copy
+runner directories to machines with Entangle checkouts; the proof is valid only
+when the runners do not rely on Host filesystem access.
+
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner
 fetches its portable bootstrap bundle from the Host API instead of mounting

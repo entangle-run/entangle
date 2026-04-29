@@ -158,6 +158,10 @@ assignment timeline endpoint. `pnpm ops:demo-user-node-runtime` now wraps the
 fastest interactive User Node runtime proof by building the dedicated User
 Client app, starting the development relay, and running the federated
 process-runner smoke in `--keep-running` mode.
+`pnpm ops:distributed-proof-kit` now generates a copyable three-runner proof
+kit for a reachable Host/relay/git topology, with Host-derived runner join
+configs, runner-local env/start scripts, and operator trust/assignment/User
+Node message commands for machines that do not share Host filesystem state.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
@@ -582,6 +586,7 @@ files are the active federated redesign pack.
 405. [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
 406. [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 407. [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
+408. [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
 
 ## Role of this corpus
 

@@ -187,8 +187,8 @@ The most accurate current description is:
   `runtime.command.receipt` observations as command-id closure while keeping
   assignment receipts and session observations as the domain lifecycle model;
 - the largest remaining gaps are projection-backed replacement for deep runtime
-  detail APIs, object-backed source/wiki mutation services, and the full
-  multi-machine distributed proof.
+  detail APIs, object-backed source/wiki mutation services, and an automated
+  verifier for the generated multi-machine distributed proof kit.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish
@@ -233,6 +233,10 @@ projected Human Interface Runtime placement and User Client URLs.
 `pnpm ops:demo-user-node-runtime` now wraps that shortest interactive path by
 building the dedicated User Client, starting the development relay, and running
 the process-runner proof in `--keep-running` mode.
+`pnpm ops:distributed-proof-kit` now prepares a copyable three-runner proof kit
+for a reachable Host/relay/git topology, including Host-derived runner join
+configs, runner-local env/start scripts, and operator trust/assignment/User
+Node message commands for machines that do not share Host filesystem state.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

@@ -205,6 +205,22 @@ To rediscover running User Client endpoints through Host projection, run:
 pnpm --filter @entangle/cli dev user-nodes clients --summary
 ```
 
+To prepare a three-runner proof kit for separate machines, start a reachable
+Host, relay, and git backend, then run:
+
+```sh
+ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-kit \
+  --host-url http://host.example:7071 \
+  --relay-url ws://relay.example:7777 \
+  --output .entangle/distributed-proof-kit
+```
+
+The generated kit contains Host-derived `runner-join.json` files, runner-local
+env/start scripts, and operator commands for trust, assignment, User Client
+discovery, signed User Node task publication, and projection inspection. Copy
+each runner directory to its intended machine and set `ENTANGLE_REPO_ROOT`
+there; no generated runner command should require Host filesystem access.
+
 To prepare an extra generic runner against an already-running Host without
 using the smoke script, write a Host-derived join config and start the runner:
 

@@ -824,6 +824,7 @@ Implementation records:
 - [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 - [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
 - [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
+- [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
 
 Current status:
 
@@ -980,11 +981,15 @@ Current status:
   Node runtime proof by building the dedicated User Client app, starting the
   development relay, and running the process-runner smoke in `--keep-running`
   mode so operators can open both projected User Client URLs;
+- `pnpm ops:distributed-proof-kit` now generates a three-runner proof kit for
+  a reachable Host/relay/git topology, including Host-derived runner join
+  configs, runner-local env/start scripts, and operator trust/assignment/User
+  Node message commands intended to be copied onto separate machines;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
-- the remaining distributed proof is the three-machine/multi-network demo with
-  reachable relay and git service.
+- the remaining distributed proof hardening is an automated remote verifier
+  for already-started machines with reachable relay and git service.
 
 Verification:
 
