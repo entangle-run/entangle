@@ -226,8 +226,8 @@ runner directories, and operator commands for trust, assignment, User Client
 discovery, signed User Node task publication, and projection inspection. Copy
 runner directories to machines with Entangle checkouts; the proof is valid only
 when the runners do not rely on Host filesystem access and report running
-runtime observations, expected runtime-kind capabilities, and distinct User
-Client URLs back to Host projection.
+runtime observations, expected runtime-kind capabilities, expected agent-engine
+capabilities, and distinct User Client URLs back to Host projection.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP
@@ -249,8 +249,8 @@ pnpm ops:smoke-distributed-proof-tools
 That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
 JSON, including the default failure path for non-running runtime observations.
 It also checks that duplicated User Client URLs and wrong runner runtime-kind
-capabilities fail the multi-user proof. It does not replace the real
-distributed proof above.
+or agent-engine capabilities fail the multi-user proof. It does not replace the
+real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

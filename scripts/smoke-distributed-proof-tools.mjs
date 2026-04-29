@@ -226,6 +226,20 @@ try {
   });
   verifySelfTestFailureJson(wrongRuntimeKindJson, "supports agent_runner");
 
+  const wrongAgentEngineKindJson = runFailureStep(
+    "proof verifier wrong-agent-engine-kind self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--self-test-wrong-agent-engine-kind"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(wrongAgentEngineKindJson, "supports opencode_server");
+
   console.log("\nDistributed proof tool smoke passed.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

@@ -28,7 +28,9 @@ multi-machine proof.
 - verifier JSON self-test failure when multiple User Node runtime projections
   report the same User Client URL;
 - verifier JSON self-test failure when a runner advertises the wrong runtime
-  kind for the expected assignment.
+  kind for the expected assignment;
+- verifier JSON self-test failure when the proof agent runner advertises the
+  wrong agent engine kind.
 
 ## Current Repo Truth
 
@@ -79,6 +81,8 @@ tools.
   override and requires success.
 - The script runs a shared-User-Client verifier self-test and requires failure.
 - The script runs a wrong-runtime-kind verifier self-test and requires failure.
+- The script runs a wrong-agent-engine-kind verifier self-test and requires
+  failure.
 
 ## Tests Required
 

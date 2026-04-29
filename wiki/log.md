@@ -5072,3 +5072,13 @@ registration advertises the runtime kind required by its proof assignment.
 The distributed proof tool smoke now includes a wrong-runtime-kind self-test
 fixture and requires that fixture to fail, proving the verifier catches a
 misplaced or stale runner capability projection.
+
+## [2026-04-29] test | Checked agent engine capability in proof
+
+Added `references/423-distributed-proof-agent-engine-capability-slice.md`.
+The distributed proof verifier now requires the proof's coding-agent runner to
+advertise the expected `opencode_server` engine capability in addition to the
+generic `agent_runner` runtime kind.
+
+The distributed proof tool smoke now includes a wrong-agent-engine-kind
+self-test fixture and requires that fixture to fail.

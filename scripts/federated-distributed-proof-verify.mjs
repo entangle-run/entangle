@@ -27,6 +27,7 @@ const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
 const selfTestWrongRuntimeKind = hasFlag("--self-test-wrong-runtime-kind");
+const selfTestWrongAgentEngineKind = hasFlag("--self-test-wrong-agent-engine-kind");
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -37,6 +38,7 @@ const reviewerUserNodeId = readFlagValue("--reviewer-user-node") ?? "reviewer";
 
 const expectedProfiles = [
   {
+    agentEngineKind: "opencode_server",
     assignmentId: `assignment-${agentRunnerId}`,
     nodeId: agentNodeId,
     runnerId: agentRunnerId,
@@ -88,6 +90,8 @@ Options:
   --self-test-shared-user-client-url
                                   Use one User Client URL for both Human Interface Runtime fixtures.
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
+  --self-test-wrong-agent-engine-kind
+                                  Make the agent runner advertise the wrong agent engine kind.
   -h, --help                      Show this help.
 
 Examples:
@@ -236,6 +240,12 @@ function buildSelfTestSnapshot() {
         liveness: "online",
         registration: {
           capabilities: {
+            agentEngineKinds:
+              selfTestWrongAgentEngineKind && profile.nodeId === agentNodeId
+                ? ["external_process"]
+                : profile.agentEngineKind
+                  ? [profile.agentEngineKind]
+                  : [],
             runtimeKinds:
               selfTestWrongRuntimeKind && profile.nodeId === agentNodeId
                 ? ["human_interface"]
@@ -369,6 +379,21 @@ async function evaluateSnapshot(snapshot) {
           "none"
         }`
       );
+      if (profile.agentEngineKind) {
+        addCheck(
+          checks,
+          `runner ${profile.runnerId} supports ${profile.agentEngineKind}`,
+          Array.isArray(runner.registration?.capabilities?.agentEngineKinds) &&
+            runner.registration.capabilities.agentEngineKinds.includes(
+              profile.agentEngineKind
+            ),
+          `agentEngineKinds=${
+            (runner.registration?.capabilities?.agentEngineKinds ?? []).join(
+              ","
+            ) || "none"
+          }`
+        );
+      }
       addCheck(
         checks,
         `runner ${profile.runnerId} heartbeat assignment`,

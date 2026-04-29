@@ -17,6 +17,7 @@ running distributed proof through network APIs only:
 - expected runner registrations exist and are trusted;
 - runners are online by default, with an explicit stale-tolerant option;
 - runners advertise the runtime kind expected by their assigned graph node;
+- the agent runner advertises the expected agent engine kind;
 - runner heartbeats include expected assignment ids;
 - expected assignments are accepted or active;
 - Host projection contains matching assignment and runtime records;
@@ -65,6 +66,9 @@ The verifier must not read Host, runner, or shared workstation files.
   `422-distributed-proof-runtime-kind-capability-slice.md`: runner
   registrations must advertise the runtime kind expected by each proof
   assignment.
+- Tightened by
+  `423-distributed-proof-agent-engine-capability-slice.md`: the proof agent
+  runner must advertise the expected `opencode_server` engine capability.
 
 ## Tests Required
 
@@ -76,7 +80,8 @@ Implemented and passed:
 - `pnpm ops:smoke-distributed-proof-tools` now also proves that stopped runtime
   observations fail by default and only pass with the explicit diagnostic
   override, that duplicated User Client URLs fail the multi-user proof, and
-  that wrong runner runtime-kind capabilities fail the topology proof.
+  that wrong runner runtime-kind or agent-engine capabilities fail the topology
+  proof.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
