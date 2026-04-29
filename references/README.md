@@ -93,7 +93,8 @@ mismatches, and service handling rejects mismatched signer envelopes before
 state mutation. User Node inbox records now
 preserve signer pubkeys for inbound and outbound messages when available, and
 Host rejects inbound User Node message records whose signer differs from the
-payload `fromPubkey`.
+payload `fromPubkey`. CLI compact User Node message summaries and User Client
+timeline headers now expose signer audit state when available.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -472,6 +473,7 @@ files are the active federated redesign pack.
 366. [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 367. [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 368. [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
+369. [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 
 ## Role of this corpus
 

@@ -19,6 +19,7 @@ import {
   fetchUserClientState,
   formatConversationTimestamp,
   formatDeliveryLabel,
+  formatSignerLabel,
   markConversationRead,
   normalizeApiBaseUrl,
   publishApprovalResponse,
@@ -547,15 +548,19 @@ function MessageTimeline({
   return (
     <div className="timeline">
       {actionMessage ? <div className="notice">{actionMessage}</div> : null}
-      {messages.map((message) => (
-        <article
-          className={`message ${message.direction}`}
-          key={message.eventId}
-        >
-          <header className="message-header">
-            <span>{message.messageType}</span>
-            <span>{formatDeliveryLabel(message)}</span>
-          </header>
+      {messages.map((message) => {
+        const signerLabel = formatSignerLabel(message);
+
+        return (
+          <article
+            className={`message ${message.direction}`}
+            key={message.eventId}
+          >
+            <header className="message-header">
+              <span>{message.messageType}</span>
+              <span>{formatDeliveryLabel(message)}</span>
+              {signerLabel ? <span>{signerLabel}</span> : null}
+            </header>
           <p>{message.summary}</p>
           {message.approval ? (
             <div className="metadata">
@@ -617,8 +622,9 @@ function MessageTimeline({
               </button>
             </div>
           ) : null}
-        </article>
-      ))}
+          </article>
+        );
+      })}
     </div>
   );
 }

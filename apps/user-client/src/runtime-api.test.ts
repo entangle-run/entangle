@@ -8,6 +8,7 @@ import {
   fetchSourceChangeDiff,
   fetchSourceChangeFilePreview,
   formatDeliveryLabel,
+  formatSignerLabel,
   markConversationRead,
   normalizeApiBaseUrl,
   reviewSourceChangeCandidate
@@ -68,6 +69,31 @@ describe("user client runtime API helpers", () => {
         relayUrls: ["ws://relay.test"]
       } as unknown as Parameters<typeof formatDeliveryLabel>[0])
     ).toBe("failed 0/1");
+  });
+
+  it("formats message signer audit labels", () => {
+    expect(
+      formatSignerLabel({
+        fromPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        signerPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      } as Parameters<typeof formatSignerLabel>[0])
+    ).toBe("signed aaaaaaaa");
+    expect(
+      formatSignerLabel({
+        fromPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        signerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      } as Parameters<typeof formatSignerLabel>[0])
+    ).toBe("signer mismatch");
+    expect(
+      formatSignerLabel({
+        fromPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      } as Parameters<typeof formatSignerLabel>[0])
+    ).toBeUndefined();
   });
 
   it("calls runtime-local review and preview JSON APIs", async () => {

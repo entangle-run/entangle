@@ -423,6 +423,20 @@ export function formatDeliveryLabel(message: UserNodeMessageRecord): string {
   return "pending";
 }
 
+export function formatSignerLabel(
+  message: UserNodeMessageRecord
+): string | undefined {
+  if (!message.signerPubkey) {
+    return undefined;
+  }
+
+  if (message.signerPubkey !== message.fromPubkey) {
+    return "signer mismatch";
+  }
+
+  return `signed ${message.signerPubkey.slice(0, 8)}`;
+}
+
 export function renderArtifactLocator(ref: ArtifactRef): string {
   switch (ref.backend) {
     case "git":

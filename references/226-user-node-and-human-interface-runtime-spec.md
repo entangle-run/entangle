@@ -72,7 +72,9 @@ User nodes are now partially runtime-capable:
   mismatched signer envelopes before state
   mutation. User Node inbound/outbound inbox message records now preserve
   signer pubkeys when available, and Host rejects inbound User Node message
-  records whose signer differs from the payload `fromPubkey`.
+  records whose signer differs from the payload `fromPubkey`. CLI compact
+  message summaries and User Client timeline headers now expose signer audit
+  state when available.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,

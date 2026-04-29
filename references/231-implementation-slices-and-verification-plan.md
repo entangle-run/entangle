@@ -697,6 +697,7 @@ Implementation records:
 - [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 - [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 - [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
+- [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 
 Current status:
 
@@ -770,6 +771,8 @@ Current status:
 - User Node inbox message records now preserve signer pubkeys for inbound and
   outbound messages when available, and Host rejects inbound User Node message
   records whose signer differs from the payload `fromPubkey`;
+- CLI compact User Node publish/message summaries and User Client timeline
+  headers now expose signer audit state when available;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

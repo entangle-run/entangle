@@ -98,6 +98,7 @@ import {
   buildUserNodeClientSummariesForCli,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
+  projectUserNodeMessageSummary,
   projectUserNodeMessagePublishSummary,
   sortUserConversationsForCli,
   sortUserNodeIdentitiesForCli
@@ -1561,7 +1562,8 @@ inboxCommand
       options.summary
         ? {
             conversation: projectUserConversationSummary(conversation),
-            messageCount: detail.messages.length
+            messageCount: detail.messages.length,
+            messages: detail.messages.map(projectUserNodeMessageSummary)
           }
         : {
             conversation,

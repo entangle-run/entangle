@@ -160,7 +160,8 @@ seal/rumor/fromPubkey mismatches, and service handling rejects mismatched
 signer envelopes before state mutation. User Node
 inbox records now preserve signer pubkeys for inbound and outbound messages
 when available, and Host rejects inbound User Node message records whose signer
-differs from the payload `fromPubkey`.
+differs from the payload `fromPubkey`. CLI compact User Node message summaries
+and User Client timeline headers now expose signer audit state when available.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets
 when available, or an explicit `--user-client-static-dir`, so manual

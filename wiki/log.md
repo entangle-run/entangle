@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Surfaced User Node signer audit state
+
+Added compact CLI projection for recorded User Node messages with signer
+pubkey and signer/fromPubkey match status, included compact message summaries
+in `entangle inbox show --summary`, and rendered short signer labels in the
+dedicated User Client timeline when signer metadata is available.
+
+Added `references/368-user-node-signer-surface-slice.md`.
+
 ## [2026-04-29] implementation | Verified NIP-59 seal signer for runner A2A
 
 Replaced direct runner A2A `nip59.unwrapEvent` receive handling with an

@@ -9,6 +9,7 @@ import {
   buildUserNodeClientSummariesForCli,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
+  projectUserNodeMessageSummary,
   projectUserNodeMessagePublishSummary,
   sortUserConversationsForCli,
   sortUserNodeIdentitiesForCli
@@ -191,6 +192,8 @@ describe("user node CLI output", () => {
         publishedRelays: ["ws://localhost:7777"],
         relayUrls: ["ws://localhost:7777"],
         sessionId: "session-alpha",
+        signerPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         targetNodeId: "worker-it",
         toPubkey:
           "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
@@ -200,7 +203,46 @@ describe("user node CLI output", () => {
       eventId: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
       fromNodeId: "user-a",
       messageType: "approval.response",
-      publishedRelayCount: 1
+      publishedRelayCount: 1,
+      signerMatchesFromPubkey: true,
+      signerPubkey:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    });
+  });
+
+  it("projects recorded User Node messages with signer audit state", () => {
+    expect(
+      projectUserNodeMessageSummary({
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-29T12:00:00.000Z",
+        direction: "inbound",
+        eventId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        signerPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        summary: "Please approve.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      })
+    ).toMatchObject({
+      direction: "inbound",
+      eventId: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      signerMatchesFromPubkey: true,
+      signerPubkey:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     });
   });
 

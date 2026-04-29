@@ -168,6 +168,7 @@ same-machine slice records.
 - [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 - [366-user-node-inbox-signer-audit-slice.md](366-user-node-inbox-signer-audit-slice.md)
 - [367-nip59-seal-signer-verification-slice.md](367-nip59-seal-signer-verification-slice.md)
+- [368-user-node-signer-surface-slice.md](368-user-node-signer-surface-slice.md)
 
 ## Audited Scope
 
@@ -512,7 +513,9 @@ the model summary omits the details.
     rejects mismatched signer envelopes before state mutation. User Node
     inbound/outbound inbox records now preserve
     signer pubkeys when available, and Host rejects inbound User Node message
-    records whose signer differs from the payload `fromPubkey`.
+    records whose signer differs from the payload `fromPubkey`. CLI compact
+    User Node message summaries and User Client timeline headers now surface
+    signer audit state when available.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact

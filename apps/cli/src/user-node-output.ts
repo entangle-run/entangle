@@ -3,6 +3,7 @@ import type {
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord,
+  UserNodeMessageRecord,
   UserNodeMessagePublishResponse
 } from "@entangle/types";
 
@@ -49,9 +50,43 @@ export type UserNodeMessagePublishCliSummary = {
   messageType: string;
   publishedRelayCount: number;
   sessionId: string;
+  signerMatchesFromPubkey?: boolean;
+  signerPubkey?: string;
   targetNodeId: string;
   turnId: string;
 };
+
+export type UserNodeMessageCliSummary = {
+  conversationId: string;
+  createdAt: string;
+  direction: string;
+  eventId: string;
+  fromNodeId: string;
+  messageType: string;
+  peerNodeId: string;
+  sessionId: string;
+  signerMatchesFromPubkey?: boolean;
+  signerPubkey?: string;
+  toNodeId: string;
+  turnId: string;
+};
+
+function projectSignerAudit(input: {
+  fromPubkey: string;
+  signerPubkey?: string | undefined;
+}): {
+  signerMatchesFromPubkey?: boolean;
+  signerPubkey?: string;
+} {
+  if (!input.signerPubkey) {
+    return {};
+  }
+
+  return {
+    signerMatchesFromPubkey: input.signerPubkey === input.fromPubkey,
+    signerPubkey: input.signerPubkey
+  };
+}
 
 export function sortUserNodeIdentitiesForCli(
   userNodes: UserNodeIdentityRecord[]
@@ -168,7 +203,32 @@ export function projectUserNodeMessagePublishSummary(
     messageType: response.messageType,
     publishedRelayCount: response.publishedRelays.length,
     sessionId: response.sessionId,
+    ...projectSignerAudit({
+      fromPubkey: response.fromPubkey,
+      signerPubkey: response.signerPubkey
+    }),
     targetNodeId: response.targetNodeId,
     turnId: response.turnId
+  };
+}
+
+export function projectUserNodeMessageSummary(
+  message: UserNodeMessageRecord
+): UserNodeMessageCliSummary {
+  return {
+    conversationId: message.conversationId,
+    createdAt: message.createdAt,
+    direction: message.direction,
+    eventId: message.eventId,
+    fromNodeId: message.fromNodeId,
+    messageType: message.messageType,
+    peerNodeId: message.peerNodeId,
+    sessionId: message.sessionId,
+    ...projectSignerAudit({
+      fromPubkey: message.fromPubkey,
+      signerPubkey: message.signerPubkey
+    }),
+    toNodeId: message.toNodeId,
+    turnId: message.turnId
   };
 }

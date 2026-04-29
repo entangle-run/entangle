@@ -171,6 +171,7 @@ This repository currently contains:
   approval controls, approval resource rendering,
   signed approval-response context, approval record request/response lineage
   metadata, signer/fromPubkey enforcement for runner A2A envelopes,
+  signer audit labels in compact CLI/User Client message surfaces,
   approver-set enforcement before approval state transitions,
   projected source-change summary rendering, projected source-change diff
   excerpt rendering, source-change diff/file fallback scoped to visible
