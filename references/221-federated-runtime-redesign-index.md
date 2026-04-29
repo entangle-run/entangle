@@ -158,6 +158,7 @@ same-machine slice records.
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
+- [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 
 ## Audited Scope
 
@@ -606,7 +607,10 @@ control plane. Those User Client artifact routes now require conversation
 context and verify that the artifact ref is visible in that User Node
 conversation before proxying to Host. The process-runner smoke now delivers
 the real builder-published source-history artifact to the User Node and verifies
-history/diff through the running User Client JSON routes.
+history/diff through the running User Client JSON routes. User Client
+source-change diff and review routes now require conversation context and verify
+that the selected conversation contains the matching inbound approval request
+before returning diff evidence or publishing review messages.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

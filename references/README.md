@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
+[358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -68,7 +68,9 @@ Client can load bounded artifact history/diff evidence through its Human
 Interface Runtime while scoped to artifact refs visible in the selected User
 Node conversation. The process-runner smoke now verifies that visible-artifact
 history/diff path through the running User Client using a real
-builder-published source-history git artifact.
+builder-published source-history git artifact. User Client source-change diff
+and review routes are now scoped to conversations containing the matching
+inbound approval request.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

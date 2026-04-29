@@ -107,6 +107,7 @@ describe("user client runtime API helpers", () => {
     await fetchSourceChangeDiff({
       baseUrl: "http://127.0.0.1:4300",
       candidateId: "candidate-alpha",
+      conversationId: "conversation-alpha",
       nodeId: "worker-it"
     });
     await markConversationRead({
@@ -136,7 +137,7 @@ describe("user client runtime API helpers", () => {
       "http://127.0.0.1:4300/api/artifacts/diff?artifactId=artifact-alpha&conversationId=conversation-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[3]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&nodeId=worker-it"
+      "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it"
     );
     expect(fetchMock.mock.calls[4]?.[0]).toBe(
       "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"

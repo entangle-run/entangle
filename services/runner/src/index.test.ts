@@ -1549,7 +1549,7 @@ describe("runner runtime context", () => {
 
       const jsonSourceDiffResponse = await fetch(
         new URL(
-          "/api/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha",
+          "/api/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha&conversationId=conversation-alpha",
           handle.clientUrl
         )
       );
@@ -1571,6 +1571,19 @@ describe("runner runtime context", () => {
         status: "pending_review"
       });
       expect(jsonSourceDiffBody.diff.content).toContain("+projected behavior");
+
+      const jsonUnscopedSourceDiffResponse = await fetch(
+        new URL(
+          "/api/source-change-candidates/diff?nodeId=worker-it&candidateId=source-change-turn-alpha",
+          handle.clientUrl
+        )
+      );
+      expect(jsonUnscopedSourceDiffResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedSourceDiffResponse.json()
+      ).resolves.toMatchObject({
+        error: "Conversation id is required for source-change inspection."
+      });
 
       const jsonSourceReviewResponse = await fetch(
         new URL("/api/source-change-candidates/review", handle.clientUrl),

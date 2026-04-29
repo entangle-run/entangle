@@ -269,6 +269,7 @@ function SourceChangeReview({
       const response = await fetchSourceChangeDiff({
         baseUrl,
         candidateId,
+        conversationId: message.conversationId,
         nodeId: message.fromNodeId
       });
 

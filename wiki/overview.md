@@ -146,7 +146,8 @@ federated dev runner image now bundles that built app, and the Docker launcher
 adapter can publish a browser-openable User Client port for User Node runtime
 contexts. The dedicated app now reaches runtime-local JSON routes for artifact
 preview, source diff, source-candidate review, wiki preview cards, and
-automatic thread read-state convergence. Studio
+automatic thread read-state convergence, with source and artifact evidence
+scoped to selected User Node conversations. Studio
 remains the operator surface, not the primary human-node client.
 
 The process-runner smoke now auto-serves built `apps/user-client/dist` assets

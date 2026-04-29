@@ -686,6 +686,7 @@ Implementation records:
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
+- [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 
 Current status:
 
@@ -727,6 +728,9 @@ Current status:
 - the process proof now delivers the real builder-published source-history git
   artifact to the User Node and verifies User Client artifact history/diff
   through the running Human Interface Runtime;
+- User Client source-change diff and review routes require conversation
+  context and verify the matching inbound approval request before returning
+  diff evidence or publishing review messages;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

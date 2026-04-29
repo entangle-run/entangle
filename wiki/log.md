@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Scoped User Client source-change review to conversations
+
+Tightened runtime-local User Client source-change diff and review routes so
+they require selected-conversation context and verify an inbound approval
+request for the requested source-change candidate before returning diff
+evidence or publishing a signed review message.
+
+Added
+`references/358-user-client-source-change-visibility-boundary-slice.md`.
+
 ## [2026-04-29] verification | Proved User Client artifact history/diff in process smoke
 
 Extended the process-runner smoke so the real builder-published source-history

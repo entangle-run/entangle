@@ -52,6 +52,11 @@ Interface Runtime:
   falling back to runtime-specific Host preview endpoints.
 - Source candidate review JSON requests stamp `reviewedBy` as the running User
   Node id.
+- As of
+  [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md),
+  source-change diff and review routes also require selected-conversation
+  context and verify the matching inbound approval request before returning
+  evidence or publishing a review message.
 - The dedicated User Client app can now:
   - preview artifact content;
   - load source-change diffs;

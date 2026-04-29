@@ -110,6 +110,15 @@ type UserClientVisibleArtifactRef =
       statusCode: number;
     };
 
+type UserClientVisibleSourceChange =
+  | {
+      visible: true;
+    }
+  | {
+      error: string;
+      statusCode: number;
+    };
+
 type UserClientSourceChangeDiffResponse = {
   candidateId: string;
   diff: RuntimeSourceChangeCandidateDiffResponse["diff"];
@@ -632,6 +641,50 @@ async function resolveUserClientVisibleArtifactRef(input: {
     error: "Artifact is not visible in the selected User Node conversation.",
     statusCode: 403
   };
+}
+
+async function resolveUserClientVisibleSourceChange(input: {
+  candidateId: string;
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  userNodeId: string;
+}): Promise<UserClientVisibleSourceChange> {
+  if (!input.conversationId) {
+    return {
+      error: "Conversation id is required for source-change inspection.",
+      statusCode: 400
+    };
+  }
+
+  const conversation = await fetchUserNodeConversation({
+    conversationId: input.conversationId,
+    hostApi: input.hostApi,
+    userNodeId: input.userNodeId
+  });
+
+  if (conversation.error || !conversation.detail) {
+    return {
+      error: conversation.error ?? "Conversation detail is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const visible = conversation.detail.messages.some(
+    (message) =>
+      message.direction === "inbound" &&
+      message.fromNodeId === input.nodeId &&
+      message.approval?.resource?.kind === "source_change_candidate" &&
+      message.approval.resource.id === input.candidateId
+  );
+
+  return visible
+    ? { visible: true }
+    : {
+        error:
+          "Source-change candidate is not visible in the selected User Node conversation.",
+        statusCode: 403
+      };
 }
 
 async function markUserClientConversationRead(input: {
@@ -2527,10 +2580,27 @@ export async function startHumanInterfaceRuntime(input: {
         const nodeId = requestUrl.searchParams.get("nodeId")?.trim() ?? "";
         const candidateId =
           requestUrl.searchParams.get("candidateId")?.trim() ?? "";
+        const conversationId =
+          requestUrl.searchParams.get("conversationId")?.trim() || undefined;
 
         if (!nodeId || !candidateId) {
           writeJson(response, 400, {
             error: "Runtime node and source-change candidate are required."
+          });
+          return;
+        }
+
+        const visibleSourceChange = await resolveUserClientVisibleSourceChange({
+          candidateId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleSourceChange) {
+          writeJson(response, visibleSourceChange.statusCode, {
+            error: visibleSourceChange.error
           });
           return;
         }
@@ -2608,6 +2678,21 @@ export async function startHumanInterfaceRuntime(input: {
           writeJson(response, 400, {
             error:
               "Runtime node, source-change candidate, conversation, parent message, and session are required."
+          });
+          return;
+        }
+
+        const visibleSourceChange = await resolveUserClientVisibleSourceChange({
+          candidateId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleSourceChange) {
+          writeJson(response, visibleSourceChange.statusCode, {
+            error: visibleSourceChange.error
           });
           return;
         }
@@ -2728,6 +2813,28 @@ export async function startHumanInterfaceRuntime(input: {
           return;
         }
 
+        const visibleSourceChange = await resolveUserClientVisibleSourceChange({
+          candidateId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleSourceChange) {
+          writeHtml(
+            response,
+            visibleSourceChange.statusCode,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: visibleSourceChange.error,
+              selectedConversationId: conversationId
+            })
+          );
+          return;
+        }
+
         writeHtml(
           response,
           200,
@@ -2787,6 +2894,29 @@ export async function startHumanInterfaceRuntime(input: {
                 hostApi: input.hostApi,
                 notice:
                   "Runtime node, source-change candidate, conversation, parent message, and session are required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const visibleSourceChange =
+            await resolveUserClientVisibleSourceChange({
+              candidateId,
+              conversationId,
+              hostApi: input.hostApi,
+              nodeId,
+              userNodeId: input.context.binding.node.nodeId
+            });
+
+          if ("error" in visibleSourceChange) {
+            writeHtml(
+              response,
+              visibleSourceChange.statusCode,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: visibleSourceChange.error,
                 selectedConversationId: conversationId
               })
             );

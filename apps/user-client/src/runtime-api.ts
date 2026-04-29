@@ -287,10 +287,12 @@ export function fetchArtifactDiff(input: {
 export function fetchSourceChangeDiff(input: {
   baseUrl: string;
   candidateId: string;
+  conversationId: string;
   nodeId: string;
 }): Promise<UserClientSourceChangeDiffResponse> {
   const params = new URLSearchParams({
     candidateId: input.candidateId,
+    conversationId: input.conversationId,
     nodeId: input.nodeId
   });
 

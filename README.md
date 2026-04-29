@@ -167,8 +167,9 @@ This repository currently contains:
   conversation list, selected-thread metadata, recorded inbound/outbound message
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, projected source-change summary rendering,
-  projected source-change diff excerpt rendering, source-change diff/file fallback,
-  signed source-candidate accept/reject messages handled by the owning runner,
+  projected source-change diff excerpt rendering, source-change diff/file
+  fallback scoped to visible approval conversations, signed source-candidate
+  accept/reject messages handled by the owning runner,
   artifact-ref rendering, projected bounded artifact preview with runtime
   fallback, delivery labels, local conversation read
   state, projected wiki-ref rendering, projected wiki preview rendering,
@@ -183,7 +184,8 @@ This repository currently contains:
   a browser-openable User Client port for User Node runtime contexts, and with
   the dedicated app now using runtime-local JSON routes for artifact preview,
   source diff, source-candidate review, wiki preview cards, and automatic
-  thread read-state convergence, plus
+  thread read-state convergence, with source and artifact evidence scoped to
+  selected User Node conversations, plus
   projection of the User Client endpoint through Host, CLI, and Studio, with
   Host runtime synchronization retaining observed User Node runtime endpoints,
   including `entangle user-nodes clients` for User Node-focused endpoint
