@@ -205,6 +205,7 @@ same-machine slice records.
 - [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 - [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 - [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
+- [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 
 ## Audited Scope
 

@@ -220,6 +220,7 @@ import {
 } from "./session-launch.js";
 import {
   buildUserNodeRuntimeSummaries,
+  buildAssignmentOperationalDetailsForStudio,
   canRevokeRunnerProjection,
   canTrustRunnerProjection,
   formatRuntimeAssignmentTimelineDetail,
@@ -3462,6 +3463,32 @@ export function App() {
         : [],
     [selectedAssignmentTimeline]
   );
+  const selectedAssignmentOperationalDetails = useMemo(() => {
+    if (!projectionSnapshot || !selectedAssignmentTimelineId) {
+      return [];
+    }
+
+    const assignment = assignmentProjectionRows.find(
+      (candidate) => candidate.assignmentId === selectedAssignmentTimelineId
+    );
+
+    if (!assignment) {
+      return [];
+    }
+
+    const runnerRegistryEntry = runnerRegistryByRunnerId.get(assignment.runnerId);
+
+    return buildAssignmentOperationalDetailsForStudio({
+      assignment,
+      projection: projectionSnapshot,
+      ...(runnerRegistryEntry ? { runnerRegistryEntry } : {})
+    });
+  }, [
+    assignmentProjectionRows,
+    projectionSnapshot,
+    runnerRegistryByRunnerId,
+    selectedAssignmentTimelineId
+  ]);
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3892,6 +3919,15 @@ export function App() {
                     selectedAssignmentTimeline
                   )}
                 </p>
+                {selectedAssignmentOperationalDetails.length > 0 ? (
+                  <div className="compact-list">
+                    {selectedAssignmentOperationalDetails.map((detail) => (
+                      <div key={detail} className="compact-list-item">
+                        <span>{detail}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="compact-list">
                   {selectedAssignmentTimelineRows.slice(0, 12).map((entry) => (
                     <div

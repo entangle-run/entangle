@@ -714,6 +714,7 @@ Implementation record:
 - [343-assignment-timeline-read-model-slice.md](343-assignment-timeline-read-model-slice.md)
 - [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 - [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
+- [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 
 Verification:
 
@@ -732,15 +733,18 @@ revoke actions. Studio can now also trust pending/revoked runners and revoke
 pending/trusted runners from the Federation panel through the same Host runner
 registry boundary as the CLI, and it enriches projected runner rows with full
 Host runner registry liveness, heartbeat, runtime-kind, engine-kind, and
-capacity summaries when available. CLI approve/reject can now derive signed
-response context from directly looked-up recorded approval-request messages.
-Host status now exposes
+capacity summaries when available. Studio assignment timeline drilldowns now
+also include runtime state, runner liveness/heartbeat, source-history counts,
+replay counts, and command receipt counts for the selected assignment. CLI
+approve/reject can now derive signed response context from directly looked-up
+recorded approval-request messages. Host status now exposes
 first federated control/observe transport health and both CLI and Studio render
 that Host-owned read model. Host status now also includes per-relay
 control/observe diagnostic rows, and Studio renders those rows in the Host
-Status panel. Richer assignment detail remains follow-up work, while old
-public direct Host approval/review mutation paths have already been removed by
-the direct API removal cleanup.
+Status panel. Direct deep links from assignment drilldowns to related runtime,
+runner, source-history, and command receipt panels remain follow-up work, while
+old public direct Host approval/review mutation paths have already been
+removed by the direct API removal cleanup.
 
 CLI also now exposes `entangle runners join-config` to write Host-derived,
 schema-validated generic runner join configs without embedding secrets.
@@ -756,9 +760,10 @@ inspect per-assignment timelines, and Studio shows grouped receipt summaries
 under projected assignment rows. CLI can now list command receipts directly
 from Host projection when operators need filtered command closure without
 reading the full projection JSON. Studio can now open a selected assignment
-timeline in the Federation panel through the same Host endpoint. A richer
-assignment detail page that joins transport diagnostics, runtime status, and
-source-history outcomes remains follow-up work.
+timeline in the Federation panel through the same Host endpoint and render a
+compact operational summary for that assignment. Direct deep links from the
+assignment detail to related runtime, runner, source-history, and command
+receipt panels remain follow-up work.
 
 ### Slice 13: Product Naming Migration
 

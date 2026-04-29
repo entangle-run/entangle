@@ -7,6 +7,7 @@ import type {
   UserNodeIdentityRecord
 } from "@entangle/types";
 import {
+  buildAssignmentOperationalDetailsForStudio,
   buildUserNodeRuntimeSummaries,
   canRevokeRunnerProjection,
   canTrustRunnerProjection,
@@ -434,6 +435,23 @@ describe("Studio federation inspection helpers", () => {
     expect(formatRuntimeAssignmentTimelineDetail(sorted[2]!)).toContain(
       "command cmd-start-alpha"
     );
+  });
+
+  it("builds assignment operational detail from projection and runner registry", () => {
+    expect(
+      buildAssignmentOperationalDetailsForStudio({
+        assignment: projection.assignments[0]!,
+        projection,
+        runnerRegistryEntry
+      })
+    ).toEqual([
+      "runtime running / desired running",
+      "runner liveness online",
+      "runner heartbeat 2026-04-26T12:03:00.000Z",
+      "source histories 0",
+      "history replays 0",
+      "command receipts 1"
+    ]);
   });
 
   it("sorts and formats runtime projections", () => {

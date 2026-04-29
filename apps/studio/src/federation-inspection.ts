@@ -44,6 +44,12 @@ export type UserNodeRuntimeSummary = {
   unreadCount: number;
 };
 
+export type AssignmentOperationalDetailInput = {
+  assignment: AssignmentProjectionRecord;
+  projection: HostProjectionSnapshot;
+  runnerRegistryEntry?: RunnerRegistryEntry;
+};
+
 export function summarizeFederationProjection(
   projection: HostProjectionSnapshot | null
 ): FederationProjectionSummary {
@@ -251,6 +257,43 @@ export function summarizeAssignmentCommandReceiptsForStudio(input: {
     latest.receiptStatus,
     `at ${latest.observedAt}`
   ].join(" · ");
+}
+
+export function buildAssignmentOperationalDetailsForStudio(
+  input: AssignmentOperationalDetailInput
+): string[] {
+  const runtime = input.projection.runtimes.find(
+    (candidate) =>
+      candidate.assignmentId === input.assignment.assignmentId ||
+      (candidate.nodeId === input.assignment.nodeId &&
+        candidate.runnerId === input.assignment.runnerId)
+  );
+  const sourceHistoryCount = input.projection.sourceHistoryRefs.filter(
+    (sourceHistory) =>
+      sourceHistory.nodeId === input.assignment.nodeId &&
+      sourceHistory.runnerId === input.assignment.runnerId
+  ).length;
+  const replayCount = input.projection.sourceHistoryReplays.filter(
+    (replay) =>
+      replay.nodeId === input.assignment.nodeId &&
+      replay.runnerId === input.assignment.runnerId
+  ).length;
+  const commandReceiptCount = input.projection.runtimeCommandReceipts.filter(
+    (receipt) => receipt.assignmentId === input.assignment.assignmentId
+  ).length;
+  const runnerLiveness = input.runnerRegistryEntry?.liveness;
+  const runnerHeartbeatAt = input.runnerRegistryEntry?.heartbeat?.lastHeartbeatAt;
+
+  return [
+    runtime
+      ? `runtime ${runtime.observedState} / desired ${runtime.desiredState}`
+      : "runtime not observed",
+    runnerLiveness ? `runner liveness ${runnerLiveness}` : undefined,
+    runnerHeartbeatAt ? `runner heartbeat ${runnerHeartbeatAt}` : undefined,
+    `source histories ${sourceHistoryCount}`,
+    `history replays ${replayCount}`,
+    `command receipts ${commandReceiptCount}`
+  ].filter((part): part is string => Boolean(part));
 }
 
 export function sortRuntimeAssignmentTimelineForStudio(

@@ -4817,3 +4817,13 @@ capacity summaries to the Federation panel.
 
 The projection remains the control summary, while registry detail stays a
 Host-owned read surface used for operator decision support.
+
+## [2026-04-29] implementation | Added Studio assignment operational detail
+
+Added `references/405-studio-assignment-operational-detail-slice.md`. Studio
+assignment timeline drilldowns now include compact operational detail for the
+selected assignment: runtime observed/desired state, runner liveness and
+heartbeat, source-history count, replay count, and command receipt count.
+
+This keeps assignment drilldown useful as an admin surface while still joining
+only Host projection and runner-registry read models at render time.

@@ -497,7 +497,8 @@ This repository currently contains:
   Runtime state, runner placement, User Client links, conversation counts,
   active counts, unread counts, pending approval counts, and first-pass
   runner trust/revoke plus liveness/capability detail and assignment
-  offer/revoke controls without turning Studio into the user chat client;
+  offer/revoke/timeline operational detail controls without turning Studio
+  into the user chat client;
 - a safer package scaffold flow where `entangle package init` exposes package
   name, package id, node kind, and explicit `--force` overwrite controls over
   the shared scaffold utility;

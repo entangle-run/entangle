@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
+[405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -162,6 +162,9 @@ Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
 engine-kind, and capacity summaries when available.
+Studio assignment timeline drilldowns now also render runtime state, runner
+liveness/heartbeat, source-history counts, replay counts, and command receipt
+counts for the selected assignment.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -577,6 +580,7 @@ files are the active federated redesign pack.
 403. [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 404. [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 405. [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
+406. [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 
 ## Role of this corpus
 
