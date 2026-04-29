@@ -176,6 +176,21 @@ try {
     mustContain: "[dry-run] would write runner env/start scripts"
   });
 
+  runStep("proof kit custom-engine dry-run", [
+    "scripts/federated-distributed-proof-kit.mjs",
+    "--dry-run",
+    "--output",
+    "/tmp/entangle-distributed-proof-ci-custom-engine",
+    "--host-url",
+    "http://host.example:7071",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--agent-engine-kind",
+    "external_process"
+  ], {
+    mustContain: "'external_process'"
+  });
+
   const selfTestJson = runStep("proof verifier self-test", [
     "scripts/federated-distributed-proof-verify.mjs",
     "--self-test",

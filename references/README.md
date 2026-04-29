@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[424-distributed-proof-agent-engine-selection-slice.md](424-distributed-proof-agent-engine-selection-slice.md)
+[425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -192,12 +192,13 @@ Authority, runner trust/liveness/runtime-kind and agent-engine capabilities,
 assignments, projection, User Client URLs, optional conversation evidence,
 default `running` runtime observations, and distinct multi-user User Client
 URLs without reading Host or runner files; custom proof profiles can override
-the expected agent engine kind while OpenCode remains the default.
+the expected agent engine kind in both the verifier and generated proof kit
+while OpenCode remains the default.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure smoke over proof-kit help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicate User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
-plus an alternate expected-agent-engine success path, before an operator
+plus custom proof-kit and verifier agent-engine paths, before an operator
 attempts the real distributed proof.
 The root sequential `pnpm test` wrapper now also launches the runner suite with
 the same `--pool=threads` setting used by the runner package script, removing a
@@ -638,6 +639,13 @@ files are the active federated redesign pack.
 417. [416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
 418. [417-user-client-wiki-target-visibility-slice.md](417-user-client-wiki-target-visibility-slice.md)
 419. [418-user-client-wiki-target-process-proof-slice.md](418-user-client-wiki-target-process-proof-slice.md)
+420. [419-distributed-proof-runtime-state-verifier-slice.md](419-distributed-proof-runtime-state-verifier-slice.md)
+421. [420-root-runner-test-pool-alignment-slice.md](420-root-runner-test-pool-alignment-slice.md)
+422. [421-distributed-proof-user-client-distinctness-slice.md](421-distributed-proof-user-client-distinctness-slice.md)
+423. [422-distributed-proof-runtime-kind-capability-slice.md](422-distributed-proof-runtime-kind-capability-slice.md)
+424. [423-distributed-proof-agent-engine-capability-slice.md](423-distributed-proof-agent-engine-capability-slice.md)
+425. [424-distributed-proof-agent-engine-selection-slice.md](424-distributed-proof-agent-engine-selection-slice.md)
+426. [425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 
 ## Role of this corpus
 

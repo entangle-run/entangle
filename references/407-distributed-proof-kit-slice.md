@@ -15,7 +15,7 @@ not share a filesystem.
 Operators should be able to start Host, relay, and git backends on reachable
 infrastructure, then generate a portable three-runner proof kit:
 
-- one OpenCode-capable agent runner;
+- one agent runner with an engine capability that defaults to `opencode_server`;
 - one primary User Node Human Interface Runtime runner;
 - one reviewer User Node Human Interface Runtime runner;
 - runner join configs derived from the live Host authority and relay settings;
@@ -45,10 +45,12 @@ managed-runner proofs.
 - Generate three runner directories with Host-derived `runner-join.json`
   files, runner env files, and executable `start.sh` scripts.
 - Generate an operator directory with Host env and executable commands for
-  trust, assignment, user message publication, client discovery, and
-  projection inspection.
+  trust, assignment, user message publication, client discovery, projection
+  inspection, and distributed proof verification.
 - Support explicit reachable Host URL, relay URLs, runner ids, graph node ids,
   heartbeat interval, and controlled Host token writing.
+- Support explicit agent engine kind selection for the generated agent runner,
+  while defaulting to `opencode_server`.
 - Add dry-run and help modes for safe operator review.
 - Document that the proof succeeds only if runner directories can be copied to
   separate machines with Entangle checkouts and no Host filesystem access.
@@ -98,3 +100,8 @@ provision those machines automatically.
 Further supported by `411-distributed-proof-tool-ci-smoke-slice.md`: CI can now
 exercise proof-kit help/dry-run paths and verifier self-test JSON before a real
 distributed proof is attempted.
+
+Further supported by `425-distributed-proof-kit-agent-engine-selection-slice.md`:
+the proof kit can now generate a non-default agent-engine runner capability and
+the generated operator script runs the distributed proof verifier with the same
+expected engine kind.

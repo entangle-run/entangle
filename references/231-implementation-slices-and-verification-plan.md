@@ -849,6 +849,7 @@ Implementation records:
 - [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
 - [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 - [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
+- [425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 
 Current status:
 
@@ -1037,7 +1038,10 @@ Current status:
 - `pnpm ops:distributed-proof-kit` now generates a three-runner proof kit for
   a reachable Host/relay/git topology, including Host-derived runner join
   configs, runner-local env/start scripts, and operator trust/assignment/User
-  Node message commands intended to be copied onto separate machines;
+  Node message commands intended to be copied onto separate machines; the kit
+  defaults the agent runner to `opencode_server`, accepts
+  `--agent-engine-kind <kind>` for custom proof profiles, and writes an
+  operator verifier command using the same expected engine kind;
 - `pnpm ops:distributed-proof-verify` now checks an already-running
   distributed proof through Host HTTP APIs and optional User Client health
   endpoints, covering Host Authority, runner trust/liveness, assignment
@@ -1053,7 +1057,8 @@ Current status:
   or agent-engine rejection, making the distributed proof tooling CI-checkable
   before the real multi-machine proof is attempted; the same smoke also proves
   a non-default expected agent engine can pass when the registry fixture
-  advertises it;
+  advertises it and that the proof kit can generate a matching custom-engine
+  runner profile;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

@@ -19,6 +19,7 @@ multi-machine proof.
 - verifier help output;
 - token-protected proof kit dry-run command generation;
 - no-token proof kit dry-run command generation;
+- custom-agent-engine proof kit dry-run command generation;
 - verifier JSON self-test with required conversation and User Client health
   checks enabled;
 - verifier JSON self-test failure when runtime observations are non-running by
@@ -74,6 +75,8 @@ tools.
 - The script runs two proof-kit dry-run paths:
   - token-protected Host generation;
   - no-token Host generation.
+- The script runs a custom-agent-engine proof-kit dry-run and requires the
+  generated command stream to include that engine kind.
 - The script runs verifier self-test with JSON output, User Client health
   checks, and required conversation checks, then parses the JSON and fails if
   any embedded check fails.

@@ -5092,3 +5092,15 @@ different expected agent engine capability without editing the verifier.
 
 The distributed proof tool smoke now includes an alternate expected-agent-engine
 self-test path and requires that fixture to pass.
+
+## [2026-04-29] tooling | Parameterized proof kit agent engine
+
+Added `references/425-distributed-proof-kit-agent-engine-selection-slice.md`.
+`pnpm ops:distributed-proof-kit` now accepts `--agent-engine-kind <kind>`;
+the default remains `opencode_server`, but generated agent runner join configs
+can advertise a custom engine capability.
+
+Generated proof-kit operator commands now also run
+`pnpm ops:distributed-proof-verify` with the same expected agent engine kind,
+and the distributed proof tool smoke includes a custom-engine proof-kit
+dry-run.

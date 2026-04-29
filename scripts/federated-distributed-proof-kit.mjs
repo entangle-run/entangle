@@ -30,6 +30,13 @@ const runnerSecretEnvVar =
   readFlagValue("--runner-secret-env-var") ?? "ENTANGLE_RUNNER_NOSTR_SECRET_KEY";
 const relayUrls = splitRepeatedValues(readFlagValues("--relay-url"));
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
+const requestedAgentEngineKinds = splitRepeatedValues(
+  readFlagValues("--agent-engine-kind")
+);
+const proofAgentEngineKinds =
+  requestedAgentEngineKinds.length > 0
+    ? requestedAgentEngineKinds
+    : ["opencode_server"];
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -40,7 +47,7 @@ const reviewerUserNodeId = readFlagValue("--reviewer-user-node") ?? "reviewer";
 
 const runnerProfiles = [
   {
-    agentEngineKinds: ["opencode_server"],
+    agentEngineKinds: proofAgentEngineKinds,
     assignmentId: `assignment-${agentRunnerId}`,
     directory: "agent-runner",
     id: agentRunnerId,
@@ -90,6 +97,7 @@ Options:
   --relay-url <url>                 Relay URL. May be repeated or comma-separated. Defaults to Host status relays.
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
+  --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
   --agent-runner <id>               Agent runner id. Default: distributed-agent-runner
   --user-runner <id>                Primary User Node runner id. Default: distributed-user-runner
   --reviewer-user-runner <id>       Reviewer User Node runner id. Default: distributed-reviewer-user-runner
@@ -337,6 +345,7 @@ function buildOperatorCommandsScript() {
     "run_cli user-nodes clients --summary",
     `run_cli user-nodes message ${shellQuote(userNodeId)} ${shellQuote(agentNodeId)} ${shellQuote("Implement a small change and report what you changed.")} --message-type task.request --compact`,
     "run_cli host projection --summary",
+    `pnpm ops:distributed-proof-verify --host-url "$ENTANGLE_HOST_URL" --check-user-client-health --require-conversation --agent-engine-kind ${shellQuote(proofAgentEngineKinds[0])}`,
     ""
   );
 
@@ -347,7 +356,7 @@ function buildReadme() {
   const runnerRows = runnerProfiles
     .map(
       (profile) =>
-        `| ${profile.directory} | ${profile.id} | ${profile.runtimeKinds.join(", ")} | ${profile.nodeId} |`
+        `| ${profile.directory} | ${profile.id} | ${profile.runtimeKinds.join(", ")} | ${profile.agentEngineKinds.join(", ") || "none"} | ${profile.nodeId} |`
     )
     .join("\n");
   const relayText = relayUrls.length > 0 ? relayUrls.join(", ") : "Host status relay defaults";
@@ -364,8 +373,8 @@ and network access to the Host API and relay.
 Host API: ${hostUrl}
 Relay URLs: ${relayText}
 
-| Directory | Runner id | Runtime kinds | Graph node to assign |
-| --- | --- | --- | --- |
+| Directory | Runner id | Runtime kinds | Agent engine kinds | Graph node to assign |
+| --- | --- | --- | --- | --- |
 ${runnerRows}
 
 ## Machine Steps
@@ -380,11 +389,11 @@ ${runnerRows}
 4. After the runners publish \`runner.hello\`, run
    \`operator/commands.sh\` from the Host/operator machine to trust runners,
    offer assignments, list User Client URLs, send a signed User Node task, and
-   inspect Host projection.
+   inspect Host projection and run the distributed proof verifier.
 
 ## Files
 
-- \`agent-runner/runner-join.json\`: generic OpenCode-capable agent runner join config.
+- \`agent-runner/runner-join.json\`: generic agent runner join config for the configured engine kind(s).
 - \`user-runner/runner-join.json\`: primary User Node Human Interface Runtime join config.
 - \`reviewer-user-runner/runner-join.json\`: reviewer User Node Human Interface Runtime join config.
 - \`*/runner.env\`: runner-local Nostr secret and Host token placeholder or value.

@@ -221,13 +221,16 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-kit \
   --output .entangle/distributed-proof-kit
 ```
 
-The kit writes one OpenCode-capable agent runner directory, two User Node
-runner directories, and operator commands for trust, assignment, User Client
-discovery, signed User Node task publication, and projection inspection. Copy
-runner directories to machines with Entangle checkouts; the proof is valid only
-when the runners do not rely on Host filesystem access and report running
-runtime observations, expected runtime-kind capabilities, expected agent-engine
-capabilities, and distinct User Client URLs back to Host projection.
+The kit writes one agent runner directory, two User Node runner directories,
+and operator commands for trust, assignment, User Client discovery, signed User
+Node task publication, projection inspection, and distributed proof
+verification. The agent runner defaults to `opencode_server`; pass
+`--agent-engine-kind <kind>` to generate a custom agent-engine capability and a
+matching verifier command. Copy runner directories to machines with Entangle
+checkouts; the proof is valid only when the runners do not rely on Host
+filesystem access and report running runtime observations, expected
+runtime-kind capabilities, expected agent-engine capabilities, and distinct
+User Client URLs back to Host projection.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP

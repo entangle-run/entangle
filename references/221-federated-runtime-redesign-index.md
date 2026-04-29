@@ -225,6 +225,7 @@ same-machine slice records.
 - [422-distributed-proof-runtime-kind-capability-slice.md](422-distributed-proof-runtime-kind-capability-slice.md)
 - [423-distributed-proof-agent-engine-capability-slice.md](423-distributed-proof-agent-engine-capability-slice.md)
 - [424-distributed-proof-agent-engine-selection-slice.md](424-distributed-proof-agent-engine-selection-slice.md)
+- [425-distributed-proof-kit-agent-engine-selection-slice.md](425-distributed-proof-kit-agent-engine-selection-slice.md)
 
 ## Audited Scope
 
@@ -803,7 +804,8 @@ production RBAC. `pnpm ops:smoke-distributed-proof-tools` now gives CI a
 deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
 self-test JSON, including default rejection of non-running runtime
 observations, duplicate User Client URLs, and wrong runner runtime-kind
-or agent-engine capabilities, and it can validate alternate expected agent
-engine kinds. The remaining blocking implementation areas are richer
+or agent-engine capabilities. The proof kit and verifier can now be
+parameterized with the same expected agent engine kind, while keeping OpenCode
+as the default. The remaining blocking implementation areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.

@@ -13,8 +13,8 @@ other engine adapters once those adapters are wired.
 ## Target Model
 
 The verifier should keep OpenCode as the default proof engine while allowing
-operators and future proof-kit profiles to specify another expected agent
-engine kind explicitly.
+operators and proof-kit profiles to specify another expected agent engine kind
+explicitly.
 
 ## Impacted Modules And Files
 
@@ -72,10 +72,12 @@ engine kind.
   the observed registry projection.
 - Risk: proof kit and verifier defaults drift.
   Mitigation: both defaults remain OpenCode-oriented, and the smoke covers the
-  default plus an alternate self-test path.
+  default plus an alternate self-test path. Follow-up
+  `425-distributed-proof-kit-agent-engine-selection-slice.md` also makes the
+  proof kit emit matching custom-engine runner configs and verifier commands.
 
 ## Open Questions
 
-- The proof kit itself still has a fixed three-runner profile. A later slice
-  can add `--agent-engine-kind` there too, so generated join configs and
-  verifier commands stay parameterized together.
+- The proof kit can now select the agent engine kind for its fixed
+  three-runner topology. A later proof kit may support multiple agent runners
+  with different engines in the same generated proof.
