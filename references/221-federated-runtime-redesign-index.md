@@ -181,6 +181,7 @@ same-machine slice records.
 - [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
+- [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 
 ## Audited Scope
 
@@ -665,7 +666,10 @@ details. Runner-observed replay outcomes now project into typed
 `sourceHistoryReplays` with Host API, host-client, CLI, and Studio summary
 surfaces. Explicit wiki publication now has Host API, host-client, CLI, and
 Studio request surfaces over the same control boundary, including optional git
-target selectors for non-primary repositories. Per-assignment
+target selectors for non-primary repositories. The process-runner smoke now
+verifies both default primary wiki publication and explicit non-primary wiki
+target publication over the live relay and real joined runner path.
+Per-assignment
 timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection. Public deep
 runtime reads now avoid Host-local runtime files for accepted federated

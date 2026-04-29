@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
+[381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -122,7 +122,9 @@ policy-gated publication to non-primary repositories while keeping the git push
 inside the assigned runner boundary. Runner-owned wiki publication commands can
 now carry the same generic git target selector, allowing operator-requested
 publication to resolved non-primary repositories without giving Host runner
-filesystem access.
+filesystem access. The process-runner smoke now verifies targeted wiki
+publication over a live relay with a real joined runner and sibling git
+repository.
 Runtime-context runner startup and the Human Interface Runtime now also support
 mounted-file identity secret delivery, matching the shared secret-delivery
 contract and generic runner join path.
@@ -517,6 +519,7 @@ files are the active federated redesign pack.
 379. [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
 380. [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 381. [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
+382. [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 
 ## Role of this corpus
 

@@ -112,7 +112,7 @@ Key behavioral coverage:
 - host-client and Studio helper tests serialize the new request shape.
 - the process smoke still proves the Host-signed wiki publication command over
   a live relay with separate Host/runner/User Node process state roots and
-  verifies the primary git branch head.
+  verifies both primary and non-primary git branch heads.
 
 Added-line local-assumption audit used the standard project regex for obsolete
 local product labels, local runtime profile assumptions, Host/runner filesystem
@@ -149,9 +149,11 @@ beyond preserving primary-target defaults.
   Mitigation: this path is currently Host-authority/operator controlled; a
   future policy slice should decide whether participant-triggered wiki
   promotion needs signed User Node approval resources.
-- Risk: process smoke still proves only primary wiki publication.
-  Mitigation: runner unit coverage proves non-primary git publication, and the
-  process smoke remains the primary proof for the Host-signed command boundary.
+- Risk: process smoke coverage could accidentally validate the primary artifact
+  for a non-primary request.
+  Mitigation: `381-process-smoke-wiki-target-publication-slice.md` filters the
+  projected artifact by requested repository name and verifies the sibling bare
+  git repository branch head.
 
 ## Open Questions
 
@@ -160,5 +162,5 @@ beyond preserving primary-target defaults.
 - Should a published node wiki become a long-lived remote memory repository
   with pull/merge semantics, or remain a runner-local repository that can
   publish snapshots to selected artifact repositories?
-- Should the distributed smoke add a non-primary wiki target case once the
-  multi-machine demo profile is automated?
+- Should the distributed smoke also cover non-primary wiki target publication
+  once the multi-machine demo profile is automated?

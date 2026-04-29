@@ -4548,3 +4548,14 @@ schema, Host, host-client, runner, Studio, global typecheck, and global lint
 gates passed for the touched scope. The federated process-runner smoke also
 passed over the live local relay, including Host-signed wiki publication on the
 primary target, two User Node runners, and filesystem isolation.
+
+## [2026-04-29] verification | Added process smoke coverage for targeted wiki publication
+
+Added `references/381-process-smoke-wiki-target-publication-slice.md`. The
+process-runner smoke now creates a sibling git repository, sends a second
+Host-signed `runtime.wiki.publish` request with `target.repositoryName`, waits
+for projected `artifact.ref` evidence for that repository, and verifies the
+sibling bare git branch head.
+
+This turns non-primary wiki publication from focused unit/contract coverage
+into a process-boundary proof over the live relay and real joined runner path.

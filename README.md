@@ -581,14 +581,14 @@ This repository currently contains:
   Client JSON API, exercises a deterministic OpenCode-adapter task turn,
   verifies projected turn/approval/session read APIs, requests runner-owned
   wiki publication through Host-signed control and verifies the projected git
-  artifact plus primary git branch head, with non-primary wiki target selection
-  covered by focused runner/contract tests, publishes from a second distinct User
-  Node identity, records a synthetic inbound agent message
-  through the running User Node, inspects the selected conversation through the
-  User Client JSON API, submits a signed User Node approval response through
-  the same JSON API, verifies Host projection, and now protects public deep
-  runtime reads from stale Host-local runtime files for accepted federated
-  assignments;
+  artifact plus primary git branch head, then requests explicit non-primary
+  wiki target publication and verifies the sibling git branch head, publishes
+  from a second distinct User Node identity, records a synthetic inbound agent
+  message through the running User Node, inspects the selected conversation
+  through the User Client JSON API, submits a signed User Node approval
+  response through the same JSON API, verifies Host projection, and now
+  protects public deep runtime reads from stale Host-local runtime files for
+  accepted federated assignments;
 - host package lint now covers TypeScript host smoke scripts, including the
   process-runner smoke that exercises the fastest federated runtime proof;
 - a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`

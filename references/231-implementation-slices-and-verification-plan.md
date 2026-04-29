@@ -290,6 +290,7 @@ Implementation record:
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
+- [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 
 Verification:
 
@@ -402,7 +403,9 @@ Current status:
 - `ops:smoke-federated-process-runner` now verifies that same wiki publication
   command with a real Host process, joined runner process, relay, and primary
   git backend by checking projected `artifact.ref` evidence and the remote git
-  branch head;
+  branch head; it also verifies a second explicit non-primary wiki publication
+  target through the same Host-signed control path and checks the sibling git
+  backend branch head;
 - public deep runtime read paths now quarantine Host filesystem reads for
   accepted federated assignments, so artifacts, memory, approvals,
   source-change candidates, source history, and turns are served from
@@ -596,6 +599,7 @@ Implementation record:
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
+- [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 
 Verification:
 
@@ -752,7 +756,9 @@ Current status:
   runner acceptance and lifecycle receipts;
 - the same process proof now requests runner-owned wiki publication through
   Host-signed `runtime.wiki.publish`, observes the projected git
-  `artifact.ref`, and verifies the primary git backend branch head;
+  `artifact.ref`, verifies the primary git backend branch head, then requests
+  explicit non-primary wiki target publication and verifies the sibling git
+  backend branch head;
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;

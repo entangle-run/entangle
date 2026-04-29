@@ -137,7 +137,9 @@ The most accurate current description is:
   runner syncs and publishes its wiki repository from runner-owned state to the
   primary git target by default or to an explicit resolved git target selector
   and emits `artifact.ref` evidence, while CLI and Studio request the same Host
-  control path;
+  control path; the process-runner smoke now verifies both primary and
+  non-primary wiki target publication over the live relay and joined runner
+  path;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -367,10 +369,10 @@ The repository now also contains the first real implementation baseline:
   or to an explicit resolved git target selector and emitting signed
   `artifact.ref` evidence, and the process-boundary smoke now verifies that
   request with a real joined runner by checking Host projection plus the
-  primary git branch head. Public deep runtime reads for accepted federated
-  assignments now ignore Host-local runtime files and use projected runner
-  evidence instead, while non-federated adapter reads remain available. With
-  bounded engine-request summaries on executable turns so CLI and Studio turn
+  primary and non-primary git branch heads. Public deep runtime reads for
+  accepted federated assignments now ignore Host-local runtime files and use
+  projected runner evidence instead, while non-federated adapter reads remain
+  available. With bounded engine-request summaries on executable turns so CLI and Studio turn
   inspection can show prompt part counts, aggregate prompt size, memory,
   artifact, and tool counts, execution limits, and peer-route inclusion without
   exposing raw prompt text, runtime-local paths, or engine-specific payloads,

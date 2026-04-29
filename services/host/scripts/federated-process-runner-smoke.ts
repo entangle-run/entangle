@@ -603,7 +603,7 @@ function assertSignerMatchesFromPubkey(
 function readGitArtifactIdentity(
   ref: unknown,
   label: string
-): { artifactId: string; commit: string } {
+): { artifactId: string; commit: string; repositoryName: string } {
   if (typeof ref !== "object" || ref === null) {
     throw new Error(`${label} must be an artifact object.`);
   }
@@ -626,15 +626,23 @@ function readGitArtifactIdentity(
     throw new Error(`${label} must include a git locator object.`);
   }
 
-  const locator = artifact.locator as { commit?: unknown };
+  const locator = artifact.locator as {
+    commit?: unknown;
+    repositoryName?: unknown;
+  };
 
   if (typeof locator.commit !== "string") {
     throw new Error(`${label} must include a git commit.`);
   }
 
+  if (typeof locator.repositoryName !== "string") {
+    throw new Error(`${label} must include a git repository name.`);
+  }
+
   return {
     artifactId: artifact.artifactId,
-    commit: locator.commit
+    commit: locator.commit,
+    repositoryName: locator.repositoryName
   };
 }
 
@@ -734,8 +742,16 @@ async function main(): Promise<void> {
     "team-alpha",
     `${graphId}.git`
   );
+  const nonPrimaryWikiRepositoryName = `${graphId}-wiki-public`;
+  const nonPrimaryWikiRepositoryPath = path.join(
+    tempRoot,
+    "git",
+    "team-alpha",
+    `${nonPrimaryWikiRepositoryName}.git`
+  );
   await mkdir(path.dirname(primaryGitRepositoryPath), { recursive: true });
   runGit(["init", "--bare", primaryGitRepositoryPath]);
+  runGit(["init", "--bare", nonPrimaryWikiRepositoryPath]);
   printPass("git-backend", gitRemoteBase);
 
   let server: Awaited<ReturnType<typeof buildHostServer>> | undefined;
@@ -2279,6 +2295,94 @@ async function main(): Promise<void> {
       "projected-runtime-wiki-publication",
       `artifact=${projectedWikiArtifact.artifactId}; ` +
         `commit=${projectedWikiCommit.slice(0, 12)}`
+    );
+
+    const targetedWikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(
+      await hostRequest({
+        baseUrl: hostBaseUrl,
+        body: {
+          reason:
+            "Process runner smoke requested runner-owned wiki publication to a non-primary target.",
+          requestedBy: "process-runner-smoke",
+          retryFailedPublication: false,
+          target: {
+            repositoryName: nonPrimaryWikiRepositoryName
+          }
+        },
+        method: "POST",
+        path: "/v1/runtimes/builder/wiki-repository/publish"
+      })
+    );
+    assertCondition(
+      targetedWikiPublicationRequest.status === "requested" &&
+        targetedWikiPublicationRequest.assignmentId === assignment.assignmentId,
+      "Targeted wiki publication request must be accepted as a federated runner command."
+    );
+    printPass(
+      "targeted-wiki-publication-request",
+      `command=${targetedWikiPublicationRequest.commandId}; ` +
+        `repository=${nonPrimaryWikiRepositoryName}`
+    );
+
+    const projectedTargetedWikiPublicationArtifact = await waitFor(
+      "Host projected runner-owned targeted wiki publication artifact",
+      async () => {
+        const artifactList = runtimeArtifactListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/artifacts"
+          })
+        );
+        const artifact = artifactList.artifacts.find(
+          (entry) =>
+            entry.ref.backend === "git" &&
+            entry.ref.artifactKind === "knowledge_summary" &&
+            entry.ref.createdByNodeId === "builder" &&
+            entry.ref.locator.branch === "builder/wiki-repository" &&
+            entry.ref.locator.repositoryName === nonPrimaryWikiRepositoryName &&
+            entry.ref.status === "published"
+        );
+
+        if (!artifact) {
+          return undefined;
+        }
+
+        const inspection = runtimeArtifactInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${artifact.ref.artifactId}`
+          })
+        );
+
+        return inspection.artifact.ref.status === "published"
+          ? inspection.artifact
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    const projectedTargetedWikiArtifact = readGitArtifactIdentity(
+      projectedTargetedWikiPublicationArtifact.ref,
+      "Targeted published wiki artifact"
+    );
+    const targetedWikiRemoteHead = runGit([
+      "--git-dir",
+      nonPrimaryWikiRepositoryPath,
+      "rev-parse",
+      "refs/heads/builder/wiki-repository"
+    ]);
+    assertCondition(
+      targetedWikiRemoteHead === projectedTargetedWikiArtifact.commit,
+      "Targeted published wiki artifact commit must match the non-primary remote wiki branch head."
+    );
+    assertCondition(
+      projectedTargetedWikiArtifact.repositoryName === nonPrimaryWikiRepositoryName,
+      "Targeted wiki artifact must identify the requested non-primary repository."
+    );
+    printPass(
+      "targeted-runtime-wiki-publication",
+      `artifact=${projectedTargetedWikiArtifact.artifactId}; ` +
+        `repository=${projectedTargetedWikiArtifact.repositoryName}; ` +
+        `commit=${projectedTargetedWikiArtifact.commit.slice(0, 12)}`
     );
 
     const projectedBuilderApproval = await waitFor(

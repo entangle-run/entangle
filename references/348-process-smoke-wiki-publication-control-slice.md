@@ -23,10 +23,8 @@ with a real Host process, joined runner process, relay, and git backend.
 The process smoke must prove that explicit wiki publication works the same way
 when Host and runner are separate OS processes with separate state roots. The
 smoke should verify request acceptance, runner-produced projection evidence,
-and the remote git branch head. This smoke currently proves the default
-primary-target path; non-primary target selection is covered by focused runner,
-contract, Host, and Studio tests in
-`380-runner-owned-wiki-target-publication-slice.md`.
+and the remote git branch head. `381-process-smoke-wiki-target-publication-slice.md`
+extends the same process proof to an explicit non-primary target selector.
 
 ## Impacted Modules/Files
 
@@ -49,6 +47,9 @@ contract, Host, and Studio tests in
 - Inspect the projected artifact through Host API.
 - Verify the bare primary git backend has `refs/heads/builder/wiki-repository`
   at the same commit carried by the projected artifact ref.
+- Verify an explicit non-primary wiki target publication request produces a
+  projected `knowledge_summary` artifact for the requested repository and a
+  matching sibling git backend branch head.
 
 ## Tests Required
 
@@ -89,5 +90,5 @@ artifact record.
 - Should Host projection later preserve selected publication metadata from
   runner `artifact.ref` observations, or should publication details remain a
   runner-owned artifact-record concern?
-- Should distributed three-machine smoke also verify wiki publication once the
-  manual demo profile is automated?
+- Should distributed three-machine smoke also verify primary and non-primary
+  wiki publication once the manual demo profile is automated?
