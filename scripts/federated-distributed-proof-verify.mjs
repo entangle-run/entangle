@@ -2,6 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
+import { normalizeDistributedProofProfile } from "./distributed-proof-profile.mjs";
 
 const rawArgs = process.argv.slice(2);
 const help = hasFlag("--help") || hasFlag("-h");
@@ -206,7 +207,9 @@ function readProofProfile(filePath) {
     throw new Error(`Proof profile '${filePath}' must contain a JSON object.`);
   }
 
-  return parsed;
+  return normalizeDistributedProofProfile(parsed, {
+    sourceLabel: `Proof profile '${filePath}'`
+  });
 }
 
 function readProofProfileString(key) {

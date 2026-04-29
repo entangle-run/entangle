@@ -139,6 +139,10 @@ try {
     "--check",
     "scripts/federated-distributed-proof-verify.mjs"
   ]);
+  runStep("syntax check proof profile contract", [
+    "--check",
+    "scripts/distributed-proof-profile.mjs"
+  ]);
 
   runStep("proof kit help", [
     "scripts/federated-distributed-proof-kit.mjs",
@@ -277,6 +281,62 @@ try {
       proofProfilePath
     ]);
     verifySelfTestJson(profileSelfTestJson);
+
+    writeFileSync(
+      proofProfilePath,
+      `${JSON.stringify({
+        hostUrl: "http://host.example:7071",
+        schemaVersion: 2
+      })}\n`,
+      "utf8"
+    );
+
+    runFailureStep(
+      "proof verifier invalid-profile-version self-test",
+      [
+        "scripts/federated-distributed-proof-verify.mjs",
+        "--self-test",
+        "--json",
+        "--profile",
+        proofProfilePath
+      ],
+      {
+        mustContain: "schemaVersion 1"
+      }
+    );
+
+    writeFileSync(
+      proofProfilePath,
+      `${JSON.stringify({
+        agentNodeId: "architect",
+        agentRunnerId: "proof-agent-runner",
+        assignments: [
+          {
+            assignmentId: "assignment-proof-agent-runner",
+            nodeId: "architect",
+            runnerId: "proof-agent-runner",
+            runtimeKinds: ["human_interface"]
+          }
+        ],
+        hostUrl: "http://host.example:7071",
+        schemaVersion: 1
+      })}\n`,
+      "utf8"
+    );
+
+    runFailureStep(
+      "proof verifier inconsistent-profile-assignment self-test",
+      [
+        "scripts/federated-distributed-proof-verify.mjs",
+        "--self-test",
+        "--json",
+        "--profile",
+        proofProfilePath
+      ],
+      {
+        mustContain: "agent assignment must include runtime kind 'agent_runner'"
+      }
+    );
   } finally {
     rmSync(proofProfileTempDir, { force: true, recursive: true });
   }

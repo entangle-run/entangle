@@ -228,6 +228,9 @@ verification. The agent runner defaults to `opencode_server`; pass
 `--agent-engine-kind <kind>` to generate a custom agent-engine capability and a
 matching verifier command. Custom runner and graph node ids are also carried
 into `operator/proof-profile.json`, which the generated verifier command reads.
+The kit validates that profile as a distributed-proof contract before writing
+it, and the verifier rejects malformed or internally inconsistent profiles
+before inspecting Host state.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected
@@ -267,10 +270,10 @@ pnpm ops:smoke-distributed-proof-tools
 That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
 JSON, including the default failure path for non-running runtime observations.
 It also checks that duplicated User Client URLs and wrong runner runtime-kind
-or agent-engine capabilities fail the multi-user proof, and that missing
-artifact evidence, missing relay URLs, file-backed git services, or missing git
-service refs fail when explicitly required. It does not replace the real
-distributed proof above.
+or agent-engine capabilities fail the multi-user proof, that malformed proof
+profiles fail before Host inspection, and that missing artifact evidence,
+missing relay URLs, file-backed git services, or missing git service refs fail
+when explicitly required. It does not replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

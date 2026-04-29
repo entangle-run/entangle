@@ -1079,9 +1079,12 @@ Current status:
   a non-default expected agent engine can pass when the registry fixture
   advertises it and that the proof kit can generate a matching custom-engine
   runner profile plus a matching custom verifier profile, and that the verifier
-  can consume a generated-style proof profile manifest; it also proves that
-  missing artifact evidence, missing relay URLs, file-backed git services, and
-  missing git service refs fail when explicitly required;
+  can consume a generated-style proof profile manifest; the profile manifest is
+  now also a typed package contract and script-validated ops contract, and the
+  smoke proves invalid schema versions and inconsistent assignment runtime
+  kinds fail before Host inspection; it also proves that missing artifact
+  evidence, missing relay URLs, file-backed git services, and missing git
+  service refs fail when explicitly required;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

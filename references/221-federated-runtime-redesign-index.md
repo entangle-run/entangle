@@ -233,6 +233,7 @@ same-machine slice records.
 - [430-distributed-proof-git-backend-health-verifier-slice.md](430-distributed-proof-git-backend-health-verifier-slice.md)
 - [431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
 - [432-operator-audit-event-presentation-slice.md](432-operator-audit-event-presentation-slice.md)
+- [433-distributed-proof-profile-contract-slice.md](433-distributed-proof-profile-contract-slice.md)
 
 ## Audited Scope
 

@@ -6,6 +6,7 @@ import {
   artifactRecordSchema,
   classifyRuntimeReconciliation,
   deploymentResourceCatalogSchema,
+  distributedProofProfileSchema,
   edgeCreateRequestSchema,
   entangleA2AApprovalRequestMetadataSchema,
   entangleA2AApprovalResponseMetadataSchema,
@@ -4658,6 +4659,85 @@ describe("agent runtime contracts", () => {
       engineProfileRef: "opencode-default",
       defaultAgent: "build"
     });
+  });
+});
+
+describe("distributed proof profile contracts", () => {
+  it("accepts a generated three-runner distributed proof profile", () => {
+    const result = distributedProofProfileSchema.parse({
+      agentEngineKind: "opencode_server",
+      agentEngineKinds: ["opencode_server"],
+      agentNodeId: "builder",
+      agentRunnerId: "distributed-agent-runner",
+      assignments: [
+        {
+          assignmentId: "assignment-distributed-agent-runner",
+          nodeId: "builder",
+          runnerId: "distributed-agent-runner",
+          runtimeKinds: ["agent_runner"]
+        },
+        {
+          assignmentId: "assignment-distributed-user-runner",
+          nodeId: "user",
+          runnerId: "distributed-user-runner",
+          runtimeKinds: ["human_interface"]
+        },
+        {
+          assignmentId: "assignment-distributed-reviewer-user-runner",
+          nodeId: "reviewer",
+          runnerId: "distributed-reviewer-user-runner",
+          runtimeKinds: ["human_interface"]
+        }
+      ],
+      checkGitBackendHealth: true,
+      gitServiceRefs: ["gitea"],
+      hostUrl: "http://host.example:7071",
+      relayUrls: ["ws://relay.example:7777"],
+      schemaVersion: 1,
+      userNodeId: "user",
+      userRunnerId: "distributed-user-runner"
+    });
+
+    expect(result.agentEngineKind).toBe("opencode_server");
+    expect(result.assignments).toHaveLength(3);
+  });
+
+  it("rejects profiles whose primary engine is not advertised", () => {
+    expect(
+      distributedProofProfileSchema.safeParse({
+        agentEngineKind: "opencode_server",
+        agentEngineKinds: ["external_process"],
+        schemaVersion: 1
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts a primary engine override without an engine-kind list", () => {
+    const result = distributedProofProfileSchema.parse({
+      agentEngineKind: "external_process",
+      schemaVersion: 1
+    });
+
+    expect(result.agentEngineKind).toBe("external_process");
+    expect(result.agentEngineKinds).toEqual([]);
+  });
+
+  it("rejects inconsistent assignment runtime kinds", () => {
+    expect(
+      distributedProofProfileSchema.safeParse({
+        agentNodeId: "builder",
+        agentRunnerId: "distributed-agent-runner",
+        assignments: [
+          {
+            assignmentId: "assignment-distributed-agent-runner",
+            nodeId: "builder",
+            runnerId: "distributed-agent-runner",
+            runtimeKinds: ["human_interface"]
+          }
+        ],
+        schemaVersion: 1
+      }).success
+    ).toBe(false);
   });
 });
 

@@ -220,9 +220,12 @@ env/start scripts, and operator commands for trust, assignment, User Client
 discovery, signed User Node task publication, projection inspection, and
 distributed proof verification. Custom runner ids, graph node ids, and
 `--agent-engine-kind <kind>` are carried into
-`operator/proof-profile.json`, which the generated verifier command reads. Copy
-each runner directory to its intended machine and set `ENTANGLE_REPO_ROOT`
-there; no generated runner command should require Host filesystem access.
+`operator/proof-profile.json`, which the generated verifier command reads. The
+kit validates that profile before writing it, and the verifier rejects
+malformed or internally inconsistent profiles before inspecting Host state.
+Copy each runner directory to its intended machine and set
+`ENTANGLE_REPO_ROOT` there; no generated runner command should require Host
+filesystem access.
 
 After those runners are started and the operator commands have run, verify the
 proof through Host and User Client HTTP surfaces:

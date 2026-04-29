@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { normalizeDistributedProofProfile } from "./distributed-proof-profile.mjs";
 
 const rawArgs = process.argv.slice(2);
 const dryRun = hasFlag("--dry-run");
@@ -373,7 +374,7 @@ function buildVerifierCommand() {
 }
 
 function buildProofProfile() {
-  return {
+  return normalizeDistributedProofProfile({
     agentEngineKind: proofAgentEngineKinds[0],
     agentEngineKinds: proofAgentEngineKinds,
     agentNodeId,
@@ -393,7 +394,9 @@ function buildProofProfile() {
     schemaVersion: 1,
     userNodeId,
     userRunnerId
-  };
+  }, {
+    sourceLabel: "Generated distributed proof profile"
+  });
 }
 
 function buildReadme() {

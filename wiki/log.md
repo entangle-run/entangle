@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Added distributed proof profile contracts
+
+Added `references/433-distributed-proof-profile-contract-slice.md`.
+Distributed proof profiles are now represented by a package-level TypeScript
+contract and a dependency-free script-side validation helper. The proof kit
+validates the manifest it generates, and the verifier rejects malformed schema
+versions or assignment/runtime-kind mismatches before inspecting Host state.
+
+`pnpm ops:smoke-distributed-proof-tools` now covers the profile contract helper
+and negative profile-manifest cases in addition to its existing topology,
+runtime, relay, git, and artifact-evidence checks.
+
 ## [2026-04-29] tooling | Added active product naming guardrail
 
 Added `pnpm ops:check-product-naming`, which scans active product surfaces

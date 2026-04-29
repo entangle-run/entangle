@@ -262,6 +262,9 @@ agent-engine capability with `--agent-engine-kind <kind>`, and writes a
 matching verifier command into the operator script. Custom runner ids and graph
 node ids are also carried into `operator/proof-profile.json`, which the
 generated verifier command reads.
+That profile is now a typed package contract and a script-validated ops
+contract, so malformed schema versions or assignment/runtime-kind mismatches
+fail before Host inspection.
 `pnpm ops:distributed-proof-verify` now checks an already-running distributed
 proof through Host HTTP APIs and optional User Client health endpoints, covering
 Host Authority, runner trust/liveness/runtime-kind and agent-engine
@@ -281,9 +284,10 @@ no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
-paths, required-artifact-evidence success/failure paths, and relay-health
-success/failure paths plus git-backend-health success/failure paths before a
-real distributed proof is attempted.
+paths, invalid proof-profile failure paths, required-artifact-evidence
+success/failure paths, and relay-health success/failure paths plus
+git-backend-health success/failure paths before a real distributed proof is
+attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

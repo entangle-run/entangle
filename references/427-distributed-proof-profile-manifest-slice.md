@@ -49,6 +49,9 @@ allowing explicit CLI flags to override profile values when needed.
 - Follow-up `430-distributed-proof-git-backend-health-verifier-slice.md` also
   lets proof profiles opt into `"checkGitBackendHealth": true` and carry
   `gitServiceRefs`.
+- Follow-up `433-distributed-proof-profile-contract-slice.md` turns the
+  generated manifest into a typed package contract plus a script-side
+  validation boundary for kit generation and verifier input.
 - The proof kit generated verifier command now uses
   `--profile "$SCRIPT_DIR/proof-profile.json"` and keeps `--host-url
   "$ENTANGLE_HOST_URL"` as an operator-env override.
