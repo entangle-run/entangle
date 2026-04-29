@@ -73,6 +73,10 @@ The verifier must not read Host, runner, or shared workstation files.
   `424-distributed-proof-agent-engine-selection-slice.md`: `opencode_server`
   remains the default expected engine, but operators can pass
   `--agent-engine-kind <kind>` for custom proof profiles.
+- Widened by `427-distributed-proof-profile-manifest-slice.md`: operators can
+  pass `--profile <file>` to load Host URL, runner ids, graph node ids, and
+  agent engine kind from a generated proof manifest, with explicit CLI flags
+  still taking precedence.
 
 ## Tests Required
 
@@ -86,7 +90,8 @@ Implemented and passed:
   override, that duplicated User Client URLs fail the multi-user proof, and
   that wrong runner runtime-kind or agent-engine capabilities fail the topology
   proof. The tool smoke also proves a non-default expected agent engine can
-  pass when the self-test fixture advertises it.
+  pass when the self-test fixture advertises it, and that verifier self-test can
+  load its expected proof profile from a generated-style manifest.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
@@ -109,7 +114,8 @@ unchanged.
   `--poll-interval-ms`.
 - Risk: operators need different ids.
   Mitigation: runner ids and graph node ids are all configurable and default to
-  the proof kit values.
+  the proof kit values; generated proof kits now also write a profile manifest
+  the verifier can read directly.
 
 ## Open Questions
 

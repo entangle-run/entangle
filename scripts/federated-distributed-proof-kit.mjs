@@ -355,17 +355,33 @@ function buildOperatorCommandsScript() {
 
 function buildVerifierCommand() {
   return [
-    'pnpm ops:distributed-proof-verify --host-url "$ENTANGLE_HOST_URL"',
+    'pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/proof-profile.json"',
+    '--host-url "$ENTANGLE_HOST_URL"',
     "--check-user-client-health",
-    "--require-conversation",
-    `--agent-runner ${shellQuote(agentRunnerId)}`,
-    `--user-runner ${shellQuote(userRunnerId)}`,
-    `--reviewer-user-runner ${shellQuote(reviewerUserRunnerId)}`,
-    `--agent-node ${shellQuote(agentNodeId)}`,
-    `--user-node ${shellQuote(userNodeId)}`,
-    `--reviewer-user-node ${shellQuote(reviewerUserNodeId)}`,
-    `--agent-engine-kind ${shellQuote(proofAgentEngineKinds[0])}`
+    "--require-conversation"
   ].join(" ");
+}
+
+function buildProofProfile() {
+  return {
+    agentEngineKind: proofAgentEngineKinds[0],
+    agentEngineKinds: proofAgentEngineKinds,
+    agentNodeId,
+    agentRunnerId,
+    assignments: runnerProfiles.map((profile) => ({
+      assignmentId: profile.assignmentId,
+      nodeId: profile.nodeId,
+      runnerId: profile.id,
+      runtimeKinds: profile.runtimeKinds
+    })),
+    hostUrl,
+    relayUrls,
+    reviewerUserNodeId,
+    reviewerUserRunnerId,
+    schemaVersion: 1,
+    userNodeId,
+    userRunnerId
+  };
 }
 
 function buildReadme() {
@@ -415,7 +431,8 @@ ${runnerRows}
 - \`*/runner.env\`: runner-local Nostr secret and Host token placeholder or value.
 - \`*/start.sh\`: runner-machine start command.
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
-- \`operator/commands.sh\`: operator commands for trust, assignment, user message, and projection.
+- \`operator/proof-profile.json\`: machine-readable runner, node, and engine profile for the verifier.
+- \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 
 The generated runner join configs use the same generic \`entangle-runner join\`
 path as local process and Docker proofs. If this kit only works when copied to
@@ -430,6 +447,7 @@ async function writeKit() {
       run(`Generate ${profile.id} join config`, "pnpm", buildRunnerJoinConfigArgs(profile));
     }
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
+    console.log(`[dry-run] operator proof profile: ${JSON.stringify(buildProofProfile())}`);
     console.log("[dry-run] would write runner env/start scripts, operator commands, and README.");
     return;
   }
@@ -451,6 +469,11 @@ async function writeKit() {
   const operatorDir = path.join(outputDir, "operator");
   await mkdir(operatorDir, { recursive: true });
   await writeFile(path.join(operatorDir, "operator.env"), buildOperatorEnvContent(), "utf8");
+  await writeFile(
+    path.join(operatorDir, "proof-profile.json"),
+    `${JSON.stringify(buildProofProfile(), null, 2)}\n`,
+    "utf8"
+  );
   await writeExecutable(path.join(operatorDir, "commands.sh"), buildOperatorCommandsScript());
   await writeFile(path.join(outputDir, "README.md"), buildReadme(), "utf8");
   console.log(`[kit] Wrote distributed proof kit to ${outputDir}`);

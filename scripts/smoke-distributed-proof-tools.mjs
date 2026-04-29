@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -226,15 +228,48 @@ try {
     "external_process"
   ], {
     mustContain: [
-      "--agent-runner 'proof-agent-runner'",
-      "--user-runner 'proof-user-runner'",
-      "--reviewer-user-runner 'proof-reviewer-runner'",
-      "--agent-node 'architect'",
-      "--user-node 'alice'",
-      "--reviewer-user-node 'bob'",
-      "--agent-engine-kind 'external_process'"
+      '--profile "$SCRIPT_DIR/proof-profile.json"',
+      '"agentRunnerId":"proof-agent-runner"',
+      '"userRunnerId":"proof-user-runner"',
+      '"reviewerUserRunnerId":"proof-reviewer-runner"',
+      '"agentNodeId":"architect"',
+      '"userNodeId":"alice"',
+      '"reviewerUserNodeId":"bob"',
+      '"agentEngineKind":"external_process"'
     ]
   });
+
+  const proofProfileTempDir = mkdtempSync(path.join(tmpdir(), "entangle-proof-profile-"));
+  const proofProfilePath = path.join(proofProfileTempDir, "proof-profile.json");
+
+  try {
+    writeFileSync(
+      proofProfilePath,
+      `${JSON.stringify({
+        agentEngineKind: "external_process",
+        agentNodeId: "architect",
+        agentRunnerId: "proof-agent-runner",
+        hostUrl: "http://host.example:7071",
+        reviewerUserNodeId: "bob",
+        reviewerUserRunnerId: "proof-reviewer-runner",
+        schemaVersion: 1,
+        userNodeId: "alice",
+        userRunnerId: "proof-user-runner"
+      })}\n`,
+      "utf8"
+    );
+
+    const profileSelfTestJson = runStep("proof verifier profile self-test", [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--profile",
+      proofProfilePath
+    ]);
+    verifySelfTestJson(profileSelfTestJson);
+  } finally {
+    rmSync(proofProfileTempDir, { force: true, recursive: true });
+  }
 
   const selfTestJson = runStep("proof verifier self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

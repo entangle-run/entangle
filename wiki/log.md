@@ -5115,3 +5115,16 @@ runner id, User Node runner ids, graph node ids, and agent engine kind into
 Proof-kit dry-run output now prints that verifier command, and
 `pnpm ops:smoke-distributed-proof-tools` verifies a custom proof profile so
 custom runner and node names cannot silently fall back to verifier defaults.
+
+## [2026-04-29] tooling | Added distributed proof profile manifest
+
+Added `references/427-distributed-proof-profile-manifest-slice.md`.
+`pnpm ops:distributed-proof-kit` now writes
+`operator/proof-profile.json` with Host URL, relay URLs, runner ids, graph node
+ids, assignment metadata, and agent engine kind.
+
+`pnpm ops:distributed-proof-verify` now accepts `--profile <file>` and uses the
+manifest as its default proof configuration while letting explicit CLI flags
+override profile values. The distributed proof tool smoke now checks the
+generated-style profile path and runs verifier self-test through a temporary
+profile manifest.

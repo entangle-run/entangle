@@ -219,10 +219,10 @@ The generated kit contains Host-derived `runner-join.json` files, runner-local
 env/start scripts, and operator commands for trust, assignment, User Client
 discovery, signed User Node task publication, projection inspection, and
 distributed proof verification. Custom runner ids, graph node ids, and
-`--agent-engine-kind <kind>` are carried into the generated verifier command.
-Copy each runner directory to its intended machine and set
-`ENTANGLE_REPO_ROOT` there; no generated runner command should require Host
-filesystem access.
+`--agent-engine-kind <kind>` are carried into
+`operator/proof-profile.json`, which the generated verifier command reads. Copy
+each runner directory to its intended machine and set `ENTANGLE_REPO_ROOT`
+there; no generated runner command should require Host filesystem access.
 
 After those runners are started and the operator commands have run, verify the
 proof through Host and User Client HTTP surfaces:
@@ -230,6 +230,7 @@ proof through Host and User Client HTTP surfaces:
 ```sh
 ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
   --host-url http://host.example:7071 \
+  --profile .entangle/distributed-proof-kit/operator/proof-profile.json \
   --check-user-client-health \
   --require-conversation
 ```

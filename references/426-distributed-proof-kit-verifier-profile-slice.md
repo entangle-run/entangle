@@ -35,14 +35,10 @@ verify profile propagation without starting a live Host.
 ## Concrete Changes
 
 - Added a shared proof-kit verifier command builder.
-- Generated `operator/commands.sh` now passes:
-  - `--agent-runner`;
-  - `--user-runner`;
-  - `--reviewer-user-runner`;
-  - `--agent-node`;
-  - `--user-node`;
-  - `--reviewer-user-node`;
-  - `--agent-engine-kind`.
+- Generated `operator/commands.sh` initially passed the selected runner, node,
+  and engine values as verifier flags. Follow-up
+  `427-distributed-proof-profile-manifest-slice.md` now writes those values to
+  `operator/proof-profile.json` and points the verifier at that manifest.
 - Proof-kit dry-run output now prints the exact verifier command that would be
   written into the operator script.
 - Extended `pnpm ops:smoke-distributed-proof-tools` with a custom-profile
@@ -76,5 +72,6 @@ script validates the same profile it trusts and assigns.
 
 ## Open Questions
 
-- Should a later proof kit emit a machine-readable proof profile manifest that
-  both operator scripts and `pnpm ops:distributed-proof-verify` can consume?
+- Implemented by `427-distributed-proof-profile-manifest-slice.md`: the proof
+  kit now emits `operator/proof-profile.json`, and the verifier can consume it
+  through `--profile <file>`.

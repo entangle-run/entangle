@@ -53,6 +53,7 @@ managed-runner proofs.
   while defaulting to `opencode_server`.
 - Carry selected runner ids, graph node ids, and agent engine kind into the
   generated verifier command.
+- Emit a generated proof profile manifest that the verifier can consume.
 - Add dry-run and help modes for safe operator review.
 - Document that the proof succeeds only if runner directories can be copied to
   separate machines with Entangle checkouts and no Host filesystem access.
@@ -111,3 +112,7 @@ expected engine kind.
 Further supported by `426-distributed-proof-kit-verifier-profile-slice.md`: the
 generated verifier command now carries the complete selected proof profile,
 including custom runner ids and graph node ids.
+
+Further supported by `427-distributed-proof-profile-manifest-slice.md`: the
+selected proof profile is now written to `operator/proof-profile.json`, and the
+generated verifier command consumes that manifest.

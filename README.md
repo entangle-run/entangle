@@ -227,11 +227,12 @@ Node task publication, projection inspection, and distributed proof
 verification. The agent runner defaults to `opencode_server`; pass
 `--agent-engine-kind <kind>` to generate a custom agent-engine capability and a
 matching verifier command. Custom runner and graph node ids are also carried
-into that generated verifier command. Copy runner directories to machines with
-Entangle checkouts; the proof is valid only when the runners do not rely on
-Host filesystem access and report running runtime observations, expected
-runtime-kind capabilities, expected agent-engine capabilities, and distinct
-User Client URLs back to Host projection.
+into `operator/proof-profile.json`, which the generated verifier command reads.
+Copy runner directories to machines with Entangle checkouts; the proof is valid
+only when the runners do not rely on Host filesystem access and report running
+runtime observations, expected runtime-kind capabilities, expected
+agent-engine capabilities, and distinct User Client URLs back to Host
+projection.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP
@@ -240,6 +241,7 @@ surfaces only:
 ```bash
 ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
   --host-url http://host.example:7071 \
+  --profile .entangle/distributed-proof-kit/operator/proof-profile.json \
   --check-user-client-health \
   --require-conversation
 ```

@@ -260,7 +260,8 @@ Node message commands for machines that do not share Host filesystem state.
 The kit defaults the agent runner to `opencode_server`, can generate a custom
 agent-engine capability with `--agent-engine-kind <kind>`, and writes a
 matching verifier command into the operator script. Custom runner ids and graph
-node ids are also carried into that generated verifier command.
+node ids are also carried into `operator/proof-profile.json`, which the
+generated verifier command reads.
 `pnpm ops:distributed-proof-verify` now checks an already-running distributed
 proof through Host HTTP APIs and optional User Client health endpoints, covering
 Host Authority, runner trust/liveness/runtime-kind and agent-engine
@@ -272,8 +273,8 @@ expected agent engine kind while OpenCode remains the default.
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
-plus proof-kit and verifier non-default expected-agent-engine/profile paths,
-before a real distributed proof is attempted.
+plus proof-kit and verifier non-default expected-agent-engine/profile manifest
+paths, before a real distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.
