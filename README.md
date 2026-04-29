@@ -436,7 +436,8 @@ This repository currently contains:
   projected text previews carried by the observed source-change summary;
 - runtime memory list/page APIs can now fall back to observed `wiki.ref`
   projection records and bounded wiki previews when Host cannot read the
-  runner's memory root;
+  runner's memory root, and memory list returns an empty projection-backed
+  view for active graph nodes before any wiki refs are observed;
 - artifact history/diff APIs can now resolve projected git artifact locators
   through a Host-owned backend cache when semantic artifact context identifies
   a reachable git backend, and otherwise return projected artifact records with

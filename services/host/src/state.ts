@@ -9010,10 +9010,13 @@ function mergeRuntimeMemoryPages(input: {
 export async function getRuntimeMemoryInspection(
   nodeId: string
 ): Promise<RuntimeMemoryInspectionResponse | null> {
-  const context = await getRuntimeFilesystemContext(nodeId);
-  const projectedPages = await listProjectedRuntimeMemoryPages(nodeId);
+  const [{ graph }, context, projectedPages] = await Promise.all([
+    readActiveGraphState(),
+    getRuntimeFilesystemContext(nodeId),
+    listProjectedRuntimeMemoryPages(nodeId)
+  ]);
 
-  if (!context && projectedPages.length === 0) {
+  if (!context && !graph?.nodes.some((node) => node.nodeId === nodeId)) {
     return null;
   }
 

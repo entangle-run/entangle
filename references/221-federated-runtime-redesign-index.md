@@ -196,6 +196,7 @@ same-machine slice records.
 - [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
 - [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 - [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
+- [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 
 ## Audited Scope
 
@@ -418,8 +419,9 @@ The repository is not fully federated:
   observed source-change candidate records;
 - Host runtime memory list/page GET routes now prefer local memory files and
   fall back to observed `wiki.ref` projection records with bounded preview
-  content, so remote node wiki memory remains inspectable without Host-readable
-  runner memory roots;
+  content; memory list now also returns an empty projection-backed memory view
+  for active graph nodes with no Host-readable runner memory root and no wiki
+  refs yet;
 - Host runtime artifact history/diff GET routes now prefer local git
   materialization for non-federated adapters, can resolve projected git
   artifact locators through a Host-owned backend cache, and fall back to
@@ -581,8 +583,9 @@ for delegated sessions without copying transcripts.
 11. Artifact/source/wiki reference publication through observation and git
     refs. Runner emission of observed artifact/source/wiki refs is implemented;
     source-change summaries, bounded source file previews, bounded artifact
-    previews, and projected memory/wiki read previews now project through
-    observed refs; source-history publish/replay and wiki publication requests
+    previews, projected memory/wiki read previews, and empty projected memory
+    list states now project through observed refs or active graph membership;
+    source-history publish/replay and wiki publication requests
     now use Host-signed runner-executed control commands; explicit
     source-history publication can target policy-gated non-primary git
     repositories, and explicit wiki publication can target a resolved git

@@ -8762,6 +8762,22 @@ describe("buildHostServer", () => {
       expect(hostErrorResponseSchema.parse(response.json())).toMatchObject({
         code: "conflict"
       });
+
+      const memoryResponse = await server.inject({
+        method: "GET",
+        url: "/v1/runtimes/worker-it/memory"
+      });
+
+      expect(memoryResponse.statusCode).toBe(200);
+      expect(
+        runtimeMemoryInspectionResponseSchema.parse(memoryResponse.json())
+      ).toMatchObject({
+        focusedRegisters: [],
+        memoryRoot: "projection://worker-it/wiki-refs",
+        nodeId: "worker-it",
+        pages: [],
+        taskPages: []
+      });
     } finally {
       await server.close();
     }

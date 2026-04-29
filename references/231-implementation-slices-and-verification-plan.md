@@ -308,6 +308,7 @@ Implementation record:
 - [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
 - [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 - [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
+- [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 
 Verification:
 
@@ -363,7 +364,8 @@ Current status:
   unavailable;
 - runtime memory list/page GET routes can fall back to observed `wiki.ref`
   projection records with bounded preview content when local memory files are
-  unavailable;
+  unavailable, and memory list now returns an empty projection-backed view for
+  active graph nodes that have no local context and no wiki refs yet;
 - runtime artifact history/diff GET routes can resolve projected git artifact
   locators through a Host-owned backend cache when the locator and semantic
   artifact context identify a reachable git backend, and otherwise fall back to

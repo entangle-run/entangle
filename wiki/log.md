@@ -4722,3 +4722,14 @@ projection.
 This keeps operator visibility aligned with the assignment timeline and CLI
 work without adding direct runner calls or a separate Studio-owned command
 receipt model.
+
+## [2026-04-29] implementation | Added empty projected memory read model
+
+Added `references/396-projection-empty-memory-read-model-slice.md`.
+Runtime memory inspection now returns an empty `projection://<nodeId>/wiki-refs`
+view for active graph nodes that have no Host-readable runtime context and no
+projected wiki refs yet.
+
+This keeps `/v1/runtimes/:nodeId/memory` federated-friendly while leaving
+`/v1/runtimes/:nodeId/context` and runtime inspection responsible for reporting
+context materialization failures.

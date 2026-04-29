@@ -557,6 +557,7 @@ files are the active federated redesign pack.
 394. [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
 395. [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 396. [395-studio-command-receipt-operator-visibility-slice.md](395-studio-command-receipt-operator-visibility-slice.md)
+397. [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 
 ## Role of this corpus
 
