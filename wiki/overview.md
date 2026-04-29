@@ -370,7 +370,9 @@ The repository now also contains the first real implementation baseline:
   for protected mutation requests through `host.operator_request.completed`
   and operator-visible Host status reporting of the active bootstrap security
   posture; token-protected Hosts now enforce the bootstrap `viewer` role as
-  read-only and include `operatorRole` in protected mutation audit events;
+  read-only and include `operatorRole` in protected mutation audit events, and
+  host-client/CLI event summaries now render those audit events with operator
+  id, role, method, path, status, and auth mode;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime

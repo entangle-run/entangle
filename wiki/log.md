@@ -5142,6 +5142,17 @@ flag after the agent has produced work. The distributed proof tool smoke now
 proves both the passing evidence fixture and the missing-evidence failure
 fixture.
 
+## [2026-04-29] cli | Presented operator audit events in summaries
+
+Added `references/432-operator-audit-event-presentation-slice.md`.
+The shared host-client event presentation now understands
+`host.operator_request.completed`, including operator id, bootstrap role,
+method, path, status code, and auth mode.
+
+CLI host event summary output uses that shared presentation, so viewer-denied
+mutations and other protected Host mutations no longer collapse to a generic
+event-type label in summary mode.
+
 ## [2026-04-29] security | Enforced bootstrap viewer operator role
 
 Added `references/431-bootstrap-viewer-operator-authorization-slice.md`.

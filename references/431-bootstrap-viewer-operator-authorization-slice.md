@@ -49,6 +49,9 @@ implemented.
   - authorized viewer mutations fail with 403;
   - denied mutations are still recorded in the audit stream with
     `operatorRole: "viewer"`.
+- Follow-up `432-operator-audit-event-presentation-slice.md` renders those
+  audit events in host-client and CLI summary output with operator id, role,
+  method, path, status, and auth mode.
 
 ## Tests Required
 

@@ -302,6 +302,8 @@ This repository currently contains:
   reporting of the active bootstrap operator security posture without exposing
   token material; token-protected Hosts now enforce the bootstrap `viewer` role
   as read-only and include `operatorRole` in protected mutation audit events;
+  host-client and CLI event summaries now render those audit events with
+  operator id, role, method, path, status, and auth mode;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
   when unused, and resolved into effective runtime context rather than

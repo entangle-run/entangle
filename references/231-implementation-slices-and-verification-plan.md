@@ -464,6 +464,9 @@ Current status:
   while keeping `operator`, `admin`, and `owner` compatible with existing Host
   mutation behavior, and protected mutation audit events now include
   `operatorRole`;
+- shared host-client/CLI host event summaries now present
+  `host.operator_request.completed` audit events with operator id, role,
+  method, path, status, and auth mode instead of a generic event-type label;
 - the User Client can request bounded artifact history/diff from its Human
   Interface Runtime through Host artifact read APIs;
 - explicit source-history publication can now target policy-gated non-primary
@@ -972,7 +975,9 @@ Current status:
   bootstrap attribution; token-protected Hosts now enforce `viewer` as a
   read-only bootstrap role and record `operatorRole` on protected mutation
   audit events while keeping production identity/authorization as an explicit
-  remaining hardening track;
+  remaining hardening track; host-client and CLI summary output now presents
+  those audit events with operator id, role, method, path, status, and auth
+  mode;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;
 - those User Client artifact routes require conversation context and verify the

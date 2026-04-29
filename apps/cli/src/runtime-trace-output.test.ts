@@ -3,6 +3,39 @@ import type { HostEventRecord } from "@entangle/types";
 import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 
 describe("projectRuntimeTraceSummary", () => {
+  it("projects bootstrap operator request audit events into structured summaries", () => {
+    const event: HostEventRecord = {
+      authMode: "bootstrap_operator_token",
+      category: "security",
+      eventId: "evt-operator-request",
+      message: "Host operator request 'PUT /v1/catalog' completed with status 403.",
+      method: "PUT",
+      operatorId: "audit-viewer",
+      operatorRole: "viewer",
+      path: "/v1/catalog",
+      requestId: "req-operator-1",
+      schemaVersion: "1",
+      statusCode: 403,
+      timestamp: "2026-04-29T21:00:00.000Z",
+      type: "host.operator_request.completed"
+    };
+
+    expect(projectRuntimeTraceSummary(event)).toEqual({
+      detailLines: [
+        "Operator: audit-viewer (viewer)",
+        "Method: PUT",
+        "Path: /v1/catalog",
+        "Status: 403",
+        "Auth: bootstrap_operator_token"
+      ],
+      eventId: "evt-operator-request",
+      label: "Operator audit-viewer PUT /v1/catalog -> 403",
+      message: "Host operator request 'PUT /v1/catalog' completed with status 403.",
+      timestamp: "2026-04-29T21:00:00.000Z",
+      type: "host.operator_request.completed"
+    });
+  });
+
   it("projects runner-turn events into structured summary records", () => {
     const event: HostEventRecord = {
       category: "runner",

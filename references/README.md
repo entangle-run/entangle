@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
+[432-operator-audit-event-presentation-slice.md](432-operator-audit-event-presentation-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -69,6 +69,8 @@ deleting authoritative artifact or projection state. Host status also exposes
 the active bootstrap operator security posture without exposing bearer-token
 material, and token-protected Hosts now enforce the bootstrap `viewer` role as
 read-only while recording `operatorRole` in protected mutation audit events.
+Shared host-client and CLI event summaries now render those audit events with
+operator id, role, method, path, status, and auth mode.
 Studio's Host Status panel renders the same path-free cache summary
 and the same bootstrap security summary for admin visibility, and
 the running User
@@ -663,6 +665,7 @@ files are the active federated redesign pack.
 430. [429-distributed-proof-relay-health-verifier-slice.md](429-distributed-proof-relay-health-verifier-slice.md)
 431. [430-distributed-proof-git-backend-health-verifier-slice.md](430-distributed-proof-git-backend-health-verifier-slice.md)
 432. [431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
+433. [432-operator-audit-event-presentation-slice.md](432-operator-audit-event-presentation-slice.md)
 
 ## Role of this corpus
 

@@ -200,6 +200,17 @@ export function describeRuntimeTraceEvent(
   event: HostEventRecord
 ): RuntimeTraceEventPresentation {
   switch (event.type) {
+    case "host.operator_request.completed":
+      return {
+        detailLines: [
+          `Operator: ${event.operatorId} (${event.operatorRole})`,
+          `Method: ${event.method}`,
+          `Path: ${event.path}`,
+          `Status: ${event.statusCode}`,
+          `Auth: ${event.authMode}`
+        ],
+        label: `Operator ${event.operatorId} ${event.method} ${event.path} -> ${event.statusCode}`
+      };
     case "session.updated":
       return {
         detailLines: buildSessionUpdatedDetailLines(event),
