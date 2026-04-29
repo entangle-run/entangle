@@ -17,8 +17,11 @@ import type {
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
+  RuntimeSourceHistoryPublishResponse,
   RuntimeWikiPublishResponse,
   SourceChangeRefProjectionRecord,
+  SourceHistoryPublicationTarget,
+  SourceHistoryRefProjectionRecord,
   UserNodeConversationResponse,
   UserNodeConversationReadResponse,
   UserConversationProjectionRecord,
@@ -36,7 +39,9 @@ import {
   runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
+  runtimeSourceHistoryPublishResponseSchema,
   runtimeWikiPublishResponseSchema,
+  sourceHistoryPublicationTargetSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
@@ -78,6 +83,7 @@ type UserClientState = {
     relayUrls: string[];
   };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
+  sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
@@ -153,6 +159,22 @@ type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
   wikiRefs: WikiRefProjectionRecord[];
 };
 
+type UserClientSourceHistoryPublishRequest = {
+  conversationId?: unknown;
+  nodeId?: unknown;
+  reason?: unknown;
+  retryFailedPublication?: unknown;
+  sourceHistoryId?: unknown;
+  target?: unknown;
+};
+
+type UserClientSourceHistoryPublishResponse =
+  RuntimeSourceHistoryPublishResponse & {
+    source: "runtime";
+    sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+    userNodeId: string;
+  };
+
 type UserClientVisibleArtifactRef =
   | {
       artifact: ArtifactRef;
@@ -174,6 +196,15 @@ type UserClientVisibleSourceChange =
 type UserClientVisibleWikiRefs =
   | {
       wikiRefs: WikiRefProjectionRecord[];
+    }
+  | {
+      error: string;
+      statusCode: number;
+    };
+
+type UserClientVisibleSourceHistoryRefs =
+  | {
+      sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
     }
   | {
       error: string;
@@ -476,6 +507,11 @@ function buildUserClientStateFingerprint(state: UserClientState): string {
       ref.status,
       ref.projection.updatedAt
     ]),
+    sourceHistoryRefs: state.sourceHistoryRefs.map((ref) => [
+      ref.nodeId,
+      ref.sourceHistoryId,
+      ref.projection.updatedAt
+    ]),
     wikiRefs: state.wikiRefs.map((ref) => [
       ref.nodeId,
       ref.artifactId,
@@ -571,6 +607,7 @@ async function buildUserClientState(input: {
       relayUrls: listRelayUrls(input.context)
     },
     sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
+    sourceHistoryRefs: projection.detail?.sourceHistoryRefs ?? [],
     targets: listTargetNodes(input.context),
     userNodeId,
     wikiRefs: projection.detail?.wikiRefs ?? []
@@ -843,6 +880,91 @@ async function resolveUserClientVisibleWikiRefs(input: {
   }
 
   return { wikiRefs };
+}
+
+async function resolveUserClientVisibleSourceHistoryRefs(input: {
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  sourceHistoryId: string;
+  userNodeId: string;
+}): Promise<UserClientVisibleSourceHistoryRefs> {
+  if (!input.conversationId) {
+    return {
+      error: "Conversation id is required for source-history publication.",
+      statusCode: 400
+    };
+  }
+
+  const conversation = await fetchUserNodeConversation({
+    conversationId: input.conversationId,
+    hostApi: input.hostApi,
+    userNodeId: input.userNodeId
+  });
+
+  if (conversation.error || !conversation.detail) {
+    return {
+      error: conversation.error ?? "Conversation detail is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const sourceHistoryResources = conversation.detail.messages.flatMap((message) => {
+    const resource = message.approval?.resource;
+
+    return message.direction === "inbound" &&
+      message.fromNodeId === input.nodeId &&
+      (resource?.kind === "source_history" ||
+        resource?.kind === "source_history_publication")
+      ? [resource]
+      : [];
+  });
+  const sourceHistoryVisible = sourceHistoryResources.some((resource) =>
+    sourceHistoryRefMatchesResource({
+      resource,
+      sourceHistoryId: input.sourceHistoryId
+    })
+  );
+
+  if (!sourceHistoryVisible) {
+    return {
+      error:
+        "Source-history resource is not visible in the selected User Node conversation.",
+      statusCode: 403
+    };
+  }
+
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+
+  if (projection.error || !projection.detail) {
+    return {
+      error: projection.error ?? "Host projection is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const sourceHistoryRefs = projection.detail.sourceHistoryRefs.filter(
+    (ref) =>
+      ref.nodeId === input.nodeId &&
+      ref.sourceHistoryId === input.sourceHistoryId &&
+      sourceHistoryResources.some((resource) =>
+        sourceHistoryRefMatchesResource({
+          ref,
+          resource,
+          sourceHistoryId: input.sourceHistoryId
+        })
+      )
+  );
+
+  if (sourceHistoryRefs.length === 0) {
+    return {
+      error:
+        "Source-history resource is visible but no projected source-history refs are available.",
+      statusCode: 403
+    };
+  }
+
+  return { sourceHistoryRefs };
 }
 
 async function markUserClientConversationRead(input: {
@@ -1537,6 +1659,74 @@ async function requestRuntimeWikiPublication(input: {
   }
 }
 
+async function requestRuntimeSourceHistoryPublication(input: {
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  reason?: string | undefined;
+  retryFailedPublication: boolean;
+  sourceHistoryId: string;
+  sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+  target?: SourceHistoryPublicationTarget | undefined;
+  userNodeId: string;
+}): Promise<{
+  detail?: UserClientSourceHistoryPublishResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for source-history publication.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/source-history/${encodeURIComponent(input.sourceHistoryId)}/publish`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          ...(input.reason ? { reason: input.reason } : {}),
+          requestedBy: input.userNodeId,
+          retryFailedPublication: input.retryFailedPublication,
+          ...(input.target ? { target: input.target } : {})
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host source-history publication request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeSourceHistoryPublishResponseSchema.parse(await response.json()),
+        source: "runtime",
+        sourceHistoryRefs: input.sourceHistoryRefs,
+        userNodeId: input.userNodeId
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host source-history publication request failed.",
+      statusCode: 502
+    };
+  }
+}
+
 async function buildUserClientSourceChangeDiff(input: {
   candidateId: string;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -2036,9 +2226,31 @@ function wikiRefMatchesResource(input: {
   );
 }
 
+function sourceHistoryRefMatchesResource(input: {
+  ref?: SourceHistoryRefProjectionRecord | undefined;
+  resource: ApprovalResource;
+  sourceHistoryId: string;
+}): boolean {
+  if (input.resource.kind === "source_history") {
+    return input.resource.id === input.sourceHistoryId;
+  }
+
+  if (input.resource.kind !== "source_history_publication") {
+    return false;
+  }
+
+  const historyId = input.ref?.sourceHistoryId ?? input.sourceHistoryId;
+
+  return (
+    input.resource.id === historyId ||
+    input.resource.id.startsWith(`${historyId}|`)
+  );
+}
+
 function renderApprovalResource(
   message: UserNodeMessageRecord,
   sourceChangeRefs: SourceChangeRefProjectionRecord[],
+  sourceHistoryRefs: SourceHistoryRefProjectionRecord[],
   wikiRefs: WikiRefProjectionRecord[]
 ): string {
   const resource = message.approval?.resource;
@@ -2061,6 +2273,19 @@ function renderApprovalResource(
           (ref) =>
             ref.nodeId === message.fromNodeId &&
             wikiRefMatchesResource({ ref, resource })
+        )
+      : [];
+  const relatedSourceHistoryRefs =
+    resource.kind === "source_history" ||
+    resource.kind === "source_history_publication"
+      ? sourceHistoryRefs.filter(
+          (ref) =>
+            ref.nodeId === message.fromNodeId &&
+            sourceHistoryRefMatchesResource({
+              ref,
+              resource,
+              sourceHistoryId: ref.sourceHistoryId
+            })
         )
       : [];
   const sourceDiffAction =
@@ -2087,7 +2312,11 @@ function renderApprovalResource(
         })
       : "";
 
-  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}${sourceReviewControls}`;
+  return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderSourceHistoryRefCards({
+    conversationId: message.conversationId,
+    nodeId: message.fromNodeId,
+    refs: relatedSourceHistoryRefs
+  })}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}${sourceReviewControls}`;
 }
 
 function renderArtifactLocator(ref: ArtifactRef): string {
@@ -2162,6 +2391,45 @@ function renderArtifactRefs(message: UserNodeMessageRecord): string {
             </form>
           </div>`
         );
+      })
+      .join("")}
+  </div>`;
+}
+
+function renderSourceHistoryRefCards(input: {
+  conversationId: string;
+  nodeId: string;
+  refs: SourceHistoryRefProjectionRecord[];
+}): string {
+  if (input.refs.length === 0) {
+    return "";
+  }
+
+  return `<div class="artifact-list">
+    ${input.refs
+      .map((ref) => {
+        const publicationCount = ref.history.publications.length;
+        const summary = ref.history.sourceChangeSummary;
+
+        return `<div class="artifact-ref">
+          <div><strong>${escapeHtml(ref.sourceHistoryId)}</strong> source history</div>
+          <div class="message-meta">${escapeHtml(ref.history.branch)} @ ${escapeHtml(ref.history.commit)}</div>
+          <div>${escapeHtml(`${summary.fileCount} files, +${summary.additions} -${summary.deletions}`)}</div>
+          <div class="message-meta">${escapeHtml(`${publicationCount} publication${publicationCount === 1 ? "" : "s"}`)}</div>
+          <form class="artifact-proposal-actions" method="post" action="/source-history/publish">
+            <input type="hidden" name="nodeId" value="${escapeHtml(input.nodeId)}" />
+            <input type="hidden" name="sourceHistoryId" value="${escapeHtml(ref.sourceHistoryId)}" />
+            <input type="hidden" name="conversationId" value="${escapeHtml(input.conversationId)}" />
+            <label>Reason
+              <input name="reason" placeholder="why this source history should be published" />
+            </label>
+            <label class="inline-checkbox">
+              <input name="retryFailedPublication" type="checkbox" value="true" />
+              <span>Retry failed publication</span>
+            </label>
+            <button type="submit">Publish source history</button>
+          </form>
+        </div>`;
       })
       .join("")}
   </div>`;
@@ -2380,7 +2648,7 @@ async function renderHome(input: {
               ${renderMessageDelivery(message)}
               ${message.approval ? `<div class="message-meta">approval ${escapeHtml(message.approval.approvalId)}${message.approval.decision ? ` - ${escapeHtml(message.approval.decision)}` : ""}</div>` : ""}
               ${message.sourceChangeReview ? `<div class="message-meta">source review ${escapeHtml(message.sourceChangeReview.candidateId)} - ${escapeHtml(message.sourceChangeReview.decision)}</div>` : ""}
-              ${renderApprovalResource(message, state.sourceChangeRefs, state.wikiRefs)}
+              ${renderApprovalResource(message, state.sourceChangeRefs, state.sourceHistoryRefs, state.wikiRefs)}
               <div>${escapeHtml(message.summary)}</div>
               ${renderArtifactRefs(message)}
               ${renderParentMessageLink(message)}
@@ -2421,6 +2689,11 @@ async function renderHome(input: {
             ref.nodeId,
             ref.candidateId,
             ref.status,
+            ref.projection?.updatedAt
+          ]),
+          sourceHistoryRefs: (state.sourceHistoryRefs || []).map((ref) => [
+            ref.nodeId,
+            ref.sourceHistoryId,
             ref.projection?.updatedAt
           ]),
           wikiRefs: (state.wikiRefs || []).map((ref) => [
@@ -3344,6 +3617,105 @@ export async function startHumanInterfaceRuntime(input: {
       }
 
       if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/source-history/publish"
+      ) {
+        let publishRequest: UserClientSourceHistoryPublishRequest;
+
+        try {
+          publishRequest =
+            (await readRequestJson(request)) as UserClientSourceHistoryPublishRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Source-history publication request is invalid."
+          });
+          return;
+        }
+
+        const conversationId =
+          typeof publishRequest.conversationId === "string"
+            ? publishRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof publishRequest.nodeId === "string"
+            ? publishRequest.nodeId.trim()
+            : "";
+        const reason =
+          typeof publishRequest.reason === "string" &&
+          publishRequest.reason.trim().length > 0
+            ? publishRequest.reason.trim()
+            : undefined;
+        const retryFailedPublication =
+          publishRequest.retryFailedPublication === true;
+        const sourceHistoryId =
+          typeof publishRequest.sourceHistoryId === "string"
+            ? publishRequest.sourceHistoryId.trim()
+            : "";
+        const target =
+          publishRequest.target === undefined
+            ? undefined
+            : sourceHistoryPublicationTargetSchema.safeParse(
+                publishRequest.target
+              );
+
+        if (!nodeId || !sourceHistoryId || !conversationId) {
+          writeJson(response, 400, {
+            error:
+              "Runtime node, source-history id, and conversation are required."
+          });
+          return;
+        }
+
+        if (target && !target.success) {
+          writeJson(response, 400, {
+            error: "Source-history publication target is invalid."
+          });
+          return;
+        }
+
+        const visibleSourceHistoryRefs =
+          await resolveUserClientVisibleSourceHistoryRefs({
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId,
+            sourceHistoryId,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+        if ("error" in visibleSourceHistoryRefs) {
+          writeJson(response, visibleSourceHistoryRefs.statusCode, {
+            error: visibleSourceHistoryRefs.error
+          });
+          return;
+        }
+
+        const publication = await requestRuntimeSourceHistoryPublication({
+          hostApi: input.hostApi,
+          nodeId,
+          reason,
+          retryFailedPublication,
+          sourceHistoryId,
+          sourceHistoryRefs: visibleSourceHistoryRefs.sourceHistoryRefs,
+          ...(target?.success ? { target: target.data } : {}),
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if (publication.error || !publication.detail) {
+          writeJson(response, publication.statusCode ?? 502, {
+            error:
+              publication.error ?? "Source-history publication request failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, publication.detail);
+        return;
+      }
+
+      if (
         request.method === "GET" &&
         requestUrl.pathname === "/api/source-change-candidates/diff"
       ) {
@@ -3900,6 +4272,114 @@ export async function startHumanInterfaceRuntime(input: {
                 error instanceof Error
                   ? error.message
                   : "Artifact source-change proposal failed.",
+              selectedConversationId: selectedConversationIdForError
+            })
+          );
+        }
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/source-history/publish"
+      ) {
+        let selectedConversationIdForError: string | undefined;
+
+        try {
+          const form = new URLSearchParams(await readRequestBody(request));
+          const conversationId = form.get("conversationId")?.trim() ?? "";
+          const nodeId = form.get("nodeId")?.trim() ?? "";
+          const reason = form.get("reason")?.trim() || undefined;
+          const retryFailedPublication =
+            form.get("retryFailedPublication") === "true";
+          const sourceHistoryId = form.get("sourceHistoryId")?.trim() ?? "";
+          selectedConversationIdForError = conversationId;
+
+          if (!nodeId || !sourceHistoryId || !conversationId) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  "Runtime node, source-history id, and conversation are required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const visibleSourceHistoryRefs =
+            await resolveUserClientVisibleSourceHistoryRefs({
+              conversationId,
+              hostApi: input.hostApi,
+              nodeId,
+              sourceHistoryId,
+              userNodeId: input.context.binding.node.nodeId
+            });
+
+          if ("error" in visibleSourceHistoryRefs) {
+            writeHtml(
+              response,
+              visibleSourceHistoryRefs.statusCode,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: visibleSourceHistoryRefs.error,
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const publication = await requestRuntimeSourceHistoryPublication({
+            hostApi: input.hostApi,
+            nodeId,
+            reason,
+            retryFailedPublication,
+            sourceHistoryId,
+            sourceHistoryRefs: visibleSourceHistoryRefs.sourceHistoryRefs,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+          if (publication.error || !publication.detail) {
+            writeHtml(
+              response,
+              publication.statusCode ?? 502,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  publication.error ??
+                  "Source-history publication request failed.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          writeHtml(
+            response,
+            200,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: `Requested source-history publication ${publication.detail.commandId} for ${publication.detail.sourceHistoryId}.`,
+              selectedConversationId: conversationId
+            })
+          );
+        } catch (error) {
+          writeHtml(
+            response,
+            500,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice:
+                error instanceof Error
+                  ? error.message
+                  : "Source-history publication request failed.",
               selectedConversationId: selectedConversationIdForError
             })
           );

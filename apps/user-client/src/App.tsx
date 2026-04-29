@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   ArtifactRef,
   SourceChangeRefProjectionRecord,
+  SourceHistoryRefProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeConversationResponse,
   UserNodeMessagePublishType,
@@ -24,6 +25,7 @@ import {
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
   publishApprovalResponse,
+  publishSourceHistory,
   publishUserMessage,
   publishWikiRepository,
   renderArtifactLocator,
@@ -84,6 +86,28 @@ function wikiRefMatchesResource(input: {
     input.resource.id === input.ref.artifactId ||
     input.resource.id === locatorPath ||
     input.resource.id === normalizedLocatorPath
+  );
+}
+
+function sourceHistoryRefMatchesResource(input: {
+  ref: SourceHistoryRefProjectionRecord;
+  resource: NonNullable<UserNodeMessageRecord["approval"]>["resource"];
+}): boolean {
+  if (!input.resource) {
+    return false;
+  }
+
+  if (input.resource.kind === "source_history") {
+    return input.resource.id === input.ref.sourceHistoryId;
+  }
+
+  if (input.resource.kind !== "source_history_publication") {
+    return false;
+  }
+
+  return (
+    input.resource.id === input.ref.sourceHistoryId ||
+    input.resource.id.startsWith(`${input.ref.sourceHistoryId}|`)
   );
 }
 
@@ -500,6 +524,104 @@ function SourceChangeReview({
   );
 }
 
+function SourceHistoryResourceCards({
+  baseUrl,
+  message,
+  onRefresh,
+  state
+}: {
+  baseUrl: string;
+  message: UserNodeMessageRecord;
+  onRefresh: () => Promise<void>;
+  state?: UserClientState | undefined;
+}) {
+  const [publishReason, setPublishReason] = useState("");
+  const [retryFailedPublication, setRetryFailedPublication] = useState(false);
+  const [status, setStatus] = useState<string | undefined>();
+  const resource = message.approval?.resource;
+  const refs =
+    resource?.kind === "source_history" ||
+    resource?.kind === "source_history_publication"
+      ? (state?.sourceHistoryRefs ?? []).filter(
+          (ref) =>
+            ref.nodeId === message.fromNodeId &&
+            sourceHistoryRefMatchesResource({ ref, resource })
+        )
+      : [];
+
+  if (refs.length === 0) {
+    return null;
+  }
+
+  async function requestPublication(sourceHistoryId: string): Promise<void> {
+    setStatus(`requesting ${sourceHistoryId}`);
+
+    try {
+      const response = await publishSourceHistory({
+        baseUrl,
+        conversationId: message.conversationId,
+        nodeId: message.fromNodeId,
+        ...(publishReason.trim() ? { reason: publishReason.trim() } : {}),
+        retryFailedPublication,
+        sourceHistoryId
+      });
+
+      setStatus(
+        `source-history publication requested ${response.commandId}`
+      );
+      await onRefresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Source-history publication failed."
+      );
+    }
+  }
+
+  return (
+    <div className="artifact-list">
+      {refs.map((ref) => (
+        <div className="artifact-card" key={ref.sourceHistoryId}>
+          <strong>{ref.sourceHistoryId}</strong>
+          <span>
+            {ref.history.sourceChangeSummary.fileCount} files · +
+            {ref.history.sourceChangeSummary.additions} -
+            {ref.history.sourceChangeSummary.deletions}
+          </span>
+          <span>
+            {ref.history.branch} @ {ref.history.commit}
+          </span>
+          <span>{ref.history.publications.length} publications</span>
+          <button
+            onClick={() => void requestPublication(ref.sourceHistoryId)}
+            type="button"
+          >
+            Publish Source History
+          </button>
+        </div>
+      ))}
+      <div className="artifact-actions">
+        <input
+          aria-label="Source-history publication reason"
+          onChange={(event) => setPublishReason(event.target.value)}
+          placeholder="Publication reason"
+          value={publishReason}
+        />
+        <label className="inline-checkbox">
+          <input
+            checked={retryFailedPublication}
+            onChange={(event) => setRetryFailedPublication(event.target.checked)}
+            type="checkbox"
+          />
+          <span>Retry failed</span>
+        </label>
+        {status ? <span className="metadata">{status}</span> : null}
+      </div>
+    </div>
+  );
+}
+
 function WikiResourceCards({
   baseUrl,
   message,
@@ -744,6 +866,12 @@ function MessageTimeline({
             </ul>
           ) : null}
           <SourceChangeReview
+            baseUrl={baseUrl}
+            message={message}
+            onRefresh={onRefresh}
+            state={state}
+          />
+          <SourceHistoryResourceCards
             baseUrl={baseUrl}
             message={message}
             onRefresh={onRefresh}

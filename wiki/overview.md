@@ -181,6 +181,11 @@ The most accurate current description is:
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, and a completed projected `runtime.wiki.publish` command receipt;
+- the running User Client can now request runner-owned source-history
+  publication for visible source-history resources in the selected User Node
+  conversation, and the process-runner smoke proves that participant path
+  through a completed projected `runtime.source_history.publish` command
+  receipt;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;
@@ -1064,8 +1069,9 @@ The current implementation-truth audit now lives in
   projected git refs, explicit wiki target publication, and shared
   multi-target source-history publication presentation plus runner-owned
   artifact restore exposed through operator surfaces plus runner-owned
-  artifact source-change proposal operator and User Client requests plus
-  explicit runner-owned artifact/source/wiki command completion receipts; the
+  artifact source-change proposal operator and User Client requests plus User
+  Client visible source-history publication requests plus explicit
+  runner-owned artifact/source/wiki command completion receipts; the
   next git gaps are richer wiki promotion policy and repository lifecycle
   behavior, source-history
   merge/reconcile workflows, and explicit fallback or

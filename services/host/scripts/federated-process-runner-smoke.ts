@@ -759,10 +759,18 @@ async function main(): Promise<void> {
     "team-alpha",
     `${nonPrimarySourceRepositoryName}.git`
   );
+  const userClientSourceRepositoryName = `${graphId}-source-user-client`;
+  const userClientSourceRepositoryPath = path.join(
+    tempRoot,
+    "git",
+    "team-alpha",
+    `${userClientSourceRepositoryName}.git`
+  );
   await mkdir(path.dirname(primaryGitRepositoryPath), { recursive: true });
   runGit(["init", "--bare", primaryGitRepositoryPath]);
   runGit(["init", "--bare", nonPrimaryWikiRepositoryPath]);
   runGit(["init", "--bare", nonPrimarySourceRepositoryPath]);
+  runGit(["init", "--bare", userClientSourceRepositoryPath]);
   printPass("git-backend", gitRemoteBase);
 
   let server: Awaited<ReturnType<typeof buildHostServer>> | undefined;
@@ -3335,6 +3343,176 @@ async function main(): Promise<void> {
       "projected-user-client-artifact-restore-command-receipt",
       `command=${projectedUserClientArtifactRestoreReceipt.commandId}; ` +
         `status=${projectedUserClientArtifactRestoreReceipt.receiptStatus}`
+    );
+
+    const sourceHistoryApprovalId = `approval-source-history-${runId}`;
+    const syntheticSourceHistoryApprovalRequestMessageId =
+      await publishSyntheticA2AMessage({
+        message: {
+          constraints: {
+            approvalRequiredBeforeAction: false
+          },
+          conversationId: userMessage.conversationId,
+          fromNodeId: "builder",
+          fromPubkey: materializedContext.identityContext.publicKey,
+          graphId: materializedContext.binding.graphId,
+          intent: "Request User Node review for source-history publication.",
+          messageType: "approval.request",
+          parentMessageId: userMessage.eventId,
+          protocol: "entangle.a2a.v1",
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: userMessage.sessionId,
+          toNodeId: "user",
+          toPubkey: materializedUserContext.identityContext.publicKey,
+          turnId: `${turnId}-source-history-approval-request`,
+          work: {
+            artifactRefs: [sourceHistoryArtifactRef],
+            metadata: {
+              approval: {
+                approvalId: sourceHistoryApprovalId,
+                approverNodeIds: ["user"],
+                operation: "source_publication",
+                resource: {
+                  id: projectedBuilderSourceHistory.sourceHistoryId,
+                  kind: "source_history",
+                  label: projectedBuilderSourceHistory.sourceHistoryId
+                }
+              }
+            },
+            summary:
+              "Process runner smoke: approve builder source-history publication."
+          }
+        },
+        relayUrls,
+        senderSecretKeyHex: builderIdentitySecret.secretKey
+      });
+    const sourceHistoryApprovalConversationDetail = await waitFor(
+      "Host User Node inbound source-history approval request",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.messageType === "approval.request" &&
+            message.approval?.approvalId === sourceHistoryApprovalId &&
+            message.approval.resource?.kind === "source_history"
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const sourceHistoryApprovalRecord =
+      sourceHistoryApprovalConversationDetail.messages.find(
+        (message) =>
+          message.eventId === syntheticSourceHistoryApprovalRequestMessageId &&
+          message.approval?.approvalId === sourceHistoryApprovalId
+      );
+    if (!sourceHistoryApprovalRecord) {
+      throw new Error(
+        "User Node conversation detail must include the inbound source-history approval request."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      sourceHistoryApprovalRecord,
+      "Host User Node source-history approval request record"
+    );
+    assertCondition(
+      sourceHistoryApprovalRecord.signerPubkey ===
+        materializedContext.identityContext.publicKey,
+      "Host User Node source-history approval request must preserve the builder signer."
+    );
+    printPass(
+      "user-node-source-history-approval-request",
+      sourceHistoryApprovalId
+    );
+
+    const userClientSourceHistoryPublicationResponse = await fetch(
+      new URL("/api/source-history/publish", userClientUrl),
+      {
+        body: JSON.stringify({
+          conversationId: userMessage.conversationId,
+          nodeId: "builder",
+          reason:
+            "Process runner smoke requested source-history publication from the User Client.",
+          retryFailedPublication: true,
+          sourceHistoryId: projectedBuilderSourceHistory.sourceHistoryId,
+          target: {
+            repositoryName: userClientSourceRepositoryName
+          }
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientSourceHistoryPublicationResponse,
+      "User Client JSON source-history publication"
+    );
+    const userClientSourceHistoryPublicationRaw =
+      (await userClientSourceHistoryPublicationResponse.json()) as {
+        source?: string;
+        sourceHistoryRefs?: Array<{ nodeId?: string; sourceHistoryId?: string }>;
+        userNodeId?: string;
+      };
+    const userClientSourceHistoryPublicationRequest =
+      runtimeSourceHistoryPublishResponseSchema.parse(
+        userClientSourceHistoryPublicationRaw
+      );
+    assertCondition(
+      userClientSourceHistoryPublicationRaw.source === "runtime" &&
+        userClientSourceHistoryPublicationRaw.userNodeId === "user" &&
+        userClientSourceHistoryPublicationRaw.sourceHistoryRefs?.some(
+          (ref) =>
+            ref.nodeId === "builder" &&
+            ref.sourceHistoryId ===
+              projectedBuilderSourceHistory.sourceHistoryId
+        ),
+      "User Client source-history publication response must identify runtime source, User Node, and visible source-history refs."
+    );
+    printPass(
+      "user-client-source-history-publication-request",
+      `command=${userClientSourceHistoryPublicationRequest.commandId}; ` +
+        `sourceHistory=${projectedBuilderSourceHistory.sourceHistoryId}`
+    );
+
+    const projectedUserClientSourceHistoryPublicationReceipt = await waitFor(
+      "Host projected User Client source-history publication command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId ===
+              userClientSourceHistoryPublicationRequest.commandId &&
+            receipt.commandEventType === "runtime.source_history.publish" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.sourceHistoryId ===
+              projectedBuilderSourceHistory.sourceHistoryId
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-user-client-source-history-publication-command-receipt",
+      `command=${projectedUserClientSourceHistoryPublicationReceipt.commandId}; ` +
+        `status=${projectedUserClientSourceHistoryPublicationReceipt.receiptStatus}`
     );
 
     const approvalId = `approval-${runId}`;

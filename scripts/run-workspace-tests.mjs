@@ -4,9 +4,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
 const suites = [
-  { name: "@entangle/types", directory: "packages/types", timeoutMs: 120_000 },
+  {
+    name: "@entangle/types",
+    directory: "packages/types",
+    timeoutMs: 120_000
+  },
   {
     name: "@entangle/nostr-fabric",
     directory: "packages/nostr-fabric",
@@ -42,40 +47,47 @@ const suites = [
     directory: "services/runner",
     timeoutMs: 180_000
   },
-  { name: "@entangle/host", directory: "services/host", timeoutMs: 180_000 },
-  { name: "@entangle/studio", directory: "apps/studio", timeoutMs: 120_000 },
-  { name: "@entangle/cli", directory: "apps/cli", timeoutMs: 120_000 }
+  {
+    name: "@entangle/host",
+    directory: "services/host",
+    timeoutMs: 180_000
+  },
+  {
+    name: "@entangle/studio",
+    directory: "apps/studio",
+    timeoutMs: 120_000
+  },
+  {
+    name: "@entangle/cli",
+    directory: "apps/cli",
+    timeoutMs: 120_000
+  }
 ];
 
+const interSuiteDelayMs = 1000;
 let activeChild;
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 function killActiveChild(signal = "SIGTERM") {
   if (!activeChild?.pid || activeChild.exitCode !== null) {
     return;
   }
 
-  try {
-    if (process.platform === "win32") {
-      activeChild.kill(signal);
-      return;
-    }
-
-    process.kill(-activeChild.pid, signal);
-  } catch (error) {
-    if (error?.code !== "ESRCH") {
-      throw error;
-    }
-  }
+  activeChild.kill(signal);
 }
 
 async function runSuite(suite) {
   console.log(`\n[workspace-test] ${suite.name}`);
 
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     let timedOut = false;
-    const child = spawn("pnpm", ["--dir", suite.directory, "test"], {
+    const child = spawn(pnpmBin, ["--dir", suite.directory, "test"], {
       cwd: repoRoot,
-      detached: process.platform !== "win32",
       env: {
         ...process.env,
         CI: process.env.CI ?? "true"
@@ -136,6 +148,7 @@ process.on("SIGTERM", () => {
 try {
   for (const suite of suites) {
     await runSuite(suite);
+    await sleep(interSuiteDelayMs);
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

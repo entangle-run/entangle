@@ -6,9 +6,12 @@ import type {
   RuntimeArtifactSourceChangeProposalResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
+  RuntimeSourceHistoryPublishResponse,
   RuntimeWikiPublishResponse,
   SourceChangeRefProjectionRecord,
   SourceChangeSummary,
+  SourceHistoryPublicationTarget,
+  SourceHistoryRefProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeConversationResponse,
   UserNodeConversationReadResponse,
@@ -38,6 +41,7 @@ export type UserClientState = {
     relayUrls: string[];
   };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
+  sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
@@ -108,6 +112,13 @@ export type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
 };
+
+export type UserClientSourceHistoryPublishResponse =
+  RuntimeSourceHistoryPublishResponse & {
+    source: "runtime";
+    sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+    userNodeId: string;
+  };
 
 export type UserClientSourceChangeDiffResponse = {
   candidateId: string;
@@ -396,6 +407,37 @@ export function publishWikiRepository(input: {
       method: "POST"
     }
   });
+}
+
+export function publishSourceHistory(input: {
+  baseUrl: string;
+  conversationId: string;
+  nodeId: string;
+  reason?: string | undefined;
+  retryFailedPublication?: boolean | undefined;
+  sourceHistoryId: string;
+  target?: SourceHistoryPublicationTarget | undefined;
+}): Promise<UserClientSourceHistoryPublishResponse> {
+  return fetchJson<UserClientSourceHistoryPublishResponse>(
+    "/api/source-history/publish",
+    {
+      baseUrl: input.baseUrl,
+      init: {
+        body: JSON.stringify({
+          conversationId: input.conversationId,
+          nodeId: input.nodeId,
+          ...(input.reason ? { reason: input.reason } : {}),
+          retryFailedPublication: input.retryFailedPublication ?? false,
+          sourceHistoryId: input.sourceHistoryId,
+          ...(input.target ? { target: input.target } : {})
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    }
+  );
 }
 
 export function fetchSourceChangeDiff(input: {

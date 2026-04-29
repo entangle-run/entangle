@@ -1014,6 +1014,54 @@ describe("runner runtime context", () => {
                   status: "pending_review"
                 }
               ],
+              sourceHistoryRefs: [
+                {
+                  graphId: "graph-alpha",
+                  history: {
+                    appliedAt: "2026-04-26T12:03:00.000Z",
+                    appliedBy: "user-main",
+                    baseTree: "tree-base-alpha",
+                    branch: "entangle-source-history",
+                    candidateId: "source-change-turn-alpha",
+                    commit: "commit-source-history-alpha",
+                    graphId: "graph-alpha",
+                    graphRevisionId: "graph-alpha-rev-1",
+                    headTree: "tree-head-alpha",
+                    mode: "already_in_workspace",
+                    nodeId: "worker-it",
+                    publications: [],
+                    sourceChangeSummary: {
+                      additions: 3,
+                      checkedAt: "2026-04-26T12:02:00.000Z",
+                      deletions: 1,
+                      fileCount: 1,
+                      filePreviews: [],
+                      files: [
+                        {
+                          additions: 3,
+                          deletions: 1,
+                          path: "src/index.ts",
+                          status: "modified"
+                        }
+                      ],
+                      status: "changed",
+                      truncated: false
+                    },
+                    sourceHistoryId: "source-history-turn-alpha",
+                    turnId: "turn-alpha",
+                    updatedAt: "2026-04-26T12:03:00.000Z"
+                  },
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:03:00.000Z"
+                  },
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey,
+                  sourceHistoryId: "source-history-turn-alpha"
+                }
+              ],
               wikiRefs: [
                 {
                   artifactId: "wiki-alpha",
@@ -1216,6 +1264,36 @@ describe("runner runtime context", () => {
                   toNodeId: "user-main",
                   toPubkey: runnerPublicKey,
                   turnId: "turn-wiki",
+                  userNodeId: "user-main"
+                },
+                {
+                  approval: {
+                    approvalId: "approval-source-history",
+                    approverNodeIds: ["user-main"],
+                    operation: "source_publication",
+                    resource: {
+                      id: "source-history-turn-alpha",
+                      kind: "source_history",
+                      label: "source-history-turn-alpha"
+                    }
+                  },
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:02:45.000Z",
+                  direction: "inbound",
+                  eventId:
+                    "abababababababababababababababababababababababababababababababab",
+                  fromNodeId: "worker-it",
+                  fromPubkey: remotePublicKey,
+                  messageType: "approval.request",
+                  peerNodeId: "worker-it",
+                  publishedRelays: [],
+                  relayUrls: [],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Review source-history publication.",
+                  toNodeId: "user-main",
+                  toPubkey: runnerPublicKey,
+                  turnId: "turn-source-history",
                   userNodeId: "user-main"
                 }
               ],
@@ -1455,6 +1533,24 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "POST" &&
+          request.url ===
+            "/v1/runtimes/worker-it/source-history/source-history-turn-alpha/publish"
+        ) {
+          response.end(
+            JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-source-history-publish-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-26T12:06:45.000Z",
+              sourceHistoryId: "source-history-turn-alpha",
+              status: "requested"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
           const body = requestRecord.body as
@@ -1605,6 +1701,12 @@ describe("runner runtime context", () => {
             peerNodeId: "worker-it"
           }
         ],
+        sourceHistoryRefs: [
+          {
+            nodeId: "worker-it",
+            sourceHistoryId: "source-history-turn-alpha"
+          }
+        ],
         targets: [
           {
             nodeId: "worker-it"
@@ -1656,6 +1758,14 @@ describe("runner runtime context", () => {
             message.direction === "inbound" &&
             message.messageType === "approval.request" &&
             message.summary === "Approve source application."
+        )
+      ).toBeDefined();
+      expect(
+        conversationApiBody.messages.find(
+          (message) =>
+            message.direction === "inbound" &&
+            message.messageType === "approval.request" &&
+            message.summary === "Review source-history publication."
         )
       ).toBeDefined();
 
@@ -1844,6 +1954,40 @@ describe("runner runtime context", () => {
         ]
       });
 
+      const jsonSourceHistoryPublishResponse = await fetch(
+        new URL("/api/source-history/publish", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Publish reviewed source history.",
+            retryFailedPublication: true,
+            sourceHistoryId: "source-history-turn-alpha"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonSourceHistoryPublishResponse.status).toBe(200);
+      await expect(
+        jsonSourceHistoryPublishResponse.json()
+      ).resolves.toMatchObject({
+        commandId: "cmd-source-history-publish-alpha",
+        nodeId: "worker-it",
+        source: "runtime",
+        sourceHistoryId: "source-history-turn-alpha",
+        sourceHistoryRefs: [
+          {
+            nodeId: "worker-it",
+            sourceHistoryId: "source-history-turn-alpha"
+          }
+        ],
+        status: "requested",
+        userNodeId: "user-main"
+      });
+
       const jsonUnscopedArtifactResponse = await fetch(
         new URL(
           "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha",
@@ -1912,6 +2056,26 @@ describe("runner runtime context", () => {
         jsonUnscopedWikiPublishResponse.json()
       ).resolves.toMatchObject({
         error: "Runtime node and conversation are required."
+      });
+
+      const jsonUnscopedSourceHistoryPublishResponse = await fetch(
+        new URL("/api/source-history/publish", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            nodeId: "worker-it",
+            sourceHistoryId: "source-history-turn-alpha"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonUnscopedSourceHistoryPublishResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedSourceHistoryPublishResponse.json()
+      ).resolves.toMatchObject({
+        error: "Runtime node, source-history id, and conversation are required."
       });
 
       const jsonSourceDiffResponse = await fetch(
@@ -2058,6 +2222,10 @@ describe("runner runtime context", () => {
       );
       expect(pageBody).toContain("approval-alpha");
       expect(pageBody).toContain("approval-wiki");
+      expect(pageBody).toContain("approval-source-history");
+      expect(pageBody).toContain("source_history:source-history-turn-alpha");
+      expect(pageBody).toContain("Publish source history");
+      expect(pageBody).toContain("/source-history/publish");
       expect(pageBody).toContain("wiki_repository:worker-it");
       expect(pageBody.match(/Wiki repository committed at abc123\./g) ?? [])
         .toHaveLength(2);
@@ -2173,6 +2341,28 @@ describe("runner runtime context", () => {
       expect(artifactProposalResponse.status).toBe(200);
       expect(artifactProposalBody).toContain(
         "Requested source-change proposal artifact-proposal-alpha"
+      );
+
+      const sourceHistoryPublishResponse = await fetch(
+        new URL("/source-history/publish", handle.clientUrl),
+        {
+          body: new URLSearchParams({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Publish reviewed source history.",
+            retryFailedPublication: "true",
+            sourceHistoryId: "source-history-turn-alpha"
+          }),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded"
+          },
+          method: "POST"
+        }
+      );
+      const sourceHistoryPublishBody = await sourceHistoryPublishResponse.text();
+      expect(sourceHistoryPublishResponse.status).toBe(200);
+      expect(sourceHistoryPublishBody).toContain(
+        "Requested source-history publication cmd-source-history-publish-alpha"
       );
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
@@ -2339,6 +2529,23 @@ describe("runner runtime context", () => {
       requestedBy: "user-main",
       retryFailedPublication: true
     });
+    const sourceHistoryPublishRequests = hostRequests.filter(
+      (request) =>
+        request.method === "POST" &&
+        request.url ===
+          "/v1/runtimes/worker-it/source-history/source-history-turn-alpha/publish"
+    );
+    expect(sourceHistoryPublishRequests).toHaveLength(2);
+    for (const request of sourceHistoryPublishRequests) {
+      expect(request).toMatchObject({
+        authorization: "Bearer host-secret"
+      });
+      expect(request.body).toMatchObject({
+        reason: "Publish reviewed source history.",
+        requestedBy: "user-main",
+        retryFailedPublication: true
+      });
+    }
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&
@@ -2385,7 +2592,7 @@ describe("runner runtime context", () => {
       conversationId: "conversation-alpha",
       messageType: "read.receipt",
       parentMessageId:
-        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "abababababababababababababababababababababababababababababababab",
       responsePolicy: {
         closeOnResult: true,
         maxFollowups: 0,

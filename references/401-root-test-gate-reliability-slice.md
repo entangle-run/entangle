@@ -39,10 +39,9 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Replace root `pnpm test` Turbo invocation with an explicit sequential
   workspace test runner script.
 - Keep Turbo for build/lint where it is not the observed hang point.
-- Run each package through `pnpm --dir <workspace> test` with inherited stdio,
-  package-specific timeouts, and process-group cleanup on interruption or
-  timeout, instead of relying on a long shell `&&` chain of `pnpm --filter`
-  commands.
+- Run each package through `pnpm --dir <workspace> test` with inherited stdio
+  and package-specific timeouts instead of relying on a long shell `&&` chain
+  of `pnpm --filter` commands.
 - Add explicit Vitest fork pools for CLI, Studio, and User Client package test
   scripts.
 - Earlier follow-up hardening briefly added explicit Vitest fork pools to
@@ -64,6 +63,11 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Follow-up correction: Runner tests now also use `--pool=threads` after the
   root gate reproduced a no-output hang under the default pool and the same
   suite passed immediately under threads and forks.
+- Follow-up correction: the root sequential runner now uses non-detached async
+  package commands plus a short one-second drain between suites. Detached
+  wrappers and immediate back-to-back suite execution reproduced no-output
+  hangs on different packages, while delayed
+  `pnpm --dir <workspace> test` commands passed.
 - Re-run package tests and root `pnpm test`.
 
 ## Tests Required

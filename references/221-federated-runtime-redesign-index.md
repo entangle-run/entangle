@@ -215,6 +215,7 @@ same-machine slice records.
 - [412-user-client-wiki-publication-slice.md](412-user-client-wiki-publication-slice.md)
 - [413-user-client-wiki-publication-process-smoke-slice.md](413-user-client-wiki-publication-process-smoke-slice.md)
 - [414-user-client-artifact-restore-slice.md](414-user-client-artifact-restore-slice.md)
+- [415-user-client-source-history-publication-slice.md](415-user-client-source-history-publication-slice.md)
 
 ## Audited Scope
 
@@ -754,7 +755,11 @@ control plane. Those User Client artifact routes now require conversation
 context and verify that the artifact ref is visible in that User Node
 conversation before proxying to Host. The process-runner smoke now delivers
 the real builder-published source-history artifact to the User Node and verifies
-history/diff through the running User Client JSON routes. User Client
+history/diff through the running User Client JSON routes. The running User
+Client can now request runner-owned source-history publication for visible
+source-history resources in the selected conversation, and the process proof
+waits for the completed projected `runtime.source_history.publish` command
+receipt from that participant path. User Client
 source-change diff and review routes now require conversation context and verify
 that the selected conversation contains matching approval-resource or projected
 session evidence before returning diff evidence, returning file preview

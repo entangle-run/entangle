@@ -9,9 +9,10 @@ Root `pnpm test` now uses `scripts/run-workspace-tests.mjs`, an explicit
 sequential workspace test runner, because Turbo test execution and later a
 long shell `pnpm --filter ... && ...` chain left Vitest child processes open in
 this environment. Workspace Vitest scripts that reproduced the same
-chained-process hang now use fork pools, with CLI pinned to one worker; the
-remaining Node suites keep their previous default pool because that remains
-their stable configuration here.
+chained-process hang now use explicit stable pools where needed: CLI, Studio,
+and User Client use fork pools, CLI is pinned to one worker, and Host and
+Runner use the threads pool. The remaining Node suites keep their previous
+default pool because that remains their stable configuration here.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 
@@ -481,6 +482,11 @@ Current status:
   wiki resources visible in the selected User Node conversation, with the Human
   Interface Runtime enforcing the conversation/wiki-resource boundary and
   forwarding `requestedBy` as the User Node id;
+- the running User Client can now request runner-owned source-history
+  publication for `source_history` or `source_history_publication` resources
+  visible in the selected User Node conversation, with the Human Interface
+  Runtime checking matching projected `sourceHistoryRefs` before forwarding to
+  Host with `requestedBy` set to the User Node id;
 - Host now returns an effective proposal id for every artifact source-change
   proposal request and sends that same id to the runner, so request
   acknowledgements identify the candidate id to follow;
@@ -905,6 +911,10 @@ Current status:
 - the process proof now publishes a signed builder-to-User-Node wiki approval
   request, calls the running User Client wiki publication JSON route, and waits
   for the completed projected `runtime.wiki.publish` command receipt;
+- the process proof now publishes a signed builder-to-User-Node source-history
+  approval request, calls the running User Client source-history publication
+  JSON route, and waits for the completed projected
+  `runtime.source_history.publish` command receipt;
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;
@@ -912,8 +922,9 @@ Current status:
   `runtime.command.receipt` correlated to the Host command id, effective
   proposal id, and resulting source-change candidate id, and the process proof
   waits for that receipt after candidate projection;
-- artifact restore, targeted source-history publication, source-history replay
-  unit coverage, and wiki publication now emit the same signed command receipt
+- artifact restore, targeted source-history publication, User Client
+  source-history publication, source-history replay unit coverage, and wiki
+  publication now emit the same signed command receipt
   model; the process proof waits for completed restore, targeted
   source-history publication, and wiki publication receipts in addition to
   domain artifact/source/wiki evidence;

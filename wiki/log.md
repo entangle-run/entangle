@@ -4957,3 +4957,26 @@ The dedicated User Client now exposes restore controls on artifact cards, and
 the federated process-runner smoke calls the running User Client restore route
 for a visible source-history artifact before waiting for the completed
 projected `runtime.artifact.restore` command receipt.
+
+## [2026-04-29] implementation | Added User Client source-history publication requests
+
+Added `references/415-user-client-source-history-publication-slice.md`. The
+Human Interface Runtime now exposes a conversation-scoped
+`POST /api/source-history/publish` route for visible source-history resources,
+checks matching projected `sourceHistoryRefs`, and forwards Host source-history
+publication control with `requestedBy` set to the User Node id.
+
+The dedicated User Client now renders source-history publication controls for
+visible source-history approval resources. The process-runner smoke publishes a
+signed builder source-history approval request to the User Node, calls the
+running User Client publication route, and waits for the completed projected
+`runtime.source_history.publish` command receipt.
+
+## [2026-04-29] tooling | Added root test wrapper suite drain
+
+While verifying the source-history User Client slice, the sequential root test
+gate reproduced no-output hangs on different workspace packages even though
+the same `pnpm --dir <workspace> test` commands passed directly. The root
+`scripts/run-workspace-tests.mjs` wrapper now uses non-detached package
+commands and waits one second between suites, matching the delayed direct
+sequence that passed end to end in this environment.
