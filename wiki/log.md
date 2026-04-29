@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Surfaced artifact cache status in Studio
+
+Added the path-free artifact backend cache summary to Studio's Host Status
+panel using the shared host-client formatter, keeping CLI and Studio operator
+vocabulary aligned while leaving cache mutation on the Host API/CLI path.
+
+Added `references/354-studio-artifact-cache-status-slice.md`.
+
 ## [2026-04-29] implementation | Added artifact backend cache clear control
 
 Added an operator Host API and CLI command to dry-run or clear the derived

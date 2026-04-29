@@ -318,7 +318,8 @@ This repository currently contains:
   CLI, and Studio rendering, and now also reports bounded derived artifact
   backend cache availability, repository count, and size without exposing Host
   filesystem paths; operators can dry-run or clear that derived cache through
-  the Host API and CLI without deleting authoritative artifact/projection state;
+  the Host API and CLI without deleting authoritative artifact/projection state,
+  and Studio renders the cache summary in the Host Status panel;
 - CLI can generate schema-validated generic runner join configs from Host
   status through `entangle runners join-config`, while the runner package now
   exposes an `entangle-runner` bin for `join --config` startup, including an

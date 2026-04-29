@@ -395,6 +395,8 @@ Current status:
   and size as derived operational metadata;
 - Host API, host-client, and CLI can now dry-run or clear the derived artifact
   backend cache without deleting authoritative artifact/projection state;
+- Studio's Host Status panel renders the same path-free artifact backend cache
+  summary for admin visibility;
 - richer source/wiki mutation endpoints, non-primary publication, richer cache
   policy, and artifact restore/promotion still need projection-backed or
   backend-resolved replacement.
@@ -678,6 +680,7 @@ Implementation records:
 - [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
+- [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 
 Current status:
 
@@ -710,6 +713,7 @@ Current status:
 - Host API and CLI can dry-run or clear the derived artifact backend cache
   without touching authoritative artifact, projection, runner, or git backend
   state;
+- Studio displays the artifact backend cache summary in the Host Status panel;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

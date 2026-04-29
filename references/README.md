@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
+[354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -62,7 +62,8 @@ path against a real runner-published source-history artifact. Host status now
 exposes bounded availability, repository count, and size metadata for that
 derived artifact backend cache without exposing Host filesystem paths, and Host
 API/CLI operators can dry-run or clear that derived cache without deleting
-authoritative artifact or projection state.
+authoritative artifact or projection state. Studio's Host Status panel renders
+the same path-free cache summary for admin visibility.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

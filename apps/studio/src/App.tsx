@@ -17,6 +17,7 @@ import {
 } from "@xyflow/react";
 import {
   createHostClient,
+  formatHostArtifactBackendCacheSummary,
   formatHostStateLayoutSummary,
   formatHostStatusSessionDiagnosticsSummary,
   formatHostTransportControlObserveSummary,
@@ -4196,6 +4197,14 @@ export function App() {
               <dd>
                 {status
                   ? formatHostTransportControlObserveSummary(status)
+                  : "not loaded"}
+              </dd>
+            </div>
+            <div>
+              <dt>Artifact cache</dt>
+              <dd>
+                {status
+                  ? formatHostArtifactBackendCacheSummary(status)
                   : "not loaded"}
               </dd>
             </div>

@@ -154,6 +154,7 @@ same-machine slice records.
 - [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
+- [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 
 ## Audited Scope
 
@@ -594,6 +595,8 @@ source-history artifact. Host status now exposes bounded operational metadata
 for that derived artifact backend cache without exposing paths or treating it
 as protocol truth, and operators can dry-run or clear that derived cache through
 the Host API/CLI without mutating authoritative artifact or projection state.
+Studio's Host Status panel now renders the same path-free artifact cache
+summary for admin visibility.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

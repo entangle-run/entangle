@@ -163,7 +163,8 @@ without probing relay state directly. Host status also reports bounded
 artifact backend cache availability, repository count, and size as derived
 operator diagnostics without exposing Host filesystem paths, and Host API/CLI
 operators can dry-run or clear that derived cache without mutating
-authoritative artifact or projection state.
+authoritative artifact or projection state. Studio renders the same summary in
+the Host Status panel.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
