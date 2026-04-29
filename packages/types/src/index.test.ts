@@ -165,6 +165,18 @@ describe("host API error contracts", () => {
       message: "Entangle host operator token is required."
     });
   });
+
+  it("accepts forbidden responses from the bootstrap host auth boundary", () => {
+    expect(
+      hostErrorResponseSchema.parse({
+        code: "forbidden",
+        message: "Entangle host operator role 'viewer' cannot mutate Host state."
+      })
+    ).toEqual({
+      code: "forbidden",
+      message: "Entangle host operator role 'viewer' cannot mutate Host state."
+    });
+  });
 });
 
 describe("federated runtime contracts", () => {
@@ -3042,6 +3054,7 @@ describe("host event contracts", () => {
         "Host operator request 'PUT /v1/external-principals/worker-it-git' completed with status 200.",
       method: "PUT",
       operatorId: "ops-lead",
+      operatorRole: "admin",
       path: "/v1/external-principals/worker-it-git",
       requestId: "req-1",
       schemaVersion: "1",
@@ -3053,6 +3066,7 @@ describe("host event contracts", () => {
     expect(result.type).toBe("host.operator_request.completed");
     expect(result.category).toBe("security");
     expect(result.operatorId).toBe("ops-lead");
+    expect(result.operatorRole).toBe("admin");
   });
 
   it("accepts a typed runtime observed-state event", () => {

@@ -18,7 +18,10 @@ Host status now includes a required `security` object:
 - `operatorAuthMode: "bootstrap_operator_token"`, `operatorId`, and
   `operatorRole` when `ENTANGLE_HOST_OPERATOR_TOKEN` is configured.
 
-This is still bootstrap security, not production RBAC.
+Follow-up `431-bootstrap-viewer-operator-authorization-slice.md` now enforces
+the bootstrap `viewer` role as read-only and records `operatorRole` on
+protected mutation audit events. This is still bootstrap security, not
+production RBAC.
 
 ## Current Repo Truth
 
@@ -133,6 +136,9 @@ to `operator`.
 
 ## Open Questions
 
+- Partially addressed by
+  `431-bootstrap-viewer-operator-authorization-slice.md`: `viewer` is now a
+  real read-only bootstrap role, but the durable principal model is still open.
 - What durable principal model replaces the bootstrap token?
 - Should future operator identities be signed Nostr principals, web session
   principals, service tokens, or a combination?

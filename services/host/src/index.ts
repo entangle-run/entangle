@@ -19,6 +19,7 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  type OperatorRole,
   type ArtifactRef,
   type GitRepositoryTargetSelector,
   type RuntimeAssignmentRecord,
@@ -46,6 +47,7 @@ import {
   hostProjectionSnapshotSchema,
   hostArtifactBackendCacheClearRequestSchema,
   hostArtifactBackendCacheClearResponseSchema,
+  operatorRoleSchema,
   nodeCreateRequestSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
@@ -428,6 +430,27 @@ function normalizeOperatorId(operatorId: string | undefined): string {
   }
 
   return "bootstrap-operator";
+}
+
+function normalizeOperatorRole(operatorRole: string | undefined): OperatorRole {
+  const parsedOperatorRole = operatorRoleSchema.safeParse(
+    operatorRole?.trim() || "operator"
+  );
+
+  return parsedOperatorRole.success ? parsedOperatorRole.data : "operator";
+}
+
+function isReadOnlyRequestMethod(method: string): boolean {
+  return ["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
+}
+
+function operatorRoleAllowsRequest(input: {
+  method: string;
+  role: OperatorRole;
+}): boolean {
+  return input.role === "viewer"
+    ? isReadOnlyRequestMethod(input.method)
+    : true;
 }
 
 function asHostOperatorRequestMethod(
@@ -1029,27 +1052,47 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
   if (operatorToken) {
     const operatorId = normalizeOperatorId(process.env.ENTANGLE_HOST_OPERATOR_ID);
+    const operatorRole = normalizeOperatorRole(
+      process.env.ENTANGLE_HOST_OPERATOR_ROLE
+    );
 
     server.addHook("preHandler", (request, reply, done) => {
       if (
-        requestHasValidOperatorToken({
+        !requestHasValidOperatorToken({
           authorization: request.headers.authorization,
           operatorToken,
           query: request.query,
           upgrade: request.headers.upgrade
         })
       ) {
-        done();
+        reply.header("www-authenticate", "Bearer realm=\"entangle-host\"");
+        reply.status(401).send(
+          hostErrorResponseSchema.parse({
+            code: "unauthorized",
+            message: "Entangle host operator token is required."
+          })
+        );
         return;
       }
 
-      reply.header("www-authenticate", "Bearer realm=\"entangle-host\"");
-      reply.status(401).send(
-        hostErrorResponseSchema.parse({
-          code: "unauthorized",
-          message: "Entangle host operator token is required."
+      if (
+        !operatorRoleAllowsRequest({
+          method: request.method,
+          role: operatorRole
         })
-      );
+      ) {
+        reply.status(403).send(
+          hostErrorResponseSchema.parse({
+            code: "forbidden",
+            message:
+              `Entangle host operator role '${operatorRole}' is not allowed ` +
+              `to perform ${request.method.toUpperCase()} requests.`
+          })
+        );
+        return;
+      }
+
+      done();
     });
 
     server.addHook("onResponse", async (request, reply) => {
@@ -1068,6 +1111,7 @@ export async function buildHostServer(options: HostServerOptions = {}) {
           message: `Host operator request '${method} ${path}' completed with status ${reply.statusCode}.`,
           method,
           operatorId,
+          operatorRole,
           path,
           requestId: String(request.id),
           statusCode: reply.statusCode,

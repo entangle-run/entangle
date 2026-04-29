@@ -45,6 +45,7 @@ import {
   conversationStatusCountsSchema,
   hostSessionConsistencyFindingCodeSchema
 } from "./sessions.js";
+import { operatorRoleSchema } from "../federation/authority.js";
 
 const hostEventBaseSchema = z.object({
   eventId: identifierSchema,
@@ -70,6 +71,7 @@ export const hostOperatorRequestCompletedEventSchema =
     category: z.literal("security"),
     method: hostOperatorRequestMethodSchema,
     operatorId: identifierSchema,
+    operatorRole: operatorRoleSchema,
     path: nonEmptyStringSchema,
     requestId: nonEmptyStringSchema,
     statusCode: z.number().int().positive(),

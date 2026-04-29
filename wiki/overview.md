@@ -369,7 +369,8 @@ The repository now also contains the first real implementation baseline:
   tokenless for low-friction development, plus typed `security` audit events
   for protected mutation requests through `host.operator_request.completed`
   and operator-visible Host status reporting of the active bootstrap security
-  posture;
+  posture; token-protected Hosts now enforce the bootstrap `viewer` role as
+  read-only and include `operatorRole` in protected mutation audit events;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime
@@ -1110,9 +1111,10 @@ The current implementation-truth audit now lives in
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics and
   consistency findings are implemented;
-- deepen the new bootstrap host operator-token and request-audit boundary into
-  real production identity and authorization only through explicit contracts,
-  tests, policy decisions, enforced roles, and operator-visible attribution;
+- deepen the bootstrap host operator-token boundary, request audit, status
+  reporting, and coarse read-only `viewer` enforcement into real production
+  identity and authorization only through explicit contracts, tests, policy
+  decisions, enforced roles, and operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

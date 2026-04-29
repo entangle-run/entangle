@@ -31,13 +31,20 @@ posture through Host status without returning token material. Tokenless mode
 reports `operatorAuthMode: "none"`, while token-protected mode reports
 normalized `operatorId` and `operatorRole`.
 
+Follow-up slice
+`431-bootstrap-viewer-operator-authorization-slice.md` makes
+`ENTANGLE_HOST_OPERATOR_ROLE=viewer` read-only for token-protected Hosts and
+adds `forbidden` as the structured denial code for authorized-but-not-allowed
+requests.
+
 ## What changed
 
 ### 1. Shared host error contract
 
-`packages/types` now includes `unauthorized` as a canonical host error code.
-This keeps host, host-client, CLI, Studio, and tests aligned on the same error
-surface instead of treating authentication failures as generic bad requests.
+`packages/types` includes `unauthorized` as a canonical host error code.
+Follow-up viewer-role enforcement also adds `forbidden`. This keeps host,
+host-client, CLI, Studio, and tests aligned on the same error surface instead
+of treating authentication or authorization failures as generic bad requests.
 
 ### 2. Host enforcement
 
@@ -99,7 +106,7 @@ operator context. It does not replace the longer-term production requirements:
 
 - user accounts;
 - workspace or tenant identity;
-- RBAC and ABAC;
+- full RBAC and ABAC beyond the bootstrap read-only `viewer` role;
 - short-lived service tokens;
 - secret manager backed token delivery;
 - audit attribution by user and service identity;

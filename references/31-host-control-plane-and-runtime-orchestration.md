@@ -70,10 +70,12 @@ The host also now has an optional bootstrap operator-token boundary. When
 `Authorization: Bearer <token>`, and the event stream validates the same token
 before exposing live host events. Protected mutation requests also produce
 typed `host.operator_request.completed` security events with method, path,
-request id, response status, auth mode, and bootstrap operator id. This does
-not replace future user, workspace, or role-aware authorization, but it
-prevents the local host from remaining an unconditionally open mutation surface
-and gives the bootstrap profile a first durable audit primitive.
+request id, response status, auth mode, bootstrap operator id, and bootstrap
+operator role. Token-protected Hosts now enforce the bootstrap `viewer` role as
+read-only. This does not replace future user, workspace, or role-aware
+authorization, but it prevents the local host from remaining an
+unconditionally open mutation surface and gives the bootstrap profile a first
+durable audit primitive.
 
 ## 3. Canonical local control-plane objects
 

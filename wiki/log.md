@@ -5142,6 +5142,19 @@ flag after the agent has produced work. The distributed proof tool smoke now
 proves both the passing evidence fixture and the missing-evidence failure
 fixture.
 
+## [2026-04-29] security | Enforced bootstrap viewer operator role
+
+Added `references/431-bootstrap-viewer-operator-authorization-slice.md`.
+Token-protected Hosts now enforce `ENTANGLE_HOST_OPERATOR_ROLE=viewer` as a
+read-only bootstrap role while preserving existing mutation behavior for
+`operator`, `admin`, and `owner`.
+
+Host now returns structured `forbidden` errors for denied viewer mutations, and
+`host.operator_request.completed` audit events include `operatorRole` so
+allowed, denied, and unauthorized protected mutations can be attributed with
+the effective bootstrap role. This remains bootstrap authorization, not final
+production RBAC.
+
 ## [2026-04-29] test | Added distributed proof git backend health checks
 
 Added `references/430-distributed-proof-git-backend-health-verifier-slice.md`.

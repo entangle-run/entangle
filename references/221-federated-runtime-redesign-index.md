@@ -231,6 +231,7 @@ same-machine slice records.
 - [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 - [429-distributed-proof-relay-health-verifier-slice.md](429-distributed-proof-relay-health-verifier-slice.md)
 - [430-distributed-proof-git-backend-health-verifier-slice.md](430-distributed-proof-git-backend-health-verifier-slice.md)
+- [431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
 
 ## Audited Scope
 
@@ -804,8 +805,10 @@ without copying peer transcripts.
 Host status now also exposes the active bootstrap operator security mode
 without exposing secrets: tokenless deployments report `none`, while
 token-protected deployments report normalized bootstrap operator attribution
-and role. This remains operator-visible bootstrap posture, not final
-production RBAC. `pnpm ops:smoke-distributed-proof-tools` now gives CI a
+and role. Token-protected deployments now also enforce the bootstrap `viewer`
+role as read-only and include `operatorRole` in protected mutation audit
+events. This remains bootstrap authorization, not final production RBAC.
+`pnpm ops:smoke-distributed-proof-tools` now gives CI a
 deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
 self-test JSON, including default rejection of non-running runtime
 observations, duplicate User Client URLs, and wrong runner runtime-kind

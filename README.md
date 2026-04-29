@@ -300,7 +300,8 @@ This repository currently contains:
   an open mutation surface, plus typed `security` audit events for protected
   mutation requests through `host.operator_request.completed`, and Host status
   reporting of the active bootstrap operator security posture without exposing
-  token material;
+  token material; token-protected Hosts now enforce the bootstrap `viewer` role
+  as read-only and include `operatorRole` in protected mutation audit events;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
   when unused, and resolved into effective runtime context rather than
@@ -1220,9 +1221,9 @@ The highest-value remaining gaps are:
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
-  boundary and its visible status summary, including real principals,
-  enforced roles, policy-backed permissions, and stronger audit retention than
-  the current bootstrap request trace;
+  boundary, visible status summary, and coarse read-only `viewer` enforcement,
+  including durable principals, finer-grained policy-backed permissions, and
+  stronger audit retention than the current bootstrap request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

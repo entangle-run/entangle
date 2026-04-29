@@ -19,6 +19,7 @@ authorization system.
 - The event records:
   - `authMode`;
   - `operatorId`;
+  - `operatorRole` as the normalized bootstrap role;
   - HTTP mutation method;
   - request path without query string;
   - Fastify request id;
@@ -45,6 +46,10 @@ surface reports tokenless mode or normalized bootstrap operator id and role,
 but it still does not expose token material and still does not implement final
 RBAC.
 
+The later `431-bootstrap-viewer-operator-authorization-slice.md` makes
+`viewer` a real read-only bootstrap role and keeps recording denied protected
+mutations through this event, including `operatorRole`.
+
 The audit event is a bootstrap control-plane trace, not a compliance-grade
 immutable audit ledger. A future production identity slice should preserve this
 contract shape while replacing the shared-token actor with authenticated
@@ -55,7 +60,7 @@ retention.
 
 - Full user authentication.
 - Multi-operator identity.
-- Role-based authorization.
+- Full role-based authorization beyond the bootstrap `viewer` read-only gate.
 - Attribute-based authorization.
 - Token rotation.
 - Persistent login sessions.
@@ -68,9 +73,11 @@ Added test coverage verifies:
 - `host.operator_request.completed` parses through the canonical host event
   union.
 - token-protected unauthorized mutation requests produce a security audit
-  event with status `401`;
+  event with status `401` and the normalized `operatorRole`;
 - token-protected authorized mutation requests produce a security audit event
-  with status `200`.
+  with status `200` and the normalized `operatorRole`;
+- token-protected viewer mutation attempts produce a security audit event with
+  status `403` and `operatorRole: "viewer"`.
 
 Focused validation run:
 

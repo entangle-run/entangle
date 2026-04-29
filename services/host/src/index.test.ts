@@ -1008,6 +1008,72 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("allows viewer bootstrap operators to read but rejects mutations", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    process.env.ENTANGLE_HOST_OPERATOR_ID = "audit-viewer";
+    process.env.ENTANGLE_HOST_OPERATOR_ROLE = "viewer";
+    const server = await createTestServer();
+
+    try {
+      const statusResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(statusResponse.json()).security).toEqual({
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "audit-viewer",
+        operatorRole: "viewer"
+      });
+
+      const mutationResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "PUT",
+        payload: {},
+        url: "/v1/catalog"
+      });
+
+      expect(mutationResponse.statusCode).toBe(403);
+      expect(hostErrorResponseSchema.parse(mutationResponse.json())).toEqual({
+        code: "forbidden",
+        message:
+          "Entangle host operator role 'viewer' is not allowed to perform PUT requests."
+      });
+
+      const eventsResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            authMode: "bootstrap_operator_token",
+            category: "security",
+            method: "PUT",
+            operatorId: "audit-viewer",
+            operatorRole: "viewer",
+            path: "/v1/catalog",
+            statusCode: 403,
+            type: "host.operator_request.completed"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
   it("dry-runs and clears the derived artifact backend cache", async () => {
     const server = await createTestServer();
     const cacheRoot = path.join(
@@ -3009,6 +3075,7 @@ describe("buildHostServer", () => {
             category: "security",
             method: "PUT",
             operatorId: "ops-lead",
+            operatorRole: "operator",
             path: "/v1/external-principals/worker-it-git-audit",
             statusCode: 401,
             type: "host.operator_request.completed"
@@ -3018,6 +3085,7 @@ describe("buildHostServer", () => {
             category: "security",
             method: "PUT",
             operatorId: "ops-lead",
+            operatorRole: "operator",
             path: "/v1/external-principals/worker-it-git-audit",
             statusCode: 200,
             type: "host.operator_request.completed"

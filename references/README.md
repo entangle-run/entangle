@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[430-distributed-proof-git-backend-health-verifier-slice.md](430-distributed-proof-git-backend-health-verifier-slice.md)
+[431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -67,7 +67,9 @@ API/CLI operators can dry-run, clear, age-prune, or max-size-prune that derived
 cache, optionally scoped to a git service/namespace/repository target, without
 deleting authoritative artifact or projection state. Host status also exposes
 the active bootstrap operator security posture without exposing bearer-token
-material. Studio's Host Status panel renders the same path-free cache summary
+material, and token-protected Hosts now enforce the bootstrap `viewer` role as
+read-only while recording `operatorRole` in protected mutation audit events.
+Studio's Host Status panel renders the same path-free cache summary
 and the same bootstrap security summary for admin visibility, and
 the running User
 Client can load bounded artifact history/diff evidence through its Human
@@ -660,6 +662,7 @@ files are the active federated redesign pack.
 429. [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 430. [429-distributed-proof-relay-health-verifier-slice.md](429-distributed-proof-relay-health-verifier-slice.md)
 431. [430-distributed-proof-git-backend-health-verifier-slice.md](430-distributed-proof-git-backend-health-verifier-slice.md)
+432. [431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
 
 ## Role of this corpus
 
