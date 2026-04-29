@@ -3742,6 +3742,32 @@ describe("RunnerService", () => {
     expect(await readSessionRecord(statePaths, "session-alpha")).toBeUndefined();
   });
 
+  it("rejects inbound envelopes whose signer does not match fromPubkey", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const service = new RunnerService({
+      context: runtimeContext,
+      transport
+    });
+
+    const result = await service.handleInboundEnvelope(
+      buildInboundTaskRequest({
+        signerPubkey: docsPublicKey
+      })
+    );
+
+    expect(result).toEqual({
+      handled: false,
+      reason: "signer_mismatch"
+    });
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    expect(await readSessionRecord(statePaths, "session-alpha")).toBeUndefined();
+  });
+
   it("starts idempotently and does not register duplicate subscriptions", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;

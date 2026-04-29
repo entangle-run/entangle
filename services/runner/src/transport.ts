@@ -5,6 +5,7 @@ export type RunnerInboundEnvelope = {
   eventId: string;
   message: EntangleA2AMessage;
   receivedAt: string;
+  signerPubkey?: string;
 };
 
 export type RunnerPublishedEnvelope = RunnerInboundEnvelope;
@@ -57,7 +58,8 @@ export class InMemoryRunnerTransport implements RunnerTransport {
     const envelope: RunnerPublishedEnvelope = {
       eventId: buildEventId(message, receivedAt),
       message,
-      receivedAt
+      receivedAt,
+      signerPubkey: message.fromPubkey
     };
 
     this.publishedEnvelopes.push(envelope);

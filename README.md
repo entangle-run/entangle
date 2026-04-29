@@ -169,7 +169,8 @@ This repository currently contains:
   conversation list, selected-thread metadata, recorded inbound/outbound message
   history, User Client approval controls, approval resource rendering,
   signed approval-response context, approval record request/response lineage
-  metadata, approver-set enforcement before approval state transitions,
+  metadata, signer/fromPubkey enforcement for runner A2A envelopes,
+  approver-set enforcement before approval state transitions,
   projected source-change summary rendering, projected source-change diff
   excerpt rendering, source-change diff/file fallback scoped to visible
   approval conversations, signed source-candidate accept/reject messages

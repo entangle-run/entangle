@@ -165,7 +165,11 @@ export type RunnerServiceObservationPublisher = {
 export type RunnerServiceHandleResult =
   | {
       handled: false;
-      reason: "invalid_message" | "wrong_node" | "wrong_pubkey";
+      reason:
+        | "invalid_message"
+        | "signer_mismatch"
+        | "wrong_node"
+        | "wrong_pubkey";
     }
   | {
       handled: true;
@@ -216,6 +220,17 @@ const artifactProjectionPreviewMaxBytes = 12 * 1024;
 
 function nowIsoString(): string {
   return new Date().toISOString();
+}
+
+function resolveEnvelopeSignerPubkey(envelope: RunnerInboundEnvelope): string {
+  return envelope.signerPubkey ?? envelope.message.fromPubkey;
+}
+
+function hasEnvelopeSignerMismatch(envelope: RunnerInboundEnvelope): boolean {
+  return (
+    envelope.signerPubkey !== undefined &&
+    envelope.signerPubkey !== envelope.message.fromPubkey
+  );
 }
 
 function inferArtifactContentPreviewType(
@@ -2448,7 +2463,7 @@ export class RunnerService {
           existingApproval?.requestEventId ?? input.envelope.eventId,
         requestSignerPubkey:
           existingApproval?.requestSignerPubkey ??
-          input.envelope.message.fromPubkey,
+          resolveEnvelopeSignerPubkey(input.envelope),
         requestedAt: existingApproval?.requestedAt ?? input.envelope.receivedAt,
         requestedByNodeId: input.envelope.message.fromNodeId,
         ...(approval.resource ? { resource: approval.resource } : {}),
@@ -2543,7 +2558,7 @@ export class RunnerService {
       {
         approverNodeId: input.envelope.message.fromNodeId,
         responseEventId: input.envelope.eventId,
-        responseSignerPubkey: input.envelope.message.fromPubkey,
+        responseSignerPubkey: resolveEnvelopeSignerPubkey(input.envelope),
         updatedAt: input.envelope.receivedAt
       }
     );
@@ -2998,6 +3013,13 @@ export class RunnerService {
       return {
         handled: false,
         reason: "invalid_message"
+      };
+    }
+
+    if (hasEnvelopeSignerMismatch(envelope)) {
+      return {
+        handled: false,
+        reason: "signer_mismatch"
       };
     }
 

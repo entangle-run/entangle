@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Hardened runner A2A signer handling
+
+Added signer pubkey metadata to runner A2A envelopes. The Nostr runner
+transport now drops gift-wrapped A2A messages when the unwrapped rumor signer
+does not match the payload `fromPubkey`, and runner service handling rejects
+direct envelopes with signer/fromPubkey mismatch before runtime state mutation.
+Approval request/response lineage now uses the envelope signer when available.
+
+Added `references/365-runner-a2a-signer-hardening-slice.md`.
+
 ## [2026-04-29] implementation | Enforced approval approver sets
 
 Updated the runner approval-response path so a matching `approval.response`

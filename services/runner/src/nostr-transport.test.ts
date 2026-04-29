@@ -19,6 +19,9 @@ import {
 } from "./test-fixtures.js";
 import type { RunnerInboundEnvelope } from "./transport.js";
 
+const mismatchedSenderPublicKey =
+  "3333333333333333333333333333333333333333333333333333333333333333";
+
 function parseHexSecret(secretHex: string): Uint8Array {
   return Uint8Array.from(Buffer.from(secretHex, "hex"));
 }
@@ -203,6 +206,7 @@ describe("NostrRunnerTransport", () => {
     expect(pool.publishCalls[0]?.event.tags).toContainEqual(["p", remotePublicKey]);
     expect(envelope.eventId).toMatch(/^[0-9a-f]{64}$/);
     expect(envelope.message.fromNodeId).toBe("worker-it");
+    expect(envelope.signerPubkey).toBe(runnerPublicKey);
   });
 
   it("subscribes on gift wraps and unwraps inbound Entangle rumor events", async () => {
@@ -238,6 +242,7 @@ describe("NostrRunnerTransport", () => {
     expect(received).toHaveLength(1);
     expect(received[0]?.eventId).toBe(wrapped.rumor.id);
     expect(received[0]?.message).toEqual(message);
+    expect(received[0]?.signerPubkey).toBe(remotePublicKey);
   });
 
   it("waits for readable relay preconnect before declaring the subscription ready", async () => {
@@ -305,6 +310,37 @@ describe("NostrRunnerTransport", () => {
     const nonEntangleWrap = nip59.createWrap(nonEntangleSeal, runnerPublicKey);
 
     pool.dispatch(nonEntangleWrap);
+
+    expect(received).toHaveLength(0);
+  });
+
+  it("ignores wrapped Entangle messages when the rumor signer does not match fromPubkey", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const pool = new FakeNostrPool();
+    const transport = new NostrRunnerTransport({
+      context,
+      pool,
+      secretKey: parseHexSecret(runnerSecretHex)
+    });
+    const received: RunnerInboundEnvelope[] = [];
+
+    await transport.subscribe({
+      onMessage: (envelope) => {
+        received.push(envelope);
+      },
+      recipientPubkey: runnerPublicKey
+    });
+
+    const message = buildInboundTaskRequest({
+      fromPubkey: mismatchedSenderPublicKey
+    }).message;
+    const wrapped = buildWrappedEntangleEvent({
+      message,
+      recipientPublicKey: runnerPublicKey,
+      senderSecretHex: remoteSecretHex
+    });
+    pool.dispatch(wrapped.wrappedEvent);
 
     expect(received).toHaveLength(0);
   });

@@ -66,7 +66,10 @@ User nodes are now partially runtime-capable:
   response event id, response signer pubkey, and source message id when that
   signed-message lineage is available. Runners now apply approval responses
   only when the response sender node is listed in the approval record's
-  approver set.
+  approver set. Runner A2A envelopes now carry signer pubkeys where the
+  transport can know them; Nostr delivery drops signer/fromPubkey mismatches,
+  and service handling rejects mismatched signer envelopes before state
+  mutation.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
 - The User Client renders bounded artifact refs attached to message records,

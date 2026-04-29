@@ -184,10 +184,15 @@ function unwrapMessageEvent(input: {
     return undefined;
   }
 
+  if (parseResult.data.fromPubkey !== rumor.pubkey) {
+    return undefined;
+  }
+
   return {
     eventId: rumor.id,
     message: parseResult.data,
-    receivedAt: input.receivedAt
+    receivedAt: input.receivedAt,
+    signerPubkey: rumor.pubkey
   };
 }
 
@@ -251,7 +256,8 @@ export class NostrRunnerTransport implements RunnerTransport {
     return {
       eventId: rumor.id,
       message,
-      receivedAt: nowIsoString()
+      receivedAt: nowIsoString(),
+      signerPubkey: rumor.pubkey
     };
   }
 

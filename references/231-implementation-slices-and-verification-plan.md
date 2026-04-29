@@ -694,6 +694,7 @@ Implementation records:
 - [362-source-change-memory-carry-forward-slice.md](362-source-change-memory-carry-forward-slice.md)
 - [363-approval-message-lineage-slice.md](363-approval-message-lineage-slice.md)
 - [364-approval-approver-enforcement-slice.md](364-approval-approver-enforcement-slice.md)
+- [365-runner-a2a-signer-hardening-slice.md](365-runner-a2a-signer-hardening-slice.md)
 
 Current status:
 
@@ -759,6 +760,10 @@ Current status:
 - runners now enforce the approval record's configured approver node set before
   applying inbound approval responses, leaving unauthorized matching responses
   from other nodes unable to approve, reject, close, or fail the gated session;
+- runner A2A envelopes now carry signer pubkeys when available, Nostr A2A
+  delivery rejects signer/fromPubkey mismatches, service handling rejects
+  mismatched signer envelopes before runtime state mutation, and approval
+  request/response lineage uses the envelope signer when available;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

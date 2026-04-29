@@ -521,6 +521,7 @@ export function buildInboundTaskRequest(
     receivedAt?: string;
     responsePolicy?: Partial<EntangleA2AResponsePolicy>;
     sessionId?: string;
+    signerPubkey?: string;
     summary?: string;
     toNodeId?: string;
     toPubkey?: string;
@@ -560,7 +561,8 @@ export function buildInboundTaskRequest(
       input.eventId ??
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     message,
-    receivedAt: input.receivedAt ?? "2026-04-22T00:00:00.000Z"
+    receivedAt: input.receivedAt ?? "2026-04-22T00:00:00.000Z",
+    signerPubkey: input.signerPubkey ?? message.fromPubkey
   };
 }
 
