@@ -98,9 +98,10 @@ Key new behavioral coverage:
 
 Added-line local-assumption audit:
 
-```bash
-git diff -U0 | rg "^\\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
-```
+The added-line local-assumption audit used the standard project regex for
+obsolete local product labels, local runtime profile assumptions,
+Host/runner filesystem coupling, shared filesystem assumptions, bootstrap
+context files, and container-only assumptions.
 
 Findings:
 
