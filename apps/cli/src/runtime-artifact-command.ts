@@ -14,7 +14,8 @@ import type {
   ArtifactRecord,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
-  RuntimeArtifactPreviewResponse
+  RuntimeArtifactPreviewResponse,
+  RuntimeArtifactRestoreResponse
 } from "@entangle/types";
 
 export type RuntimeArtifactCliFilterOptions =
@@ -193,5 +194,27 @@ export function projectRuntimeArtifactDiffSummary(
           reason: response.diff.reason,
           status: formatRuntimeArtifactDiffStatus(response.diff)
         }
+  };
+}
+
+export interface RuntimeArtifactCliRestoreSummaryRecord {
+  artifactId: string;
+  assignmentId: string;
+  commandId: string;
+  nodeId: string;
+  requestedAt: string;
+  status: RuntimeArtifactRestoreResponse["status"];
+}
+
+export function projectRuntimeArtifactRestoreSummary(
+  response: RuntimeArtifactRestoreResponse
+): RuntimeArtifactCliRestoreSummaryRecord {
+  return {
+    artifactId: response.artifactId,
+    assignmentId: response.assignmentId,
+    commandId: response.commandId,
+    nodeId: response.nodeId,
+    requestedAt: response.requestedAt,
+    status: response.status
   };
 }

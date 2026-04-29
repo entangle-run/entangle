@@ -7,6 +7,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -247,6 +248,26 @@ describe("runtime-artifact-command", () => {
         status: "000000000000..0123456789ab · 42 bytes",
         truncated: false
       }
+    });
+  });
+
+  it("projects artifact restore requests into compact command summaries", () => {
+    expect(
+      projectRuntimeArtifactRestoreSummary({
+        artifactId: "artifact-report",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-artifact-restore-alpha",
+        nodeId: "worker-it",
+        requestedAt: "2026-04-29T10:00:00.000Z",
+        status: "requested"
+      })
+    ).toEqual({
+      artifactId: "artifact-report",
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-artifact-restore-alpha",
+      nodeId: "worker-it",
+      requestedAt: "2026-04-29T10:00:00.000Z",
+      status: "requested"
     });
   });
 

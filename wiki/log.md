@@ -4597,3 +4597,13 @@ The assigned runner retrieves the projected artifact ref through runner-owned
 artifact backend state, persists success or failure retrieval records, and
 emits signed `artifact.ref` observation evidence that Host projection can
 inspect without reading runner-local files.
+
+## [2026-04-29] implementation | Surfaced artifact restore for operators
+
+Added `references/385-artifact-restore-operator-surfaces-slice.md`. CLI now
+exposes `host runtimes artifact-restore` with compact summary output, and
+Studio exposes the same Host request from selected artifact detail.
+
+Both surfaces request the existing Host-signed runner control path and show a
+request acknowledgement while restore completion remains runner observation
+evidence.

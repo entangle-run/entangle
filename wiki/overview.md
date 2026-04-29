@@ -354,7 +354,9 @@ The repository now also contains the first real implementation baseline:
   and replay outcomes visible through Host projection. Artifact restore
   requests now travel as Host-signed `runtime.artifact.restore` commands to
   the accepted runner assignment, with the runner retrieving projected artifact
-  refs into runner-owned state and emitting `artifact.ref` retrieval evidence.
+  refs into runner-owned state and emitting `artifact.ref` retrieval evidence;
+  CLI and Studio expose that same request path from artifact inspection
+  surfaces.
   Node-configured source mutation policy is now able to require approved runtime
   approval ids before source application or source publication, while
   validating approval operation and concrete resource scope before accepting a
@@ -363,8 +365,9 @@ The repository now also contains the first real implementation baseline:
   with bounded host/CLI/Studio history and diff inspection for supported
   materialized git artifacts, with direct Host artifact restore/promotion
   mutations removed and artifact restore now returned as runner-owned protocol
-  behavior while promotion remains a future source-change or artifact-policy
-  flow, and with runner-owned local git snapshots of `memory/wiki` into
+  behavior through CLI/Studio operator requests while promotion remains a
+  future source-change or artifact-policy flow, and with runner-owned local git
+  snapshots of `memory/wiki` into
   each node's `wiki-repository` workspace after completed turns, including
   durable sync outcomes on turns, host events, CLI output, and Studio turn
   inspection, plus
@@ -981,7 +984,7 @@ The current implementation-truth audit now lives in
   artifact history/diff/preview inspection, backend-cache history/diff for
   projected git refs, explicit wiki target publication, and shared
   multi-target source-history publication presentation plus runner-owned
-  artifact restore; the next git gaps are
+  artifact restore exposed through operator surfaces; the next git gaps are
   artifact promotion or source-change proposal flows, richer
   wiki promotion policy and repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or

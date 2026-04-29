@@ -166,6 +166,12 @@ import {
   sortRuntimeArtifacts
 } from "./runtime-artifact-inspection.js";
 import {
+  buildRuntimeArtifactRestoreRequest,
+  createEmptyRuntimeArtifactRestoreDraft,
+  formatRuntimeArtifactRestoreRequestSummary,
+  type RuntimeArtifactRestoreDraft
+} from "./runtime-artifact-restore.js";
+import {
   formatSourceChangeSummary,
   formatRuntimeTurnArtifactSummary,
   formatRuntimeTurnDetailLines,
@@ -544,6 +550,15 @@ export function App() {
     useState<RuntimeArtifactDiffResponse | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
   const [artifactDetailError, setArtifactDetailError] = useState<string | null>(null);
+  const [artifactRestoreDraft, setArtifactRestoreDraft] =
+    useState<RuntimeArtifactRestoreDraft>(
+      createEmptyRuntimeArtifactRestoreDraft
+    );
+  const [artifactRestoreError, setArtifactRestoreError] =
+    useState<string | null>(null);
+  const [lastArtifactRestoreSummary, setLastArtifactRestoreSummary] =
+    useState<string | null>(null);
+  const [pendingArtifactRestore, setPendingArtifactRestore] = useState(false);
   const [selectedMemory, setSelectedMemory] =
     useState<RuntimeMemoryInspectionResponse | null>(null);
   const [selectedMemoryPagePath, setSelectedMemoryPagePath] =
@@ -2332,6 +2347,51 @@ export function App() {
     wikiPublicationDraft
   ]);
 
+  const requestRuntimeArtifactRestore = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedArtifactInspection) {
+      return;
+    }
+
+    setPendingArtifactRestore(true);
+    setArtifactRestoreError(null);
+    setLastArtifactRestoreSummary(null);
+
+    try {
+      const response = await client.restoreRuntimeArtifact(
+        selectedRuntimeId,
+        selectedArtifactInspection.artifact.ref.artifactId,
+        buildRuntimeArtifactRestoreRequest(artifactRestoreDraft)
+      );
+
+      startTransition(() => {
+        setLastArtifactRestoreSummary(
+          formatRuntimeArtifactRestoreRequestSummary(response)
+        );
+        setArtifactRestoreDraft(createEmptyRuntimeArtifactRestoreDraft());
+        setArtifactRestoreError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setArtifactRestoreError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting artifact restore."
+          )
+        );
+      });
+    } finally {
+      setPendingArtifactRestore(false);
+    }
+  }, [
+    artifactRestoreDraft,
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedArtifactInspection,
+    selectedRuntimeId
+  ]);
+
   const selectGraphRevision = useCallback(
     async (revisionId: string) => {
       setSelectedGraphRevisionId(revisionId);
@@ -2720,6 +2780,10 @@ export function App() {
       setSelectedArtifactHistory(null);
       setSelectedArtifactDiff(null);
       setArtifactDetailError(null);
+      setArtifactRestoreDraft(createEmptyRuntimeArtifactRestoreDraft());
+      setArtifactRestoreError(null);
+      setLastArtifactRestoreSummary(null);
+      setPendingArtifactRestore(false);
       setSelectedMemory(null);
       setSelectedMemoryPagePath(null);
       setSelectedMemoryPageInspection(null);
@@ -2789,6 +2853,10 @@ export function App() {
     setSelectedArtifactHistory(null);
     setSelectedArtifactDiff(null);
     setArtifactDetailError(null);
+    setArtifactRestoreDraft(createEmptyRuntimeArtifactRestoreDraft());
+    setArtifactRestoreError(null);
+    setLastArtifactRestoreSummary(null);
+    setPendingArtifactRestore(false);
     setSelectedMemory(null);
     setSelectedMemoryPagePath(null);
     setSelectedMemoryPageInspection(null);
@@ -6318,6 +6386,80 @@ export function App() {
                             <li key={line}>{line}</li>
                           ))}
                         </ul>
+
+                        <form
+                          className="stacked-form"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void requestRuntimeArtifactRestore();
+                          }}
+                        >
+                          <div className="field-grid">
+                            <label className="field">
+                              <span>Reason</span>
+                              <input
+                                disabled={pendingArtifactRestore}
+                                onChange={(event) => {
+                                  setArtifactRestoreDraft((current) => ({
+                                    ...current,
+                                    reason: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator restore reason"
+                                value={artifactRestoreDraft.reason}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Requested By</span>
+                              <input
+                                disabled={pendingArtifactRestore}
+                                onChange={(event) => {
+                                  setArtifactRestoreDraft((current) => ({
+                                    ...current,
+                                    requestedBy: event.target.value
+                                  }));
+                                }}
+                                placeholder="operator id"
+                                value={artifactRestoreDraft.requestedBy}
+                              />
+                            </label>
+                            <label className="field">
+                              <span>Restore Id</span>
+                              <input
+                                disabled={pendingArtifactRestore}
+                                onChange={(event) => {
+                                  setArtifactRestoreDraft((current) => ({
+                                    ...current,
+                                    restoreId: event.target.value
+                                  }));
+                                }}
+                                placeholder="generated if empty"
+                                value={artifactRestoreDraft.restoreId}
+                              />
+                            </label>
+                          </div>
+                          <div className="action-row">
+                            <button
+                              className="action-button"
+                              disabled={
+                                !selectedRuntimeId || pendingArtifactRestore
+                              }
+                              type="submit"
+                            >
+                              {pendingArtifactRestore
+                                ? "Requesting..."
+                                : "Restore Artifact"}
+                            </button>
+                            {lastArtifactRestoreSummary ? (
+                              <span className="panel-caption">
+                                {lastArtifactRestoreSummary}
+                              </span>
+                            ) : null}
+                          </div>
+                          {artifactRestoreError ? (
+                            <p className="error-box">{artifactRestoreError}</p>
+                          ) : null}
+                        </form>
 
                         <div className="artifact-preview-panel">
                           <div className="section-header">

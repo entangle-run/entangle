@@ -27,6 +27,7 @@ import {
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
+  runtimeArtifactRestoreRequestSchema,
   runtimeAssignmentOfferRequestSchema,
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
@@ -129,6 +130,7 @@ import {
   projectRuntimeArtifactDiffSummary,
   projectRuntimeArtifactHistorySummary,
   projectRuntimeArtifactPreviewSummary,
+  projectRuntimeArtifactRestoreSummary,
   projectRuntimeArtifactSummary,
   sortRuntimeArtifactsForCli
 } from "./runtime-artifact-command.js";
@@ -3077,6 +3079,49 @@ hostRuntimesCommand
       printJson(
         options.summary
           ? { artifact: projectRuntimeArtifactSummary(response.artifact) }
+          : response
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("artifact-restore")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<artifactId>", "Artifact identifier to restore.")
+  .option("--reason <reason>", "Operator-visible restore reason.")
+  .option("--requested-by <operatorId>", "Operator id requesting restore.")
+  .option("--restore-id <restoreId>", "Stable restore request id.")
+  .option("--summary", "Print a compact operator-oriented restore summary.")
+  .description(
+    "Ask the assigned runner to restore one runtime artifact through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      artifactId: string,
+      options: {
+        reason?: string;
+        requestedBy?: string;
+        restoreId?: string;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const request = runtimeArtifactRestoreRequestSchema.parse({
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
+        ...(options.restoreId ? { restoreId: options.restoreId } : {})
+      });
+      const response = await client.restoreRuntimeArtifact(
+        nodeId,
+        artifactId,
+        request
+      );
+
+      printJson(
+        options.summary
+          ? { restore: projectRuntimeArtifactRestoreSummary(response) }
           : response
       );
     }

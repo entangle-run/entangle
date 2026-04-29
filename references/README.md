@@ -523,6 +523,7 @@ files are the active federated redesign pack.
 383. [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 384. [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 385. [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
+386. [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 
 ## Role of this corpus
 

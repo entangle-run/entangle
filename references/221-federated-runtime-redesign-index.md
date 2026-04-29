@@ -185,6 +185,7 @@ same-machine slice records.
 - [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
+- [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 
 ## Audited Scope
 
@@ -652,9 +653,12 @@ Artifact restore has returned as the Host-signed
 `runtime.artifact.restore` control command: Host resolves a projected artifact
 ref, the accepted runner retrieves it through runner-owned artifact backend
 state, and the runner emits `artifact.ref` observation evidence with retrieval
-state. Artifact promotion remains unresolved and must return either as a
-runner-owned protocol command with explicit policy or as source-change proposal
-behavior. Explicit wiki repository publication has returned as the Host-signed
+state. CLI can request that command with
+`host runtimes artifact-restore`, and Studio exposes the same request from
+selected artifact detail. Artifact promotion remains unresolved and must
+return either as a runner-owned protocol command with explicit policy or as
+source-change proposal behavior. Explicit wiki repository publication has
+returned as the Host-signed
 `runtime.wiki.publish` control command: the owning runner syncs and publishes
 its wiki repository to the primary git target by default or to an explicit
 resolved git target selector, persists the artifact record, and emits

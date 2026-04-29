@@ -294,6 +294,7 @@ Implementation record:
 - [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
+- [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 
 Verification:
 
@@ -432,6 +433,8 @@ Current status:
 - artifact restore now uses a Host-signed `runtime.artifact.restore` control
   command, with the assigned runner retrieving into runner-owned state and
   emitting `artifact.ref` retrieval evidence;
+- CLI and Studio can now request that runner-owned artifact restore path from
+  artifact inspection surfaces without reintroducing Host filesystem mutation;
 - richer source/wiki mutation endpoints, richer cache policy, and artifact
   promotion/source-change proposal flows still need protocol-backed
   replacement.
@@ -609,6 +612,7 @@ Implementation record:
 - [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
+- [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 
 Verification:
 
@@ -779,6 +783,9 @@ Current status:
   Host-signed `runtime.artifact.restore` command for the accepted assignment,
   and the runner records observed retrieval success or failure without Host
   filesystem access;
+- CLI exposes the same request as `host runtimes artifact-restore`, and Studio
+  exposes it from selected artifact detail while showing request
+  acknowledgement separate from later observation evidence;
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;
