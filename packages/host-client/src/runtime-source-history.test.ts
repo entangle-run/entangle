@@ -18,6 +18,7 @@ const history: SourceHistoryRecord[] = [
     headTree: "head-tree-old",
     mode: "applied_to_workspace",
     nodeId: "worker-it",
+    publications: [],
     sourceChangeSummary: {
       additions: 1,
       checkedAt: "2026-04-24T00:00:00.000Z",
@@ -46,7 +47,8 @@ const history: SourceHistoryRecord[] = [
     nodeId: "worker-it",
     publication: {
       approvalId: "approval-source-publish-new",
-      artifactId: "source-source-history-source-change-turn-new",
+      artifactId:
+        "source-source-history-source-change-turn-new-gitea-team-alpha-public",
       branch: "worker-it/source-history/source-history-source-change-turn-new",
       publication: {
         publishedAt: "2026-04-24T00:04:00.000Z",
@@ -57,8 +59,41 @@ const history: SourceHistoryRecord[] = [
       requestedAt: "2026-04-24T00:04:00.000Z",
       targetGitServiceRef: "gitea",
       targetNamespace: "team-alpha",
-      targetRepositoryName: "graph-alpha"
+      targetRepositoryName: "graph-alpha-public"
     },
+    publications: [
+      {
+        artifactId: "source-source-history-source-change-turn-new",
+        branch: "worker-it/source-history/source-history-source-change-turn-new",
+        publication: {
+          publishedAt: "2026-04-24T00:03:30.000Z",
+          remoteName: "entangle-gitea",
+          remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
+          state: "published"
+        },
+        requestedAt: "2026-04-24T00:03:30.000Z",
+        targetGitServiceRef: "gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha"
+      },
+      {
+        approvalId: "approval-source-publish-new",
+        artifactId:
+          "source-source-history-source-change-turn-new-gitea-team-alpha-public",
+        branch: "worker-it/source-history/source-history-source-change-turn-new",
+        publication: {
+          publishedAt: "2026-04-24T00:04:00.000Z",
+          remoteName: "entangle-gitea",
+          remoteUrl:
+            "ssh://git@gitea.example:22/team-alpha/graph-alpha-public.git",
+          state: "published"
+        },
+        requestedAt: "2026-04-24T00:04:00.000Z",
+        targetGitServiceRef: "gitea",
+        targetNamespace: "team-alpha",
+        targetRepositoryName: "graph-alpha-public"
+      }
+    ],
     reason: "Promote accepted source.",
     sourceChangeSummary: {
       additions: 2,
@@ -96,7 +131,16 @@ describe("runtime source history presentation helpers", () => {
       "publication published"
     );
     expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
-      "publication target gitea/team-alpha/graph-alpha"
+      "publication target gitea/team-alpha/graph-alpha-public"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
+      "publications 2"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
+      "publication 1 published source-source-history-source-change-turn-new target gitea/team-alpha/graph-alpha"
+    );
+    expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
+      "publication 2 published source-source-history-source-change-turn-new-gitea-team-alpha-public target gitea/team-alpha/graph-alpha-public"
     );
     expect(formatRuntimeSourceHistoryDetailLines(history[1]!)).toContain(
       "application approval approval-source-apply-new"

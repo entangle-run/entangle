@@ -4573,3 +4573,15 @@ Non-primary source-history artifacts receive target-qualified ids, and the
 process-runner smoke now requests and verifies targeted source-history
 publication against a sibling git repository over the live relay and joined
 runner path.
+
+## [2026-04-29] implementation | Added source-history publication target presentation
+
+Added `references/383-source-history-publication-presentation-slice.md`.
+Shared host-client source-history presentation now exposes retained
+per-target publication records, including count, target labels, artifact ids,
+branches, approval ids, and publication state.
+
+CLI summaries now include additive `publicationCount`, `publicationTargets`,
+and `publishedArtifactIds` fields while preserving latest-publication fields.
+Studio source-history detail uses the same shared helper, so visual and
+headless surfaces stay aligned.

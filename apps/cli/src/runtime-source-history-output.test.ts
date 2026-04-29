@@ -17,7 +17,8 @@ const entry: SourceHistoryRecord = {
   nodeId: "worker-it",
   publication: {
     approvalId: "approval-source-publish-alpha",
-    artifactId: "source-source-history-source-change-turn-alpha",
+    artifactId:
+      "source-source-history-source-change-turn-alpha-gitea-team-alpha-public",
     branch: "worker-it/source-history/source-history-source-change-turn-alpha",
     publication: {
       publishedAt: "2026-04-24T00:04:00.000Z",
@@ -28,8 +29,41 @@ const entry: SourceHistoryRecord = {
     requestedAt: "2026-04-24T00:04:00.000Z",
     targetGitServiceRef: "gitea",
     targetNamespace: "team-alpha",
-    targetRepositoryName: "graph-alpha"
+    targetRepositoryName: "graph-alpha-public"
   },
+  publications: [
+    {
+      artifactId: "source-source-history-source-change-turn-alpha",
+      branch: "worker-it/source-history/source-history-source-change-turn-alpha",
+      publication: {
+        publishedAt: "2026-04-24T00:03:30.000Z",
+        remoteName: "entangle-gitea",
+        remoteUrl: "ssh://git@gitea.example:22/team-alpha/graph-alpha.git",
+        state: "published"
+      },
+      requestedAt: "2026-04-24T00:03:30.000Z",
+      targetGitServiceRef: "gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha"
+    },
+    {
+      approvalId: "approval-source-publish-alpha",
+      artifactId:
+        "source-source-history-source-change-turn-alpha-gitea-team-alpha-public",
+      branch: "worker-it/source-history/source-history-source-change-turn-alpha",
+      publication: {
+        publishedAt: "2026-04-24T00:04:00.000Z",
+        remoteName: "entangle-gitea",
+        remoteUrl:
+          "ssh://git@gitea.example:22/team-alpha/graph-alpha-public.git",
+        state: "published"
+      },
+      requestedAt: "2026-04-24T00:04:00.000Z",
+      targetGitServiceRef: "gitea",
+      targetNamespace: "team-alpha",
+      targetRepositoryName: "graph-alpha-public"
+    }
+  ],
   reason: "Promote accepted source.",
   sourceChangeSummary: {
     additions: 2,
@@ -53,9 +87,19 @@ describe("runtime source history CLI output", () => {
       applicationApprovalId: "approval-source-apply-alpha",
       mode: "already_in_workspace",
       publicationApprovalId: "approval-source-publish-alpha",
-      publicationTarget: "gitea/team-alpha/graph-alpha",
+      publicationCount: 2,
+      publicationTarget: "gitea/team-alpha/graph-alpha-public",
+      publicationTargets: [
+        "gitea/team-alpha/graph-alpha",
+        "gitea/team-alpha/graph-alpha-public"
+      ],
       publicationState: "published",
-      publishedArtifactId: "source-source-history-source-change-turn-alpha",
+      publishedArtifactId:
+        "source-source-history-source-change-turn-alpha-gitea-team-alpha-public",
+      publishedArtifactIds: [
+        "source-source-history-source-change-turn-alpha",
+        "source-source-history-source-change-turn-alpha-gitea-team-alpha-public"
+      ],
       sourceHistoryId: "source-history-source-change-turn-alpha"
     });
     expect(projectRuntimeSourceHistorySummary(entry).detailLines).toContain(

@@ -1,4 +1,15 @@
-import type { SourceHistoryRecord } from "@entangle/types";
+import type {
+  SourceHistoryPublicationRecord,
+  SourceHistoryRecord
+} from "@entangle/types";
+
+export type RuntimeSourceHistoryPublicationPresentation = {
+  approvalId?: string;
+  artifactId: string;
+  branch: string;
+  state: SourceHistoryPublicationRecord["publication"]["state"];
+  target?: string;
+};
 
 export function sortRuntimeSourceHistoryForPresentation(
   history: SourceHistoryRecord[]
@@ -14,18 +25,50 @@ export function formatRuntimeSourceHistoryLabel(
   return `${history.sourceHistoryId} · ${history.mode}`;
 }
 
+function formatSourceHistoryPublicationTarget(
+  publication: SourceHistoryPublicationRecord
+): string | undefined {
+  const target = [
+    publication.targetGitServiceRef,
+    publication.targetNamespace,
+    publication.targetRepositoryName
+  ]
+    .filter((entry) => entry !== undefined)
+    .join("/");
+
+  return target.length > 0 ? target : undefined;
+}
+
+export function listRuntimeSourceHistoryPublications(
+  history: SourceHistoryRecord
+): RuntimeSourceHistoryPublicationPresentation[] {
+  const records =
+    history.publications.length > 0
+      ? history.publications
+      : history.publication
+        ? [history.publication]
+        : [];
+
+  return records.map((publication) => {
+    const target = formatSourceHistoryPublicationTarget(publication);
+
+    return {
+      ...(publication.approvalId ? { approvalId: publication.approvalId } : {}),
+      artifactId: publication.artifactId,
+      branch: publication.branch,
+      state: publication.publication.state,
+      ...(target ? { target } : {})
+    };
+  });
+}
+
 export function formatRuntimeSourceHistoryDetailLines(
   history: SourceHistoryRecord
 ): string[] {
   const publicationTarget = history.publication
-    ? [
-        history.publication.targetGitServiceRef,
-        history.publication.targetNamespace,
-        history.publication.targetRepositoryName
-      ]
-        .filter((entry) => entry !== undefined)
-        .join("/")
+    ? formatSourceHistoryPublicationTarget(history.publication)
     : undefined;
+  const publications = listRuntimeSourceHistoryPublications(history);
 
   return [
     `history ${history.sourceHistoryId}`,
@@ -58,6 +101,19 @@ export function formatRuntimeSourceHistoryDetailLines(
           ...(history.publication.publication.lastError
             ? [`publication error ${history.publication.publication.lastError}`]
             : [])
+        ]
+      : []),
+    ...(publications.length > 1
+      ? [
+          `publications ${publications.length}`,
+          ...publications.map((publication, index) =>
+            [
+              `publication ${index + 1}`,
+              publication.state,
+              publication.artifactId,
+              ...(publication.target ? [`target ${publication.target}`] : [])
+            ].join(" ")
+          )
         ]
       : []),
     `turn ${history.turnId}`,

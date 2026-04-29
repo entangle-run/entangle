@@ -301,8 +301,9 @@ This repository currently contains:
   explicit operator publish/retry requests now travel as Host-signed
   `runtime.source_history.publish` commands to the accepted runner assignment
   and can carry an approval id plus explicit git target selectors for
-  policy-gated non-primary repository publication. Explicit operator replay
-  requests now travel as Host-signed
+  policy-gated non-primary repository publication, with retained per-target
+  publication records now visible through shared CLI and Studio source-history
+  presentation. Explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
   history detail using that Host request path and with observed
@@ -1059,8 +1060,9 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected
-  git refs, especially protocol-owned artifact restore or source-change
-  proposal flows, richer wiki promotion policy and repository lifecycle
+  git refs plus shared multi-target source-history publication presentation,
+  especially protocol-owned artifact restore or source-change proposal flows,
+  richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

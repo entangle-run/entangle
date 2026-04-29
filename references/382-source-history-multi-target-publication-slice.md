@@ -100,8 +100,10 @@ ids now include resolved target identity so the runner can persist one artifact
 record per publication target.
 
 The Host and user/operator surfaces can continue reading `publication` as the
-latest summary. Richer multi-target presentation can read `publications` in a
-future UI/API refinement without changing the runner protocol again.
+latest summary. Follow-up
+`383-source-history-publication-presentation-slice.md` adds shared CLI/Studio
+presentation for the retained per-target `publications` array without changing
+the runner protocol again.
 
 ## Risks And Mitigations
 

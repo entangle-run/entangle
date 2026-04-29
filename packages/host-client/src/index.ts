@@ -1570,5 +1570,7 @@ export {
 export {
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
-  sortRuntimeSourceHistoryForPresentation
+  listRuntimeSourceHistoryPublications,
+  sortRuntimeSourceHistoryForPresentation,
+  type RuntimeSourceHistoryPublicationPresentation
 } from "./runtime-source-history.js";

@@ -292,6 +292,7 @@ Implementation record:
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 - [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 - [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
+- [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
 
 Verification:
 
@@ -764,6 +765,9 @@ Current status:
   source-history target publication after automatic primary publication,
   observes the projected target-qualified git artifact, and verifies the
   sibling source repository branch head;
+- shared CLI/Studio source-history presentation now exposes per-target
+  publication count, target labels, and artifact ids while keeping the latest
+  publication summary fields intact;
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;

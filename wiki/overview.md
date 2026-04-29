@@ -126,7 +126,8 @@ The most accurate current description is:
   primary git target for automatic publication while explicit publish commands
   can select a policy-gated non-primary git target; a source-history entry now
   retains per-target publication records while preserving the latest
-  publication summary for existing read paths;
+  publication summary for existing read paths, and shared CLI/Studio
+  presentation exposes publication count, target labels, and artifact ids;
 - explicit source-history publication/retry and source-history replay are now
   Host-signed control commands to the accepted runner assignment, with the
   runner owning git publication or replay execution and emitting observation
@@ -974,8 +975,9 @@ The current implementation-truth audit now lives in
   runner-owned source-history commit artifact publication with explicit
   non-primary target selection plus multi-target publication retention, bounded
   artifact history/diff/preview inspection, backend-cache history/diff for
-  projected git refs, and explicit wiki target publication; the next git gaps
-  are protocol-owned artifact restore or source-change proposal flows, richer
+  projected git refs, explicit wiki target publication, and shared
+  multi-target source-history publication presentation; the next git gaps are
+  protocol-owned artifact restore or source-change proposal flows, richer
   wiki promotion policy and repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,

@@ -662,8 +662,10 @@ repositories while Host remains outside the git push. A single source-history
 entry can now retain multiple per-target publication records while preserving
 the latest publication field for existing read paths, and the process-runner
 smoke verifies explicit non-primary source-history target publication over the
-same live relay and joined runner path. Source-history replay now has a
-Host-signed
+same live relay and joined runner path. CLI and Studio source-history detail
+presentation now exposes those per-target publication records through shared
+host-client helpers while retaining latest-publication compatibility fields.
+Source-history replay now has a Host-signed
 `runtime.source_history.replay` control command for accepted federated
 assignments, and Studio can request that command from selected source-history
 details. Runner-observed replay outcomes now project into typed
