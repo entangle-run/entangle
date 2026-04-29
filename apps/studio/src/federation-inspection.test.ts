@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type {
   HostProjectionSnapshot,
+  RuntimeAssignmentTimelineResponse,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord
 } from "@entangle/types";
 import {
   buildUserNodeRuntimeSummaries,
+  formatRuntimeAssignmentTimelineDetail,
+  formatRuntimeAssignmentTimelineLabel,
   formatRuntimeProjectionDetail,
   formatRuntimeProjectionLabel,
   formatAssignmentReceiptDetail,
@@ -21,10 +24,12 @@ import {
   sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
   sortAssignmentReceiptsForStudio,
+  sortRuntimeAssignmentTimelineForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
   summarizeAssignmentCommandReceiptsForStudio,
   summarizeAssignmentReceiptsForStudio,
+  summarizeRuntimeAssignmentTimelineForStudio,
   summarizeFederationProjection
 } from "./federation-inspection.js";
 
@@ -202,6 +207,53 @@ const conversations: UserConversationProjectionRecord[] = [
   }
 ];
 
+const assignmentTimeline: RuntimeAssignmentTimelineResponse = {
+  assignment: {
+    acceptedAt: "2026-04-26T12:00:30.000Z",
+    assignmentId: "assignment-alpha",
+    assignmentRevision: 0,
+    graphId: "team-alpha",
+    graphRevisionId: "rev-1",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "worker-it",
+    offeredAt: "2026-04-26T12:00:00.000Z",
+    runnerId: "runner-alpha",
+    runnerPubkey:
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    runtimeKind: "agent_runner",
+    schemaVersion: "1",
+    status: "accepted",
+    updatedAt: "2026-04-26T12:00:30.000Z"
+  },
+  commandReceipts: projection.runtimeCommandReceipts,
+  generatedAt: "2026-04-26T12:03:00.000Z",
+  receipts: projection.assignmentReceipts,
+  timeline: [
+    {
+      assignmentId: "assignment-alpha",
+      commandEventType: "runtime.start",
+      commandId: "cmd-start-alpha",
+      entryKind: "runtime.command.receipt",
+      receiptStatus: "completed",
+      timestamp: "2026-04-26T12:02:00.000Z"
+    },
+    {
+      assignmentId: "assignment-alpha",
+      entryKind: "assignment.receipt",
+      message: "Assignment runtime is running.",
+      receiptKind: "started",
+      timestamp: "2026-04-26T12:01:00.000Z"
+    },
+    {
+      assignmentId: "assignment-alpha",
+      entryKind: "assignment.accepted",
+      status: "accepted",
+      timestamp: "2026-04-26T12:00:00.000Z"
+    }
+  ]
+};
+
 describe("Studio federation inspection helpers", () => {
   it("summarizes projection counts for operator panels", () => {
     expect(summarizeFederationProjection(projection)).toMatchObject({
@@ -272,6 +324,27 @@ describe("Studio federation inspection helpers", () => {
         receipts: projection.runtimeCommandReceipts
       })
     ).toContain("1 command receipt");
+  });
+
+  it("sorts and formats runtime assignment timelines", () => {
+    const sorted = sortRuntimeAssignmentTimelineForStudio(
+      assignmentTimeline.timeline
+    );
+
+    expect(sorted.map((entry) => entry.entryKind)).toEqual([
+      "assignment.accepted",
+      "assignment.receipt",
+      "runtime.command.receipt"
+    ]);
+    expect(summarizeRuntimeAssignmentTimelineForStudio(assignmentTimeline)).toBe(
+      "assignment-alpha · accepted · 1 receipt · 1 command receipt · 3 timeline entries"
+    );
+    expect(formatRuntimeAssignmentTimelineLabel(sorted[2]!)).toBe(
+      "runtime.command.receipt · runtime.start · completed"
+    );
+    expect(formatRuntimeAssignmentTimelineDetail(sorted[2]!)).toContain(
+      "command cmd-start-alpha"
+    );
   });
 
   it("sorts and formats runtime projections", () => {

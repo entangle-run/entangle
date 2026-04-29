@@ -48,6 +48,7 @@ import type {
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactInspectionResponse,
   RuntimeArtifactPreviewResponse,
+  RuntimeAssignmentTimelineResponse,
   RuntimeInspectionResponse,
   RuntimeMemoryInspectionResponse,
   RuntimeMemoryPageInspectionResponse,
@@ -218,6 +219,8 @@ import {
 } from "./session-launch.js";
 import {
   buildUserNodeRuntimeSummaries,
+  formatRuntimeAssignmentTimelineDetail,
+  formatRuntimeAssignmentTimelineLabel,
   formatAssignmentReceiptDetail,
   formatAssignmentReceiptLabel,
   formatRuntimeCommandReceiptDetail,
@@ -226,6 +229,7 @@ import {
   formatRuntimeProjectionLabel,
   summarizeAssignmentCommandReceiptsForStudio,
   summarizeAssignmentReceiptsForStudio,
+  summarizeRuntimeAssignmentTimelineForStudio,
   formatUserConversationDetail,
   formatUserConversationLabel,
   formatUserNodeRuntimeSummaryDetail,
@@ -233,6 +237,7 @@ import {
   sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
   sortAssignmentReceiptsForStudio,
+  sortRuntimeAssignmentTimelineForStudio,
   sortUserConversationsForStudio,
   sortUserNodeIdentitiesForStudio,
   summarizeFederationProjection
@@ -475,6 +480,14 @@ export function App() {
   const [pendingAssignmentOffer, setPendingAssignmentOffer] = useState(false);
   const [pendingAssignmentRevokeId, setPendingAssignmentRevokeId] =
     useState<string | null>(null);
+  const [selectedAssignmentTimelineId, setSelectedAssignmentTimelineId] =
+    useState<string | null>(null);
+  const [selectedAssignmentTimeline, setSelectedAssignmentTimeline] =
+    useState<RuntimeAssignmentTimelineResponse | null>(null);
+  const [assignmentTimelineError, setAssignmentTimelineError] =
+    useState<string | null>(null);
+  const [pendingAssignmentTimelineId, setPendingAssignmentTimelineId] =
+    useState<string | null>(null);
   const [graphInspection, setGraphInspection] =
     useState<GraphInspectionResponse | null>(null);
   const [graphRevisions, setGraphRevisions] = useState<GraphRevisionMetadata[]>([]);
@@ -682,6 +695,7 @@ export function App() {
     useState<EventStreamState>("connecting");
   const [eventStreamError, setEventStreamError] = useState<string | null>(null);
   const selectedGraphRevisionIdRef = useRef<string | null>(null);
+  const selectedAssignmentTimelineIdRef = useRef<string | null>(null);
   const selectedRuntimeIdRef = useRef<string | null>(null);
   const selectedApprovalIdRef = useRef<string | null>(null);
   const selectedArtifactIdRef = useRef<string | null>(null);
@@ -694,6 +708,7 @@ export function App() {
   const sessionLaunchDraftSeedRef = useRef<string | null>(null);
 
   selectedGraphRevisionIdRef.current = selectedGraphRevisionId;
+  selectedAssignmentTimelineIdRef.current = selectedAssignmentTimelineId;
   selectedRuntimeIdRef.current = selectedRuntimeId;
   selectedApprovalIdRef.current = selectedApprovalId;
   selectedArtifactIdRef.current = selectedArtifactId;
@@ -833,6 +848,20 @@ export function App() {
       if (projectionResult.status === "fulfilled") {
         setProjectionSnapshot(projectionResult.value);
         setProjectionError(null);
+
+        if (
+          selectedAssignmentTimelineIdRef.current &&
+          !projectionResult.value.assignments.some(
+            (assignment) =>
+              assignment.assignmentId ===
+              selectedAssignmentTimelineIdRef.current
+          )
+        ) {
+          setSelectedAssignmentTimelineId(null);
+          setSelectedAssignmentTimeline(null);
+          setAssignmentTimelineError(null);
+          setPendingAssignmentTimelineId(null);
+        }
       } else {
         setProjectionSnapshot(null);
         setProjectionError(
@@ -841,6 +870,10 @@ export function App() {
             "Unknown error while loading federated projection."
           )
         );
+        setSelectedAssignmentTimelineId(null);
+        setSelectedAssignmentTimeline(null);
+        setAssignmentTimelineError(null);
+        setPendingAssignmentTimelineId(null);
       }
 
       if (userNodeResult.status === "fulfilled") {
@@ -857,6 +890,48 @@ export function App() {
       }
     });
   }, [client]);
+
+  const loadAssignmentTimeline = useCallback(
+    async (assignmentId: string) => {
+      selectedAssignmentTimelineIdRef.current = assignmentId;
+      startTransition(() => {
+        setSelectedAssignmentTimelineId(assignmentId);
+        setSelectedAssignmentTimeline(null);
+        setAssignmentTimelineError(null);
+        setPendingAssignmentTimelineId(assignmentId);
+      });
+
+      try {
+        const timeline = await client.getAssignmentTimeline(assignmentId);
+
+        if (selectedAssignmentTimelineIdRef.current !== assignmentId) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedAssignmentTimeline(timeline);
+          setAssignmentTimelineError(null);
+          setPendingAssignmentTimelineId(null);
+        });
+      } catch (caught: unknown) {
+        if (selectedAssignmentTimelineIdRef.current !== assignmentId) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedAssignmentTimeline(null);
+          setAssignmentTimelineError(
+            normalizeError(
+              caught,
+              "Unknown error while loading assignment timeline."
+            )
+          );
+          setPendingAssignmentTimelineId(null);
+        });
+      }
+    },
+    [client]
+  );
 
   const loadSelectedGraphRevisionInspection = useCallback(
     async (revisionId: string) => {
@@ -3266,6 +3341,13 @@ export function App() {
       ),
     [projectionSnapshot]
   );
+  const selectedAssignmentTimelineRows = useMemo(
+    () =>
+      selectedAssignmentTimeline
+        ? sortRuntimeAssignmentTimelineForStudio(selectedAssignmentTimeline.timeline)
+        : [],
+    [selectedAssignmentTimeline]
+  );
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
     [graphInspection, selectedEdgeId, selectedRuntimeId]
@@ -3570,6 +3652,18 @@ export function App() {
                 </span>
                 <button
                   className="action-button"
+                  disabled={pendingAssignmentTimelineId !== null}
+                  onClick={() => {
+                    void loadAssignmentTimeline(assignment.assignmentId);
+                  }}
+                  type="button"
+                >
+                  {pendingAssignmentTimelineId === assignment.assignmentId
+                    ? "Loading..."
+                    : "Timeline"}
+                </button>
+                <button
+                  className="action-button"
                   disabled={
                     pendingAssignmentRevokeId !== null ||
                     !canRevokeAssignmentProjection(assignment)
@@ -3593,6 +3687,50 @@ export function App() {
             <p>No runtime assignments are projected yet.</p>
           </div>
         )}
+
+        {selectedAssignmentTimelineId ? (
+          <div className="artifact-detail-card">
+            <div className="section-header">
+              <h3>Assignment Timeline</h3>
+              <span className="panel-caption">{selectedAssignmentTimelineId}</span>
+            </div>
+            {pendingAssignmentTimelineId === selectedAssignmentTimelineId ? (
+              <p className="panel-caption">Loading timeline...</p>
+            ) : null}
+            {assignmentTimelineError ? (
+              <p className="error-box">{assignmentTimelineError}</p>
+            ) : null}
+            {selectedAssignmentTimeline ? (
+              <>
+                <p className="panel-caption">
+                  {summarizeRuntimeAssignmentTimelineForStudio(
+                    selectedAssignmentTimeline
+                  )}
+                </p>
+                <div className="compact-list">
+                  {selectedAssignmentTimelineRows.slice(0, 12).map((entry) => (
+                    <div
+                      key={`${entry.entryKind}-${entry.timestamp}-${
+                        entry.commandId ??
+                        entry.receiptKind ??
+                        entry.status ??
+                        "state"
+                      }`}
+                      className="compact-list-item"
+                    >
+                      <strong>
+                        {formatRuntimeAssignmentTimelineLabel(entry)}
+                      </strong>
+                      <span>
+                        {formatRuntimeAssignmentTimelineDetail(entry)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
         {assignmentReceiptRows.length > 0 ? (
           <div className="compact-list">

@@ -3,6 +3,8 @@ import type {
   AssignmentProjectionRecord,
   HostProjectionSnapshot,
   RuntimeCommandReceiptProjectionRecord,
+  RuntimeAssignmentTimelineEntry,
+  RuntimeAssignmentTimelineResponse,
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord
@@ -180,6 +182,57 @@ export function summarizeAssignmentCommandReceiptsForStudio(input: {
     latest.receiptStatus,
     `at ${latest.observedAt}`
   ].join(" · ");
+}
+
+export function sortRuntimeAssignmentTimelineForStudio(
+  entries: RuntimeAssignmentTimelineEntry[]
+): RuntimeAssignmentTimelineEntry[] {
+  return [...entries].sort((left, right) => {
+    const timeOrder = left.timestamp.localeCompare(right.timestamp);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.entryKind.localeCompare(right.entryKind);
+  });
+}
+
+export function summarizeRuntimeAssignmentTimelineForStudio(
+  timeline: RuntimeAssignmentTimelineResponse
+): string {
+  return [
+    timeline.assignment.assignmentId,
+    timeline.assignment.status,
+    `${timeline.receipts.length} receipt${
+      timeline.receipts.length === 1 ? "" : "s"
+    }`,
+    `${timeline.commandReceipts.length} command receipt${
+      timeline.commandReceipts.length === 1 ? "" : "s"
+    }`,
+    `${timeline.timeline.length} timeline entr${
+      timeline.timeline.length === 1 ? "y" : "ies"
+    }`
+  ].join(" · ");
+}
+
+export function formatRuntimeAssignmentTimelineLabel(
+  entry: RuntimeAssignmentTimelineEntry
+): string {
+  return [
+    entry.entryKind,
+    entry.status,
+    entry.receiptKind,
+    entry.commandEventType,
+    entry.receiptStatus
+  ].filter((part) => part !== undefined).join(" · ");
+}
+
+export function formatRuntimeAssignmentTimelineDetail(
+  entry: RuntimeAssignmentTimelineEntry
+): string {
+  return [
+    `at ${entry.timestamp}`,
+    entry.commandId ? `command ${entry.commandId}` : undefined,
+    entry.message
+  ].filter((part) => part !== undefined).join(" · ");
 }
 
 export function formatRuntimeProjectionLabel(

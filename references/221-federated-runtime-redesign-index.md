@@ -199,6 +199,7 @@ same-machine slice records.
 - [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 - [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
+- [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 
 ## Audited Scope
 
@@ -449,7 +450,9 @@ The repository is not fully federated:
   CLI compact projection summaries list recent command receipts from Host
   projection. CLI also exposes a dedicated `entangle host command-receipts`
   command with assignment, node, runner, command type, status, and limit filters
-  over the same Host projection;
+  over the same Host projection. Studio can fetch the same Host assignment
+  timeline endpoint per projected assignment and render lifecycle, assignment
+  receipt, and runtime command receipt entries without direct runner access;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`

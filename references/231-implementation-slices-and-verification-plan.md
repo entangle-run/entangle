@@ -170,7 +170,9 @@ Current status:
   and command receipt summaries under assignment rows while Studio and CLI
   compact projection summaries list recent command receipts from Host
   projection. CLI can also list runtime command receipts directly with
-  assignment, node, runner, command type, status, and limit filters.
+  assignment, node, runner, command type, status, and limit filters. Studio can
+  fetch and render the same Host assignment timeline read model per projected
+  assignment row.
 - The process-runner smoke now validates that the real joined runner path
   produces assignment acceptance, `started` receipt evidence, and completed
   runtime command receipt entries visible through the assignment timeline read
@@ -313,6 +315,7 @@ Implementation record:
 - [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 - [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
+- [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 
 Verification:
 
@@ -479,6 +482,8 @@ Current status:
   receipts carrying cancellation/session correlation ids;
 - CLI can list runtime command receipts directly from Host projection using
   assignment, node, runner, command type, status, and limit filters;
+- Studio can inspect per-assignment timeline entries through the Host
+  assignment timeline endpoint, keeping operator drilldown aligned with CLI;
 - richer source/wiki mutation endpoints and richer cache policy still need
   protocol-backed replacement.
 
@@ -739,9 +744,10 @@ summarizes projected replay outcome counts in the Federation panel. CLI can now
 inspect per-assignment timelines, and Studio shows grouped receipt summaries
 under projected assignment rows. CLI can now list command receipts directly
 from Host projection when operators need filtered command closure without
-reading the full projection JSON. A richer assignment detail page that joins
-control command ids, transport diagnostics, runtime status, and source-history
-outcomes remains follow-up work.
+reading the full projection JSON. Studio can now open a selected assignment
+timeline in the Federation panel through the same Host endpoint. A richer
+assignment detail page that joins transport diagnostics, runtime status, and
+source-history outcomes remains follow-up work.
 
 ### Slice 13: Product Naming Migration
 

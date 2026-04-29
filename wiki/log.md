@@ -4752,3 +4752,14 @@ id, runtime command event type, receipt status, and result limit.
 
 This keeps command-closure inspection headless-friendly without adding a direct
 runner call or a new Host API surface.
+
+## [2026-04-29] implementation | Added Studio assignment timeline drilldown
+
+Added `references/399-studio-assignment-timeline-drilldown-slice.md`.
+Studio Federation assignment rows now include a read-only `Timeline` action
+that fetches `GET /v1/assignments/{assignmentId}/timeline` through the shared
+host client and renders assignment lifecycle, assignment receipt, and runtime
+command receipt entries together.
+
+This brings Studio's operator drilldown closer to CLI parity while keeping the
+surface Host-boundary-only and runner-filesystem-free.

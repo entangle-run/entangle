@@ -468,7 +468,8 @@ This repository currently contains:
   lifecycle plus command receipt summaries sharing the same read model and
   Studio plus CLI compact projection output listing recent command receipts
   from Host projection, plus a dedicated CLI command receipt list with
-  assignment, node, runner, command type, status, and limit filters;
+  assignment, node, runner, command type, status, and limit filters, and a
+  Studio assignment timeline drilldown over the same Host endpoint;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

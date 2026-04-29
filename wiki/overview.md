@@ -164,7 +164,8 @@ The most accurate current description is:
   CLI, and Studio can inspect grouped assignment progress, including recent
   command receipt rows in Studio, compact CLI projection output, and a
   dedicated CLI command receipt list with assignment, node, runner, command
-  type, status, and limit filters, without scanning generic events or reading
+  type, status, and limit filters, plus a Studio assignment timeline drilldown
+  over the same Host endpoint, without scanning generic events or reading
   runner-local state;
 - artifact source-change proposal requests are now exposed through CLI and
   Studio artifact inspection surfaces, using the same Host-signed runner

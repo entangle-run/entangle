@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
+[399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -152,7 +152,8 @@ effective proposal id even when callers omit one, and sends that same id in the
 runner control payload so acknowledgements can be followed to the projected
 candidate. CLI can also inspect runtime command receipts directly from Host
 projection with assignment, node, runner, command type, status, and limit
-filters.
+filters. Studio can now open assignment-scoped timelines through the same Host
+assignment timeline endpoint.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -562,6 +563,7 @@ files are the active federated redesign pack.
 397. [396-projection-empty-memory-read-model-slice.md](396-projection-empty-memory-read-model-slice.md)
 398. [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 399. [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
+400. [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 
 ## Role of this corpus
 
