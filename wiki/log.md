@@ -4764,6 +4764,14 @@ command receipt entries together.
 This brings Studio's operator drilldown closer to CLI parity while keeping the
 surface Host-boundary-only and runner-filesystem-free.
 
+## [2026-04-29] implementation | Added distributed proof verifier
+
+Added `references/408-distributed-proof-verifier-slice.md` and
+`pnpm ops:distributed-proof-verify`. The verifier polls Host status, runner
+registry, assignments, and projection through HTTP APIs, optionally checks User
+Client `/health`, and can require primary User Node conversation projection.
+It includes a self-test fixture and does not read Host or runner files.
+
 ## [2026-04-29] implementation | Added distributed proof kit generator
 
 Added `references/407-distributed-proof-kit-slice.md` and

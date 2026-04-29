@@ -162,6 +162,10 @@ process-runner smoke in `--keep-running` mode.
 kit for a reachable Host/relay/git topology, with Host-derived runner join
 configs, runner-local env/start scripts, and operator trust/assignment/User
 Node message commands for machines that do not share Host filesystem state.
+`pnpm ops:distributed-proof-verify` now checks that running topology through
+Host HTTP APIs and optional User Client health endpoints, covering Host
+Authority, runner trust/liveness, assignments, projection, User Client URLs,
+and optional conversation evidence without reading Host or runner files.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
@@ -587,6 +591,7 @@ files are the active federated redesign pack.
 406. [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 407. [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 408. [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
+409. [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 
 ## Role of this corpus
 

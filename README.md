@@ -204,6 +204,17 @@ discovery, signed User Node task publication, and projection inspection. Copy
 runner directories to machines with Entangle checkouts; the proof is valid only
 when the runners do not rely on Host filesystem access.
 
+After the runner directories are running and assignments have been offered, the
+operator machine can verify the proof through Host and User Client HTTP
+surfaces only:
+
+```bash
+ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
+  --host-url http://host.example:7071 \
+  --check-user-client-health \
+  --require-conversation
+```
+
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner
 fetches its portable bootstrap bundle from the Host API instead of mounting

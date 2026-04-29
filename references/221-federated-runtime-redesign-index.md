@@ -208,6 +208,7 @@ same-machine slice records.
 - [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 - [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 - [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
+- [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 
 ## Audited Scope
 
@@ -769,5 +770,5 @@ conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
 The next blocking implementation areas are richer projection-backed source/wiki
-review services, per-backend cache policy controls, and turning the generated
-multi-machine proof kit into an automated remote verifier.
+review services, per-backend cache policy controls, and CI-grade orchestration
+around the distributed proof verifier.

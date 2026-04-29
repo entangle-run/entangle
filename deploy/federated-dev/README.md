@@ -221,6 +221,16 @@ discovery, signed User Node task publication, and projection inspection. Copy
 each runner directory to its intended machine and set `ENTANGLE_REPO_ROOT`
 there; no generated runner command should require Host filesystem access.
 
+After those runners are started and the operator commands have run, verify the
+proof through Host and User Client HTTP surfaces:
+
+```sh
+ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
+  --host-url http://host.example:7071 \
+  --check-user-client-health \
+  --require-conversation
+```
+
 To prepare an extra generic runner against an already-running Host without
 using the smoke script, write a Host-derived join config and start the runner:
 

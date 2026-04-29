@@ -825,6 +825,7 @@ Implementation records:
 - [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
 - [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 - [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
+- [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 
 Current status:
 
@@ -985,11 +986,16 @@ Current status:
   a reachable Host/relay/git topology, including Host-derived runner join
   configs, runner-local env/start scripts, and operator trust/assignment/User
   Node message commands intended to be copied onto separate machines;
+- `pnpm ops:distributed-proof-verify` now checks an already-running
+  distributed proof through Host HTTP APIs and optional User Client health
+  endpoints, covering Host Authority, runner trust/liveness, assignment
+  convergence, projection, User Client URLs, and optional conversation
+  evidence without reading Host or runner files;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
-- the remaining distributed proof hardening is an automated remote verifier
-  for already-started machines with reachable relay and git service.
+- the remaining distributed proof hardening is CI-grade orchestration that can
+  provision multiple machines or VM/container boundaries around the verifier.
 
 Verification:
 

@@ -30,6 +30,7 @@
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",
     "ops:demo-user-node-runtime": "node scripts/federated-user-node-runtime-demo.mjs",
     "ops:distributed-proof-kit": "node scripts/federated-distributed-proof-kit.mjs",
+    "ops:distributed-proof-verify": "node scripts/federated-distributed-proof-verify.mjs",
     "ops:fake-openai-provider": "node scripts/fake-openai-compatible-provider.mjs",
     "ops:smoke-fake-openai-provider": "node scripts/smoke-fake-openai-compatible-provider.mjs",
     "test": "pnpm --filter @entangle/types test && pnpm --filter @entangle/nostr-fabric test && pnpm --filter @entangle/user-client test && pnpm --filter @entangle/validator test && pnpm --filter @entangle/agent-engine test && pnpm --filter @entangle/package-scaffold test && pnpm --filter @entangle/host-client test && pnpm --filter @entangle/runner test && pnpm --filter @entangle/host test && pnpm --filter @entangle/studio test && pnpm --filter @entangle/cli test",

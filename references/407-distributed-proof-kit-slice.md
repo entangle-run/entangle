@@ -90,7 +90,7 @@ generate join configs.
 
 ## Open Questions
 
-- The next useful hardening step is an automated remote verifier that can
-  connect to already-started distributed machines and assert runner liveness,
-  assignments, User Client endpoints, and git-backed artifact evidence without
-  assuming shared filesystem access.
+Partially resolved by `408-distributed-proof-verifier-slice.md`: an operator
+can now verify already-started distributed machines through Host HTTP APIs and
+optional User Client health endpoints. A future infrastructure harness can
+provision those machines automatically.
