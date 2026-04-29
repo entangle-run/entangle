@@ -84,6 +84,9 @@ unchanged.
 
 ## Open Questions
 
-- A future CI-friendly distributed test can pair this verifier with managed
-  ephemeral hosts or VMs. That is infrastructure orchestration, not a Host or
-  runner protocol blocker.
+- Partially addressed by `411-distributed-proof-tool-ci-smoke-slice.md`: CI can
+  now validate the verifier self-test JSON plus proof-kit dry-run paths without
+  external machines.
+- A future infrastructure-backed distributed test can pair this verifier with
+  managed ephemeral hosts or VMs. That is infrastructure orchestration, not a
+  Host or runner protocol blocker.

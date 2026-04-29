@@ -836,6 +836,7 @@ Implementation records:
 - [402-user-node-runtime-demo-command-slice.md](402-user-node-runtime-demo-command-slice.md)
 - [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
 - [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
+- [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
 
 Current status:
 
@@ -1005,11 +1006,16 @@ Current status:
   endpoints, covering Host Authority, runner trust/liveness, assignment
   convergence, projection, User Client URLs, and optional conversation
   evidence without reading Host or runner files;
+- `pnpm ops:smoke-distributed-proof-tools` now runs a deterministic
+  no-infrastructure smoke for proof-kit syntax/help/dry-run paths and verifier
+  self-test JSON, making the distributed proof tooling CI-checkable before the
+  real multi-machine proof is attempted;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
-- the remaining distributed proof hardening is CI-grade orchestration that can
-  provision multiple machines or VM/container boundaries around the verifier.
+- the remaining distributed proof hardening is infrastructure-backed
+  orchestration that can provision multiple machines or VM/container boundaries
+  around the verifier.
 
 Verification:
 

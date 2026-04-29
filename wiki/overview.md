@@ -187,8 +187,8 @@ The most accurate current description is:
   `runtime.command.receipt` observations as command-id closure while keeping
   assignment receipts and session observations as the domain lifecycle model;
 - the largest remaining gaps are projection-backed replacement for deep runtime
-  detail APIs, object-backed source/wiki mutation services, and CI-grade
-  orchestration around the distributed proof verifier.
+  detail APIs, object-backed source/wiki mutation services, and
+  infrastructure-backed multi-machine proof execution.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish
@@ -241,6 +241,9 @@ Node message commands for machines that do not share Host filesystem state.
 proof through Host HTTP APIs and optional User Client health endpoints, covering
 Host Authority, runner trust/liveness, assignments, projection, User Client
 URLs, and optional conversation evidence without reading Host or runner files.
+`pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
+no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
+self-test JSON before a real distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

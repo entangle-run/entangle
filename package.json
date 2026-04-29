@@ -31,6 +31,7 @@
     "ops:demo-user-node-runtime": "node scripts/federated-user-node-runtime-demo.mjs",
     "ops:distributed-proof-kit": "node scripts/federated-distributed-proof-kit.mjs",
     "ops:distributed-proof-verify": "node scripts/federated-distributed-proof-verify.mjs",
+    "ops:smoke-distributed-proof-tools": "node scripts/smoke-distributed-proof-tools.mjs",
     "ops:fake-openai-provider": "node scripts/fake-openai-compatible-provider.mjs",
     "ops:smoke-fake-openai-provider": "node scripts/smoke-fake-openai-compatible-provider.mjs",
     "test": "node scripts/run-workspace-tests.mjs",

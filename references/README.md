@@ -169,6 +169,9 @@ Node message commands for machines that do not share Host filesystem state.
 Host HTTP APIs and optional User Client health endpoints, covering Host
 Authority, runner trust/liveness, assignments, projection, User Client URLs,
 and optional conversation evidence without reading Host or runner files.
+`pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
+no-infrastructure smoke over proof-kit help/dry-run paths and verifier
+self-test JSON before an operator attempts the real distributed proof.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
@@ -597,6 +600,7 @@ files are the active federated redesign pack.
 409. [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 410. [409-artifact-backend-cache-target-policy-slice.md](409-artifact-backend-cache-target-policy-slice.md)
 411. [410-bootstrap-operator-security-status-slice.md](410-bootstrap-operator-security-status-slice.md)
+412. [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
 
 ## Role of this corpus
 

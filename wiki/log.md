@@ -4890,3 +4890,15 @@ of relying on a long shell chain of `pnpm --filter` commands.
 CLI/Studio/User Client fork-pool scripts, and CLI is pinned to one worker after
 parallel forks hung at the end of the chain. Other Node packages remain on the
 default pool because that is their stable configuration in this environment.
+
+## [2026-04-29] implementation | Added distributed proof tool CI smoke
+
+Added `references/411-distributed-proof-tool-ci-smoke-slice.md` and
+`pnpm ops:smoke-distributed-proof-tools`. The smoke checks proof-kit and
+verifier syntax, help output, token/no-token proof-kit dry-runs, and verifier
+self-test JSON with User Client health and required-conversation checks
+enabled.
+
+This makes the distributed proof tooling CI-checkable without live model
+credentials or external machines. It does not replace the real proof where
+runners, Host, relay, and git backend live on separate reachable boundaries.

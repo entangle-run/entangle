@@ -211,6 +211,7 @@ same-machine slice records.
 - [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 - [409-artifact-backend-cache-target-policy-slice.md](409-artifact-backend-cache-target-policy-slice.md)
 - [410-bootstrap-operator-security-status-slice.md](410-bootstrap-operator-security-status-slice.md)
+- [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
 
 ## Audited Scope
 
@@ -775,6 +776,8 @@ Host status now also exposes the active bootstrap operator security mode
 without exposing secrets: tokenless deployments report `none`, while
 token-protected deployments report normalized bootstrap operator attribution
 and role. This remains operator-visible bootstrap posture, not final
-production RBAC. The next blocking implementation areas are richer
-projection-backed source/wiki review services, CI-grade orchestration around
-the distributed proof verifier, and deeper production identity/authorization.
+production RBAC. `pnpm ops:smoke-distributed-proof-tools` now gives CI a
+deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
+self-test JSON. The remaining blocking implementation areas are richer
+projection-backed source/wiki review services, infrastructure-backed
+multi-machine proof execution, and deeper production identity/authorization.

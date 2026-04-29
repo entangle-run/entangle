@@ -94,3 +94,7 @@ Partially resolved by `408-distributed-proof-verifier-slice.md`: an operator
 can now verify already-started distributed machines through Host HTTP APIs and
 optional User Client health endpoints. A future infrastructure harness can
 provision those machines automatically.
+
+Further supported by `411-distributed-proof-tool-ci-smoke-slice.md`: CI can now
+exercise proof-kit help/dry-run paths and verifier self-test JSON before a real
+distributed proof is attempted.

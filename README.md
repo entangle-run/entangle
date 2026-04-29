@@ -221,6 +221,15 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
   --require-conversation
 ```
 
+CI can verify the proof tooling itself without provisioning external machines:
+
+```bash
+pnpm ops:smoke-distributed-proof-tools
+```
+
+That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
+JSON. It does not replace the real distributed proof above.
+
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner
 fetches its portable bootstrap bundle from the Host API instead of mounting
@@ -1171,8 +1180,8 @@ The highest-value remaining gaps are:
   enforced roles, policy-backed permissions, and stronger audit retention than
   the current bootstrap request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
-  disposable same-machine profile, especially CI-grade coverage and non-disposable
-  upgrade/repair behavior.
+  disposable same-machine profile, especially infrastructure-backed
+  multi-machine proof execution and non-disposable upgrade/repair behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 
