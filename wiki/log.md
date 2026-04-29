@@ -4980,3 +4980,20 @@ the same `pnpm --dir <workspace> test` commands passed directly. The root
 `scripts/run-workspace-tests.mjs` wrapper now uses non-detached package
 commands and waits one second between suites, matching the delayed direct
 sequence that passed end to end in this environment.
+
+## [2026-04-29] implementation | Tightened User Client source-history targets
+
+Added `references/416-user-client-source-history-target-visibility-slice.md`.
+User Client source-history publication requests that include a git target now
+require a matching visible `source_history_publication` resource in the
+selected User Node conversation. The fallback Human Interface Runtime page and
+the dedicated User Client both carry the target encoded by that resource.
+
+This keeps participant-triggered target publication scoped to graph-visible
+conversation evidence while leaving operator Host surfaces able to request
+explicit targets directly.
+
+During root verification for this slice, User Client reproduced the root
+wrapper no-output hang under Vitest forks while the same suite passed
+immediately under threads. The User Client package test script now uses the
+threads pool, matching the stable Host/Runner configuration.

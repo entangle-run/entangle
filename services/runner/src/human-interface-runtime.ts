@@ -887,6 +887,7 @@ async function resolveUserClientVisibleSourceHistoryRefs(input: {
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
   sourceHistoryId: string;
+  target?: SourceHistoryPublicationTarget | undefined;
   userNodeId: string;
 }): Promise<UserClientVisibleSourceHistoryRefs> {
   if (!input.conversationId) {
@@ -920,16 +921,18 @@ async function resolveUserClientVisibleSourceHistoryRefs(input: {
       : [];
   });
   const sourceHistoryVisible = sourceHistoryResources.some((resource) =>
-    sourceHistoryRefMatchesResource({
+    sourceHistoryResourceAllowsTarget({
       resource,
-      sourceHistoryId: input.sourceHistoryId
+      sourceHistoryId: input.sourceHistoryId,
+      ...(input.target ? { target: input.target } : {})
     })
   );
 
   if (!sourceHistoryVisible) {
     return {
-      error:
-        "Source-history resource is not visible in the selected User Node conversation.",
+      error: input.target
+        ? "Source-history publication target is not visible in the selected User Node conversation."
+        : "Source-history resource is not visible in the selected User Node conversation.",
       statusCode: 403
     };
   }
@@ -2247,6 +2250,64 @@ function sourceHistoryRefMatchesResource(input: {
   );
 }
 
+function parseSourceHistoryPublicationTargetFromResource(input: {
+  resource: ApprovalResource;
+  sourceHistoryId: string;
+}): SourceHistoryPublicationTarget | undefined {
+  if (input.resource.kind !== "source_history_publication") {
+    return undefined;
+  }
+
+  const parts = input.resource.id.split("|");
+  if (parts.length !== 4 || parts[0] !== input.sourceHistoryId) {
+    return undefined;
+  }
+
+  const parsed = sourceHistoryPublicationTargetSchema.safeParse({
+    gitServiceRef: parts[1],
+    namespace: parts[2],
+    repositoryName: parts[3]
+  });
+
+  return parsed.success ? parsed.data : undefined;
+}
+
+function sourceHistoryPublicationTargetsMatch(
+  resourceTarget: SourceHistoryPublicationTarget,
+  selector: SourceHistoryPublicationTarget
+): boolean {
+  return (
+    (selector.gitServiceRef === undefined ||
+      resourceTarget.gitServiceRef === selector.gitServiceRef) &&
+    (selector.namespace === undefined ||
+      resourceTarget.namespace === selector.namespace) &&
+    (selector.repositoryName === undefined ||
+      resourceTarget.repositoryName === selector.repositoryName)
+  );
+}
+
+function sourceHistoryResourceAllowsTarget(input: {
+  resource: ApprovalResource;
+  sourceHistoryId: string;
+  target?: SourceHistoryPublicationTarget | undefined;
+}): boolean {
+  if (!input.target) {
+    return sourceHistoryRefMatchesResource({
+      resource: input.resource,
+      sourceHistoryId: input.sourceHistoryId
+    });
+  }
+
+  const resourceTarget = parseSourceHistoryPublicationTargetFromResource({
+    resource: input.resource,
+    sourceHistoryId: input.sourceHistoryId
+  });
+
+  return resourceTarget
+    ? sourceHistoryPublicationTargetsMatch(resourceTarget, input.target)
+    : false;
+}
+
 function renderApprovalResource(
   message: UserNodeMessageRecord,
   sourceChangeRefs: SourceChangeRefProjectionRecord[],
@@ -2315,7 +2376,8 @@ function renderApprovalResource(
   return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderSourceHistoryRefCards({
     conversationId: message.conversationId,
     nodeId: message.fromNodeId,
-    refs: relatedSourceHistoryRefs
+    refs: relatedSourceHistoryRefs,
+    resource
   })}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}${sourceReviewControls}`;
 }
 
@@ -2400,6 +2462,7 @@ function renderSourceHistoryRefCards(input: {
   conversationId: string;
   nodeId: string;
   refs: SourceHistoryRefProjectionRecord[];
+  resource: ApprovalResource;
 }): string {
   if (input.refs.length === 0) {
     return "";
@@ -2410,16 +2473,24 @@ function renderSourceHistoryRefCards(input: {
       .map((ref) => {
         const publicationCount = ref.history.publications.length;
         const summary = ref.history.sourceChangeSummary;
+        const target = parseSourceHistoryPublicationTargetFromResource({
+          resource: input.resource,
+          sourceHistoryId: ref.sourceHistoryId
+        });
 
         return `<div class="artifact-ref">
           <div><strong>${escapeHtml(ref.sourceHistoryId)}</strong> source history</div>
           <div class="message-meta">${escapeHtml(ref.history.branch)} @ ${escapeHtml(ref.history.commit)}</div>
+          ${target ? `<div class="message-meta">${escapeHtml(`publication target ${target.gitServiceRef ?? ""}/${target.namespace ?? ""}/${target.repositoryName ?? ""}`)}</div>` : ""}
           <div>${escapeHtml(`${summary.fileCount} files, +${summary.additions} -${summary.deletions}`)}</div>
           <div class="message-meta">${escapeHtml(`${publicationCount} publication${publicationCount === 1 ? "" : "s"}`)}</div>
           <form class="artifact-proposal-actions" method="post" action="/source-history/publish">
             <input type="hidden" name="nodeId" value="${escapeHtml(input.nodeId)}" />
             <input type="hidden" name="sourceHistoryId" value="${escapeHtml(ref.sourceHistoryId)}" />
             <input type="hidden" name="conversationId" value="${escapeHtml(input.conversationId)}" />
+            ${target ? `<input type="hidden" name="targetGitServiceRef" value="${escapeHtml(target.gitServiceRef ?? "")}" />
+            <input type="hidden" name="targetNamespace" value="${escapeHtml(target.namespace ?? "")}" />
+            <input type="hidden" name="targetRepositoryName" value="${escapeHtml(target.repositoryName ?? "")}" />` : ""}
             <label>Reason
               <input name="reason" placeholder="why this source history should be published" />
             </label>
@@ -3682,6 +3753,7 @@ export async function startHumanInterfaceRuntime(input: {
             hostApi: input.hostApi,
             nodeId,
             sourceHistoryId,
+            ...(target?.success ? { target: target.data } : {}),
             userNodeId: input.context.binding.node.nodeId
           });
 
@@ -4293,6 +4365,19 @@ export async function startHumanInterfaceRuntime(input: {
           const retryFailedPublication =
             form.get("retryFailedPublication") === "true";
           const sourceHistoryId = form.get("sourceHistoryId")?.trim() ?? "";
+          const targetForm = {
+            gitServiceRef: form.get("targetGitServiceRef")?.trim() || undefined,
+            namespace: form.get("targetNamespace")?.trim() || undefined,
+            repositoryName:
+              form.get("targetRepositoryName")?.trim() || undefined
+          };
+          const hasTargetForm =
+            targetForm.gitServiceRef ||
+            targetForm.namespace ||
+            targetForm.repositoryName;
+          const target = hasTargetForm
+            ? sourceHistoryPublicationTargetSchema.safeParse(targetForm)
+            : undefined;
           selectedConversationIdForError = conversationId;
 
           if (!nodeId || !sourceHistoryId || !conversationId) {
@@ -4310,12 +4395,27 @@ export async function startHumanInterfaceRuntime(input: {
             return;
           }
 
+          if (target && !target.success) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: "Source-history publication target is invalid.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
           const visibleSourceHistoryRefs =
             await resolveUserClientVisibleSourceHistoryRefs({
               conversationId,
               hostApi: input.hostApi,
               nodeId,
               sourceHistoryId,
+              ...(target?.success ? { target: target.data } : {}),
               userNodeId: input.context.binding.node.nodeId
             });
 
@@ -4340,6 +4440,7 @@ export async function startHumanInterfaceRuntime(input: {
             retryFailedPublication,
             sourceHistoryId,
             sourceHistoryRefs: visibleSourceHistoryRefs.sourceHistoryRefs,
+            ...(target?.success ? { target: target.data } : {}),
             userNodeId: input.context.binding.node.nodeId
           });
 

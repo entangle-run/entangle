@@ -1272,9 +1272,10 @@ describe("runner runtime context", () => {
                     approverNodeIds: ["user-main"],
                     operation: "source_publication",
                     resource: {
-                      id: "source-history-turn-alpha",
-                      kind: "source_history",
-                      label: "source-history-turn-alpha"
+                      id: "source-history-turn-alpha|gitea|team-alpha|graph-alpha-public",
+                      kind: "source_history_publication",
+                      label:
+                        "source-history-turn-alpha -> gitea/team-alpha/graph-alpha-public"
                     }
                   },
                   conversationId: "conversation-alpha",
@@ -1962,7 +1963,12 @@ describe("runner runtime context", () => {
             nodeId: "worker-it",
             reason: "Publish reviewed source history.",
             retryFailedPublication: true,
-            sourceHistoryId: "source-history-turn-alpha"
+            sourceHistoryId: "source-history-turn-alpha",
+            target: {
+              gitServiceRef: "gitea",
+              namespace: "team-alpha",
+              repositoryName: "graph-alpha-public"
+            }
           }),
           headers: {
             "content-type": "application/json"
@@ -1986,6 +1992,34 @@ describe("runner runtime context", () => {
         ],
         status: "requested",
         userNodeId: "user-main"
+      });
+
+      const jsonMismatchedSourceHistoryPublishResponse = await fetch(
+        new URL("/api/source-history/publish", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            retryFailedPublication: true,
+            sourceHistoryId: "source-history-turn-alpha",
+            target: {
+              gitServiceRef: "gitea",
+              namespace: "team-alpha",
+              repositoryName: "not-visible"
+            }
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonMismatchedSourceHistoryPublishResponse.status).toBe(403);
+      await expect(
+        jsonMismatchedSourceHistoryPublishResponse.json()
+      ).resolves.toMatchObject({
+        error:
+          "Source-history publication target is not visible in the selected User Node conversation."
       });
 
       const jsonUnscopedArtifactResponse = await fetch(
@@ -2223,7 +2257,12 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("approval-alpha");
       expect(pageBody).toContain("approval-wiki");
       expect(pageBody).toContain("approval-source-history");
-      expect(pageBody).toContain("source_history:source-history-turn-alpha");
+      expect(pageBody).toContain(
+        "source_history_publication:source-history-turn-alpha|gitea|team-alpha|graph-alpha-public"
+      );
+      expect(pageBody).toContain(
+        "publication target gitea/team-alpha/graph-alpha-public"
+      );
       expect(pageBody).toContain("Publish source history");
       expect(pageBody).toContain("/source-history/publish");
       expect(pageBody).toContain("wiki_repository:worker-it");
@@ -2351,7 +2390,10 @@ describe("runner runtime context", () => {
             nodeId: "worker-it",
             reason: "Publish reviewed source history.",
             retryFailedPublication: "true",
-            sourceHistoryId: "source-history-turn-alpha"
+            sourceHistoryId: "source-history-turn-alpha",
+            targetGitServiceRef: "gitea",
+            targetNamespace: "team-alpha",
+            targetRepositoryName: "graph-alpha-public"
           }),
           headers: {
             "content-type": "application/x-www-form-urlencoded"
@@ -2543,7 +2585,12 @@ describe("runner runtime context", () => {
       expect(request.body).toMatchObject({
         reason: "Publish reviewed source history.",
         requestedBy: "user-main",
-        retryFailedPublication: true
+        retryFailedPublication: true,
+        target: {
+          gitServiceRef: "gitea",
+          namespace: "team-alpha",
+          repositoryName: "graph-alpha-public"
+        }
       });
     }
     const publishRequest = hostRequests.find(

@@ -185,7 +185,8 @@ The most accurate current description is:
   publication for visible source-history resources in the selected User Node
   conversation, and the process-runner smoke proves that participant path
   through a completed projected `runtime.source_history.publish` command
-  receipt;
+  receipt; target-specific publication requests must match a visible
+  `source_history_publication` resource in that conversation;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;
@@ -986,8 +987,9 @@ The repository now also contains the first real implementation baseline:
   `scripts/run-workspace-tests.mjs` instead of Turbo or a long shell chain
   after both left Vitest child processes open in this environment,
   and the workspace Vitest scripts observed to hang in the chain pinned to
-  fork pools, with CLI pinned to one worker, so the root gate exits cleanly
-  while other Node suites remain on their stable default pool;
+  stable pools: CLI/Studio use forks, CLI is pinned to one worker, User
+  Client/Host/Runner use threads, and other Node suites remain on their stable
+  default pool;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root;
@@ -1070,7 +1072,8 @@ The current implementation-truth audit now lives in
   multi-target source-history publication presentation plus runner-owned
   artifact restore exposed through operator surfaces plus runner-owned
   artifact source-change proposal operator and User Client requests plus User
-  Client visible source-history publication requests plus explicit
+  Client visible source-history publication requests plus target-specific
+  source-history publication visibility checks plus explicit
   runner-owned artifact/source/wiki command completion receipts; the
   next git gaps are richer wiki promotion policy and repository lifecycle
   behavior, source-history

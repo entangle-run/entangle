@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   ArtifactRef,
   SourceChangeRefProjectionRecord,
+  SourceHistoryPublicationTarget,
   SourceHistoryRefProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeConversationResponse,
@@ -109,6 +110,32 @@ function sourceHistoryRefMatchesResource(input: {
     input.resource.id === input.ref.sourceHistoryId ||
     input.resource.id.startsWith(`${input.ref.sourceHistoryId}|`)
   );
+}
+
+function sourceHistoryPublicationTargetFromResource(input: {
+  resource: NonNullable<UserNodeMessageRecord["approval"]>["resource"];
+  sourceHistoryId: string;
+}): SourceHistoryPublicationTarget | undefined {
+  if (!input.resource || input.resource.kind !== "source_history_publication") {
+    return undefined;
+  }
+
+  const parts = input.resource.id.split("|");
+  if (parts.length !== 4 || parts[0] !== input.sourceHistoryId) {
+    return undefined;
+  }
+
+  return {
+    gitServiceRef: parts[1],
+    namespace: parts[2],
+    repositoryName: parts[3]
+  };
+}
+
+function formatSourceHistoryPublicationTarget(
+  target: SourceHistoryPublicationTarget
+): string {
+  return `${target.gitServiceRef ?? ""}/${target.namespace ?? ""}/${target.repositoryName ?? ""}`;
 }
 
 function SourceSummary({
@@ -553,8 +580,14 @@ function SourceHistoryResourceCards({
     return null;
   }
 
-  async function requestPublication(sourceHistoryId: string): Promise<void> {
-    setStatus(`requesting ${sourceHistoryId}`);
+  async function requestPublication(input: {
+    sourceHistoryId: string;
+    target?: SourceHistoryPublicationTarget | undefined;
+  }): Promise<void> {
+    const targetLabel = input.target
+      ? ` to ${formatSourceHistoryPublicationTarget(input.target)}`
+      : "";
+    setStatus(`requesting ${input.sourceHistoryId}`);
 
     try {
       const response = await publishSourceHistory({
@@ -563,11 +596,12 @@ function SourceHistoryResourceCards({
         nodeId: message.fromNodeId,
         ...(publishReason.trim() ? { reason: publishReason.trim() } : {}),
         retryFailedPublication,
-        sourceHistoryId
+        sourceHistoryId: input.sourceHistoryId,
+        ...(input.target ? { target: input.target } : {})
       });
 
       setStatus(
-        `source-history publication requested ${response.commandId}`
+        `source-history publication${targetLabel} requested ${response.commandId}`
       );
       await onRefresh();
     } catch (error) {
@@ -581,26 +615,41 @@ function SourceHistoryResourceCards({
 
   return (
     <div className="artifact-list">
-      {refs.map((ref) => (
-        <div className="artifact-card" key={ref.sourceHistoryId}>
-          <strong>{ref.sourceHistoryId}</strong>
-          <span>
-            {ref.history.sourceChangeSummary.fileCount} files · +
-            {ref.history.sourceChangeSummary.additions} -
-            {ref.history.sourceChangeSummary.deletions}
-          </span>
-          <span>
-            {ref.history.branch} @ {ref.history.commit}
-          </span>
-          <span>{ref.history.publications.length} publications</span>
-          <button
-            onClick={() => void requestPublication(ref.sourceHistoryId)}
-            type="button"
-          >
-            Publish Source History
-          </button>
-        </div>
-      ))}
+      {refs.map((ref) => {
+        const target = sourceHistoryPublicationTargetFromResource({
+          resource,
+          sourceHistoryId: ref.sourceHistoryId
+        });
+
+        return (
+          <div className="artifact-card" key={ref.sourceHistoryId}>
+            <strong>{ref.sourceHistoryId}</strong>
+            <span>
+              {ref.history.sourceChangeSummary.fileCount} files · +
+              {ref.history.sourceChangeSummary.additions} -
+              {ref.history.sourceChangeSummary.deletions}
+            </span>
+            {target ? (
+              <span>target {formatSourceHistoryPublicationTarget(target)}</span>
+            ) : null}
+            <span>
+              {ref.history.branch} @ {ref.history.commit}
+            </span>
+            <span>{ref.history.publications.length} publications</span>
+            <button
+              onClick={() =>
+                void requestPublication({
+                  sourceHistoryId: ref.sourceHistoryId,
+                  ...(target ? { target } : {})
+                })
+              }
+              type="button"
+            >
+              Publish Source History
+            </button>
+          </div>
+        );
+      })}
       <div className="artifact-actions">
         <input
           aria-label="Source-history publication reason"

@@ -9,9 +9,9 @@ Root `pnpm test` now uses `scripts/run-workspace-tests.mjs`, an explicit
 sequential workspace test runner, because Turbo test execution and later a
 long shell `pnpm --filter ... && ...` chain left Vitest child processes open in
 this environment. Workspace Vitest scripts that reproduced the same
-chained-process hang now use explicit stable pools where needed: CLI, Studio,
-and User Client use fork pools, CLI is pinned to one worker, and Host and
-Runner use the threads pool. The remaining Node suites keep their previous
+chained-process hang now use explicit stable pools where needed: CLI and Studio
+use fork pools, CLI is pinned to one worker, and User Client, Host, and Runner
+use the threads pool. The remaining Node suites keep their previous
 default pool because that remains their stable configuration here.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
@@ -486,7 +486,9 @@ Current status:
   publication for `source_history` or `source_history_publication` resources
   visible in the selected User Node conversation, with the Human Interface
   Runtime checking matching projected `sourceHistoryRefs` before forwarding to
-  Host with `requestedBy` set to the User Node id;
+  Host with `requestedBy` set to the User Node id; target-specific requests now
+  require a matching visible `source_history_publication` resource instead of
+  granting arbitrary target publication from a generic source-history resource;
 - Host now returns an effective proposal id for every artifact source-change
   proposal request and sends that same id to the runner, so request
   acknowledgements identify the candidate id to follow;
@@ -913,7 +915,8 @@ Current status:
   for the completed projected `runtime.wiki.publish` command receipt;
 - the process proof now publishes a signed builder-to-User-Node source-history
   approval request, calls the running User Client source-history publication
-  JSON route, and waits for the completed projected
+  JSON route with the target encoded by the visible
+  `source_history_publication` resource, and waits for the completed projected
   `runtime.source_history.publish` command receipt;
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response

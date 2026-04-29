@@ -117,7 +117,9 @@ now also asks the running User Client to request artifact restore for the
 visible source-history artifact, publishes a signed source-history approval
 request to the User Node, asks the running User Client to request
 source-history publication for that visible resource, and verifies both
-projected command receipts.
+projected command receipts. Target-specific source-history publication requests
+from the User Client must match the `source_history_publication` resource
+visible in the selected User Node conversation.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
@@ -170,10 +172,10 @@ commands exited cleanly. The wrapper intentionally uses non-detached package
 processes and waits briefly between suites because immediate chained workspace
 execution reproduced no-output hangs on otherwise passing package test
 commands.
-CLI, Studio, and User Client use fork pools so the sequential root gate exits
-cleanly in this environment; CLI is pinned to one worker. Host and Runner use
-the threads pool for the same reason. The other Node packages stay on the
-default pool because that is their stable configuration here.
+CLI and Studio use fork pools so the sequential root gate exits cleanly in this
+environment; CLI is pinned to one worker. User Client, Host, and Runner use the
+threads pool for the same reason. The other Node packages stay on the default
+pool because that is their stable configuration here.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -1185,7 +1187,8 @@ The highest-value remaining gaps are:
   plus runner-owned artifact restore and source-change proposal operator
   requests plus User Client visible-artifact restore/proposal/wiki publication
   requests plus User Client visible source-history publication requests and
-  explicit runner-owned artifact/source/wiki command completion receipts,
+  target-specific source-history publication visibility checks and explicit
+  runner-owned artifact/source/wiki command completion receipts,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

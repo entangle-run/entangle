@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[415-user-client-source-history-publication-slice.md](415-user-client-source-history-publication-slice.md)
+[416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -159,7 +159,9 @@ command receipt. The running User Client can now request runner-owned
 source-history publication for visible source-history resources through the
 same participant boundary, and the process-runner smoke proves that path with
 a signed builder approval request and a completed projected
-`runtime.source_history.publish` command receipt. Host now returns an
+`runtime.source_history.publish` command receipt. Target-specific participant
+requests now require the selected conversation to contain a matching
+`source_history_publication` resource. Host now returns an
 effective proposal id even when callers omit one, and sends that same id in the
 runner control payload so acknowledgements can be followed to the projected
 candidate. The running User Client can now also request runner-owned wiki
@@ -616,6 +618,11 @@ files are the active federated redesign pack.
 410. [409-artifact-backend-cache-target-policy-slice.md](409-artifact-backend-cache-target-policy-slice.md)
 411. [410-bootstrap-operator-security-status-slice.md](410-bootstrap-operator-security-status-slice.md)
 412. [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
+413. [412-user-client-wiki-publication-slice.md](412-user-client-wiki-publication-slice.md)
+414. [413-user-client-wiki-publication-process-smoke-slice.md](413-user-client-wiki-publication-process-smoke-slice.md)
+415. [414-user-client-artifact-restore-slice.md](414-user-client-artifact-restore-slice.md)
+416. [415-user-client-source-history-publication-slice.md](415-user-client-source-history-publication-slice.md)
+417. [416-user-client-source-history-target-visibility-slice.md](416-user-client-source-history-target-visibility-slice.md)
 
 ## Role of this corpus
 

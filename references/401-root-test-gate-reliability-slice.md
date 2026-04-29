@@ -42,8 +42,9 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Run each package through `pnpm --dir <workspace> test` with inherited stdio
   and package-specific timeouts instead of relying on a long shell `&&` chain
   of `pnpm --filter` commands.
-- Add explicit Vitest fork pools for CLI, Studio, and User Client package test
-  scripts.
+- Add explicit Vitest fork pools for CLI and Studio package test scripts, and
+  later move User Client to the threads pool after it reproduced the same
+  no-output hang under forks in the root wrapper.
 - Earlier follow-up hardening briefly added explicit Vitest fork pools to
   `package-scaffold` and `host-client` after chained root verification
   reproduced no-output child-process hangs on those packages.
@@ -63,6 +64,9 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Follow-up correction: Runner tests now also use `--pool=threads` after the
   root gate reproduced a no-output hang under the default pool and the same
   suite passed immediately under threads and forks.
+- Follow-up correction: User Client tests now use `--pool=threads` after the
+  root gate reproduced a no-output hang under forks while the same suite passed
+  immediately under threads.
 - Follow-up correction: the root sequential runner now uses non-detached async
   package commands plus a short one-second drain between suites. Detached
   wrappers and immediate back-to-back suite execution reproduced no-output

@@ -3377,9 +3377,14 @@ async function main(): Promise<void> {
                 approverNodeIds: ["user"],
                 operation: "source_publication",
                 resource: {
-                  id: projectedBuilderSourceHistory.sourceHistoryId,
-                  kind: "source_history",
-                  label: projectedBuilderSourceHistory.sourceHistoryId
+                  id: [
+                    projectedBuilderSourceHistory.sourceHistoryId,
+                    "gitea",
+                    "team-alpha",
+                    userClientSourceRepositoryName
+                  ].join("|"),
+                  kind: "source_history_publication",
+                  label: `${projectedBuilderSourceHistory.sourceHistoryId} -> gitea/team-alpha/${userClientSourceRepositoryName}`
                 }
               }
             },
@@ -3404,7 +3409,7 @@ async function main(): Promise<void> {
           (message) =>
             message.messageType === "approval.request" &&
             message.approval?.approvalId === sourceHistoryApprovalId &&
-            message.approval.resource?.kind === "source_history"
+            message.approval.resource?.kind === "source_history_publication"
         )
           ? detail
           : undefined;
