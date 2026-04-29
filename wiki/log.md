@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Added fake OpenAI-compatible provider smoke
+
+Added `pnpm ops:smoke-fake-openai-provider`. The smoke starts the
+deterministic OpenAI-compatible provider on an ephemeral port, verifies health,
+model listing, non-streaming chat completions, streaming chat completions, and
+streaming Responses API frames, then stops the spawned provider process.
+
+Added `references/377-fake-provider-smoke-slice.md`.
+
 ## [2026-04-29] implementation | Added conversation-aware working-context memory
 
 The durable runner-owned `working-context.md` summary now includes a

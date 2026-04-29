@@ -192,6 +192,12 @@ responds deterministically and supports streaming chat-completions and
 Responses API shapes, so it is useful for catalog/auth/adapter wiring tests,
 not for validating real model quality.
 
+To check that harness itself:
+
+```sh
+pnpm ops:smoke-fake-openai-provider
+```
+
 To rediscover running User Client endpoints through Host projection, run:
 
 ```sh

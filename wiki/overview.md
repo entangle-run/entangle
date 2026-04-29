@@ -112,6 +112,9 @@ The most accurate current description is:
 - operators can now start a deterministic OpenAI-compatible development
   provider with `pnpm ops:fake-openai-provider` for manual no-credential
   catalog, auth, adapter, and UI wiring tests;
+- `pnpm ops:smoke-fake-openai-provider` now verifies that no-credential
+  provider harness end to end, including streaming chat-completions and
+  Responses API frames;
 - accepted source-candidate reviews now also emit signed `source_history.ref`
   observations, so Host can project source-history records and serve
   source-history list/detail reads without a Host-readable runner filesystem;

@@ -119,6 +119,16 @@ deterministic responses and bearer-token validation. Point an
 catalog, auth, adapter, and UI wiring without live model credentials. This does
 not validate real model behavior.
 
+The provider harness has its own no-credential smoke:
+
+```bash
+pnpm ops:smoke-fake-openai-provider
+```
+
+That smoke starts the fake provider on an ephemeral port and verifies health,
+model listing, non-streaming chat completions, streaming chat completions, and
+streaming Responses API frames.
+
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
 both User Client URLs, and prints CLI commands for publishing a signed

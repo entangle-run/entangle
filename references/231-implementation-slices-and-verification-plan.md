@@ -238,6 +238,9 @@ Current status:
 - `pnpm ops:fake-openai-provider` now starts a deterministic
   OpenAI-compatible development provider for manual no-credential
   catalog/auth/adapter wiring tests.
+- `pnpm ops:smoke-fake-openai-provider` now starts that provider on an
+  ephemeral port and verifies health, models, non-streaming chat completions,
+  streaming chat completions, and streaming Responses API frames.
 - Docker managed runners can now receive inline join config JSON and the
   federated dev Compose profile selects Docker join mode with Host API bundle
   retrieval, avoiding Host state/secret volume mounts in managed join-mode
@@ -714,6 +717,7 @@ Implementation records:
 - [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 - [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 - [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
+- [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 
 Current status:
 
@@ -811,6 +815,8 @@ Current status:
 - `pnpm ops:fake-openai-provider` exposes the same no-credential provider
   boundary as an operator-started development server for manual integration
   checks;
+- `pnpm ops:smoke-fake-openai-provider` verifies the deterministic provider
+  harness without live credentials;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

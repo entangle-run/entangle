@@ -177,6 +177,7 @@ same-machine slice records.
 - [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 - [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 - [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
+- [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 
 ## Audited Scope
 
@@ -276,6 +277,9 @@ The repository is not fully federated:
   provider through `pnpm ops:fake-openai-provider`; it validates bearer tokens
   and serves models, chat-completions, and Responses API routes for manual
   catalog/auth/adapter wiring tests without live credentials;
+- `pnpm ops:smoke-fake-openai-provider` now verifies that deterministic
+  provider harness end to end, including streaming chat-completions and
+  Responses API frames;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to
   a configured OpenCode server, include Basic auth from runner environment
   when configured, and record combined CLI/server version evidence while still

@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
+[377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -113,10 +113,11 @@ OpenAI-compatible HTTP provider fixture that exercises the real `fetch` path
 for chat completions, tool-loop continuation, and provider error mapping
 without live model credentials. A root `pnpm ops:fake-openai-provider` command
 now starts a deterministic OpenAI-compatible HTTP development server for manual
-catalog/auth/adapter wiring tests without live model credentials. Runtime-context
-runner startup and the Human Interface Runtime now also support mounted-file
-identity secret delivery, matching the shared secret-delivery contract and
-generic runner join path.
+catalog/auth/adapter wiring tests without live model credentials, and
+`pnpm ops:smoke-fake-openai-provider` verifies that harness end to end.
+Runtime-context runner startup and the Human Interface Runtime now also support
+mounted-file identity secret delivery, matching the shared secret-delivery
+contract and generic runner join path.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -504,6 +505,7 @@ files are the active federated redesign pack.
 375. [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
 376. [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 377. [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
+378. [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
 
 ## Role of this corpus
 

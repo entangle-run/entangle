@@ -28,6 +28,7 @@
     "ops:demo-federated-preview": "node scripts/federated-preview-demo.mjs",
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",
     "ops:fake-openai-provider": "node scripts/fake-openai-compatible-provider.mjs",
+    "ops:smoke-fake-openai-provider": "node scripts/smoke-fake-openai-compatible-provider.mjs",
     "test": "turbo run test --concurrency=1",
     "test:coverage": "vitest run --config vitest.config.ts packages/**/*.test.ts services/**/*.test.ts --coverage.enabled true",
     "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck && pnpm --filter @entangle/user-client typecheck",
