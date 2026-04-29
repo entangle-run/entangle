@@ -57,6 +57,7 @@ import {
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
@@ -7211,6 +7212,16 @@ describe("buildHostServer", () => {
       requestedBy?: string;
       restoreId?: string;
     }> = [];
+    const artifactProposalRequests: Array<{
+      artifactRef: ArtifactRef;
+      assignment: RuntimeAssignmentRecord;
+      overwrite?: boolean;
+      proposalId?: string;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+      targetPath?: string;
+    }> = [];
     type ArtifactRestorePublishInput = {
       artifactRef: ArtifactRef;
       assignment: RuntimeAssignmentRecord;
@@ -7218,6 +7229,16 @@ describe("buildHostServer", () => {
       relayUrls: string[];
       requestedBy?: string;
       restoreId?: string;
+    };
+    type ArtifactProposalPublishInput = {
+      artifactRef: ArtifactRef;
+      assignment: RuntimeAssignmentRecord;
+      overwrite?: boolean;
+      proposalId?: string;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+      targetPath?: string;
     };
     const server = await createTestServer({
       federatedControlPlane: {
@@ -7231,6 +7252,21 @@ describe("buildHostServer", () => {
             relayUrls: input.relayUrls,
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
             ...(input.restoreId ? { restoreId: input.restoreId } : {})
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeArtifactSourceChangeProposal: (
+          input: ArtifactProposalPublishInput
+        ) => {
+          artifactProposalRequests.push({
+            artifactRef: input.artifactRef,
+            assignment: input.assignment,
+            overwrite: input.overwrite,
+            ...(input.proposalId ? { proposalId: input.proposalId } : {}),
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+            ...(input.targetPath ? { targetPath: input.targetPath } : {})
           });
           return Promise.resolve();
         },
@@ -7456,6 +7492,52 @@ describe("buildHostServer", () => {
         relayUrls: ["ws://relay.example"],
         requestedBy: "operator-main",
         restoreId: "restore-artifact-alpha"
+      });
+
+      const artifactProposalResponse = await server.inject({
+        method: "POST",
+        payload: {
+          proposalId: "artifact-proposal-alpha",
+          reason: "Operator requested source-change proposal.",
+          requestedBy: "operator-main",
+          targetPath: "proposals/report.md"
+        },
+        url:
+          "/v1/runtimes/worker-it/artifacts/artifact-alpha/source-change-proposal"
+      });
+
+      expect(artifactProposalResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactSourceChangeProposalResponseSchema.parse(
+          artifactProposalResponse.json()
+        )
+      ).toMatchObject({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        proposalId: "artifact-proposal-alpha",
+        status: "requested",
+        targetPath: "proposals/report.md"
+      });
+      expect(artifactProposalRequests).toHaveLength(1);
+      expect(artifactProposalRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(artifactProposalRequests[0]).toMatchObject({
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          locator: {
+            repositoryName: "graph-alpha"
+          }
+        },
+        overwrite: false,
+        proposalId: "artifact-proposal-alpha",
+        reason: "Operator requested source-change proposal.",
+        relayUrls: ["ws://relay.example"],
+        requestedBy: "operator-main",
+        targetPath: "proposals/report.md"
       });
 
       const publishResponse = await server.inject({

@@ -231,6 +231,79 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("requests runtime artifact source-change proposals through the Host boundary", async () => {
+    const requests: Array<{
+      body?: string;
+      headers?: Record<string, string>;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          headers: init?.headers,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifactId: "report-turn-001",
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-artifact-proposal-alpha",
+              nodeId: "worker-it",
+              proposalId: "artifact-proposal-alpha",
+              requestedAt: "2026-04-29T10:00:00.000Z",
+              status: "requested",
+              targetPath: "proposals/report.md"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.proposeRuntimeArtifactSourceChange("worker-it", "report-turn-001", {
+        proposalId: "artifact-proposal-alpha",
+        reason: "Prepare report as source proposal.",
+        requestedBy: "operator-main",
+        targetPath: "proposals/report.md"
+      })
+    ).resolves.toMatchObject({
+      artifactId: "report-turn-001",
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-artifact-proposal-alpha",
+      nodeId: "worker-it",
+      proposalId: "artifact-proposal-alpha",
+      status: "requested"
+    });
+
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          overwrite: false,
+          proposalId: "artifact-proposal-alpha",
+          reason: "Prepare report as source proposal.",
+          requestedBy: "operator-main",
+          targetPath: "proposals/report.md"
+        }),
+        headers: {
+          authorization: "Bearer host-secret",
+          "content-type": "application/json"
+        },
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/source-change-proposal"
+      }
+    ]);
+  });
+
   it("fetches the Host projection snapshot", async () => {
     const requests: string[] = [];
     const client = createHostClient({

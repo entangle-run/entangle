@@ -52,6 +52,8 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeArtifactSourceChangeProposalRequestSchema,
+  runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
@@ -149,6 +151,8 @@ import {
   type RuntimeArtifactPreviewResponse,
   type RuntimeArtifactRestoreRequest,
   type RuntimeArtifactRestoreResponse,
+  type RuntimeArtifactSourceChangeProposalRequest,
+  type RuntimeArtifactSourceChangeProposalResponse,
   type RuntimeBootstrapBundleResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
@@ -1080,6 +1084,28 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         runtimeArtifactRestoreResponseSchema
+      );
+    },
+
+    async proposeRuntimeArtifactSourceChange(
+      nodeId: string,
+      artifactId: string,
+      request: RuntimeArtifactSourceChangeProposalRequest = {}
+    ): Promise<RuntimeArtifactSourceChangeProposalResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/source-change-proposal`,
+          {
+            body: JSON.stringify(
+              runtimeArtifactSourceChangeProposalRequestSchema.parse(request)
+            ),
+            headers: {
+              "content-type": "application/json"
+            },
+            method: "POST"
+          }
+        ),
+        runtimeArtifactSourceChangeProposalResponseSchema
       );
     },
 

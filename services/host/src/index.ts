@@ -68,6 +68,8 @@ import {
   runtimeArtifactPreviewResponseSchema,
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeArtifactSourceChangeProposalRequestSchema,
+  runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
@@ -309,6 +311,19 @@ type HostFederatedAssignmentPublisher = {
     relayUrls: string[];
     requestedBy?: string;
     restoreId?: string;
+  }): Promise<unknown>;
+  publishRuntimeArtifactSourceChangeProposal?(input: {
+    artifactRef: ArtifactRef;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    overwrite?: boolean;
+    proposalId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    targetPath?: string;
   }): Promise<unknown>;
   publishRuntimeSourceHistoryPublish?(input: {
     approvalId?: string;
@@ -752,6 +767,45 @@ async function publishRuntimeArtifactRestoreCommandFromHost(
     relayUrls: options.federatedControlRelayUrls,
     ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
     ...(input.restoreId ? { restoreId: input.restoreId } : {})
+  });
+
+  return commandId;
+}
+
+async function publishRuntimeArtifactSourceChangeProposalCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    artifactRef: ArtifactRef;
+    assignment: RuntimeAssignmentRecord;
+    overwrite?: boolean;
+    proposalId?: string;
+    reason?: string;
+    requestedBy?: string;
+    targetPath?: string;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeArtifactSourceChangeProposal ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-artifact-proposal-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeArtifactSourceChangeProposal({
+    artifactRef: input.artifactRef,
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    overwrite: input.overwrite ?? false,
+    ...(input.proposalId ? { proposalId: input.proposalId } : {}),
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+    ...(input.targetPath ? { targetPath: input.targetPath } : {})
   });
 
   return commandId;
@@ -2320,6 +2374,101 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         nodeId: params.nodeId,
         requestedAt: new Date().toISOString(),
         status: "requested"
+      });
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/artifacts/:artifactId/source-change-proposal",
+    async (request, reply) => {
+      const params = request.params as { artifactId: string; nodeId: string };
+      const body = parseRequestInput(
+        runtimeArtifactSourceChangeProposalRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected artifact source-change proposal schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const artifactInspection = await getRuntimeArtifactInspection({
+        artifactId: params.artifactId,
+        nodeId: params.nodeId
+      });
+
+      if (!artifactInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            artifactId: params.artifactId,
+            nodeId: params.nodeId
+          },
+          message:
+            `Artifact source-change proposal for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const commandId =
+        await publishRuntimeArtifactSourceChangeProposalCommandFromHost(
+          options,
+          {
+            artifactRef: artifactInspection.artifact.ref,
+            assignment,
+            overwrite: body.overwrite,
+            ...(body.proposalId ? { proposalId: body.proposalId } : {}),
+            ...(body.reason ? { reason: body.reason } : {}),
+            ...(body.requestedBy ? { requestedBy: body.requestedBy } : {}),
+            ...(body.targetPath ? { targetPath: body.targetPath } : {})
+          }
+        );
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            artifactId: params.artifactId,
+            nodeId: params.nodeId
+          },
+          message:
+            "Federated artifact source-change proposal requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeArtifactSourceChangeProposalResponseSchema.parse({
+        artifactId: params.artifactId,
+        assignmentId: assignment.assignmentId,
+        commandId,
+        nodeId: params.nodeId,
+        ...(body.proposalId ? { proposalId: body.proposalId } : {}),
+        requestedAt: new Date().toISOString(),
+        status: "requested",
+        ...(body.targetPath ? { targetPath: body.targetPath } : {})
       });
     }
   );

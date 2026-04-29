@@ -396,6 +396,58 @@ function buildRuntimeSourceHistoryPublishEvent(
   };
 }
 
+function buildRuntimeArtifactSourceChangeProposalEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  const artifactRef: ArtifactRef = {
+    artifactId: "artifact-alpha",
+    artifactKind: "report_file",
+    backend: "git",
+    locator: {
+      branch: "artifact-artifact-alpha",
+      commit: "abc123",
+      gitServiceRef: "gitea",
+      namespace: "team-alpha",
+      path: "reports/session-alpha/report.md",
+      repositoryName: "graph-alpha"
+    },
+    status: "published"
+  };
+
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:05.000Z",
+      eventId: "1313131313131313131313131313131313131313131313131313131313131313",
+      payloadHash:
+        "3535353535353535353535353535353535353535353535353535353535353535",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "57575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757575757",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      artifactId: artifactRef.artifactId,
+      artifactRef,
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-artifact-proposal-alpha",
+      eventType: "runtime.artifact.propose_source_change",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:05.000Z",
+      nodeId: assignment.nodeId,
+      proposalId: "artifact-proposal-alpha",
+      protocol: "entangle.control.v1",
+      reason: "Prepare artifact proposal",
+      requestedBy: "operator-main",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey,
+      targetPath: "proposals/report.md"
+    }
+  };
+}
+
 function buildRuntimeSourceHistoryReplayEvent(
   assignment: RuntimeAssignmentRecord
 ): EntangleControlEvent {
@@ -2426,6 +2478,7 @@ describe("runner runtime context", () => {
     const runtimeStarts: string[] = [];
     const runtimeCancellations: string[] = [];
     const runtimeArtifactRestores: string[] = [];
+    const runtimeArtifactSourceChangeProposals: string[] = [];
     const runtimeSourceHistoryPublications: string[] = [];
     const runtimeSourceHistoryReplays: string[] = [];
     const runtimeWikiPublications: string[] = [];
@@ -2476,6 +2529,16 @@ describe("runner runtime context", () => {
                 retrievalState: "retrieved"
               });
             },
+            proposeSourceChangeFromArtifact: (request) => {
+              runtimeArtifactSourceChangeProposals.push(
+                `${request.artifactRef.artifactId}:${request.requestedBy ?? "unknown"}:${request.proposalId ?? "generated"}:${request.targetPath ?? "default"}`
+              );
+              return Promise.resolve({
+                artifactId: request.artifactRef.artifactId,
+                candidateId: request.proposalId ?? "generated",
+                sourceChangeStatus: "changed"
+              });
+            },
             replaySourceHistory: (request) => {
               runtimeSourceHistoryReplays.push(
                 `${request.sourceHistoryId}:${request.replayId ?? "generated"}:${request.approvalId ?? "none"}`
@@ -2505,6 +2568,9 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeRestartEvent(assignment));
     await transport.dispatch(buildRuntimeSessionCancelEvent(assignment));
     await transport.dispatch(buildRuntimeArtifactRestoreEvent(assignment));
+    await transport.dispatch(
+      buildRuntimeArtifactSourceChangeProposalEvent(assignment)
+    );
     await transport.dispatch(buildRuntimeSourceHistoryPublishEvent(assignment));
     await transport.dispatch(buildRuntimeSourceHistoryReplayEvent(assignment));
     await transport.dispatch(buildRuntimeWikiPublishEvent(assignment));
@@ -2521,6 +2587,9 @@ describe("runner runtime context", () => {
     expect(runtimeCancellations).toEqual(["session-alpha"]);
     expect(runtimeArtifactRestores).toEqual([
       "artifact-alpha:operator-main:restore-alpha"
+    ]);
+    expect(runtimeArtifactSourceChangeProposals).toEqual([
+      "artifact-alpha:operator-main:artifact-proposal-alpha:proposals/report.md"
     ]);
     expect(runtimeSourceHistoryPublications).toEqual([
       "source-history-alpha:retry:operator-main:approval-source-history-publication-alpha:graph-alpha-public"

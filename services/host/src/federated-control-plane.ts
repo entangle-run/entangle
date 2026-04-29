@@ -525,6 +525,49 @@ export class HostFederatedControlPlane {
     });
   }
 
+  publishRuntimeArtifactSourceChangeProposal(input: {
+    artifactRef: ArtifactRef;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    overwrite?: boolean;
+    proposalId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    targetPath?: string;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        artifactId: input.artifactRef.artifactId,
+        artifactRef: input.artifactRef,
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        eventType: "runtime.artifact.propose_source_change",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        overwrite: input.overwrite ?? false,
+        protocol: "entangle.control.v1",
+        ...(input.proposalId ? { proposalId: input.proposalId } : {}),
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey,
+        ...(input.targetPath ? { targetPath: input.targetPath } : {})
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
   publishRuntimeSourceHistoryReplay(input: {
     approvalId?: string;
     assignment: RuntimeAssignmentRecord;

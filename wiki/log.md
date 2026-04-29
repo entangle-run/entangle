@@ -4618,3 +4618,16 @@ Host projection to report runner-observed `retrieved` state.
 The smoke exposed and closed a validator mismatch for file-backed git proof
 profiles: file git targets no longer require git transport principals, while
 SSH and HTTPS git targets still keep the existing principal requirements.
+
+## [2026-04-29] implementation | Added runner-owned artifact source proposals
+
+Added `references/387-runner-owned-artifact-source-proposal-slice.md`.
+Artifact-to-source work now uses a Host-signed
+`runtime.artifact.propose_source_change` command instead of Host-side
+promotion.
+
+The assigned runner retrieves the artifact, copies bounded safe content into
+its source workspace, harvests a `pending_review` source-change candidate, and
+emits signed `source_change.ref` evidence. The process-runner smoke now proves
+that path against the real report artifact published by the joined agent
+runner.

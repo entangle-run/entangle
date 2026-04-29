@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { open, stat } from "node:fs/promises";
+import {
+  copyFile,
+  lstat,
+  mkdir,
+  open,
+  readdir,
+  stat
+} from "node:fs/promises";
 import path from "node:path";
 import type {
   AgentEngineTurnResult,
@@ -39,7 +46,8 @@ import {
   isAllowedApprovalLifecycleTransition,
   isAllowedConversationLifecycleTransition,
   isAllowedSessionLifecycleTransition,
-  sessionCancellationRequestRecordSchema
+  sessionCancellationRequestRecordSchema,
+  sourceChangeCandidateRecordSchema
 } from "@entangle/types";
 import { validateA2AMessageDocument } from "@entangle/validator";
 import type { AgentEngine } from "@entangle/agent-engine";
@@ -136,6 +144,13 @@ export type RunnerArtifactRestoreCommandResult = {
   retrievalState?: "failed" | "retrieved";
 };
 
+export type RunnerArtifactSourceChangeProposalCommandResult = {
+  artifactId: string;
+  candidateId?: string;
+  message?: string;
+  sourceChangeStatus?: "changed" | "failed" | "not_configured" | "unchanged";
+};
+
 export type RunnerServiceObservationPublisher = {
   publishArtifactRefObserved?(input: {
     artifactRecord: ArtifactRecord;
@@ -225,9 +240,239 @@ const handoffAllowedRelations = new Set([
 ]);
 
 const artifactProjectionPreviewMaxBytes = 12 * 1024;
+const artifactSourceProposalMaxFiles = 200;
+const artifactSourceProposalMaxBytes = 20 * 1024 * 1024;
 
 function nowIsoString(): string {
   return new Date().toISOString();
+}
+
+function sanitizeIdentifier(input: string): string {
+  const normalized = input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+
+  return normalized.length > 0 ? normalized : `id-${randomUUID().slice(0, 8)}`;
+}
+
+function buildArtifactSourceProposalCandidateId(input: {
+  artifactId: string;
+  proposalId?: string | undefined;
+}): string {
+  const raw =
+    input.proposalId ??
+    `artifact-proposal-${sanitizeIdentifier(input.artifactId)}-${randomUUID().slice(0, 8)}`;
+  const normalized = sanitizeIdentifier(raw);
+
+  return normalized.length <= 100 ? normalized : normalized.slice(0, 100);
+}
+
+function defaultArtifactSourceProposalTargetPath(
+  artifactRef: ArtifactRef
+): string {
+  if (artifactRef.backend === "git" && artifactRef.locator.path !== ".") {
+    return artifactRef.locator.path;
+  }
+
+  return path.join("artifact-proposals", sanitizeIdentifier(artifactRef.artifactId));
+}
+
+function normalizeSafeRelativeSourcePath(input: {
+  artifactRef: ArtifactRef;
+  targetPath?: string | undefined;
+}): string {
+  const rawPath =
+    input.targetPath?.trim() ??
+    defaultArtifactSourceProposalTargetPath(input.artifactRef);
+  const normalizedPath = path.normalize(rawPath);
+
+  if (
+    normalizedPath === "." ||
+    path.isAbsolute(normalizedPath) ||
+    normalizedPath.split(path.sep).includes("..")
+  ) {
+    throw new Error(
+      `Artifact source-change proposal target path '${rawPath}' is not a safe relative path.`
+    );
+  }
+
+  return normalizedPath;
+}
+
+function assertPathInsideRoot(input: {
+  root: string;
+  targetPath: string;
+  label: string;
+}): void {
+  const relativePath = path.relative(input.root, input.targetPath);
+
+  if (
+    relativePath === "" ||
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error(`${input.label} must stay inside the source workspace.`);
+  }
+}
+
+function isNodeErrorCode(error: unknown, code: string): boolean {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (error as NodeJS.ErrnoException).code === code
+  );
+}
+
+async function copyArtifactProposalFile(input: {
+  destinationPath: string;
+  overwrite: boolean;
+  sourcePath: string;
+}): Promise<{
+  copiedBytes: number;
+  copiedFiles: number;
+}> {
+  const sourceStats = await lstat(input.sourcePath);
+
+  if (sourceStats.isSymbolicLink()) {
+    throw new Error("Artifact source-change proposals cannot copy symlinks.");
+  }
+
+  if (!sourceStats.isFile()) {
+    throw new Error("Artifact source-change proposals can only copy files or directories.");
+  }
+
+  try {
+    await lstat(input.destinationPath);
+
+    if (!input.overwrite) {
+      throw new Error(
+        `Artifact source-change proposal target '${input.destinationPath}' already exists.`
+      );
+    }
+  } catch (error) {
+    if (!isNodeErrorCode(error, "ENOENT")) {
+      throw error;
+    }
+  }
+
+  await mkdir(path.dirname(input.destinationPath), { recursive: true });
+  await copyFile(input.sourcePath, input.destinationPath);
+
+  return {
+    copiedBytes: sourceStats.size,
+    copiedFiles: 1
+  };
+}
+
+async function copyArtifactProposalDirectory(input: {
+  destinationRoot: string;
+  overwrite: boolean;
+  sourceRoot: string;
+}): Promise<{
+  copiedBytes: number;
+  copiedFiles: number;
+}> {
+  let copiedBytes = 0;
+  let copiedFiles = 0;
+
+  async function visit(sourceDirectory: string, destinationDirectory: string): Promise<void> {
+    await mkdir(destinationDirectory, { recursive: true });
+
+    for (const entry of await readdir(sourceDirectory, { withFileTypes: true })) {
+      if (entry.name === ".git") {
+        continue;
+      }
+
+      const sourcePath = path.join(sourceDirectory, entry.name);
+      const destinationPath = path.join(destinationDirectory, entry.name);
+
+      if (entry.isSymbolicLink()) {
+        throw new Error("Artifact source-change proposals cannot copy symlinks.");
+      }
+
+      if (entry.isDirectory()) {
+        await visit(sourcePath, destinationPath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        throw new Error(
+          "Artifact source-change proposals can only copy regular files and directories."
+        );
+      }
+
+      const result = await copyArtifactProposalFile({
+        destinationPath,
+        overwrite: input.overwrite,
+        sourcePath
+      });
+      copiedBytes += result.copiedBytes;
+      copiedFiles += result.copiedFiles;
+
+      if (copiedFiles > artifactSourceProposalMaxFiles) {
+        throw new Error(
+          `Artifact source-change proposal exceeds ${artifactSourceProposalMaxFiles} files.`
+        );
+      }
+
+      if (copiedBytes > artifactSourceProposalMaxBytes) {
+        throw new Error(
+          `Artifact source-change proposal exceeds ${artifactSourceProposalMaxBytes} bytes.`
+        );
+      }
+    }
+  }
+
+  await visit(input.sourceRoot, input.destinationRoot);
+
+  return {
+    copiedBytes,
+    copiedFiles
+  };
+}
+
+async function copyArtifactIntoSourceWorkspace(input: {
+  artifactRef: ArtifactRef;
+  overwrite: boolean;
+  sourcePath: string;
+  sourceWorkspaceRoot: string;
+  targetPath?: string | undefined;
+}): Promise<{
+  copiedBytes: number;
+  copiedFiles: number;
+  targetPath: string;
+}> {
+  const targetPath = normalizeSafeRelativeSourcePath({
+    artifactRef: input.artifactRef,
+    ...(input.targetPath ? { targetPath: input.targetPath } : {})
+  });
+  const destinationPath = path.resolve(input.sourceWorkspaceRoot, targetPath);
+  assertPathInsideRoot({
+    label: "Artifact source-change proposal target path",
+    root: input.sourceWorkspaceRoot,
+    targetPath: destinationPath
+  });
+
+  const sourceStats = await lstat(input.sourcePath);
+  const result = sourceStats.isDirectory()
+    ? await copyArtifactProposalDirectory({
+        destinationRoot: destinationPath,
+        overwrite: input.overwrite,
+        sourceRoot: input.sourcePath
+      })
+    : await copyArtifactProposalFile({
+        destinationPath,
+        overwrite: input.overwrite,
+        sourcePath: input.sourcePath
+      });
+
+  return {
+    ...result,
+    targetPath
+  };
 }
 
 function resolveEnvelopeSignerPubkey(envelope: RunnerInboundEnvelope): string {
@@ -1669,11 +1914,12 @@ export class RunnerService {
   }
 
   private async publishSourceChangeRefObservation(
-    candidate: SourceChangeCandidateRecord
+    candidate: SourceChangeCandidateRecord,
+    artifactRefs: ArtifactRef[] = []
   ): Promise<void> {
     try {
       await this.observationPublisher?.publishSourceChangeRefObserved?.({
-        artifactRefs: [],
+        artifactRefs,
         candidate,
         observedAt: candidate.updatedAt
       });
@@ -1998,6 +2244,113 @@ export class RunnerService {
 
       throw error;
     }
+  }
+
+  async requestArtifactSourceChangeProposal(input: {
+    artifactRef: ArtifactRef;
+    overwrite?: boolean;
+    proposalId?: string;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    targetPath?: string;
+  }): Promise<RunnerArtifactSourceChangeProposalCommandResult> {
+    const sourceWorkspaceRoot = this.context.workspace.sourceWorkspaceRoot;
+
+    if (!sourceWorkspaceRoot) {
+      throw new Error(
+        `Runtime '${this.context.binding.node.nodeId}' has no source workspace for artifact source-change proposals.`
+      );
+    }
+
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+
+    const restored = await this.artifactBackend.retrieveInboundArtifacts({
+      artifactRefs: [input.artifactRef],
+      context: this.context
+    });
+    const [artifact] = restored.artifacts;
+    const [artifactInput] = restored.artifactInputs;
+
+    if (!artifact || !artifactInput?.localPath) {
+      throw new Error(
+        `Artifact '${input.artifactRef.artifactId}' did not produce source-change proposal input.`
+      );
+    }
+
+    await writeArtifactRecord(statePaths, artifact);
+    await this.publishArtifactRefObservation(artifact);
+
+    const baseline = await prepareSourceChangeHarvest(this.context);
+    const copyResult = await copyArtifactIntoSourceWorkspace({
+      artifactRef: input.artifactRef,
+      overwrite: input.overwrite ?? false,
+      sourcePath: artifactInput.localPath,
+      sourceWorkspaceRoot,
+      ...(input.targetPath ? { targetPath: input.targetPath } : {})
+    });
+    const harvestResult = await harvestSourceChanges(this.context, baseline);
+
+    if (harvestResult.summary.status !== "changed") {
+      return {
+        artifactId: input.artifactRef.artifactId,
+        message:
+          harvestResult.summary.failureReason ??
+          `Artifact source-change proposal copied ${copyResult.copiedFiles} files to '${copyResult.targetPath}', but no source change was detected.`,
+        sourceChangeStatus: harvestResult.summary.status
+      };
+    }
+
+    const timestamp = nowIsoString();
+    const candidateId = buildArtifactSourceProposalCandidateId({
+      artifactId: input.artifactRef.artifactId,
+      ...(input.proposalId ? { proposalId: input.proposalId } : {})
+    });
+    const turnRecord: RunnerTurnRecord = {
+      consumedArtifactIds: [input.artifactRef.artifactId],
+      emittedHandoffMessageIds: [],
+      graphId: this.context.binding.graphId,
+      nodeId: this.context.binding.node.nodeId,
+      phase: "blocked",
+      producedArtifactIds: [],
+      requestedApprovalIds: [],
+      sourceChangeCandidateIds: [candidateId],
+      sourceChangeSummary: harvestResult.summary,
+      startedAt: input.requestedAt ?? timestamp,
+      triggerKind: "operator",
+      turnId: candidateId,
+      updatedAt: timestamp
+    };
+    const candidate = sourceChangeCandidateRecordSchema.parse({
+      candidateId,
+      ...(input.artifactRef.conversationId
+        ? { conversationId: input.artifactRef.conversationId }
+        : {}),
+      createdAt: timestamp,
+      graphId: this.context.binding.graphId,
+      nodeId: this.context.binding.node.nodeId,
+      ...(input.artifactRef.sessionId
+        ? { sessionId: input.artifactRef.sessionId }
+        : {}),
+      ...(harvestResult.snapshot ? { snapshot: harvestResult.snapshot } : {}),
+      sourceChangeSummary: harvestResult.summary,
+      status: "pending_review",
+      turnId: turnRecord.turnId,
+      updatedAt: timestamp
+    });
+
+    await writeRunnerTurnRecord(statePaths, turnRecord);
+    await writeSourceChangeCandidateRecord(statePaths, candidate);
+    await this.publishSourceChangeRefObservation(candidate, [input.artifactRef]);
+
+    return {
+      artifactId: input.artifactRef.artifactId,
+      candidateId,
+      sourceChangeStatus: harvestResult.summary.status
+    };
   }
 
   async requestWikiRepositoryPublication(input: {

@@ -102,9 +102,11 @@ projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
 artifact history/diff through the running User Client. It requests
 runner-owned artifact restore for that source-history artifact and verifies
-projected retrieval evidence, then requests explicit non-primary
-source-history target publication and verifies the sibling source repository
-branch head, without live model credentials. Live OpenCode
+projected retrieval evidence, requests a runner-owned artifact source-change
+proposal from the published report artifact and verifies the pending candidate
+projection, then requests explicit non-primary source-history target
+publication and verifies the sibling source repository branch head, without
+live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
 local provider fixture.
@@ -310,7 +312,11 @@ This repository currently contains:
   runner retrieves the projected artifact ref into runner-owned state and emits
   signed `artifact.ref` retrieval evidence rather than Host reading runner
   files, with CLI and Studio exposing that request path from artifact
-  inspection surfaces. Explicit operator replay requests now travel as Host-signed
+  inspection surfaces. Artifact-to-source proposal requests now travel as
+  Host-signed `runtime.artifact.propose_source_change` commands; the runner
+  retrieves the artifact, copies bounded safe content into its source
+  workspace, and emits a pending source-change candidate for normal review.
+  Explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
   history detail using that Host request path and with observed
@@ -510,9 +516,9 @@ This repository currently contains:
   git history, and git diff inspection for supported materialized artifacts.
   Direct Host restore/promotion mutations have been removed; artifact restore
   now returns as a Host-signed command executed in runner-owned state and
-  exposed through CLI/Studio operator surfaces, while promotion remains a
-  future policy-backed protocol flow rather than Host writes into runner-local
-  workspaces;
+  exposed through CLI/Studio operator surfaces. Artifact-to-source work now
+  returns as a runner-owned source-change proposal command rather than Host
+  writes into runner-local workspaces;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -1071,7 +1077,7 @@ The highest-value remaining gaps are:
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs plus shared multi-target source-history publication presentation
   and runner-owned artifact restore,
-  especially artifact promotion or source-change proposal flows,
+  especially richer artifact proposal user/operator controls,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

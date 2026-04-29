@@ -26,6 +26,7 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.restart",
   "runtime.session.cancel",
   "runtime.artifact.restore",
+  "runtime.artifact.propose_source_change",
   "runtime.source_history.publish",
   "runtime.source_history.replay",
   "runtime.wiki.publish"
@@ -185,6 +186,22 @@ export const runtimeArtifactRestorePayloadSchema = controlPayloadBaseSchema.exte
   restoreId: identifierSchema.optional()
 });
 
+export const runtimeArtifactSourceChangeProposalPayloadSchema =
+  controlPayloadBaseSchema.extend({
+    artifactId: identifierSchema,
+    artifactRef: artifactRefSchema,
+    assignmentId: identifierSchema.optional(),
+    commandId: identifierSchema,
+    eventType: z.literal("runtime.artifact.propose_source_change"),
+    graphId: identifierSchema,
+    nodeId: identifierSchema,
+    overwrite: z.boolean().default(false),
+    proposalId: identifierSchema.optional(),
+    reason: nonEmptyStringSchema.optional(),
+    requestedBy: identifierSchema.optional(),
+    targetPath: nonEmptyStringSchema.optional()
+  });
+
 export const runtimeSourceHistoryPublishPayloadSchema =
   controlPayloadBaseSchema.extend({
     approvalId: identifierSchema.optional(),
@@ -238,6 +255,7 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeRestartPayloadSchema,
     runtimeSessionCancelPayloadSchema,
     runtimeArtifactRestorePayloadSchema,
+    runtimeArtifactSourceChangeProposalPayloadSchema,
     runtimeSourceHistoryPublishPayloadSchema,
     runtimeSourceHistoryReplayPayloadSchema,
     runtimeWikiPublishPayloadSchema

@@ -644,6 +644,29 @@ describe("Host federated control plane", () => {
       requestedBy: "operator-main",
       restoreId: "restore-alpha"
     });
+    await controlPlane.publishRuntimeArtifactSourceChangeProposal({
+      artifactRef: {
+        artifactId: "artifact-alpha",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "artifact-artifact-alpha",
+          commit: "abc123",
+          gitServiceRef: "gitea",
+          namespace: "team-alpha",
+          path: "reports/session-alpha/report.md",
+          repositoryName: "graph-alpha"
+        },
+        status: "published"
+      },
+      assignment,
+      commandId: "cmd-artifact-proposal-alpha",
+      proposalId: "artifact-proposal-alpha",
+      reason: "Prepare artifact as source proposal.",
+      relayUrls,
+      requestedBy: "operator-main",
+      targetPath: "proposals/report.md"
+    });
     await controlPlane.publishRuntimeSourceHistoryPublish({
       approvalId: "approval-source-history-publication-alpha",
       assignment,
@@ -740,6 +763,21 @@ describe("Host federated control plane", () => {
         runnerPubkey
       }),
       expect.objectContaining({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-artifact-proposal-alpha",
+        eventType: "runtime.artifact.propose_source_change",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        proposalId: "artifact-proposal-alpha",
+        requestedBy: "operator-main",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        targetPath: "proposals/report.md"
+      }),
+      expect.objectContaining({
         approvalId: "approval-source-history-publication-alpha",
         assignmentId: "assignment-alpha",
         commandId: "cmd-source-history-publish-alpha",
@@ -796,6 +834,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

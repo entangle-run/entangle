@@ -765,6 +765,44 @@ describe("federated runtime contracts", () => {
         }
       }
     });
+    const artifactSourceChangeProposal = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        artifactId: "artifact-alpha",
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/report",
+            commit: "abc123",
+            gitServiceRef: "gitea",
+            namespace: "team-alpha",
+            path: "reports/session-alpha/report.md",
+            repositoryName: "graph-alpha"
+          },
+          status: "published"
+        },
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-artifact-proposal-alpha",
+        eventType: "runtime.artifact.propose_source_change",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        overwrite: false,
+        proposalId: "artifact-proposal-alpha",
+        protocol: "entangle.control.v1",
+        requestedBy: "operator-main",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        targetPath: "proposals/report.md"
+      }
+    });
     const sourceHistoryReplay = entangleControlEventSchema.parse({
       envelope: buildSignedEnvelope({
         protocol: "entangle.control.v1",
@@ -822,6 +860,14 @@ describe("federated runtime contracts", () => {
     expect(artifactRestore.payload).toMatchObject({
       artifactId: "artifact-alpha",
       restoreId: "restore-artifact-alpha"
+    });
+    expect(artifactSourceChangeProposal.payload.eventType).toBe(
+      "runtime.artifact.propose_source_change"
+    );
+    expect(artifactSourceChangeProposal.payload).toMatchObject({
+      artifactId: "artifact-alpha",
+      proposalId: "artifact-proposal-alpha",
+      targetPath: "proposals/report.md"
     });
     expect(sourceHistoryPublish.payload.eventType).toBe(
       "runtime.source_history.publish"

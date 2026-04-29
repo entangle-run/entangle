@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
+[387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -136,6 +136,13 @@ verifies projected `retrieved` evidence through Host runtime artifact
 inspection. The artifact-ref validator now treats file-backed git targets as
 credentialless local proof backends while preserving git principal requirements
 for SSH and HTTPS targets.
+Artifact-to-source work now returns as runner-owned proposal behavior instead
+of Host-side promotion: Host publishes
+`runtime.artifact.propose_source_change`, the assigned runner retrieves the
+artifact, copies bounded safe content into its source workspace, harvests a
+pending source-change candidate, and emits signed `source_change.ref`
+evidence. The process-runner smoke proves that path against the real
+runner-published report artifact.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -533,6 +540,7 @@ files are the active federated redesign pack.
 385. [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 386. [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 387. [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
+388. [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
 
 ## Role of this corpus
 

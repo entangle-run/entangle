@@ -102,6 +102,12 @@ The most accurate current description is:
   source-history artifact and verifies projected `retrieved` evidence from the
   real joined runner path, while file-backed git proof targets no longer
   require transport principals;
+- artifact-to-source work now returns as runner-owned source-change proposal
+  behavior: Host signs `runtime.artifact.propose_source_change`, the assigned
+  runner retrieves the artifact, copies bounded safe content into its source
+  workspace, emits a `pending_review` source-change candidate, and the
+  process-runner smoke verifies that path against the real runner-published
+  report artifact;
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate
@@ -369,8 +375,9 @@ The repository now also contains the first real implementation baseline:
   with bounded host/CLI/Studio history and diff inspection for supported
   materialized git artifacts, with direct Host artifact restore/promotion
   mutations removed and artifact restore now returned as runner-owned protocol
-  behavior through CLI/Studio operator requests while promotion remains a
-  future source-change or artifact-policy flow, and with runner-owned local git
+  behavior through CLI/Studio operator requests while artifact-to-source work
+  now returns as runner-owned source-change proposal behavior, and with
+  runner-owned local git
   snapshots of `memory/wiki` into
   each node's `wiki-repository` workspace after completed turns, including
   durable sync outcomes on turns, host events, CLI output, and Studio turn
@@ -988,8 +995,9 @@ The current implementation-truth audit now lives in
   artifact history/diff/preview inspection, backend-cache history/diff for
   projected git refs, explicit wiki target publication, and shared
   multi-target source-history publication presentation plus runner-owned
-  artifact restore exposed through operator surfaces; the next git gaps are
-  artifact promotion or source-change proposal flows, richer
+  artifact restore exposed through operator surfaces plus runner-owned
+  artifact source-change proposals; the next git gaps are richer artifact
+  proposal user/operator controls, richer
   wiki promotion policy and repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,

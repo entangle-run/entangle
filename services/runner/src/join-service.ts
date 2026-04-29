@@ -94,6 +94,20 @@ export type RunnerAssignmentRuntimeHandle = {
     message?: string;
     retrievalState?: "failed" | "retrieved";
   }>;
+  proposeSourceChangeFromArtifact?(request: {
+    artifactRef: ArtifactRef;
+    overwrite?: boolean;
+    proposalId?: string;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    targetPath?: string;
+  }): Promise<{
+    artifactId: string;
+    candidateId?: string;
+    message?: string;
+    sourceChangeStatus?: "changed" | "failed" | "not_configured" | "unchanged";
+  }>;
   replaySourceHistory?(request: {
     approvalId?: string;
     reason?: string;
@@ -284,6 +298,11 @@ export class RunnerJoinService {
       return;
     }
 
+    if (payload.eventType === "runtime.artifact.propose_source_change") {
+      await this.handleRuntimeArtifactSourceChangeProposalCommand(payload);
+      return;
+    }
+
     if (payload.eventType === "runtime.source_history.publish") {
       await this.handleRuntimeSourceHistoryPublishCommand(payload);
       return;
@@ -439,6 +458,7 @@ export class RunnerJoinService {
       {
         eventType:
           | "runtime.restart"
+          | "runtime.artifact.propose_source_change"
           | "runtime.artifact.restore"
           | "runtime.session.cancel"
           | "runtime.source_history.publish"
@@ -728,6 +748,71 @@ export class RunnerJoinService {
           error instanceof Error
             ? error.message
             : "Runtime artifact restore command failed."
+      });
+    }
+  }
+
+  private async handleRuntimeArtifactSourceChangeProposalCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.artifact.propose_source_change" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime artifact source-change proposal command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.proposeSourceChangeFromArtifact) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime artifact source-change proposal command cannot be applied because the assigned runtime is not running."
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.proposeSourceChangeFromArtifact({
+        artifactRef: payload.artifactRef,
+        overwrite: payload.overwrite,
+        ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        requestedAt: payload.issuedAt,
+        ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {}),
+        ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+      });
+
+      if (result.sourceChangeStatus && result.sourceChangeStatus !== "changed") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Artifact '${result.artifactId}' did not produce a source-change proposal.`
+        });
+      }
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime artifact source-change proposal command failed."
       });
     }
   }

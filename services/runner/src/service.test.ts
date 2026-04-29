@@ -8,6 +8,7 @@ import {
   sessionRecordSchema,
   sourceHistoryRecordSchema,
   type AgentEngineTurnRequest,
+  type ArtifactRef,
   type ApprovalRecord,
   type ConversationRecord,
   type EffectiveRuntimeContext,
@@ -3078,6 +3079,100 @@ describe("RunnerService", () => {
         outputTokens: 0
       }
     });
+  });
+
+  it("creates pending source-change proposals from published git artifacts", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    if (!fixture.remoteRepositoryPath) {
+      throw new Error("Expected a bare remote repository path for retrieval tests.");
+    }
+
+    const inboundArtifact = await createPublishedGitArtifact({
+      artifactId: "proposal-report",
+      remoteRepositoryPath: fixture.remoteRepositoryPath,
+      summary: "Promote this report into source review.\n"
+    });
+    const runtimeContext = await loadRuntimeContext(fixture.contextPath);
+    const observedSourceChanges: Array<{
+      artifactRefs: ArtifactRef[];
+      candidate: SourceChangeCandidateRecord;
+    }> = [];
+    const service = new RunnerService({
+      context: runtimeContext,
+      observationPublisher: {
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishSourceChangeRefObserved: (input) => {
+          observedSourceChanges.push({
+            artifactRefs: input.artifactRefs,
+            candidate: input.candidate
+          });
+          return Promise.resolve();
+        },
+        publishTurnUpdated: () => Promise.resolve()
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    const result = await service.requestArtifactSourceChangeProposal({
+      artifactRef: inboundArtifact,
+      proposalId: "artifact-proposal-alpha",
+      reason: "Prepare artifact for source review.",
+      requestedAt: "2026-04-29T10:00:00.000Z",
+      requestedBy: "operator-main",
+      targetPath: "proposals/report.md"
+    });
+
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const candidates = await listSourceChangeCandidateRecords(statePaths);
+    const turns = await listRunnerTurnRecords(statePaths);
+    const copiedReport = await readFile(
+      path.join(
+        runtimeContext.workspace.sourceWorkspaceRoot!,
+        "proposals",
+        "report.md"
+      ),
+      "utf8"
+    );
+
+    expect(result).toMatchObject({
+      artifactId: "proposal-report",
+      candidateId: "artifact-proposal-alpha",
+      sourceChangeStatus: "changed"
+    });
+    expect(copiedReport).toContain("Promote this report into source review.");
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({
+      candidateId: "artifact-proposal-alpha",
+      sourceChangeSummary: {
+        status: "changed"
+      },
+      status: "pending_review",
+      turnId: "artifact-proposal-alpha"
+    });
+    expect(candidates[0]?.sourceChangeSummary.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "proposals/report.md",
+          status: "added"
+        })
+      ])
+    );
+    expect(turns[0]).toMatchObject({
+      consumedArtifactIds: ["proposal-report"],
+      sourceChangeCandidateIds: ["artifact-proposal-alpha"],
+      triggerKind: "operator"
+    });
+    const observedSourceChange = observedSourceChanges[0];
+    const observedSourceArtifact = observedSourceChange?.artifactRefs[0];
+    expect(observedSourceArtifact?.artifactId).toBe("proposal-report");
+    expect(observedSourceChange?.candidate.candidateId).toBe(
+      "artifact-proposal-alpha"
+    );
   });
 
   it("retrieves published inbound git artifacts from a sibling repository on the primary service", async () => {

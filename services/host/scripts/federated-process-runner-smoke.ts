@@ -37,6 +37,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactRestoreResponseSchema,
+  runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
   runtimeInspectionResponseSchema,
@@ -2286,6 +2287,82 @@ async function main(): Promise<void> {
       "projected-runtime-artifact-restore",
       `artifact=${restoredSourceHistoryArtifact.ref.artifactId}; ` +
         `retrieval=${restoredSourceHistoryArtifact.retrieval?.state}`
+    );
+
+    const projectedReportArtifact = await waitFor(
+      "Host projected runner report artifact",
+      async () => {
+        const artifactList = runtimeArtifactListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/artifacts"
+          })
+        );
+
+        return artifactList.artifacts.find(
+          (artifact) =>
+            artifact.ref.artifactId === `report-${projectedBuilderTurn.turnId}` &&
+            artifact.ref.backend === "git" &&
+            artifact.ref.status === "published"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    const artifactProposalId = "artifact-proposal-report";
+    const artifactProposalTargetPath = `artifact-proposals/${projectedBuilderTurn.turnId}.md`;
+    const artifactProposalRequest =
+      runtimeArtifactSourceChangeProposalResponseSchema.parse(
+        await hostRequest({
+          baseUrl: hostBaseUrl,
+          body: {
+            proposalId: artifactProposalId,
+            reason:
+              "Process runner smoke requested artifact source-change proposal.",
+            requestedBy: "process-runner-smoke",
+            targetPath: artifactProposalTargetPath
+          },
+          method: "POST",
+          path:
+            `/v1/runtimes/builder/artifacts/` +
+            `${projectedReportArtifact.ref.artifactId}/source-change-proposal`
+        })
+      );
+    assertCondition(
+      artifactProposalRequest.status === "requested" &&
+        artifactProposalRequest.assignmentId === assignment.assignmentId,
+      "Artifact source-change proposal request must be accepted as a federated runner command."
+    );
+    printPass(
+      "artifact-source-change-proposal-request",
+      `command=${artifactProposalRequest.commandId}; candidate=${artifactProposalId}`
+    );
+
+    const projectedArtifactProposalCandidate = await waitFor(
+      "Host projected artifact source-change proposal",
+      async () => {
+        const candidateList =
+          runtimeSourceChangeCandidateListResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: "/v1/runtimes/builder/source-change-candidates"
+            })
+          );
+
+        return candidateList.candidates.find(
+          (candidate) =>
+            candidate.candidateId === artifactProposalId &&
+            candidate.status === "pending_review" &&
+            candidate.sourceChangeSummary.files.some(
+              (file) => file.path === artifactProposalTargetPath
+            )
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-artifact-source-change-proposal",
+      `candidate=${projectedArtifactProposalCandidate.candidateId}; ` +
+        `files=${projectedArtifactProposalCandidate.sourceChangeSummary.fileCount}`
     );
 
     const targetedSourceHistoryPublicationRequest =

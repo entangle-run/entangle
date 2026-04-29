@@ -187,6 +187,7 @@ same-machine slice records.
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 - [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
+- [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
 
 ## Audited Scope
 
@@ -660,9 +661,13 @@ selected artifact detail. The process-runner smoke now requests that command
 for the runner-published source-history artifact and verifies projected
 `retrieved` evidence from the real joined runner path. File-backed git proof
 profiles are valid without git transport principals, while non-file git
-targets still require deterministic principal bindings. Artifact promotion remains unresolved and must
-return either as a runner-owned protocol command with explicit policy or as
-source-change proposal behavior. Explicit wiki repository publication has
+targets still require deterministic principal bindings. Artifact-to-source
+work now returns as runner-owned source-change proposal behavior:
+`runtime.artifact.propose_source_change` asks the assigned runner to retrieve a
+visible artifact, copy bounded regular files into its source workspace, harvest
+a `pending_review` source-change candidate, and emit signed `source_change.ref`
+evidence. Direct artifact promotion remains intentionally absent. Explicit wiki
+repository publication has
 returned as the Host-signed
 `runtime.wiki.publish` control command: the owning runner syncs and publishes
 its wiki repository to the primary git target by default or to an explicit
@@ -733,6 +738,6 @@ conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
 The next blocking implementation areas are richer projection-backed source/wiki
-review services, artifact promotion or source-change proposal flows, richer
-cache policy controls, and turning the process smoke into the full
+review services, richer artifact proposal controls in user/operator surfaces,
+richer cache policy controls, and turning the process smoke into the full
 multi-machine distributed proof.

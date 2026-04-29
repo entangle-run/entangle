@@ -297,6 +297,25 @@ export const runtimeArtifactRestoreResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeArtifactSourceChangeProposalRequestSchema = z.object({
+  overwrite: z.boolean().default(false),
+  proposalId: identifierSchema.optional(),
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional(),
+  targetPath: nonEmptyStringSchema.optional()
+});
+
+export const runtimeArtifactSourceChangeProposalResponseSchema = z.object({
+  artifactId: identifierSchema,
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  nodeId: identifierSchema,
+  proposalId: identifierSchema.optional(),
+  requestedAt: nonEmptyStringSchema,
+  status: z.literal("requested"),
+  targetPath: nonEmptyStringSchema.optional()
+});
+
 export const runtimeMemoryPageKindSchema = z.enum([
   "schema",
   "summary",
@@ -543,6 +562,12 @@ export type RuntimeArtifactRestoreRequest = z.input<
 >;
 export type RuntimeArtifactRestoreResponse = z.infer<
   typeof runtimeArtifactRestoreResponseSchema
+>;
+export type RuntimeArtifactSourceChangeProposalRequest = z.input<
+  typeof runtimeArtifactSourceChangeProposalRequestSchema
+>;
+export type RuntimeArtifactSourceChangeProposalResponse = z.infer<
+  typeof runtimeArtifactSourceChangeProposalResponseSchema
 >;
 export type RuntimeMemoryPageKind = z.infer<typeof runtimeMemoryPageKindSchema>;
 export type RuntimeMemoryPageSummary = z.infer<typeof runtimeMemoryPageSummarySchema>;

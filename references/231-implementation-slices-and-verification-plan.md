@@ -296,6 +296,7 @@ Implementation record:
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 - [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
+- [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
 
 Verification:
 
@@ -436,8 +437,8 @@ Current status:
   emitting `artifact.ref` retrieval evidence;
 - CLI and Studio can now request that runner-owned artifact restore path from
   artifact inspection surfaces without reintroducing Host filesystem mutation;
-- richer source/wiki mutation endpoints, richer cache policy, and artifact
-  promotion/source-change proposal flows still need protocol-backed
+- richer source/wiki mutation endpoints, richer cache policy, and richer
+  artifact proposal operator/user controls still need protocol-backed
   replacement.
 
 ### Slice 9: User Node Runtime
@@ -615,6 +616,7 @@ Implementation record:
 - [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 - [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 - [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
+- [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
 
 Verification:
 
@@ -791,6 +793,12 @@ Current status:
 - the process proof now requests runner-owned artifact restore for the
   runner-published source-history artifact and verifies projected `retrieved`
   evidence from the real joined runner path;
+- Host API, host-client, control-plane transport, joined runner dispatch, and
+  `RunnerService` now support runner-owned artifact source-change proposal
+  commands that create `pending_review` candidates instead of direct Host-side
+  promotion;
+- the process proof now requests a source-change proposal from the real
+  runner-published report artifact and verifies projected candidate evidence;
 - semantic artifact validation now allows file-backed git proof targets
   without git transport principals while retaining principal requirements for
   SSH and HTTPS targets;
