@@ -218,6 +218,7 @@ try {
     "ws://relay.example:7777",
     "--git-service-ref",
     "gitea",
+    "--check-relay-health",
     "--check-git-backend-health",
     "--agent-runner",
     "proof-agent-runner",
@@ -236,6 +237,7 @@ try {
   ], {
     mustContain: [
       '--profile "$SCRIPT_DIR/proof-profile.json"',
+      "--check-relay-health",
       '"agentRunnerId":"proof-agent-runner"',
       '"userRunnerId":"proof-user-runner"',
       '"reviewerUserRunnerId":"proof-reviewer-runner"',
@@ -243,10 +245,27 @@ try {
       '"userNodeId":"alice"',
       '"reviewerUserNodeId":"bob"',
       '"agentEngineKind":"external_process"',
+      '"checkRelayHealth":true',
       '"checkGitBackendHealth":true',
       '"gitServiceRefs":["gitea"]'
     ]
   });
+
+  runFailureStep(
+    "proof kit relay-health without relay dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-missing-relay",
+      "--host-url",
+      "http://host.example:7071",
+      "--check-relay-health"
+    ],
+    {
+      mustContain: "--check-relay-health requires at least one explicit --relay-url"
+    }
+  );
 
   const proofProfileTempDir = mkdtempSync(path.join(tmpdir(), "entangle-proof-profile-"));
   const proofProfilePath = path.join(proofProfileTempDir, "proof-profile.json");

@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-04-29] tooling | Added proof-kit relay-health profile generation
+
+Added `references/434-distributed-proof-kit-relay-health-profile-slice.md`.
+`pnpm ops:distributed-proof-kit` now accepts `--check-relay-health` when at
+least one explicit `--relay-url` is supplied, writes
+`"checkRelayHealth": true` into the generated proof profile, and includes the
+matching verifier flag in `operator/commands.sh`.
+
+The distributed proof tool smoke now proves the generated relay-health profile
+path and the validation failure for relay-health generation without explicit
+relay URLs.
+
 ## [2026-04-29] verification | Added distributed proof profile contracts
 
 Added `references/433-distributed-proof-profile-contract-slice.md`.

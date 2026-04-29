@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[433-distributed-proof-profile-contract-slice.md](433-distributed-proof-profile-contract-slice.md)
+[434-distributed-proof-kit-relay-health-profile-slice.md](434-distributed-proof-kit-relay-health-profile-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -74,6 +74,8 @@ operator id, role, method, path, status, and auth mode.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.
+The proof kit can also generate relay-health verifier commands and profile
+settings when explicit relay URLs are supplied.
 Studio's Host Status panel renders the same path-free cache summary
 and the same bootstrap security summary for admin visibility, and
 the running User
@@ -670,6 +672,7 @@ files are the active federated redesign pack.
 432. [431-bootstrap-viewer-operator-authorization-slice.md](431-bootstrap-viewer-operator-authorization-slice.md)
 433. [432-operator-audit-event-presentation-slice.md](432-operator-audit-event-presentation-slice.md)
 434. [433-distributed-proof-profile-contract-slice.md](433-distributed-proof-profile-contract-slice.md)
+435. [434-distributed-proof-kit-relay-health-profile-slice.md](434-distributed-proof-kit-relay-health-profile-slice.md)
 
 ## Role of this corpus
 

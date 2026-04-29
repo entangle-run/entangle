@@ -80,3 +80,6 @@ commands are unchanged unless operators add `--check-relay-health` or set
 - Follow-up: `430-distributed-proof-git-backend-health-verifier-slice.md` adds
   the matching optional Host catalog git backend health check for the same
   distributed proof workflow.
+- Follow-up: `434-distributed-proof-kit-relay-health-profile-slice.md` lets
+  the proof kit generate relay-health verifier commands and proof profiles
+  directly when explicit relay URLs are supplied.

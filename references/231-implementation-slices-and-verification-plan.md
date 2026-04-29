@@ -1082,9 +1082,10 @@ Current status:
   can consume a generated-style proof profile manifest; the profile manifest is
   now also a typed package contract and script-validated ops contract, and the
   smoke proves invalid schema versions and inconsistent assignment runtime
-  kinds fail before Host inspection; it also proves that missing artifact
-  evidence, missing relay URLs, file-backed git services, and missing git
-  service refs fail when explicitly required;
+  kinds fail before Host inspection; the proof kit can now also generate relay
+  health profile/command settings when explicit relay URLs are supplied; it
+  also proves that missing artifact evidence, missing relay URLs, file-backed
+  git services, and missing git service refs fail when explicitly required;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

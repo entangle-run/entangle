@@ -231,6 +231,9 @@ into `operator/proof-profile.json`, which the generated verifier command reads.
 The kit validates that profile as a distributed-proof contract before writing
 it, and the verifier rejects malformed or internally inconsistent profiles
 before inspecting Host state.
+Pass `--check-relay-health` with at least one `--relay-url` when the generated
+operator command should also probe relay WebSocket reachability from the
+operator machine.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected

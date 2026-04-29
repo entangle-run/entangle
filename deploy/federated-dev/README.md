@@ -223,6 +223,9 @@ distributed proof verification. Custom runner ids, graph node ids, and
 `operator/proof-profile.json`, which the generated verifier command reads. The
 kit validates that profile before writing it, and the verifier rejects
 malformed or internally inconsistent profiles before inspecting Host state.
+Pass `--check-relay-health` with at least one `--relay-url` when the generated
+operator command should probe relay WebSocket reachability from the operator
+machine.
 Copy each runner directory to its intended machine and set
 `ENTANGLE_REPO_ROOT` there; no generated runner command should require Host
 filesystem access.

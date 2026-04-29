@@ -31,6 +31,7 @@ const runnerSecretEnvVar =
   readFlagValue("--runner-secret-env-var") ?? "ENTANGLE_RUNNER_NOSTR_SECRET_KEY";
 const relayUrls = splitRepeatedValues(readFlagValues("--relay-url"));
 const gitServiceRefs = splitRepeatedValues(readFlagValues("--git-service-ref"));
+const checkRelayHealth = hasFlag("--check-relay-health");
 const checkGitBackendHealth = hasFlag("--check-git-backend-health");
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
@@ -98,6 +99,7 @@ Options:
   --no-host-token-env-var           Omit Host bearer-token env config for no-auth Hosts.
   --write-host-token                Write the Host token into generated runner/operator env files.
   --relay-url <url>                 Relay URL. May be repeated or comma-separated. Defaults to Host status relays.
+  --check-relay-health              Include relay WebSocket health checks in the generated verifier command and proof profile. Requires at least one --relay-url.
   --git-service-ref <id>            Git service ref expected by the distributed proof. May be repeated or comma-separated.
   --check-git-backend-health        Include git backend health checks in the generated verifier command and proof profile.
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
@@ -370,6 +372,10 @@ function buildVerifierCommand() {
     args.push("--check-git-backend-health");
   }
 
+  if (checkRelayHealth) {
+    args.push("--check-relay-health");
+  }
+
   return args.join(" ");
 }
 
@@ -385,6 +391,7 @@ function buildProofProfile() {
       runnerId: profile.id,
       runtimeKinds: profile.runtimeKinds
     })),
+    ...(checkRelayHealth ? { checkRelayHealth: true } : {}),
     ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
     ...(gitServiceRefs.length > 0 ? { gitServiceRefs } : {}),
     hostUrl,
@@ -501,6 +508,12 @@ if (help) {
 }
 
 try {
+  if (checkRelayHealth && relayUrls.length === 0) {
+    throw new Error(
+      "--check-relay-health requires at least one explicit --relay-url so the generated proof profile can be verified from another machine."
+    );
+  }
+
   await writeKit();
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
