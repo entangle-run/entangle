@@ -1405,6 +1405,7 @@ describe("runner runtime context", () => {
               assignmentId: "assignment-alpha",
               commandId: "cmd-artifact-proposal-alpha",
               nodeId: "worker-it",
+              proposalId: "artifact-proposal-alpha",
               requestedAt: "2026-04-26T12:06:00.000Z",
               status: "requested",
               targetPath:
@@ -1745,6 +1746,7 @@ describe("runner runtime context", () => {
         artifactId: "artifact-alpha",
         commandId: "cmd-artifact-proposal-alpha",
         nodeId: "worker-it",
+        proposalId: "artifact-proposal-alpha",
         source: "runtime",
         targetPath: "proposals/report.md",
         userNodeId: "user-main"
@@ -2039,7 +2041,7 @@ describe("runner runtime context", () => {
       const artifactProposalBody = await artifactProposalResponse.text();
       expect(artifactProposalResponse.status).toBe(200);
       expect(artifactProposalBody).toContain(
-        "Requested source-change proposal cmd-artifact-proposal-alpha"
+        "Requested source-change proposal artifact-proposal-alpha"
       );
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {

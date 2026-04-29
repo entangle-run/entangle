@@ -98,5 +98,6 @@ conversation-scoped artifact visibility before forwarding the request.
 
 - Should the User Client also publish a signed User Node message that records
   the artifact proposal request in the conversation timeline?
-- Should Host projection later correlate the request command id to the
-  resulting source-change candidate id for immediate User Client feedback?
+- Answered by `390-artifact-proposal-correlation-slice.md`: Host now returns
+  an effective proposal id in each acknowledgement and sends that id to the
+  runner as the candidate id to create.

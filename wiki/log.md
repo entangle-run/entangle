@@ -4654,3 +4654,14 @@ The dedicated User Client can request source-change proposals from visible
 artifact cards with target path, reason, and overwrite controls. The runtime
 forwards the request through the existing Host-signed runner control path and
 sets `requestedBy` to the User Node id.
+
+## [2026-04-29] implementation | Correlated artifact proposal acknowledgements
+
+Added `references/390-artifact-proposal-correlation-slice.md`. Host now
+generates an effective artifact proposal id when the caller omits one, sends
+that id in the `runtime.artifact.propose_source_change` control payload, and
+returns it in the request acknowledgement.
+
+This makes CLI, Studio, and User Client proposal acknowledgements immediately
+actionable: the returned `proposalId` is the source-change candidate id the
+runner is expected to create and project.

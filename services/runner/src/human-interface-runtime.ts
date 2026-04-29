@@ -3485,7 +3485,7 @@ export async function startHumanInterfaceRuntime(input: {
             await renderHome({
               context: input.context,
               hostApi: input.hostApi,
-              notice: `Requested source-change proposal ${proposal.detail.commandId} for ${proposal.detail.artifactId}.`,
+              notice: `Requested source-change proposal ${proposal.detail.proposalId ?? proposal.detail.commandId} for ${proposal.detail.artifactId}.`,
               selectedConversationId: conversationId
             })
           );

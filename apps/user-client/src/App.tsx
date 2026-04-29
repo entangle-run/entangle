@@ -232,7 +232,7 @@ function ArtifactPreviewAction({
           : {})
       });
 
-      setStatus(`proposal requested ${response.commandId}`);
+      setStatus(`proposal requested ${response.proposalId ?? response.commandId}`);
       setProposalOverwrite(false);
       setProposalReason("");
       setProposalTargetPath("");

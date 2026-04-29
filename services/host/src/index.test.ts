@@ -7540,6 +7540,44 @@ describe("buildHostServer", () => {
         targetPath: "proposals/report.md"
       });
 
+      const generatedArtifactProposalResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "User requested source-change proposal.",
+          requestedBy: "user-main"
+        },
+        url:
+          "/v1/runtimes/worker-it/artifacts/artifact-alpha/source-change-proposal"
+      });
+
+      expect(generatedArtifactProposalResponse.statusCode).toBe(200);
+      const generatedArtifactProposal =
+        runtimeArtifactSourceChangeProposalResponseSchema.parse(
+          generatedArtifactProposalResponse.json()
+        );
+      expect(generatedArtifactProposal).toMatchObject({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        status: "requested"
+      });
+      expect(generatedArtifactProposal.proposalId).toBeDefined();
+      expect(generatedArtifactProposal.commandId).toMatch(/^cmd-artifact-proposal-/u);
+      expect(generatedArtifactProposal.proposalId).toBe(
+        generatedArtifactProposal.commandId.replace(/^cmd-/u, "")
+      );
+      expect(artifactProposalRequests).toHaveLength(2);
+      expect(artifactProposalRequests[1]).toMatchObject({
+        artifactRef: {
+          artifactId: "artifact-alpha"
+        },
+        overwrite: false,
+        proposalId: generatedArtifactProposal.proposalId,
+        reason: "User requested source-change proposal.",
+        relayUrls: ["ws://relay.example"],
+        requestedBy: "user-main"
+      });
+
       const publishResponse = await server.inject({
         method: "POST",
         payload: {

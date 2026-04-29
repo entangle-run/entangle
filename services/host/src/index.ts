@@ -783,7 +783,7 @@ async function publishRuntimeArtifactSourceChangeProposalCommandFromHost(
     requestedBy?: string;
     targetPath?: string;
   }
-): Promise<string | undefined> {
+): Promise<{ commandId: string; proposalId: string } | undefined> {
   if (
     !options.federatedControlPlane?.publishRuntimeArtifactSourceChangeProposal ||
     !options.federatedControlRelayUrls ||
@@ -793,6 +793,7 @@ async function publishRuntimeArtifactSourceChangeProposalCommandFromHost(
   }
 
   const commandId = `cmd-artifact-proposal-${randomUUID()}`;
+  const proposalId = input.proposalId ?? commandId.replace(/^cmd-/u, "");
   await options.federatedControlPlane.publishRuntimeArtifactSourceChangeProposal({
     artifactRef: input.artifactRef,
     assignment: input.assignment,
@@ -801,14 +802,17 @@ async function publishRuntimeArtifactSourceChangeProposalCommandFromHost(
       : {}),
     commandId,
     overwrite: input.overwrite ?? false,
-    ...(input.proposalId ? { proposalId: input.proposalId } : {}),
+    proposalId,
     ...(input.reason ? { reason: input.reason } : {}),
     relayUrls: options.federatedControlRelayUrls,
     ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
     ...(input.targetPath ? { targetPath: input.targetPath } : {})
   });
 
-  return commandId;
+  return {
+    commandId,
+    proposalId
+  };
 }
 
 async function publishRuntimeSourceHistoryPublishCommandFromHost(
@@ -2433,7 +2437,7 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         });
       }
 
-      const commandId =
+      const proposalCommand =
         await publishRuntimeArtifactSourceChangeProposalCommandFromHost(
           options,
           {
@@ -2447,7 +2451,7 @@ export async function buildHostServer(options: HostServerOptions = {}) {
           }
         );
 
-      if (!commandId) {
+      if (!proposalCommand) {
         throw new HostHttpError({
           code: "conflict",
           details: {
@@ -2463,9 +2467,9 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       return runtimeArtifactSourceChangeProposalResponseSchema.parse({
         artifactId: params.artifactId,
         assignmentId: assignment.assignmentId,
-        commandId,
+        commandId: proposalCommand.commandId,
         nodeId: params.nodeId,
-        ...(body.proposalId ? { proposalId: body.proposalId } : {}),
+        proposalId: proposalCommand.proposalId,
         requestedAt: new Date().toISOString(),
         status: "requested",
         ...(body.targetPath ? { targetPath: body.targetPath } : {})

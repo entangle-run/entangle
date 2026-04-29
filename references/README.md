@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[389-user-client-artifact-source-proposal-slice.md](389-user-client-artifact-source-proposal-slice.md)
+[390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -147,7 +147,10 @@ runner-owned proposal path from artifact inspection surfaces without adding a
 Host-side source mutation shortcut. The running User Client can now also
 request the same proposal path for artifacts visible in the selected User Node
 conversation, with the Human Interface Runtime enforcing conversation
-visibility and setting `requestedBy` to the User Node id.
+visibility and setting `requestedBy` to the User Node id. Host now returns an
+effective proposal id even when callers omit one, and sends that same id in the
+runner control payload so acknowledgements can be followed to the projected
+candidate.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
