@@ -1018,13 +1018,14 @@ The repository now also contains the first real implementation baseline:
   scaffolding, host API input failure modes, runtime context conflict
   semantics, and runner bootstrap behavior;
 - a verified `pnpm verify` path for the current workspace, with root
-  `pnpm test` running explicit sequential workspace tests through
-  `scripts/run-workspace-tests.mjs`, which launches local Vitest directly,
-  expands `src/**/*.test.ts` itself, and avoids Turbo, long shell chains,
-  nested `pnpm`, shell globbing, and implicit Vitest discovery after those
-  paths reproduced no-output hangs in this environment; Host and Runner use
-  Vitest's threads pool inside that wrapper, matching their stable package
-  test commands;
+  `pnpm test` running one direct aggregate Vitest command from the repo root
+  with `vitest.aggregate.config.ts`, covering workspace `src/**/*.test.ts`
+  files under `apps`, `packages`, and `services`, and avoiding Turbo, long
+  shell chains, nested `pnpm`, repeated Vitest child processes, a Node wrapper
+  around Vitest, shell globbing, and package-local implicit discovery after
+  those paths reproduced no-output hangs in this environment; the root
+  aggregate uses Vitest's fork pool with one worker, while package-level test
+  scripts keep their focused per-package settings;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root;

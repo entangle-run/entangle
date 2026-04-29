@@ -81,6 +81,22 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
   the filesystem, and avoids nested `pnpm` plus shell glob/discovery behavior.
   This is the root-gate path that exits cleanly after package-directory and
   filter-based `pnpm` child execution reproduced no-output hangs.
+- Follow-up correction: after later `pnpm verify` attempts reproduced
+  additional no-output stalls before `agent-engine`, `package-scaffold`, and
+  `host` emitted Vitest output, the root aggregate wrapper now runs every suite
+  with `--pool=forks --maxWorkers=1`. Direct package tests keep their
+  package-specific settings; the root gate prioritizes process isolation and
+  predictable exit.
+- Follow-up correction: an isolated `pnpm exec node` reproduction showed that
+  direct child stdio inheritance could still hang before `host-client` emitted
+  output, while ignored stdin plus piped stdout/stderr completed the same
+  sequence. The root wrapper now forwards piped child output itself and waits
+  for child `close` before starting the next suite.
+- Follow-up replacement: `436-root-test-gate-single-fork-worker-slice.md`
+  removes `scripts/run-workspace-tests.mjs` entirely. Root `pnpm test` now runs
+  one direct aggregate Vitest command with `vitest.aggregate.config.ts`, because
+  repeated Vitest child processes and the Node wrapper remained
+  nondeterministic.
 - Re-run package tests and root `pnpm test`.
 
 ## Tests Required
@@ -116,6 +132,8 @@ Later follow-up verification also covered:
 - direct local Vitest execution through `scripts/run-workspace-tests.mjs`,
   including filesystem-expanded test file lists for every workspace suite;
 - `pnpm test` after aligning the root runner suite to `--pool=threads`;
+- direct full-wrapper experiment with `--pool=forks --maxWorkers=1` for every
+  workspace suite before adopting that root-gate setting;
 
 Already passed in the preceding verification window:
 

@@ -5,14 +5,14 @@
 The repo already follows a slice discipline: each implemented runtime
 capability has a reference record, tests, wiki log entry, and usually a
 coherent commit. The root `pnpm verify` gate runs lint, typecheck, and tests.
-Root `pnpm test` now uses `scripts/run-workspace-tests.mjs`, an explicit
-sequential workspace test runner, because Turbo test execution and later a
-long shell `pnpm --filter ... && ...` chain left Vitest child processes open in
-this environment. The wrapper now launches the local Vitest binary directly,
-expands `src/**/*.test.ts` itself, and keeps suites sequential. Inside that
-root wrapper, CLI and Studio use fork pools, CLI is pinned to one worker, Host
-and Runner use the threads pool, and the other suites use their stable default
-pool.
+Root `pnpm test` now runs one direct aggregate Vitest command with
+`vitest.aggregate.config.ts`, because Turbo test execution, long shell
+`pnpm --filter ... && ...` chains, nested package test execution, repeated
+Vitest child processes, and a Node wrapper around Vitest reproduced no-output
+hangs in this environment. The aggregate config covers workspace
+`src/**/*.test.ts` files under `apps`, `packages`, and `services`, and the
+root gate uses a single fork worker for predictable local completion.
+Package-level test scripts keep their focused per-package pool settings.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 

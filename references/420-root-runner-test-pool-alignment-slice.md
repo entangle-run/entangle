@@ -2,6 +2,14 @@
 
 ## Current Repo Truth
 
+Follow-up note: `436-root-test-gate-single-fork-worker-slice.md` supersedes
+the root-wrapper pool alignment decision. Runner's package-level test script
+still uses `--pool=threads`, but the root aggregate test command now uses
+`--pool=forks --maxWorkers=1` after mixed pool settings
+continued to reproduce intermittent no-output stalls.
+The same follow-up ultimately removed the root wrapper entirely and replaced
+root `pnpm test` with one direct aggregate Vitest command.
+
 The runner package test script already uses Vitest `--pool=threads`, and the
 root test reliability record states that runner tests should use the threads
 pool after the default pool reproduced no-output hangs in this environment.
@@ -14,8 +22,12 @@ The direct runner package test passed immediately under `--pool=threads`.
 
 ## Target Model
 
-Root `pnpm test` should execute the runner suite with the same stable pool used
-by the runner package script and documented by the root test reliability slice.
+At the time of this slice, root `pnpm test` should execute the runner suite
+with the same stable pool used by the runner package script and documented by
+the root test reliability slice. After the follow-up in
+`436-root-test-gate-single-fork-worker-slice.md`, the durable target changed:
+package-level runner tests still use `--pool=threads`, while the root
+aggregate gate uses a single fork worker for every suite.
 
 ## Impacted Modules And Files
 
@@ -32,8 +44,9 @@ by the runner package script and documented by the root test reliability slice.
 
 - Updated the root sequential workspace test runner so `@entangle/runner` uses
   `--pool=threads`.
-- Updated root test gate documentation to say both Host and Runner use the
-  threads pool inside the root wrapper.
+- Updated root test gate documentation at the time to say both Host and Runner
+  use the threads pool inside the root wrapper. This historical statement is
+  superseded by `436-root-test-gate-single-fork-worker-slice.md`.
 
 ## Tests Required
 

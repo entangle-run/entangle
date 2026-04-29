@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-29] tooling | Stabilized root test gate with aggregate Vitest
+
+Added `references/436-root-test-gate-single-fork-worker-slice.md`. After
+`pnpm verify` reproduced intermittent no-output stalls inside the root
+workspace test wrapper, the root `pnpm test` path now launches one aggregate
+Vitest process from the repo root with `vitest.aggregate.config.ts` and
+`--pool=forks --maxWorkers=1`. The previous
+`scripts/run-workspace-tests.mjs` wrapper was removed because repeated Vitest
+child processes remained nondeterministic.
+
+Package-level test scripts keep their focused per-package pool settings; the
+root gate now prioritizes aggregate completion over per-package process
+parity.
+
 ## [2026-04-29] tooling | Added generated post-work proof verifier
 
 Added `references/435-distributed-proof-kit-post-work-verifier-slice.md`.

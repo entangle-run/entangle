@@ -162,22 +162,21 @@ pnpm ops:check-product-naming
 That check scans active code, deployment, example, script, package, and README
 surfaces so obsolete local product/profile labels do not return.
 
-The root test gate is intentionally sequential:
+The root test gate uses one aggregate Vitest run:
 
 ```bash
 pnpm test
 ```
 
-It runs each workspace test command through
-`scripts/run-workspace-tests.mjs` instead of routing tests through Turbo or a
-long shell chain, because Turbo and chained `pnpm --filter` execution left
-Vitest child processes open in this environment. The wrapper launches the local
-Vitest binary directly, expands `src/**/*.test.ts` files itself, runs suites
-sequentially, and waits briefly between suites so the root gate does not depend
-on shell globbing, nested `pnpm`, or Vitest's implicit discovery. CLI and Studio
-use fork pools inside the root wrapper, CLI is pinned to one worker, Host and
-Runner use the threads pool, and the other root suites use their stable default
-pool in this environment.
+It runs Vitest directly from the repository root with
+`vitest.aggregate.config.ts` instead of routing tests through Turbo, chained
+`pnpm --filter` execution, nested wrappers, or repeated Vitest child processes,
+because those paths reproduced intermittent no-output hangs in this
+environment. The aggregate config covers workspace `src/**/*.test.ts` files
+under `apps`, `packages`, and `services`. The root gate uses a single fork
+worker (`--pool=forks --maxWorkers=1`) for predictable local completion.
+Package-level test scripts keep their own targeted settings for focused
+verification.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
