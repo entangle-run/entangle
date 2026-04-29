@@ -178,6 +178,9 @@ The most accurate current description is:
   wiki resources visible in the selected User Node conversation, with the Human
   Interface Runtime enforcing visibility and tagging the request as the User
   Node;
+- the process-runner smoke now proves that User Client wiki publication path
+  through a signed builder wiki approval request, the running User Client JSON
+  route, and a completed projected `runtime.wiki.publish` command receipt;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;

@@ -78,6 +78,7 @@ Implemented and passed:
 - `pnpm --filter @entangle/runner lint`
 - `pnpm typecheck`
 - `pnpm test`
+- `pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 90000`
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist: no

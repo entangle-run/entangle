@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[412-user-client-wiki-publication-slice.md](412-user-client-wiki-publication-slice.md)
+[413-user-client-wiki-publication-process-smoke-slice.md](413-user-client-wiki-publication-process-smoke-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -157,9 +157,12 @@ runner control payload so acknowledgements can be followed to the projected
 candidate. The running User Client can now also request runner-owned wiki
 publication for wiki resources visible in the selected User Node conversation,
 with the Human Interface Runtime enforcing conversation visibility and setting
-`requestedBy` to the User Node id. CLI can also inspect runtime command
-receipts directly from Host projection with assignment, node, runner, command
-type, status, and limit filters. Studio can now open assignment-scoped
+`requestedBy` to the User Node id; the process-runner smoke now proves that
+path through a signed builder wiki approval request, the running User Client
+JSON route, and a completed projected `runtime.wiki.publish` command receipt.
+CLI can also inspect runtime command receipts directly from Host projection
+with assignment, node, runner, command type, status, and limit filters. Studio
+can now open assignment-scoped
 timelines through the same Host assignment timeline endpoint.
 `pnpm ops:demo-user-node-runtime` now wraps the fastest interactive User Node
 runtime proof by building the dedicated User Client app, starting the

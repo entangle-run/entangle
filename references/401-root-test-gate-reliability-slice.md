@@ -25,6 +25,7 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - `packages/validator/package.json`
 - `packages/package-scaffold/package.json`
 - `packages/host-client/package.json`
+- `services/host/package.json`
 - `references/221-federated-runtime-redesign-index.md`
 - `references/231-implementation-slices-and-verification-plan.md`
 - `references/README.md`
@@ -49,13 +50,16 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - Pin CLI tests to a single Vitest worker after the chained root gate reached
   the final CLI package and reproduced the same no-output hang under parallel
   fork workers.
-- Keep `types`, `nostr-fabric`, `agent-engine`, `runner`, and `host` on their
-  previous default Vitest pool because those package suites remained stable
-  there, and some of them hung when forced onto fork pools in this environment.
+- Keep `types`, `nostr-fabric`, `agent-engine`, and `runner` on their previous
+  default Vitest pool because those package suites remained stable there, and
+  some of them hung when forced onto fork pools in this environment.
 - Follow-up correction: `validator`, `package-scaffold`, and `host-client` are
   back on the default Vitest pool. Their previous `--pool=forks` pins later
   reproduced no-output root-gate hangs, while the same suites passed
   immediately under the default and threads pools.
+- Follow-up correction: Host tests now use `--pool=threads` because the direct
+  package command reproduced a no-output hang under the default pool outside
+  the root runner, while the same suite passed immediately under threads.
 - Re-run package tests and root `pnpm test`.
 
 ## Tests Required
@@ -84,6 +88,8 @@ Later follow-up verification also covered:
 - `pnpm --dir packages/package-scaffold exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts --pool=threads`
 - `pnpm --dir packages/host-client exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts`
 - `pnpm --dir packages/host-client exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts --pool=threads`
+- `CI=true pnpm --dir services/host test`
+- `pnpm --dir services/host exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=threads`
 
 Already passed in the preceding verification window:
 

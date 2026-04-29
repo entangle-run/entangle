@@ -213,6 +213,7 @@ same-machine slice records.
 - [410-bootstrap-operator-security-status-slice.md](410-bootstrap-operator-security-status-slice.md)
 - [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
 - [412-user-client-wiki-publication-slice.md](412-user-client-wiki-publication-slice.md)
+- [413-user-client-wiki-publication-process-smoke-slice.md](413-user-client-wiki-publication-process-smoke-slice.md)
 
 ## Audited Scope
 

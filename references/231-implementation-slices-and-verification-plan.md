@@ -895,6 +895,9 @@ Current status:
 - the running User Client exposes wiki publication from visible wiki approval
   cards through a conversation-scoped Human Interface Runtime JSON route,
   forwarding to Host with `requestedBy` set to the User Node id;
+- the process proof now publishes a signed builder-to-User-Node wiki approval
+  request, calls the running User Client wiki publication JSON route, and waits
+  for the completed projected `runtime.wiki.publish` command receipt;
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

@@ -4922,8 +4922,23 @@ the human graph participant surface.
 During the User Client wiki publication slice, root `pnpm test` timed out at
 `@entangle/validator` and then at `@entangle/package-scaffold` while those
 package scripts used `--pool=forks`; `host-client` was checked before waiting
-for the same failure. The same suites passed immediately under the default
-Vitest pool and under `--pool=threads`, so `packages/validator/package.json`,
+for the same failure. Host then reproduced a no-output direct package-test
+hang under its default pool while passing immediately under `--pool=threads`.
+The smaller package suites passed immediately under the default Vitest pool and
+under `--pool=threads`, so `packages/validator/package.json`,
 `packages/package-scaffold/package.json`, and
-`packages/host-client/package.json` now use the default pool again and
+`packages/host-client/package.json` now use the default pool again,
+`services/host/package.json` uses the threads pool, and
 `references/401-root-test-gate-reliability-slice.md` records the correction.
+
+## [2026-04-29] implementation | Proved User Client wiki publication in process smoke
+
+Added `references/413-user-client-wiki-publication-process-smoke-slice.md`.
+The federated process-runner smoke now publishes a signed builder-originated
+wiki approval request to the User Node, waits for that inbox record, calls the
+running User Client's `/api/wiki-repository/publish` route, and waits for the
+completed projected `runtime.wiki.publish` command receipt.
+
+The same verification pass pinned Host package tests to the Vitest threads pool
+because the direct package command reproduced a no-output hang under the
+default pool while passing immediately with threads.

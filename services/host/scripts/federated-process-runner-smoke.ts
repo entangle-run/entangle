@@ -2954,6 +2954,160 @@ async function main(): Promise<void> {
         path: "/v1/runtimes/builder/identity-secret"
       })
     );
+    const wikiApprovalId = `approval-wiki-${runId}`;
+    const syntheticWikiApprovalRequestMessageId =
+      await publishSyntheticA2AMessage({
+        message: {
+          constraints: {
+            approvalRequiredBeforeAction: false
+          },
+          conversationId: userMessage.conversationId,
+          fromNodeId: "builder",
+          fromPubkey: materializedContext.identityContext.publicKey,
+          graphId: materializedContext.binding.graphId,
+          intent: "Request User Node approval for wiki publication.",
+          messageType: "approval.request",
+          parentMessageId: userMessage.eventId,
+          protocol: "entangle.a2a.v1",
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: userMessage.sessionId,
+          toNodeId: "user",
+          toPubkey: materializedUserContext.identityContext.publicKey,
+          turnId: `${turnId}-wiki-approval-request`,
+          work: {
+            artifactRefs: [projectedWikiPublicationArtifact.ref],
+            metadata: {
+              approval: {
+                approvalId: wikiApprovalId,
+                approverNodeIds: ["user"],
+                operation: "wiki_update",
+                resource: {
+                  id: "builder",
+                  kind: "wiki_repository",
+                  label: "builder wiki"
+                }
+              }
+            },
+            summary:
+              "Process runner smoke: approve builder wiki publication."
+          }
+        },
+        relayUrls,
+        senderSecretKeyHex: builderIdentitySecret.secretKey
+      });
+    const wikiApprovalConversationDetail = await waitFor(
+      "Host User Node inbound wiki approval request",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.messageType === "approval.request" &&
+            message.approval?.approvalId === wikiApprovalId &&
+            message.approval.resource?.kind === "wiki_repository"
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const wikiApprovalRecord = wikiApprovalConversationDetail.messages.find(
+      (message) =>
+        message.eventId === syntheticWikiApprovalRequestMessageId &&
+        message.approval?.approvalId === wikiApprovalId
+    );
+    if (!wikiApprovalRecord) {
+      throw new Error(
+        "User Node conversation detail must include the inbound wiki approval request."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      wikiApprovalRecord,
+      "Host User Node wiki approval request record"
+    );
+    assertCondition(
+      wikiApprovalRecord.signerPubkey ===
+        materializedContext.identityContext.publicKey,
+      "Host User Node wiki approval request must preserve the builder signer."
+    );
+    printPass("user-node-wiki-approval-request", wikiApprovalId);
+
+    const userClientWikiPublicationResponse = await fetch(
+      new URL("/api/wiki-repository/publish", userClientUrl),
+      {
+        body: JSON.stringify({
+          conversationId: userMessage.conversationId,
+          nodeId: "builder",
+          reason:
+            "Process runner smoke requested wiki publication from the User Client.",
+          retryFailedPublication: true
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientWikiPublicationResponse,
+      "User Client JSON wiki publication"
+    );
+    const userClientWikiPublicationRaw =
+      (await userClientWikiPublicationResponse.json()) as {
+        source?: string;
+        userNodeId?: string;
+        wikiRefs?: Array<{ artifactId?: string; nodeId?: string }>;
+      };
+    const userClientWikiPublicationRequest =
+      runtimeWikiPublishResponseSchema.parse(userClientWikiPublicationRaw);
+    assertCondition(
+      userClientWikiPublicationRaw.source === "runtime" &&
+        userClientWikiPublicationRaw.userNodeId === "user" &&
+        userClientWikiPublicationRaw.wikiRefs?.some(
+          (ref) => ref.nodeId === "builder"
+        ),
+      "User Client wiki publication response must identify runtime source, User Node, and visible wiki refs."
+    );
+    printPass(
+      "user-client-wiki-publication-request",
+      `command=${userClientWikiPublicationRequest.commandId}; ` +
+        `approval=${wikiApprovalId}`
+    );
+
+    const projectedUserClientWikiPublicationReceipt = await waitFor(
+      "Host projected User Client wiki publication command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === userClientWikiPublicationRequest.commandId &&
+            receipt.commandEventType === "runtime.wiki.publish" &&
+            receipt.receiptStatus === "completed"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-user-client-wiki-publication-command-receipt",
+      `command=${projectedUserClientWikiPublicationReceipt.commandId}; ` +
+        `status=${projectedUserClientWikiPublicationReceipt.receiptStatus}`
+    );
+
     const syntheticAgentMessageId = await publishSyntheticA2AMessage({
       message: {
         constraints: {
