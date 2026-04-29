@@ -92,14 +92,16 @@ describe("host status presentation helpers", () => {
       formatHostArtifactBackendCacheClearSummary({
         completedAt: "2026-04-25T08:00:03.000Z",
         dryRun: false,
+        maxSizeBytes: 8192,
         olderThanSeconds: 3600,
         repositoryCount: 2,
         retainedRepositoryCount: 1,
+        retainedSizeBytes: 2048,
         status: "cleared",
         totalSizeBytes: 4096
       })
     ).toBe(
-      "cleared · older than 3600s · 2 repositories · 1 retained · 4096 bytes"
+      "cleared · older than 3600s · max 8192 bytes · 2 repositories · 1 retained · 2048 retained bytes · 4096 bytes"
     );
   });
 

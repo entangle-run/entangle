@@ -3,15 +3,15 @@
 ## Current Repo Truth
 
 Host exposes derived artifact backend cache status and can dry-run or clear all
-cached git repository clones under the Host-owned cache root. That is safe, but
-it is still too coarse for longer-running deployments because operators cannot
-prune only stale derived repositories.
+cached git repository clones under the Host-owned cache root. This slice added
+age pruning for stale derived repositories; `406-artifact-backend-cache-size-policy-slice.md`
+extends the same boundary with max-size pruning for disk-bound cache control.
 
 ## Target Model
 
 Artifact backend cache remains rebuildable Host implementation state. Operators
-should be able to clear all derived repositories or prune only repositories
-older than a bounded age:
+should be able to clear all derived repositories, prune repositories older than
+a bounded age, or combine age pruning with later size pruning:
 
 - use the existing Host operator boundary;
 - keep the cache path-free in responses and summaries;
@@ -92,5 +92,6 @@ clients can ignore the new response fields.
 
 ## Open Questions
 
-- Should future cache policy add max-size pruning, per-backend selectors, or
-  automatic rebuild diagnostics?
+Max-size pruning is resolved by
+`406-artifact-backend-cache-size-policy-slice.md`. Future policy may still add
+per-backend selectors or automatic rebuild diagnostics.

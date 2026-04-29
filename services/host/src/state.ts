@@ -13493,6 +13493,7 @@ async function buildArtifactBackendCacheStatus(timestamp: string) {
 export async function clearArtifactBackendCache(
   input: {
     dryRun?: boolean | undefined;
+    maxSizeBytes?: number | undefined;
     olderThanSeconds?: number | undefined;
   } = {}
 ) {
@@ -13513,27 +13514,65 @@ export async function clearArtifactBackendCache(
       repositoryEntries.map(async (entry) => {
         const repositoryPath = path.join(artifactGitResolverCacheRoot, entry.name);
         const metadata = await lstat(repositoryPath);
+        const sizeBytes = await calculateDirectorySizeBytes(repositoryPath);
 
         return {
+          mtimeMs: metadata.mtime.getTime(),
           path: repositoryPath,
-          selected:
+          sizeBytes,
+          ageEligible:
             olderThanCutoffMs === undefined ||
             metadata.mtime.getTime() <= olderThanCutoffMs
         };
       })
     );
+    const selectedRepositoryPaths = new Set<string>();
+    let retainedSizeBytes = repositoryCandidates.reduce(
+      (total, candidate) => total + candidate.sizeBytes,
+      0
+    );
+    const clearAll =
+      olderThanCutoffMs === undefined && input.maxSizeBytes === undefined;
+
+    for (const candidate of repositoryCandidates) {
+      if (
+        clearAll ||
+        (candidate.ageEligible && olderThanCutoffMs !== undefined)
+      ) {
+        selectedRepositoryPaths.add(candidate.path);
+        retainedSizeBytes -= candidate.sizeBytes;
+      }
+    }
+
+    if (
+      input.maxSizeBytes !== undefined &&
+      retainedSizeBytes > input.maxSizeBytes
+    ) {
+      for (const candidate of [...repositoryCandidates].sort(
+        (left, right) =>
+          left.mtimeMs - right.mtimeMs || left.path.localeCompare(right.path)
+      )) {
+        if (selectedRepositoryPaths.has(candidate.path)) {
+          continue;
+        }
+
+        selectedRepositoryPaths.add(candidate.path);
+        retainedSizeBytes -= candidate.sizeBytes;
+
+        if (retainedSizeBytes <= input.maxSizeBytes) {
+          break;
+        }
+      }
+    }
+
     const repositoryPaths = repositoryCandidates
-      .filter((candidate) => candidate.selected)
+      .filter((candidate) => selectedRepositoryPaths.has(candidate.path))
       .map((candidate) => candidate.path);
     const retainedRepositoryCount =
       repositoryCandidates.length - repositoryPaths.length;
-    const totalSizeBytes = (
-      await Promise.all(
-        repositoryPaths.map((repositoryPath) =>
-          calculateDirectorySizeBytes(repositoryPath)
-        )
-      )
-    ).reduce((total, sizeBytes) => total + sizeBytes, 0);
+    const totalSizeBytes = repositoryCandidates
+      .filter((candidate) => selectedRepositoryPaths.has(candidate.path))
+      .reduce((total, candidate) => total + candidate.sizeBytes, 0);
 
     if (!dryRun) {
       await Promise.all(
@@ -13546,11 +13585,15 @@ export async function clearArtifactBackendCache(
     return {
       completedAt,
       dryRun,
+      ...(input.maxSizeBytes !== undefined
+        ? { maxSizeBytes: input.maxSizeBytes }
+        : {}),
       ...(input.olderThanSeconds !== undefined
         ? { olderThanSeconds: input.olderThanSeconds }
         : {}),
       repositoryCount: repositoryPaths.length,
       retainedRepositoryCount,
+      retainedSizeBytes,
       status: dryRun ? "dry_run" : "cleared",
       totalSizeBytes
     };
@@ -13559,11 +13602,15 @@ export async function clearArtifactBackendCache(
       return {
         completedAt,
         dryRun,
+        ...(input.maxSizeBytes !== undefined
+          ? { maxSizeBytes: input.maxSizeBytes }
+          : {}),
         ...(input.olderThanSeconds !== undefined
           ? { olderThanSeconds: input.olderThanSeconds }
           : {}),
         repositoryCount: 0,
         retainedRepositoryCount: 0,
+        retainedSizeBytes: 0,
         status: dryRun ? "dry_run" : "cleared",
         totalSizeBytes: 0
       };

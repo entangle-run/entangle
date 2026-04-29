@@ -69,12 +69,22 @@ export function formatHostArtifactBackendCacheClearSummary(
     response.olderThanSeconds === undefined
       ? undefined
       : `older than ${response.olderThanSeconds}s`;
+  const sizePolicyLabel =
+    response.maxSizeBytes === undefined
+      ? undefined
+      : `max ${response.maxSizeBytes} bytes`;
+  const retainedSizeLabel =
+    response.retainedSizeBytes === undefined
+      ? undefined
+      : `${response.retainedSizeBytes} retained bytes`;
 
   return [
     actionLabel,
     policyLabel,
+    sizePolicyLabel,
     repositoryLabel,
     retainedLabel,
+    retainedSizeLabel,
     `${response.totalSizeBytes} bytes`
   ].filter((part): part is string => Boolean(part)).join(" · ");
 }

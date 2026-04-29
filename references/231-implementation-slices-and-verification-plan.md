@@ -445,8 +445,8 @@ Current status:
   history/diff path against the runner-published source-history git artifact;
 - Host status now reports bounded artifact backend cache availability, count,
   and size as derived operational metadata;
-- Host API, host-client, and CLI can now dry-run, clear, or age-prune the
-  derived artifact backend cache without deleting authoritative
+- Host API, host-client, and CLI can now dry-run, clear, age-prune, or
+  max-size-prune the derived artifact backend cache without deleting authoritative
   artifact/projection state;
 - Studio's Host Status panel renders the same path-free artifact backend cache
   summary for admin visibility;
@@ -798,6 +798,7 @@ Implementation records:
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
 - [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
+- [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
@@ -903,9 +904,9 @@ Current status:
   runner;
 - Host status exposes derived artifact backend cache availability, repository
   count, and size for operator diagnostics;
-- Host API and CLI can dry-run, clear, or age-prune the derived artifact
-  backend cache without touching authoritative artifact, projection, runner, or
-  git backend state;
+- Host API and CLI can dry-run, clear, age-prune, or max-size-prune the
+  derived artifact backend cache without touching authoritative artifact,
+  projection, runner, or git backend state;
 - Studio displays the artifact backend cache summary in the Host Status panel;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;

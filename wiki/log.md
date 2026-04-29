@@ -4764,6 +4764,16 @@ command receipt entries together.
 This brings Studio's operator drilldown closer to CLI parity while keeping the
 surface Host-boundary-only and runner-filesystem-free.
 
+## [2026-04-29] implementation | Added artifact backend cache size pruning
+
+Added `references/406-artifact-backend-cache-size-policy-slice.md`. Host
+artifact backend cache clear requests now accept `maxSizeBytes`, apply age
+pruning first when present, then prune oldest retained derived repositories
+until the retained cache is at or below the requested size. Host responses and
+shared summaries now report retained bytes, and CLI exposes
+`entangle host artifact-backend-cache-clear --max-size-bytes <n>` while keeping
+the operation limited to rebuildable Host-owned cache state.
+
 ## [2026-04-29] implementation | Added artifact backend cache age pruning
 
 Added `references/400-artifact-backend-cache-prune-policy-slice.md`.

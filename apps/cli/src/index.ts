@@ -803,12 +803,17 @@ hostCommand
     "--older-than-seconds <n>",
     "Clear only derived cache repositories older than this age."
   )
+  .option(
+    "--max-size-bytes <n>",
+    "Clear oldest derived cache repositories until retained cache size is at or below this many bytes."
+  )
   .option("--summary", "Print a compact operator-oriented cache clear summary.")
   .description("Clear Host's derived artifact backend cache.")
   .action(
     async (
       options: {
         dryRun?: boolean;
+        maxSizeBytes?: string;
         olderThanSeconds?: string;
         summary?: boolean;
       },
@@ -817,6 +822,14 @@ hostCommand
       const client = createCliHostClient(command);
       const response = await client.clearArtifactBackendCache({
         dryRun: options.dryRun,
+        ...(options.maxSizeBytes
+          ? {
+              maxSizeBytes: parsePositiveIntegerOption(
+                options.maxSizeBytes,
+                "--max-size-bytes"
+              )
+            }
+          : {}),
         ...(options.olderThanSeconds
           ? {
               olderThanSeconds: parsePositiveIntegerOption(

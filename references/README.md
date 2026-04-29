@@ -63,10 +63,10 @@ through semantic artifact context, and the process-runner smoke verifies that
 path against a real runner-published source-history artifact. Host status now
 exposes bounded availability, repository count, and size metadata for that
 derived artifact backend cache without exposing Host filesystem paths, and Host
-API/CLI operators can dry-run, clear, or age-prune that derived cache without
-deleting authoritative artifact or projection state. Studio's Host Status panel
-renders
-the same path-free cache summary for admin visibility, and the running User
+API/CLI operators can dry-run, clear, age-prune, or max-size-prune that derived
+cache without deleting authoritative artifact or projection state. Studio's Host
+Status panel renders the same path-free cache summary for admin visibility, and
+the running User
 Client can load bounded artifact history/diff evidence through its Human
 Interface Runtime while scoped to artifact refs visible in the selected User
 Node conversation. The process-runner smoke now verifies that visible-artifact
@@ -581,6 +581,7 @@ files are the active federated redesign pack.
 404. [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 405. [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
 406. [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
+407. [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 
 ## Role of this corpus
 

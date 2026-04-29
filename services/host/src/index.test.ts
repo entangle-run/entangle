@@ -1076,6 +1076,32 @@ describe("buildHostServer", () => {
         "git-repo-beta"
       ]);
 
+      const sizeDryRunResponse = await server.inject({
+        body: {
+          dryRun: true,
+          maxSizeBytes: 10
+        },
+        method: "POST",
+        url: "/v1/host/artifact-backend-cache/clear"
+      });
+
+      expect(sizeDryRunResponse.statusCode).toBe(200);
+      const sizeDryRun = hostArtifactBackendCacheClearResponseSchema.parse(
+        sizeDryRunResponse.json()
+      );
+      expect(sizeDryRun).toMatchObject({
+        dryRun: true,
+        maxSizeBytes: 10,
+        repositoryCount: 1,
+        retainedRepositoryCount: 1,
+        retainedSizeBytes: 10,
+        status: "dry_run"
+      });
+      expect((await readdir(cacheRoot)).sort()).toEqual([
+        "git-repo-alpha",
+        "git-repo-beta"
+      ]);
+
       const clearResponse = await server.inject({
         body: {
           olderThanSeconds: 3600

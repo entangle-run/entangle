@@ -206,6 +206,7 @@ same-machine slice records.
 - [403-studio-runner-trust-controls-slice.md](403-studio-runner-trust-controls-slice.md)
 - [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
 - [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
+- [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 
 ## Audited Scope
 
