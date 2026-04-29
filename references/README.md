@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
+[375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -108,9 +108,12 @@ covers TypeScript host smoke scripts, including the process-runner federated
 proof. `@entangle/agent-engine` now also has a deterministic local
 OpenAI-compatible HTTP provider fixture that exercises the real `fetch` path
 for chat completions, tool-loop continuation, and provider error mapping
-without live model credentials. Runtime-context runner startup and the Human
-Interface Runtime now also support mounted-file identity secret delivery,
-matching the shared secret-delivery contract and generic runner join path.
+without live model credentials. A root `pnpm ops:fake-openai-provider` command
+now starts a deterministic OpenAI-compatible HTTP development server for manual
+catalog/auth/adapter wiring tests without live model credentials. Runtime-context
+runner startup and the Human Interface Runtime now also support mounted-file
+identity secret delivery, matching the shared secret-delivery contract and
+generic runner join path.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -496,6 +499,7 @@ files are the active federated redesign pack.
 373. [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 374. [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 375. [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
+376. [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 
 ## Role of this corpus
 

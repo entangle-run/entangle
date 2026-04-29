@@ -105,6 +105,20 @@ credentials. Live OpenCode behavior and real-provider credentials remain
 manual/operator validation; the OpenAI-compatible agent-engine HTTP boundary is
 now covered by a deterministic local provider fixture.
 
+For manual no-credential provider plumbing tests, start the deterministic
+OpenAI-compatible development server:
+
+```bash
+pnpm ops:fake-openai-provider -- --port 18080 --api-key entangle-test-key
+```
+
+It serves `/v1/models`, `/v1/chat/completions`, and `/v1/responses` with
+deterministic responses and bearer-token validation. Point an
+`openai_compatible` model endpoint at `http://127.0.0.1:18080/v1` and store
+`entangle-test-key` under the endpoint's `secretRef` when you want to validate
+catalog, auth, adapter, and UI wiring without live model credentials. This does
+not validate real model behavior.
+
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
 both User Client URLs, and prints CLI commands for publishing a signed

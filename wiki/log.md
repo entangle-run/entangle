@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-04-29] tooling | Added deterministic OpenAI-compatible dev provider
+
+Added `pnpm ops:fake-openai-provider`, an operator-started deterministic
+OpenAI-compatible HTTP server for no-credential manual integration tests. It
+serves `/v1/models`, `/v1/chat/completions`, and `/v1/responses`, validates a
+bearer token by default, and supports streaming chat-completions and Responses
+API shapes so catalog/auth/adapter/UI wiring can be exercised without live
+model-provider credentials.
+
+Added `references/375-deterministic-openai-provider-dev-server-slice.md`.
+
 ## [2026-04-29] implementation | Added handoff-aware working-context memory
 
 Model-guided runner memory synthesis now receives bounded current-turn handoff

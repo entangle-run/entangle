@@ -175,6 +175,7 @@ same-machine slice records.
 - [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 - [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 - [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
+- [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 
 ## Audited Scope
 
@@ -270,6 +271,10 @@ The repository is not fully federated:
   local HTTP fixture coverage for the real `fetch` provider path, including
   bearer-token auth, plain chat completion, tool-loop continuation, and 429
   error classification without live model-provider credentials;
+- operators can now start a deterministic OpenAI-compatible development
+  provider through `pnpm ops:fake-openai-provider`; it validates bearer tokens
+  and serves models, chat-completions, and Responses API routes for manual
+  catalog/auth/adapter wiring tests without live credentials;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to
   a configured OpenCode server, include Basic auth from runner environment
   when configured, and record combined CLI/server version evidence while still

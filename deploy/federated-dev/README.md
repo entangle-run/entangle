@@ -179,6 +179,19 @@ exists, it is auto-served by the running User Node runtimes; pass
 `--user-client-static-dir <path>` to use another built app directory. Stop it
 with `Ctrl-C` when the manual test is done.
 
+To validate provider plumbing without live API credentials, run the
+deterministic OpenAI-compatible development provider in another terminal:
+
+```sh
+pnpm ops:fake-openai-provider -- --port 18080 --api-key entangle-test-key
+```
+
+Use `http://127.0.0.1:18080/v1` as an `openai_compatible` model endpoint base
+URL and store `entangle-test-key` under that endpoint's `secretRef`. The server
+responds deterministically and supports streaming chat-completions and
+Responses API shapes, so it is useful for catalog/auth/adapter wiring tests,
+not for validating real model quality.
+
 To rediscover running User Client endpoints through Host projection, run:
 
 ```sh

@@ -235,6 +235,9 @@ Current status:
   provider fixture coverage for the real `fetch` provider path, including
   plain chat completion, tool-loop continuation, and 429 classification without
   live model-provider credentials.
+- `pnpm ops:fake-openai-provider` now starts a deterministic
+  OpenAI-compatible development provider for manual no-credential
+  catalog/auth/adapter wiring tests.
 - Docker managed runners can now receive inline join config JSON and the
   federated dev Compose profile selects Docker join mode with Host API bundle
   retrieval, avoiding Host state/secret volume mounts in managed join-mode
@@ -709,6 +712,7 @@ Implementation records:
 - [372-openai-compatible-fake-provider-fixture-slice.md](372-openai-compatible-fake-provider-fixture-slice.md)
 - [373-mounted-file-runtime-identity-slice.md](373-mounted-file-runtime-identity-slice.md)
 - [374-handoff-aware-working-context-memory-slice.md](374-handoff-aware-working-context-memory-slice.md)
+- [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 
 Current status:
 
@@ -799,6 +803,9 @@ Current status:
 - `@entangle/agent-engine` now tests the OpenAI-compatible HTTP provider
   boundary against a deterministic local API fixture rather than only through
   injected client factories;
+- `pnpm ops:fake-openai-provider` exposes the same no-credential provider
+  boundary as an operator-started development server for manual integration
+  checks;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
