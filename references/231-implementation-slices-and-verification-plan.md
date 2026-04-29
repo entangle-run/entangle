@@ -1044,13 +1044,16 @@ Current status:
   convergence, expected runner runtime-kind and agent-engine capabilities,
   projection, `running` runtime observations, User Client URLs, distinct
   multi-user User Client URLs, and optional conversation evidence without
-  reading Host or runner files;
+  reading Host or runner files; custom proof profiles can override the expected
+  agent engine kind while OpenCode remains the default;
 - `pnpm ops:smoke-distributed-proof-tools` now runs a deterministic
   no-infrastructure smoke for proof-kit syntax/help/dry-run paths and verifier
   self-test JSON, including stopped-runtime rejection and the explicit
   diagnostic override plus duplicate User Client URL and wrong-runtime-kind
   or agent-engine rejection, making the distributed proof tooling CI-checkable
-  before the real multi-machine proof is attempted;
+  before the real multi-machine proof is attempted; the same smoke also proves
+  a non-default expected agent engine can pass when the registry fixture
+  advertises it;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

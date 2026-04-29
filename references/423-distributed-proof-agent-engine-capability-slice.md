@@ -22,6 +22,9 @@ nodes:
 - engine kind: the runner can execute the expected coding-agent engine.
 
 For the current proof kit, the expected agent engine is `opencode_server`.
+`424-distributed-proof-agent-engine-selection-slice.md` later made that
+expected value configurable for custom proof profiles while keeping OpenCode as
+the default.
 
 ## Impacted Modules And Files
 
@@ -69,14 +72,13 @@ proof's coding-agent node.
 ## Risks And Mitigations
 
 - Risk: future proof kits may support non-OpenCode agent engines.
-  Mitigation: the expected engine kind is now part of the verifier profile and
-  can be parameterized in a later proof-kit widening slice.
+  Mitigation: the expected engine kind is now configurable in the verifier;
+  the proof kit can be widened separately to generate matching custom profiles.
 - Risk: runtime-kind checks alone were mistaken for engine compatibility.
   Mitigation: the verifier now reports separate runtime-kind and engine-kind
   checks.
 
 ## Open Questions
 
-- Should `pnpm ops:distributed-proof-verify` expose `--agent-engine-kind` once
-  the proof kit supports selecting Codex, Claude Code, Aider, or other engine
-  adapters for the agent runner?
+- Should the proof kit also expose `--agent-engine-kind` so generated join
+  configs and verifier commands stay parameterized together?

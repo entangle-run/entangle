@@ -240,6 +240,10 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
   --require-conversation
 ```
 
+The verifier defaults the expected agent engine to `opencode_server`; custom
+proof profiles can pass `--agent-engine-kind <kind>` when the agent runner is
+intentionally configured for another engine adapter.
+
 CI can verify the proof tooling itself without provisioning external machines:
 
 ```bash

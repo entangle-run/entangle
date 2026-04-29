@@ -29,6 +29,7 @@ const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url"
 const selfTestWrongRuntimeKind = hasFlag("--self-test-wrong-runtime-kind");
 const selfTestWrongAgentEngineKind = hasFlag("--self-test-wrong-agent-engine-kind");
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
+const agentEngineKind = readFlagValue("--agent-engine-kind") ?? "opencode_server";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
   readFlagValue("--reviewer-user-runner") ?? "distributed-reviewer-user-runner";
@@ -38,7 +39,7 @@ const reviewerUserNodeId = readFlagValue("--reviewer-user-node") ?? "reviewer";
 
 const expectedProfiles = [
   {
-    agentEngineKind: "opencode_server",
+    agentEngineKind,
     assignmentId: `assignment-${agentRunnerId}`,
     nodeId: agentNodeId,
     runnerId: agentRunnerId,
@@ -81,6 +82,7 @@ Options:
   --agent-runner <id>             Agent runner id. Default: distributed-agent-runner
   --user-runner <id>              Primary User Node runner id. Default: distributed-user-runner
   --reviewer-user-runner <id>     Reviewer User Node runner id. Default: distributed-reviewer-user-runner
+  --agent-engine-kind <kind>       Expected agent runner engine kind. Default: opencode_server
   --agent-node <nodeId>           Agent graph node id. Default: builder
   --user-node <nodeId>            Primary User Node id. Default: user
   --reviewer-user-node <nodeId>   Reviewer User Node id. Default: reviewer
@@ -242,7 +244,11 @@ function buildSelfTestSnapshot() {
           capabilities: {
             agentEngineKinds:
               selfTestWrongAgentEngineKind && profile.nodeId === agentNodeId
-                ? ["external_process"]
+                ? [
+                    profile.agentEngineKind === "opencode_server"
+                      ? "external_process"
+                      : "opencode_server"
+                  ]
                 : profile.agentEngineKind
                   ? [profile.agentEngineKind]
                   : [],

@@ -5082,3 +5082,13 @@ generic `agent_runner` runtime kind.
 
 The distributed proof tool smoke now includes a wrong-agent-engine-kind
 self-test fixture and requires that fixture to fail.
+
+## [2026-04-29] tooling | Parameterized proof agent engine expectation
+
+Added `references/424-distributed-proof-agent-engine-selection-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts `--agent-engine-kind <kind>`;
+the default remains `opencode_server`, but custom proof profiles can validate a
+different expected agent engine capability without editing the verifier.
+
+The distributed proof tool smoke now includes an alternate expected-agent-engine
+self-test path and requires that fixture to pass.

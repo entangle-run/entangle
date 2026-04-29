@@ -206,6 +206,15 @@ try {
   ]);
   verifySelfTestJson(stoppedRuntimeAllowedJson);
 
+  const alternateAgentEngineJson = runStep("proof verifier alternate-agent-engine self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--agent-engine-kind",
+    "external_process"
+  ]);
+  verifySelfTestJson(alternateAgentEngineJson);
+
   const sharedUserClientJson = runFailureStep("proof verifier shared-user-client self-test", [
     "scripts/federated-distributed-proof-verify.mjs",
     "--self-test",

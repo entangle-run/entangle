@@ -262,12 +262,14 @@ proof through Host HTTP APIs and optional User Client health endpoints, covering
 Host Authority, runner trust/liveness/runtime-kind and agent-engine
 capabilities, assignments, projection, default `running` runtime observations,
 distinct multi-user User Client URLs, and optional conversation evidence
-without reading Host or runner files.
+without reading Host or runner files; custom proof profiles can override the
+expected agent engine kind while OpenCode remains the default.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
-before a real distributed proof is attempted.
+plus a non-default expected-agent-engine success path, before a real
+distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

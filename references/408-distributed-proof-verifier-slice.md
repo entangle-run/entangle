@@ -69,6 +69,10 @@ The verifier must not read Host, runner, or shared workstation files.
 - Tightened by
   `423-distributed-proof-agent-engine-capability-slice.md`: the proof agent
   runner must advertise the expected `opencode_server` engine capability.
+- Widened by
+  `424-distributed-proof-agent-engine-selection-slice.md`: `opencode_server`
+  remains the default expected engine, but operators can pass
+  `--agent-engine-kind <kind>` for custom proof profiles.
 
 ## Tests Required
 
@@ -81,7 +85,8 @@ Implemented and passed:
   observations fail by default and only pass with the explicit diagnostic
   override, that duplicated User Client URLs fail the multi-user proof, and
   that wrong runner runtime-kind or agent-engine capabilities fail the topology
-  proof.
+  proof. The tool smoke also proves a non-default expected agent engine can
+  pass when the self-test fixture advertises it.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
