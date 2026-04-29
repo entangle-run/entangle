@@ -25,6 +25,8 @@ const pollIntervalMs = parsePositiveInteger(
 );
 const allowStaleRunners = hasFlag("--allow-stale-runners");
 const allowNonRunningRuntimes = hasFlag("--allow-non-running-runtimes");
+const checkRelayHealth =
+  hasFlag("--check-relay-health") || readProofProfileBoolean("checkRelayHealth");
 const checkUserClientHealth = hasFlag("--check-user-client-health");
 const requireConversation = hasFlag("--require-conversation");
 const requireArtifactEvidence =
@@ -62,6 +64,9 @@ const reviewerUserNodeId =
   readFlagValue("--reviewer-user-node") ??
   readProofProfileString("reviewerUserNodeId") ??
   "reviewer";
+const requestedRelayUrls = splitRepeatedValues(readFlagValues("--relay-url"));
+const relayUrls =
+  requestedRelayUrls.length > 0 ? requestedRelayUrls : readProofProfileStringArray("relayUrls");
 
 const expectedProfiles = [
   {
@@ -104,6 +109,8 @@ Options:
   --poll-interval-ms <ms>         Poll interval while waiting. Default: 1000
   --allow-stale-runners           Accept stale runner liveness instead of requiring online runners.
   --allow-non-running-runtimes    Accept runtime projections that are not observed as running.
+  --relay-url <url>               Relay URL for optional health checks. May be repeated or comma-separated. Defaults to profile relayUrls.
+  --check-relay-health            Open each configured relay WebSocket.
   --check-user-client-health      Fetch /health for projected User Client URLs.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
@@ -150,6 +157,32 @@ function readFlagValue(name) {
   return index >= 0 ? rawArgs[index + 1] : undefined;
 }
 
+function readFlagValues(name) {
+  const inlinePrefix = `${name}=`;
+  const values = rawArgs
+    .filter((arg) => arg.startsWith(inlinePrefix))
+    .map((arg) => arg.slice(inlinePrefix.length));
+
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    if (rawArgs[index] === name && rawArgs[index + 1]) {
+      values.push(rawArgs[index + 1]);
+    }
+  }
+
+  return values;
+}
+
+function splitRepeatedValues(values) {
+  return [
+    ...new Set(
+      values
+        .flatMap((value) => value.split(","))
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+    )
+  ];
+}
+
 function readProofProfile(filePath) {
   if (!filePath) {
     return undefined;
@@ -174,6 +207,14 @@ function readProofProfileString(key) {
 
 function readProofProfileBoolean(key) {
   return proofProfile?.[key] === true;
+}
+
+function readProofProfileStringArray(key) {
+  const value = proofProfile?.[key];
+
+  return Array.isArray(value)
+    ? value.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
+    : [];
 }
 
 function parsePositiveInteger(value) {
@@ -439,6 +480,61 @@ async function checkHealth(url) {
   };
 }
 
+async function checkRelay(url) {
+  if (selfTest) {
+    return {
+      detail: "self-test relay health",
+      ok: true
+    };
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let socket;
+
+    try {
+      socket = new WebSocket(url);
+    } catch (error) {
+      resolve({
+        detail: error instanceof Error ? error.message : String(error),
+        ok: false
+      });
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      settle(false, "timeout");
+    }, 5000);
+
+    function settle(ok, detail) {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+
+      try {
+        socket.close(1000, "Entangle distributed proof relay health complete");
+      } catch {
+        // Ignore close errors after a failed connection attempt.
+      }
+
+      resolve({
+        detail,
+        ok
+      });
+    }
+
+    socket.addEventListener("open", () => {
+      settle(true, "websocket open");
+    });
+    socket.addEventListener("error", () => {
+      settle(false, "websocket error");
+    });
+  });
+}
+
 async function evaluateSnapshot(snapshot) {
   const checks = [];
   const userClientUrls = [];
@@ -449,6 +545,22 @@ async function evaluateSnapshot(snapshot) {
     typeof authorityPubkey === "string" && authorityPubkey.length > 0,
     authorityPubkey ? `authority=${authorityPubkey}` : "missing authority"
   );
+
+  if (checkRelayHealth) {
+    if (relayUrls.length === 0) {
+      addCheck(checks, "relay urls configured", false, "no relay URLs configured");
+    }
+
+    for (const relayUrl of relayUrls) {
+      const health = await checkRelay(relayUrl);
+      addCheck(
+        checks,
+        `relay health ${relayUrl}`,
+        health.ok,
+        health.detail
+      );
+    }
+  }
 
   for (const profile of expectedProfiles) {
     const runner = findRunnerEntry(snapshot, profile.runnerId);

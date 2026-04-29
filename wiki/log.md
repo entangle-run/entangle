@@ -5141,3 +5141,14 @@ immediately after task publication. Operators can rerun the verifier with the
 flag after the agent has produced work. The distributed proof tool smoke now
 proves both the passing evidence fixture and the missing-evidence failure
 fixture.
+
+## [2026-04-29] test | Added distributed proof relay health checks
+
+Added `references/429-distributed-proof-relay-health-verifier-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts `--check-relay-health` and
+repeated or comma-separated `--relay-url <url>` values, falling back to
+`relayUrls` in the generated proof profile.
+
+Relay health opens each configured relay WebSocket from the verifier machine.
+The distributed proof tool smoke now proves configured relay health succeeds in
+self-test mode and that requiring relay health without relay URLs fails.

@@ -238,6 +238,8 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
 After the agent has produced projected work evidence, rerun the same verifier
 with `--require-artifact-evidence` to require at least one projected artifact,
 source-change, source-history, or wiki ref from the agent node.
+For real multi-machine network checks, add `--check-relay-health`; relay URLs
+come from `--relay-url` or the generated proof profile.
 
 To prepare an extra generic runner against an already-running Host without
 using the smoke script, write a Host-derived join config and start the runner:

@@ -25,6 +25,10 @@ multi-machine proof.
 - verifier JSON self-test pass when artifact evidence is required and present;
 - verifier JSON self-test failure when artifact evidence is required but
   missing;
+- verifier JSON self-test pass when relay health is required and relay URLs are
+  configured;
+- verifier JSON self-test failure when relay health is required without relay
+  URLs;
 - verifier JSON self-test with required conversation and User Client health
   checks enabled;
 - verifier JSON self-test failure when runtime observations are non-running by
@@ -88,6 +92,8 @@ tools.
   self-test through `--profile`.
 - The script runs an artifact-evidence verifier self-test and requires success,
   then runs a missing-artifact-evidence fixture and requires failure.
+- The script runs relay-health verifier self-tests for the configured and
+  missing-relay paths.
 - The script runs verifier self-test with JSON output, User Client health
   checks, and required conversation checks, then parses the JSON and fails if
   any embedded check fails.

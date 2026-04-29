@@ -25,6 +25,7 @@ running distributed proof through network APIs only:
 - User Node Human Interface Runtime projections expose User Client URLs;
 - expected User Node User Client URLs are distinct;
 - optional User Client `/health` checks pass;
+- optional relay WebSocket health checks pass;
 - optional primary User Node to agent conversation projection exists.
 - optional projected artifact/source/wiki evidence exists for the agent node.
 
@@ -83,6 +84,9 @@ The verifier must not read Host, runner, or shared workstation files.
   pass `--require-artifact-evidence` to require projected artifact,
   source-change, source-history, or wiki refs from the agent node after work is
   produced.
+- Widened by `429-distributed-proof-relay-health-verifier-slice.md`: operators
+  can pass `--check-relay-health` plus optional `--relay-url <url>` overrides
+  to check relay WebSocket reachability from the verifier machine.
 
 ## Tests Required
 
@@ -98,7 +102,8 @@ Implemented and passed:
   proof. The tool smoke also proves a non-default expected agent engine can
   pass when the self-test fixture advertises it, and that verifier self-test can
   load its expected proof profile from a generated-style manifest. It now also
-  proves passing and failing artifact-evidence requirements.
+  proves passing and failing artifact-evidence requirements and relay health
+  requirements.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
@@ -126,6 +131,9 @@ unchanged.
 - Risk: artifact evidence is required before the agent has produced work.
   Mitigation: the evidence check is opt-in and intended for a post-work
   verifier rerun.
+- Risk: relay reachability is confused with full relay protocol proof.
+  Mitigation: relay health is documented as WebSocket reachability; live
+  publish/subscribe behavior remains covered by runner/control smokes.
 
 ## Open Questions
 

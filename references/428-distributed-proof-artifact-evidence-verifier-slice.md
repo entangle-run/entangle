@@ -5,7 +5,9 @@
 `pnpm ops:distributed-proof-verify` verifies Host Authority, runner registry,
 trust/liveness, assignments, runtime projections, User Client URLs, optional
 User Client health, optional conversation projection, and optional proof
-profile manifests.
+profile manifests. Follow-up
+`429-distributed-proof-relay-health-verifier-slice.md` adds optional relay
+WebSocket reachability checks.
 
 Before this slice, it did not have an operator-facing check for projected work
 evidence after an agent produced artifact/source/wiki refs. That meant the

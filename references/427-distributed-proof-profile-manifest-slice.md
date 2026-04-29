@@ -44,6 +44,8 @@ allowing explicit CLI flags to override profile values when needed.
   - assignment profile metadata.
 - Follow-up `428-distributed-proof-artifact-evidence-verifier-slice.md` also
   lets proof profiles opt into `"requireArtifactEvidence": true`.
+- Follow-up `429-distributed-proof-relay-health-verifier-slice.md` also lets
+  proof profiles opt into `"checkRelayHealth": true`.
 - The proof kit generated verifier command now uses
   `--profile "$SCRIPT_DIR/proof-profile.json"` and keeps `--host-url
   "$ENTANGLE_HOST_URL"` as an operator-env override.
@@ -88,4 +90,5 @@ script and verifier share the same generated profile file.
   health expectations so the verifier can validate more than Host/User Client
   HTTP surfaces? `428-distributed-proof-artifact-evidence-verifier-slice.md`
   adds the first optional projected work-evidence requirement, but not direct
-  backend health checks.
+  backend health checks. `429-distributed-proof-relay-health-verifier-slice.md`
+  adds optional relay WebSocket reachability checks, but not git backend health.

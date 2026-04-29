@@ -249,7 +249,9 @@ try {
         agentEngineKind: "external_process",
         agentNodeId: "architect",
         agentRunnerId: "proof-agent-runner",
+        checkRelayHealth: true,
         hostUrl: "http://host.example:7071",
+        relayUrls: ["ws://relay.example:7777"],
         requireArtifactEvidence: true,
         reviewerUserNodeId: "bob",
         reviewerUserRunnerId: "proof-reviewer-runner",
@@ -294,6 +296,30 @@ try {
     }
   );
   verifySelfTestFailureJson(missingArtifactEvidenceJson, "artifact evidence");
+
+  const relayHealthJson = runStep("proof verifier relay-health self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--check-relay-health",
+    "--relay-url",
+    "ws://relay.example:7777"
+  ]);
+  verifySelfTestJson(relayHealthJson);
+
+  const missingRelayJson = runFailureStep(
+    "proof verifier missing-relay self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--check-relay-health"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(missingRelayJson, "relay urls configured");
 
   const selfTestJson = runStep("proof verifier self-test", [
     "scripts/federated-distributed-proof-verify.mjs",
