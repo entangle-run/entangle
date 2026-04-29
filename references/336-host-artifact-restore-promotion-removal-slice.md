@@ -18,6 +18,11 @@ Those routes wrote restore workspaces and source workspace files from Host by
 reading runtime-local paths. That is not a valid boundary for runners on other
 machines.
 
+Later update: `384-runner-owned-artifact-restore-control-slice.md` reintroduces
+artifact restore as a Host-signed `runtime.artifact.restore` control command
+executed by the accepted runner. The direct Host filesystem mutation and
+promotion surfaces remain removed.
+
 ## Target Model
 
 Artifact mutation is node-owned runtime behavior. Host should observe signed

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { artifactRefSchema } from "../artifacts/artifact-ref.js";
 import { gitRepositoryTargetSelectorSchema } from "../artifacts/git-repository-target.js";
 import { nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
@@ -24,6 +25,7 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.stop",
   "runtime.restart",
   "runtime.session.cancel",
+  "runtime.artifact.restore",
   "runtime.source_history.publish",
   "runtime.source_history.replay",
   "runtime.wiki.publish"
@@ -170,6 +172,19 @@ export const runtimeSessionCancelPayloadSchema = controlPayloadBaseSchema
     }
   });
 
+export const runtimeArtifactRestorePayloadSchema = controlPayloadBaseSchema.extend({
+  artifactId: identifierSchema,
+  artifactRef: artifactRefSchema,
+  assignmentId: identifierSchema.optional(),
+  commandId: identifierSchema,
+  eventType: z.literal("runtime.artifact.restore"),
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional(),
+  restoreId: identifierSchema.optional()
+});
+
 export const runtimeSourceHistoryPublishPayloadSchema =
   controlPayloadBaseSchema.extend({
     approvalId: identifierSchema.optional(),
@@ -222,6 +237,7 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeStopPayloadSchema,
     runtimeRestartPayloadSchema,
     runtimeSessionCancelPayloadSchema,
+    runtimeArtifactRestorePayloadSchema,
     runtimeSourceHistoryPublishPayloadSchema,
     runtimeSourceHistoryReplayPayloadSchema,
     runtimeWikiPublishPayloadSchema
@@ -288,6 +304,9 @@ export type RuntimeSessionCancelPayload = z.infer<
 >;
 export type RuntimeSourceHistoryPublishPayload = z.infer<
   typeof runtimeSourceHistoryPublishPayloadSchema
+>;
+export type RuntimeArtifactRestorePayload = z.infer<
+  typeof runtimeArtifactRestorePayloadSchema
 >;
 export type RuntimeSourceHistoryReplayPayload = z.infer<
   typeof runtimeSourceHistoryReplayPayloadSchema

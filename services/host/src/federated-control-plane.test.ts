@@ -622,6 +622,28 @@ describe("Host federated control plane", () => {
       commandId: "cmd-cancel-alpha",
       relayUrls
     });
+    await controlPlane.publishRuntimeArtifactRestore({
+      artifactRef: {
+        artifactId: "artifact-alpha",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "artifact-artifact-alpha",
+          commit: "abc123",
+          gitServiceRef: "gitea",
+          namespace: "team-alpha",
+          path: "reports/session-alpha/report.md",
+          repositoryName: "graph-alpha"
+        },
+        status: "published"
+      },
+      assignment,
+      commandId: "cmd-artifact-restore-alpha",
+      reason: "Restore artifact.",
+      relayUrls,
+      requestedBy: "operator-main",
+      restoreId: "restore-alpha"
+    });
     await controlPlane.publishRuntimeSourceHistoryPublish({
       approvalId: "approval-source-history-publication-alpha",
       assignment,
@@ -704,6 +726,20 @@ describe("Host federated control plane", () => {
         sessionId: "session-alpha"
       }),
       expect.objectContaining({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-artifact-restore-alpha",
+        eventType: "runtime.artifact.restore",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        requestedBy: "operator-main",
+        restoreId: "restore-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }),
+      expect.objectContaining({
         approvalId: "approval-source-history-publication-alpha",
         assignmentId: "assignment-alpha",
         commandId: "cmd-source-history-publish-alpha",
@@ -760,6 +796,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

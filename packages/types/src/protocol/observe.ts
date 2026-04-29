@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   artifactContentPreviewSchema,
+  artifactRecordSchema,
   artifactRefSchema
 } from "../artifacts/artifact-ref.js";
 import { nostrPublicKeySchema } from "../common/crypto.js";
@@ -158,6 +159,7 @@ export const approvalUpdatedObservationPayloadSchema =
 
 export const artifactRefObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
+    artifactRecord: artifactRecordSchema.optional(),
     artifactPreview: artifactContentPreviewSchema.optional(),
     artifactRef: artifactRefSchema,
     eventType: z.literal("artifact.ref"),

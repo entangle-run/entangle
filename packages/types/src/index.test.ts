@@ -703,6 +703,42 @@ describe("federated runtime contracts", () => {
         sessionId: "session-alpha"
       }
     });
+    const artifactRestore = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        artifactId: "artifact-alpha",
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          artifactKind: "report_file",
+          backend: "git",
+          locator: {
+            branch: "worker-it/session-alpha/report",
+            commit: "abc123",
+            gitServiceRef: "gitea",
+            namespace: "team-alpha",
+            path: "reports/session-alpha/report.md",
+            repositoryName: "graph-alpha"
+          },
+          status: "published"
+        },
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-artifact-restore-alpha",
+        eventType: "runtime.artifact.restore",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        requestedBy: "operator-main",
+        restoreId: "restore-artifact-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
     const sourceHistoryPublish = entangleControlEventSchema.parse({
       envelope: buildSignedEnvelope({
         protocol: "entangle.control.v1",
@@ -782,6 +818,11 @@ describe("federated runtime contracts", () => {
     expect(stop.payload.eventType).toBe("runtime.stop");
     expect(restart.payload.eventType).toBe("runtime.restart");
     expect(cancel.payload.eventType).toBe("runtime.session.cancel");
+    expect(artifactRestore.payload.eventType).toBe("runtime.artifact.restore");
+    expect(artifactRestore.payload).toMatchObject({
+      artifactId: "artifact-alpha",
+      restoreId: "restore-artifact-alpha"
+    });
     expect(sourceHistoryPublish.payload.eventType).toBe(
       "runtime.source_history.publish"
     );
@@ -852,6 +893,25 @@ describe("federated runtime contracts", () => {
       artifactRefs: [
         {
           artifactId: "artifact-alpha",
+          artifactRecord: {
+            createdAt: observedAt,
+            ref: {
+              artifactId: "artifact-alpha",
+              artifactKind: "report_file",
+              backend: "git",
+              locator: {
+                branch: "artifact-artifact-alpha",
+                commit: "abc123",
+                path: "report.md"
+              },
+              status: "published"
+            },
+            retrieval: {
+              retrievedAt: observedAt,
+              state: "retrieved"
+            },
+            updatedAt: observedAt
+          },
           artifactPreview: {
             available: true,
             bytesRead: 18,
@@ -1080,6 +1140,9 @@ describe("federated runtime contracts", () => {
     });
 
     expect(snapshot.artifactRefs[0]?.artifactId).toBe("artifact-alpha");
+    expect(snapshot.artifactRefs[0]?.artifactRecord?.retrieval?.state).toBe(
+      "retrieved"
+    );
     expect(snapshot.assignmentReceipts[0]?.receiptKind).toBe("started");
     expect(snapshot.artifactRefs[0]?.artifactPreview?.available).toBe(true);
     expect(snapshot.runtimes[0]?.nodeId).toBe("worker-it");

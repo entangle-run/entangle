@@ -522,6 +522,7 @@ files are the active federated redesign pack.
 382. [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 383. [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 384. [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
+385. [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 
 ## Role of this corpus
 

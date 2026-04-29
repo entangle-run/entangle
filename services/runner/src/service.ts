@@ -130,6 +130,12 @@ export type RunnerWikiPublicationCommandResult = {
   publicationState?: "failed" | "not_requested" | "published";
 };
 
+export type RunnerArtifactRestoreCommandResult = {
+  artifactId: string;
+  message?: string;
+  retrievalState?: "failed" | "retrieved";
+};
+
 export type RunnerServiceObservationPublisher = {
   publishArtifactRefObserved?(input: {
     artifactRecord: ArtifactRecord;
@@ -1939,6 +1945,59 @@ export class RunnerService {
       ...(publicationState ? { publicationState } : {}),
       sourceHistoryId: publication.history.sourceHistoryId
     };
+  }
+
+  async requestArtifactRestore(input: {
+    artifactRef: ArtifactRef;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    restoreId?: string;
+  }): Promise<RunnerArtifactRestoreCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+
+    try {
+      const restored = await this.artifactBackend.retrieveInboundArtifacts({
+        artifactRefs: [input.artifactRef],
+        context: this.context
+      });
+      const [artifact] = restored.artifacts;
+
+      if (!artifact) {
+        throw new Error(
+          `Artifact '${input.artifactRef.artifactId}' did not produce a restorable git artifact record.`
+        );
+      }
+
+      await writeArtifactRecord(statePaths, artifact);
+      await this.publishArtifactRefObservation(artifact);
+
+      return {
+        artifactId: artifact.ref.artifactId,
+        retrievalState: artifact.retrieval?.state ?? "retrieved"
+      };
+    } catch (error) {
+      if (error instanceof RunnerArtifactRetrievalError) {
+        await Promise.all(
+          error.artifactRecords.map((artifactRecord) =>
+            writeArtifactRecord(statePaths, artifactRecord)
+          )
+        );
+        await this.publishArtifactRefObservations(error.artifactRecords);
+        const [failedArtifact] = error.artifactRecords;
+
+        return {
+          artifactId: input.artifactRef.artifactId,
+          message: failedArtifact?.retrieval?.lastError ?? error.message,
+          retrievalState: "failed"
+        };
+      }
+
+      throw error;
+    }
   }
 
   async requestWikiRepositoryPublication(input: {

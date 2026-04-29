@@ -23,7 +23,10 @@ turn execution, so those projection records are no longer only test-fed.
 Observed `source_change.ref` records now include bounded source-change
 summaries. Observed `artifact.ref` records can now include bounded text
 previews, and Host projection exposes those previews to the User Client without
-reading runner disk. Observed activity records now carry a source marker so
+reading runner disk. Observed `artifact.ref` records can also include the
+runner's bounded `ArtifactRecord` when a Host-signed
+`runtime.artifact.restore` command succeeds or fails in runner-owned state.
+Observed activity records now carry a source marker so
 local filesystem synchronization can prune stale local imports without deleting
 records sourced from signed observations. The Host session list now also has a
 projection fallback for remote sessions that have no Host-readable runner

@@ -293,6 +293,7 @@ Implementation record:
 - [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
 - [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
 - [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
+- [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 
 Verification:
 
@@ -428,8 +429,11 @@ Current status:
   git repositories through the same runner-owned control boundary;
 - explicit wiki publication can now target resolved non-primary git
   repositories through the same runner-owned control boundary;
+- artifact restore now uses a Host-signed `runtime.artifact.restore` control
+  command, with the assigned runner retrieving into runner-owned state and
+  emitting `artifact.ref` retrieval evidence;
 - richer source/wiki mutation endpoints, richer cache policy, and artifact
-  restore/promotion still need projection-backed or backend-resolved
+  promotion/source-change proposal flows still need protocol-backed
   replacement.
 
 ### Slice 9: User Node Runtime
@@ -602,6 +606,9 @@ Implementation record:
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 - [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
+- [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
+- [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
+- [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 
 Verification:
 
@@ -768,6 +775,10 @@ Current status:
 - shared CLI/Studio source-history presentation now exposes per-target
   publication count, target labels, and artifact ids while keeping the latest
   publication summary fields intact;
+- Host API and host-client can request runner-owned artifact restore through a
+  Host-signed `runtime.artifact.restore` command for the accepted assignment,
+  and the runner records observed retrieval success or failure without Host
+  filesystem access;
 - Host public deep runtime read paths now ignore Host-local runtime files for
   accepted federated assignments, keeping the process proof on projected
   runner evidence even when a semantic Host context exists;

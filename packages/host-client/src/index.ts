@@ -50,6 +50,8 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreRequestSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeInspectionResponseSchema,
@@ -145,6 +147,8 @@ import {
   type RuntimeArtifactInspectionResponse,
   type RuntimeArtifactListResponse,
   type RuntimeArtifactPreviewResponse,
+  type RuntimeArtifactRestoreRequest,
+  type RuntimeArtifactRestoreResponse,
   type RuntimeBootstrapBundleResponse,
   type RuntimeContextInspectionResponse,
   type RuntimeInspectionResponse,
@@ -1056,6 +1060,26 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(url.toString()),
         runtimeArtifactDiffResponseSchema
+      );
+    },
+
+    async restoreRuntimeArtifact(
+      nodeId: string,
+      artifactId: string,
+      request: RuntimeArtifactRestoreRequest = {}
+    ): Promise<RuntimeArtifactRestoreResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/artifacts/${artifactId}/restore`,
+          {
+            body: JSON.stringify(runtimeArtifactRestoreRequestSchema.parse(request)),
+            headers: {
+              "content-type": "application/json"
+            },
+            method: "POST"
+          }
+        ),
+        runtimeArtifactRestoreResponseSchema
       );
     },
 

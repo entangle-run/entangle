@@ -303,7 +303,11 @@ This repository currently contains:
   and can carry an approval id plus explicit git target selectors for
   policy-gated non-primary repository publication, with retained per-target
   publication records now visible through shared CLI and Studio source-history
-  presentation. Explicit operator replay requests now travel as Host-signed
+  presentation. Artifact restore requests now travel as Host-signed
+  `runtime.artifact.restore` commands to the accepted runner assignment; the
+  runner retrieves the projected artifact ref into runner-owned state and emits
+  signed `artifact.ref` retrieval evidence rather than Host reading runner
+  files. Explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
   history detail using that Host request path and with observed
@@ -501,9 +505,10 @@ This repository currently contains:
   `GET /v1/runtimes/{nodeId}/artifacts` and
   `GET /v1/runtimes/{nodeId}/artifacts/{artifactId}`, with bounded preview,
   git history, and git diff inspection for supported materialized artifacts.
-  Direct Host restore/promotion mutations have been removed because artifact
-  mutation must be runner-owned protocol behavior rather than Host writes into
-  runner-local workspaces;
+  Direct Host restore/promotion mutations have been removed; artifact restore
+  now returns as a Host-signed command executed in runner-owned state, while
+  promotion remains a future policy-backed protocol flow rather than Host
+  writes into runner-local workspaces;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -1060,8 +1065,9 @@ The highest-value remaining gaps are:
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected
-  git refs plus shared multi-target source-history publication presentation,
-  especially protocol-owned artifact restore or source-change proposal flows,
+  git refs plus shared multi-target source-history publication presentation
+  and runner-owned artifact restore,
+  especially artifact promotion or source-change proposal flows,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

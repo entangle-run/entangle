@@ -19,6 +19,7 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  type ArtifactRef,
   type GitRepositoryTargetSelector,
   type RuntimeAssignmentRecord,
   type SourceHistoryPublicationTarget,
@@ -65,6 +66,8 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreRequestSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
@@ -295,6 +298,17 @@ type HostFederatedAssignmentPublisher = {
     commandId: string;
     correlationId?: string;
     relayUrls: string[];
+  }): Promise<unknown>;
+  publishRuntimeArtifactRestore?(input: {
+    artifactRef: ArtifactRef;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    restoreId?: string;
   }): Promise<unknown>;
   publishRuntimeSourceHistoryPublish?(input: {
     approvalId?: string;
@@ -706,6 +720,41 @@ async function publishRuntimeSessionCancelCommandFromHost(
   });
 
   return true;
+}
+
+async function publishRuntimeArtifactRestoreCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    artifactRef: ArtifactRef;
+    assignment: RuntimeAssignmentRecord;
+    reason?: string;
+    requestedBy?: string;
+    restoreId?: string;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeArtifactRestore ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-artifact-restore-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeArtifactRestore({
+    artifactRef: input.artifactRef,
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+    ...(input.restoreId ? { restoreId: input.restoreId } : {})
+  });
+
+  return commandId;
 }
 
 async function publishRuntimeSourceHistoryPublishCommandFromHost(
@@ -2183,6 +2232,95 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       }
 
       return runtimeArtifactDiffResponseSchema.parse(artifactDiff);
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/artifacts/:artifactId/restore",
+    async (request, reply) => {
+      const params = request.params as { artifactId: string; nodeId: string };
+      const body = parseRequestInput(
+        runtimeArtifactRestoreRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message: "Request body did not match the expected artifact restore schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const artifactInspection = await getRuntimeArtifactInspection({
+        artifactId: params.artifactId,
+        nodeId: params.nodeId
+      });
+
+      if (!artifactInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Artifact '${params.artifactId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            artifactId: params.artifactId,
+            nodeId: params.nodeId
+          },
+          message:
+            `Artifact restore for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const commandId = await publishRuntimeArtifactRestoreCommandFromHost(
+        options,
+        {
+          artifactRef: artifactInspection.artifact.ref,
+          assignment,
+          ...(body.reason ? { reason: body.reason } : {}),
+          ...(body.requestedBy ? { requestedBy: body.requestedBy } : {}),
+          ...(body.restoreId ? { restoreId: body.restoreId } : {})
+        }
+      );
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            artifactId: params.artifactId,
+            nodeId: params.nodeId
+          },
+          message:
+            "Federated artifact restore requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeArtifactRestoreResponseSchema.parse({
+        artifactId: params.artifactId,
+        assignmentId: assignment.assignmentId,
+        commandId,
+        nodeId: params.nodeId,
+        requestedAt: new Date().toISOString(),
+        status: "requested"
+      });
     }
   );
 

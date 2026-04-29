@@ -1,4 +1,5 @@
 import type {
+  ArtifactRef,
   EntangleControlEvent,
   EntangleObservationEvent,
   GitRepositoryTargetSelector,
@@ -480,6 +481,45 @@ export class HostFederatedControlPlane {
         runnerPubkey: input.assignment.runnerPubkey,
         sourceHistoryId: input.sourceHistoryId,
         ...(input.target ? { target: input.target } : {})
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
+  publishRuntimeArtifactRestore(input: {
+    artifactRef: ArtifactRef;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+    restoreId?: string;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        artifactId: input.artifactRef.artifactId,
+        artifactRef: input.artifactRef,
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        eventType: "runtime.artifact.restore",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        protocol: "entangle.control.v1",
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+        ...(input.restoreId ? { restoreId: input.restoreId } : {}),
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey
       },
       relayUrls: input.relayUrls
     });

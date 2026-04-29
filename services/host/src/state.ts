@@ -2986,6 +2986,9 @@ export async function recordArtifactRefObservation(
   await assertRegisteredObservationRunner(observation);
   const record = artifactRefProjectionRecordSchema.parse({
     artifactId: observation.artifactRef.artifactId,
+    ...(observation.artifactRecord
+      ? { artifactRecord: observation.artifactRecord }
+      : {}),
     ...(observation.artifactPreview
       ? { artifactPreview: observation.artifactPreview }
       : {}),
@@ -8619,6 +8622,10 @@ export async function getRuntimeBootstrapBundle(
 function buildRuntimeArtifactRecordFromProjection(
   record: ArtifactRefProjectionRecord
 ): ArtifactRecord {
+  if (record.artifactRecord) {
+    return artifactRecordSchema.parse(record.artifactRecord);
+  }
+
   return artifactRecordSchema.parse({
     createdAt: record.projection.updatedAt,
     ref: record.artifactRef,

@@ -249,6 +249,7 @@ function createRuntimeObservationPublisher(input: {
         ...(record.artifactPreview
           ? { artifactPreview: record.artifactPreview }
           : {}),
+        artifactRecord: record.artifactRecord,
         artifactRef: record.artifactRecord.ref,
         eventType: "artifact.ref",
         graphId: record.graphId,
@@ -460,6 +461,8 @@ export async function createConfiguredRunnerJoinService(
             configured.service.requestWikiRepositoryPublication(request),
           replaySourceHistory: (request) =>
             configured.service.requestSourceHistoryReplay(request),
+          restoreArtifact: (request) =>
+            configured.service.requestArtifactRestore(request),
           runtimeContextPath,
           runtimeRoot: startResult.runtimeRoot,
           stop: () => configured.service.stop()

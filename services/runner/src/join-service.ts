@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   AssignmentLease,
+  ArtifactRef,
   EntangleControlEvent,
   EntangleObservationEventPayload,
   GitRepositoryTargetSelector,
@@ -81,6 +82,17 @@ export type RunnerAssignmentRuntimeHandle = {
     message?: string;
     publicationState?: "failed" | "not_requested" | "published";
     sourceHistoryId: string;
+  }>;
+  restoreArtifact?(request: {
+    artifactRef: ArtifactRef;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+    restoreId?: string;
+  }): Promise<{
+    artifactId: string;
+    message?: string;
+    retrievalState?: "failed" | "retrieved";
   }>;
   replaySourceHistory?(request: {
     approvalId?: string;
@@ -267,6 +279,11 @@ export class RunnerJoinService {
       return;
     }
 
+    if (payload.eventType === "runtime.artifact.restore") {
+      await this.handleRuntimeArtifactRestoreCommand(payload);
+      return;
+    }
+
     if (payload.eventType === "runtime.source_history.publish") {
       await this.handleRuntimeSourceHistoryPublishCommand(payload);
       return;
@@ -422,6 +439,7 @@ export class RunnerJoinService {
       {
         eventType:
           | "runtime.restart"
+          | "runtime.artifact.restore"
           | "runtime.session.cancel"
           | "runtime.source_history.publish"
           | "runtime.source_history.replay"
@@ -647,6 +665,69 @@ export class RunnerJoinService {
           error instanceof Error
             ? error.message
             : "Runtime session cancellation command failed."
+      });
+    }
+  }
+
+  private async handleRuntimeArtifactRestoreCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.artifact.restore" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime artifact restore command did not match an accepted assignment."
+      });
+      return;
+    }
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.restoreArtifact) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime artifact restore command cannot be applied because the assigned runtime is not running."
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.restoreArtifact({
+        artifactRef: payload.artifactRef,
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        requestedAt: payload.issuedAt,
+        ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {}),
+        ...(payload.restoreId ? { restoreId: payload.restoreId } : {})
+      });
+
+      if (result.retrievalState === "failed") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Artifact '${result.artifactId}' restore failed.`
+        });
+      }
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime artifact restore command failed."
       });
     }
   }

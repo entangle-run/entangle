@@ -182,6 +182,9 @@ same-machine slice records.
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
 - [380-runner-owned-wiki-target-publication-slice.md](380-runner-owned-wiki-target-publication-slice.md)
 - [381-process-smoke-wiki-target-publication-slice.md](381-process-smoke-wiki-target-publication-slice.md)
+- [382-source-history-multi-target-publication-slice.md](382-source-history-multi-target-publication-slice.md)
+- [383-source-history-publication-presentation-slice.md](383-source-history-publication-presentation-slice.md)
+- [384-runner-owned-artifact-restore-control-slice.md](384-runner-owned-artifact-restore-control-slice.md)
 
 ## Audited Scope
 
@@ -644,9 +647,13 @@ now produce projected runner-owned source-history application and primary git
 publication evidence, with the old direct Host publication, source-candidate
 apply, and source-history replay mutations removed from Host, CLI, Studio, and
 host-client. Direct Host-mediated wiki repository publication and artifact
-restore/promotion have also been removed from Host/CLI/Studio/host-client;
-artifact inspection currently remains through runner-owned refs plus signed
-projection, and artifact mutation must return as runner-owned protocol
+restore/promotion have also been removed from Host/CLI/Studio/host-client.
+Artifact restore has returned as the Host-signed
+`runtime.artifact.restore` control command: Host resolves a projected artifact
+ref, the accepted runner retrieves it through runner-owned artifact backend
+state, and the runner emits `artifact.ref` observation evidence with retrieval
+state. Artifact promotion remains unresolved and must return either as a
+runner-owned protocol command with explicit policy or as source-change proposal
 behavior. Explicit wiki repository publication has returned as the Host-signed
 `runtime.wiki.publish` control command: the owning runner syncs and publishes
 its wiki repository to the primary git target by default or to an explicit
@@ -717,6 +724,6 @@ conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
 The next blocking implementation areas are richer projection-backed source/wiki
-review services, backend-resolved artifact restore/promotion, richer cache
-policy controls, and turning the process smoke into the full multi-machine
-distributed proof.
+review services, artifact promotion or source-change proposal flows, richer
+cache policy controls, and turning the process smoke into the full
+multi-machine distributed proof.

@@ -4585,3 +4585,15 @@ CLI summaries now include additive `publicationCount`, `publicationTargets`,
 and `publishedArtifactIds` fields while preserving latest-publication fields.
 Studio source-history detail uses the same shared helper, so visual and
 headless surfaces stay aligned.
+
+## [2026-04-29] implementation | Added runner-owned artifact restore control
+
+Added `references/384-runner-owned-artifact-restore-control-slice.md`.
+Artifact restore now uses a Host-signed `runtime.artifact.restore` control
+command to the accepted runner assignment instead of a Host-side filesystem
+mutation.
+
+The assigned runner retrieves the projected artifact ref through runner-owned
+artifact backend state, persists success or failure retrieval records, and
+emits signed `artifact.ref` observation evidence that Host projection can
+inspect without reading runner-local files.

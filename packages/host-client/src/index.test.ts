@@ -164,6 +164,73 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("requests runtime artifact restore through the Host boundary", async () => {
+    const requests: Array<{
+      body?: string;
+      headers?: Record<string, string>;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          headers: init?.headers,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              artifactId: "report-turn-001",
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-artifact-restore-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-29T10:00:00.000Z",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.restoreRuntimeArtifact("worker-it", "report-turn-001", {
+        reason: "Restore for review.",
+        requestedBy: "operator-main",
+        restoreId: "restore-alpha"
+      })
+    ).resolves.toMatchObject({
+      artifactId: "report-turn-001",
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-artifact-restore-alpha",
+      nodeId: "worker-it",
+      status: "requested"
+    });
+
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          reason: "Restore for review.",
+          requestedBy: "operator-main",
+          restoreId: "restore-alpha"
+        }),
+        headers: {
+          authorization: "Bearer host-secret",
+          "content-type": "application/json"
+        },
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/artifacts/report-turn-001/restore"
+      }
+    ]);
+  });
+
   it("fetches the Host projection snapshot", async () => {
     const requests: string[] = [];
     const client = createHostClient({

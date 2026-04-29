@@ -56,6 +56,7 @@ import {
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeBootstrapBundleResponseSchema,
   runtimeContextInspectionResponseSchema,
   runtimeIdentitySecretResponseSchema,
@@ -93,6 +94,7 @@ import {
   userNodeMessageRecordSchema,
   sourceChangeCandidateRecordSchema,
   sourceHistoryRecordSchema,
+  type ArtifactRef,
   type RuntimeAssignmentRecord,
   type SessionCancellationRequestRecord,
   type SourceHistoryPublicationTarget,
@@ -7201,10 +7203,37 @@ describe("buildHostServer", () => {
       retryFailedPublication: boolean;
       target?: GitRepositoryTargetSelector;
     }> = [];
+    const artifactRestoreRequests: Array<{
+      artifactRef: ArtifactRef;
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+      restoreId?: string;
+    }> = [];
+    type ArtifactRestorePublishInput = {
+      artifactRef: ArtifactRef;
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+      restoreId?: string;
+    };
     const server = await createTestServer({
       federatedControlPlane: {
         publishRuntimeAssignmentOffer: () => Promise.resolve(),
         publishRuntimeAssignmentRevoke: () => Promise.resolve(),
+        publishRuntimeArtifactRestore: (input: ArtifactRestorePublishInput) => {
+          artifactRestoreRequests.push({
+            artifactRef: input.artifactRef,
+            assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+            ...(input.restoreId ? { restoreId: input.restoreId } : {})
+          });
+          return Promise.resolve();
+        },
         publishRuntimeSourceHistoryPublish: (input) => {
           publishedRequests.push({
             ...(input.approvalId ? { approvalId: input.approvalId } : {}),
@@ -7249,6 +7278,7 @@ describe("buildHostServer", () => {
     try {
       const [
         {
+          recordArtifactRefObservation,
           recordRunnerHello,
           recordRuntimeAssignmentAccepted,
           recordSourceHistoryRefObservation
@@ -7317,6 +7347,32 @@ describe("buildHostServer", () => {
         runnerPubkey
       });
 
+      const artifactRef: ArtifactRef = {
+        artifactId: "artifact-alpha",
+        artifactKind: "report_file",
+        backend: "git",
+        locator: {
+          branch: "artifact-artifact-alpha",
+          commit: "abc123",
+          gitServiceRef: "gitea",
+          namespace: "team-alpha",
+          path: "reports/session-alpha/report.md",
+          repositoryName: "graph-alpha"
+        },
+        status: "published"
+      };
+      await recordArtifactRefObservation({
+        artifactRef,
+        eventType: "artifact.ref",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        nodeId: "worker-it",
+        observedAt,
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+
       const projectedSourceHistory = sourceHistoryRecordSchema.parse({
         appliedAt: observedAt,
         appliedBy: "user-main",
@@ -7360,6 +7416,46 @@ describe("buildHostServer", () => {
         runnerId: "runner-alpha",
         runnerPubkey,
         sourceHistoryId: "source-history-candidate-alpha"
+      });
+
+      const artifactRestoreResponse = await server.inject({
+        method: "POST",
+        payload: {
+          reason: "Operator requested artifact restore.",
+          requestedBy: "operator-main",
+          restoreId: "restore-artifact-alpha"
+        },
+        url: "/v1/runtimes/worker-it/artifacts/artifact-alpha/restore"
+      });
+
+      expect(artifactRestoreResponse.statusCode).toBe(200);
+      expect(
+        runtimeArtifactRestoreResponseSchema.parse(
+          artifactRestoreResponse.json()
+        )
+      ).toMatchObject({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        status: "requested"
+      });
+      expect(artifactRestoreRequests).toHaveLength(1);
+      expect(artifactRestoreRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(artifactRestoreRequests[0]).toMatchObject({
+        artifactRef: {
+          artifactId: "artifact-alpha",
+          locator: {
+            repositoryName: "graph-alpha"
+          }
+        },
+        reason: "Operator requested artifact restore.",
+        relayUrls: ["ws://relay.example"],
+        requestedBy: "operator-main",
+        restoreId: "restore-artifact-alpha"
       });
 
       const publishResponse = await server.inject({

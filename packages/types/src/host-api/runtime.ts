@@ -282,6 +282,21 @@ export const runtimeArtifactDiffResponseSchema = z.object({
   diff: runtimeArtifactDiffSchema
 });
 
+export const runtimeArtifactRestoreRequestSchema = z.object({
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional(),
+  restoreId: identifierSchema.optional()
+});
+
+export const runtimeArtifactRestoreResponseSchema = z.object({
+  artifactId: identifierSchema,
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  nodeId: identifierSchema,
+  requestedAt: nonEmptyStringSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeMemoryPageKindSchema = z.enum([
   "schema",
   "summary",
@@ -522,6 +537,12 @@ export type RuntimeArtifactDiffQuery = z.infer<
 export type RuntimeArtifactDiff = z.infer<typeof runtimeArtifactDiffSchema>;
 export type RuntimeArtifactDiffResponse = z.infer<
   typeof runtimeArtifactDiffResponseSchema
+>;
+export type RuntimeArtifactRestoreRequest = z.input<
+  typeof runtimeArtifactRestoreRequestSchema
+>;
+export type RuntimeArtifactRestoreResponse = z.infer<
+  typeof runtimeArtifactRestoreResponseSchema
 >;
 export type RuntimeMemoryPageKind = z.infer<typeof runtimeMemoryPageKindSchema>;
 export type RuntimeMemoryPageSummary = z.infer<typeof runtimeMemoryPageSummarySchema>;
