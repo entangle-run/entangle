@@ -71,5 +71,7 @@ from resolvable artifact locators.
 
 ## Open Questions
 
-- Should later cache policy support max-age, max-size, per-backend pruning, or
-  automatic cache rebuild diagnostics?
+Partially resolved by `400-artifact-backend-cache-prune-policy-slice.md`:
+cache clear now supports max-age pruning through `olderThanSeconds` while
+preserving dry-run behavior. Max-size, per-backend pruning, and automatic cache
+rebuild diagnostics remain open.

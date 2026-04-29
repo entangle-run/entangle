@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
+[400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -63,8 +63,9 @@ through semantic artifact context, and the process-runner smoke verifies that
 path against a real runner-published source-history artifact. Host status now
 exposes bounded availability, repository count, and size metadata for that
 derived artifact backend cache without exposing Host filesystem paths, and Host
-API/CLI operators can dry-run or clear that derived cache without deleting
-authoritative artifact or projection state. Studio's Host Status panel renders
+API/CLI operators can dry-run, clear, or age-prune that derived cache without
+deleting authoritative artifact or projection state. Studio's Host Status panel
+renders
 the same path-free cache summary for admin visibility, and the running User
 Client can load bounded artifact history/diff evidence through its Human
 Interface Runtime while scoped to artifact refs visible in the selected User
@@ -564,6 +565,7 @@ files are the active federated redesign pack.
 398. [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 399. [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 400. [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
+401. [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 
 ## Role of this corpus
 

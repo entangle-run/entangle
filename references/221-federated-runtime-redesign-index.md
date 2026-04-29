@@ -200,6 +200,7 @@ same-machine slice records.
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 - [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 - [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
+- [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 
 ## Audited Scope
 
@@ -728,8 +729,9 @@ locator is resolvable through the semantic artifact context, and the
 process-runner smoke now proves that path against a runner-published
 source-history artifact. Host status now exposes bounded operational metadata
 for that derived artifact backend cache without exposing paths or treating it
-as protocol truth, and operators can dry-run or clear that derived cache through
-the Host API/CLI without mutating authoritative artifact or projection state.
+as protocol truth, and operators can dry-run, clear, or age-prune that derived
+cache through the Host API/CLI without mutating authoritative artifact or
+projection state.
 Studio's Host Status panel now renders the same path-free artifact cache
 summary for admin visibility. The running User Client can now request bounded
 artifact history and diff evidence through its Human Interface Runtime, using
@@ -760,5 +762,5 @@ conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
 The next blocking implementation areas are richer projection-backed source/wiki
-review services, richer cache policy controls, and turning the process smoke
-into the full multi-machine distributed proof.
+review services, max-size/per-backend cache policy controls, and turning the
+process smoke into the full multi-machine distributed proof.

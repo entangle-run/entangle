@@ -59,8 +59,24 @@ export function formatHostArtifactBackendCacheClearSummary(
       ? "1 repository"
       : `${response.repositoryCount} repositories`;
   const actionLabel = response.dryRun ? "dry run" : "cleared";
+  const retainedLabel =
+    response.retainedRepositoryCount === undefined
+      ? undefined
+      : response.retainedRepositoryCount === 1
+        ? "1 retained"
+        : `${response.retainedRepositoryCount} retained`;
+  const policyLabel =
+    response.olderThanSeconds === undefined
+      ? undefined
+      : `older than ${response.olderThanSeconds}s`;
 
-  return `${actionLabel} · ${repositoryLabel} · ${response.totalSizeBytes} bytes`;
+  return [
+    actionLabel,
+    policyLabel,
+    repositoryLabel,
+    retainedLabel,
+    `${response.totalSizeBytes} bytes`
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
 export function formatHostStateLayoutSummary(status: HostStatusResponse): string {

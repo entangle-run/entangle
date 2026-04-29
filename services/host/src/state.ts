@@ -13491,19 +13491,42 @@ async function buildArtifactBackendCacheStatus(timestamp: string) {
 }
 
 export async function clearArtifactBackendCache(
-  input: { dryRun?: boolean | undefined } = {}
+  input: {
+    dryRun?: boolean | undefined;
+    olderThanSeconds?: number | undefined;
+  } = {}
 ) {
   const completedAt = new Date().toISOString();
   const dryRun = input.dryRun === true;
+  const completedAtMs = Date.parse(completedAt);
+  const olderThanCutoffMs =
+    input.olderThanSeconds === undefined
+      ? undefined
+      : completedAtMs - input.olderThanSeconds * 1000;
 
   try {
     const entries = await readdir(artifactGitResolverCacheRoot, {
       withFileTypes: true
     });
     const repositoryEntries = entries.filter((entry) => entry.isDirectory());
-    const repositoryPaths = repositoryEntries.map((entry) =>
-      path.join(artifactGitResolverCacheRoot, entry.name)
+    const repositoryCandidates = await Promise.all(
+      repositoryEntries.map(async (entry) => {
+        const repositoryPath = path.join(artifactGitResolverCacheRoot, entry.name);
+        const metadata = await lstat(repositoryPath);
+
+        return {
+          path: repositoryPath,
+          selected:
+            olderThanCutoffMs === undefined ||
+            metadata.mtime.getTime() <= olderThanCutoffMs
+        };
+      })
     );
+    const repositoryPaths = repositoryCandidates
+      .filter((candidate) => candidate.selected)
+      .map((candidate) => candidate.path);
+    const retainedRepositoryCount =
+      repositoryCandidates.length - repositoryPaths.length;
     const totalSizeBytes = (
       await Promise.all(
         repositoryPaths.map((repositoryPath) =>
@@ -13523,7 +13546,11 @@ export async function clearArtifactBackendCache(
     return {
       completedAt,
       dryRun,
-      repositoryCount: repositoryEntries.length,
+      ...(input.olderThanSeconds !== undefined
+        ? { olderThanSeconds: input.olderThanSeconds }
+        : {}),
+      repositoryCount: repositoryPaths.length,
+      retainedRepositoryCount,
       status: dryRun ? "dry_run" : "cleared",
       totalSizeBytes
     };
@@ -13532,7 +13559,11 @@ export async function clearArtifactBackendCache(
       return {
         completedAt,
         dryRun,
+        ...(input.olderThanSeconds !== undefined
+          ? { olderThanSeconds: input.olderThanSeconds }
+          : {}),
         repositoryCount: 0,
+        retainedRepositoryCount: 0,
         status: dryRun ? "dry_run" : "cleared",
         totalSizeBytes: 0
       };

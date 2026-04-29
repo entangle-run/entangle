@@ -7,6 +7,7 @@ import {
   readlink,
   rm,
   stat,
+  utimes,
   writeFile
 } from "node:fs/promises";
 import { spawn } from "node:child_process";
@@ -1007,9 +1008,24 @@ describe("buildHostServer", () => {
       "cache",
       "artifact-git-repositories"
     );
-    const cachedRepositoryPath = path.join(cacheRoot, "git-repo-alpha");
-    await mkdir(cachedRepositoryPath, { recursive: true });
-    await writeFile(path.join(cachedRepositoryPath, "HEAD"), "ref: main\n", "utf8");
+    const oldCachedRepositoryPath = path.join(cacheRoot, "git-repo-alpha");
+    const freshCachedRepositoryPath = path.join(cacheRoot, "git-repo-beta");
+    await mkdir(oldCachedRepositoryPath, { recursive: true });
+    await mkdir(freshCachedRepositoryPath, { recursive: true });
+    await writeFile(
+      path.join(oldCachedRepositoryPath, "HEAD"),
+      "ref: main\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(freshCachedRepositoryPath, "HEAD"),
+      "ref: main\n",
+      "utf8"
+    );
+    const oldTimestamp = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const freshTimestamp = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    await utimes(oldCachedRepositoryPath, oldTimestamp, oldTimestamp);
+    await utimes(freshCachedRepositoryPath, freshTimestamp, freshTimestamp);
 
     try {
       const dryRunResponse = await server.inject({
@@ -1026,12 +1042,44 @@ describe("buildHostServer", () => {
       );
       expect(dryRun).toMatchObject({
         dryRun: true,
-        repositoryCount: 1,
+        repositoryCount: 2,
+        retainedRepositoryCount: 0,
         status: "dry_run"
       });
-      expect((await readdir(cacheRoot)).sort()).toEqual(["git-repo-alpha"]);
+      expect((await readdir(cacheRoot)).sort()).toEqual([
+        "git-repo-alpha",
+        "git-repo-beta"
+      ]);
+
+      const pruneDryRunResponse = await server.inject({
+        body: {
+          dryRun: true,
+          olderThanSeconds: 3600
+        },
+        method: "POST",
+        url: "/v1/host/artifact-backend-cache/clear"
+      });
+
+      expect(pruneDryRunResponse.statusCode).toBe(200);
+      const pruneDryRun = hostArtifactBackendCacheClearResponseSchema.parse(
+        pruneDryRunResponse.json()
+      );
+      expect(pruneDryRun).toMatchObject({
+        dryRun: true,
+        olderThanSeconds: 3600,
+        repositoryCount: 1,
+        retainedRepositoryCount: 1,
+        status: "dry_run"
+      });
+      expect((await readdir(cacheRoot)).sort()).toEqual([
+        "git-repo-alpha",
+        "git-repo-beta"
+      ]);
 
       const clearResponse = await server.inject({
+        body: {
+          olderThanSeconds: 3600
+        },
         method: "POST",
         url: "/v1/host/artifact-backend-cache/clear"
       });
@@ -1043,6 +1091,24 @@ describe("buildHostServer", () => {
       expect(cleared).toMatchObject({
         dryRun: false,
         repositoryCount: 1,
+        retainedRepositoryCount: 1,
+        status: "cleared"
+      });
+      expect(await readdir(cacheRoot)).toEqual(["git-repo-beta"]);
+
+      const clearAllResponse = await server.inject({
+        method: "POST",
+        url: "/v1/host/artifact-backend-cache/clear"
+      });
+
+      expect(clearAllResponse.statusCode).toBe(200);
+      const clearedAll = hostArtifactBackendCacheClearResponseSchema.parse(
+        clearAllResponse.json()
+      );
+      expect(clearedAll).toMatchObject({
+        dryRun: false,
+        repositoryCount: 1,
+        retainedRepositoryCount: 0,
         status: "cleared"
       });
       expect(await readdir(cacheRoot)).toEqual([]);

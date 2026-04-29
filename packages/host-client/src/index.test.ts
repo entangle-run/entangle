@@ -133,7 +133,9 @@ describe("createHostClient", () => {
             body: JSON.stringify({
               completedAt: "2026-04-29T00:00:00.000Z",
               dryRun: true,
+              olderThanSeconds: 3600,
               repositoryCount: 2,
+              retainedRepositoryCount: 1,
               status: "dry_run",
               totalSizeBytes: 4096
             }),
@@ -145,15 +147,17 @@ describe("createHostClient", () => {
     });
 
     await expect(
-      client.clearArtifactBackendCache({ dryRun: true })
+      client.clearArtifactBackendCache({ dryRun: true, olderThanSeconds: 3600 })
     ).resolves.toMatchObject({
       dryRun: true,
+      olderThanSeconds: 3600,
       repositoryCount: 2,
+      retainedRepositoryCount: 1,
       status: "dry_run"
     });
     expect(requests).toEqual([
       {
-        body: JSON.stringify({ dryRun: true }),
+        body: JSON.stringify({ dryRun: true, olderThanSeconds: 3600 }),
         headers: {
           authorization: "Bearer host-secret",
           "content-type": "application/json"

@@ -85,13 +85,16 @@ export const hostArtifactBackendCacheStatusSchema = z.object({
 });
 
 export const hostArtifactBackendCacheClearRequestSchema = z.object({
-  dryRun: z.boolean().optional()
+  dryRun: z.boolean().optional(),
+  olderThanSeconds: z.number().int().positive().optional()
 });
 
 export const hostArtifactBackendCacheClearResponseSchema = z.object({
   completedAt: nonEmptyStringSchema,
   dryRun: z.boolean(),
+  olderThanSeconds: z.number().int().positive().optional(),
   repositoryCount: z.number().int().nonnegative(),
+  retainedRepositoryCount: z.number().int().nonnegative().optional(),
   status: z.enum(["cleared", "dry_run"]),
   totalSizeBytes: z.number().int().nonnegative()
 });

@@ -3919,12 +3919,16 @@ describe("reconciliation contracts", () => {
     const result = hostArtifactBackendCacheClearResponseSchema.parse({
       completedAt: "2026-04-24T00:00:01.000Z",
       dryRun: true,
+      olderThanSeconds: 3600,
       repositoryCount: 2,
+      retainedRepositoryCount: 1,
       status: "dry_run",
       totalSizeBytes: 4096
     });
 
+    expect(result.olderThanSeconds).toBe(3600);
     expect(result.repositoryCount).toBe(2);
+    expect(result.retainedRepositoryCount).toBe(1);
     expect(result.status).toBe("dry_run");
   });
 

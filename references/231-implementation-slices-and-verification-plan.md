@@ -442,8 +442,9 @@ Current status:
   history/diff path against the runner-published source-history git artifact;
 - Host status now reports bounded artifact backend cache availability, count,
   and size as derived operational metadata;
-- Host API, host-client, and CLI can now dry-run or clear the derived artifact
-  backend cache without deleting authoritative artifact/projection state;
+- Host API, host-client, and CLI can now dry-run, clear, or age-prune the
+  derived artifact backend cache without deleting authoritative
+  artifact/projection state;
 - Studio's Host Status panel renders the same path-free artifact backend cache
   summary for admin visibility;
 - the User Client can request bounded artifact history/diff from its Human
@@ -484,8 +485,8 @@ Current status:
   assignment, node, runner, command type, status, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer source/wiki mutation endpoints and richer cache policy still need
-  protocol-backed replacement.
+- richer source/wiki mutation endpoints and max-size/per-backend cache policy
+  still need protocol-backed replacement.
 
 ### Slice 9: User Node Runtime
 
@@ -781,6 +782,7 @@ Implementation records:
 - [352-artifact-backend-cache-status-slice.md](352-artifact-backend-cache-status-slice.md)
 - [353-artifact-backend-cache-clear-slice.md](353-artifact-backend-cache-clear-slice.md)
 - [354-studio-artifact-cache-status-slice.md](354-studio-artifact-cache-status-slice.md)
+- [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
@@ -885,9 +887,9 @@ Current status:
   runner;
 - Host status exposes derived artifact backend cache availability, repository
   count, and size for operator diagnostics;
-- Host API and CLI can dry-run or clear the derived artifact backend cache
-  without touching authoritative artifact, projection, runner, or git backend
-  state;
+- Host API and CLI can dry-run, clear, or age-prune the derived artifact
+  backend cache without touching authoritative artifact, projection, runner, or
+  git backend state;
 - Studio displays the artifact backend cache summary in the Host Status panel;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;

@@ -4763,3 +4763,15 @@ command receipt entries together.
 
 This brings Studio's operator drilldown closer to CLI parity while keeping the
 surface Host-boundary-only and runner-filesystem-free.
+
+## [2026-04-29] implementation | Added artifact backend cache age pruning
+
+Added `references/400-artifact-backend-cache-prune-policy-slice.md`.
+Artifact backend cache clear requests now accept `olderThanSeconds`, and Host
+selects only derived cache repository directories older than that threshold
+while preserving dry-run behavior.
+
+CLI exposes the same policy through
+`entangle host artifact-backend-cache-clear --older-than-seconds <n>`, and
+shared summaries report selected and retained repository counts without
+exposing Host filesystem paths.

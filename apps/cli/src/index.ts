@@ -799,16 +799,32 @@ hostCommand
 hostCommand
   .command("artifact-backend-cache-clear")
   .option("--dry-run", "Inspect what would be cleared without deleting cache entries.")
+  .option(
+    "--older-than-seconds <n>",
+    "Clear only derived cache repositories older than this age."
+  )
   .option("--summary", "Print a compact operator-oriented cache clear summary.")
   .description("Clear Host's derived artifact backend cache.")
   .action(
     async (
-      options: { dryRun?: boolean; summary?: boolean },
+      options: {
+        dryRun?: boolean;
+        olderThanSeconds?: string;
+        summary?: boolean;
+      },
       command: Command
     ) => {
       const client = createCliHostClient(command);
       const response = await client.clearArtifactBackendCache({
-        dryRun: options.dryRun
+        dryRun: options.dryRun,
+        ...(options.olderThanSeconds
+          ? {
+              olderThanSeconds: parsePositiveIntegerOption(
+                options.olderThanSeconds,
+                "--older-than-seconds"
+              )
+            }
+          : {})
       });
       printJson(
         options.summary
