@@ -92,7 +92,8 @@ User Client health and state routes, observes runtime state through signed
 message through the relay and verifies that the running User Node records it as
 inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits signed source-candidate review and
-approval response messages through the same JSON User Client API. The fake
+approval response messages through the same JSON User Client API. It also loads
+the source-change diff through the running User Client before review. The fake
 OpenCode executable mutates the source workspace, so the smoke also verifies
 projected source-change candidate list/detail/diff/file reads and delivers the
 published source-history git artifact to the User Node before verifying
@@ -379,8 +380,9 @@ This repository currently contains:
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
-  source-change candidate list/detail/diff/file, signed source-candidate
-  review, approval, and session read APIs without requiring live
+  source-change candidate list/detail/diff/file, running User Client
+  source-change diff, signed source-candidate review, approval, and session
+  read APIs without requiring live
   model-provider credentials;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions including handoffs, coordination result/close,

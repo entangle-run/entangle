@@ -1,11 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Proved User Client source diff in process smoke
+
+Extended the process-runner smoke so the running User Client loads the visible
+source-change diff with selected-conversation context before publishing the
+signed source-candidate review message.
+
+Added `references/359-process-smoke-user-client-source-diff-slice.md`.
+
 ## [2026-04-29] implementation | Scoped User Client source-change review to conversations
 
 Tightened runtime-local User Client source-change diff and review routes so
-they require selected-conversation context and verify an inbound approval
-request for the requested source-change candidate before returning diff
-evidence or publishing a signed review message.
+they require selected-conversation context and verify matching
+approval-resource or projected session evidence before returning diff evidence
+or publishing a signed review message.
 
 Added
 `references/358-user-client-source-change-visibility-boundary-slice.md`.

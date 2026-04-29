@@ -687,6 +687,7 @@ Implementation records:
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
 - [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
+- [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
 
 Current status:
 
@@ -729,8 +730,10 @@ Current status:
   artifact to the User Node and verifies User Client artifact history/diff
   through the running Human Interface Runtime;
 - User Client source-change diff and review routes require conversation
-  context and verify the matching inbound approval request before returning
-  diff evidence or publishing review messages;
+  context and verify matching approval-resource or projected session evidence
+  before returning diff evidence or publishing review messages;
+- the process proof now verifies the running User Client source-change diff
+  route before submitting signed source-candidate review;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

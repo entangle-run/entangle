@@ -10,10 +10,11 @@ once required fields were present.
 
 ## Target Model
 
-Source-change review is a User Node action triggered by a visible approval
-request, not a general runtime operator read. The Human Interface Runtime must
-verify that the selected User Node conversation contains an inbound
-`approval.request` for the requested source-change candidate before returning
+Source-change review is a User Node action tied to visible conversation
+context, not a general runtime operator read. The Human Interface Runtime must
+verify that the selected User Node conversation either contains an inbound
+`approval.request` for the requested source-change candidate or maps to a
+projected source-change candidate in the same peer session before returning
 diff evidence or publishing a `source_change.review` message.
 
 ## Impacted Modules/Files
@@ -36,7 +37,8 @@ diff evidence or publishing a `source_change.review` message.
 - Require `conversationId` for User Client source-change diff requests.
 - Verify the selected conversation contains an inbound approval request whose
   resource is the requested `source_change_candidate` from the requested peer
-  node.
+  node, or that Host projection maps the candidate to the same selected peer
+  conversation/session.
 - Apply the same visibility check before publishing JSON or HTML
   source-candidate review messages.
 - Keep Host/CLI/Studio operator inspection separate from the User Client
@@ -58,11 +60,12 @@ participant boundary is more important than preserving unscoped local probing.
 
 ## Risks And Mitigations
 
-- Risk: a valid source-change candidate is hidden when the approval request is
-  missing from Host conversation projection.
-  Mitigation: the User Client flow is approval-request-driven, and unavailable
-  conversation state returns a clear error instead of falling through to a
-  broad runtime read.
+- Risk: a valid source-change candidate is hidden when no explicit approval
+  resource message exists in the conversation.
+  Mitigation: the gate also accepts Host-projected candidates whose
+  conversation/session metadata matches the selected User Node conversation.
+  Unavailable conversation state returns a clear error instead of falling
+  through to a broad runtime read.
 - Risk: extra Host conversation reads add latency.
   Mitigation: this only gates user-triggered review actions and keeps the
   authority boundary explicit.

@@ -101,7 +101,8 @@ The most accurate current description is:
 - the process-runner smoke now exercises the OpenCode adapter with a temporary
   deterministic `opencode` executable inside the spawned agent runner, mutates
   the source workspace, then verifies projected turn, source-change candidate
-  list/detail/diff/file, signed source-candidate review, runner-owned
+  list/detail/diff/file, running User Client source-change diff, signed
+  source-candidate review, runner-owned
   source-history application, approval, and session read APIs without live model
   credentials;
 - accepted source-candidate reviews now also emit signed `source_history.ref`

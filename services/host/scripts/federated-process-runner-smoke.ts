@@ -1903,6 +1903,42 @@ async function main(): Promise<void> {
         }`
     );
 
+    const userClientSourceDiffParams = new URLSearchParams({
+      candidateId: projectedBuilderSourceCandidate.candidate.candidateId,
+      conversationId: userMessage.conversationId,
+      nodeId: "builder"
+    });
+    const userClientSourceDiffResponse = await fetch(
+      new URL(
+        `/api/source-change-candidates/diff?${userClientSourceDiffParams.toString()}`,
+        userClientUrl
+      )
+    );
+    await assertResponseOk(
+      userClientSourceDiffResponse,
+      "User Client JSON source-change diff"
+    );
+    const userClientSourceDiff =
+      (await userClientSourceDiffResponse.json()) as {
+        diff?: {
+          available?: boolean;
+          content?: string;
+        };
+        source?: string;
+      };
+    assertCondition(
+      userClientSourceDiff.source === "projection" &&
+        userClientSourceDiff.diff?.available === true &&
+        (userClientSourceDiff.diff.content ?? "").includes(
+          "smoke-generated.ts"
+        ),
+      "User Client source-change diff must resolve the visible source-change candidate."
+    );
+    printPass(
+      "user-client-source-change-diff",
+      `candidate=${projectedBuilderSourceCandidate.candidate.candidateId}; diff=available`
+    );
+
     const sourceReviewResponse = await fetch(
       new URL("/api/source-change-candidates/review", userClientUrl),
       {

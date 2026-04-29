@@ -678,13 +678,36 @@ async function resolveUserClientVisibleSourceChange(input: {
       message.approval.resource.id === input.candidateId
   );
 
-  return visible
-    ? { visible: true }
-    : {
-        error:
-          "Source-change candidate is not visible in the selected User Node conversation.",
-        statusCode: 403
-      };
+  if (visible) {
+    return { visible: true };
+  }
+
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+  const projectedRef = findProjectedSourceChangeRef({
+    candidateId: input.candidateId,
+    nodeId: input.nodeId,
+    projection: projection.detail
+  });
+  const candidate = projectedRef?.candidate;
+  const conversationSessionId = conversation.detail.conversation?.sessionId;
+  const conversationPeerNodeId = conversation.detail.conversation?.peerNodeId;
+
+  if (
+    candidate &&
+    (candidate.conversationId === input.conversationId ||
+      (candidate.sessionId &&
+        candidate.sessionId === conversationSessionId &&
+        conversationPeerNodeId === input.nodeId))
+  ) {
+    return { visible: true };
+  }
+
+  return {
+    error:
+      projection.error ??
+      "Source-change candidate is not visible in the selected User Node conversation.",
+    statusCode: projection.error ? 502 : 403
+  };
 }
 
 async function markUserClientConversationRead(input: {

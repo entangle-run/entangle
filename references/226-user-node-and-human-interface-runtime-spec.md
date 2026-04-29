@@ -68,6 +68,12 @@ User nodes are now partially runtime-capable:
   including backend, kind, summary, and locator details, and now exposes a
   server-side artifact preview page that renders bounded content without
   exposing runtime-local preview paths to the browser.
+- User Client artifact and source-change routes are scoped to the selected
+  conversation. Artifact preview/history/diff APIs require a conversation id
+  and only resolve refs visible in that conversation. Source-change diff/review
+  APIs require a conversation id and accept either an inbound approval request
+  resource visible in that conversation or a Host-projected source-change
+  candidate tied to the same peer session.
 - The process-boundary smoke now starts one real joined agent runner and one
   real joined User Node `human_interface` runner, assigns both through the same
   control plane, verifies User Client `/health`, and proves the signed User
@@ -168,8 +174,10 @@ Host Authority is not the User Node. Operator identity is not the User Node.
   `entangle user-nodes clients`, which joins User Node identity records with
   Host runtime projection and reports unassigned User Nodes explicitly.
 - Add runtime-local JSON APIs for artifact/source review. Done for
-  projection-first artifact preview, projection-first source diff, and
-  source-candidate review.
+  conversation-scoped artifact preview/history/diff, projection-first source
+  diff, and source-candidate review. Source-change diff/review access is scoped
+  to the selected conversation through either visible approval-resource metadata
+  or Host-projected same-session source-change evidence.
 - Serve dedicated User Client assets from the running Human Interface Runtime.
   Done when `ENTANGLE_USER_CLIENT_STATIC_DIR` points at a built/static app
   directory, and now enabled by default in the federated dev runner image.
