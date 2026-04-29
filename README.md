@@ -129,6 +129,15 @@ That smoke starts the fake provider on an ephemeral port and verifies health,
 model listing, non-streaming chat completions, streaming chat completions, and
 streaming Responses API frames.
 
+Active product naming is also guarded:
+
+```bash
+pnpm ops:check-product-naming
+```
+
+That check scans active code, deployment, example, script, package, and README
+surfaces so obsolete local product/profile labels do not return.
+
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
 both User Client URLs, and prints CLI commands for publishing a signed

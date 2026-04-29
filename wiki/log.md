@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] tooling | Added active product naming guardrail
+
+Added `pnpm ops:check-product-naming`, which scans active product surfaces
+(`README.md`, apps, deploy material, examples, packages, scripts, services,
+and `package.json`) for obsolete local product/profile labels. Historical
+reference and release material remains outside this active-surface gate so it
+can be archived or rewritten intentionally.
+
+Added `references/378-active-product-naming-guardrail-slice.md`.
+
 ## [2026-04-29] verification | Added fake OpenAI-compatible provider smoke
 
 Added `pnpm ops:smoke-fake-openai-provider`. The smoke starts the

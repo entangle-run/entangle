@@ -178,6 +178,7 @@ same-machine slice records.
 - [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 - [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 - [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
+- [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
 
 ## Audited Scope
 
@@ -280,6 +281,8 @@ The repository is not fully federated:
 - `pnpm ops:smoke-fake-openai-provider` now verifies that deterministic
   provider harness end to end, including streaming chat-completions and
   Responses API frames;
+- `pnpm ops:check-product-naming` now guards active product surfaces against
+  obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to
   a configured OpenCode server, include Basic auth from runner environment
   when configured, and record combined CLI/server version evidence while still

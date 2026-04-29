@@ -16,6 +16,7 @@
     "lint:fix": "eslint apps services packages --fix",
     "ops:check-federated-dev": "node scripts/check-federated-dev-profile.mjs",
     "ops:check-federated-dev:strict": "node scripts/check-federated-dev-profile.mjs --strict",
+    "ops:check-product-naming": "node scripts/check-active-product-naming.mjs",
     "ops:smoke-federated-dev": "node scripts/smoke-federated-dev-profile.mjs",
     "ops:smoke-federated-dev:diagnostics": "node scripts/smoke-federated-dev-diagnostics.mjs",
     "ops:smoke-federated-dev:reliability": "node scripts/smoke-federated-dev-reliability.mjs",

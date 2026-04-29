@@ -241,6 +241,8 @@ Current status:
 - `pnpm ops:smoke-fake-openai-provider` now starts that provider on an
   ephemeral port and verifies health, models, non-streaming chat completions,
   streaming chat completions, and streaming Responses API frames.
+- `pnpm ops:check-product-naming` now checks active product surfaces for old
+  local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
   federated dev Compose profile selects Docker join mode with Host API bundle
   retrieval, avoiding Host state/secret volume mounts in managed join-mode
@@ -718,6 +720,7 @@ Implementation records:
 - [375-deterministic-openai-provider-dev-server-slice.md](375-deterministic-openai-provider-dev-server-slice.md)
 - [376-conversation-aware-working-context-memory-slice.md](376-conversation-aware-working-context-memory-slice.md)
 - [377-fake-provider-smoke-slice.md](377-fake-provider-smoke-slice.md)
+- [378-active-product-naming-guardrail-slice.md](378-active-product-naming-guardrail-slice.md)
 
 Current status:
 
@@ -817,6 +820,8 @@ Current status:
   checks;
 - `pnpm ops:smoke-fake-openai-provider` verifies the deterministic provider
   harness without live credentials;
+- `pnpm ops:check-product-naming` verifies active product surfaces do not
+  reintroduce obsolete local product/profile labels;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
