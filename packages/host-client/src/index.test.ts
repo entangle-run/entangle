@@ -72,6 +72,9 @@ describe("createHostClient", () => {
                 observed: 0,
                 running: 0
               },
+              security: {
+                operatorAuthMode: "none"
+              },
               stateLayout: {
                 checkedAt: "2026-04-24T00:00:00.000Z",
                 currentLayoutVersion: 1,

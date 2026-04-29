@@ -112,6 +112,16 @@ export function formatHostStateLayoutSummary(status: HostStatusResponse): string
   return `v${recordedLayoutVersion} · ${layout.status}`;
 }
 
+export function formatHostSecuritySummary(status: HostStatusResponse): string {
+  const security = status.security;
+
+  if (security.operatorAuthMode === "none") {
+    return "none";
+  }
+
+  return `bootstrap operator token · ${security.operatorId} · ${security.operatorRole}`;
+}
+
 export function formatHostTransportControlObserveSummary(
   status: HostStatusResponse
 ): string {
@@ -142,6 +152,7 @@ export function formatHostStatusDetailLines(
   const detailLines = [
     `timestamp ${status.timestamp}`,
     `state layout ${formatHostStateLayoutSummary(status)}`,
+    `security ${formatHostSecuritySummary(status)}`,
     `transport control/observe ${formatHostTransportControlObserveSummary(status)}`,
     `runtime counts desired ${status.runtimeCounts.desired}, observed ${status.runtimeCounts.observed}, running ${status.runtimeCounts.running}`,
     `reconciliation ${formatHostStatusReconciliationSummary(status)}`,

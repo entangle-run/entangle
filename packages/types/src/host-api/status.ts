@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { operatorRoleSchema } from "../federation/authority.js";
 import { hostAuthoritySummarySchema } from "./authority.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
@@ -133,10 +134,25 @@ export const hostArtifactBackendCacheClearResponseSchema = z.object({
   totalSizeBytes: z.number().int().nonnegative()
 });
 
+export const hostOperatorSecurityStatusSchema = z.discriminatedUnion(
+  "operatorAuthMode",
+  [
+    z.object({
+      operatorAuthMode: z.literal("none")
+    }),
+    z.object({
+      operatorAuthMode: z.literal("bootstrap_operator_token"),
+      operatorId: identifierSchema,
+      operatorRole: operatorRoleSchema
+    })
+  ]
+);
+
 export const hostStatusResponseSchema = z.object({
   artifactBackendCache: hostArtifactBackendCacheStatusSchema.optional(),
   authority: hostAuthoritySummarySchema.optional(),
   service: z.literal("entangle-host"),
+  security: hostOperatorSecurityStatusSchema,
   status: z.enum(["starting", "healthy", "degraded"]),
   graphRevisionId: identifierSchema.optional(),
   reconciliation: z.object({
@@ -190,6 +206,9 @@ export type HostArtifactBackendCacheClearRequest = z.infer<
 >;
 export type HostArtifactBackendCacheClearResponse = z.infer<
   typeof hostArtifactBackendCacheClearResponseSchema
+>;
+export type HostOperatorSecurityStatus = z.infer<
+  typeof hostOperatorSecurityStatusSchema
 >;
 export type HostStatusResponse = z.infer<typeof hostStatusResponseSchema>;
 export type HostTransportHealth = z.infer<typeof hostTransportHealthSchema>;

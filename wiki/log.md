@@ -4865,3 +4865,28 @@ heartbeat, source-history count, replay count, and command receipt count.
 
 This keeps assignment drilldown useful as an admin surface while still joining
 only Host projection and runner-registry read models at render time.
+
+## [2026-04-29] implementation | Added Host bootstrap security status
+
+Added `references/410-bootstrap-operator-security-status-slice.md`. Host
+status now includes a required `security` object that reports tokenless mode or
+the active bootstrap operator-token posture with normalized operator id and
+role, without exposing bearer-token material.
+
+Shared host-client formatting, CLI host status projection, and Studio's Host
+Status panel now render that security posture. This keeps the current
+bootstrap auth/audit boundary operator-visible while leaving real
+multi-principal authorization as a separate production hardening track.
+
+## [2026-04-29] implementation | Hardened chained Vitest fork pools
+
+Followed up `references/401-root-test-gate-reliability-slice.md` after the
+root sequential test gate reproduced the same no-output Vitest child-process
+hang on additional workspace packages. Root `pnpm test` now runs
+`scripts/run-workspace-tests.mjs`, which invokes package-directory tests
+sequentially with inherited stdio, timeouts, and process-group cleanup instead
+of relying on a long shell chain of `pnpm --filter` commands.
+`package-scaffold` and `host-client` now use fork pools, joining the existing
+CLI/Studio/User Client fork-pool scripts, and CLI is pinned to one worker after
+parallel forks hung at the end of the chain. Other Node packages remain on the
+default pool because that is their stable configuration in this environment.

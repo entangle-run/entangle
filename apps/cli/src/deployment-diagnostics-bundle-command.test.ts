@@ -129,6 +129,9 @@ function createDeps(): DeploymentDiagnosticsBundleDeps {
             observed: 0,
             running: 0
           },
+          security: {
+            operatorAuthMode: "none"
+          },
           service: "entangle-host",
           stateLayout: {
             checkedAt: "2026-04-26T00:00:00.000Z",

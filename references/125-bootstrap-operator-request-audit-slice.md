@@ -39,6 +39,12 @@ This event intentionally records request metadata only. It does not persist
 authorization headers, bearer tokens, request bodies, query strings, or secret
 material.
 
+The later `410-bootstrap-operator-security-status-slice.md` adds a separate
+Host status summary for the active bootstrap operator posture. That status
+surface reports tokenless mode or normalized bootstrap operator id and role,
+but it still does not expose token material and still does not implement final
+RBAC.
+
 The audit event is a bootstrap control-plane trace, not a compliance-grade
 immutable audit ledger. A future production identity slice should preserve this
 contract shape while replacing the shared-token actor with authenticated

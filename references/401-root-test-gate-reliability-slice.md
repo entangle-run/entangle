@@ -18,9 +18,12 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 ## Impacted Modules And Files
 
 - `package.json`
+- `scripts/run-workspace-tests.mjs`
 - `apps/cli/package.json`
 - `apps/studio/package.json`
 - `apps/user-client/package.json`
+- `packages/package-scaffold/package.json`
+- `packages/host-client/package.json`
 - `references/221-federated-runtime-redesign-index.md`
 - `references/231-implementation-slices-and-verification-plan.md`
 - `references/README.md`
@@ -31,10 +34,24 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 ## Concrete Changes Required
 
 - Replace root `pnpm test` Turbo invocation with an explicit sequential
-  workspace command chain.
+  workspace test runner script.
 - Keep Turbo for build/lint where it is not the observed hang point.
+- Run each package through `pnpm --dir <workspace> test` with inherited stdio,
+  package-specific timeouts, and process-group cleanup on interruption or
+  timeout, instead of relying on a long shell `&&` chain of `pnpm --filter`
+  commands.
 - Add explicit Vitest fork pools for CLI, Studio, and User Client package test
   scripts.
+- Follow-up hardening: add explicit Vitest fork pools to `package-scaffold` and
+  `host-client` after chained root verification later reproduced the same
+  no-output child-process hang on those packages while they passed when run
+  directly.
+- Pin CLI tests to a single Vitest worker after the chained root gate reached
+  the final CLI package and reproduced the same no-output hang under parallel
+  fork workers.
+- Keep `types`, `nostr-fabric`, `agent-engine`, `runner`, and `host` on their
+  previous default Vitest pool because those package suites remained stable
+  there, and some of them hung when forced onto fork pools in this environment.
 - Re-run package tests and root `pnpm test`.
 
 ## Tests Required
@@ -49,6 +66,9 @@ Implemented and passed:
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist: no
   relevant hits
+
+Follow-up hardening also re-ran the root gate after the newly affected
+workspace Vitest test scripts used fork pools.
 
 Already passed in the preceding verification window:
 

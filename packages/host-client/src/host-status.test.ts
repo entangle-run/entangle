@@ -3,6 +3,7 @@ import type { HostStatusResponse } from "@entangle/types";
 import {
   formatHostArtifactBackendCacheClearSummary,
   formatHostArtifactBackendCacheSummary,
+  formatHostSecuritySummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,
@@ -35,6 +36,11 @@ function createStatus(): HostStatusResponse {
       desired: 3,
       observed: 3,
       running: 1
+    },
+    security: {
+      operatorAuthMode: "bootstrap_operator_token",
+      operatorId: "ops-lead",
+      operatorRole: "admin"
     },
     service: "entangle-host",
     sessionDiagnostics: {
@@ -88,6 +94,9 @@ describe("host status presentation helpers", () => {
     expect(formatHostArtifactBackendCacheSummary(status)).toBe(
       "2 repositories · 4096 bytes"
     );
+    expect(formatHostSecuritySummary(status)).toBe(
+      "bootstrap operator token · ops-lead · admin"
+    );
     expect(
       formatHostArtifactBackendCacheClearSummary({
         completedAt: "2026-04-25T08:00:03.000Z",
@@ -122,6 +131,9 @@ describe("host status presentation helpers", () => {
       "artifact backend cache 2 repositories · 4096 bytes"
     );
     expect(detailLines).toContain("state layout v1 · current");
+    expect(detailLines).toContain(
+      "security bootstrap operator token · ops-lead · admin"
+    );
     expect(detailLines).toContain(
       "findings context_unavailable, runtime_failed"
     );

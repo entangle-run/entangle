@@ -1631,6 +1631,9 @@ describe("federated runtime contracts", () => {
           observed: 0,
           running: 0
         },
+        security: {
+          operatorAuthMode: "none"
+        },
         service: "entangle-host",
         stateLayout: {
           checkedAt: observedAt,
@@ -3876,6 +3879,11 @@ describe("reconciliation contracts", () => {
         observed: 1,
         running: 1
       },
+      security: {
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "ops-lead",
+        operatorRole: "admin"
+      },
       service: "entangle-host",
       stateLayout: {
         checkedAt: "2026-04-24T00:00:00.000Z",
@@ -3911,6 +3919,11 @@ describe("reconciliation contracts", () => {
     expect(result.reconciliation.blockedRuntimeCount).toBe(1);
     expect(result.reconciliation.findingCodes).toEqual(["context_unavailable"]);
     expect(result.artifactBackendCache?.repositoryCount).toBe(1);
+    expect(result.security).toEqual({
+      operatorAuthMode: "bootstrap_operator_token",
+      operatorId: "ops-lead",
+      operatorRole: "admin"
+    });
     expect(result.stateLayout.status).toBe("current");
     expect(result.transport.controlObserve.status).toBe("degraded");
   });

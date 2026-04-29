@@ -18,6 +18,7 @@ import {
 import {
   createHostClient,
   formatHostArtifactBackendCacheSummary,
+  formatHostSecuritySummary,
   formatHostStateLayoutSummary,
   formatHostStatusSessionDiagnosticsSummary,
   formatHostTransportControlObserveSummary,
@@ -4844,6 +4845,10 @@ export function App() {
                   ? formatHostStatusSessionDiagnosticsSummary(status)
                   : "not loaded"}
               </dd>
+            </div>
+            <div>
+              <dt>Security</dt>
+              <dd>{status ? formatHostSecuritySummary(status) : "not loaded"}</dd>
             </div>
             <div>
               <dt>Transport</dt>

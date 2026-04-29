@@ -1,5 +1,6 @@
 import {
   formatHostStateLayoutSummary,
+  formatHostSecuritySummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,
   formatHostStatusReconciliationSummary,
@@ -27,6 +28,9 @@ export type HostStatusCliSummary = {
     transitioningRuntimeCount: number;
   };
   runtimeCounts: HostStatusResponse["runtimeCounts"];
+  security: HostStatusResponse["security"] & {
+    summary: string;
+  };
   service: string;
   sessionDiagnostics?: NonNullable<HostStatusResponse["sessionDiagnostics"]> & {
     summary: string;
@@ -67,6 +71,10 @@ export function projectHostStatusSummary(
       transitioningRuntimeCount: status.reconciliation.transitioningRuntimeCount
     },
     runtimeCounts: status.runtimeCounts,
+    security: {
+      ...status.security,
+      summary: formatHostSecuritySummary(status)
+    },
     service: status.service,
     ...(status.sessionDiagnostics
       ? {

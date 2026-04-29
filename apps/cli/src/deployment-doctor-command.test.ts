@@ -54,6 +54,9 @@ function createPassingDeps(): DeploymentDoctorDeps {
             observed: 1,
             running: 1
           },
+          security: {
+            operatorAuthMode: "none"
+          },
           service: "entangle-host",
           stateLayout: {
             checkedAt: "2026-04-25T00:00:00.000Z",

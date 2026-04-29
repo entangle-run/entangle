@@ -29,6 +29,11 @@ function createStatus(): HostStatusResponse {
       observed: 2,
       running: 1
     },
+    security: {
+      operatorAuthMode: "bootstrap_operator_token",
+      operatorId: "ops-lead",
+      operatorRole: "operator"
+    },
     service: "entangle-host",
     sessionDiagnostics: {
       consistencyFindingCount: 3,
@@ -83,6 +88,12 @@ describe("host status CLI summary projection", () => {
       runtimeCounts: {
         running: 1
       },
+      security: {
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "ops-lead",
+        operatorRole: "operator",
+        summary: "bootstrap operator token · ops-lead · operator"
+      },
       sessionDiagnostics: {
         consistencyFindingCount: 3,
         summary: "2 sessions · 3 consistency findings · 1 affected"
@@ -115,6 +126,9 @@ describe("host status CLI summary projection", () => {
     );
     expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
       "artifact backend cache 1 repository · 2048 bytes"
+    );
+    expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
+      "security bootstrap operator token · ops-lead · operator"
     );
     expect(projectHostStatusSummary(createStatus()).detailLines).toContain(
       "transport relay ws://relay-a.entangle.test subscribed · subscribed 2026-04-25T08:00:01.000Z"

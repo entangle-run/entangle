@@ -210,6 +210,7 @@ same-machine slice records.
 - [407-distributed-proof-kit-slice.md](407-distributed-proof-kit-slice.md)
 - [408-distributed-proof-verifier-slice.md](408-distributed-proof-verifier-slice.md)
 - [409-artifact-backend-cache-target-policy-slice.md](409-artifact-backend-cache-target-policy-slice.md)
+- [410-bootstrap-operator-security-status-slice.md](410-bootstrap-operator-security-status-slice.md)
 
 ## Audited Scope
 
@@ -770,6 +771,10 @@ It now carries a runner-owned `Conversation Routes` section with active
 conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
 without copying peer transcripts.
-The next blocking implementation areas are richer projection-backed source/wiki
-review services, CI-grade orchestration around the distributed proof verifier,
-and deeper production identity/authorization.
+Host status now also exposes the active bootstrap operator security mode
+without exposing secrets: tokenless deployments report `none`, while
+token-protected deployments report normalized bootstrap operator attribution
+and role. This remains operator-visible bootstrap posture, not final
+production RBAC. The next blocking implementation areas are richer
+projection-backed source/wiki review services, CI-grade orchestration around
+the distributed proof verifier, and deeper production identity/authorization.

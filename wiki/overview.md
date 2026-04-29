@@ -259,6 +259,10 @@ operator diagnostics without exposing Host filesystem paths, and Host API/CLI
 operators can dry-run, clear, age-prune, max-size-prune, or target-prune by
 git service/namespace/repository without mutating authoritative artifact or
 projection state. Studio renders the same summary in the Host Status panel.
+Host status now also reports the active bootstrap operator security posture:
+tokenless deployments report `none`, while `ENTANGLE_HOST_OPERATOR_TOKEN`
+deployments report normalized operator id and bootstrap role without exposing
+the token.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
@@ -320,7 +324,9 @@ The repository now also contains the first real implementation baseline:
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
   shared host client, CLI, and Studio while the default same-machine profile remains
   tokenless for low-friction development, plus typed `security` audit events
-  for protected mutation requests through `host.operator_request.completed`;
+  for protected mutation requests through `host.operator_request.completed`
+  and operator-visible Host status reporting of the active bootstrap security
+  posture;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime
@@ -957,8 +963,12 @@ The repository now also contains the first real implementation baseline:
   scaffolding, host API input failure modes, runtime context conflict
   semantics, and runner bootstrap behavior;
 - a verified `pnpm verify` path for the current workspace, with root
-  `pnpm test` running explicit sequential package tests instead of Turbo test
-  execution after Turbo left Vitest child processes open in this environment;
+  `pnpm test` running explicit sequential package tests through
+  `scripts/run-workspace-tests.mjs` instead of Turbo or a long shell chain
+  after both left Vitest child processes open in this environment,
+  and the workspace Vitest scripts observed to hang in the chain pinned to
+  fork pools, with CLI pinned to one worker, so the root gate exits cleanly
+  while other Node suites remain on their stable default pool;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root;
@@ -1056,7 +1066,7 @@ The current implementation-truth audit now lives in
   consistency findings are implemented;
 - deepen the new bootstrap host operator-token and request-audit boundary into
   real production identity and authorization only through explicit contracts,
-  tests, policy decisions, and operator-visible attribution;
+  tests, policy decisions, enforced roles, and operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

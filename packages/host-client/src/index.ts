@@ -1489,6 +1489,7 @@ export {
 export {
   formatHostArtifactBackendCacheClearSummary,
   formatHostArtifactBackendCacheSummary,
+  formatHostSecuritySummary,
   formatHostStateLayoutSummary,
   formatHostStatusDetailLines,
   formatHostStatusLabel,

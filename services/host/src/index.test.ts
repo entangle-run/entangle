@@ -919,6 +919,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
+  delete process.env.ENTANGLE_HOST_OPERATOR_ROLE;
   delete process.env.ENTANGLE_HOST_LOGGER;
   vi.unstubAllGlobals();
   vi.resetModules();
@@ -933,6 +934,8 @@ afterEach(async () => {
 describe("buildHostServer", () => {
   it("requires the configured operator token before serving host routes", async () => {
     process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    process.env.ENTANGLE_HOST_OPERATOR_ID = "ops-lead";
+    process.env.ENTANGLE_HOST_OPERATOR_ROLE = "admin";
     const server = await createTestServer();
 
     try {
@@ -971,6 +974,11 @@ describe("buildHostServer", () => {
       expect(authorizedResponse.statusCode).toBe(200);
       const status = hostStatusResponseSchema.parse(authorizedResponse.json());
       expect(status.service).toBe("entangle-host");
+      expect(status.security).toEqual({
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "ops-lead",
+        operatorRole: "admin"
+      });
       expect(status.artifactBackendCache).toMatchObject({
         available: true,
         repositoryCount: 0,
@@ -1214,6 +1222,9 @@ describe("buildHostServer", () => {
         publicKey: authorityInspection.authority.publicKey,
         secretStatus: "available",
         status: "active"
+      });
+      expect(status.security).toEqual({
+        operatorAuthMode: "none"
       });
       expect(status.transport.controlObserve.relayUrls).toEqual([
         "ws://strfry:7777"

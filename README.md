@@ -152,9 +152,15 @@ The root test gate is intentionally sequential:
 pnpm test
 ```
 
-It runs each workspace test command directly instead of routing tests through
-Turbo, because Turbo test execution left Vitest child processes open in this
-environment while the same package tests exited cleanly when run directly.
+It runs each workspace test command through
+`scripts/run-workspace-tests.mjs` instead of routing tests through Turbo or a
+long shell chain, because Turbo and chained `pnpm --filter` execution left
+Vitest child processes open in this environment while package-directory test
+commands exited cleanly.
+CLI, Studio, User Client, package-scaffold, and host-client use fork pools so
+the sequential root gate exits cleanly in this environment; CLI is pinned to
+one worker. The other Node packages stay on the default pool because that is
+their stable configuration here.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -241,7 +247,9 @@ This repository currently contains:
   `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
   shared host client, CLI, and Studio for same-machine profiles that should not expose
   an open mutation surface, plus typed `security` audit events for protected
-  mutation requests through `host.operator_request.completed`;
+  mutation requests through `host.operator_request.completed`, and Host status
+  reporting of the active bootstrap operator security posture without exposing
+  token material;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
   when unused, and resolved into effective runtime context rather than
@@ -502,6 +510,10 @@ This repository currently contains:
   clear, age-prune, max-size-prune, or target-prune by git
   service/namespace/repository when operators need to reclaim space or refresh
   stale backend clones;
+- Host status also surfaces bootstrap operator security mode, normalized
+  operator id, and bootstrap role when `ENTANGLE_HOST_OPERATOR_TOKEN` is
+  configured, while tokenless development reports that no operator auth mode is
+  active;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
@@ -1155,8 +1167,9 @@ The highest-value remaining gaps are:
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
-  boundary, including real principals, roles, policy-backed permissions, and
-  stronger audit retention than the current bootstrap request trace;
+  boundary and its visible status summary, including real principals,
+  enforced roles, policy-backed permissions, and stronger audit retention than
+  the current bootstrap request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially CI-grade coverage and non-disposable
   upgrade/repair behavior.

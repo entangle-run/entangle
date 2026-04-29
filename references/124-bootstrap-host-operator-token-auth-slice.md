@@ -13,6 +13,8 @@ graph, runtime, session, and recovery state.
 The repository now supports an optional bootstrap operator-token boundary:
 
 - `ENTANGLE_HOST_OPERATOR_TOKEN` enables host-side enforcement;
+- `ENTANGLE_HOST_OPERATOR_ID` provides normalized bootstrap attribution;
+- `ENTANGLE_HOST_OPERATOR_ROLE` provides an operator-visible bootstrap role;
 - HTTP clients authenticate with `Authorization: Bearer <token>`;
 - the host-client package can attach the token to every request;
 - CLI clients can pass `--host-token` or use `ENTANGLE_HOST_TOKEN`;
@@ -22,6 +24,12 @@ The repository now supports an optional bootstrap operator-token boundary:
 
 When no host operator token is configured, the local development profile
 continues to behave as before.
+
+Follow-up slice
+`410-bootstrap-operator-security-status-slice.md` exposes this active bootstrap
+posture through Host status without returning token material. Tokenless mode
+reports `operatorAuthMode: "none"`, while token-protected mode reports
+normalized `operatorId` and `operatorRole`.
 
 ## What changed
 

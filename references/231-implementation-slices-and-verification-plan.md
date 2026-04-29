@@ -5,8 +5,13 @@
 The repo already follows a slice discipline: each implemented runtime
 capability has a reference record, tests, wiki log entry, and usually a
 coherent commit. The root `pnpm verify` gate runs lint, typecheck, and tests.
-Root `pnpm test` now uses an explicit sequential workspace test chain because
-Turbo test execution left Vitest child processes open in this environment.
+Root `pnpm test` now uses `scripts/run-workspace-tests.mjs`, an explicit
+sequential workspace test runner, because Turbo test execution and later a
+long shell `pnpm --filter ... && ...` chain left Vitest child processes open in
+this environment. Workspace Vitest scripts that reproduced the same
+chained-process hang now use fork pools, with CLI pinned to one worker; the
+remaining Node suites keep their previous default pool because that remains
+their stable configuration here.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 
@@ -451,6 +456,9 @@ Current status:
   artifact/projection state;
 - Studio's Host Status panel renders the same path-free artifact backend cache
   summary for admin visibility;
+- Host status now reports the active bootstrap operator security posture,
+  including tokenless mode or normalized bootstrap operator id and role for
+  token-protected deployments, without exposing bearer-token material;
 - the User Client can request bounded artifact history/diff from its Human
   Interface Runtime through Host artifact read APIs;
 - explicit source-history publication can now target policy-gated non-primary
@@ -800,6 +808,7 @@ Implementation records:
 - [400-artifact-backend-cache-prune-policy-slice.md](400-artifact-backend-cache-prune-policy-slice.md)
 - [406-artifact-backend-cache-size-policy-slice.md](406-artifact-backend-cache-size-policy-slice.md)
 - [409-artifact-backend-cache-target-policy-slice.md](409-artifact-backend-cache-target-policy-slice.md)
+- [410-bootstrap-operator-security-status-slice.md](410-bootstrap-operator-security-status-slice.md)
 - [355-user-client-artifact-history-diff-slice.md](355-user-client-artifact-history-diff-slice.md)
 - [356-user-client-artifact-visibility-boundary-slice.md](356-user-client-artifact-visibility-boundary-slice.md)
 - [357-process-smoke-user-client-artifact-history-diff-slice.md](357-process-smoke-user-client-artifact-history-diff-slice.md)
@@ -912,6 +921,9 @@ Current status:
   service/namespace/repository target, without touching authoritative
   artifact, projection, runner, or git backend state;
 - Studio displays the artifact backend cache summary in the Host Status panel;
+- Host status exposes bootstrap operator security mode and normalized
+  bootstrap attribution while keeping production identity/authorization as an
+  explicit remaining hardening track;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;
 - those User Client artifact routes require conversation context and verify the
