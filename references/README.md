@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
+[351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -57,7 +57,8 @@ wiki publication produces projected artifact evidence and a matching primary git
 branch, and Host public deep runtime reads now ignore Host-local runtime files
 for accepted federated assignments. Projected git artifact history/diff can now
 be computed through a Host-owned backend cache when the locator is resolvable
-through semantic artifact context.
+through semantic artifact context, and the process-runner smoke verifies that
+path against a real runner-published source-history artifact.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era

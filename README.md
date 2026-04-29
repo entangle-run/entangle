@@ -358,6 +358,8 @@ This repository currently contains:
   through a Host-owned backend cache when semantic artifact context identifies
   a reachable git backend, and otherwise return projected artifact records with
   explicit unavailable reasons;
+- the process-runner smoke now verifies backend-cache history/diff for a
+  runner-published source-history git artifact;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,

@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Proved backend artifact history and diff in process smoke
+
+Extended the federated process-runner smoke so the real Host plus joined runner
+path now checks Host backend-cache artifact history/diff for the source-history
+git artifact published by the runner. The smoke prints
+`backend-resolved-artifact-history-diff` only when both history and diff are
+available through the configured git backend.
+
+Added `references/351-process-smoke-artifact-backend-history-diff-slice.md`.
+
 ## [2026-04-28] implementation | Resolved federated artifact history and diff from git backends
 
 Added Host-owned backend-cache resolution for projected git artifact

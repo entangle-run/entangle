@@ -32,6 +32,8 @@ import {
   runtimeAssignmentTimelineResponseSchema,
   runtimeApprovalInspectionResponseSchema,
   runtimeApprovalListResponseSchema,
+  runtimeArtifactDiffResponseSchema,
+  runtimeArtifactHistoryResponseSchema,
   runtimeArtifactInspectionResponseSchema,
   runtimeArtifactListResponseSchema,
   runtimeContextInspectionResponseSchema,
@@ -1993,6 +1995,62 @@ async function main(): Promise<void> {
       `sourceHistory=${projectedBuilderSourceHistory.sourceHistoryId}; ` +
         `commit=${projectedBuilderSourceHistory.commit}; ` +
         `publication=${projectedBuilderSourceHistory.publication?.publication.state}`
+    );
+
+    const sourceHistoryArtifactId =
+      projectedBuilderSourceHistory.publication?.artifactId;
+    assertCondition(
+      Boolean(sourceHistoryArtifactId),
+      "Published source history must expose an artifact id."
+    );
+    const projectedSourceHistoryArtifactGitInspection = await waitFor(
+      "Host backend-resolved source-history artifact git inspection",
+      async () => {
+        const artifact = runtimeArtifactInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${sourceHistoryArtifactId}`
+          })
+        );
+        const history = runtimeArtifactHistoryResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path:
+              `/v1/runtimes/builder/artifacts/${sourceHistoryArtifactId}` +
+              "/history?limit=3"
+          })
+        );
+        const diff = runtimeArtifactDiffResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/artifacts/${sourceHistoryArtifactId}/diff`
+          })
+        );
+
+        return history.history.available &&
+          artifact.artifact.ref.backend === "git" &&
+          history.history.commits.some(
+            (commit) => commit.commit === artifact.artifact.ref.locator.commit
+          ) &&
+          diff.diff.available &&
+          diff.diff.content.includes("smoke-generated.ts")
+          ? { artifact, diff, history }
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "backend-resolved-artifact-history-diff",
+      `artifact=${sourceHistoryArtifactId}; ` +
+        `history=${
+          projectedSourceHistoryArtifactGitInspection.history.history.available
+            ? "available"
+            : "unavailable"
+        }; diff=${
+          projectedSourceHistoryArtifactGitInspection.diff.diff.available
+            ? "available"
+            : "unavailable"
+        }`
     );
 
     const wikiPublicationRequest = runtimeWikiPublishResponseSchema.parse(

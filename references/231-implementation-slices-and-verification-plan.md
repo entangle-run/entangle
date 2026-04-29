@@ -389,6 +389,8 @@ Current status:
   projection/backend evidence instead of stale Host-local runtime files;
 - projected git artifact history/diff can now be computed from a Host-owned
   backend cache without reading runner-local runtime files;
+- `ops:smoke-federated-process-runner` now verifies that backend-cache
+  history/diff path against the runner-published source-history git artifact;
 - richer source/wiki mutation endpoints, non-primary publication, cache policy,
   and artifact restore/promotion still need projection-backed or
   backend-resolved replacement.
@@ -669,6 +671,7 @@ Implementation records:
 - [348-process-smoke-wiki-publication-control-slice.md](348-process-smoke-wiki-publication-control-slice.md)
 - [349-federated-runtime-filesystem-read-quarantine-slice.md](349-federated-runtime-filesystem-read-quarantine-slice.md)
 - [350-federated-artifact-backend-history-diff-slice.md](350-federated-artifact-backend-history-diff-slice.md)
+- [351-process-smoke-artifact-backend-history-diff-slice.md](351-process-smoke-artifact-backend-history-diff-slice.md)
 
 Current status:
 
@@ -693,6 +696,9 @@ Current status:
 - Host can resolve projected git artifact history/diff through a backend cache
   when artifact locators include git service, namespace, repository, commit,
   and path metadata;
+- the process proof now checks that the same backend-resolved history/diff path
+  is available for the source-history artifact published by the real joined
+  runner;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 
