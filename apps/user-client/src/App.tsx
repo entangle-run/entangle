@@ -25,6 +25,7 @@ import {
   proposeArtifactSourceChange,
   publishApprovalResponse,
   publishUserMessage,
+  publishWikiRepository,
   renderArtifactLocator,
   reviewSourceChangeCandidate,
   type UserClientState
@@ -456,12 +457,19 @@ function SourceChangeReview({
 }
 
 function WikiResourceCards({
+  baseUrl,
   message,
+  onRefresh,
   state
 }: {
+  baseUrl: string;
   message: UserNodeMessageRecord;
+  onRefresh: () => Promise<void>;
   state?: UserClientState | undefined;
 }) {
+  const [publishReason, setPublishReason] = useState("");
+  const [retryFailedPublication, setRetryFailedPublication] = useState(false);
+  const [status, setStatus] = useState<string | undefined>();
   const resource = message.approval?.resource;
   const refs =
     resource?.kind === "wiki_repository" || resource?.kind === "wiki_page"
@@ -476,6 +484,27 @@ function WikiResourceCards({
     return null;
   }
 
+  async function requestPublication(): Promise<void> {
+    setStatus("requesting wiki publication");
+
+    try {
+      const response = await publishWikiRepository({
+        baseUrl,
+        conversationId: message.conversationId,
+        nodeId: message.fromNodeId,
+        ...(publishReason.trim() ? { reason: publishReason.trim() } : {}),
+        retryFailedPublication
+      });
+
+      setStatus(`wiki publication requested ${response.commandId}`);
+      await onRefresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Wiki publication failed."
+      );
+    }
+  }
+
   return (
     <div className="artifact-list">
       {refs.map((ref) => (
@@ -488,6 +517,26 @@ function WikiResourceCards({
           ) : null}
         </div>
       ))}
+      <div className="artifact-actions">
+        <input
+          aria-label="Wiki publication reason"
+          onChange={(event) => setPublishReason(event.target.value)}
+          placeholder="Publication reason"
+          value={publishReason}
+        />
+        <label className="inline-checkbox">
+          <input
+            checked={retryFailedPublication}
+            onChange={(event) => setRetryFailedPublication(event.target.checked)}
+            type="checkbox"
+          />
+          <span>Retry failed</span>
+        </label>
+        <button onClick={() => void requestPublication()} type="button">
+          Publish Wiki
+        </button>
+        {status ? <span className="metadata">{status}</span> : null}
+      </div>
     </div>
   );
 }
@@ -656,7 +705,12 @@ function MessageTimeline({
             onRefresh={onRefresh}
             state={state}
           />
-          <WikiResourceCards message={message} state={state} />
+          <WikiResourceCards
+            baseUrl={baseUrl}
+            message={message}
+            onRefresh={onRefresh}
+            state={state}
+          />
           <footer className="message-footer">
             <span>{message.createdAt}</span>
             <span>{message.eventId}</span>

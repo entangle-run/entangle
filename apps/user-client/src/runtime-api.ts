@@ -5,6 +5,7 @@ import type {
   RuntimeArtifactSourceChangeProposalResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
+  RuntimeWikiPublishResponse,
   SourceChangeRefProjectionRecord,
   SourceChangeSummary,
   UserConversationProjectionRecord,
@@ -94,6 +95,12 @@ export type UserClientArtifactSourceProposalResponse =
     source: "runtime";
     userNodeId: string;
   };
+
+export type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
+  source: "runtime";
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+};
 
 export type UserClientSourceChangeDiffResponse = {
   candidateId: string;
@@ -332,6 +339,30 @@ export function proposeArtifactSourceChange(input: {
       }
     }
   );
+}
+
+export function publishWikiRepository(input: {
+  baseUrl: string;
+  conversationId: string;
+  nodeId: string;
+  reason?: string | undefined;
+  retryFailedPublication?: boolean | undefined;
+}): Promise<UserClientWikiPublishResponse> {
+  return fetchJson<UserClientWikiPublishResponse>("/api/wiki-repository/publish", {
+    baseUrl: input.baseUrl,
+    init: {
+      body: JSON.stringify({
+        conversationId: input.conversationId,
+        nodeId: input.nodeId,
+        ...(input.reason ? { reason: input.reason } : {}),
+        retryFailedPublication: input.retryFailedPublication ?? false
+      }),
+      headers: {
+        "content-type": "application/json"
+      },
+      method: "POST"
+    }
+  });
 }
 
 export function fetchSourceChangeDiff(input: {

@@ -477,6 +477,10 @@ Current status:
   path for artifacts visible in the selected User Node conversation, with the
   Human Interface Runtime forwarding through Host control and tagging the
   request with the User Node id;
+- the running User Client can now request runner-owned wiki publication for
+  wiki resources visible in the selected User Node conversation, with the Human
+  Interface Runtime enforcing the conversation/wiki-resource boundary and
+  forwarding `requestedBy` as the User Node id;
 - Host now returns an effective proposal id for every artifact source-change
   proposal request and sends that same id to the runner, so request
   acknowledgements identify the candidate id to follow;
@@ -888,6 +892,9 @@ Current status:
 - the running User Client exposes the same request from visible artifact cards
   through a conversation-scoped Human Interface Runtime JSON route and fallback
   HTML form, forwarding to Host with `requestedBy` set to the User Node id;
+- the running User Client exposes wiki publication from visible wiki approval
+  cards through a conversation-scoped Human Interface Runtime JSON route,
+  forwarding to Host with `requestedBy` set to the User Node id;
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

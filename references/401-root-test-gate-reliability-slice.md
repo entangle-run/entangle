@@ -22,6 +22,7 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
 - `apps/cli/package.json`
 - `apps/studio/package.json`
 - `apps/user-client/package.json`
+- `packages/validator/package.json`
 - `packages/package-scaffold/package.json`
 - `packages/host-client/package.json`
 - `references/221-federated-runtime-redesign-index.md`
@@ -42,16 +43,19 @@ test command in a fixed sequence, stop on the first failure, and exit cleanly so
   commands.
 - Add explicit Vitest fork pools for CLI, Studio, and User Client package test
   scripts.
-- Follow-up hardening: add explicit Vitest fork pools to `package-scaffold` and
-  `host-client` after chained root verification later reproduced the same
-  no-output child-process hang on those packages while they passed when run
-  directly.
+- Earlier follow-up hardening briefly added explicit Vitest fork pools to
+  `package-scaffold` and `host-client` after chained root verification
+  reproduced no-output child-process hangs on those packages.
 - Pin CLI tests to a single Vitest worker after the chained root gate reached
   the final CLI package and reproduced the same no-output hang under parallel
   fork workers.
 - Keep `types`, `nostr-fabric`, `agent-engine`, `runner`, and `host` on their
   previous default Vitest pool because those package suites remained stable
   there, and some of them hung when forced onto fork pools in this environment.
+- Follow-up correction: `validator`, `package-scaffold`, and `host-client` are
+  back on the default Vitest pool. Their previous `--pool=forks` pins later
+  reproduced no-output root-gate hangs, while the same suites passed
+  immediately under the default and threads pools.
 - Re-run package tests and root `pnpm test`.
 
 ## Tests Required
@@ -69,6 +73,17 @@ Implemented and passed:
 
 Follow-up hardening also re-ran the root gate after the newly affected
 workspace Vitest test scripts used fork pools.
+
+Later follow-up verification also covered:
+
+- `pnpm --filter @entangle/validator test`
+- `pnpm --filter @entangle/package-scaffold test`
+- `pnpm --dir packages/validator exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts`
+- `pnpm --dir packages/validator exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts --pool=threads`
+- `pnpm --dir packages/package-scaffold exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts`
+- `pnpm --dir packages/package-scaffold exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts --pool=threads`
+- `pnpm --dir packages/host-client exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts`
+- `pnpm --dir packages/host-client exec vitest run --config ../../vitest.config.ts --environment node src/index.test.ts --pool=threads`
 
 Already passed in the preceding verification window:
 

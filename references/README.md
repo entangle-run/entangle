@@ -41,7 +41,7 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
+[412-user-client-wiki-publication-slice.md](412-user-client-wiki-publication-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
@@ -154,12 +154,16 @@ conversation, with the Human Interface Runtime enforcing conversation
 visibility and setting `requestedBy` to the User Node id. Host now returns an
 effective proposal id even when callers omit one, and sends that same id in the
 runner control payload so acknowledgements can be followed to the projected
-candidate. CLI can also inspect runtime command receipts directly from Host
-projection with assignment, node, runner, command type, status, and limit
-filters. Studio can now open assignment-scoped timelines through the same Host
-assignment timeline endpoint. `pnpm ops:demo-user-node-runtime` now wraps the
-fastest interactive User Node runtime proof by building the dedicated User
-Client app, starting the development relay, and running the federated
+candidate. The running User Client can now also request runner-owned wiki
+publication for wiki resources visible in the selected User Node conversation,
+with the Human Interface Runtime enforcing conversation visibility and setting
+`requestedBy` to the User Node id. CLI can also inspect runtime command
+receipts directly from Host projection with assignment, node, runner, command
+type, status, and limit filters. Studio can now open assignment-scoped
+timelines through the same Host assignment timeline endpoint.
+`pnpm ops:demo-user-node-runtime` now wraps the fastest interactive User Node
+runtime proof by building the dedicated User Client app, starting the
+development relay, and running the federated
 process-runner smoke in `--keep-running` mode.
 `pnpm ops:distributed-proof-kit` now generates a copyable three-runner proof
 kit for a reachable Host/relay/git topology, with Host-derived runner join

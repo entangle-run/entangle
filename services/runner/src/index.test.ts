@@ -1422,6 +1422,22 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "POST" &&
+          request.url === "/v1/runtimes/worker-it/wiki-repository/publish"
+        ) {
+          response.end(
+            JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-wiki-publish-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-26T12:06:30.000Z",
+              status: "requested"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
           request.url === "/v1/user-nodes/user-main/messages"
         ) {
           const body = requestRecord.body as
@@ -1752,6 +1768,36 @@ describe("runner runtime context", () => {
         userNodeId: "user-main"
       });
 
+      const jsonWikiPublishResponse = await fetch(
+        new URL("/api/wiki-repository/publish", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Publish reviewed wiki memory.",
+            retryFailedPublication: true
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonWikiPublishResponse.status).toBe(200);
+      await expect(jsonWikiPublishResponse.json()).resolves.toMatchObject({
+        commandId: "cmd-wiki-publish-alpha",
+        nodeId: "worker-it",
+        source: "runtime",
+        status: "requested",
+        userNodeId: "user-main",
+        wikiRefs: [
+          {
+            artifactId: "wiki-alpha",
+            nodeId: "worker-it"
+          }
+        ]
+      });
+
       const jsonUnscopedArtifactResponse = await fetch(
         new URL(
           "/api/artifacts/diff?nodeId=worker-it&artifactId=artifact-alpha",
@@ -1781,6 +1827,25 @@ describe("runner runtime context", () => {
         jsonUnscopedArtifactProposalResponse.json()
       ).resolves.toMatchObject({
         error: "Runtime node, artifact id, and conversation are required."
+      });
+
+      const jsonUnscopedWikiPublishResponse = await fetch(
+        new URL("/api/wiki-repository/publish", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            nodeId: "worker-it"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonUnscopedWikiPublishResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedWikiPublishResponse.json()
+      ).resolves.toMatchObject({
+        error: "Runtime node and conversation are required."
       });
 
       const jsonSourceDiffResponse = await fetch(
@@ -2181,6 +2246,19 @@ describe("runner runtime context", () => {
         targetPath: "proposals/report.md"
       });
     }
+    const wikiPublishRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/runtimes/worker-it/wiki-repository/publish"
+    );
+    expect(wikiPublishRequest).toMatchObject({
+      authorization: "Bearer host-secret"
+    });
+    expect(wikiPublishRequest?.body).toMatchObject({
+      reason: "Publish reviewed wiki memory.",
+      requestedBy: "user-main",
+      retryFailedPublication: true
+    });
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&

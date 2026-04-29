@@ -174,6 +174,10 @@ The most accurate current description is:
 - the running User Client can now request that same proposal path for artifacts
   visible in the selected User Node conversation, with the Human Interface
   Runtime enforcing visibility and tagging the request as the User Node;
+- the running User Client can now request runner-owned wiki publication for
+  wiki resources visible in the selected User Node conversation, with the Human
+  Interface Runtime enforcing visibility and tagging the request as the User
+  Node;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;

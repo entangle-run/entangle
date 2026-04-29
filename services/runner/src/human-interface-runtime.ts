@@ -16,6 +16,7 @@ import type {
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
+  RuntimeWikiPublishResponse,
   SourceChangeRefProjectionRecord,
   UserNodeConversationResponse,
   UserNodeConversationReadResponse,
@@ -33,6 +34,7 @@ import {
   runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
+  runtimeWikiPublishResponseSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeInboxResponseSchema,
@@ -122,6 +124,19 @@ type UserClientArtifactSourceProposalResponse =
     userNodeId: string;
   };
 
+type UserClientWikiPublishRequest = {
+  conversationId?: unknown;
+  nodeId?: unknown;
+  reason?: unknown;
+  retryFailedPublication?: unknown;
+};
+
+type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
+  source: "runtime";
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+};
+
 type UserClientVisibleArtifactRef =
   | {
       artifact: ArtifactRef;
@@ -134,6 +149,15 @@ type UserClientVisibleArtifactRef =
 type UserClientVisibleSourceChange =
   | {
       visible: true;
+    }
+  | {
+      error: string;
+      statusCode: number;
+    };
+
+type UserClientVisibleWikiRefs =
+  | {
+      wikiRefs: WikiRefProjectionRecord[];
     }
   | {
       error: string;
@@ -737,6 +761,74 @@ async function resolveUserClientVisibleSourceChange(input: {
   };
 }
 
+async function resolveUserClientVisibleWikiRefs(input: {
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  userNodeId: string;
+}): Promise<UserClientVisibleWikiRefs> {
+  if (!input.conversationId) {
+    return {
+      error: "Conversation id is required for wiki publication.",
+      statusCode: 400
+    };
+  }
+
+  const conversation = await fetchUserNodeConversation({
+    conversationId: input.conversationId,
+    hostApi: input.hostApi,
+    userNodeId: input.userNodeId
+  });
+
+  if (conversation.error || !conversation.detail) {
+    return {
+      error: conversation.error ?? "Conversation detail is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const wikiResources = conversation.detail.messages.flatMap((message) => {
+    const resource = message.approval?.resource;
+
+    return message.direction === "inbound" &&
+      message.fromNodeId === input.nodeId &&
+      (resource?.kind === "wiki_repository" || resource?.kind === "wiki_page")
+      ? [resource]
+      : [];
+  });
+
+  if (wikiResources.length === 0) {
+    return {
+      error: "Wiki resource is not visible in the selected User Node conversation.",
+      statusCode: 403
+    };
+  }
+
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+
+  if (projection.error || !projection.detail) {
+    return {
+      error: projection.error ?? "Host projection is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const wikiRefs = projection.detail.wikiRefs.filter(
+    (ref) =>
+      ref.nodeId === input.nodeId &&
+      wikiResources.some((resource) => wikiRefMatchesResource({ ref, resource }))
+  );
+
+  if (wikiRefs.length === 0) {
+    return {
+      error: "Wiki resource is visible but no projected wiki refs are available.",
+      statusCode: 403
+    };
+  }
+
+  return { wikiRefs };
+}
+
 async function markUserClientConversationRead(input: {
   conversationId: string;
   context: EffectiveRuntimeContext;
@@ -1294,6 +1386,71 @@ async function requestRuntimeArtifactSourceProposal(input: {
           ? error.message
           : "Host artifact source-change proposal request failed.",
       statusCode: 500
+    };
+  }
+}
+
+async function requestRuntimeWikiPublication(input: {
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  reason?: string | undefined;
+  retryFailedPublication: boolean;
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+}): Promise<{
+  detail?: UserClientWikiPublishResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for wiki publication.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/wiki-repository/publish`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          ...(input.reason ? { reason: input.reason } : {}),
+          requestedBy: input.userNodeId,
+          retryFailedPublication: input.retryFailedPublication
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host wiki publication request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeWikiPublishResponseSchema.parse(await response.json()),
+        source: "runtime",
+        userNodeId: input.userNodeId,
+        wikiRefs: input.wikiRefs
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host wiki publication request failed.",
+      statusCode: 502
     };
   }
 }
@@ -2940,6 +3097,82 @@ export async function startHumanInterfaceRuntime(input: {
         }
 
         writeJson(response, 200, proposal.detail);
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/wiki-repository/publish"
+      ) {
+        let publishRequest: UserClientWikiPublishRequest;
+
+        try {
+          publishRequest =
+            (await readRequestJson(request)) as UserClientWikiPublishRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Wiki publication request is invalid."
+          });
+          return;
+        }
+
+        const conversationId =
+          typeof publishRequest.conversationId === "string"
+            ? publishRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof publishRequest.nodeId === "string"
+            ? publishRequest.nodeId.trim()
+            : "";
+        const reason =
+          typeof publishRequest.reason === "string" &&
+          publishRequest.reason.trim().length > 0
+            ? publishRequest.reason.trim()
+            : undefined;
+        const retryFailedPublication =
+          publishRequest.retryFailedPublication === true;
+
+        if (!nodeId || !conversationId) {
+          writeJson(response, 400, {
+            error: "Runtime node and conversation are required."
+          });
+          return;
+        }
+
+        const visibleWikiRefs = await resolveUserClientVisibleWikiRefs({
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleWikiRefs) {
+          writeJson(response, visibleWikiRefs.statusCode, {
+            error: visibleWikiRefs.error
+          });
+          return;
+        }
+
+        const publication = await requestRuntimeWikiPublication({
+          hostApi: input.hostApi,
+          nodeId,
+          reason,
+          retryFailedPublication,
+          userNodeId: input.context.binding.node.nodeId,
+          wikiRefs: visibleWikiRefs.wikiRefs
+        });
+
+        if (publication.error || !publication.detail) {
+          writeJson(response, publication.statusCode ?? 502, {
+            error: publication.error ?? "Wiki publication request failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, publication.detail);
         return;
       }
 

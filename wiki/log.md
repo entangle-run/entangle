@@ -3048,7 +3048,9 @@ successful restores remain inspectable instead of overwriting one another.
 During verification, `@entangle/validator` consistently stalled under the
 default Vitest worker pool while passing immediately with the fork pool. Its
 package test script now pins `--pool=forks` so the repository-level
-`pnpm verify` gate remains deterministic.
+`pnpm verify` gate remains deterministic. This pool choice was later
+superseded on 2026-04-29 after `--pool=forks` became the root-gate hang point
+for the validator suite.
 
 ## [2026-04-26] implementation | Added non-primary publication provisioning
 
@@ -4902,3 +4904,26 @@ enabled.
 This makes the distributed proof tooling CI-checkable without live model
 credentials or external machines. It does not replace the real proof where
 runners, Host, relay, and git backend live on separate reachable boundaries.
+
+## [2026-04-29] implementation | Added User Client wiki publication requests
+
+Added `references/412-user-client-wiki-publication-slice.md`. The Human
+Interface Runtime now exposes a conversation-scoped
+`POST /api/wiki-repository/publish` route that requires a visible inbound
+wiki approval/resource before forwarding Host's `runtime.wiki.publish` request
+with `requestedBy` set to the User Node id.
+
+The dedicated User Client now exposes that action from wiki cards with reason
+and retry controls, keeping Studio as the admin surface and the User Client as
+the human graph participant surface.
+
+## [2026-04-29] tooling | Returned validator tests to default Vitest pool
+
+During the User Client wiki publication slice, root `pnpm test` timed out at
+`@entangle/validator` and then at `@entangle/package-scaffold` while those
+package scripts used `--pool=forks`; `host-client` was checked before waiting
+for the same failure. The same suites passed immediately under the default
+Vitest pool and under `--pool=threads`, so `packages/validator/package.json`,
+`packages/package-scaffold/package.json`, and
+`packages/host-client/package.json` now use the default pool again and
+`references/401-root-test-gate-reliability-slice.md` records the correction.
